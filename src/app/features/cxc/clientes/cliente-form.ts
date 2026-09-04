@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, input, output } from '@angular/core';
+import { Component, inject, signal, OnInit, input, output, effect, Injector } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -46,12 +46,34 @@ export class ClienteForm implements OnInit {
   // ===== MODO RUTA (original) =====
   private _clienteId = 0;
   private _modoInline = false;
+  private injector = inject(Injector);
 
   esEdicion = signal(false);
   cargando = signal(false);
   guardando = signal(false);
   titulo = signal('Nuevo cliente');
   modoFacturacion = signal(false);
+
+  // Reaccionar a cambios en clienteIdInput (modo inline)
+  private _clienteEffect = effect(() => {
+    const id = this.clienteIdInput();
+    if (this._modoInline) {
+      this._clienteId = id ?? 0;
+      this.esEdicion.set(!!id);
+      this.titulo.set(id ? 'Editar cliente' : 'Nuevo cliente');
+      if (id) {
+        this.cargarCliente(id);
+      } else if (this.form) {
+        this.form.reset({
+          nombres: '', apellidos: '', razonsocial: '', nrocliente: '',
+          dni: '', sexo: 'M', estadocivil: 'S', rtn: '',
+          limiteCredito: 0, diasplazo: 0, interes: 0, moratorio: 0,
+          categoria: 'A', sn_activo: 'S', fechanacimiento: null,
+        });
+        this.cargando.set(false);
+      }
+    }
+  }, { injector: this.injector });
 
   readonly snOptions = [
     { label: 'Activo', value: 'S' },
@@ -112,12 +134,12 @@ export class ClienteForm implements OnInit {
     // Detectar modo: si viene clienteIdInput() -> modo inline
     // Si no, usar route params (modo original)
     const inlineId = this.clienteIdInput();
-    if (inlineId != null) {
+    if (inlineId !== undefined) {
       this._modoInline = true;
-      this._clienteId = inlineId;
-      this.esEdicion.set(inlineId > 0);
-      this.titulo.set(inlineId > 0 ? 'Editar cliente' : 'Nuevo cliente');
-      if (inlineId > 0) {
+      this._clienteId = inlineId ?? 0;
+      this.esEdicion.set(!!inlineId);
+      this.titulo.set(inlineId ? 'Editar cliente' : 'Nuevo cliente');
+      if (inlineId) {
         this.cargarCliente(inlineId);
       }
     } else {

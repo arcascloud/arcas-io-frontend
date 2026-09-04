@@ -4,18 +4,14 @@ import { Consulta } from './consulta/consulta';
 export const CXC_ROUTES: Routes = [
   { path: '', redirectTo: 'caja', pathMatch: 'full' },
 
-  // Caja - formulario directo
+  // Caja - componente dedicado
   {
     path: 'caja',
-    data: { nombre: 'caja' },
-    loadComponent: () =>
-      import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm),
+    loadComponent: () => import('./caja/caja').then((m) => m.Caja),
   },
   {
     path: 'caja/editar/:id',
-    data: { nombre: 'caja' },
-    loadComponent: () =>
-      import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm),
+    loadComponent: () => import('./caja/caja').then((m) => m.Caja),
   },
 
   // Clientes - Nuevo gestor con layout dividido

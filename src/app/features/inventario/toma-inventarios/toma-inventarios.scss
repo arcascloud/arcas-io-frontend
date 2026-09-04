@@ -1,4 +1,6 @@
-:host { display: block; }
+:host {
+  display: block;
+}
 
 code {
   background: var(--c-surface-ground);
@@ -7,10 +9,115 @@ code {
   font-size: 0.8rem;
 }
 
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.page-fill {
+  height: calc(100vh - 76px);
+  max-height: calc(100vh - 76px);
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+.detail-fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0.5rem;
+}
+
+.detail-fill > .sticky-header {
+  flex-shrink: 0;
+  background: var(--c-surface-ground);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--c-border);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    flex-shrink: 1;
+    border-bottom: none;
+    box-shadow: none;
+  }
+}
+
+.detail-fill > .detail-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+
+  @media (max-width: 768px) {
+    flex: none;
+    overflow: visible;
+  }
+}
+
+.acciones-card {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+.form-grid-captura {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr 7rem auto;
+  gap: 0 0.75rem;
+  align-items: end;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
 ::ng-deep .p-datatable-tbody > tr {
   cursor: default;
 
   &:hover {
     background: var(--c-surface-ground);
   }
+
+  &.row-seleccionado {
+    background: color-mix(in srgb, var(--select-row) 10%, transparent);
+  }
+
+  &.row-editando {
+    background: color-mix(in srgb, var(--select-row) 15%, transparent);
+  }
+}
+
+::ng-deep .p-datatable {
+  --p-datatable-body-cell-border-color: #25374a;
 }

@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -10,14 +10,21 @@ import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToolbarModule } from 'primeng/toolbar';
 import { SelectModule } from 'primeng/select';
+import { CheckboxModule } from 'primeng/checkbox';
+import { ScrollPanelModule } from 'primeng/scrollpanel';
+import { CardModule } from 'primeng/card';
+import { ToolbarModule } from 'primeng/toolbar';
+import { TooltipModule } from 'primeng/tooltip';
+import { AutoCompleteModule } from 'primeng/autocomplete';
 import { FileUploadModule } from 'primeng/fileupload';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { TomaInventarioService } from '../../../core/services/toma-inventario.service';
 import { BodegasService } from '../../../core/services/bodegas.service';
-import { TomaInventarioMae, TomaInventarioDet } from '../../../core/models/inventario.models';
+import { ProductosService } from '../../../core/services/productos.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { Bodega, Producto } from '../../../core/models/inventario.models';
 import { ProductosHelperList } from '../../helpers/productos';
 import { FooterHelper } from '../../helpers/footer';
 
@@ -29,15 +36,19 @@ import { FooterHelper } from '../../helpers/footer';
     CommonModule, FormsModule, ReactiveFormsModule,
     TableModule, ButtonModule, InputTextModule, InputNumberModule,
     DialogModule, TagModule, ToastModule, ConfirmDialogModule,
-    ToolbarModule, SelectModule, FileUploadModule,
+    SelectModule, CheckboxModule, ScrollPanelModule, CardModule,
+    ToolbarModule, TooltipModule, AutoCompleteModule, FileUploadModule,
   ],
   templateUrl: './toma-inventarios.html',
   styleUrl: './toma-inventarios.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TomaInventarios implements OnInit {
   private fb = inject(FormBuilder);
   private service = inject(TomaInventarioService);
   private bodegasService = inject(BodegasService);
+  private productosService = inject(ProductosService);
+  private auth = inject(AuthService);
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
@@ -47,27 +58,30 @@ export class TomaInventarios implements OnInit {
 
   maestros = signal<any[]>([]);
   detalles = signal<any[]>([]);
-  bodegas = signal<any[]>([]);
+  bodegas = signal<Bodega[]>([]);
+
   seleccionado = signal<any | null>(null);
   cargando = signal(false);
   cargandoDet = signal(false);
-
-  dialogMae = signal(false);
-  dialogDet = signal(false);
-  dialogImport = signal(false);
-  esEdicion = signal(false);
+  itemsSeleccionados = signal<any[]>([]);
 
   formMae = this.fb.group({
-    concepto: ['', Validators.required],
     bodegaId: [null as number | null, Validators.required],
+    concepto: ['', Validators.required],
   });
 
   formDet = this.fb.group({
     codbarra: ['', Validators.required],
     descripcion: [''],
-    fisico: [0, Validators.required],
+    productoId: [null as number | null],
+    fisico: [0, [Validators.required, Validators.min(0)]],
   });
 
+  itemEditando = signal<number | null>(null);
+  productoSeleccionado: Producto | null = null;
+  productosFiltrados: Producto[] = [];
+
+  dialogImport = signal(false);
   archivoImport = signal<File | null>(null);
   itemsImport = signal<any[]>([]);
 
@@ -98,6 +112,10 @@ export class TomaInventarios implements OnInit {
 
   seleccionar(row: any) {
     this.seleccionado.set(row);
+    this.formMae.patchValue({ bodegaId: row.bodegaId, concepto: row.concepto });
+    this.formDet.reset({ codbarra: '', descripcion: '', productoId: null, fisico: 0 });
+    this.itemEditando.set(null);
+    this.productoSeleccionado = null;
     this.cargarDetalles(row.invfisId);
   }
 
@@ -105,7 +123,7 @@ export class TomaInventarios implements OnInit {
     this.cargandoDet.set(true);
     this.service.getDet(invfisId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data: any) => {
-        this.detalles.set(data?.value || data || []);
+        this.detalles.set((data?.value || data || []).sort((a: any, b: any) => (b.nrofila || 0) - (a.nrofila || 0)));
         this.cargandoDet.set(false);
       },
       error: () => {
@@ -118,68 +136,107 @@ export class TomaInventarios implements OnInit {
   volver() {
     this.seleccionado.set(null);
     this.detalles.set([]);
+    this.itemsSeleccionados.set([]);
   }
 
   nuevoMae() {
-    this.esEdicion.set(false);
-    this.formMae.reset();
-    this.dialogMae.set(true);
-  }
-
-  editarMae(row: any) {
-    this.esEdicion.set(true);
-    this.formMae.patchValue({ concepto: row.concepto, bodegaId: row.bodegaId });
-    this.seleccionado.set(row);
-    this.dialogMae.set(true);
+    this.formMae.reset({ bodegaId: null, concepto: '' });
+    this.seleccionado.set({
+      invfisId: 0,
+      empresaId: this.auth.currentUser()?.empresaId || 0,
+      fecharegistro: new Date().toISOString(),
+      bodegaId: 0,
+      concepto: '',
+      sn_anulado: 'N',
+      usuarioCreated: this.auth.currentUser()?.usuario || 'SYSTEM',
+    });
+    this.detalles.set([]);
   }
 
   guardarMae() {
     if (this.formMae.invalid) return;
     const val = this.formMae.value;
-    const obs$ = this.esEdicion()
-      ? this.service.update(this.seleccionado()!.invfisId, val as any)
-      : this.service.create(val as any);
+    const payload: any = {
+      bodegaId: val.bodegaId,
+      concepto: val.concepto,
+      sn_anulado: 'N',
+    };
 
-    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.service.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res: any) => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: this.esEdicion() ? 'Toma actualizada' : 'Toma creada' });
-        this.dialogMae.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Toma de inventario creada' });
         this.cargarMaestros();
-        if (!this.esEdicion() && res.invfisId) {
+        if (res?.invfisId) {
           this.seleccionar(res);
         }
       },
-      error: () => this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar' }),
-    });
-  }
-
-  eliminarMae(row: any) {
-    this.confirm.confirm({
-      message: `¿Eliminar toma de inventario #${row.invfisId}?`,
-      header: 'Confirmar',
-      acceptLabel: 'Eliminar',
-      rejectLabel: 'Cancelar',
-      accept: () => {
-        this.service.remove(row.invfisId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: () => {
-            this.msgs.add({ severity: 'success', summary: 'Eliminada' });
-            if (this.seleccionado()?.invfisId === row.invfisId) this.volver();
-            this.cargarMaestros();
-          },
-        });
+      error: (err) => {
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo guardar' });
       },
     });
   }
 
   nuevoDet() {
-    this.formDet.reset({ codbarra: '', descripcion: '', fisico: 0 });
-    this.dialogDet.set(true);
+    this.formDet.reset({ codbarra: '', descripcion: '', productoId: null, fisico: 0 });
+    this.itemEditando.set(null);
+    this.productoSeleccionado = null;
   }
 
-  editarDet(row: any) {
-    this.formDet.patchValue({ codbarra: row.codbarra, descripcion: row.descripcion, fisico: row.fisico });
-    (this.formDet as any)._editId = row.nvfisdetId;
-    this.dialogDet.set(true);
+  guardarDet() {
+    if (this.formDet.invalid) return;
+    const val = this.formDet.value;
+    const mae = this.seleccionado();
+    if (!mae) return;
+
+    let finalCodbarra = val.codbarra || '';
+    if (this.productoSeleccionado) {
+      finalCodbarra = (this.productoSeleccionado as any).codbarra || finalCodbarra;
+    }
+
+    const payload: any = {
+      invfisId: mae.invfisId,
+      bodegaId: mae.bodegaId,
+      codbarra: finalCodbarra,
+      descripcion: val.descripcion || '',
+      productoId: val.productoId || null,
+      fisico: val.fisico || 0,
+      empresaId: mae.empresaId,
+    };
+
+    const editId = this.itemEditando();
+    const obs$ = editId
+      ? this.service.updateDet(editId, payload)
+      : this.service.createDet(payload);
+
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: editId ? 'Item actualizado' : 'Item agregado' });
+        this.formDet.reset({ codbarra: '', descripcion: '', productoId: null, fisico: 0 });
+        this.itemEditando.set(null);
+        this.productoSeleccionado = null;
+        this.cargarDetalles(mae.invfisId);
+      },
+      error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo guardar el item' }),
+    });
+  }
+
+  editarItem(row: any) {
+    this.itemEditando.set(row.nvfisdetId);
+    this.productoSeleccionado = row.productoId
+      ? { produtoId: row.productoId, codbarra: row.codbarra, descripcion: row.descripcion } as any
+      : null;
+    this.formDet.patchValue({
+      codbarra: row.codbarra || '',
+      descripcion: row.descripcion || '',
+      productoId: row.productoId || null,
+      fisico: row.fisico || 0,
+    });
+  }
+
+  cancelarEdicion() {
+    this.itemEditando.set(null);
+    this.productoSeleccionado = null;
+    this.formDet.reset({ codbarra: '', descripcion: '', productoId: null, fisico: 0 });
   }
 
   showHelperProductos() {
@@ -193,54 +250,96 @@ export class TomaInventarios implements OnInit {
     });
     this.ref.onClose.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: any) => {
       if (data && 'codbarra' in data) {
-        this.formDet.reset({ codbarra: data.codbarra, descripcion: data.descripcion, fisico: 0 });
-        (this.formDet as any)._editId = null;
-        this.dialogDet.set(true);
+        this.productoSeleccionado = data;
+        this.formDet.patchValue({
+          codbarra: data.codbarra,
+          descripcion: data.descripcion,
+          productoId: data.produtoId,
+          fisico: 0,
+        });
       }
     });
   }
 
-  guardarDet() {
-    if (this.formDet.invalid) return;
-    const val = this.formDet.value;
-    const editId = (this.formDet as any)._editId;
-
-    const payload: any = {
-      invfisId: this.seleccionado()!.invfisId,
-      bodegaId: this.seleccionado()!.bodegaId,
-      codbarra: val.codbarra,
-      descripcion: val.descripcion || '',
-      fisico: val.fisico || 0,
-      empresaId: this.seleccionado()!.empresaId,
-    };
-
-    const obs$ = editId
-      ? this.service.updateDet(editId, payload)
-      : this.service.createDet(payload);
-
-    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: editId ? 'Item actualizado' : 'Item agregado' });
-        this.dialogDet.set(false);
-        delete (this.formDet as any)._editId;
-        this.cargarDetalles(this.seleccionado()!.invfisId);
-      },
-      error: () => this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el item' }),
+  onCodBarraSearch(event: any) {
+    const termino = event.query;
+    if (!termino || termino.length < 8) {
+      this.productosFiltrados = [];
+      return;
+    }
+    this.productosService.search(termino).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (productos) => this.productosFiltrados = productos || [],
+      error: () => this.productosFiltrados = [],
     });
+  }
+
+  onProductoSelect(event: any) {
+    const prod: Producto = event.value;
+    this.productoSeleccionado = prod;
+    this.formDet.patchValue({
+      productoId: prod.produtoId,
+      codbarra: prod.codbarra || '',
+      descripcion: prod.descripcion,
+    });
+  }
+
+  onCodBarraClear() {
+    this.productoSeleccionado = null;
+    this.formDet.patchValue({ productoId: null, codbarra: '', descripcion: '' });
+  }
+
+  onCodBarraBlur() {
+    if (!this.productoSeleccionado) {
+      this.formDet.patchValue({ productoId: null, codbarra: '', descripcion: '' });
+    }
   }
 
   eliminarDet(row: any) {
     this.confirm.confirm({
-      message: `¿Eliminar item "${row.descripcion}"?`,
+      message: `¿Eliminar item "${row.descripcion || row.codbarra}"?`,
       header: 'Confirmar',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
       accept: () => {
+        this.confirm.close();
         this.service.removeDet(row.nvfisdetId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             this.msgs.add({ severity: 'success', summary: 'Eliminado' });
             this.cargarDetalles(this.seleccionado()!.invfisId);
           },
+          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo eliminar' }),
         });
       },
+      reject: () => this.confirm.close(),
+    });
+  }
+
+  eliminarSeleccionados() {
+    const seleccionados = this.itemsSeleccionados();
+    if (seleccionados.length === 0) return;
+    this.confirm.confirm({
+      message: `¿Eliminar ${seleccionados.length} item(s) seleccionado(s)?`,
+      header: 'Eliminar múltiple',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.confirm.close();
+        let eliminados = 0;
+        for (const item of seleccionados) {
+          this.service.removeDet(item.nvfisdetId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: () => {
+              eliminados++;
+              if (eliminados === seleccionados.length) {
+                this.msgs.add({ severity: 'success', summary: 'Eliminados', detail: `${eliminados} item(s) eliminado(s)` });
+                this.itemsSeleccionados.set([]);
+                this.cargarDetalles(this.seleccionado()!.invfisId);
+              }
+            },
+            error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo eliminar' }),
+          });
+        }
+      },
+      reject: () => this.confirm.close(),
     });
   }
 
@@ -272,6 +371,28 @@ export class TomaInventarios implements OnInit {
           error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo procesar' }),
         });
       },
+      reject: () => this.confirm.close(),
+    });
+  }
+
+  eliminarMae(mae: any) {
+    this.confirm.confirm({
+      message: `¿Anular toma de inventario #${mae.invfisId}?`,
+      header: 'Anular toma',
+      acceptLabel: 'Anular',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.confirm.close();
+        this.service.remove(mae.invfisId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Anulada', detail: 'Toma de inventario anulada' });
+            this.cargarMaestros();
+            if (this.seleccionado()?.invfisId === mae.invfisId) this.volver();
+          },
+          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo anular' }),
+        });
+      },
+      reject: () => this.confirm.close(),
     });
   }
 
@@ -350,5 +471,27 @@ export class TomaInventarios implements OnInit {
 
   objectKeys(obj: any): string[] {
     return Object.keys(obj || {});
+  }
+
+  isSelected(row: any): boolean {
+    return this.itemsSeleccionados().some(i => i.nvfisdetId === row.nvfisdetId);
+  }
+
+  toggleRow(row: any, checked: boolean) {
+    const actual = this.itemsSeleccionados();
+    if (checked) {
+      this.itemsSeleccionados.set([...actual, row]);
+    } else {
+      this.itemsSeleccionados.set(actual.filter(i => i.nvfisdetId !== row.nvfisdetId));
+    }
+  }
+
+  todosSeleccionados(): boolean {
+    const det = this.detalles();
+    return det.length > 0 && det.every(d => this.isSelected(d));
+  }
+
+  toggleTodos(checked: boolean) {
+    this.itemsSeleccionados.set(checked ? [...this.detalles()] : []);
   }
 }

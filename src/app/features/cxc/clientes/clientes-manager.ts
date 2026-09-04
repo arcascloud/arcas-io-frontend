@@ -214,6 +214,7 @@ export class ClientesManager implements OnInit {
   }
 
   selectedCliente = signal<CxcCliente | null>(null);
+  nuevoCliente = signal(false);
 
   estadoCuentaData = signal<any[]>([]);
   estadoCuentaLoading = signal(false);
@@ -844,17 +845,20 @@ export class ClientesManager implements OnInit {
     }
 
   nuevo() {
-    this.editingCliente.set(null);
-    this.showForm.set(true);
+    this.selectedCliente.set(null);
+    this.nuevoCliente.set(true);
+    this.activeTabIndex.set(0);
   }
 
   onFormSaved() {
+    this.nuevoCliente.set(false);
     this.showForm.set(false);
     this.editingCliente.set(null);
-    this.loadClientes(); // refrescar lista
+    this.loadClientes();
   }
 
   onFormCancelled() {
+    this.nuevoCliente.set(false);
     this.showForm.set(false);
     this.editingCliente.set(null);
   }
@@ -866,8 +870,9 @@ export class ClientesManager implements OnInit {
   }
 
   seleccionarCliente(cliente: CxcCliente) {
+    this.nuevoCliente.set(false);
     this.selectedCliente.set(cliente);
-    this.activeTabIndex.set(0); // Focus en Estado de Cuenta
+    this.activeTabIndex.set(0);
     this.cargarDatosCliente(cliente.clienteId);
   }
 

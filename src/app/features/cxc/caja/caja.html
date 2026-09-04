@@ -1,0 +1,123 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h3 class="page-title">Caja</h3>
+      <p class="page-subtitle">Abonos a cuenta de clientes</p>
+    </div>
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text size="small" rounded
+      (onClick)="volver()" />
+  </header>
+
+  @if (cargando()) {
+    <div class="card">Cargando datos...</div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="card form-grid">
+        <div class="campo">
+          <label>Cliente <span class="req">*</span></label>
+          <div class="flex gap-2">
+            <p-select size="small" formControlName="clienteId" [options]="clientes()" optionLabel="cliente"
+              optionValue="clienteId" placeholder="Seleccionar cliente..." styleClass="w-full" [filter]="true"
+              filterBy="cliente" [appendTo]="'body'" />
+            <p-button type="button" icon="pi pi-search" severity="secondary" (onClick)="abrirClientes()" />
+          </div>
+          @if (invalid('clienteId')) {
+            <small class="err">Cliente es obligatorio</small>
+          }
+        </div>
+        <div class="campo">
+          <label>Nombre Cliente</label>
+          <input pInputText pSize="small" formControlName="nombrecliente" readonly class="bg-gray-100 w-full" />
+        </div>
+        <div class="campo">
+          <label>Concepto</label>
+          <input pInputText formControlName="concepto" maxlength="120" placeholder="Concepto..." class="w-full" />
+        </div>
+        <div class="campo">
+          <label>Tipo Documento Fiscal</label>
+          <p-select size="small" formControlName="documentoId" [options]="documentosFiltrados()" optionLabel="label"
+            optionValue="value" placeholder="Tipo documento..." styleClass="w-full" [filter]="true" filterBy="label"
+            [appendTo]="'body'" (ngModelChange)="onDocumentoIdChange()" />
+        </div>
+        <div class="campo">
+          <label>Nro. Documento</label>
+          <p-select size="small" formControlName="nrodocumento" [options]="nrosDocumento()" optionLabel="label"
+            optionValue="value" placeholder="Nro. documento..." styleClass="w-full" [filter]="true" filterBy="label"
+            [appendTo]="'body'" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="detalles-head">
+          <h4 class="detalles-title">Formas de Pago</h4>
+          <p-button type="button" label="Agregar fila" icon="pi pi-plus" variant="text" severity="success" size="small"
+            [rounded]="true" (onClick)="nuevaFila()" />
+        </div>
+
+        <p-table [value]="dets()" [scrollable]="true" scrollHeight="400px" styleClass="det-table" [paginator]="true"
+          [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small">
+          <ng-template #header>
+            <tr>
+              <th style="width:50px">#</th>
+              <th>Forma de Pago</th>
+              <th>Importe</th>
+              <th>Tarjeta</th>
+              <th>Nro. Tarjeta</th>
+              <th>Autorización</th>
+              <th style="width:50px"></th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-row let-idx="rowIndex">
+            <tr>
+              <td>{{ idx + 1 }}</td>
+              <td>
+                <p-select size="small" [ngModel]="row['formapagoId']"
+                  (ngModelChange)="row['formapagoId'] = $event; onFormaPagoChange(row)"
+                  [ngModelOptions]="{ standalone: true }" [options]="opcionesFp()" optionLabel="label"
+                  optionValue="value" placeholder="Seleccionar..." styleClass="w-full" [filter]="true"
+                  filterBy="label" [appendTo]="'body'" />
+              </td>
+              <td>
+                <p-inputnumber size="small" [(ngModel)]="row['importe']" [ngModelOptions]="{ standalone: true }"
+                  [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2"
+                  [maxFractionDigits]="2" [useGrouping]="true" styleClass="w-8rem" [inputStyle]="{ 'width': '100%' }" />
+              </td>
+              <td>
+                <p-select size="small" [ngModel]="row['tarjetacreditoId']" (ngModelChange)="row['tarjetacreditoId'] = $event"
+                  [ngModelOptions]="{ standalone: true }" [options]="opcionesTarjeta()" optionLabel="label"
+                  optionValue="value" placeholder="Seleccionar..." styleClass="w-full" [filter]="true"
+                  filterBy="label" [appendTo]="'body'" [disabled]="isCampoDesactivado(row, 'tarjetacreditoId')" />
+              </td>
+              <td>
+                <input pInputText pSize="small" [(ngModel)]="row['nrotarjeta']" [ngModelOptions]="{ standalone: true }"
+                  [disabled]="isCampoDesactivado(row, 'nrotarjeta')" placeholder="Nro. tarjeta" />
+              </td>
+              <td>
+                <input pInputText pSize="small" [(ngModel)]="row['nroautorizacion']"
+                  [ngModelOptions]="{ standalone: true }" [disabled]="isCampoDesactivado(row, 'nroautorizacion')"
+                  placeholder="Autorización" />
+              </td>
+              <td>
+                <p-button type="button" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" size="small"
+                  [disabled]="!esNuevaFila(row)" (onClick)="quitarFila(idx)" />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="7" class="text-center p-3">Sin detalles. Agregue filas.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <div class="acciones-form">
+        <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small"
+          [rounded]="true" (onClick)="volver()" />
+        <p-button type="submit" label="Guardar" icon="pi pi-check" variant="text" severity="success" size="small"
+          [rounded]="true" [loading]="guardando()" />
+      </div>
+    </form>
+  }
+</section>

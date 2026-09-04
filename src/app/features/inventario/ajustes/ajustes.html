@@ -124,7 +124,7 @@
             <div class="campo campo-codbarra">
               <label>Codigo de Barras</label>
               <div class="flex gap-1">
-                <input pInputText [ngModel]="codBusqueda()" (ngModelChange)="codBusqueda.set($event)"
+                <input pInputText [ngModel]="codBusqueda()" (ngModelChange)="onCodBarraInput($event)"
                   (keyup.enter)="buscarProducto()" placeholder="Escanear o escribir codigo..." [ngModelOptions]="{standalone: true}" />
                 <p-button icon="pi pi-search" size="small" rounded severity="secondary" (onClick)="showHelperProductos()" />
               </div>
@@ -142,7 +142,7 @@
             </div>
             <div class="campo-btn">
               <p-button icon="pi pi-plus" size="small" rounded severity="success" (onClick)="buscarProducto(); agregarItem()"
-                [loading]="guardando()" />
+                [loading]="guardando()" [disabled]="seleccionado()!.sn_anulado === 'S' || todosProcesados()" />
             </div>
           </div>
           @if (formDet.value.descripcion) {

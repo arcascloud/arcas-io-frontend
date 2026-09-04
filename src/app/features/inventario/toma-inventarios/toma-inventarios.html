@@ -1,205 +1,260 @@
+<p-toast />
 <p-confirmDialog />
 
-<section class="page">
+<section class="page" [class.page-fill]="seleccionado()">
   @if (!seleccionado()) {
-    <header class="page-header">
-      <div>
-        <h3 class="page-title">Toma de Inventarios</h3>
-        <p class="page-subtitle">Conteo fisico de existencias por bodega</p>
-      </div>
-      <p-button label="Nueva Toma" icon="pi pi-plus" size="small" rounded (onClick)="nuevoMae()" />
-    </header>
+  <header class="page-header">
+    <div>
+      <h3 class="page-title">Toma de Inventarios</h3>
+      <p class="page-subtitle">Conteo fisico de existencias por bodega</p>
+    </div>
+    <p-button label="Nueva Toma" raised="true" rounded="true" variant="text" severity="success" icon="pi pi-plus"
+      size="small" (onClick)="nuevoMae()" />
+  </header>
 
-    <p-table
-      [value]="maestros()"
-      [loading]="cargando()"
-      dataKey="invfisId"
-      [paginator]="true"
-      [rows]="10"
-      [showCurrentPageReport]="true"
-      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-      [rowsPerPageOptions]="[10, 25, 50]"
-      size="small"
-    >
-      <ng-template pTemplate="header">
-        <tr>
-          <th style="width:4rem">#</th>
-          <th>Fecha</th>
-          <th>Bodega</th>
-          <th>Concepto</th>
-          <th style="width:6rem">Estado</th>
-          <th style="width:6rem">Creado por</th>
-          <th style="width:8rem">Acciones</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-row>
-        <tr (click)="seleccionar(row)" style="cursor:pointer">
-          <td>{{ row.invfisId }}</td>
-          <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>{{ nombreBodega(row.bodegaId) }}</td>
-          <td>{{ row.concepto }}</td>
-          <td>
-            <p-tag [value]="row.sn_anulado === 'S' ? 'Anulada' : 'Activa'" [severity]="row.sn_anulado === 'S' ? 'danger' : 'success'" [style]="{'font-size':'0.75rem'}" />
-          </td>
-          <td>{{ row.usuarioCreated }}</td>
-          <td>
-            <p-button icon="pi pi-trash" severity="danger" text size="small" rounded (onClick)="$event.stopPropagation(); eliminarMae(row)" />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr><td colspan="7" class="text-center p-3">No hay tomas de inventario registradas.</td></tr>
-      </ng-template>
-    </p-table>
+  <p-table id="grid1" [value]="maestros()" [loading]="cargando()" dataKey="invfisId" [paginator]="true" [rows]="10"
+    [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    [rowsPerPageOptions]="[10, 25, 50]" styleClass="p-datatable-sm">
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width:4rem">#</th>
+        <th>Fecha</th>
+        <th>Bodega</th>
+        <th>Concepto</th>
+        <th style="width:6rem">Estado</th>
+        <th style="width:6rem">Creado por</th>
+        <th style="width:8rem">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr (click)="seleccionar(row)" style="cursor:pointer">
+        <td>{{ row.invfisId }}</td>
+        <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>{{ nombreBodega(row.bodegaId) }}</td>
+        <td>{{ row.concepto }}</td>
+        <td>
+          <p-tag [value]="row.sn_anulado === 'S' ? 'Anulada' : 'Activa'"
+            [severity]="row.sn_anulado === 'S' ? 'danger' : 'success'" [style]="{'font-size':'0.75rem'}" />
+        </td>
+        <td>{{ row.usuarioCreated }}</td>
+        <td>
+          <p-button icon="pi pi-trash" severity="danger" text size="small"
+            (onClick)="$event.stopPropagation(); eliminarMae(row)" [disabled]="row.sn_anulado === 'S'" />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="7" class="text-center p-3">No hay tomas de inventario registradas.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+
   } @else {
-    <header class="page-header">
-      <div class="flex align-items-center gap-2">
-        <p-button icon="pi pi-arrow-left" text size="small" rounded (onClick)="volver()" />
-        <div>
-          <h3 class="page-title">Toma #{{ seleccionado()!.invfisId }}</h3>
-          <p class="page-subtitle">{{ seleccionado()!.concepto }} — {{ nombreBodega(seleccionado()!.bodegaId) }}</p>
-        </div>
-      </div>
-      <div class="flex gap-2">
-        <p-button label="Agregar Item" icon="pi pi-plus" size="small" rounded (onClick)="nuevoDet()" [disabled]="todosAplicados()" />
-        <p-button label="Importar" icon="pi pi-upload" size="small" rounded severity="secondary" (onClick)="abrirImport()" [disabled]="todosAplicados()" />
-        <p-button label="Procesar" icon="pi pi-check-circle" size="small" rounded severity="success" (onClick)="procesar()" [disabled]="detalles().length === 0 || todosAplicados()" />
-      </div>
-    </header>
+  <div class="detail-fill">
+    <div class="sticky-header">
+      <p-card [header]="'Toma #' + (seleccionado()?.invfisId || 'Nueva')">
+        <form [formGroup]="formMae" class="flex flex-column gap-2">
+          <div class="form-grid-2">
+            <div>
+              <label class="block mb-1 text-sm font-medium">Bodega *</label>
+              <p-select size="small" formControlName="bodegaId" [options]="bodegas()" optionLabel="descripcion"
+                optionValue="bodegaId" placeholder="Seleccionar bodega" styleClass="w-full" [appendTo]="'body'" />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Concepto *</label>
+              <input pInputText formControlName="concepto" class="w-full" pSize="small"
+                placeholder="Ej: Toma fisica Agosto 2026" />
+            </div>
+          </div>
+        </form>
+      </p-card>
 
-    <p-table
-      [value]="detalles()"
-      [loading]="cargandoDet()"
-      dataKey="nvfisdetId"
-      [paginator]="true"
-      [rows]="15"
-      size="small"
-    >
-      <ng-template pTemplate="header">
-        <tr>
-          <th style="width:3rem">#</th>
-          <th style="width:8rem">Cod. Barra</th>
-          <th>Descripcion</th>
-          <th style="width:6rem" class="text-right">Existencia</th>
-          <th style="width:6rem" class="text-right">Fisico</th>
-          <th style="width:6rem" class="text-right">Ajuste E</th>
-          <th style="width:6rem" class="text-right">Ajuste S</th>
-          <th style="width:7rem" class="text-right">Costo U.</th>
-          <th style="width:7rem" class="text-right">Costo T.</th>
-          <th style="width:5rem">Estado</th>
-          <th style="width:7rem">Acciones</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-row>
-        <tr>
-          <td>{{ row.nrofila }}</td>
-          <td>{{ row.codbarra }}</td>
-          <td>{{ row.descripcion }}</td>
-          <td class="text-right">{{ row.existencia }}</td>
-          <td class="text-right font-bold">{{ row.fisico }}</td>
-          <td class="text-right" [style.color]="row.ajusteEntrada > 0 ? 'var(--c-success)' : ''">
-            {{ row.ajusteEntrada > 0 ? row.ajusteEntrada : '-' }}
-          </td>
-          <td class="text-right" [style.color]="row.ajusteSalida > 0 ? 'var(--c-error)' : ''">
-            {{ row.ajusteSalida > 0 ? row.ajusteSalida : '-' }}
-          </td>
-          <td class="text-right">{{ row.costoUnitario | number:'1.2-2' }}</td>
-          <td class="text-right">{{ row.costoTotal | number:'1.2-2' }}</td>
-          <td>
-            @if (row.sn_aplicado === 'S') {
+      @if (seleccionado()?.invfisId !== 0 && !todosAplicados()) {
+      <form [formGroup]="formDet" class="form-grid-captura">
+        <div>
+          <label class="block mb-1 text-sm font-medium">Código Barra</label>
+          <p-autoComplete [(ngModel)]="productoSeleccionado"
+            [ngModelOptions]="{ standalone: true }"
+            [suggestions]="productosFiltrados"
+            (completeMethod)="onCodBarraSearch($event)" (onSelect)="onProductoSelect($event)"
+            (onClear)="onCodBarraClear()" (onBlur)="onCodBarraBlur()" [minLength]="12"
+            optionLabel="codbarra"
+            placeholder="Mínimo 12 caracteres" [style]="{ width: '100%' }" [inputStyle]="{ width: '100%' }"
+            size="small" [dropdown]="false">
+            <ng-template let-producto pTemplate="item">
+              <div class="flex align-items-center gap-2">
+                <span class="font-bold">{{ producto.codbarra }}</span>
+                <span> - {{ producto.descripcion }}</span>
+              </div>
+            </ng-template>
+          </p-autoComplete>
+        </div>
+        <div class="w-full">
+          <label class="block mb-1 text-sm font-medium">Descripción</label>
+          <input pInputText formControlName="descripcion" class="w-full" pSize="small"
+            placeholder="Nombre del producto" [readonly]="productoSeleccionado?.produtoId != null" />
+        </div>
+        <div>
+          <label class="block mb-1 text-sm font-medium">Cant. Física *</label>
+          <p-inputNumber size="small" formControlName="fisico" [min]="0" mode="decimal" [minFractionDigits]="0"
+            [maxFractionDigits]="2" styleClass="w-8rem" [inputStyle]="{ 'width': '100%' }" [locale]="'en-US'" />
+        </div>
+        <div class="flex align-items-end gap-1">
+          @if (itemEditando()) {
+          <p-button size="small" label="Actualizar" icon="pi pi-check"
+            severity="warn" (onClick)="guardarDet()"
+            variant="text" [rounded]="true"
+            [disabled]="formDet.invalid || seleccionado()!.sn_anulado === 'S'" />
+          <p-button size="small" icon="pi pi-times" severity="secondary" text (onClick)="cancelarEdicion()" />
+          } @else {
+          <p-button size="small" label="Agregar" icon="pi pi-plus"
+            variant="text" [raised]="true" [rounded]="true"
+            severity="success" (onClick)="guardarDet()"
+            [disabled]="formDet.invalid || seleccionado()!.sn_anulado === 'S' || seleccionado()!.sn_procesado === 'S'" />
+          }
+        </div>
+      </form>
+      }
+
+      <div class="acciones-card">
+        <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" text (onClick)="volver()" />
+        @if (seleccionado()?.invfisId === 0) {
+        <p-button size="small" label="Guardar Toma" icon="pi pi-check" (onClick)="guardarMae()" variant="text"
+          [disabled]="formMae.invalid || seleccionado()!.sn_anulado === 'S'" />
+        }
+        @if (seleccionado()?.invfisId !== 0) {
+        <p-button label="Importar" icon="pi pi-upload" size="small" variant="text" severity="secondary"
+          (onClick)="abrirImport()" [rounded]="true"
+          [disabled]="todosAplicados() || seleccionado()!.sn_anulado === 'S'" pTooltip="Importar desde CSV/JSON/XML" />
+        @if (itemsSeleccionados().length > 0) {
+        <p-button label="Eliminar ({{ itemsSeleccionados().length }})" icon="pi pi-trash" size="small" severity="danger"
+          variant="text" (onClick)="eliminarSeleccionados()" [rounded]="true"
+          [disabled]="todosAplicados()" />
+        }
+        <p-button label="Procesar" icon="pi pi-check-circle" size="small" variant="text" [rounded]="true"
+          severity="success" (onClick)="procesar()"
+          [disabled]="detalles().length === 0 || todosAplicados()" />
+        <p-button label="Anular" icon="pi pi-times-circle" size="small" severity="danger" variant="text"
+          (onClick)="eliminarMae(seleccionado()!)" [rounded]="true"
+          [disabled]="seleccionado()!.sn_anulado === 'S'" />
+        }
+      </div>
+
+    </div>
+
+    <div class="detail-scroll">
+      <p-table id="grid2" [value]="detalles()" [loading]="cargandoDet()" dataKey="nvfisdetId" [paginator]="true"
+        [rows]="15" [scrollable]="true" scrollHeight="400px" size="small" [rowHover]="true">
+        <ng-template pTemplate="caption">
+          <div class="text-center w-full">
+            <span class="text-xl font-bold">Productos</span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width:3rem">
+              <p-checkbox [binary]="true" [ngModel]="todosSeleccionados()" (ngModelChange)="toggleTodos($event)" />
+            </th>
+            <th style="width:3rem">#</th>
+            <th>Producto</th>
+            <th style="width:6rem" class="text-right">Existencia</th>
+            <th style="width:6rem" class="text-right">Físico</th>
+            <th style="width:6rem" class="text-right">Ajuste E</th>
+            <th style="width:6rem" class="text-right">Ajuste S</th>
+            <th style="width:7rem" class="text-right">Costo U.</th>
+            <th style="width:5rem">Estado</th>
+            <th style="width:7rem">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr [class.row-seleccionado]="isSelected(row)" [class.row-editando]="itemEditando() === row.nvfisdetId">
+            <td>
+              <p-checkbox [binary]="true" [ngModel]="isSelected(row)" (ngModelChange)="toggleRow(row, $event)" />
+            </td>
+            <td>{{ row.nrofila }}</td>
+            <td>
+              <div class="grid w-full align-items-center m-0">
+                <div class="col-4 p-0 text-xs font-bold text-color-secondary">
+                  {{ row.codbarra }}
+                </div>
+                <div class="col-8 p-0 text-sm font-medium text-overflow-ellipsis overflow-hidden">
+                  {{ row.descripcion }}
+                </div>
+              </div>
+            </td>
+            <td class="text-right">{{ row.existencia }}</td>
+            <td class="text-right font-bold">{{ row.fisico }}</td>
+            <td class="text-right" [style.color]="row.ajusteEntrada > 0 ? 'var(--c-success)' : ''">
+              {{ row.ajusteEntrada > 0 ? row.ajusteEntrada : '-' }}
+            </td>
+            <td class="text-right" [style.color]="row.ajusteSalida > 0 ? 'var(--c-error)' : ''">
+              {{ row.ajusteSalida > 0 ? row.ajusteSalida : '-' }}
+            </td>
+            <td class="text-right">{{ row.costoUnitario | number:'1.2-2' }}</td>
+            <td>
+              @if (row.sn_aplicado === 'S') {
               <p-tag value="Aplicado" severity="success" [style]="{'font-size':'0.7rem'}" />
-            } @else {
+              } @else {
               <p-tag value="Pendiente" severity="warn" [style]="{'font-size':'0.7rem'}" />
-            }
-          </td>
-          <td>
-            <p-button icon="pi pi-pencil" text severity="secondary" size="small" rounded (onClick)="editarDet(row)" [disabled]="row.sn_aplicado === 'S'" />
-            <p-button icon="pi pi-refresh" text severity="info" size="small" rounded (onClick)="cargarExistencia(row)" pTooltip="Cargar existencia del sistema" />
-            <p-button icon="pi pi-trash" text severity="danger" size="small" rounded (onClick)="eliminarDet(row)" [disabled]="row.sn_aplicado === 'S'" />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr><td colspan="11" class="text-center p-3">No hay items en esta toma de inventario.</td></tr>
-      </ng-template>
-    </p-table>
+              }
+            </td>
+            <td>
+              <div class="flex gap-1">
+                <p-button icon="pi pi-pencil" text severity="warn" size="small" (onClick)="editarItem(row)"
+                  [disabled]="row.sn_aplicado === 'S'" pTooltip="Editar" />
+                <p-button icon="pi pi-refresh" text severity="info" size="small" (onClick)="cargarExistencia(row)"
+                  pTooltip="Cargar existencia del sistema" />
+                <p-button icon="pi pi-trash" text severity="danger" size="small" (onClick)="eliminarDet(row)"
+                  [disabled]="row.sn_aplicado === 'S'" pTooltip="Eliminar" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="10" class="text-center p-3">No hay items en esta toma de inventario.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+  </div>
   }
 </section>
 
-<!-- Dialog Maestro -->
-<p-dialog [header]="esEdicion() ? 'Editar Toma de Inventario' : 'Nueva Toma de Inventario'" 
-[modal]="true" [draggable]="false" [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{width:'450px', minHeight:'400px'}" [(visible)]="dialogMae">
-  <form [formGroup]="formMae" class="flex flex-column gap-3">
-    <div>
-      <label class="block mb-1 text-sm font-medium">Concepto *</label>
-      <input pInputText formControlName="concepto" class="w-full" placeholder="Ej: Toma fisica Agosto 2026" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Bodega *</label>
-      <p-select formControlName="bodegaId" [options]="bodegas()" optionLabel="descripcion" optionValue="bodegaId" placeholder="Seleccionar bodega" styleClass="w-full" [appendTo]="'body'" />
-    </div>
-  </form>
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text size="small" rounded (onClick)="dialogMae.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" size="small" rounded severity="success" [raised]="true" (onClick)="guardarMae()" [disabled]="formMae.invalid" />
-  </ng-template>
-</p-dialog>
-
-<!-- Dialog Detalle -->
-<p-dialog header="Item de Inventario" [modal]="true" [draggable]="false" [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{width:'450px'}" [(visible)]="dialogDet">
-  <form [formGroup]="formDet" class="flex flex-column gap-3">
-    <div>
-      <label class="block mb-1 text-sm font-medium">Codigo de Barra *</label>
-      <div class="flex gap-1">
-        <input pInputText formControlName="codbarra" class="w-full" placeholder="Escanea o escribe el codigo" />
-        <p-button icon="pi pi-search" size="small" rounded severity="secondary" (onClick)="showHelperProductos()" />
-      </div>
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Descripcion</label>
-      <input pInputText formControlName="descripcion" class="w-full" placeholder="Descripcion del producto" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Cantidad Fisica *</label>
-      <p-inputNumber formControlName="fisico" [min]="0" mode="decimal" [minFractionDigits]="0" [maxFractionDigits]="2" size="small" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
-    </div>
-  </form>
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text size="small" rounded (onClick)="dialogDet.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" size="small" rounded severity="success" [raised]="true" (onClick)="guardarDet()" [disabled]="formDet.invalid" />
-  </ng-template>
-</p-dialog>
-
-<!-- Dialog Importar -->
-<p-dialog header="Importar Items" [modal]="true" [draggable]="false" [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{width:'550px'}" [(visible)]="dialogImport">
+<p-dialog header="Importar Items" [modal]="true" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{width:'550px'}" [(visible)]="dialogImport">
   <div class="flex flex-column gap-3">
     <p>Selecciona un archivo <b>CSV</b>, <b>JSON</b> o <b>XML</b> con los items a importar.</p>
     <p>El archivo debe tener columnas: <code>codbarra</code>, <code>fisico</code>, y opcionalmente <code>descripcion</code>.</p>
-    <p-fileUpload mode="basic" name="archivo" [auto]="true" accept=".csv,.json,.xml" [maxFileSize]="5000000" chooseLabel="Seleccionar archivo" (onSelect)="onArchivoSelect($event)" />
+    <p-fileUpload mode="basic" name="archivo" [auto]="true" accept=".csv,.json,.xml" [maxFileSize]="5000000"
+      chooseLabel="Seleccionar archivo" (onSelect)="onArchivoSelect($event)" />
     @if (itemsImport().length > 0) {
-      <div class="card" style="padding:0.5rem; background:var(--c-surface-ground)">
-        <b>{{ itemsImport().length }} items</b> listos para importar.
-        <p-table [value]="itemsImport()" [paginator]="true" [rows]="5" size="small" styleClass="mt-2">
-          <ng-template pTemplate="header">
-            <tr>
-              @for (col of objectKeys(itemsImport()[0]); track col) {
-                <th>{{ col }}</th>
-              }
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-row>
-            <tr>
-              @for (col of objectKeys(itemsImport()[0]); track col) {
-                <td>{{ row[col] }}</td>
-              }
-            </tr>
-          </ng-template>
-        </p-table>
-      </div>
+    <div class="card" style="padding:0.5rem; background:var(--c-surface-ground)">
+      <b>{{ itemsImport().length }} items</b> listos para importar.
+      <p-table [value]="itemsImport()" [paginator]="true" [rows]="5" size="small" styleClass="mt-2">
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of objectKeys(itemsImport()[0]); track col) {
+            <th>{{ col }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            @for (col of objectKeys(itemsImport()[0]); track col) {
+            <td>{{ row[col] }}</td>
+            }
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
     }
   </div>
   <ng-template pTemplate="footer">
     <p-button label="Cancelar" severity="secondary" text size="small" rounded (onClick)="dialogImport.set(false)" />
-    <p-button label="Importar" icon="pi pi-upload" size="small" rounded severity="success" [raised]="true" (onClick)="confirmarImport()" [disabled]="itemsImport().length === 0" />
+    <p-button label="Importar" icon="pi pi-upload" size="small" rounded severity="success" [raised]="true"
+      (onClick)="confirmarImport()" [disabled]="itemsImport().length === 0" />
   </ng-template>
 </p-dialog>

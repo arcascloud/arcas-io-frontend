@@ -147,6 +147,13 @@ export class Ajustes implements OnInit {
     });
   }
 
+  onCodBarraInput(valor: string) {
+    this.codBusqueda.set(valor);
+    if (valor.length >= 12) {
+      this.buscarProducto();
+    }
+  }
+
   buscarProducto() {
     const q = this.codBusqueda().trim();
     if (!q) return;

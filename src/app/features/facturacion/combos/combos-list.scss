@@ -55,9 +55,8 @@
   }
 
   &.selected {
-    background: rgba(16, 185, 129, 0.08);
-    border-left: 3px solid var(--c-primary);
-    padding-left: calc(1rem - 3px);
+    border-color: var(--for-border-color-alls);
+    background: var(--master-background);
   }
 }
 
