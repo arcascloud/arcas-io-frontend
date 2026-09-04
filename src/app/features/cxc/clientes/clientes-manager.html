@@ -4,39 +4,39 @@
     <div class="left-column">
       <!-- Empty state -->
       @if (!selectedCliente() && !showForm() && !nuevoCliente()) {
-        <div class="empty-state">
-          <i class="pi pi-arrow-left empty-icon"></i>
-          <h3>Seleccione un cliente</h3>
-          <p>Haga clic en un cliente de la lista para ver su información</p>
-        </div>
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Seleccione un cliente</h3>
+        <p>Haga clic en un cliente de la lista para ver su información</p>
+      </div>
       }
 
       <!-- Tabs detalle -->
       @if ((selectedCliente() || nuevoCliente()) && !showForm()) {
       <div class="cliente-detail">
-        <p-tabs [activeIndex]="activeTabIndex()" (activeIndexChange)="activeTabIndex.set($event)">
+        <p-tabs [value]="activeTabValue()" (valueChange)="activeTabValue.set($event)">
           <p-tablist>
             <p-tab value="0">
               <i class="pi pi-wallet"></i>
               <span>Cliente</span>
             </p-tab>
-            <p-tab value="1">
+            <p-tab value="1" [disabled]="nuevoCliente()">
               <i class="pi pi-wallet"></i>
               <span>Estado de Cuenta</span>
             </p-tab>
-            <p-tab value="2">
+            <p-tab value="2" [disabled]="nuevoCliente()">
               <i class="pi pi-file-text"></i>
               <span>Notas Cred/Deb</span>
             </p-tab>
-            <p-tab value="3">
+            <p-tab value="3" [disabled]="nuevoCliente()">
               <i class="pi pi-money-bill"></i>
               <span>Préstamos</span>
             </p-tab>
-            <p-tab value="4">
+            <p-tab value="4" [disabled]="nuevoCliente()">
               <i class="pi pi-address-book"></i>
               <span>Referencias</span>
             </p-tab>
-            <p-tab value="5">
+            <p-tab value="5" [disabled]="nuevoCliente()">
               <i class="pi pi-users"></i>
               <span>Parientes</span>
             </p-tab>
@@ -45,11 +45,8 @@
           <p-tabpanels>
             <p-tabpanel value="0">
               <div class="tab-content">
-                <app-cliente-form
-                  [clienteIdInput]="nuevoCliente() ? null : (selectedCliente()?.clienteId ?? null)"
-                  (saved)="onFormSaved()"
-                  (cancelled)="onFormCancelled()"
-                />
+                <app-cliente-form #clienteFormRef [clienteIdInput]="nuevoCliente() ? null : (selectedCliente()?.clienteId ?? null)"
+                  (saved)="onFormSaved()" (cancelled)="onFormCancelled()" />
               </div>
             </p-tabpanel>
 
@@ -86,7 +83,8 @@
                           </td>
                           <td class="col-ref">{{ mov.nroreferencia || '—' }}</td>
                           <td>{{ mov.concepto }}</td>
-                          <td class="col-importe" [ngClass]="{'text-success': mov.tipomov === 'D', 'text-danger': mov.tipomov !== 'D'}">
+                          <td class="col-importe"
+                            [ngClass]="{'text-success': mov.tipomov === 'D', 'text-danger': mov.tipomov !== 'D'}">
                             {{ mov.tipomov === 'D' ? '+' : '-' }}{{ moneda(mov.importe) }}
                           </td>
                         </tr>
@@ -107,15 +105,15 @@
                 <ng-template #loadingSkeleton>
                   <div class="loading-skeleton">
                     @for (i of [1,2,3,4,5]; track i) {
-                      <div class="skeleton-row">
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                      </div>
+                    <div class="skeleton-row">
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                    </div>
                     }
                   </div>
                 </ng-template>
@@ -131,7 +129,8 @@
                 <div class="card nota-form-inline mb-3">
                   <div class="tab-header">
                     <span *ngIf="notaModel().tipomov === 'C' && notaModel().nroreferencia" class="saldo-disponible">
-                      Saldo disponible ref. {{ notaModel().nroreferencia }}: <strong>{{ moneda(saldoDisponiblePorRef(notaModel().nroreferencia)) }}</strong>
+                      Saldo disponible ref. {{ notaModel().nroreferencia }}: <strong>{{
+                        moneda(saldoDisponiblePorRef(notaModel().nroreferencia)) }}</strong>
                     </span>
                     <span *ngIf="notaModel().tipomov === 'C' && !notaModel().nroreferencia" class="saldo-disponible">
                       Seleccione un débito de referencia
@@ -142,57 +141,68 @@
                       <div class="p-col-12 p-col-6">
                         <div class="p-field">
                           <label>Tipo</label>
-                          <p-select size="small" [options]="notaTipoOptions" [ngModel]="notaModel().tipomov" (ngModelChange)="notaModel.set({...notaModel(), tipomov: $event, nroreferencia: ''})" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar tipo"></p-select>
+                          <p-select size="small" [options]="notaTipoOptions" [ngModel]="notaModel().tipomov"
+                            (ngModelChange)="notaModel.set({...notaModel(), tipomov: $event, nroreferencia: ''})"
+                            styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar tipo"></p-select>
                         </div>
                       </div>
                       <div class="p-col-12 p-col-6">
                         <div class="p-field">
                           <label>Documento Fiscal</label>
-                          <p-select size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()" (ngModelChange)="documentoSelected.set($event)" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar documento"></p-select>
+                          <p-select size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()"
+                            (ngModelChange)="documentoSelected.set($event)" styleClass="w-full" [appendTo]="'body'"
+                            placeholder="Seleccionar documento"></p-select>
                         </div>
                       </div>
                       <div class="p-col-12 p-col-6">
                         <div class="p-field">
                           <label>Concepto</label>
-                          <input pInputText pSize="small" [ngModel]="notaModel().concepto" (ngModelChange)="notaModel.set({...notaModel(), concepto: $event})" />
+                          <input pInputText pSize="small" [ngModel]="notaModel().concepto"
+                            (ngModelChange)="notaModel.set({...notaModel(), concepto: $event})" />
                         </div>
                       </div>
                       <div class="p-col-12 p-col-6">
                         <div class="p-field">
                           <label>Importe</label>
-                          <p-inputNumber size="small" [ngModel]="notaModel().importe" (ngModelChange)="notaModel.set({...notaModel(), importe: $event})" mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                          <p-inputNumber size="small" [ngModel]="notaModel().importe"
+                            (ngModelChange)="notaModel.set({...notaModel(), importe: $event})" mode="currency"
+                            currency="HNL" [locale]="'es-HN'" [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2"
+                            [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
                         </div>
                       </div>
                       <div class="p-col-12 p-col-6">
                         <div class="p-field">
                           <label>Nro. Referencia</label>
-                          <p-select size="small" *ngIf="notaModel().tipomov === 'C'" [options]="debitoReferencias().map(r => ({label: r, value: r}))" [ngModel]="notaModel().nroreferencia" (ngModelChange)="notaModel.set({...notaModel(), nroreferencia: $event})" placeholder="Seleccione débito" styleClass="w-full" [appendTo]="'body'"></p-select>
-                          <input *ngIf="notaModel().tipomov !== 'C'" pInputText [ngModel]="notaModel().nroreferencia" (ngModelChange)="notaModel.set({...notaModel(), nroreferencia: $event})" />
+                          <p-select size="small" *ngIf="notaModel().tipomov === 'C'"
+                            [options]="debitoReferencias().map(r => ({label: r, value: r}))"
+                            [ngModel]="notaModel().nroreferencia"
+                            (ngModelChange)="notaModel.set({...notaModel(), nroreferencia: $event})"
+                            placeholder="Seleccione débito" styleClass="w-full" [appendTo]="'body'"></p-select>
+                          <input *ngIf="notaModel().tipomov !== 'C'" pInputText [ngModel]="notaModel().nroreferencia"
+                            (ngModelChange)="notaModel.set({...notaModel(), nroreferencia: $event})" />
                         </div>
                       </div>
                       <div class="p-col-12 p-col-6">
                         <div class="p-field">
                           <label>Fecha</label>
-                          <p-datepicker [ngModel]="notaFecha()" (ngModelChange)="onFechaChange($event)" dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
+                          <p-datepicker [ngModel]="notaFecha()" (ngModelChange)="onFechaChange($event)"
+                            dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
                         </div>
                       </div>
                       <div class="p-col-12">
                         <div class="d-flex gap-2 justify-content-end mt-3">
-                          <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" (click)="cancelarNota()" [rounded]="true" size="small"></p-button>
-                          <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [loading]="notaSaving()" (click)="guardarNota()" [rounded]="true" size="small"></p-button>
+                          <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+                            (click)="cancelarNota()" [rounded]="true" size="small"></p-button>
+                          <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+                            [loading]="notaSaving()" (click)="guardarNota()" [rounded]="true" size="small"></p-button>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <p-dataView
-                  [value]="notasData()"
-                  [loading]="notasLoading()"
-                  size="small"
-                  layout="list"
-                  class="notas-dataview"
-                >
+                <p-dataView [value]="notasData()" [loading]="notasLoading()" size="small" layout="list"
+                  class="notas-dataview">
                   <ng-template #list let-nota>
                     <div class="nota-item">
                       <div class="nota-fecha">{{ nota.fecharegistro | date:'dd/MM/yyyy' }}</div>
@@ -219,19 +229,29 @@
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Nro. Préstamo</label>
-                        <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo" (ngModelChange)="prestamoModel.set({...prestamoModel(), nroprestamo: $event})" placeholder="Se genera al guardar plan" [readonly]="true" />
+                        <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo"
+                          (ngModelChange)="prestamoModel.set({...prestamoModel(), nroprestamo: $event})"
+                          placeholder="Se genera al guardar plan" [readonly]="true" />
                       </div>
                       <div class="p-field">
                         <label>Capital</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().capital" (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})" (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                        <p-inputNumber size="small" [ngModel]="prestamoModel().capital"
+                          (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})"
+                          (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0.01"
+                          [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+                          [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
                       </div>
                       <div class="p-field">
                         <label>Tasa %</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().tasa" (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})" (blur)="calcularCuota()" mode="decimal" [min]="0" [step]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                        <p-inputNumber size="small" [ngModel]="prestamoModel().tasa"
+                          (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})"
+                          (blur)="calcularCuota()" mode="decimal" [min]="0" [step]="0.01" [minFractionDigits]="2"
+                          [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
                       </div>
                       <div class="p-field">
                         <label>Fecha</label>
-                        <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)" dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
+                        <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)"
+                          dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
                       </div>
                     </div>
                   </div>
@@ -240,38 +260,44 @@
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Estado</label>
-                        <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo" (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar estado"></p-select>
+                        <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo"
+                          (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"
+                          styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar estado"></p-select>
                       </div>
                       <div class="p-field">
                         <label>Cuotas</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().cuotas" (ngModelChange)="prestamoModel.set({...prestamoModel(), cuotas: $event})" (blur)="calcularCuota()" [min]="1"></p-inputNumber>
+                        <p-inputNumber size="small" [ngModel]="prestamoModel().cuotas"
+                          (ngModelChange)="prestamoModel.set({...prestamoModel(), cuotas: $event})"
+                          (blur)="calcularCuota()" [min]="1"></p-inputNumber>
                       </div>
                       <div class="p-field">
                         <label>Valor Cuota</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().vlrcuota" [readonly]="true" mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                        <p-inputNumber size="small" [ngModel]="prestamoModel().vlrcuota" [readonly]="true"
+                          mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0" [minFractionDigits]="2"
+                          [maxFractionDigits]="2" [useGrouping]="true"
+                          [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div class="form-actions mb-3">
-                  <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary" (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" (click)="cancelarPrestamo()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [loading]="prestamoSaving()" (click)="guardarPrestamo()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
+                    (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+                    (click)="cancelarPrestamo()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+                    [loading]="prestamoSaving()" (click)="guardarPrestamo()" [rounded]="true" size="small"></p-button>
                 </div>
 
-                <p-dataView
-                  [value]="prestamosData()"
-                  [loading]="prestamosLoading()"
-                  size="small"
-                  layout="list"
-                  class="prestamos-dataview"
-                >
+                <p-dataView [value]="prestamosData()" [loading]="prestamosLoading()" size="small" layout="list"
+                  class="prestamos-dataview">
                   <ng-template #list let-pres>
                     <div class="prestamo-item">
                       <div class="prestamo-nro">#{{ pres.nroprestamo || pres.prestamoId }}</div>
                       <div class="prestamo-capital">Capital: {{ moneda(pres.capital) }}</div>
-                      <div class="prestamo-cuotas">{{ pres.cuotas }} cuotas de {{ moneda(pres.vlrcuota || pres.capital / pres.cuotas) }}</div>
+                      <div class="prestamo-cuotas">{{ pres.cuotas }} cuotas de {{ moneda(pres.vlrcuota || pres.capital /
+                        pres.cuotas) }}</div>
                       <div class="prestamo-estado">
                         <span class="estado-badge" [ngClass]="pres.sn_activo === 'S' ? 'activo' : 'inactivo'">
                           {{ pres.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}
@@ -282,47 +308,48 @@
                 </p-dataView>
 
                 @if (showPlanPago() && planPago().length > 0) {
-                  <div class="card mt-3">
-                    <div class="tab-header">
-                      <h4>Plan de Pago - Amortización</h4>
-                      <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" (click)="cancelarPlanPago()" [rounded]="true" size="small"></p-button>
-                    </div>
-                    <div class="table-responsive">
-                      <table class="table table-striped">
-                        <thead>
-                          <tr>
-                            <th>Cuota</th>
-                            <th>Fecha Pago</th>
-                            <th class="col-importe">Cuota</th>
-                            <th class="col-importe">Capital</th>
-                            <th class="col-importe">Interés</th>
-                            <th class="col-importe">Saldo</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          @for (fila of planPago(); track fila.nrofila) {
-                            <tr>
-                              <td>{{ fila.nrofila }}</td>
-                              <td>{{ fila.FechaPago | date:'dd/MM/yyyy' }}</td>
-                              <td class="col-importe">{{ moneda(fila.vlrcuota) }}</td>
-                              <td class="col-importe">{{ moneda(fila.capital) }}</td>
-                              <td class="col-importe">{{ moneda(fila.interes) }}</td>
-                              <td class="col-importe">{{ moneda(fila.saldo) }}</td>
-                            </tr>
-                          }
-                        </tbody>
-                        <tfoot>
-                          <tr class="fw-bold">
-                            <td colspan="2">Totales</td>
-                            <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.vlrcuota, 0)) }}</td>
-                            <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.capital, 0)) }}</td>
-                            <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.interes, 0)) }}</td>
-                            <td class="col-importe"></td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
+                <div class="card mt-3">
+                  <div class="tab-header">
+                    <h4>Plan de Pago - Amortización</h4>
+                    <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary"
+                      (click)="cancelarPlanPago()" [rounded]="true" size="small"></p-button>
                   </div>
+                  <div class="table-responsive">
+                    <table class="table table-striped">
+                      <thead>
+                        <tr>
+                          <th>Cuota</th>
+                          <th>Fecha Pago</th>
+                          <th class="col-importe">Cuota</th>
+                          <th class="col-importe">Capital</th>
+                          <th class="col-importe">Interés</th>
+                          <th class="col-importe">Saldo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (fila of planPago(); track fila.nrofila) {
+                        <tr>
+                          <td>{{ fila.nrofila }}</td>
+                          <td>{{ fila.FechaPago | date:'dd/MM/yyyy' }}</td>
+                          <td class="col-importe">{{ moneda(fila.vlrcuota) }}</td>
+                          <td class="col-importe">{{ moneda(fila.capital) }}</td>
+                          <td class="col-importe">{{ moneda(fila.interes) }}</td>
+                          <td class="col-importe">{{ moneda(fila.saldo) }}</td>
+                        </tr>
+                        }
+                      </tbody>
+                      <tfoot>
+                        <tr class="fw-bold">
+                          <td colspan="2">Totales</td>
+                          <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.vlrcuota, 0)) }}</td>
+                          <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.capital, 0)) }}</td>
+                          <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.interes, 0)) }}</td>
+                          <td class="col-importe"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
                 }
               </div>
             </p-tabpanel>
@@ -339,23 +366,32 @@
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Nombres</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().nombres" (ngModelChange)="referenciaModel.set({...referenciaModel(), nombres: $event})" placeholder="Nombres" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().nombres"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), nombres: $event})"
+                          placeholder="Nombres" />
                       </div>
                       <div class="p-field">
                         <label>Apellidos</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().apellidos" (ngModelChange)="referenciaModel.set({...referenciaModel(), apellidos: $event})" placeholder="Apellidos" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().apellidos"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), apellidos: $event})"
+                          placeholder="Apellidos" />
                       </div>
                       <div class="p-field">
                         <label>DNI</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().dni" (ngModelChange)="referenciaModel.set({...referenciaModel(), dni: $event})" placeholder="DNI" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().dni"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), dni: $event})"
+                          placeholder="DNI" />
                       </div>
                       <div class="p-field">
                         <label>Fecha de Nacimiento</label>
-                        <p-datepicker [ngModel]="referenciaFecha()" (ngModelChange)="onReferenciaFechaChange($event)" dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
+                        <p-datepicker [ngModel]="referenciaFecha()" (ngModelChange)="onReferenciaFechaChange($event)"
+                          dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
                       </div>
                       <div class="p-field">
                         <label>Tipo</label>
-                        <p-select size="small" [options]="referenciaTipoOptions" [ngModel]="referenciaModel().tipo" (ngModelChange)="referenciaModel.set({...referenciaModel(), tipo: $event})" placeholder="Seleccione tipo" styleClass="w-full" [appendTo]="'body'"></p-select>
+                        <p-select size="small" [options]="referenciaTipoOptions" [ngModel]="referenciaModel().tipo"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), tipo: $event})"
+                          placeholder="Seleccione tipo" styleClass="w-full" [appendTo]="'body'"></p-select>
                       </div>
                     </div>
                   </div>
@@ -364,40 +400,49 @@
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Teléfono</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().telefono" (ngModelChange)="referenciaModel.set({...referenciaModel(), telefono: $event})" placeholder="Teléfono fijo" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().telefono"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), telefono: $event})"
+                          placeholder="Teléfono fijo" />
                       </div>
                       <div class="p-field">
                         <label>Celular</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().celular" (ngModelChange)="referenciaModel.set({...referenciaModel(), celular: $event})" placeholder="Celular" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().celular"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), celular: $event})"
+                          placeholder="Celular" />
                       </div>
                       <div class="p-field">
                         <label>Parentesco</label>
-                        <p-select size="small" [options]="referenciaParentescoOptions" [ngModel]="referenciaModel().parentesco" (ngModelChange)="referenciaModel.set({...referenciaModel(), parentesco: $event})" placeholder="Seleccione parentesco" styleClass="w-full" [appendTo]="'body'"></p-select>
+                        <p-select size="small" [options]="referenciaParentescoOptions"
+                          [ngModel]="referenciaModel().parentesco"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), parentesco: $event})"
+                          placeholder="Seleccione parentesco" styleClass="w-full" [appendTo]="'body'"></p-select>
                       </div>
                       <div class="p-field">
                         <label>Dirección</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().direccion1" (ngModelChange)="referenciaModel.set({...referenciaModel(), direccion1: $event})" placeholder="Dirección" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().direccion1"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), direccion1: $event})"
+                          placeholder="Dirección" />
                       </div>
                       <div class="p-field">
                         <label>Lugar de Trabajo</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().lugarTrabajo" (ngModelChange)="referenciaModel.set({...referenciaModel(), lugarTrabajo: $event})" placeholder="Lugar de trabajo" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().lugarTrabajo"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), lugarTrabajo: $event})"
+                          placeholder="Lugar de trabajo" />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div class="form-actions mb-3">
-                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" (click)="cancelarReferencia()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [loading]="referenciaSaving()" (click)="guardarReferencia()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+                    (click)="cancelarReferencia()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+                    [loading]="referenciaSaving()" (click)="guardarReferencia()" [rounded]="true"
+                    size="small"></p-button>
                 </div>
 
-                <p-dataView
-                  [value]="referenciasData()"
-                  [loading]="referenciasLoading()"
-                  size="small"
-                  layout="list"
-                  class="referencias-dataview"
-                >
+                <p-dataView [value]="referenciasData()" [loading]="referenciasLoading()" size="small" layout="list"
+                  class="referencias-dataview">
                   <ng-template #list let-ref>
                     <div class="referencia-item">
                       <div class="ref-nombre">{{ ref.nombres || ref.nombre }}</div>
@@ -421,15 +466,20 @@
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Nombres</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().nombres" (ngModelChange)="parienteModel.set({...parienteModel(), nombres: $event})" placeholder="Nombres" />
+                        <input pInputText pSize="small" [ngModel]="parienteModel().nombres"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), nombres: $event})"
+                          placeholder="Nombres" />
                       </div>
                       <div class="p-field">
                         <label>Apellidos</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().apellidos" (ngModelChange)="parienteModel.set({...parienteModel(), apellidos: $event})" placeholder="Apellidos" />
+                        <input pInputText pSize="small" [ngModel]="parienteModel().apellidos"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), apellidos: $event})"
+                          placeholder="Apellidos" />
                       </div>
                       <div class="p-field">
                         <label>DNI</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().dni" (ngModelChange)="parienteModel.set({...parienteModel(), dni: $event})" placeholder="DNI" />
+                        <input pInputText pSize="small" [ngModel]="parienteModel().dni"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), dni: $event})" placeholder="DNI" />
                       </div>
                     </div>
                   </div>
@@ -438,28 +488,30 @@
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Parentesco</label>
-                        <p-select size="small" [options]="parienteParentescoOptions" [ngModel]="parienteModel().parentesco" (ngModelChange)="parienteModel.set({...parienteModel(), parentesco: $event})" placeholder="Seleccione parentesco" styleClass="w-full" [appendTo]="'body'"></p-select>
+                        <p-select size="small" [options]="parienteParentescoOptions"
+                          [ngModel]="parienteModel().parentesco"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), parentesco: $event})"
+                          placeholder="Seleccione parentesco" styleClass="w-full" [appendTo]="'body'"></p-select>
                       </div>
                       <div class="p-field">
                         <label>Teléfono</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().telefono" (ngModelChange)="parienteModel.set({...parienteModel(), telefono: $event})" placeholder="Teléfono de contacto" />
+                        <input pInputText pSize="small" [ngModel]="parienteModel().telefono"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), telefono: $event})"
+                          placeholder="Teléfono de contacto" />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div class="form-actions mb-3">
-                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" (click)="cancelarPariente()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [loading]="parienteSaving()" (click)="guardarPariente()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+                    (click)="cancelarPariente()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+                    [loading]="parienteSaving()" (click)="guardarPariente()" [rounded]="true" size="small"></p-button>
                 </div>
 
-                <p-dataView
-                  [value]="parientesData()"
-                  [loading]="parientesLoading()"
-                  size="small"
-                  layout="list"
-                  class="parientes-dataview"
-                >
+                <p-dataView [value]="parientesData()" [loading]="parientesLoading()" size="small" layout="list"
+                  class="parientes-dataview">
                   <ng-template #list let-par>
                     <div class="pariente-item">
                       <div class="par-nombre">{{ par.nombres }} {{ par.apellidos }}</div>
@@ -481,134 +533,111 @@
       <div class="search-bar">
         <div class="search-input-wrapper">
           <i class="pi pi-search"></i>
-          <input
-            type="text"
-            pInputText
-            [ngModel]="q()"
-            (ngModelChange)="q.set($event)"
-            placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..."
-            class="search-input"
-          />
-          <p-button
-            *ngIf="q()"
-            label="Limpiar"
-            icon="pi pi-times"
-            (click)="limpiarFiltros()"
-            severity="secondary"
-            [rounded]="true"
-            size="small"
-            class="clear-btn"
-          ></p-button>
+          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+            placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="search-input" />
+          <p-button *ngIf="q()" label="Limpiar" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
+            [rounded]="true" size="small" class="clear-btn"></p-button>
+
         </div>
+
+        <p-button label="Nuevo" icon="pi pi-plus" (click)="nuevo()" 
+          variant="text"
+          severity="success" [rounded]="true"
+          size="small"></p-button>
+
+
       </div>
 
       @if (cargando()) {
-        <div class="loading-skeleton">
-          @for (i of [1,2,3,4,5]; track i) {
-            <div class="skeleton-item">
-              <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
-              <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
-              <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
-            </div>
-          }
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
         </div>
+        }
+      </div>
       } @else if (data().length === 0) {
-        <div class="empty-state">
-          <i class="pi pi-users empty-icon"></i>
-          <h3>No hay clientes</h3>
-          <p>No se encontraron clientes registrados.</p>
-          <p-button label="Nuevo" icon="pi pi-plus" (click)="nuevo()" severity="success" [rounded]="true" size="small"></p-button>
-        </div>
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay clientes</h3>
+        <p>No se encontraron clientes registrados.</p>
+        <p-button label="Nuevo" icon="pi pi-plus" (click)="nuevo()" severity="success" [rounded]="true"
+          size="small"></p-button>
+      </div>
       } @else {
-        <div class="clientes-lista">
-          @for (cliente of data(); track cliente.clienteId) {
-            <div
-              class="cliente-item-ficha"
-              [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
-              (click)="seleccionarCliente(cliente)"
-            >
-              <div class="item-ficha-header">
-                <span class="ficha-label">Codigo:</span>
-                <span class="ficha-value">{{ cliente.nrocliente }}</span>
-                <p-tag
-                  [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
-                  [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
-                  [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}"
-                />
-              </div>
-              <div class="item-ficha-row">
-                <span class="ficha-label">Apellidos:</span>
-                <span class="ficha-value">{{ cliente.apellidos }}</span>
-              </div>
-              <div class="item-ficha-row">
-                <span class="ficha-label">Nombres:</span>
-                <span class="ficha-value">{{ cliente.nombres }}</span>
-              </div>
-              <div class="item-ficha-row">
-                <span class="ficha-label">DNI:</span>
-                <span class="ficha-value">{{ cliente.dni }}</span>
-              </div>
-              @if (cliente.rtn) {
-                <div class="item-ficha-row">
-                  <span class="ficha-label">RTN:</span>
-                  <span class="ficha-value">{{ cliente.rtn }}</span>
-                </div>
-              }
-              <div class="item-ficha-row">
-                <span class="ficha-label">Dias plazo:</span>
-                <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
-              </div>
-              <div class="item-ficha-row">
-                <span class="ficha-label">Limite Credito:</span>
-                <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
-              </div>
-              <div class="item-ficha-row">
-                <span class="ficha-label">Disponible Credito:</span>
-                <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
-              </div>
-              <div class="item-ficha-row">
-                <span class="ficha-label">Tasa interes:</span>
-                <span class="ficha-value">{{ cliente.interes }}%</span>
-              </div>
-              <div class="item-ficha-row">
-                <span class="ficha-label">Tasa moratoria:</span>
-                <span class="ficha-value">{{ cliente.moratorio }}%</span>
-              </div>
-              <div class="item-ficha-row">
-                <span class="ficha-label">Categoria:</span>
-                <span class="ficha-value">{{ cliente.categoria }}</span>
-              </div>
-              <div class="item-ficha-row">
-                <span class="ficha-label">Estado:</span>
-                <span class="ficha-value">{{ cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}</span>
-              </div>
-              <div class="item-ficha-row">
-                <span class="ficha-label">Razon social:</span>
-                <span class="ficha-value">{{ cliente.razonsocial }}</span>
-              </div>
-              <div class="item-ficha-actions">
-                <p-button
-                  icon="pi pi-pencil"
-                  (click)="editarCliente(cliente, $event)"
-                  [rounded]="true"
-                  size="small"
-                  text
-                  pTooltip="Editar"
-                  tooltipPosition="left"
-                />
-              </div>
-            </div>
+      <div class="clientes-lista">
+        @for (cliente of data(); track cliente.clienteId) {
+        <div class="cliente-item-ficha" [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)">
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ cliente.nrocliente }}</span>
+            <p-tag [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ cliente.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ cliente.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ cliente.dni }}</span>
+          </div>
+          @if (cliente.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ cliente.rtn }}</span>
+          </div>
           }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Disponible Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa interes:</span>
+            <span class="ficha-value">{{ cliente.interes }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa moratoria:</span>
+            <span class="ficha-value">{{ cliente.moratorio }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ cliente.categoria }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Estado:</span>
+            <span class="ficha-value">{{ cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Razon social:</span>
+            <span class="ficha-value">{{ cliente.razonsocial }}</span>
+          </div>
+          <div class="item-ficha-actions">
+            <p-button icon="pi pi-pencil" (click)="editarCliente(cliente, $event)" [rounded]="true" size="small" text
+              pTooltip="Editar" tooltipPosition="left" />
+          </div>
         </div>
+        }
+      </div>
 
-        <p-paginator
-          [first]="(page() - 1) * limit()"
-          [rows]="limit()"
-          [totalRecords]="totalClientes()"
-          [rowsPerPageOptions]="[5, 10, 15]"
-          (onPageChange)="onPageChange($event)"
-          class="mt-3"
-        ></p-paginator>
+      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)" styleClass="paginator-compact"></p-paginator>
       }
     </div>
   </div>

@@ -1,0 +1,39 @@
+[31m[Nest] 14096  - [39m04/09/2026, 12:56:33 a. m. [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39mQueryFailedError: Unknown column 'TInvTrasladoDet.invtrasladomaeId' in 'field list'
+    at Query.onResult [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mtypeorm[24m\driver\mysql\MysqlQueryRunner.js:168:37[90m)[39m
+    at Query.execute [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\commands\command.js:36:14[90m)[39m
+    at PoolConnection.handlePacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:555:34[90m)[39m
+    at PacketParser.onPacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:104:12[90m)[39m
+    at PacketParser.executeStart [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\packet_parser.js:75:16[90m)[39m
+    at Socket.<anonymous> [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:112:25[90m)[39m
+[90m    at Socket.emit (node:events:509:28)[39m
+[90m    at addChunk (node:internal/streams/readable:563:12)[39m
+[90m    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)[39m
+[90m    at Readable.push (node:internal/streams/readable:394:5)[39m {
+  query: [32m'SELECT `TInvTrasladoDet`.`invtrasladodetId` AS `TInvTrasladoDet_invtrasladodetId`, `TInvTrasladoDet`.`fecharegistro` AS `TInvTrasladoDet_fecharegistro`, `TInvTrasladoDet`.`invtrasladomaeId` AS `TInvTrasladoDet_invtrasladomaeId`, `TInvTrasladoDet`.`nrofila` AS `TInvTrasladoDet_nrofila`, `TInvTrasladoDet`.`productoId` AS `TInvTrasladoDet_productoId`, `TInvTrasladoDet`.`codbarra` AS `TInvTrasladoDet_codbarra`, `TInvTrasladoDet`.`descripcion` AS `TInvTrasladoDet_descripcion`, `TInvTrasladoDet`.`cantidad` AS `TInvTrasladoDet_cantidad`, `TInvTrasladoDet`.`costoUnitario` AS `TInvTrasladoDet_costoUnitario`, `TInvTrasladoDet`.`costoTotal` AS `TInvTrasladoDet_costoTotal`, `TInvTrasladoDet`.`sn_anulado` AS `TInvTrasladoDet_sn_anulado`, `TInvTrasladoDet`.`empresaId` AS `TInvTrasladoDet_empresaId`, `TInvTrasladoDet`.`usuarioCreated` AS `TInvTrasladoDet_usuarioCreated`, `TInvTrasladoDet`.`usuarioUpdated` AS `TInvTrasladoDet_usuarioUpdated`, `TInvTrasladoDet`.`fechaUpdated` AS `TInvTrasladoDet_fechaUpdated` FROM `invtrasdet` `TInvTrasladoDet` WHERE ((`TInvTrasladoDet`.`invtrasladomaeId` = ?) AND (`TInvTrasladoDet`.`empresaId` = ?)) ORDER BY `TInvTrasladoDet`.`nrofila` ASC'[39m,
+  parameters: [
+    [33m1[39m,
+    [33m2[39m
+  ],
+  driverError: Error: Unknown column 'TInvTrasladoDet.invtrasladomaeId' in 'field list'
+      at Packet.asError [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\packets\packet.js:833:17[90m)[39m
+      at Query.execute [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\commands\command.js:29:26[90m)[39m
+      at PoolConnection.handlePacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:555:34[90m)[39m
+      at PacketParser.onPacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:104:12[90m)[39m
+      at PacketParser.executeStart [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\packet_parser.js:75:16[90m)[39m
+      at Socket.<anonymous> [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:112:25[90m)[39m
+  [90m    at Socket.emit (node:events:509:28)[39m
+  [90m    at addChunk (node:internal/streams/readable:563:12)[39m
+  [90m    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)[39m
+  [90m    at Readable.push (node:internal/streams/readable:394:5)[39m {
+    code: [32m'ER_BAD_FIELD_ERROR'[39m,
+    errno: [33m1054[39m,
+    sqlState: [32m'42S22'[39m,
+    sqlMessage: [32m"Unknown column 'TInvTrasladoDet.invtrasladomaeId' in 'field list'"[39m,
+    sql: [32m'SELECT `TInvTrasladoDet`.`invtrasladodetId` AS `TInvTrasladoDet_invtrasladodetId`, `TInvTrasladoDet`.`fecharegistro` AS `TInvTrasladoDet_fecharegistro`, `TInvTrasladoDet`.`invtrasladomaeId` AS `TInvTrasladoDet_invtrasladomaeId`, `TInvTrasladoDet`.`nrofila` AS `TInvTrasladoDet_nrofila`, `TInvTrasladoDet`.`productoId` AS `TInvTrasladoDet_productoId`, `TInvTrasladoDet`.`codbarra` AS `TInvTrasladoDet_codbarra`, `TInvTrasladoDet`.`descripcion` AS `TInvTrasladoDet_descripcion`, `TInvTrasladoDet`.`cantidad` AS `TInvTrasladoDet_cantidad`, `TInvTrasladoDet`.`costoUnitario` AS `TInvTrasladoDet_costoUnitario`, `TInvTrasladoDet`.`costoTotal` AS `TInvTrasladoDet_costoTotal`, `TInvTrasladoDet`.`sn_anulado` AS `TInvTrasladoDet_sn_anulado`, `TInvTrasladoDet`.`empresaId` AS `TInvTrasladoDet_empresaId`, `TInvTrasladoDet`.`usuarioCreated` AS `TInvTrasladoDet_usuarioCreated`, `TInvTrasladoDet`.`usuarioUpdated` AS `TInvTrasladoDet_usuarioUpdated`, `TInvTrasladoDet`.`fechaUpdated` AS `TInvTrasladoDet_fechaUpdated` FROM `invtrasdet` `TInvTrasladoDet` WHERE ((`TInvTrasladoDet`.`invtrasladomaeId` = 1) AND (`TInvTrasladoDet`.`empresaId` = 2)) ORDER BY `TInvTrasladoDet`.`nrofila` ASC'[39m
+  },
+  code: [32m'ER_BAD_FIELD_ERROR'[39m,
+  errno: [33m1054[39m,
+  sqlState: [32m'42S22'[39m,
+  sqlMessage: [32m"Unknown column 'TInvTrasladoDet.invtrasladomaeId' in 'field list'"[39m,
+  sql: [32m'SELECT `TInvTrasladoDet`.`invtrasladodetId` AS `TInvTrasladoDet_invtrasladodetId`, `TInvTrasladoDet`.`fecharegistro` AS `TInvTrasladoDet_fecharegistro`, `TInvTrasladoDet`.`invtrasladomaeId` AS `TInvTrasladoDet_invtrasladomaeId`, `TInvTrasladoDet`.`nrofila` AS `TInvTrasladoDet_nrofila`, `TInvTrasladoDet`.`productoId` AS `TInvTrasladoDet_productoId`, `TInvTrasladoDet`.`codbarra` AS `TInvTrasladoDet_codbarra`, `TInvTrasladoDet`.`descripcion` AS `TInvTrasladoDet_descripcion`, `TInvTrasladoDet`.`cantidad` AS `TInvTrasladoDet_cantidad`, `TInvTrasladoDet`.`costoUnitario` AS `TInvTrasladoDet_costoUnitario`, `TInvTrasladoDet`.`costoTotal` AS `TInvTrasladoDet_costoTotal`, `TInvTrasladoDet`.`sn_anulado` AS `TInvTrasladoDet_sn_anulado`, `TInvTrasladoDet`.`empresaId` AS `TInvTrasladoDet_empresaId`, `TInvTrasladoDet`.`usuarioCreated` AS `TInvTrasladoDet_usuarioCreated`, `TInvTrasladoDet`.`usuarioUpdated` AS `TInvTrasladoDet_usuarioUpdated`, `TInvTrasladoDet`.`fechaUpdated` AS `TInvTrasladoDet_fechaUpdated` FROM `invtrasdet` `TInvTrasladoDet` WHERE ((`TInvTrasladoDet`.`invtrasladomaeId` = 1) AND (`TInvTrasladoDet`.`empresaId` = 2)) ORDER BY `TInvTrasladoDet`.`nrofila` ASC'[39m
+}

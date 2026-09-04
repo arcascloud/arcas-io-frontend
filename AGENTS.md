@@ -40,16 +40,16 @@ Como regla arquitectónica **invariable** en todo el ERP, en **TODOS** los esque
 - **`empresaId`**: OBLIGATORIO en la entidad Maestra y OBLIGATORIO en cada entidad Detalle.
 - **`usuarioCreated`**: OBLIGATORIO en la entidad Maestra y OBLIGATORIO en cada entidad Detalle.
 
-�?**NUNCA** generes una entidad o tabla detalle omitiendo `empresaId` o `usuarioCreated`, incluso si consideras que la relación con la cabecera lo hace "redundante" desde el punto de vista de normalización. En este ERP es un requisito estricto de seguridad, particionamiento de datos y auditoría.
+�?**NUNCA** generes una entidad o tabla detalle omitiendo `empresaId` o `usuarioCreated`, incluso si consideras que la relación con la cabecera lo hace "redundante" desde el punto de vista de normalización. En este ERP es un requisito estricto de seguridad, particionamiento de datos y auditoría.
 
-�?**SIEMPRE** incluye ambos campos explícitamente en el esquema del Maestro y del Detalle.
+�?**SIEMPRE** incluye ambos campos explícitamente en el esquema del Maestro y del Detalle.
 
 ---
 
 ### Ejemplo de Estructura de Datos Obligatoria
 
 ```typescript
-// �?CORRECTO: Ambos modelos contienen los campos requeridos explícitamente
+// �?CORRECTO: Ambos modelos contienen los campos requeridos explícitamente
 
 interface DocumentoMaestro {
   id: string;
@@ -80,8 +80,8 @@ Si la solución requiere tocar más de un módulo (ej. Facturación debe afectar
 ### ¿Por qué esta estructura le ayuda al LLM?
 1. **Persona bien definida:** Asumir el rol de *Analista Senior + Master en Retail* fuerza al modelo a dar respuestas orientadas a producción, evitando sugerencias simplistas o "de juguete".
 2. **Contexto del dominio:** Al enumerar los 13 módulos, el modelo entenderá las implicaciones cruzadas cuando le pidas código (ej: sabrá que una *Factura* impacta en *Inventario*, *CXC* y *Contabilidad*).
-3. **Instrucciones de alta directiva:** La combinación de emojis de advertencia (`🚨`), reglas de negación estricta (`�?NUNCA`) y ejemplos en TypeScript asegura que el modelo retenga la regla de `empresaId` y `usuarioCreated` en cada respuesta.
-## Quick Reference �?Backend Operations
+3. **Instrucciones de alta directiva:** La combinación de emojis de advertencia (`🚨`), reglas de negación estricta (`�?NUNCA`) y ejemplos en TypeScript asegura que el modelo retenga la regla de `empresaId` y `usuarioCreated` en cada respuesta.
+## Quick Reference �?Backend Operations
 
 ### Common backend operations
 ```bash
@@ -109,7 +109,7 @@ Invoke-RestMethod -Uri 'http://localhost:3000/api/ENDPOINT' -Method GET -Headers
 ### MySQL (local)
 - **Host**: `127.0.0.1:3306`, **User**: `root`, **Password**: `root.8`, **DB**: `arcasdb`
 - **IMPORTANT**: `mysql` CLI has an interactive launcher (localhost/aiven.io menu). Use PowerShell `Invoke-RestMethod` to query via API instead, or pipe "1" to select localhost.
-- `synchronize: false` �?schema changes require manual `ALTER TABLE`
+- `synchronize: false` �?schema changes require manual `ALTER TABLE`
 
 ### Backend debugging pattern
 1. Add `try/catch` with `console.error()` in the service method
@@ -136,7 +136,7 @@ Invoke-RestMethod -Uri 'http://localhost:3000/api/ENDPOINT' -Method GET -Headers
 
 ### Backend entity patterns
 - **Default values in entities**: If column has `default: 'N'` in entity but DB default is different (or NULL), the entity default wins on INSERT via TypeORM. Check DB defaults independently.
-- **Enum columns**: MySQL ENUMs are strict. `'A'` �?`'a'`. TypeORM enum must match DB enum exactly.
+- **Enum columns**: MySQL ENUMs are strict. `'A'` �?`'a'`. TypeORM enum must match DB enum exactly.
 - **`usuarioCreated`**: Always injected by `createEntity()` helper, not needed in DTOs.
 
 ## Commands
@@ -178,10 +178,10 @@ npm test
 ```
 src/app/
 ├── core/           # Singleton services, interceptors, models, guards, utils
-�?  ├── interceptors/   # auth.interceptor.ts (JWT injection), error.interceptor.ts (toast errors)
-�?  ├── models/         # TypeScript interfaces per module (cxc.models.ts, etc.)
-�?  ├── services/       # ApiService (HTTP with empresaId injection), AuthService, per-module services
-�?  └── guards/         # authGuard
+�?  ├── interceptors/   # auth.interceptor.ts (JWT injection), error.interceptor.ts (toast errors)
+�?  ├── models/         # TypeScript interfaces per module (cxc.models.ts, etc.)
+�?  ├── services/       # ApiService (HTTP with empresaId injection), AuthService, per-module services
+�?  └── guards/         # authGuard
 ├── features/       # Lazy-loaded feature modules (each has routes + components)
 ├── layout/         # MainLayout with sidebar/header
 └── app.config.ts   # Root providers (PrimeNG theme, router, HTTP interceptors)
@@ -189,18 +189,18 @@ src/app/
 
 ### Features (lazy-loaded)
 Each feature has its own `*.routes.ts` with exported route constants:
-- `auth` �?Login
-- `dashboard` �?Dashboard
-- `inventario` �?Products, warehouses, categories, brands, UoM, suppliers
-- `bancos` �?Bank accounts, movements
-- `facturacion` �?Invoices, proformas + **Tienda Virtual** (`/facturacion/tienda`)
-- `cxc` �?Accounts receivable (most complete module)
-- `cxp` �?Accounts payable
-- `planilla` �?Payroll
-- `contabilidad` �?Chart of accounts, journal entries
-- `configuracion` �?System parameters
-- `usuarios` �?Users, roles, permissions
-- `parametros` �?System catalogs (currencies, countries, taxes)
+- `auth` �?Login
+- `dashboard` �?Dashboard
+- `inventario` �?Products, warehouses, categories, brands, UoM, suppliers
+- `bancos` �?Bank accounts, movements
+- `facturacion` �?Invoices, proformas + **Tienda Virtual** (`/facturacion/tienda`)
+- `cxc` �?Accounts receivable (most complete module)
+- `cxp` �?Accounts payable
+- `planilla` �?Payroll
+- `contabilidad` �?Chart of accounts, journal entries
+- `configuracion` �?System parameters
+- `usuarios` �?Users, roles, permissions
+- `parametros` �?System catalogs (currencies, countries, taxes)
 
 ### Routing
 - All routes behind `authGuard` via `canMatch`
@@ -210,11 +210,11 @@ Each feature has its own `*.routes.ts` with exported route constants:
 ## Code Conventions
 
 ### Angular
-- **Zoneless**: Uses `provideZonelessChangeDetection()` �?no Zone.js
+- **Zoneless**: Uses `provideZonelessChangeDetection()` �?no Zone.js
 - **Signals**: `signal()`, `computed()`, `effect()` only in field initializers (not in constructors)
 - **OnPush**: All components use `ChangeDetectionStrategy.OnPush`
 - **RxJS**: Always `takeUntilDestroyed(this.destroyRef)` on subscriptions
-- **Standalone components** �?no NgModules
+- **Standalone components** �?no NgModules
 - **Component prefix**: `app-`
 
 ### UI (PrimeNG + SCSS)
@@ -222,8 +222,8 @@ Each feature has its own `*.routes.ts` with exported route constants:
 - Use PrimeNG components: `p-inputText`, `p-inputNumber`, `p-datepicker`, `p-button`
 - **Design tokens**: Use `--c-*` from `styles.scss` (e.g., `var(--c-surface)`, `var(--c-primary)`)
 - **Forbidden**: PrimeNG native CSS variables (`--surface-card`, `--primary-*`)
-- **Forbidden**: Inline `style=""` �?all styles in SCSS
-- **Forbidden**: Inline arrays `[{label, value}]` in HTML �?always in TypeScript as `readonly`
+- **Forbidden**: Inline `style=""` �?all styles in SCSS
+- **Forbidden**: Inline arrays `[{label, value}]` in HTML �?always in TypeScript as `readonly`
 - **Forbidden**: `new Date()` in templates
 - Grid layout: `p-grid` / `p-col-12 p-col-6` for 2-column forms
 
@@ -247,15 +247,15 @@ Each feature has its own `*.routes.ts` with exported route constants:
 
 ## Key Files
 
-- `src/app/core/services/api.service.ts` �?HTTP client with automatic `empresaId` injection
-- `src/app/core/interceptors/auth.interceptor.ts` �?JWT Bearer token injection
-- `src/app/core/interceptors/error.interceptor.ts` �?Global error handling with PrimeNG toasts
-- `src/app/core/models/cxc.models.ts` �?CxC TypeScript interfaces
-- `src/app/core/models/facturacion.models.ts` �?`MAESTRO_DETALLE` config for generic forms
-- `src/styles.scss` �?Global design tokens, fonts (Mukta), utilities
-- `src/app/app.config.ts` �?Root providers (PrimeNG theme preset: ArcasPreset with emerald colors)
+- `src/app/core/services/api.service.ts` �?HTTP client with automatic `empresaId` injection
+- `src/app/core/interceptors/auth.interceptor.ts` �?JWT Bearer token injection
+- `src/app/core/interceptors/error.interceptor.ts` �?Global error handling with PrimeNG toasts
+- `src/app/core/models/cxc.models.ts` �?CxC TypeScript interfaces
+- `src/app/core/models/facturacion.models.ts` �?`MAESTRO_DETALLE` config for generic forms
+- `src/styles.scss` �?Global design tokens, fonts (Mukta), utilities
+- `src/app/app.config.ts` �?Root providers (PrimeNG theme preset: ArcasPreset with emerald colors)
 
-## Bitácora �?24/08/2026
+## Bitácora �?24/08/2026
 
 ### Completado
 - **CxC Clientes Manager** (`cxc/clientes/clientes-manager.*`): Layout dividido lista/detalle, 5 tabs (Estado de Cuenta, Notas Créd/Déb, Préstamos, Referencias, Parientes)
@@ -267,11 +267,11 @@ Each feature has its own `*.routes.ts` with exported route constants:
 - **AGENTS.md** creado con contexto del proyecto
 
 ### Pendiente para mañana (25/08/2026)
-- **Balance de Antigüedad de Saldos**: Vista/resumen de saldos por antigüedad (30, 60, 90+ días) �?**completado (ya existía y compila)**
-- **Cartas de Recordatorio de Cobro**: Generación de cartas de vencimiento a 30, 60 y 90 días �?**completado (fix build: TooltipModule + campo corriente)**
+- **Balance de Antigüedad de Saldos**: Vista/resumen de saldos por antigüedad (30, 60, 90+ días) �?**completado (ya existía y compila)**
+- **Cartas de Recordatorio de Cobro**: Generación de cartas de vencimiento a 30, 60 y 90 días �?**completado (fix build: TooltipModule + campo corriente)**
 - Posible ruta en `cxc/` o como consulta
  
-## Bitácora �?25/08/2026
+## Bitácora �?25/08/2026
  
 ### Completado
 - **Fix build CXC Cartas Recordatorio** (`cxc/cartas-recordatorio/cartas-recordatorio.ts`):
@@ -280,7 +280,7 @@ Each feature has its own `*.routes.ts` with exported route constants:
   - Build de producción compila sin errores
 - **Verificación Antigüedad Saldos** (`cxc/antiguedad-saldos/antiguedad-saldos.ts`): ya incluía `corriente` en interfaz y lógica; sin cambios
 
-## Bitácora �?26/08/2026
+## Bitácora �?26/08/2026
 
 ### Completado
 - **Documentos pendientes por cliente** (`cxc.service.ts` backend `findDocumentosPendientesCliente`):
@@ -294,9 +294,9 @@ Each feature has its own `*.routes.ts` with exported route constants:
 - **Caja movimiento: tipomov corregido** (`cxc.service.ts` backend):
   - `generarMovimientoDesdeCaja` y `generarMovimientoDesdeCajaDet`: tipomov cambiado de `'A'` a `'C'` (enum solo acepta 'D'/'C')
 - **Prueba de fuego caja** (Juan Carlos, clienteId=1):
-  - �?Header (caja-mae) se registra correctamente
-  - �?Detalle (caja-det) con 2 formas de pago se registra correctamente
-  - �?Movimientos en cxcmovimientos: registrados correctamente tras fixes
+  - �?Header (caja-mae) se registra correctamente
+  - �?Detalle (caja-det) con 2 formas de pago se registra correctamente
+  - �?Movimientos en cxcmovimientos: registrados correctamente tras fixes
 - **Caja movimiento: fix FK documentoId** (`cxc.service.ts` backend):
   - `documentoId` cambiado de `caja.cxccajaId` a `caja.documentoId` (FK a `tcotipodocumentofiscal`, no a caja)
   - `moduloId` cambiado de `3` a `4` (CXC es módulo 4)
@@ -309,7 +309,7 @@ Each feature has its own `*.routes.ts` with exported route constants:
 
 ---
 
-## Frontend Architecture �?Detalle
+## Frontend Architecture �?Detalle
 
 ### Estructura de directorios
 
@@ -318,38 +318,38 @@ src/app/
 ├── app.config.ts              # Root providers: PrimeNG theme, router, HTTP, zoneless
 ├── app.routes.ts              # Lazy-loaded feature routes
 ├── core/
-�?  ├── guards/                # authGuard (canMatch)
-�?  ├── interceptors/          # auth.interceptor.ts, error.interceptor.ts
-�?  ├── models/                # TypeScript interfaces per module
-�?  �?  ├── auth.models.ts
-�?  �?  ├── bancos.models.ts
-�?  �?  ├── contabilidad.models.ts
-�?  �?  ├── cxc.models.ts      # CxC interfaces (Cliente, Movimiento, CajaMae, CajaDet, etc.)
-�?  �?  ├── cxp.models.ts
-�?  �?  ├── facturacion.models.ts  # MAESTRO_DETALLE config for generic forms
-�?  �?  ├── inventario.models.ts
-�?  �?  ├── parametros.models.ts
-�?  �?  └── planilla.models.ts
-�?  ├── services/
-�?  �?  ├── api.service.ts     # HTTP base, auto-injects empresaId + Idsucursal
-�?  �?  ├── auth.service.ts    # Login, JWT storage, currentUser
-�?  �?  ├── cxc.service.ts     # CxC API calls
-�?  �?  ├── menu-config.ts     # Sidebar menu definition
-�?  �?  └── [module].service.ts # One service per module
-�?  └── utils/                 # Helpers, formateo, fechas
+�?  ├── guards/                # authGuard (canMatch)
+�?  ├── interceptors/          # auth.interceptor.ts, error.interceptor.ts
+�?  ├── models/                # TypeScript interfaces per module
+�?  �?  ├── auth.models.ts
+�?  �?  ├── bancos.models.ts
+�?  �?  ├── contabilidad.models.ts
+�?  �?  ├── cxc.models.ts      # CxC interfaces (Cliente, Movimiento, CajaMae, CajaDet, etc.)
+�?  �?  ├── cxp.models.ts
+�?  �?  ├── facturacion.models.ts  # MAESTRO_DETALLE config for generic forms
+�?  �?  ├── inventario.models.ts
+�?  �?  ├── parametros.models.ts
+�?  �?  └── planilla.models.ts
+�?  ├── services/
+�?  �?  ├── api.service.ts     # HTTP base, auto-injects empresaId + Idsucursal
+�?  �?  ├── auth.service.ts    # Login, JWT storage, currentUser
+�?  �?  ├── cxc.service.ts     # CxC API calls
+�?  �?  ├── menu-config.ts     # Sidebar menu definition
+�?  �?  └── [module].service.ts # One service per module
+�?  └── utils/                 # Helpers, formateo, fechas
 ├── features/
-�?  ├── auth/                  # Login
-�?  ├── dashboard/             # Dashboard
-�?  ├── inventario/            # Productos, bodegas, categorías, etc.
-�?  ├── bancos/                # Cuentas bancarias
-�?  ├── facturacion/           # Facturación + genérico maestro-detalle
-�?  ├── cxc/                   # Cuentas por cobrar (más completo)
-�?  ├── cxp/                   # Cuentas por pagar
-�?  ├── contabilidad/          # Plan de cuentas, comprobantes
-�?  ├── planilla/              # Empleados, planillas
-�?  ├── configuracion/         # Parámetros del sistema
-�?  ├── usuarios/              # Usuarios, roles, permisos
-�?  └── parametros/            # Catálogos (monedas, países, impuestos, etc.)
+�?  ├── auth/                  # Login
+�?  ├── dashboard/             # Dashboard
+�?  ├── inventario/            # Productos, bodegas, categorías, etc.
+�?  ├── bancos/                # Cuentas bancarias
+�?  ├── facturacion/           # Facturación + genérico maestro-detalle
+�?  ├── cxc/                   # Cuentas por cobrar (más completo)
+�?  ├── cxp/                   # Cuentas por pagar
+�?  ├── contabilidad/          # Plan de cuentas, comprobantes
+�?  ├── planilla/              # Empleados, planillas
+�?  ├── configuracion/         # Parámetros del sistema
+�?  ├── usuarios/              # Usuarios, roles, permisos
+�?  └── parametros/            # Catálogos (monedas, países, impuestos, etc.)
 └── layout/
     ├── main-layout/           # Shell: sidebar + header + router-outlet
     └── auth-layout/           # Login layout
@@ -361,21 +361,21 @@ src/app/
 features/cxc/
 ├── cxc.routes.ts              # Rutas lazy-loaded
 ├── clientes/
-�?  ├── clientes-manager.ts    # Componente contenedor (lista + detalle)
-�?  ├── clientes-manager.html
-�?  ├── clientes-manager.scss
-�?  ├── cliente-form.ts        # Formulario de cliente
-�?  ├── cliente-form.html
-�?  ├── cliente-form.scss
-�?  ├── cliente-list.ts        # Lista de clientes
-�?  └── cliente-list.html
+�?  ├── clientes-manager.ts    # Componente contenedor (lista + detalle)
+�?  ├── clientes-manager.html
+�?  ├── clientes-manager.scss
+�?  ├── cliente-form.ts        # Formulario de cliente
+�?  ├── cliente-form.html
+�?  ├── cliente-form.scss
+�?  ├── cliente-list.ts        # Lista de clientes
+�?  └── cliente-list.html
 ├── caja/
-�?  ├── caja-manager.ts
-�?  ├── caja-form.ts
-�?  └── ...
+�?  ├── caja-manager.ts
+�?  ├── caja-form.ts
+�?  └── ...
 ├── prestamos/
-�?  ├── prestamos-manager.ts
-�?  └── ...
+�?  ├── prestamos-manager.ts
+�?  └── ...
 ├── antiguedad-saldos/
 ├── cartas-recordatorio/
 └── ...
@@ -405,7 +405,7 @@ Uso en HTML:
 </div>
 ```
 
-### ApiService �?inyección automática
+### ApiService �?inyección automática
 
 ```typescript
 // Rutas CON empresaId + Idsucursal (auto-inyectados)
@@ -424,20 +424,20 @@ static SOLO_EMPRESA = ['clientes-con-saldo', 'documentos-pendientes', 'antigueda
 - GET/DELETE: `empresaId` + `Idsucursal` se inyectan como **query params**
 - POST/PUT: se inyectan en el **body**
 
-### Frontend Services �?Referencia rápida
+### Frontend Services �?Referencia rápida
 
 | Service | Archivo | Métodos | Endpoint backend |
 |---------|---------|---------|------------------|
 | `ApiService` | `api.service.ts` | `get`, `getOne`, `post`, `put`, `putBase`, `delete` | Base HTTP con inyección automática de `empresaId`/`Idsucursal` |
 | `AuthService` | `auth.service.ts` | `login`, `loginRaw`, `checkStatus`, `logout` | `/auth/login` |
 | `MenuConfigService` | `menu-config.service.ts` | `getMenuItems` | Sin HTTP (lee menú por rol) |
-| `NavegacionService` | `navegacion.service.ts` | `volver(fallback)` | Sin HTTP �?`Location.back()` con fallback |
+| `NavegacionService` | `navegacion.service.ts` | `volver(fallback)` | Sin HTTP �?`Location.back()` con fallback |
 | `CxcService` | `cxc.service.ts` | 24 métodos | `/cxc/*` (clientes, caja, movimientos, préstamos, etc.) |
 | `CxpService` | `cxp.service.ts` | 10 métodos | `/cxp/*` (proveedores, compras, movimientos) |
-| `FacturacionService` | `facturacion.service.ts` | 7 métodos | Genérico �?recibe `ruta` como parámetro |
+| `FacturacionService` | `facturacion.service.ts` | 7 métodos | Genérico �?recibe `ruta` como parámetro |
 | `PlanillaService` | `planilla.service.ts` | 4 métodos | `/planilla/empleados` |
-| `CatalogoParametrosService` | `catalogo-parametros.service.ts` | 4 métodos | Genérico �?recibe `ruta` como parámetro |
-| `SettingsService` | `settings.service.ts` | 2 métodos | Genérico �?`get(ruta)`, `upsert(ruta, payload)` |
+| `CatalogoParametrosService` | `catalogo-parametros.service.ts` | 4 métodos | Genérico �?recibe `ruta` como parámetro |
+| `SettingsService` | `settings.service.ts` | 2 métodos | Genérico �?`get(ruta)`, `upsert(ruta, payload)` |
 | `UsuariosService` | `usuarios.service.ts` | 5 métodos | `/users` |
 | `UsuariosModuleService` | `usuarios-module.service.ts` | 5 métodos | `/users/modules` |
 | `UsuariosScriptsService` | `usuarios-scripts.service.ts` | 5 métodos | `/users/scripts` |
@@ -470,17 +470,17 @@ static SOLO_EMPRESA = ['clientes-con-saldo', 'documentos-pendientes', 'antigueda
 - **Tags**: Auth, Usuarios, Módulos, Empresas, Sucursales, Parámetros, Inventario, Facturación, CxC, CxP, Bancos, Contabilidad, Planilla
 - Todos los controllers, DTOs y entidades decorados con `@ApiTags`, `@ApiOperation`, `@ApiProperty`
 
-### CxC �?Componentes y flujo
+### CxC �?Componentes y flujo
 
 #### Clientes Manager (`cxc/clientes/`)
-- **Layout dividido**: lista oculta cuando formulario activo, con botón "�?Volver al listado"
+- **Layout dividido**: lista oculta cuando formulario activo, con botón "�?Volver al listado"
 - **5 tabs**: Estado de Cuenta, Notas Créd/Déb, Préstamos, Referencias, Parientes
 - **Formulario 2 columnas**: Datos Personales + Clasificación y Crédito
 
 #### Caja (`facturacion/maestro-detalle/`)
 - **Componente genérico**: `MaestroDetalleFormComponent` reutilizado para Caja, Facturas, Compras
 - **Config**: `MAESTRO_DETALLE.caja` en `facturacion.models.ts`
-- **Flujo**: Seleccionar cliente �?Ver docs pendientes �?Agregar formas de pago �?Guardar
+- **Flujo**: Seleccionar cliente �?Ver docs pendientes �?Agregar formas de pago �?Guardar
 - **Guardado secuencial**: Primero maestro (`caja-mae`), luego detalles (`caja-det`)
 - **Reset**: `finalizar()` limpia formulario + detalles en vez de navegar
 
@@ -534,7 +534,7 @@ Interfaces principales:
 ## Lessons Learned (Reference rápida)
 
 ### Siempre verificar FK constraints antes de hardcodear IDs
-- `clienteId: 0` en `posfacmae` causó 500 �?FK a `cxcclientes` exige cliente real
+- `clienteId: 0` en `posfacmae` causó 500 �?FK a `cxcclientes` exige cliente real
 - `documentoId` en `cxcmovimientos` debe ser `tipodocumentofiscalId` (1-5), no `facturaId`
 - Solución: buscar/crear registro genérico ("TIENDA") y usar su ID real
 
@@ -556,29 +556,48 @@ Interfaces principales:
 - Usar siempre `Invoke-RestMethod` o `Invoke-WebRequest` desde PowerShell para queries
 - Login: `POST /api/auth/login` con `{"usuario":"admin","password":"admin123"}`
 
-### Tienda Virtual �?Arquitectura
-- **Carrito**: `poscotmae` (header) + `poscotdet` (items) �?misma estructura que cotizaciones
+### PrimeNG v21+ Tabs: value, no activeIndex
+- `p-tabs` usa `value`/`valueChange` (ModelSignal), NO `activeIndex`/`activeIndexChange`
+- `activeIndex` no existe en PrimeNG v21+ `p-tabs` — usar `[value]` y `(valueChange)`
+- El tipo de signal debe ser `string` (no `number`) porque `p-tab value="0"` es string
+- Fix: `activeTabValue = signal<string>('0')` + `.set('0')` en vez de `.set(0)`
+
+### effect() necesita injection context
+- `effect()` dentro de `ngOnInit()` NO funciona — no está en contexto de inyección
+- Fix: mover a initializer de campo con `{ injector: this.injector }`:
+  ```typescript
+  private injector = inject(Injector);
+  private _effect = effect(() => { ... }, { injector: this.injector });
+  ```
+
+### Angular input() signal change detection
+- `input()` retorna `undefined` (no `null`) cuando no se pasa valor
+- `ngOnInit()` solo corre una vez — no detecta cambios posteriores
+- Fix: usar `effect()` en initializer de campo para reaccionar a cambios del input signal
+
+### Tienda Virtual �?Arquitectura
+- **Carrito**: `poscotmae` (header) + `poscotdet` (items) �?misma estructura que cotizaciones
 - **Checkout**: Convierte carrito en `posfacmae` + `posfacdet` + `posfaccaja` + kardex
 - **Cliente genérico**: `nrocliente: 'TIENDA'` en `cxcclientes` (creado on-demand)
 - **Kardex**: Se procesa automáticamente después de crear factura (try/catch para no bloquear)
 - **Estado carrito**: `'A'`=Activo, `'F'`=Facturado, `'X'`=Anulado
-- **Formaspago**: `GET /parametros/formas-pago?empresaId=X` �?`ttipoformapago`
-- **Tarjetas**: `GET /parametros/tarjetas-credito?empresaId=X` �?`ttipotarjetacredito`
+- **Formaspago**: `GET /parametros/formas-pago?empresaId=X` �?`ttipoformapago`
+- **Tarjetas**: `GET /parametros/tarjetas-credito?empresaId=X` �?`ttipotarjetacredito`
 - **Luhn**: Validación de tarjeta en frontend antes de enviar al backend
 
 ### Bitácora consolidada (resumen por fecha)
 
-## Bitácora �?27/08/2026
+## Bitácora �?27/08/2026
 
 ### Completado
 
-#### Backend �?Kardex: Fix actualización de existencias
+#### Backend �?Kardex: Fix actualización de existencias
 - **Causa raíz**: `actualizarExistencia()` en `kardex.service.ts` usaba `repository.update()` de TypeORM. Las columnas decimal de MySQL se leen como strings (`'100.00'`). TypeORM no reconocía el cambio string→number y el UPDATE se omitía silenciosamente.
 - **Causa 2**: `usuarioUpdated` usaba `'SYSTEM'` que no existe en `tusuarios`. FK constraint `fk_update_invexistencias_usuario` rechazaba el UPDATE.
 - **Corrección**: Reemplazado con `createQueryBuilder().update().set().where().execute()` (bypass de change detection) + se pasa `usuarioCreated` del DTO como `usuarioUpdated`.
-- **Archivo**: `Backend/src/modules/inventario/kardex.service.ts` �?método `actualizarExistencia()`
+- **Archivo**: `Backend/src/modules/inventario/kardex.service.ts` �?método `actualizarExistencia()`
 
-#### Frontend �?Facturación: Mejoras operativas
+#### Frontend �?Facturación: Mejoras operativas
 
 **1. Permanecer en nueva-factura después de facturar**
 - Antes: `this.salir()` navegaba a `/facturacion/facturas`
@@ -613,57 +632,57 @@ Interfaces principales:
 - `nueva()` llama `this.dialogPagos.set(false)` antes de resetear
 
 **Archivos modificados**:
-- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.ts` �?Lógica de facturación, pagos, validaciones
-- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.html` �?Toolbar, dialog pagos, panel lateral
-- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.scss` �?Clase `.pendiente-line`
+- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.ts` �?Lógica de facturación, pagos, validaciones
+- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.html` �?Toolbar, dialog pagos, panel lateral
+- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.scss` �?Clase `.pendiente-line`
 
 ### Pendiente
 - Verificar que `cxcmovimientos` se cree correctamente al facturar de crédito
 
-#### Backend �?Fix CxC: Movimiento desde factura de crédito
-- **Causa raíz**: `generarMovimientoDesdeFactura()` usaba `factura.facturaId` (PK autoincrement de posfacmae) como `documentoId` en `cxcmovimientos`. La FK `fk_cxcmovimientos_tcotipodocumentofiscal` espera un `tipodocumentofiscalId` (valores 1-5). Valores >5 causan constraint violation �?error tragado silenciosamente por try/catch.
+#### Backend �?Fix CxC: Movimiento desde factura de crédito
+- **Causa raíz**: `generarMovimientoDesdeFactura()` usaba `factura.facturaId` (PK autoincrement de posfacmae) como `documentoId` en `cxcmovimientos`. La FK `fk_cxcmovimientos_tcotipodocumentofiscal` espera un `tipodocumentofiscalId` (valores 1-5). Valores >5 causan constraint violation �?error tragado silenciosamente por try/catch.
 - **Fix**: `documentoId: 1` (FAC) en vez de `factura.facturaId`
-- **Fix adicional**: `anularMovimientoFactura()` y `anularCajaPorFactura()` también usaban `facturaId` como `documentoId` �?corregidos para buscar por `nroreferencia` / `nrodocumento`
+- **Fix adicional**: `anularMovimientoFactura()` y `anularCajaPorFactura()` también usaban `facturaId` como `documentoId` �?corregidos para buscar por `nroreferencia` / `nrodocumento`
 - **Archivos**: `cxc.service.ts`, `facturacion.service.ts`
 
-#### Backend �?Fix defaults en entidades CxC
+#### Backend �?Fix defaults en entidades CxC
 - `cxccajamae.entity.ts`: `sn_cotabilizada` y `sn_anulado` cambiados de `default: 'S'` a `default: 'N'`
 - `cxccajadet.entity.ts`: `sn_anulado` cambiado de `default: 'S'` a `default: 'N'`
-- **Frontend**: `facturacion.models.ts` �?`sn_doc_anulado` renombrado a `sn_anulado` para coincidir con la entidad
+- **Frontend**: `facturacion.models.ts` �?`sn_doc_anulado` renombrado a `sn_anulado` para coincidir con la entidad
 
-#### Backend �?Ticket de factura (impresión térmica)
-- **Nuevo endpoint**: `GET /facturacion/facturas/:id/ticket` �?devuelve factura, detalles (con descripción de productos), pagos, empresa (nombre, RTN, tel, dir, mensajes)
-- **Entidad nueva**: `companies/entities/empresasdet.entity.ts` �?`tempresasdet` (RTN, dirección, teléfono, correo, etc.)
-- **Módulo**: `facturacion.module.ts` �?repos `Tempresas`, `TempresasDet`, `TtipoParamFac`, `Tproducto` inyectados
+#### Backend �?Ticket de factura (impresión térmica)
+- **Nuevo endpoint**: `GET /facturacion/facturas/:id/ticket` �?devuelve factura, detalles (con descripción de productos), pagos, empresa (nombre, RTN, tel, dir, mensajes)
+- **Entidad nueva**: `companies/entities/empresasdet.entity.ts` �?`tempresasdet` (RTN, dirección, teléfono, correo, etc.)
+- **Módulo**: `facturacion.module.ts` �?repos `Tempresas`, `TempresasDet`, `TtipoParamFac`, `Tproducto` inyectados
 
-#### Backend �?CRUD tempresasdet
-- **DTO**: `companies/dto/empresasdet.dto.ts` �?Create/Update
-- **Service**: `companies.service.ts` �?`findAllDet`, `findOneDet`, `createDet`, `updateDet`, `removeDet`
-- **Controller**: `companies.controller.ts` �?`GET/POST/PUT/DELETE /companies/det`
-- **Module**: `companies.module.ts` �?repo `TempresasDet` agregado
+#### Backend �?CRUD tempresasdet
+- **DTO**: `companies/dto/empresasdet.dto.ts` �?Create/Update
+- **Service**: `companies.service.ts` �?`findAllDet`, `findOneDet`, `createDet`, `updateDet`, `removeDet`
+- **Controller**: `companies.controller.ts` �?`GET/POST/PUT/DELETE /companies/det`
+- **Module**: `companies.module.ts` �?repo `TempresasDet` agregado
 
-#### Frontend �?Impresión de ticket térmico
+#### Frontend �?Impresión de ticket térmico
 - **Lógica**: `nueva-factura.ts`
   - `snImprimeFactura` se carga de `param-fac` en `cargarParamFac()`
-  - `imprimirTicket()` �?llama `GET /facturas/:id/ticket`, genera HTML
-  - `abrirTicket()` �?CSS optimizado 80mm, `window.open()` + `window.print()`
+  - `imprimirTicket()` �?llama `GET /facturas/:id/ticket`, genera HTML
+  - `abrirTicket()` �?CSS optimizado 80mm, `window.open()` + `window.print()`
   - En `procesarKardexYFinalizar()`: si `snImprimeFactura`, imprime antes de `nueva()`
 - **Ticket incluye**: Nombre empresa, RTN, dirección, teléfono, factura #, fecha, hora, cliente, condición, líneas (cant x desc = total), subtotal, descuento, ISV, total, pagos, efectivo, cambio, mensaje devolución, mensaje factura, "Gracias por su compra"
 
-#### Frontend �?CRUD tempresasdet (UI)
-- **Service**: `empresas.service.ts` �?`getAllDet`, `createDet`, `updateDet`, `removeDet`
-- **Model**: `empresa.models.ts` �?interfaz `EmpresaDet`
-- **Component**: `empresa-form.ts/html` �?Tabla "Datos fiscales y contacto" con dialog para agregar/editar/eliminar
-- **Ubicación**: Configuración �?Empresas �?Editar
+#### Frontend �?CRUD tempresasdet (UI)
+- **Service**: `empresas.service.ts` �?`getAllDet`, `createDet`, `updateDet`, `removeDet`
+- **Model**: `empresa.models.ts` �?interfaz `EmpresaDet`
+- **Component**: `empresa-form.ts/html` �?Tabla "Datos fiscales y contacto" con dialog para agregar/editar/eliminar
+- **Ubicación**: Configuración �?Empresas �?Editar
 
 ### Pendiente
 - Verificar que `cxcmovimientos` se cree correctamente al facturar de crédito (ya corregido, pendiente re-test completo)
 
-## Bitácora �?28/08/2026
+## Bitácora �?28/08/2026
 
 ### Completado
 
-#### Frontend �?nueva-factura: Mejoras visuales
+#### Frontend �?nueva-factura: Mejoras visuales
 
 **1. Tabla de productos: celda producto**
 - Reemplazado `<br />` por `<span class="cod-barra">` + `<span class="desc-linea">` con `display: block`
@@ -680,7 +699,7 @@ Interfaces principales:
 **4. Totales: layout 2 columnas**
 - Botones (Nueva/Facturar|Pagar/Salir) movidos del toolbar `col-right` a la card `nf-totales`
 - Layout: columna izquierda 30% (botones) + columna derecha `flex: 1` (totales)
-- Totales en `display: grid; grid-template-columns: repeat(4, 1fr)` �?Subtotal, Impuesto, Descuento, Gran Total en fila única
+- Totales en `display: grid; grid-template-columns: repeat(4, 1fr)` �?Subtotal, Impuesto, Descuento, Gran Total en fila única
 - Padding reducido a 0.2rem en ambas columnas
 
 **5. Resumen de Pago: línea única**
@@ -694,7 +713,7 @@ Interfaces principales:
 - Solo visible si tiene valor Y `sn_excenta === 'S'`
 - Se vuelve requerido (`Validators.required`) cuando `sn_excenta` es `'S'` (en `recalcularExenta()`)
 
-#### Frontend �?Cliente rápido desde Facturación
+#### Frontend �?Cliente rápido desde Facturación
 
 **1. NavegacionService** (`core/services/navegacion.service.ts`)
 - `volver(fallback)`: usa `Location.back()` si hay historial, si no navega al fallback
@@ -704,7 +723,7 @@ Interfaces principales:
 - Nuevo signal `modoFacturacion`, detecta query param `?modo=facturacion`
 - Campos requeridos dinámicos: solo nombres, apellidos, dni, sexo, fecha nacimiento
 - `cancelar()` y `guardar()` usan `NavegacionService.volver()` para volver al origen
-- **Bug fix**: `input()` retorna `undefined` (no `null`) cuando se usa vía ruta �?corregido con `!= null`
+- **Bug fix**: `input()` retorna `undefined` (no `null`) cuando se usa vía ruta �?corregido con `!= null`
 
 **3. cliente-form.html: campos ocultos en modo facturación**
 - Ocultos: nrocliente, razonsocial, rtn, estado civil, categoría, crédito, plazo, interés, moratorio, sn_activo
@@ -714,11 +733,11 @@ Interfaces principales:
 **4. nueva-factura.ts: navegación a cliente**
 - `abrirNuevoCliente()` navega con `queryParams: { modo: 'facturacion' }`
 
-#### Backend �?Cliente rápido: auto-generación de campos
+#### Backend �?Cliente rápido: auto-generación de campos
 
 **1. cxc.module.ts**: Agregado `TtipoParamCxc` a `TypeOrmModule.forFeature`
 
-**2. cxc.service.ts �?createCliente mejorado**
+**2. cxc.service.ts �?createCliente mejorado**
 - Lee parámetros de `ttipoparamcxc` (interés, mora, días plazo, límite crédito)
 - Auto-genera `nrocliente` (incrementa contador en params)
 - Deriva `razonsocial` de nombres + apellidos
@@ -726,28 +745,28 @@ Interfaces principales:
 - `dni` default `'0000000000000'` si vacío (NOT NULL en entity)
 - Try-catch en lectura de params para resiliencia
 
-**3. dto/cxc.dto.ts �?campos flexibilizados**
+**3. dto/cxc.dto.ts �?campos flexibilizados**
 - `nrocliente`, `razonsocial`, `fecharegistro`, `fechanacimiento`, `dni`, `diasplazo`, `interes`, `moratorio` cambiados a `@IsOptional()`
 - Se eliminó `@IsDateString()` de fechas (accepta Date objects del datepicker)
 
 **Archivos modificados**:
-- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.ts` �?Botón cliente con query param
-- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.html` �?Celda producto, totales layout, resumen pago
-- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.scss` �?.cell-producto, .tag-sm, .btn-add-cliente, .nf-totales-split, .pago-resumen-inline, .pago-block reset
-- `Frontend/src/app/features/cxc/clientes/cliente-form.ts` �?Modo facturación, NavegacionService, bug fix !=
-- `Frontend/src/app/features/cxc/clientes/cliente-form.html` �?Campos condicionales por modo
-- `Frontend/src/app/core/services/navegacion.service.ts` �?Nuevo servicio
-- `Backend/src/modules/cxc/cxc.module.ts` �?Import TtipoParamCxc
-- `Backend/src/modules/cxc/cxc.service.ts` �?createCliente con auto-generación
-- `Backend/src/modules/cxc/dto/cxc.dto.ts` �?@IsOptional en campos flexibles
+- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.ts` �?Botón cliente con query param
+- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.html` �?Celda producto, totales layout, resumen pago
+- `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.scss` �?.cell-producto, .tag-sm, .btn-add-cliente, .nf-totales-split, .pago-resumen-inline, .pago-block reset
+- `Frontend/src/app/features/cxc/clientes/cliente-form.ts` �?Modo facturación, NavegacionService, bug fix !=
+- `Frontend/src/app/features/cxc/clientes/cliente-form.html` �?Campos condicionales por modo
+- `Frontend/src/app/core/services/navegacion.service.ts` �?Nuevo servicio
+- `Backend/src/modules/cxc/cxc.module.ts` �?Import TtipoParamCxc
+- `Backend/src/modules/cxc/cxc.service.ts` �?createCliente con auto-generación
+- `Backend/src/modules/cxc/dto/cxc.dto.ts` �?@IsOptional en campos flexibles
 
-#### Tienda Virtual �?Fix checkout 500 (FK constraint)
-- **Causa raíz**: `posfacmae` tiene FK `fk_posfacmae_cxcclientes` �?`cxcclientes.clienteId`. El checkout enviaba `clienteId: 0` (no existe).
+#### Tienda Virtual �?Fix checkout 500 (FK constraint)
+- **Causa raíz**: `posfacmae` tiene FK `fk_posfacmae_cxcclientes` �?`cxcclientes.clienteId`. El checkout enviaba `clienteId: 0` (no existe).
 - **Fix**: En `checkoutTienda()`, antes de crear la factura, se busca/crea un cliente genérico con `nrocliente: 'TIENDA'` en `cxcclientes` y se usa su `clienteId` real.
-- **Archivo**: `Backend/src/modules/facturacion/facturacion.service.ts` �?método `checkoutTienda()`
-- **Test**: Checkout exitoso �?`facturaId: 31, nrofactura: 35, total: L 62.00`. Kardex también verificado OK.
+- **Archivo**: `Backend/src/modules/facturacion/facturacion.service.ts` �?método `checkoutTienda()`
+- **Test**: Checkout exitoso �?`facturaId: 31, nrofactura: 35, total: L 62.00`. Kardex también verificado OK.
 
-#### Frontend �?Tienda Virtual: Responsive Mobile (�?68px)
+#### Frontend �?Tienda Virtual: Responsive Mobile (�?68px)
 
 **Sidebar carrito: overlay volador**
 - Oculto en mobile por defecto, se muestra con `transform: translateX(0)` al abrir
@@ -774,14 +793,14 @@ Interfaces principales:
 - Layout: 1 sola columna (form + summary apilados)
 
 **Archivos modificados**:
-- `Frontend/src/app/features/facturacion/tienda/tienda-virtual.ts` �?`carritoOpen` signal, `isMobile()` method
-- `Frontend/src/app/features/facturacion/tienda/tienda-virtual.html` �?Overlay, FAB button, checkout mobile, markup responsive
-- `Frontend/src/app/features/facturacion/tienda/tienda-virtual.scss` �?Media queries `@media (max-width: 768px)`, overlay, FAB, toolbar apilado, grid/list mobile
+- `Frontend/src/app/features/facturacion/tienda/tienda-virtual.ts` �?`carritoOpen` signal, `isMobile()` method
+- `Frontend/src/app/features/facturacion/tienda/tienda-virtual.html` �?Overlay, FAB button, checkout mobile, markup responsive
+- `Frontend/src/app/features/facturacion/tienda/tienda-virtual.scss` �?Media queries `@media (max-width: 768px)`, overlay, FAB, toolbar apilado, grid/list mobile
 
 ### Pendiente
 - Verificar que `cxcmovimientos` se cree correctamente al facturar de crédito (ya corregido, pendiente re-test completo)
 
-## Bitácora �?29/08/2026
+## Bitácora �?29/08/2026
 
 ### Completado
 
@@ -789,12 +808,12 @@ Interfaces principales:
 - **Componente nuevo** `AnularFacturas` (`anular-facturas/`): tabla Poseidon, 9 columnas, acciones Ver + Anular
 - **Dialogo confirmacion**: pregunta antes de anular, muestra cliente/total/tipo
 - **Validaciones backend** (`facturacion.service.ts createFacturaAnul`):
-  - `sn_anulada === 'S'` �?400 "La factura ya esta anulada"
-  - `sn_contabilizada === 'S'` �?400 "La factura esta contabilizada y no se puede anular"
-  - Credito + abonos (`posfaccaja.find`) �?400 "La factura es al credito y tiene abonos registrados"
+  - `sn_anulada === 'S'` �?400 "La factura ya esta anulada"
+  - `sn_contabilizada === 'S'` �?400 "La factura esta contabilizada y no se puede anular"
+  - Credito + abonos (`posfaccaja.find`) �?400 "La factura es al credito y tiene abonos registrados"
 - **Reversa automatica**: kardex (entrada), existencias, movimientos CxC, caja
 
-#### Tienda Virtual �?Cache + Optimizacion
+#### Tienda Virtual �?Cache + Optimizacion
 - **TiendaService**: `shareReplay(1)` in-memory + `localStorage` TTL 5 min, `invalidateCache()` post-checkout
 - **Componente**: `trackBy` en `@for`, `loading="lazy"` en imagenes, `content-visibility: auto` en cards, `imagenCache` Map
 
@@ -819,18 +838,18 @@ Interfaces principales:
 
 ---
 
-## Bitácora �?29/08/2026 (tarde)
+## Bitácora �?29/08/2026 (tarde)
 
 ### Completado
 
-#### Facturación �?Cliente TIENDA automático (contado)
-- **Regla negocio**: `snNombreOptions='N'` + contado �?select cliente TIENDA, solo lectura; `snNombreOptions='S'` + contado �?clienteId=TIENDA + input para nombre del cliente
+#### Facturación �?Cliente TIENDA automático (contado)
+- **Regla negocio**: `snNombreOptions='N'` + contado �?select cliente TIENDA, solo lectura; `snNombreOptions='S'` + contado �?clienteId=TIENDA + input para nombre del cliente
 - **TS**: `nombreClienteManual` signal, `getClienteTienda()` busca `nrocliente='TIENDA'`, `onTipoFacturaChange()` setea cliente automáticamente, `esContado()` helper
 - **HTML**: `p-select [disabled]="esContado()"`, input nombre visible solo si `esContado() && snNombreOptions==='S'`
 - **facturar()**: usa `nombreClienteManual()` cuando `tipofactura='E'` y `snNombreOptions='S'`, validación de nombre requerido
 - **cargarOpciones()**: llama `onTipoFacturaChange()` al cargar clientes
 
-#### Facturación �?Atajos de teclado (shortcuts)
+#### Facturación �?Atajos de teclado (shortcuts)
 - **HostListener** `document:keydown` con shortcuts:
   - ESC: cancelar factura / cerrar dialog pagos
   - ALT+1: buscar producto (DynamicDialog)
@@ -845,9 +864,9 @@ Interfaces principales:
 - **Dialog atajos**: tabla con tecla+acción, `dialogAtajos` signal
 - **Dialog ventas suspendidas**: `dialogSuspendidas` signal (fix: antes usaba `[visible]="ventasSuspendidas().length > 0"` que no cerraba correctamente)
 
-#### Facturación �?Zoom imagen producto
-- **Hover** sobre imagen en tabla �?overlay `position: fixed` con imagen 250x250
-- **TS**: `onImgHover()`, `onImgMove()`, `onImgLeave()` �?signals `zoomVisible`, `zoomUrl`, `zoomX`, `zoomY`
+#### Facturación �?Zoom imagen producto
+- **Hover** sobre imagen en tabla �?overlay `position: fixed` con imagen 250x250
+- **TS**: `onImgHover()`, `onImgMove()`, `onImgLeave()` �?signals `zoomVisible`, `zoomUrl`, `zoomX`, `zoomY`
 - **HTML**: `<img class="img-zoom-overlay">` al final del template, solo visible con `@if (zoomVisible())`
 - **SCSS**: `.img-zoom-overlay` con `position: fixed`, `z-index: 9999`, `pointer-events: none`
 
@@ -856,73 +875,73 @@ Interfaces principales:
 - Botón producto muestra ALT+1
 - Botón cliente muestra ALT+2
 
-#### ProductosHelperList �?Filtros de columna
+#### ProductosHelperList �?Filtros de columna
 - `p-columnFilter` con `type="text"` en columnas codbarra y descripcion
 - `[filters]` object con `FilterMatchMode.CONTAINS`
 - Imports: `FormsModule`, `InputTextModule`
 - Paginador habilitado
-- **Fix duplicación**: eliminado `<p-button>` del body template �?el click en `<tr>` + click en button ambos llamaban `selectProduct()` �?`ref.close()` emitía 2 veces �?producto duplicado
+- **Fix duplicación**: eliminado `<p-button>` del body template �?el click en `<tr>` + click en button ambos llamaban `selectProduct()` �?`ref.close()` emitía 2 veces �?producto duplicado
 
-#### PrimeNG �?filterMatchModeOptions global
+#### PrimeNG �?filterMatchModeOptions global
 - **app.config.ts**: `providePrimeNG({ filterMatchModeOptions: { text, numeric, date } })`
 - Import `FilterMatchMode` de `primeng/api`
 - Habilita filtros de columna en todas las `p-table` del proyecto
 
 ### Pendiente
 - Verificar ProductosHelperList con `pTemplate` en DynamicDialog (posible factory error con `p-button` inside templates)
-- Verificar ventas suspendidas end-to-end (ALT+3 �?ALT+4 �?restaurar)
+- Verificar ventas suspendidas end-to-end (ALT+3 �?ALT+4 �?restaurar)
 
 ---
 
-## Bitácora �?30/08/2026
+## Bitácora �?30/08/2026
 
 ### Completado
 
-#### ProductosHelperList �?Filtros por columna
+#### ProductosHelperList �?Filtros por columna
 - `p-columnFilter` NO renderiza en DynamicDialog (probado `display="row"` y `display="menu"`, ambos vacíos)
 - **Solución**: `p-inputText` por columna con `[ngModel]`/`(ngModelChange)` a signals + `computed()` filtrado
 - Patrón replicado de `entity-selector.ts` (funciona en DynamicDialog)
 
-#### Facturación �?Imagen con transparencia
+#### Facturación �?Imagen con transparencia
 - Clase `.img-producto` con `mix-blend-mode: multiply` en tabla de productos (`nueva-factura.scss`)
 - Permite ver color de fondo del td a través de la imagen
 
-#### Facturación �?Validación Luhn tarjetas crédito
+#### Facturación �?Validación Luhn tarjetas crédito
 - `validarLuhn(numero)` replicado de `tienda-virtual.ts:374`
 - Se aplica en `facturar()` al validar pagos con tarjeta (13-19 dígitos + checksum)
 - Validación de longitud mínima de 13 dígitos antes de Luhn
 
-#### Facturación �?Autorización obligatoria para transferencias
+#### Facturación �?Autorización obligatoria para transferencias
 - `esTransferencia(pago)` detecta forma de pago con label 'transferencia'
 - Campo `nroautorizacion` visible para tarjetas Y transferencias
-- Validación en `facturar()`: transferencia sin autorización �?error
+- Validación en `facturar()`: transferencia sin autorización �?error
 
-#### Facturación �?Ticket: nombre forma de pago
-- Pago #1 100.00 �?Efectivo 100.00 / Tarjeta ****1234 670.50 / Transferencia Aut: 123456
+#### Facturación �?Ticket: nombre forma de pago
+- Pago #1 100.00 �?Efectivo 100.00 / Tarjeta ****1234 670.50 / Transferencia Aut: 123456
 - `pagosHtml` busca label en `formaspago()`, enmascara tarjeta con últimos 4 dígitos
 - Agrega `Aut: {nroautorizacion}` si existe
 
-#### Facturación �?Fix cliente TIENDA en nueva factura
-- `nueva()` no llamaba `onTipoFacturaChange()` �?clienteId quedaba null tras reset
+#### Facturación �?Fix cliente TIENDA en nueva factura
+- `nueva()` no llamaba `onTipoFacturaChange()` �?clienteId quedaba null tras reset
 - Fix: agregar `this.onTipoFacturaChange()` + `snNombreOptions: 'N'` en `form.reset()`
 
-#### Productos �?Imágenes base64
+#### Productos �?Imágenes base64
 - Endpoint `/inventario/productos-img` retorna `{ productoId, img }` (campo `img`, NO `imagen`)
 - Mapeo con `Map<productoId, img>`, prefijo `data:image/png;base64,` vía `resolverImagen()`
 - **Gotcha**: campo se llama `img` en la respuesta, no `imagen`
 
-#### Productos �?sn_activo NULL en update (500)
-- `p-selectbutton` PrimeNG 21 no bindea valor al form control �?`sn_activo = NULL` en SQL
+#### Productos �?sn_activo NULL en update (500)
+- `p-selectbutton` PrimeNG 21 no bindea valor al form control �?`sn_activo = NULL` en SQL
 - **Causa raíz**: `Column 'sn_activo' cannot be null` en UPDATE
 - **Fix 1**: Reemplazar `p-selectbutton` por `p-select` (bindea correctamente)
 - **Fix 2**: Fallback `raw.sn_activo || 'S'` en payload de edición
 
-#### Productos �?Vista grid 3 columnas
+#### Productos �?Vista grid 3 columnas
 - CSS puro (sin PrimeFlex): `grid-template-columns: repeat(3, 1fr)`
-- Responsive: 2 col en tablet (�?60px), 1 col en mobile (�?00px)
+- Responsive: 2 col en tablet (�?60px), 1 col en mobile (�?00px)
 - Cards: imagen centrada fondo claro, tag estado superpuesto, descripción, código, precio, botón editar
 
-#### Inventario Existencias �?Imágenes
+#### Inventario Existencias �?Imágenes
 - `forkJoin` de existencias + tienda/productos + bodegas
 - `resolverImagen()` + `getItemImagen()` replicados de tienda-virtual
 - Endpoint `/inventario/tienda/productos` retorna `imagen` (base64) en `ProductoTienda`
@@ -934,11 +953,11 @@ Interfaces principales:
 
 ---
 
-## Bitácora �?31/08/2026
+## Bitácora �?31/08/2026
 
 ### Completado
 
-#### CxP Compras �?Backend completo
+#### CxP Compras �?Backend completo
 - **Entity fixes**:
   - `compra-mae.entity.ts`: `sn_anulada` default cambiado de `'S'` a `'N'`
   - `movimiento.entity.ts`: `sn_chq`, `sn_chq_anulado`, `sn_conciliado`, `sn_contabilizado`, `sn_doc_anulado` todos default `'N'`; `bcoctasId` cambiado a nullable
@@ -948,14 +967,14 @@ Interfaces principales:
   - `deleteCompraDet()`: elimina detalle y recalcula total
   - `procesarCompra()`: ejecuta kardex entrada + movimiento CxP débito para todos los detalles
   - `deleteCompra()`: anula compra, revierte kardex (salida AN), marca movimientos CxP como anulados
-  - `registrarKardexEntrada()`: resuelve `codbarra` �?`productoId` via `Tproducto` repo (NO usa `productoId` en `cxpcomprasdet`)
+  - `registrarKardexEntrada()`: resuelve `codbarra` �?`productoId` via `Tproducto` repo (NO usa `productoId` en `cxpcomprasdet`)
   - `crearMovimientoCxP()`: crea movimiento débito automático con datos del proveedor
   - `actualizarTotalCompra()`: recalcula subtotal/total desde detalles
 - **Controller** (`cxp.controller.ts`): POST `/compras`, PUT `/compras/:id`, PUT `/compras/:id/procesar`, PUT `/compras/:id/anular`, POST `/compras-det`, DELETE `/compras-det/:id`, GET `/compras/:id/detalles`
 - **Module** (`cxp.module.ts`): agregado `Tproducto` repo para resolución codbarra→productoId
 
-#### CxP Compras �?Frontend
-- **Models** (`inventario.models.ts`): interfaces `CompraMae`, `CompraDet` (sin `productoId` �?se usa `codbarra`)
+#### CxP Compras �?Frontend
+- **Models** (`inventario.models.ts`): interfaces `CompraMae`, `CompraDet` (sin `productoId` �?se usa `codbarra`)
 - **Service** (`cxp.service.ts`): `createCompra`, `createCompraDet`, `deleteCompraDet`, `getDetallesByCompra`, `procesarCompra`, `anularCompra`
 - **Componente** `ComprasManager` (`cxp/compras/`):
   - Lista compras con tabla (proveedor, bodega, tipo, pagada, estado)
@@ -968,8 +987,8 @@ Interfaces principales:
 
 #### Regla de negocio Compras
 - `monedaId` es **obligatorio** en `cxpcomprasmae` (NOT NULL en DB)
-- `cxpcomprasdet` NO tiene `productoId` �?identifica producto por `codbarra`
-- Kardex resuelve `codbarra` �?`productoId` via `Tproducto` repo al procesar
+- `cxpcomprasdet` NO tiene `productoId` �?identifica producto por `codbarra`
+- Kardex resuelve `codbarra` �?`productoId` via `Tproducto` repo al procesar
 - Todas las compras inician como `sn_pagada: 'N'` (pendientes de pago)
 - Al procesar: se crea movimiento CxP débito automático (proveedor queda debiendo)
 - Al anular: reversa kardex (salida AN) + marca movimientos CxP como anulados
@@ -979,11 +998,11 @@ Interfaces principales:
 
 ---
 
-## Bitácora �?31/08/2026 (tarde)
+## Bitácora �?31/08/2026 (tarde)
 
 ### Completado
 
-#### OCR Parser �?Reescritura con enfoque ETL
+#### OCR Parser �?Reescritura con enfoque ETL
 - **Parser reescrito** (`core/utils/invoice-parser.ts`):
   - Enfoque ETL por bloques: HEADER (antes de "DETALLE") / DETALLE (items) / FOOTER (después de subtotal/total)
   - Palabras clave de INICIO: `detalle`, `descripcion`, `producto`, `artículo`, `servicio`, `mercadería`
@@ -995,16 +1014,16 @@ Interfaces principales:
   - Primera palabra = código de barra, resto = descripción
   - Sin campo `subtotal` en `FacturaItem` (solo `codbarra`, `descripcion`, `cantidad`, `precioUnitario`)
 
-#### Número de factura �?OCR mejorado
+#### Número de factura �?OCR mejorado
 - **Patrones regex expandidos** para `nroFactura`:
   - `N° Factura:` / `N* Factura:` / `N. Factura:` (variantes OCR de `°`)
   - `Factura:` sin prefijo, `Nro:`, `#`
-  - Patrón partido OCR: `Factura:001-001-\nRTN:... 01000255` �?concatena group1 + group2
+  - Patrón partido OCR: `Factura:001-001-\nRTN:... 01000255` �?concatena group1 + group2
   - Standalone: `001-001-01000255` (sin prefijo)
 - **`buscarPatron()` mejorado**: si group1 termina en `-` y existe group2, concatena automáticamente
 - **Campo editable**: Nro. Factura en dialog OCR es `<input>` para corrección manual
 
-#### CxP Compras �?Selección múltiple y eliminación
+#### CxP Compras �?Selección múltiple y eliminación
 - **`p-checkbox` manual** en tabla de items (PrimeNG 21 eliminó `pTableHeaderCheckbox`/`pTableBodyCheckbox`)
 - **Checkbox header**: selecciona/deselecciona todos los items
 - **Checkbox por fila**: selección individual con highlight de fila
@@ -1014,33 +1033,33 @@ Interfaces principales:
 - **`eliminarSeleccionados()`**: confirm dialog + eliminación secuencial + toast éxito/error
 - **Confirm dialogs**: todos los 6 diálogos (3 ComprasManager + 3 ConsultaCompras) tienen `reject: () => this.confirm.close()`
 
-#### Backend �?nrofila respetado
-- **`createCompraDet()`** (`cxp.service.ts`): solo calcula `nrofila` si `!dto.nrofila` �?si el frontend lo envía, lo respeta
+#### Backend �?nrofila respetado
+- **`createCompraDet()`** (`cxp.service.ts`): solo calcula `nrofila` si `!dto.nrofila` �?si el frontend lo envía, lo respeta
 - **Frontend `agregarItemsOcr()`**: envía `nrofila: nroInicial + i + 1` y `subtotal: cantidad × precioUnitario`
 
-#### OCR Dialog �?Mejoras
+#### OCR Dialog �?Mejoras
 - **Imports**: `FormsModule`, `InputTextModule`, `CheckboxModule` agregados a `ocr-dialog.ts`
 - **Tabla items**: columna "Cód. Barra" visible + columna "Subtotal" eliminada
 
 ### Pendiente
 - Verificar OCR end-to-end con factura real de Super Repuestos
 
-## Bitácora �?01/09/2026
+## Bitácora �?01/09/2026
 
 ### Completado
 
-#### CxP Compras �?Autocomplete de código de barras
+#### CxP Compras �?Autocomplete de código de barras
 - **`p-autoComplete`** en campo Cód. Barra: mínimo 8 caracteres, campo `field="codbarra"`
 - **`codBarraBusqueda`** signal string para el display del autocomplete (separa del form control)
 - **`ngModelOptions="standalone"`**: autocomplete no pelea con reactive form
-- **Búsqueda**: `ProductosService.search(termino)` �?`GET /inventario/productos/buscar?q=...`
+- **Búsqueda**: `ProductosService.search(termino)` �?`GET /inventario/productos/buscar?q=...`
 - **Selección**: `onProductoSelect()` patch form con `codbarra`, `descripcion`, `productoId`
 - **Clear**: `onCodBarraClear()` limpia codbarra, descripcion y productoId
 - **Editar item**: `editarItem()` setea `codBarraBusqueda` con el codbarra de la fila
 - **Reseteo**: `codBarraBusqueda = ''` en todos los puntos de reset del form (5 puntos)
 
 ### Pendiente
-- Verificar autocomplete end-to-end en browser (buscar código �?seleccionar �?descripción llena �?precio editable)
+- Verificar autocomplete end-to-end en browser (buscar código �?seleccionar �?descripción llena �?precio editable)
 
 # Instructions for PrimeNG Component Standards
 
@@ -1136,7 +1155,7 @@ Always structure actions in <ng-template pTemplate="footer"> using standard butt
 HTML
 <p-dialog 
     [(visible)]="displayModal" 
-    [header]="'T��tulo del Modal'" 
+    [header]="'T��tulo del Modal'" 
     [modal]="true" 
     [draggable]="false" 
     [resizable]="false"
@@ -1179,8 +1198,8 @@ TypeScript Service Standard:
 
 TypeScript
 this.confirmationService.confirm({
-    message: '?Est�� seguro de realizar esta acci��n?',
-    header: 'Confirmaci��n',
+    message: '?Est�� seguro de realizar esta acci��n?',
+    header: 'Confirmaci��n',
     icon: 'pi pi-exclamation-triangle',
     rejectButtonProps: {
         label: 'Cancelar',

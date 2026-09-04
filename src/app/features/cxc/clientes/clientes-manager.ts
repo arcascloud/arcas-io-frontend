@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, ViewChild, ElementRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -216,6 +216,8 @@ export class ClientesManager implements OnInit {
   selectedCliente = signal<CxcCliente | null>(null);
   nuevoCliente = signal(false);
 
+  @ViewChild('clienteFormRef') clienteFormRef?: any;
+
   estadoCuentaData = signal<any[]>([]);
   estadoCuentaLoading = signal(false);
 
@@ -231,7 +233,7 @@ export class ClientesManager implements OnInit {
   parientesData = signal<any[]>([]);
   parientesLoading = signal(false);
 
-  activeTabIndex = signal(0);
+  activeTabValue = signal<string>('0');
 
   // Saldo pendiente computado (evita recalcular en cada ciclo de detección de cambios)
   saldoPendiente = computed(() =>
@@ -842,12 +844,31 @@ export class ClientesManager implements OnInit {
 
   limpiarFiltros() {
     this.q.set('');
+    this.selectedCliente.set(null);
+    this.nuevoCliente.set(false);
+    this.showForm.set(false);
+    this.editingCliente.set(null);
+    this.activeTabValue.set('0');
+    this.estadoCuentaData.set([]);
+    this.notasData.set([]);
+    this.prestamosData.set([]);
+    this.referenciasData.set([]);
+    this.parientesData.set([]);
     }
 
   nuevo() {
     this.selectedCliente.set(null);
     this.nuevoCliente.set(true);
-    this.activeTabIndex.set(0);
+    this.activeTabValue.set('0');
+    this.estadoCuentaData.set([]);
+    this.notasData.set([]);
+    this.prestamosData.set([]);
+    this.referenciasData.set([]);
+    this.parientesData.set([]);
+
+    setTimeout(() => {
+      this.clienteFormRef?.nativeElement?.focusPrimerCampo();
+    }, 200);
   }
 
   onFormSaved() {
@@ -872,7 +893,12 @@ export class ClientesManager implements OnInit {
   seleccionarCliente(cliente: CxcCliente) {
     this.nuevoCliente.set(false);
     this.selectedCliente.set(cliente);
-    this.activeTabIndex.set(0);
+    this.activeTabValue.set('0');
+    this.estadoCuentaData.set([]);
+    this.notasData.set([]);
+    this.prestamosData.set([]);
+    this.referenciasData.set([]);
+    this.parientesData.set([]);
     this.cargarDatosCliente(cliente.clienteId);
   }
 
@@ -923,8 +949,8 @@ export class ClientesManager implements OnInit {
     });
   }
 
-  onTabChange(index: number) {
-    this.activeTabIndex.set(index);
+  onTabChange(index: string) {
+    this.activeTabValue.set(index);
   }
 
   getClienteNombre(c: CxcCliente): string {

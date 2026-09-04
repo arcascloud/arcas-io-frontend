@@ -20,7 +20,7 @@
         }
         <div class="p-field">
           <label>Nombres <span class="req">*</span></label>
-          <input pInputText pSize="small" [formControl]="form.get('nombres')" maxlength="50" placeholder="Nombres" />
+          <input #primerCampo pInputText pSize="small" [formControl]="form.get('nombres')" maxlength="50" placeholder="Nombres" />
           @if (form.get('nombres')?.invalid && form.get('nombres')?.touched) {
             <small class="p-error">Los nombres son obligatorios</small>
           }
@@ -51,13 +51,15 @@
           <input pInputText pSize="small" [formControl]="form.get('rtn')" maxlength="50" placeholder="RTN" />
         </div>
         }
-        <div class="p-field">
-          <label>Sexo</label>
-          <p-select size="small" [formControl]="form.get('sexo')" [options]="sexoOptions" optionLabel="label" optionValue="value" placeholder="Seleccione sexo" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
-        </div>
-        <div class="p-field">
-          <label>Fecha de nacimiento</label>
-          <p-datepicker [formControl]="form.get('fechanacimiento')" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" />
+        <div class="form-row">
+          <div class="p-field">
+            <label>Sexo</label>
+            <p-select size="small" [formControl]="form.get('sexo')" [options]="sexoOptions" optionLabel="label" optionValue="value" placeholder="Seleccione sexo" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
+          </div>
+          <div class="p-field">
+            <label>Fecha de nacimiento</label>
+            <p-datepicker [formControl]="form.get('fechanacimiento')" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" />
+          </div>
         </div>
       </div>
       @if (!modoFacturacion()) {

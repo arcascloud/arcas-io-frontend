@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, input, output, effect, Injector } from '@angular/core';
+import { Component, inject, signal, OnInit, input, output, effect, Injector, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -53,6 +53,12 @@ export class ClienteForm implements OnInit {
   guardando = signal(false);
   titulo = signal('Nuevo cliente');
   modoFacturacion = signal(false);
+
+  @ViewChild('primerCampo') primerCampo?: ElementRef<HTMLInputElement>;
+
+  focusPrimerCampo() {
+    setTimeout(() => this.primerCampo?.nativeElement?.focus(), 100);
+  }
 
   // Reaccionar a cambios en clienteIdInput (modo inline)
   private _clienteEffect = effect(() => {
