@@ -1,0 +1,211 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">{{ titulo() }}</h1>
+      <p class="page-subtitle">Registro de proveedor</p>
+    </div>
+    <p-button
+      label="Volver"
+      icon="pi pi-arrow-left"
+      severity="secondary"
+      text
+      size="small"
+      rounded
+      (onClick)="volver()"
+    />
+  </header>
+
+  @if (cargando()) {
+    <div class="card">Cargando datos...</div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
+      <div class="campo">
+        <label for="nroproveedor">Nro. proveedor <span class="req">*</span></label>
+        <input
+          pInputText
+          id="nroproveedor"
+          formControlName="nroproveedor"
+          maxlength="20"
+          placeholder="Número de proveedor"
+          [ngClass]="{ 'ng-invalid': invalid('nroproveedor') }"
+        />
+        @if (invalid('nroproveedor')) {
+          <small class="err">El número de proveedor es obligatorio</small>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="nombres">Nombres <span class="req">*</span></label>
+        <input
+          pInputText
+          id="nombres"
+          formControlName="nombres"
+          maxlength="50"
+          placeholder="Nombres"
+          [ngClass]="{ 'ng-invalid': invalid('nombres') }"
+        />
+        @if (invalid('nombres')) {
+          <small class="err">Los nombres son obligatorios</small>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="apellidos">Apellidos <span class="req">*</span></label>
+        <input
+          pInputText
+          id="apellidos"
+          formControlName="apellidos"
+          maxlength="50"
+          placeholder="Apellidos"
+          [ngClass]="{ 'ng-invalid': invalid('apellidos') }"
+        />
+        @if (invalid('apellidos')) {
+          <small class="err">Los apellidos son obligatorios</small>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="razonsocial">Razón social</label>
+        <input
+          pInputText
+          id="razonsocial"
+          formControlName="razonsocial"
+          maxlength="120"
+          placeholder="Razón social"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="rtn">RTN</label>
+        <input
+          pInputText
+          id="rtn"
+          formControlName="rtn"
+          maxlength="50"
+          placeholder="RTN"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="dni">DNI</label>
+        <input
+          pInputText
+          id="dni"
+          formControlName="dni"
+          maxlength="20"
+          placeholder="DNI"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="sexo">Sexo</label>
+        <p-select
+size="small"           id="sexo"
+          formControlName="sexo"
+          [options]="sexoOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione sexo"
+          [fluid]="true"
+          [showClear]="true"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="estadocivil">Estado civil</label>
+        <p-select
+size="small"           id="estadocivil"
+          formControlName="estadocivil"
+          [options]="estadoCivilOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione estado civil"
+          [fluid]="true"
+          [showClear]="true"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="limiteCredito">Límite de crédito</label>
+        <p-inputnumber size="small"
+          id="limiteCredito"
+          formControlName="limiteCredito"
+          [mode]="'currency'"
+          currency="HNL"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="diasplazo">Días de plazo</label>
+        <p-inputnumber size="small"
+          id="diasplazo"
+          formControlName="diasplazo"
+          [min]="0"
+          [max]="999"
+          [useGrouping]="false"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="interes">Interés (%)</label>
+        <p-inputnumber size="small"
+          id="interes"
+          formControlName="interes"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="moratorio">Moratorio (%)</label>
+        <p-inputnumber size="small"
+          id="moratorio"
+          formControlName="moratorio"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="categoria">Categoría</label>
+        <p-select
+size="small"           id="categoria"
+          formControlName="categoria"
+          [options]="categoriaOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione categoría"
+          [fluid]="true"
+          [showClear]="true"
+        />
+      </div>
+
+      @if (esEdicion()) {
+        <div class="campo">
+          <label>Estado <span class="req">*</span></label>
+          <p-selectbutton size="small"
+            [options]="snOptions"
+            formControlName="sn_activo"
+            optionLabel="label"
+            optionValue="value"
+          />
+        </div>
+      }
+
+      <div class="acciones-form">
+        <p-button
+          type="button"
+          label="Cancelar"
+          icon="pi pi-times"
+          severity="secondary"
+          size="small"
+          rounded
+          (onClick)="volver()"
+        />
+        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+      </div>
+    </form>
+  }
+</section>

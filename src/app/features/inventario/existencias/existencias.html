@@ -1,0 +1,80 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Existencias</h1>
+      <p class="page-subtitle">Consultar existencias por producto y bodega</p>
+    </div>
+  </header>
+
+  <div class="filtros card">
+    <div class="campo">
+      <label>Buscar</label>
+      <input
+        pInputText
+        type="text"
+        placeholder="Producto, bodega..."
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        (keyup.enter)="buscar()"
+      />
+    </div>
+    <div class="campo acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
+      <p-button
+        label="Limpiar"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        size="small"
+        rounded
+        (onClick)="limpiarFiltros()"
+      />
+    </div>
+  </div>
+
+  <p-dataview
+    [value]="filtered()"
+    [loading]="cargando()"
+    dataKey="invexistenciaId"
+    [paginator]="true"
+    [rows]="10"
+    layout="list"
+    size="small"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    [rowsPerPageOptions]="[10, 20, 50]"
+  >
+    <ng-template #list let-items>
+      <div class="grid grid-nogutter">
+        @for (e of items; track e.invexistenciaId) {
+        <div class="col-12 p-2">
+          <div class="flex flex-column sm:flex-row align-items-center p-3 gap-3 border-1 surface-border border-round">
+            <div class="existencia-img-container">
+              @if (getItemImagen(e)) {
+                <img [src]="getItemImagen(e)" [alt]="e.producto?.descripcion" loading="lazy" />
+              } @else {
+                <i class="pi pi-image"></i>
+              }
+            </div>
+            <div class="flex flex-column sm:align-items-start gap-2 flex-1">
+              <div class="text-xl font-bold text-900">{{ e.producto?.descripcion }}</div>
+              <div class="text-sm text-600">Cod: {{ e.producto?.codbarra }}</div>
+              <div class="text-sm font-semibold">Bodega: {{ e.bodega?.descripcion }}</div>
+              <div class="flex gap-3 align-items-center">
+                <span class="text-sm">Existencia: <b>{{ e.existencia }}</b></span>
+                <span class="text-sm">C.U: <b>{{ moneda(e.costounitario) }}</b></span>
+                <span class="text-sm">PrVta: <b>{{ moneda(e.precioventa) }}</b></span>
+              </div>
+            </div>
+            <p-tag [value]="e.existencia > 0 ? 'Disponible' : 'Agotado'" [severity]="e.existencia > 0 ? 'success' : 'danger'" />
+          </div>
+        </div>
+        }
+      </div>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <div class="text-center p-3">No hay existencias registradas.</div>
+    </ng-template>
+  </p-dataview>
+</section>

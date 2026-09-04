@@ -1,0 +1,337 @@
+<p-toast />
+<p-confirmDialog />
+
+<section class="page" [class.page-fill]="seleccionado()">
+  @if (!seleccionado()) {
+  <header class="page-header">
+    <div>
+      <h3 class="page-title">Compras</h3>
+      <p class="page-subtitle">Órdenes de compra y facturas de proveedores</p>
+    </div>
+    <p-button label="Nueva Compra" raised="true" rounded="true" variant="text" severity="success" icon="pi pi-plus"
+      size="small" (onClick)="nuevoMae()" />
+  </header>
+
+  <p-table id="grid1" [value]="compras()" [loading]="cargando()" dataKey="compraId" [paginator]="true" [rows]="10"
+    [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    [rowsPerPageOptions]="[10, 25, 50]" styleClass="p-datatable-sm">
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width:4rem">#</th>
+        <th>Fecha</th>
+        <th>Proveedor</th>
+        <th>Bodega</th>
+        <th>Ref.</th>
+        <th style="width:7rem" class="text-right">Total</th>
+          <th style="width:6rem">Tipo</th>
+          <th style="width:6rem">Pagada</th>
+          <th style="width:6.5rem">Procesada</th>
+          <th style="width:6rem">Estado</th>
+        <th style="width:8rem">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr (click)="seleccionar(row)" style="cursor:pointer">
+        <td>{{ row.compraId }}</td>
+        <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>{{ nombreProveedor(row.proveedorId) }}</td>
+        <td>{{ nombreBodega(row.bodegaId) }}</td>
+        <td>{{ row.nroreferencia || '-' }}</td>
+        <td class="text-right font-bold">{{ moneda(row.total) }}</td>
+        <td>
+          <p-tag [value]="row.TipoCompra === 'F' ? 'Fiscal' : 'Otra'"
+            [severity]="row.TipoCompra === 'F' ? 'info' : 'warn'" [style]="{'font-size':'0.75rem'}" />
+        </td>
+          <td>
+            <p-tag [value]="row.sn_pagada === 'S' ? 'Sí' : 'No'" [severity]="row.sn_pagada === 'S' ? 'success' : 'warn'"
+              [style]="{'font-size':'0.75rem'}" />
+          </td>
+          <td>
+            <p-tag [value]="row.sn_procesada === 'S' ? 'Sí' : 'No'" [severity]="row.sn_procesada === 'S' ? 'success' : 'warn'"
+              [style]="{'font-size':'0.75rem'}" />
+          </td>
+          <td>
+            <p-tag [value]="row.sn_anulada === 'S' ? 'Anulada' : 'Activa'"
+            [severity]="row.sn_anulada === 'S' ? 'danger' : 'success'" [style]="{'font-size':'0.75rem'}" />
+        </td>
+        <td>
+          <p-button icon="pi pi-trash" severity="danger" text size="small"
+            (onClick)="$event.stopPropagation(); anularCompra(row)" [disabled]="row.sn_anulada === 'S'" />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="10" class="text-center p-3">No hay compras registradas.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  } @else {
+  <div class="detail-fill">
+    <div class="sticky-header">
+      <p-card [header]="'Compra #' + (seleccionado()?.compraId || 'Nueva')">
+        <form [formGroup]="formMae" class="flex flex-column gap-2">
+          <div class="form-grid-3">
+            <div>
+              <label class="block mb-1 text-sm font-medium">Tipo de Compra *</label>
+              <p-select formControlName="TipoCompra" size="small"
+                [options]="[{label:'Factura', value:'F'},{label:'Orden de compra', value:'O'}]" optionLabel="label"
+                optionValue="value" styleClass="w-full" [appendTo]="'body'" />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Proveedor *</label>
+              <p-select size="small" formControlName="proveedorId" [options]="proveedores()" optionLabel="nombres"
+                optionValue="proveedorId" placeholder="Seleccionar proveedor" [filter]="true"
+                [filterBy]="'nombres,apellidos,razonsocial'" styleClass="w-full" [appendTo]="'body'">
+                <ng-template let-prov pTemplate="item">
+                  <span>{{ prov.nombres }} {{ prov.apellidos }}</span>
+                </ng-template>
+              </p-select>
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Bodega *</label>
+              <p-select size="small" formControlName="bodegaId" [options]="bodegas()" optionLabel="descripcion"
+                optionValue="bodegaId" placeholder="Seleccionar bodega" styleClass="w-full" [appendTo]="'body'" />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Documento Fiscal</label>
+              <p-select size="small" formControlName="documentoId" [options]="documentosFiscales()" optionLabel="label"
+                optionValue="value" placeholder="Seleccionar documento" styleClass="w-full" [showClear]="true"
+                [appendTo]="'body'" />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Nro. Referencia</label>
+              <input pInputText formControlName="nroreferencia" class="w-full" pSize="small"
+                placeholder="Nro. factura o referencia del proveedor" />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Moneda *</label>
+              <p-select size="small" formControlName="monedaId" [options]="monedas()" optionLabel="label"
+                optionValue="value" placeholder="Seleccionar moneda" styleClass="w-full" [appendTo]="'body'" />
+            </div>
+          </div>
+        </form>
+      </p-card>
+
+      <!-- MI MODIFICACION ARFM20260901 -->
+
+      @if (seleccionado()?.compraId !== 0 && seleccionado()?.sn_procesada !== 'S' && seleccionado()?.sn_anulada !== 'S') {
+      <!-- para editar el item que se va agregar o modificar-->
+      <form [formGroup]="formDet" class="form-grid-captura">
+        <div>
+          <label class="block mb-1 text-sm font-medium">Código Barra</label>
+          <p-autoComplete [(ngModel)]="productoSeleccionado"
+            [ngModelOptions]="{ standalone: true }"
+            [suggestions]="productosFiltrados"
+            (completeMethod)="onCodBarraSearch($event)" (onSelect)="onProductoSelect($event)"
+            (onClear)="onCodBarraClear()" (onBlur)="onCodBarraBlur()" [minLength]="8"
+            optionLabel="codbarra"
+            placeholder="Mínimo 8 dígitos" [style]="{ width: '100%' }" [inputStyle]="{ width: '100%' }"
+            size="small" [dropdown]="false">
+            <ng-template let-producto pTemplate="item">
+              <div class="flex align-items-center gap-2">
+                <span class="font-bold">{{ producto.codbarra }}</span>
+                <span> - {{ producto.descripcion }}</span>
+              </div>
+            </ng-template>
+          </p-autoComplete>
+        </div>
+        <div class="w-full">
+          <label class="block mb-1 text-sm font-medium">Descripción *</label>
+          <input pInputText formControlName="descripcion" class="w-full" pSize="small"
+            placeholder="Nombre del producto" [readonly]="productoSeleccionado?.produtoId != null" />
+        </div>
+        <div>
+          <label class="block mb-1 text-sm font-medium">Cantidad *</label>
+          <p-inputNumber size="small" formControlName="cantidad" [min]="0.01" mode="decimal" [minFractionDigits]="2"
+            styleClass="w-10rem" [inputStyle]="{ 'width': '100%' }"
+            [maxFractionDigits]="2" [locale]="'en-US'" [useGrouping]="true" />
+        </div>
+        <div>
+          <label class="block mb-1 text-sm font-medium">P. Compra *</label>
+          <p-inputNumber size="small" formControlName="precio" [min]="0.01" mode="decimal" [minFractionDigits]="2"
+            [maxFractionDigits]="2" [locale]="'en-US'" [useGrouping]="true"
+            styleClass="w-10rem" [inputStyle]="{ 'width': '100%' }" (onInput)="onPrecioCompraChange()" />
+        </div>
+        <div>
+          <label class="block mb-1 text-sm font-medium">Tipo Precio Vta</label>
+          <p-select size="small" formControlName="preciovtaId" [options]="preciosVta()" optionLabel="label"
+            optionValue="value" placeholder="Seleccionar" styleClass="w-10rem"
+            [showClear]="true" [appendTo]="'body'"
+            (onChange)="onPrecioVtaChange($event.value)" />
+        </div>
+        <div>
+          <label class="block mb-1 text-sm font-medium">P. Venta</label>
+          <p-inputNumber size="small" formControlName="precioventa" [min]="0" mode="decimal" [minFractionDigits]="2"
+            [maxFractionDigits]="2" [locale]="'en-US'" [useGrouping]="true"
+            styleClass="w-10rem" [inputStyle]="{ 'width': '100%' }"
+            [readonly]="formDet.value.preciovtaId != null" />
+        </div>
+        <div class="flex align-items-end gap-1">
+          @if (itemEditando()) {
+          <p-button size="small" label="Actualizar" icon="pi pi-check"
+          severity="warn" (onClick)="guardarDet()"
+          variant="text"  [rounded]="true"
+            [disabled]="formDet.invalid" />
+          <p-button size="small" icon="pi pi-times" severity="secondary" text (onClick)="cancelarEdicion()" />
+          } @else {
+          <p-button size="small" label="Agregar" icon="pi pi-plus"
+          variant="text"  [raised]="true" [rounded]="true"
+          severity="success" (onClick)="guardarDet()"
+            [disabled]="formDet.invalid" />
+          }
+        </div>
+      </form>
+      }
+      <div class="acciones-card">
+        <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" text (onClick)="volver()" />
+        @if (seleccionado()?.compraId === 0) {
+        <p-button size="small" label="Guardar Compra" icon="pi pi-check" (onClick)="guardarMae()" variant="text"
+          [disabled]="formMae.invalid" />
+        }
+        @if (seleccionado()?.compraId !== 0) {
+        @if (puedeUsarOcr()) {
+        <p-button label="OCR Factura" icon="pi pi-camera" size="small" variant="text" severity="info"
+          (onClick)="dialogOcr.set(true)" pTooltip="Leer factura con OCR" tooltipPosition="top" [rounded]="true"
+          [disabled]="seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'" />
+        }
+        @if (itemsSeleccionados().length > 0) {
+        <p-button label="Eliminar ({{ itemsSeleccionados().length }})" icon="pi pi-trash" size="small" severity="danger"
+          variant="text" (onClick)="eliminarSeleccionados()" [rounded]="true"
+          [disabled]="seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'" />
+        }
+        <p-button label="Procesar" icon="pi pi-check-circle"
+           variant="text" size="small" [rounded]="true"
+          severity="success" (onClick)="procesar()"
+          [disabled]="detalles().length === 0 || seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'" />
+        <p-button label="Anular" icon="pi pi-times-circle" size="small" severity="danger" variant="text"
+          (onClick)="anularCompra(seleccionado()!)" [rounded]="true" [disabled]="seleccionado()!.sn_anulada === 'S'" />
+        <p-button label="Imprimir" icon="pi pi-printer" size="small" severity="secondary" variant="text"
+          (onClick)="imprimir()" [rounded]="true" [disabled]="!seleccionado()?.compraId" />
+        }
+
+        <div class="compra-totales">
+          <div class="total-line">
+            <span>Total Compra:</span>
+            <span class="font-bold">{{ moneda(seleccionado()!.total) }}</span>
+          </div>
+            <div class="total-line">
+              <span>Estado Pago:</span>
+              <p-tag [value]="seleccionado()!.sn_pagada === 'S' ? 'Pagada' : 'Pendiente'"
+                [severity]="seleccionado()!.sn_pagada === 'S' ? 'success' : 'warn'" [style]="{'font-size':'0.75rem'}" />
+            </div>
+            <div class="total-line">
+              <span>Procesada:</span>
+              <p-tag [value]="seleccionado()!.sn_procesada === 'S' ? 'Sí' : 'No'"
+                [severity]="seleccionado()!.sn_procesada === 'S' ? 'success' : 'warn'" [style]="{'font-size':'0.75rem'}" />
+            </div>
+          </div>
+      </div>
+
+    </div> <!-- CIERRA sticky-header -->
+
+    <!-- GRID 2 — fuera del sticky para scrollear independiente -->
+    <div class="detail-scroll">
+      <p-table id="grid2" [value]="detalles()" [loading]="cargandoDet()" dataKey="cxpcomprasdetId" [paginator]="true"
+        [rows]="15" [scrollable]="true" scrollHeight="400px" size="small" [rowHover]="true">
+        <ng-template pTemplate="caption">
+          <div class="text-center w-full">
+            <span class="text-xl font-bold">Productos</span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width:3rem">
+              <p-checkbox [binary]="true" [ngModel]="todosSeleccionados()" (ngModelChange)="toggleTodos($event)" />
+            </th>
+            <th style="width:3rem">#</th>
+            <th>Producto</th>
+            <th style="width:6rem" class="text-right">Cantidad</th>
+            <th style="width:7rem" class="text-right">P. Compra</th>
+            <th style="width:7rem" class="text-right">P. Venta</th>
+            <th style="width:7rem" class="text-right">Subtotal</th>
+            <th style="width:6rem">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr [class.row-seleccionado]="isSelected(row)" [class.row-editando]="itemEditando() === row.cxpcomprasdetId">
+            <td>
+              <p-checkbox [binary]="true" [ngModel]="isSelected(row)" (ngModelChange)="toggleRow(row, $event)" />
+            </td>
+            <td>{{ row.nrofila }}</td>
+            <td>
+              <div class="grid w-full align-items-center m-0">
+                <div class="col-4 p-0 text-xs font-bold text-color-secondary">
+                  {{ row.codbarra }}
+                </div>
+                <div class="col-8 p-0 text-sm font-medium text-overflow-ellipsis overflow-hidden">
+                  {{ row.descripcion || nombreProducto(row.productoId)}}
+                </div>
+              </div>
+            </td>
+            <td class="text-right font-bold">{{ row.cantidad }}</td>
+            <td class="text-right">{{ moneda(row.precio) }}</td>
+            <td class="text-right">{{ moneda(row.precioventa) }}</td>
+            <td class="text-right font-bold">{{ moneda(row.subtotal) }}</td>
+            <td>
+              <div class="flex gap-1">
+                <p-button icon="pi pi-pencil" text severity="warn" size="small" (onClick)="editarItem(row)"
+                  [disabled]="seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'" pTooltip="Editar" />
+                <p-button icon="pi pi-trash" text severity="danger" size="small" (onClick)="eliminarDet(row)"
+                  [disabled]="seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'" pTooltip="Eliminar" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="text-center p-3">No hay items en esta compra.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+  </div>
+  } <!-- FIN DEL ELSE -->
+</section>
+
+<p-dialog header="OCR — Leer Factura" [modal]="true" [draggable]="false" [style]="{width:'600px', minHeight:'400px'}"
+  [(visible)]="dialogOcr">
+  <app-ocr-dialog (datosFactura)="onOcrDatos($event)" />
+</p-dialog>
+
+<p-dialog header="Nuevo Producto" [modal]="true" [draggable]="false" [style]="{width:'500px'}"
+  [(visible)]="dialogProducto">
+  <form [formGroup]="formProducto" class="flex flex-column gap-3">
+    <div>
+      <label class="block mb-1 text-sm font-medium">Código de Barra</label>
+      <input pInputText pSize="small" formControlName="codbarra" class="w-full" />
+    </div>
+    <div>
+      <label class="block mb-1 text-sm font-medium">Descripción *</label>
+      <input pInputText pSize="small" formControlName="descripcion" class="w-full" />
+    </div>
+    <div class="form-grid-2">
+      <div>
+        <label class="block mb-1 text-sm font-medium">Costo *</label>
+        <p-inputNumber formControlName="cstounit" [min]="0" mode="decimal" [minFractionDigits]="2"
+          [maxFractionDigits]="2" [locale]="'en-US'" [useGrouping]="true" class="w-full" />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-medium">Precio Venta *</label>
+        <p-inputNumber formControlName="precioventa" [min]="0" mode="decimal" [minFractionDigits]="2"
+          [maxFractionDigits]="2" [locale]="'en-US'" [useGrouping]="true" class="w-full" />
+      </div>
+    </div>
+    <div>
+      <label class="block mb-1 text-sm font-medium">Impuesto *</label>
+      <p-select formControlName="impuestoId" [options]="impuestos()" placeholder="Seleccionar impuesto"
+        size="small" styleClass="w-full" [appendTo]="'body'" />
+    </div>
+  </form>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogProducto.set(false)" />
+    <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarProducto()" [disabled]="formProducto.invalid" />
+  </ng-template>
+</p-dialog>

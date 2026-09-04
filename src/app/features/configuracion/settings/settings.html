@@ -1,0 +1,39 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">{{ config?.titulo }}</h1>
+      <p class="page-subtitle">{{ config?.subtitulo }}</p>
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <div class="card">Cargando configuración...</div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
+      @for (c of campos; track c.key) {
+        <div class="campo">
+          <label [for]="c.key">{{ c.label }}</label>
+
+          @if (c.tipo === 'texto') {
+            <input pInputText pSize="small" [id]="c.key" [formControlName]="c.key" maxlength="50" [placeholder]="c.label" />
+          } @else if (c.tipo === 'numero') {
+            <p-inputnumber size="small" [formControlName]="c.key" [showButtons]="true" inputId="integeronly" />
+          } @else if (c.tipo === 'select') {
+            <p-select size="small"
+              [formControlName]="c.key"
+              [options]="c.opciones ?? []"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+            />
+          }
+        </div>
+      }
+
+      <div class="acciones-form">
+        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+      </div>
+    </form>
+  }
+</section>

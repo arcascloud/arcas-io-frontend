@@ -1,0 +1,108 @@
+@if (cargando()) {
+  <div class="card mb-3">Cargando datos...</div>
+} @else {
+  <div class="card mb-3">
+    <div class="prestamo-form-columns" [formGroup]="form">
+      <div class="form-col">
+        @if (modoFacturacion()) {
+          <h5 class="form-col-title">Datos del Cliente</h5>
+        } @else {
+          <h5 class="form-col-title">Datos Personales</h5>
+        }
+        @if (!modoFacturacion()) {
+        <div class="p-field">
+          <label>Nro. cliente <span class="req">*</span></label>
+          <input pInputText pSize="small" [formControl]="form.get('nrocliente')" maxlength="20" placeholder="Número de cliente" />
+          @if (form.get('nrocliente')?.invalid && form.get('nrocliente')?.touched) {
+            <small class="p-error">El número de cliente es obligatorio</small>
+          }
+        </div>
+        }
+        <div class="p-field">
+          <label>Nombres <span class="req">*</span></label>
+          <input pInputText pSize="small" [formControl]="form.get('nombres')" maxlength="50" placeholder="Nombres" />
+          @if (form.get('nombres')?.invalid && form.get('nombres')?.touched) {
+            <small class="p-error">Los nombres son obligatorios</small>
+          }
+        </div>
+        <div class="p-field">
+          <label>Apellidos <span class="req">*</span></label>
+          <input pInputText pSize="small" [formControl]="form.get('apellidos')" maxlength="50" placeholder="Apellidos" />
+          @if (form.get('apellidos')?.invalid && form.get('apellidos')?.touched) {
+            <small class="p-error">Los apellidos son obligatorios</small>
+          }
+        </div>
+        @if (!modoFacturacion()) {
+        <div class="p-field">
+          <label>Razón social</label>
+          <input pInputText pSize="small" [formControl]="form.get('razonsocial')" maxlength="120" placeholder="Razón social" />
+        </div>
+        }
+        <div class="p-field">
+          <label>DNI <span class="req">*</span></label>
+          <input pInputText pSize="small" [formControl]="form.get('dni')" maxlength="20" placeholder="DNI" />
+          @if (form.get('dni')?.invalid && form.get('dni')?.touched) {
+            <small class="p-error">El DNI es obligatorio</small>
+          }
+        </div>
+        @if (!modoFacturacion()) {
+        <div class="p-field">
+          <label>RTN</label>
+          <input pInputText pSize="small" [formControl]="form.get('rtn')" maxlength="50" placeholder="RTN" />
+        </div>
+        }
+        <div class="p-field">
+          <label>Sexo</label>
+          <p-select size="small" [formControl]="form.get('sexo')" [options]="sexoOptions" optionLabel="label" optionValue="value" placeholder="Seleccione sexo" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
+        </div>
+        <div class="p-field">
+          <label>Fecha de nacimiento</label>
+          <p-datepicker [formControl]="form.get('fechanacimiento')" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" />
+        </div>
+      </div>
+      @if (!modoFacturacion()) {
+      <div class="form-col">
+        <h5 class="form-col-title">Clasificación y Crédito</h5>
+        <div class="p-field">
+          <label>Estado civil</label>
+          <p-select size="small" [formControl]="form.get('estadocivil')" [options]="estadoCivilOptions" optionLabel="label" optionValue="value" placeholder="Seleccione estado civil" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
+        </div>
+        <div class="p-field">
+          <label>Categoría</label>
+          <p-select size="small" [formControl]="form.get('categoria')" [options]="categoriaOptions" optionLabel="label" optionValue="value" placeholder="Seleccione categoría" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
+        </div>
+        <div class="p-field">
+          <label>Límite de crédito</label>
+          <p-inputNumber size="small" [formControl]="form.get('limiteCredito')" mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" />
+        </div>
+        <div class="p-field">
+          <label>Días de plazo</label>
+          <p-inputNumber size="small" [formControl]="form.get('diasplazo')" [min]="0" [max]="999" [useGrouping]="false" />
+        </div>
+        <div class="p-field">
+          <label>Interés (%)</label>
+          <p-inputNumber size="small" [formControl]="form.get('interes')" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }" />
+        </div>
+        <div class="p-field">
+          <label>Moratorio (%)</label>
+          <p-inputNumber size="small" [formControl]="form.get('moratorio')" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }" />
+        </div>
+        @if (esEdicion()) {
+          <div class="p-field">
+            <label>Estado <span class="req">*</span></label>
+            <p-selectButton size="small" [formControl]="form.get('sn_activo')" [options]="snOptions" optionLabel="label" optionValue="value" />
+          </div>
+        }
+      </div>
+      }
+    </div>
+    <div class="form-actions">
+      @if (modoFacturacion()) {
+        <p-button label="Cancelar" icon="pi pi-times" size="small" variant="text" severity="secondary" [rounded]="true" (onClick)="cancelar()" />
+      } @else {
+        <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" severity="secondary" [rounded]="true" (onClick)="cancelar()" />
+      }
+      <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" severity="success" [rounded]="true" [loading]="guardando()" (onClick)="guardar()" />
+    </div>
+  </div>
+}

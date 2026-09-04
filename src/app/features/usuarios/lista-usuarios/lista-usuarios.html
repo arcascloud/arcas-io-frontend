@@ -1,0 +1,96 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Usuarios</h1>
+      <p class="page-subtitle">Administración de usuarios del sistema</p>
+    </div>
+    <p-button label="Nuevo usuario" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+  </header>
+
+  <div class="filtros card">
+    <div class="campo">
+      <label>Buscar</label>
+      <input
+        pInputText
+        type="text"
+        placeholder="Usuario, nombre o email..."
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        (keyup.enter)="buscar()"
+      />
+    </div>
+    <div class="campo">
+      <label>Estado</label>
+      <p-select
+size="small"         [options]="estadoOptions"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="estadoFiltro()"
+        (onChange)="estadoFiltro.set($event.value); buscar()"
+        placeholder="Todos"
+      />
+    </div>
+    <div class="campo acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button
+        label="Limpiar"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        size="small"
+        (onClick)="limpiarFiltros()"
+      />
+    </div>
+  </div>
+
+  <p-dataview
+    [value]="filtered()"
+    [loading]="cargando()"
+    dataKey="usuario"
+    [paginator]="true"
+    [rows]="20"
+    [rowsPerPageOptions]="[10, 20, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+  >
+    <ng-template #list let-items>
+      <div class="dv-cards">
+        @for (u of items; track u.usuario) {
+          <div class="dv-card">
+            <div class="dv-top">
+              <span class="dv-title">{{ u.nombre || u.usuario }}</span>
+              <p-tag [value]="activoLbl(u.sn_activo)" [severity]="activoSev(u.sn_activo)" />
+            </div>
+
+            <div class="dv-body">
+              <div class="dv-row">
+                <span class="dv-label">Usuario</span>
+                <span class="dv-value">{{ u.usuario }}</span>
+              </div>
+              <div class="dv-row">
+                <span class="dv-label">Email</span>
+                <span class="dv-value">{{ u.email || '-' }}</span>
+              </div>
+            </div>
+
+            <div class="dv-actions" (click)="$event.stopPropagation()">
+              <p-button
+                icon="pi pi-pencil"
+                pTooltip="Editar"
+                (onClick)="editar(u.usuario, $event)"
+                severity="warn"
+                text
+                size="small"
+                rounded
+              />
+            </div>
+          </div>
+        }
+      </div>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <div class="text-center p-3">No hay usuarios que coincidan con los filtros.</div>
+    </ng-template>
+  </p-dataview>
+</section>

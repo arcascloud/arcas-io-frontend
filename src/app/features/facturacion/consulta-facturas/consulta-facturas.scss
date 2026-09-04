@@ -1,0 +1,202 @@
+﻿.filtros-card {
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.filtros-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.campo-busqueda {
+  flex: 1;
+  max-width: 400px;
+}
+
+.busqueda-input {
+  width: 100%;
+  padding-left: 2.5rem;
+}
+
+.filtros-acciones {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+
+  i {
+    font-size: 0.9rem;
+    color: var(--c-text-muted);
+    line-height: 1;
+  }
+}
+
+.tabla-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.facturas-table {
+  :host ::ng-deep .p-datatable-tbody > tr > td {
+    padding: 0.6rem 0.75rem;
+    vertical-align: middle;
+  }
+
+  :host ::ng-deep .p-datatable-thead > tr > th {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: var(--c-surface-ground);
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  :host ::ng-deep .p-datatable-tbody > tr {
+    transition: background-color 0.15s;
+  }
+
+  :host ::ng-deep .p-datatable-tbody > tr:hover {
+    background-color: var(--c-surface-ground);
+  }
+
+  :host ::ng-deep .p-datatable-tbody > tr > td {
+    border-bottom: 1px solid var(--c-border);
+  }
+}
+
+.fila-click {
+  cursor: pointer;
+}
+
+.nro-factura {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--c-text);
+}
+
+.cliente-nombre {
+  color: var(--c-text);
+  font-size: 0.85rem;
+}
+
+.total-cell {
+  font-weight: 600;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+
+.hora-cell {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.th-hora {
+  font-size: 0.7rem !important;
+}
+
+.acciones-header {
+  text-align: center !important;
+}
+
+.acciones-cell {
+  text-align: center !important;
+}
+
+.acciones-row {
+  display: flex;
+  gap: 0.15rem;
+  justify-content: center;
+}
+
+.tag-sm {
+  :host ::ng-deep & {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+  }
+}
+
+.btn-whatsapp-sm {
+  :host ::ng-deep .p-button {
+    color: #25d366;
+
+    &:hover {
+      background: rgba(37, 211, 102, 0.1);
+    }
+  }
+}
+
+.row-anulada {
+  opacity: 0.45;
+
+  .nro-factura,
+  .cliente-nombre,
+  .total-cell {
+    text-decoration: line-through;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem !important;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.3;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+// ==================== Dialog Correo ====================
+
+.correo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.correo-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+}
+
+.correo-input {
+  width: 100%;
+}
+
+.correo-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+// ==================== Responsive ====================
+
+@media (max-width: 768px) {
+  .filtros-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .campo-busqueda {
+    max-width: 100%;
+  }
+
+  .acciones-row {
+    flex-wrap: wrap;
+  }
+}

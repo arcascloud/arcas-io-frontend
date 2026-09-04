@@ -1,0 +1,186 @@
+<section class="page">
+  <header class="page-header">
+    <div class="header-left">
+      <p-button icon="pi pi-arrow-left" severity="secondary" text rounded size="small" (onClick)="volver()" pTooltip="Volver a la lista" />
+      <div>
+        <h1 class="page-title">Factura #{{ factura()?.nrofactura }}</h1>
+        <p class="page-subtitle">{{ fechaLarga(factura()?.fecharegistro) }}</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <p-button icon="pi pi-print" label="Imprimir" size="small" (onClick)="imprimir()" pTooltip="Imprimir factura" />
+      <p-button icon="pi pi-download" label="PDF" severity="secondary" size="small" (onClick)="descargarPdf()" pTooltip="Descargar PDF" />
+      <p-button icon="pi pi-envelope" label="Correo" severity="info" size="small" (onClick)="abrirDialogCorreo()" pTooltip="Enviar por correo" />
+      <p-button icon="pi pi-whatsapp" label="WhatsApp" severity="success" size="small" (onClick)="compartir()" styleClass="btn-whatsapp" pTooltip="Compartir por WhatsApp" />
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <div class="loading-state card">
+      <div class="loading-content">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>Cargando factura...</span>
+      </div>
+    </div>
+  } @else if (factura()) {
+    <div class="invoice-paper">
+
+      <!-- Header: Empresa + Meta -->
+      <div class="invoice-header">
+        <div class="empresa-block">
+          <h2 class="empresa-nombre">{{ empresa().nombre || 'EMPRESA' }}</h2>
+          @if (empresa().rtn) {
+            <p class="empresa-detail">RTN: {{ empresa().rtn }}</p>
+          }
+          @if (empresa().direccion) {
+            <p class="empresa-detail">{{ empresa().direccion }}</p>
+          }
+          @if (empresa().telefono) {
+            <p class="empresa-detail">Tel: {{ empresa().telefono }}</p>
+          }
+        </div>
+        <div class="meta-block">
+          <div class="meta-estado">
+            <p-tag [value]="getEstado()" [severity]="getEstadoSeverity()" />
+          </div>
+          <h1 class="meta-numero">FACTURA # {{ factura()?.nrofactura }}</h1>
+          <div class="meta-grid">
+            <span class="meta-label">Fecha</span>
+            <span class="meta-value">{{ fechaLarga(factura()?.fecharegistro) }}</span>
+            <span class="meta-label">Hora</span>
+            <span class="meta-value">{{ horaCorta(factura()?.fecharegistro) }}</span>
+            <span class="meta-label">Tipo</span>
+            <span class="meta-value">{{ getTipoFactura(factura()?.tipofactura) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="invoice-divider"></div>
+
+      <!-- Parties: Cliente + Direccion -->
+      <div class="invoice-parties">
+        <div class="party">
+          <span class="party-label">Cliente</span>
+          <span class="party-value">{{ factura()?.nombrecliente || 'Sin cliente' }}</span>
+          @if (factura()?.direccion) {
+            <span class="party-detail">{{ factura()?.direccion }}</span>
+          }
+        </div>
+        <div class="party">
+          <span class="party-label">Direccion de Entrega</span>
+          <span class="party-value">{{ factura()?.direccion || 'N/A' }}</span>
+        </div>
+      </div>
+
+      <div class="invoice-divider"></div>
+
+      <!-- Tabla de productos -->
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-producto">Producto</th>
+            <th class="col-cant">Cant.</th>
+            <th class="col-precio">Precio</th>
+            <th class="col-subtotal">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of detalles(); track $index) {
+            <tr>
+              <td class="col-num">{{ $index + 1 }}</td>
+              <td class="col-producto">{{ d.descripcion || d.codbarra }}</td>
+              <td class="col-cant">{{ d.cantidad }}</td>
+              <td class="col-precio">{{ moneda(d.precioventa) }}</td>
+              <td class="col-subtotal">{{ moneda(d.subTotal) }}</td>
+            </tr>
+          }
+          @if (detalles().length === 0) {
+            <tr>
+              <td colspan="5" class="empty-det">Sin detalles</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Totales -->
+      <div class="invoice-totals">
+        <div class="totals-group">
+          <div class="totals-row">
+            <span class="totals-label">Subtotal</span>
+            <span class="totals-value">{{ moneda(factura()?.subTotal) }}</span>
+          </div>
+          <div class="totals-row">
+            <span class="totals-label">ISV 15%</span>
+            <span class="totals-value">{{ moneda(factura()?.impuesto) }}</span>
+          </div>
+          @if (descuentoVisible()) {
+            <div class="totals-row">
+              <span class="totals-label">Descuento</span>
+              <span class="totals-value totals-descuento">- {{ moneda(factura()?.descuento) }}</span>
+            </div>
+          }
+          <div class="totals-row totals-grand">
+            <span class="totals-label">Total</span>
+            <span class="totals-value">{{ moneda(factura()?.total) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="invoice-divider"></div>
+
+      <!-- Pagos -->
+      @if (pagos().length > 0) {
+        <div class="invoice-pagos">
+          <h3 class="section-title">Pagos</h3>
+          <div class="pagos-grid">
+            @for (p of pagos(); track $index) {
+              <div class="pago-item">
+                <span class="pago-label">Efectivo</span>
+                <span class="pago-valor">{{ moneda(p.importe_efectivo) }}</span>
+                <span class="pago-label">Otros</span>
+                <span class="pago-valor">{{ moneda(p.importe_otros) }}</span>
+              </div>
+            }
+          </div>
+          @if (factura()?.tipofactura === 'E') {
+            <div class="pagos-resumen">
+              <div class="pago-item">
+                <span class="pago-label">Efectivo recibido</span>
+                <span class="pago-valor">{{ moneda(factura()?.efectivo_recibido) }}</span>
+              </div>
+              <div class="pago-item">
+                <span class="pago-label">Cambio</span>
+                <span class="pago-valor pago-cambio">{{ moneda(factura()?.importe_cambio) }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Footer mensaje empresa -->
+      @if (empresa().mensajeFactura) {
+        <div class="invoice-footer-msg">
+          {{ empresa().mensajeFactura }}
+        </div>
+      }
+
+    </div>
+  }
+
+  <!-- Dialog Correo -->
+  <p-dialog header="Enviar factura por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '420px' }" [draggable]="false" [resizable]="false"
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true" styleClass="correo-dialog">
+    <div class="correo-form">
+      <label class="correo-label">Correo electronico del destinatario</label>
+      <input pInputText pSize="small" type="email" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
+        placeholder="correo@ejemplo.com" class="correo-input" />
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="correo-footer">
+        <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+        <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="enviando()" />
+      </div>
+    </ng-template>
+  </p-dialog>
+</section>

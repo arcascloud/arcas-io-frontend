@@ -1,0 +1,510 @@
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { TableModule } from 'primeng/table';
+import { DialogModule } from 'primeng/dialog';
+import { ToolbarModule } from 'primeng/toolbar';
+import { TagModule } from 'primeng/tag';
+import { forkJoin } from 'rxjs';
+import { MessageService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+import { FacturacionService } from '../../../core/services/facturacion.service';
+
+interface Opcion {
+  label: string;
+  value: any;
+}
+
+interface FilaDet {
+  fila: number;
+  productoId: number | null;
+  codbarra: string;
+  descripcion: string;
+  imagenUrl?: string | null;
+  estado?: 'ALTA' | 'BAJO' | 'AGOTADO' | string;
+  cantidad: number;
+  precioventa: number;
+  descuento: number;
+  impuesto: number;
+  subTotal: number;
+}
+
+@Component({
+  selector: 'app-nueva-factura',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    InputNumberModule,
+    SelectModule,
+    SelectButtonModule,
+    TableModule,
+    DialogModule,
+    ToolbarModule,
+    TagModule,
+  ],
+  templateUrl: './nueva-factura.html',
+  styleUrl: './nueva-factura.scss',
+})
+export class NuevaFactura implements OnInit {
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private api = inject(ApiService);
+  private service = inject(FacturacionService);
+  private msgs = inject(MessageService);
+
+  private readonly MODULO_FACTURACION = 4;
+
+  form!: FormGroup;
+
+  cargando = signal(false);
+  guardando = signal(false);
+
+  clientes = signal<Opcion[]>([]);
+  formaspago = signal<Opcion[]>([]);
+  bodegas = signal<Opcion[]>([]);
+  cajeros = signal<Opcion[]>([]);
+  gestores = signal<Opcion[]>([]);
+  tarjetas = signal<Opcion[]>([]);
+
+  productosArray: any[] = [];
+  dialogProductos = signal(false);
+  qProducto = signal('');
+  productosFiltrados = signal<any[]>([]);
+
+  filas = signal<FilaDet[]>([]);
+
+  varCodBarra = signal('');
+  varProducto = signal('');
+  varPrecioVenta = signal(0);
+
+  totales = signal({ subTotal: 0, descuento: 0, impuesto: 0, total: 0, cambio: 0 });
+
+  private contadorFila = 0;
+  private tasaImpuesto = 0.15;
+  private impuestoIncluido = false;
+  private impuestos: any[] = [];
+  private impuestoId: number | null = null;
+
+  private existenciasMap = new Map<number, number>();
+  private imagenesMap = new Map<number, string>();
+
+  readonly tipoOptions = [
+    { label: 'Contado', value: 'E' },
+    { label: 'Crédito', value: 'C' },
+  ];
+
+  readonly snOptions = [
+    { label: 'Sí', value: 'S' },
+    { label: 'No', value: 'N' },
+  ];
+
+  ngOnInit() {
+    this.buildForm();
+    this.cargarOpciones();
+    this.cargarFactorCambio();
+    this.cargarParamCxc();
+    this.cargarImpuestos();
+    this.cargarParamFac();
+    this.recalcularTotales();
+  }
+
+  private cargarParamCxc() {
+    this.api.get<any>('/parametros/param-cxc').subscribe({
+      next: (p) => {
+        const dias = Number(p?.diasPlazo ?? 0);
+        const v = new Date();
+        v.setDate(v.getDate() + dias);
+        this.form.patchValue({
+          diascredito: dias,
+          fechavencimiento: v,
+        });
+      },
+    });
+  }
+
+  private cargarImpuestos() {
+    this.api.get<any[]>('/parametros/impuestos').subscribe({
+      next: (items) => {
+        this.impuestos = items ?? [];
+        this.aplicarTasa();
+      },
+    });
+  }
+
+  private cargarParamFac() {
+    this.api.get<any>('/parametros/param-fac').subscribe({
+      next: (p) => {
+        this.impuestoIncluido = p?.sn_impuestoincluido === 'S';
+        this.impuestoId = Number(p?.impuestoId) || null;
+        this.aplicarTasa();
+      },
+      error: () => {
+        this.impuestoIncluido = false;
+        this.impuestoId = null;
+      },
+    });
+  }
+
+  private aplicarTasa() {
+    if (!this.impuestos.length) return;
+    const porId = this.impuestos.find(
+      (i) => i.impuestoId === this.impuestoId && i.sn_activo === 'S',
+    );
+    const porModulo =
+      porId ||
+      this.impuestos.find(
+        (i) => Number(i.moduloId) === this.MODULO_FACTURACION && i.sn_activo === 'S',
+      );
+    if (porModulo && Number(porModulo.porcentaje) > 0) {
+      this.tasaImpuesto = Number(porModulo.porcentaje) / 100;
+    }
+    if (this.filas().length) {
+      for (const r of this.filas()) {
+        this.recalcularFila(r);
+      }
+    }
+  }
+
+  private cargarFactorCambio() {
+    this.api.get<any[]>('/contabilidad/factordecambio').subscribe({
+      next: (items) => {
+        const lista = items ?? [];
+        const enDolares = lista.find((i) => (i.tipomoneda ?? 'D') === 'D') ?? lista[0];
+        if (enDolares) {
+          this.form.patchValue({
+            factordecambio: Number(enDolares.precioventa) || Number(enDolares.preciocompra) || 0,
+          });
+        }
+      },
+    });
+  }
+
+  private buildForm() {
+    this.form = this.fb.group({
+      tipofactura: ['E'],
+      clienteId: [null as number | null, Validators.required],
+      nrocliente: ['', Validators.required],
+      formapagoId: [null as number | null, Validators.required],
+      bodegaId: [null as number | null, Validators.required],
+      cajaId: [null as number | null, Validators.required],
+      gestorId: [null as number | null, Validators.required],
+      factordecambio: [0],
+      tarjetacreditoId: [null as number | null],
+      nrotarjeta: [''],
+      nroreferencia: [''],
+      nrocarnet: [''],
+      diascredito: [0],
+      fechavencimiento: [null as Date | null],
+      sn_excenta: ['N'],
+      efectivo_recibido: [0],
+    });
+  }
+
+  private cargarOpciones() {
+    this.api.get<any[]>('/cxc/clientes').subscribe((items) => {
+      this.clientes.set(
+        (items ?? []).map((c) => ({
+          label: `${c.nrocliente ?? ''} - ${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim(),
+          value: c.clienteId,
+        })),
+      );
+    });
+    this.api.get<any[]>('/parametros/formas-pago').subscribe((items) => {
+      this.formaspago.set((items ?? []).map((i) => ({ label: i.descripcion, value: i.formapagoId })));
+    });
+    this.api.get<any[]>('/inventario/bodegas').subscribe((items) => {
+      this.bodegas.set((items ?? []).map((i) => ({ label: i.descripcion, value: i.bodegaId })));
+    });
+    this.api.get<any[]>('/cxc/cajeros').subscribe((items) => {
+      this.cajeros.set((items ?? []).map((i) => ({ label: i.usuario, value: i.cajaId })));
+    });
+    this.api.get<any[]>('/parametros/gestores').subscribe((items) => {
+      this.gestores.set((items ?? []).map((i) => ({ label: `Empleado #${i.empleadoId}`, value: i.gestorId })));
+    });
+    this.api.get<any[]>('/parametros/tarjetas-credito').subscribe((items) => {
+      this.tarjetas.set((items ?? []).map((i) => ({ label: i.descripcion, value: i.tarjetacreditoId })));
+    });
+    this.api.get<any[]>('/inventario/productos').subscribe((items) => {
+      this.productosArray = items ?? [];
+      this.filtrarProductos();
+    });
+    this.api.get<any[]>('/inventario/existencias').subscribe((items) => {
+      const m = new Map<number, number>();
+      for (const e of items ?? []) {
+        const id = Number(e.productoId);
+        m.set(id, (m.get(id) ?? 0) + Number(e.existencia ?? 0));
+      }
+      this.existenciasMap = m;
+    });
+    this.api.get<any[]>('/inventario/productos-img').subscribe((items) => {
+      const m = new Map<number, string>();
+      for (const i of items ?? []) {
+        const id = Number(i.productoId);
+        if (i.sn_activo === 'S' && i.img && !m.has(id)) {
+          m.set(id, this.resolverImagen(i.img));
+        }
+      }
+      this.imagenesMap = m;
+    });
+  }
+
+  private resolverImagen(img: string): string {
+    return /^data:/i.test(img) ? img : `data:image/png;base64,${img}`;
+  }
+
+  filtrarProductos() {
+    const q = this.qProducto().toLowerCase().trim();
+    this.productosFiltrados.set(
+      q
+        ? this.productosArray.filter(
+            (p) =>
+              (p.codbarra ?? '').toLowerCase().includes(q) ||
+              (p.descripcion ?? '').toLowerCase().includes(q),
+          )
+        : this.productosArray,
+    );
+  }
+
+  invalid(ctrl: string): boolean {
+    const c = this.form.get(ctrl);
+    return !!c && c.invalid && (c.dirty || c.touched);
+  }
+
+  onClienteChange() {
+    this.api.get<any[]>('/cxc/clientes').subscribe({
+      next: (cs) => {
+        const c = (cs ?? []).find((i) => i.clienteId === this.form.get('clienteId')?.value);
+        if (c) {
+          this.form.patchValue({
+            nrocliente: c.nrocliente ?? '',
+          });
+        }
+      },
+    });
+  }
+
+  abrirProductos() {
+    this.qProducto.set('');
+    this.filtrarProductos();
+    this.dialogProductos.set(true);
+  }
+
+  agregar() {
+    this.abrirProductos();
+  }
+
+  seleccionarProducto(p: any) {
+    const productoId = Number(p.produtoId) || null;
+    const existencia = Number(p.existencia ?? this.existenciasMap.get(productoId ?? -1) ?? 0);
+    const stockMin = Number(p.stockMinimo ?? 0);
+    const estado = existencia <= 0 ? 'AGOTADO' : existencia <= stockMin ? 'BAJO' : 'ALTA';
+
+    this.varCodBarra.set(p.codbarra ?? '');
+    this.varProducto.set(p.descripcion ?? '');
+    this.varPrecioVenta.set(Number(p.precioventa) || 0);
+    this.dialogProductos.set(false);
+
+    const row: FilaDet = {
+      fila: ++this.contadorFila,
+      productoId,
+      codbarra: p.codbarra ?? '',
+      descripcion: p.descripcion ?? '',
+      imagenUrl: this.imagenesMap.get(productoId ?? -1) ?? null,
+      estado,
+      cantidad: 1,
+      precioventa: Number(p.precioventa) || 0,
+      descuento: 0,
+      impuesto: 0,
+      subTotal: 0,
+    };
+
+    this.filas.update((f) => [...f, row]);
+    this.recalcularFila(row);
+  }
+
+  quitarFila(idx: number) {
+    this.filas.update((f) => f.filter((_, i) => i !== idx));
+    this.recalcularTotales();
+  }
+
+  recalcularFila(row: FilaDet) {
+    const cantidad = row.cantidad ?? 0;
+    const descuento = row.descuento ?? 0;
+    const exenta = this.form.get('sn_excenta')?.value === 'S';
+    const bruto = cantidad * (row.precioventa ?? 0);
+    const brutoDesc = bruto * (1 - descuento / 100);
+
+    if (this.impuestoIncluido) {
+      const subConImp = bruto * (1 + this.tasaImpuesto) * (1 - descuento / 100);
+      row.impuesto = exenta ? 0 : Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
+      row.subTotal = Math.round(subConImp * 100) / 100;
+    } else {
+      row.impuesto = exenta ? 0 : Math.round(brutoDesc * this.tasaImpuesto * 100) / 100;
+      row.subTotal = Math.round((brutoDesc + row.impuesto) * 100) / 100;
+    }
+
+    this.filas.update((f) => [...f]);
+    this.recalcularTotales();
+  }
+
+  recalcularExenta() {
+    for (const r of this.filas()) {
+      this.recalcularFila(r);
+    }
+  }
+
+  recalcularTotales() {
+    let bruto = 0;
+    let descuento = 0;
+    let impuesto = 0;
+    for (const r of this.filas()) {
+      bruto += (r.cantidad ?? 0) * (r.precioventa ?? 0);
+      descuento += (r.cantidad ?? 0) * (r.precioventa ?? 0) * ((r.descuento ?? 0) / 100);
+      impuesto += r.impuesto ?? 0;
+    }
+    const total = bruto - descuento + impuesto;
+    const efectivo = this.form?.get('efectivo_recibido')?.value ?? 0;
+    this.totales.set({
+      subTotal: Math.round(bruto * 100) / 100,
+      descuento: Math.round(descuento * 100) / 100,
+      impuesto: Math.round(impuesto * 100) / 100,
+      total: Math.round(total * 100) / 100,
+      cambio: Math.max(0, Number(efectivo) - total),
+    });
+  }
+
+  getSeverity(estado: string) {
+    switch (estado) {
+      case 'ALTA':
+        return 'success';
+      case 'BAJO':
+        return 'warn';
+      case 'AGOTADO':
+        return 'danger';
+      default:
+        return 'secondary';
+    }
+  }
+
+  salir() {
+    this.router.navigate(['/facturacion/facturas']);
+  }
+
+  abrirNuevoCliente() {
+    this.router.navigate(['/cxc/clientes/nuevo']);
+  }
+
+  nueva() {
+    this.form.reset({
+      tipofactura: 'E',
+      sn_excenta: 'N',
+      factordecambio: 0,
+      diascredito: 0,
+      efectivo_recibido: 0,
+    });
+    this.filas.set([]);
+    this.contadorFila = 0;
+    this.varCodBarra.set('');
+    this.varProducto.set('');
+    this.varPrecioVenta.set(0);
+    this.recalcularTotales();
+  }
+
+  facturar() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Complete los campos obligatorios de la factura' });
+      return;
+    }
+    const filas = this.filas();
+    if (filas.length === 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Agregue al menos un artículo' });
+      return;
+    }
+
+    const raw = this.form.getRawValue();
+    const t = this.totales();
+    const mae = {
+      tipofactura: raw.tipofactura,
+      clienteId: raw.clienteId,
+      nrocliente: raw.nrocliente,
+      nombrecliente: raw.nombrecliente || null,
+      direccion: raw.direccion || null,
+      factordecambio: raw.factordecambio ?? 0,
+      subTotal: t.subTotal,
+      impuesto: t.impuesto,
+      descuento: t.descuento,
+      total: t.total,
+      efectivo_recibido: raw.efectivo_recibido ?? 0,
+      importe_cambio: Math.round(t.cambio * 100) / 100,
+      diascredito: raw.diascredito ?? 0,
+      fechavencimiento: raw.fechavencimiento ? new Date(raw.fechavencimiento).toISOString() : null,
+      bodegaId: raw.bodegaId,
+      cajaId: raw.cajaId,
+      gestorId: raw.gestorId,
+      formapagoId: raw.formapagoId,
+      tarjetacreditoId: raw.tarjetacreditoId || null,
+      nrotarjeta: raw.nrotarjeta || null,
+      nroreferencia: raw.nroreferencia || null,
+      sn_excenta: raw.sn_excenta,
+      nrocarnet: raw.nrocarnet || null,
+      sn_pagada: raw.tipofactura === 'E' ? 'S' : 'N',
+      sn_anulada: 'N',
+      sn_contabilizada: 'N',
+    };
+
+    this.guardando.set(true);
+    this.service.createMae<any>('/facturacion/facturas', mae).subscribe({
+      next: (fac) => {
+        const detOps = filas.map((r, i) =>
+          this.service.createDet<any>('/facturacion/facturas-det', {
+            facturaId: fac.facturaId,
+            bodegaId: raw.bodegaId,
+            nrofila: i + 1,
+            productoId: r.productoId,
+            codbarra: r.codbarra || '',
+            cantidad: r.cantidad ?? 0,
+            precioventa: r.precioventa ?? 0,
+            impuesto: r.impuesto ?? 0,
+            subTotal: r.subTotal,
+            descuento: r.descuento ?? 0,
+            sn_anulada: 'S',
+          }),
+        );
+        forkJoin(detOps).subscribe({
+          next: () => {
+            this.guardando.set(false);
+            this.msgs.add({ severity: 'success', summary: 'Guardado', detail: `Factura #${fac.facturaId} creada` });
+            this.salir();
+          },
+          error: () => {
+            this.guardando.set(false);
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'La factura se creó pero falló el detalle' });
+          },
+        });
+      },
+      error: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la factura' });
+      },
+    });
+  }
+
+  moneda(n: number | undefined): string {
+    return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
+  }
+
+  num(n: any): number {
+    return Number(n) || 0;
+  }
+}

@@ -1,0 +1,228 @@
+<p-toast />
+<p-confirmDialog />
+
+<section class="page">
+  @if (!seleccionado()) {
+    <header class="page-header">
+      <div>
+        <h3 class="page-title">Requisiciones de Inventario</h3>
+        <p class="page-subtitle">Solicitudes de productos entre bodegas</p>
+      </div>
+      <p-button label="Nueva Requisición" icon="pi pi-plus" size="small" rounded (onClick)="nuevoMae()" />
+    </header>
+
+    <p-table [value]="requisiciones()" [loading]="cargando()" dataKey="invreqmaeid" [paginator]="true" [rows]="10"
+      [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[10, 25, 50]" size="small">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width:4rem">#</th>
+          <th>Fecha</th>
+          <th>Origen</th>
+          <th>Destino</th>
+          <th>Concepto</th>
+          <th style="width:6rem">Prioridad</th>
+          <th style="width:7rem">Estado</th>
+          <th style="width:6rem">Creado por</th>
+          <th style="width:4rem"></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr (click)="seleccionar(row)" style="cursor:pointer">
+          <td>{{ row.invreqmaeid }}</td>
+          <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ nombreBodega(row.bodegaOrigenId) }}</td>
+          <td>{{ nombreBodega(row.bodegaDestinoId) }}</td>
+          <td>{{ row.concepto }}</td>
+          <td>
+            <p-tag [value]="prioridadLabel(row.prioridad || 'M')" [severity]="prioridadSeverity(row.prioridad || 'M')" [style]="{'font-size':'0.75rem'}" />
+          </td>
+          <td>
+            <p-tag [value]="estadoLabel(row.sn_estado)" [severity]="estadoSeverity(row.sn_estado)" [style]="{'font-size':'0.75rem'}" />
+          </td>
+          <td>{{ row.usuarioCreated }}</td>
+          <td>
+            <p-button icon="pi pi-trash" severity="danger" text size="small" rounded
+              (onClick)="$event.stopPropagation(); seleccionar(row)" [disabled]="row.sn_estado !== 'P'" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="text-center p-3">No hay requisiciones registradas.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+
+  @if (seleccionado()) {
+    <header class="page-header">
+      <div class="flex align-items-center gap-2">
+        <p-button icon="pi pi-arrow-left" text size="small" rounded (onClick)="volver()" />
+        <div>
+          <h3 class="page-title">Requisición #{{ seleccionado()!.invreqmaeid || 'Nueva' }}</h3>
+          <p class="page-subtitle">
+            {{ nombreBodega(formMae.value.bodegaOrigenId || 0) }}
+            → {{ nombreBodega(formMae.value.bodegaDestinoId || 0) }}
+            — <p-tag [value]="prioridadLabel(formMae.value.prioridad || 'M')" [severity]="prioridadSeverity(formMae.value.prioridad || 'M')" [style]="{'font-size':'0.7rem'}" />
+            @if (seleccionado()!.sn_estado) {
+              — <p-tag [value]="estadoLabel(seleccionado()!.sn_estado)" [severity]="estadoSeverity(seleccionado()!.sn_estado)" [style]="{'font-size':'0.7rem'}" />
+            }
+          </p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        @if (seleccionado()!.invreqmaeid && esPendiente()) {
+          <p-button label="Aprobar" icon="pi pi-check-circle" size="small" rounded severity="success" (onClick)="procesar()"
+            [disabled]="detalles().length === 0" />
+          <p-button label="Anular" icon="pi pi-times-circle" size="small" rounded severity="danger" (onClick)="anular()" />
+        }
+      </div>
+    </header>
+
+    <form [formGroup]="formMae" (ngSubmit)="guardarMae()" class="card form-card">
+      <div class="form-grid">
+        <div class="campo">
+          <label>Bodega Origen *</label>
+          <p-select formControlName="bodegaOrigenId" [options]="bodegas()" optionLabel="descripcion"
+            optionValue="bodegaId" placeholder="Seleccionar origen" styleClass="w-full" [appendTo]="'body'"
+            [disabled]="!esNuevo()" />
+          @if (formMae.get('bodegaOrigenId')?.invalid && formMae.get('bodegaOrigenId')?.touched) {
+            <small class="err">Requerido</small>
+          }
+        </div>
+        <div class="campo">
+          <label>Bodega Destino *</label>
+          <p-select formControlName="bodegaDestinoId" [options]="bodegas()" optionLabel="descripcion"
+            optionValue="bodegaId" placeholder="Seleccionar destino" styleClass="w-full" [appendTo]="'body'"
+            [disabled]="!esNuevo()" />
+          @if (formMae.get('bodegaDestinoId')?.invalid && formMae.get('bodegaDestinoId')?.touched) {
+            <small class="err">Requerido</small>
+          }
+        </div>
+        <div class="campo">
+          <label>Concepto *</label>
+          <input pInputText formControlName="concepto" placeholder="Ej: Solicitud para sucursal" [readonly]="!esNuevo()" class="w-full" />
+          @if (formMae.get('concepto')?.invalid && formMae.get('concepto')?.touched) {
+            <small class="err">Requerido</small>
+          }
+        </div>
+        <div class="campo">
+          <label>Prioridad *</label>
+          <p-select formControlName="prioridad" [options]="prioridades()" optionLabel="label" optionValue="value"
+            placeholder="Seleccionar prioridad" styleClass="w-full" [appendTo]="'body'"
+            [disabled]="!esNuevo()" />
+        </div>
+        <div class="campo">
+          <label>Fecha de Entrega</label>
+          <p-datepicker formControlName="fechaEntrega" dateFormat="dd/mm/yy" placeholder="Fecha límite"
+            styleClass="w-full" [showIcon]="true" [showClear]="true" [appendTo]="'body'"
+            [disabled]="!esNuevo()" />
+        </div>
+        <div class="campo campo-full">
+          <label>Observaciones</label>
+          <textarea pTextarea formControlName="observaciones" rows="3" placeholder="Notas adicionales..."
+            [readonly]="!esNuevo()" class="w-full"></textarea>
+        </div>
+      </div>
+      @if (esNuevo()) {
+        <div class="acciones-form">
+          <p-button type="button" label="Cancelar" severity="secondary" text size="small" rounded (onClick)="volver()" />
+          <p-button type="submit" label="Crear Requisición" icon="pi pi-check" size="small" rounded severity="success" [raised]="true"
+            [loading]="guardando()" [disabled]="formMae.invalid" />
+        </div>
+      }
+    </form>
+
+    <div class="card info-card">
+      <div class="info-grid">
+        <div><span class="info-label">Estado:</span>
+          <p-tag [value]="estadoLabel(seleccionado()!.sn_estado)" [severity]="estadoSeverity(seleccionado()!.sn_estado)" [style]="{'font-size':'0.7rem'}" />
+        </div>
+      </div>
+    </div>
+
+    @if (esPendiente()) {
+      <div [formGroup]="formDet" class="card agregar-item-card">
+        <div class="agregar-item-row">
+          <div class="campo campo-codbarra">
+            <label>Codigo de Barras</label>
+            <div class="flex gap-1">
+              <input pInputText [ngModel]="codBusqueda()" (ngModelChange)="codBusqueda.set($event)"
+                (keyup.enter)="buscarProducto()" placeholder="Escanear o escribir codigo..." [ngModelOptions]="{standalone: true}" />
+              <p-button icon="pi pi-search" size="small" rounded severity="secondary" (onClick)="showHelperProductos()" />
+            </div>
+          </div>
+          <div class="campo campo-cantidad">
+            <label>Cant. Solicitada</label>
+            <p-inputNumber formControlName="cantidadSolicitada" [min]="0.01" mode="decimal" [minFractionDigits]="2"
+              [maxFractionDigits]="2" size="small" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
+          </div>
+          <div class="campo-btn">
+            <p-button icon="pi pi-plus" size="small" rounded severity="success" (onClick)="buscarProducto(); agregarItem()"
+              [loading]="guardando()" [disabled]="!formDet.value.descripcion" />
+          </div>
+        </div>
+        @if (formDet.value.descripcion) {
+          <div class="producto-encontrado">
+            <span class="font-bold">{{ formDet.value.descripcion }}</span>
+          </div>
+        }
+      </div>
+
+        <select [ngModel]="formDet.value.productoId" (ngModelChange)="formDet.patchValue({productoId: $event})" [ngModelOptions]="{standalone: true}" class="hidden-select">
+        <option [ngValue]="null">-</option>
+        @for (p of productos(); track p.produtoId) {
+          <option [ngValue]="p.produtoId">{{ p.descripcion }}</option>
+        }
+      </select>
+    }
+
+    <p-table [value]="detalles()" [loading]="cargandoDet()" dataKey="invreqdetid" [paginator]="true" [rows]="15" size="small">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width:3rem">#</th>
+          <th>Cod. Barra</th>
+          <th>Producto</th>
+          <th style="width:8rem" class="text-right">Cant. Solicitada</th>
+          <th style="width:8rem" class="text-right">Cant. Entregada</th>
+          <th style="width:6rem" class="text-center">Estado</th>
+          @if (esPendiente()) {
+            <th style="width:5rem" class="text-center"></th>
+          }
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ row.nrofila }}</td>
+          <td class="font-bold">{{ row.codbarra }}</td>
+          <td>{{ row.descripcion }}</td>
+          <td class="text-right font-bold">{{ row.cantidadSolicitada }}</td>
+          <td class="text-right">{{ row.cantidadEntregada }}</td>
+          <td class="text-center">
+            <p-tag [value]="row.sn_estado === 'P' ? 'Pendiente' : row.sn_estado === 'A' ? 'Aprobado' : 'Recibido'"
+              [severity]="row.sn_estado === 'P' ? 'warn' : row.sn_estado === 'A' ? 'success' : 'info'"
+              [style]="{'font-size':'0.7rem'}" />
+          </td>
+          @if (esPendiente()) {
+            <td class="text-center">
+              <p-button icon="pi pi-trash" text severity="danger" size="small" rounded (onClick)="eliminarItem(row)" />
+            </td>
+          }
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center p-3">No hay items en esta requisición.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <div class="card totales-card">
+      <div class="total-line">
+        <span>Items:</span>
+        <span class="font-bold">{{ detalles().length }}</span>
+      </div>
+    </div>
+  }
+</section>

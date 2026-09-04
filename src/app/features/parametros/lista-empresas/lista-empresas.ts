@@ -1,0 +1,104 @@
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
+import { DataViewModule } from 'primeng/dataview';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService } from 'primeng/api';
+import { EmpresasService } from '../../../core/services/empresas.service';
+import { Empresa } from '../../../core/models/empresa.models';
+
+@Component({
+  selector: 'app-lista-empresas',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    DataViewModule,
+    ButtonModule,
+    InputTextModule,
+    TagModule,
+    TooltipModule,
+  ],
+  templateUrl: './lista-empresas.html',
+  styleUrl: './lista-empresas.scss',
+})
+export class ListaEmpresas implements OnInit {
+  private service = inject(EmpresasService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private msgs = inject(MessageService);
+
+  data = signal<Empresa[]>([]);
+  filtered = signal<Empresa[]>([]);
+  cargando = signal(false);
+
+  q = signal('');
+
+  ngOnInit() {
+    this.load();
+  }
+
+  load() {
+    this.cargando.set(true);
+    this.service.getAll().subscribe({
+      next: (res) => {
+        this.data.set(res);
+        this.filtrar();
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las empresas',
+        });
+      },
+    });
+  }
+
+  filtrar() {
+    const q = this.q().toLowerCase();
+    this.filtered.set(
+      this.data().filter((e) => {
+        const matchQ =
+          !q ||
+          e.descripcion.toLowerCase().includes(q) ||
+          (e.msjfactura?.toLowerCase().includes(q) ?? false) ||
+          (e.msjdevfactura?.toLowerCase().includes(q) ?? false);
+        return matchQ;
+      }),
+    );
+  }
+
+  buscar() {
+    this.filtrar();
+  }
+
+  limpiarFiltros() {
+    this.q.set('');
+    this.filtrar();
+  }
+
+  nuevo() {
+    this.router.navigate(['nuevo'], { relativeTo: this.route });
+  }
+
+  editar(id?: number, e?: Event) {
+    e?.stopPropagation();
+    if (!id) return;
+    this.router.navigate(['editar', id], { relativeTo: this.route });
+  }
+
+  activoLbl(sn: string): string {
+    return sn === 'S' ? 'Activo' : 'Inactivo';
+  }
+
+  activoSev(sn: string): 'success' | 'danger' {
+    return sn === 'S' ? 'success' : 'danger';
+  }
+}

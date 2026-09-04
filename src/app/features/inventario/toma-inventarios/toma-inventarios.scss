@@ -1,0 +1,16 @@
+:host { display: block; }
+
+code {
+  background: var(--c-surface-ground);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+::ng-deep .p-datatable-tbody > tr {
+  cursor: default;
+
+  &:hover {
+    background: var(--c-surface-ground);
+  }
+}

@@ -1,0 +1,61 @@
+<div class="login-page">
+  <div class="login-bg"></div>
+
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="assets/images/arcas-logo.svg" alt="Arcas Software" class="login-logo-img" />
+      </div>
+
+      <div class="login-header">
+        <h2>Arcas Software</h2>
+        <p class="text-muted">Sistema de Gestión Empresarial</p>
+      </div>
+
+      @if (error()) {
+        <p-message severity="error" [text]="error()" styleClass="w-full mb-3" />
+      }
+
+      <form class="login-form" (ngSubmit)="login()">
+        <div class="campo">
+          <label for="usuario">Usuario <span class="req">*</span></label>
+          <input
+            pInputText
+            id="usuario"
+            name="usuario"
+            type="text"
+            autocomplete="username"
+            [(ngModel)]="usuario"
+            placeholder="Ingrese su usuario"
+            [disabled]="loading()"
+            autofocus
+          />
+        </div>
+
+        <div class="campo">
+          <label for="password">Contraseña <span class="req">*</span></label>
+          <p-password
+            id="password"
+            name="password"
+            [(ngModel)]="password"
+            [toggleMask]="true"
+            [feedback]="false"
+            [fluid]="true"
+            autocomplete="current-password"
+            placeholder="Ingrese su contraseña"
+            [disabled]="loading()"
+          />
+        </div>
+
+        <p-button
+          type="submit"
+          label="Iniciar Sesión"
+          icon="pi pi-sign-in"
+          size="small"
+          [loading]="loading()"
+          styleClass="w-full mt-2"
+        />
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,217 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h2 class="page-title">{{ titulo() }}</h2>
+      <p class="page-subtitle">Combos de productos</p>
+    </div>
+    <p-button
+      label="Volver"
+      icon="pi pi-arrow-left"
+      severity="secondary"
+      text
+      size="small"
+      rounded
+      (onClick)="volver()"
+    />
+  </header>
+
+  @if (cargando()) {
+    <div class="card">Cargando datos...</div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="card form-grid">
+        <div class="campo">
+          <label for="descripcion">Descripción <span class="req">*</span></label>
+          <input
+            pInputText
+            id="descripcion"
+            formControlName="descripcion"
+            maxlength="50"
+            pSize="small"
+            placeholder="Descripción del combo"
+            [ngClass]="{ 'ng-invalid': invalid('descripcion') }"
+          />
+          @if (invalid('descripcion')) {
+            <small class="err">Descripción es obligatoria</small>
+          }
+        </div>
+
+        <div class="campo">
+          <label for="fec_vig_desde">Vigente Desde <span class="req">*</span></label>
+          <p-datepicker
+            id="fec_vig_desde"
+            formControlName="fec_vig_desde"
+            dateFormat="dd/mm/yy"
+            styleClass="w-full"
+            size="small"
+          />
+        </div>
+
+        <div class="campo">
+          <label for="fec_vig_hasta">Vigente Hasta <span class="req">*</span></label>
+          <p-datepicker
+            id="fec_vig_hasta"
+            size="small"
+            formControlName="fec_vig_hasta"
+            dateFormat="dd/mm/yy"
+            styleClass="w-full"
+          />
+        </div>
+      </div>
+
+      <div class="combo-layout">
+        <div class="combo-catalogo">
+          <div class="catalogo-header">
+            <h2 class="section-title"><i class="pi pi-box"></i> Productos Disponibles</h2>
+            <div class="search-box">
+              <i class="pi pi-search search-icon"></i>
+              <input
+                pInputText
+                [(ngModel)]="busqueda"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Buscar producto..."
+                class="search-input"
+              />
+            </div>
+          </div>
+
+          @if (cargandoProductos()) {
+            <div class="loading"><i class="pi pi-spin pi-spinner"></i> Cargando productos...</div>
+          }
+
+          @if (!cargandoProductos()) {
+            <div class="productos-scroll">
+              @for (producto of productosFiltrados(); track produtoId; let idx = $index) {
+                <div class="producto-row">
+                  <div class="producto-img">
+                    @if (producto.imagen) {
+                      <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
+                    } @else {
+                      <div class="producto-img-placeholder"><i class="pi pi-image"></i></div>
+                    }
+                  </div>
+                  <div class="producto-info">
+                    <span class="producto-nombre">{{ producto.descripcion }}</span>
+                    <div class="producto-meta">
+                      <span class="producto-precio">{{ formatearPrecio(producto.precioventa) }}</span>
+                      @if (producto.codbarra) {
+                        <span class="producto-cod">{{ producto.codbarra }}</span>
+                      }
+                    </div>
+                  </div>
+                  <div class="producto-accion">
+                    <p-button
+                      icon="pi pi-plus"
+                      [rounded]="true"
+                      size="small"
+                      (click)="agregarAlCombo(producto)"
+                      pTooltip="Agregar al combo"
+                    />
+                  </div>
+                </div>
+              } @empty {
+                <div class="sin-productos">
+                  <i class="pi pi-inbox"></i>
+                  <p>No se encontraron productos</p>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="combo-resumen">
+          <div class="resumen-header">
+            <div class="resumen-header-left">
+              <i class="pi pi-shopping-cart"></i>
+              <span>Mi Combo</span>
+            </div>
+            <span class="resumen-count">{{ totalItems() }} item{{ totalItems() > 1 ? 's' : '' }}</span>
+          </div>
+
+          <div class="resumen-items">
+            @for (item of comboItems(); track item.productoId) {
+              <div class="resumen-item">
+                <div class="resumen-item-img">
+                  @if (item.imagen) {
+                    <img [src]="resolverImagen(item.imagen)" [alt]="item.descripcion" loading="lazy" />
+                  } @else {
+                    <div class="resumen-item-placeholder"><i class="pi pi-image"></i></div>
+                  }
+                </div>
+                <div class="resumen-item-details">
+                  <span class="resumen-item-name">{{ item.descripcion }}</span>
+                  <div class="resumen-item-price-row">
+                    <span class="resumen-item-price-label">Precio:</span>
+                    <p-inputnumber
+                      size="small"
+                      [ngModel]="item.precioventa"
+                      (ngModelChange)="onPrecioChange(item, $event)"
+                      [ngModelOptions]="{ standalone: true }"
+                      mode="currency"
+                      currency="HNL"
+                      locale="es-HN"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [useGrouping]="true"
+                      [inputStyle]="{ 'width': '100%' }"
+                      [style]="{ width: '110px' }"
+                      [ngClass]="{ 'precio-invalid': !precioValido(item) }"
+                    />
+                  </div>
+                  @if (!precioValido(item)) {
+                    <span class="precio-error">Mínimo {{ formatearPrecio(precioMinimo(item)) }}</span>
+                  }
+                  <div class="resumen-item-qty">
+                    <button class="qty-btn" type="button" (click)="decrementar(item)">
+                      <i class="pi pi-minus"></i>
+                    </button>
+                    <span class="qty-value">{{ item.cantidad }}</span>
+                    <button class="qty-btn" type="button" (click)="incrementar(item)">
+                      <i class="pi pi-plus"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="resumen-item-right">
+                  <span class="resumen-item-subtotal">{{ formatearPrecio(item.cantidad * item.precioventa) }}</span>
+                  <button class="resumen-item-remove" type="button" (click)="quitarDelCombo(item)" pTooltip="Eliminar">
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              <div class="resumen-empty">
+                <i class="pi pi-inbox" style="font-size: 2rem; color: var(--c-text-muted)"></i>
+                <p>Sin productos en el combo</p>
+                <span>Agrega productos desde el catálogo</span>
+              </div>
+            }
+          </div>
+
+          <div class="resumen-summary">
+            <div class="summary-line">
+              <span>Subtotal ({{ totalItems() }} items)</span>
+              <span>{{ formatearPrecio(totalCombo()) }}</span>
+            </div>
+            <div class="summary-line summary-total">
+              <span>Total</span>
+              <strong>{{ formatearPrecio(totalCombo()) }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="acciones-form">
+        <p-button
+          type="button"
+          label="Cancelar"
+          icon="pi pi-times"
+          severity="secondary"
+          size="small"
+          rounded
+          (onClick)="volver()"
+        />
+        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+      </div>
+    </form>
+  }
+</section>

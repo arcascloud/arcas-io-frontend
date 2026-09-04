@@ -1,0 +1,184 @@
+<div class="cartas-recordatorio">
+  <p-toolbar>
+    <ng-template #start>
+      <div class="toolbar-title">
+        <i class="pi pi-envelope"></i>
+        <span>Cartas de Recordatorio de Cobro</span>
+      </div>
+    </ng-template>
+    <ng-template #end>
+      <p-button
+        label="Actualizar"
+        icon="pi pi-refresh"
+        (click)="load()"
+        [loading]="cargando()"
+        [rounded]="true"
+        size="small"
+      ></p-button>
+    </ng-template>
+  </p-toolbar>
+
+  <div class="filtros-bar">
+    <div class="search-input-wrapper">
+      <i class="pi pi-search"></i>
+      <input
+        type="text"
+        pInputText
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        placeholder="Buscar por nombre, Nro. cliente o DNI..."
+        class="search-input"
+      />
+      <p-button
+        *ngIf="q()"
+        icon="pi pi-times"
+        (click)="limpiarFiltros()"
+        severity="secondary"
+        [rounded]="true"
+        size="small"
+        class="clear-btn"
+      ></p-button>
+    </div>
+
+    <div class="filtro-tipo">
+      <label>Tipo de deuda:</label>
+      <p-select size="small"
+        [options]="tipoOptions"
+        [ngModel]="tipoFiltro()"
+        (ngModelChange)="tipoFiltro.set($event)"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        placeholder="Seleccionar tipo"
+      ></p-select>
+    </div>
+
+    <div class="filtro-fecha">
+      <label>Fecha de carta:</label>
+      <p-datepicker
+        [ngModel]="fechaCarta()"
+        (ngModelChange)="fechaCarta.set($event)"
+        dateFormat="dd/mm/yy"
+        [showIcon]="true"
+        [inline]="false"
+      ></p-datepicker>
+    </div>
+  </div>
+
+  <!-- Acciones -->
+  <div class="acciones-bar">
+    <p-button
+      label="Generar Cartas"
+      icon="pi pi-file-edit"
+      (click)="generarCartas()"
+      [rounded]="true"
+      size="small"
+    ></p-button>
+    <p-button
+      label="Imprimir Todas"
+      icon="pi pi-print"
+      severity="secondary"
+      (click)="imprimirTodas()"
+      [disabled]="cartasGeneradas().length === 0"
+      [rounded]="true"
+      size="small"
+    ></p-button>
+    <span class="cartas-count" *ngIf="cartasGeneradas().length > 0">
+      {{ cartasGeneradas().length }} cartas generadas
+    </span>
+  </div>
+
+  <!-- Tabla de Clientes con Saldo -->
+  <div class="table-container">
+    <p-table
+      [value]="filtered()"
+      [loading]="cargando()"
+      [paginator]="true"
+      [rows]="15"
+      [rowsPerPageOptions]="[10, 15, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+      styleClass="p-datatable-striped"
+      size="small"
+    >
+      <ng-template #header>
+        <tr>
+          <th style="width: 80px">Nro.</th>
+          <th>Cliente</th>
+          <th>DNI</th>
+          <th class="col-importe">Total</th>
+          <th class="col-importe">1-30 Días</th>
+          <th class="col-importe">31-60 Días</th>
+          <th class="col-importe">90+ Días</th>
+          <th style="width: 120px">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-cliente>
+        <tr>
+          <td>{{ cliente.nrocliente }}</td>
+          <td>
+            <span class="cliente-nombre">{{ cliente.cliente }}</span>
+          </td>
+          <td>{{ cliente.dni }}</td>
+          <td class="col-importe fw-bold">{{ moneda(cliente.total) }}</td>
+          <td class="col-importe" [class.text-danger]="cliente.vencido30 > 0">{{ moneda(cliente.vencido30) }}</td>
+          <td class="col-importe" [class.text-danger]="cliente.vencido60 > 0">{{ moneda(cliente.vencido60) }}</td>
+          <td class="col-importe" [class.text-danger]="cliente.vencido90 > 0">{{ moneda(cliente.vencido90) }}</td>
+          <td>
+            <div class="action-buttons">
+              <p-button
+                *ngIf="cliente.vencido30 > 0"
+                icon="pi pi-calendar"
+                (click)="imprimirCarta({cliente, tipo: '30', fecha: fechaCarta(), saldo: cliente.vencido30})"
+                pTooltip="Carta 30 días"
+                tooltipPosition="top"
+                [rounded]="true"
+                size="small"
+                text
+              ></p-button>
+              <p-button
+                *ngIf="cliente.vencido60 > 0"
+                icon="pi pi-calendar-plus"
+                (click)="imprimirCarta({cliente, tipo: '60', fecha: fechaCarta(), saldo: cliente.vencido60})"
+                pTooltip="Carta 60 días"
+                tooltipPosition="top"
+                [rounded]="true"
+                size="small"
+                text
+              ></p-button>
+              <p-button
+                *ngIf="cliente.vencido90 > 0"
+                icon="pi pi-exclamation-triangle"
+                (click)="imprimirCarta({cliente, tipo: '90', fecha: fechaCarta(), saldo: cliente.vencido90})"
+                pTooltip="Carta 90+ días"
+                tooltipPosition="top"
+                [rounded]="true"
+                size="small"
+                text
+              ></p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="text-center p-4">
+            <div class="empty-state">
+              <i class="pi pi-inbox empty-icon"></i>
+              <p>No se encontraron clientes con saldo vencido.</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #summary>
+        <div class="table-summary">
+          <div class="summary-row">
+            <span class="summary-label">Clientes con saldo:</span>
+            <span class="summary-value">{{ filtered().length }}</span>
+          </div>
+        </div>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

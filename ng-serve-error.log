@@ -1,0 +1,856 @@
+
+Warning: This is a simple server for use in testing or debugging Angular applications
+locally. It hasn't been reviewed for security issues.
+
+Binding this server to an open connection can result in compromising your application or
+computer. Using a different host than the one passed to the "--host" flag might result in
+websocket connection issues.
+    
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'p-table' is not a known element:
+1. If 'p-table' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.html:25:2:
+[37m      25 │   [32m<p-table[37m
+         ╵   [32m~~~~~~~~[0m
+
+  Error occurs in the template of component CatalogoGenerico.
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.ts:18:15:
+[37m      18 │   templateUrl: [32m'./catalogo-generico.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'value' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'value' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.html:26:4:
+[37m      26 │     [32m[value]="filtered()"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CatalogoGenerico.
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.ts:18:15:
+[37m      18 │   templateUrl: [32m'./catalogo-generico.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'loading' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'loading' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.html:27:4:
+[37m      27 │     [32m[loading]="cargando()"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CatalogoGenerico.
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.ts:18:15:
+[37m      18 │   templateUrl: [32m'./catalogo-generico.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'paginator' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'paginator' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.html:28:4:
+[37m      28 │     [32m[paginator]="true"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CatalogoGenerico.
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.ts:18:15:
+[37m      18 │   templateUrl: [32m'./catalogo-generico.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'rows' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'rows' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.html:29:4:
+[37m      29 │     [32m[rows]="20"[37m
+         ╵     [32m~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CatalogoGenerico.
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.ts:18:15:
+[37m      18 │   templateUrl: [32m'./catalogo-generico.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'rowsPerPageOptions' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'rowsPerPageOptions' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.html:30:4:
+[37m      30 │     [32m[rowsPerPageOptions]="[10, 20, 50]"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CatalogoGenerico.
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.ts:18:15:
+[37m      18 │   templateUrl: [32m'./catalogo-generico.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'showCurrentPageReport' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'showCurrentPageReport' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.html:31:4:
+[37m      31 │     [32m[showCurrentPageReport]="true"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CatalogoGenerico.
+
+    src/app/features/parametros/catalogo-generico/catalogo-generico.ts:18:15:
+[37m      18 │   templateUrl: [32m'./catalogo-generico.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+Component update failed: NG01203: No value accessor for form control name: 'sn_activo'. Find more at https://v22.angular.dev/errors/NG01203
+Error: NG01203: No value accessor for form control name: 'sn_activo'. Find more at https://v22.angular.dev/errors/NG01203
+    at _throwMissingValueAccessorError (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/@angular_forms.js?v=6ba70c82:1938:8)
+    at setUpControlValueAccessor (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/@angular_forms.js?v=6ba70c82:1808:27)
+    at FormControlName._setupWithForm (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/@angular_forms.js?v=6ba70c82:4271:4)
+    at FormGroupDirective.addControl (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/@angular_forms.js?v=6ba70c82:3700:7)
+    at FormControlName._setUpControl (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/@angular_forms.js?v=6ba70c82:4297:37)
+    at FormControlName.ngOnChanges (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/@angular_forms.js?v=6ba70c82:4275:26)
+    at FormControlName.rememberChangeHistoryAndInvokeOnChangesHook (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=6ba70c82:96:8)
+    at callHookInternal (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=6ba70c82:211:8)
+    at callHook (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=6ba70c82:226:9)
+    at callHooks (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=6ba70c82:201:4)
+Please consider reporting the error at https://github.com/angular/angular-cli/issues
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1010: 'imports' must be an array of components, directives, pipes, or NgModules.
+  Value could not be determined statically.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/categorias/categoria-form.ts:22:4:
+[37m      22 │     [32mSelect[37m
+         ╵     [32m~~~~~~[0m
+
+  Unknown reference.
+
+    src/app/features/inventario/categorias/categoria-form.ts:22:4:
+[37m      22 │     [32mSelect[37m
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2552: Cannot find name 'Select'. Did you mean 'onselect'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/categorias/categoria-form.ts:22:4:
+[37m      22 │     [32mSelect[37m
+         ╵     [32m~~~~~~[0m
+
+  'onselect' is declared here.
+
+    node_modules/typescript/lib/lib.dom.d.ts:43974:12:
+[37m      43974 │ declare var [32monselect[37m: ((this: Window, ev: Event) => any) | null;
+            ╵             [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1010: 'imports' must be an array of components, directives, pipes, or NgModules.
+  Value could not be determined statically.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/pasillos/pasillo-form.ts:15:78:
+[37m      15 │ ...veFormsModule, ButtonModule, InputTextModule, [32mSelectButtonModule[37m],
+         ╵                                                  [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Unknown reference.
+
+    src/app/features/inventario/pasillos/pasillo-form.ts:15:78:
+[37m      15 │ ...veFormsModule, ButtonModule, InputTextModule, [32mSelectButtonModule[37m],
+         ╵                                                  [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2552: Cannot find name 'SelectButtonModule'. Did you mean 'ButtonModule'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/pasillos/pasillo-form.ts:15:78:
+[37m      15 │ ...veFormsModule, ButtonModule, InputTextModule, [32mSelectButtonModule[37m],
+         ╵                                                  [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1010: 'imports' must be an array of components, directives, pipes, or NgModules.
+  Value could not be determined statically.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/bodegas/bodega-form.ts:15:78:
+[37m      15 │ ...veFormsModule, ButtonModule, InputTextModule, [32mSelectButtonModule[37m],
+         ╵                                                  [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Unknown reference.
+
+    src/app/features/inventario/bodegas/bodega-form.ts:15:78:
+[37m      15 │ ...veFormsModule, ButtonModule, InputTextModule, [32mSelectButtonModule[37m],
+         ╵                                                  [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2552: Cannot find name 'SelectButtonModule'. Did you mean 'ButtonModule'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/bodegas/bodega-form.ts:15:78:
+[37m      15 │ ...veFormsModule, ButtonModule, InputTextModule, [32mSelectButtonModule[37m],
+         ╵                                                  [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'p-toast' is not a known element:
+1. If 'p-toast' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-toast' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/catalogo-list/catalogo-list.html:0:0:
+[37m      0 │ [32m[37m
+        ╵ [32m^[0m
+
+  Error occurs in the template of component CatalogoList.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:32:15:
+[37m      32 │   templateUrl: [32m'./catalogo-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'totalItems' does not exist on type 'CatalogoList'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/catalogo-list/catalogo-list.html:6:34:
+[37m      6 │ ...span class="page-count">{{ [32mtotalItems[37m() }} registro{{ totalItems...
+        ╵                               [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component CatalogoList.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:32:15:
+[37m      32 │   templateUrl: [32m'./catalogo-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'totalItems' does not exist on type 'CatalogoList'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/catalogo-list/catalogo-list.html:6:61:
+[37m      6 │ ... totalItems() }} registro{{ [32mtotalItems[37m() !== 1 ? 's' : '' }}</span>
+        ╵                                [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component CatalogoList.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:32:15:
+[37m      32 │   templateUrl: [32m'./catalogo-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'layout' does not exist on type 'CatalogoList'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/catalogo-list/catalogo-list.html:22:26:
+[37m      22 │           [class.active]="[32mlayout[37m() === 'grid'"
+         ╵                           [32m~~~~~~[0m
+
+  Error occurs in the template of component CatalogoList.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:32:15:
+[37m      32 │   templateUrl: [32m'./catalogo-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'layout' does not exist on type 'CatalogoList'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/catalogo-list/catalogo-list.html:23:19:
+[37m      23 │           (click)="[32mlayout[37m.set('grid')"
+         ╵                    [32m~~~~~~[0m
+
+  Error occurs in the template of component CatalogoList.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:32:15:
+[37m      32 │   templateUrl: [32m'./catalogo-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'layout' does not exist on type 'CatalogoList'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/catalogo-list/catalogo-list.html:30:26:
+[37m      30 │           [class.active]="[32mlayout[37m() === 'list'"
+         ╵                           [32m~~~~~~[0m
+
+  Error occurs in the template of component CatalogoList.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:32:15:
+[37m      32 │   templateUrl: [32m'./catalogo-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'layout' does not exist on type 'CatalogoList'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/catalogo-list/catalogo-list.html:31:19:
+[37m      31 │           (click)="[32mlayout[37m.set('list')"
+         ╵                    [32m~~~~~~[0m
+
+  Error occurs in the template of component CatalogoList.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:32:15:
+[37m      32 │   templateUrl: [32m'./catalogo-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'layout' does not exist on type 'CatalogoList'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/catalogo-list/catalogo-list.html:54:22:
+[37m      54 │   @if (!cargando() && [32mlayout[37m() === 'grid') {
+         ╵                       [32m~~~~~~[0m
+
+  Error occurs in the template of component CatalogoList.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:32:15:
+[37m      32 │   templateUrl: [32m'./catalogo-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'layout' does not exist on type 'CatalogoList'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/catalogo-list/catalogo-list.html:93:22:
+[37m      93 │   @if (!cargando() && [32mlayout[37m() === 'list') {
+         ╵                       [32m~~~~~~[0m
+
+  Error occurs in the template of component CatalogoList.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:32:15:
+[37m      32 │   templateUrl: [32m'./catalogo-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:13:227:
+[37m      13 │ ...uloNuevo: 'Nueva categoría[32m' } satis[37mfies CatalogoConfig }, load...
+         ╵                              [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:18:194:
+[37m      18 │ ...ituloNuevo: 'Nueva marca' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:23:195:
+[37m      23 │ ...tuloNuevo: 'Nuevo modelo' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:28:197:
+[37m      28 │ ...ituloNuevo: 'Nuevo color' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:33:244:
+[37m      33 │ ...tuloNuevo: 'Nueva unidad' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:38:216:
+[37m      38 │ ...loNuevo: 'Nuevo embalaje' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:43:200:
+[37m      43 │ ...tuloNuevo: 'Nueva bodega' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:48:224:
+[37m      48 │ ...oNuevo: 'Nueva ubicación' [32m} satisfi[37mes CatalogoConfig }, loadCo...
+         ╵                              [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:53:208:
+[37m      53 │ ...uloNuevo: 'Nuevo pasillo' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:58:184:
+[37m      58 │ ...tituloNuevo: 'Nueva casa' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:63:212:
+[37m      63 │ ...loNuevo: 'Nuevo testante' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:68:182:
+[37m      68 │ ... tituloNuevo: 'Nuevo tag' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:13:227:
+[37m      13 │ ...uloNuevo: 'Nueva categoría[32m' } satis[37mfies CatalogoConfig }, load...
+         ╵                              [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:18:194:
+[37m      18 │ ...ituloNuevo: 'Nueva marca' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:23:195:
+[37m      23 │ ...tuloNuevo: 'Nuevo modelo' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:28:197:
+[37m      28 │ ...ituloNuevo: 'Nuevo color' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:33:244:
+[37m      33 │ ...tuloNuevo: 'Nueva unidad' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:38:216:
+[37m      38 │ ...loNuevo: 'Nuevo embalaje' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:43:200:
+[37m      43 │ ...tuloNuevo: 'Nueva bodega' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:48:224:
+[37m      48 │ ...oNuevo: 'Nueva ubicación' [32m} satisfi[37mes CatalogoConfig }, loadCo...
+         ╵                              [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:53:208:
+[37m      53 │ ...uloNuevo: 'Nuevo pasillo' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:58:184:
+[37m      58 │ ...tituloNuevo: 'Nueva casa' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:63:212:
+[37m      63 │ ...loNuevo: 'Nuevo testante' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:68:182:
+[37m      68 │ ... tituloNuevo: 'Nuevo tag' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:13:227:
+[37m      13 │ ...uloNuevo: 'Nueva categoría[32m' } satis[37mfies CatalogoConfig }, load...
+         ╵                              [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:18:194:
+[37m      18 │ ...ituloNuevo: 'Nueva marca' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:23:195:
+[37m      23 │ ...tuloNuevo: 'Nuevo modelo' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:28:197:
+[37m      28 │ ...ituloNuevo: 'Nuevo color' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:33:244:
+[37m      33 │ ...tuloNuevo: 'Nueva unidad' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:38:216:
+[37m      38 │ ...loNuevo: 'Nuevo embalaje' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:43:200:
+[37m      43 │ ...tuloNuevo: 'Nueva bodega' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:48:224:
+[37m      48 │ ...oNuevo: 'Nueva ubicación' [32m} satisfi[37mes CatalogoConfig }, loadCo...
+         ╵                              [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:53:208:
+[37m      53 │ ...uloNuevo: 'Nuevo pasillo' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:58:184:
+[37m      58 │ ...tituloNuevo: 'Nueva casa' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:63:212:
+[37m      63 │ ...loNuevo: 'Nuevo testante' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1360: Type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' does not satisfy the expected type 'CatalogoConfig'.
+  Property 'campos' is missing in type '{ titulo: string; subtitulo: string; ruta: string; idKey: string; icono: string; tituloNuevo: string; }' but required in type 'CatalogoConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventario/inventario.routes.ts:68:182:
+[37m      68 │ ... tituloNuevo: 'Nuevo tag' }[32m satisfie[37ms CatalogoConfig }, loadCom...
+         ╵                               [32m~~~~~~~~~[0m
+
+  'campos' is declared here.
+
+    src/app/features/inventario/catalogo-list/catalogo-list.ts:24:2:
+[37m      24 │   [32mcampos[37m: CampoColumna[];
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find template file './nueva-factura.html'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/nueva-factura/nueva-factura.ts:75:15:
+[37m      75 │   templateUrl: [32m'./nueva-factura.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find template file './nueva-factura.html'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/nueva-factura/nueva-factura.ts:75:15:
+[37m      75 │   templateUrl: [32m'./nueva-factura.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find template file './nueva-factura.html'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/nueva-factura/nueva-factura.ts:75:15:
+[37m      75 │   templateUrl: [32m'./nueva-factura.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find template file './nueva-factura.html'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/nueva-factura/nueva-factura.ts:75:15:
+[37m      75 │   templateUrl: [32m'./nueva-factura.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[2m2:47:34 p. m.[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31merror while updating dependencies:
+Error: EPERM: operation not permitted, rename 'E:\desarrollo\proyectos angular\erp\Frontend\.angular\cache\22.1.4\arcas-software\vite\deps_temp_cd46148a' -> 'E:\desarrollo\proyectos angular\erp\Frontend\.angular\cache\22.1.4\arcas-software\vite\deps'[39m
+[2m8:29:44 p. m.[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31merror while updating dependencies:
+Error: EPERM: operation not permitted, rename 'E:\desarrollo\proyectos angular\erp\Frontend\.angular\cache\22.1.4\arcas-software\vite\deps' -> 'E:\desarrollo\proyectos angular\erp\Frontend\.angular\cache\22.1.4\arcas-software\vite\deps_temp_720e76e5'[39m

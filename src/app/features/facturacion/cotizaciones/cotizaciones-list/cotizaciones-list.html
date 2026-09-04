@@ -1,0 +1,104 @@
+﻿<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Cotizaciones</h1>
+      <p class="page-subtitle">Cotizaciones de venta</p>
+    </div>
+    <div>
+      <p-button label="Nueva" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="nuevo()" />
+    </div>
+  </header>
+
+  <div class="card filtros-card">
+    <div class="filtros-row">
+      <div class="campo campo-busqueda">
+        <span class="p-input-icon-left">
+          <input pInputText type="text" pSize="small"
+            placeholder="Buscar por # cotización, nombre del cliente o atendió..."
+            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" class="busqueda-input" />
+        </span>
+      </div>
+      <div class="filtros-acciones">
+        <i class="pi pi-search"></i>
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="limpiar()" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card tabla-card">
+    <p-table [value]="filtered()" [loading]="cargando()"
+    showGridlines
+    [tableStyle]="{ 'min-width': '40rem' }"
+     [paginator]="true" [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} cotizaciones"
+      styleClass="cotizaciones-table">
+      <ng-template #header>
+        <tr>
+          <th style="width:6rem"># Cotización</th>
+          <th style="width:6rem">Fecha</th>
+          <th style="width:5rem" class="th-hora">Hora</th>
+          <th>Cliente</th>
+          <th style="width:8rem">Atendió</th>
+          <th style="width:6rem">Estado</th>
+          <th style="width:10rem" class="acciones-header">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr (click)="editar(item.poscotmaeId)" class="fila-click" [class.row-anulada]="item.sn_estadocarrito === 'X'">
+          <td>
+            <span class="nro-factura">{{ item.poscotmaeId }}</span>
+          </td>
+          <td>{{ fechaCorta(item.fecharegistro) }}</td>
+          <td class="hora-cell">{{ horaCorta(item.fecharegistro) }}</td>
+          <td>
+            <span class="cliente-nombre">{{ item.Nombrecliente || 'Sin cliente' }}</span>
+          </td>
+          <td>{{ item.atendio || '-' }}</td>
+          <td>
+            <p-tag [value]="estadoLabel(item)" [severity]="estadoSeverity(item)" styleClass="tag-sm" />
+          </td>
+          <td class="acciones-cell">
+            <div class="acciones-row">
+              <p-button icon="pi pi-pencil" severity="info" text rounded size="small"
+                (onClick)="editar(item.poscotmaeId); $event.stopPropagation()" pTooltip="Editar" tooltipPosition="top" />
+              <p-button icon="pi pi-envelope" severity="warn" text rounded size="small"
+                (onClick)="abrirCorreo(item, $event)" pTooltip="Enviar por correo" tooltipPosition="top"
+                [disabled]="!esActiva(item)" />
+              <p-button icon="pi pi-trash" severity="danger" text rounded size="small"
+                (onClick)="eliminar(item, $event)" pTooltip="Eliminar" tooltipPosition="top"
+                [disabled]="!esActiva(item)" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="7" class="empty-state">
+            <div class="empty-content">
+              <i class="pi pi-file"></i>
+              <p>No hay cotizaciones registradas</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <p-confirmDialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+  <p-dialog header="Enviar cotización por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '420px' }" [draggable]="false" [resizable]="false"
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true" styleClass="correo-dialog">
+    <div class="correo-form">
+      <label class="correo-label">Correo electrónico del destinatario</label>
+      <input pInputText type="email" pSize="small" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
+        placeholder="correo@ejemplo.com" class="correo-input" />
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="correo-footer">
+        <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+        <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="enviando()" />
+      </div>
+    </ng-template>
+  </p-dialog>
+</section>

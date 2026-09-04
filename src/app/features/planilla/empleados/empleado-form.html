@@ -1,0 +1,255 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">{{ titulo() }}</h1>
+      <p class="page-subtitle">Registro de empleado</p>
+    </div>
+    <p-button
+      label="Volver"
+      icon="pi pi-arrow-left"
+      severity="secondary"
+      text
+      size="small"
+      rounded
+      (onClick)="volver()"
+    />
+  </header>
+
+  @if (cargando()) {
+    <div class="card">Cargando datos...</div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
+      <div class="campo">
+        <label for="nombres">Nombres <span class="req">*</span></label>
+        <input
+          pInputText
+          id="nombres"
+          formControlName="nombres"
+          maxlength="50"
+          placeholder="Nombres"
+          [ngClass]="{ 'ng-invalid': invalid('nombres') }"
+        />
+        @if (invalid('nombres')) {
+          <small class="err">Los nombres son obligatorios</small>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="apellidos">Apellidos <span class="req">*</span></label>
+        <input
+          pInputText
+          id="apellidos"
+          formControlName="apellidos"
+          maxlength="50"
+          placeholder="Apellidos"
+          [ngClass]="{ 'ng-invalid': invalid('apellidos') }"
+        />
+        @if (invalid('apellidos')) {
+          <small class="err">Los apellidos son obligatorios</small>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="dni">DNI <span class="req">*</span></label>
+        <input
+          pInputText
+          id="dni"
+          formControlName="dni"
+          maxlength="20"
+          placeholder="DNI"
+          [ngClass]="{ 'ng-invalid': invalid('dni') }"
+        />
+        @if (invalid('dni')) {
+          <small class="err">El DNI es obligatorio</small>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="fechanacimiento">Fecha de nacimiento</label>
+        <p-datepicker
+          id="fechanacimiento"
+          formControlName="fechanacimiento"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          styleClass="w-full"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="sexo">Sexo</label>
+        <p-select
+size="small"           id="sexo"
+          formControlName="sexo"
+          [options]="sexoOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione sexo"
+          [fluid]="true"
+          [showClear]="true"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="estadocivil">Estado civil</label>
+        <p-select
+size="small"           id="estadocivil"
+          formControlName="estadocivil"
+          [options]="estadoCivilOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione estado civil"
+          [fluid]="true"
+          [showClear]="true"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="paisorigen">País de origen</label>
+        <p-select
+size="small"           id="paisorigen"
+          formControlName="paisorigen"
+          [options]="paises()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione país"
+          [fluid]="true"
+          [showClear]="true"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="paisresidencia">País de residencia</label>
+        <p-select
+size="small"           id="paisresidencia"
+          formControlName="paisresidencia"
+          [options]="paises()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione país"
+          [fluid]="true"
+          [showClear]="true"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="nroseguro">Nro. seguro</label>
+        <input pInputText pSize="small" id="nroseguro" formControlName="nroseguro" maxlength="20" placeholder="Nro. seguro" />
+      </div>
+
+      <div class="campo">
+        <label for="telefono">Teléfono</label>
+        <input pInputText pSize="small" id="telefono" formControlName="telefono" maxlength="20" placeholder="Teléfono" />
+      </div>
+
+      <div class="campo">
+        <label for="celular">Celular</label>
+        <input pInputText pSize="small" id="celular" formControlName="celular" maxlength="20" placeholder="Celular" />
+      </div>
+
+      <div class="campo">
+        <label for="email">Email</label>
+        <input pInputText pSize="small" id="email" formControlName="email" maxlength="20" placeholder="Email" />
+      </div>
+
+      <div class="campo">
+        <label for="profesionId">Profesión</label>
+        <p-select
+size="small"           id="profesionId"
+          formControlName="profesionId"
+          [options]="profesiones()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione profesión"
+          [fluid]="true"
+          [showClear]="true"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="puestoId">Puesto</label>
+        <p-select
+size="small"           id="puestoId"
+          formControlName="puestoId"
+          [options]="puestos()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccione puesto"
+          [fluid]="true"
+          [showClear]="true"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="sueldobruto">Sueldo bruto</label>
+        <p-inputnumber size="small"
+          id="sueldobruto"
+          formControlName="sueldobruto"
+          [mode]="'currency'"
+          currency="HNL"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="techoseguro">Techo seguro</label>
+        <p-inputnumber size="small"
+          id="techoseguro"
+          formControlName="techoseguro"
+          [mode]="'currency'"
+          currency="HNL"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="cuentabancaria">Cuenta bancaria</label>
+        <input pInputText pSize="small" id="cuentabancaria" formControlName="cuentabancaria" maxlength="20" placeholder="Cuenta bancaria" />
+      </div>
+
+      <div class="campo">
+        <label for="lugardenacimiento">Lugar de nacimiento</label>
+        <input pInputText pSize="small" id="lugardenacimiento" formControlName="lugardenacimiento" maxlength="200" placeholder="Lugar de nacimiento" />
+      </div>
+
+      <div class="campo">
+        <label for="tipoempId">Tipo empleado <span class="req">*</span></label>
+        <p-inputnumber size="small"
+          id="tipoempId"
+          formControlName="tipoempId"
+          [useGrouping]="false"
+          [ngClass]="{ 'ng-invalid': invalid('tipoempId') }"
+        />
+        @if (invalid('tipoempId')) {
+          <small class="err">El tipo de empleado es obligatorio</small>
+        }
+      </div>
+
+      @if (esEdicion()) {
+        <div class="campo">
+          <label>Estado <span class="req">*</span></label>
+          <p-selectbutton size="small"
+            [options]="snOptions"
+            formControlName="sn_activo"
+            optionLabel="label"
+            optionValue="value"
+          />
+        </div>
+      }
+
+      <div class="acciones-form">
+        <p-button
+          type="button"
+          label="Cancelar"
+          icon="pi pi-times"
+          severity="secondary"
+          size="small"
+          rounded
+          (onClick)="volver()"
+        />
+        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+      </div>
+    </form>
+  }
+</section>

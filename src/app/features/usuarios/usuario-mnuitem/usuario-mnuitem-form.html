@@ -1,0 +1,141 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">{{ titulo() }}</h1>
+      <p class="page-subtitle">Asignación de items de menú por usuario y módulo</p>
+    </div>
+    <p-button
+      label="Volver"
+      icon="pi pi-arrow-left"
+      severity="secondary"
+      text
+      size="small"
+      rounded
+      (onClick)="volver()"
+    />
+  </header>
+
+  @if (cargando()) {
+    <div class="card">Cargando datos...</div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
+      <div class="campo">
+        <label for="usuario">Usuario <span class="req">*</span></label>
+        <p-select
+size="small"           id="usuario"
+          formControlName="usuario"
+          [options]="usuarios()"
+          optionLabel="nombre"
+          optionValue="usuario"
+          [filter]="true"
+          filterBy="nombre,usuario"
+          filterPlaceholder="Buscar usuario..."
+          placeholder="Seleccione usuario"
+          appendTo="body"
+          [disabled]="esEdicion()"
+        />
+        @if (invalid('usuario')) {
+          <small class="err">Debe seleccionar un usuario</small>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="moduloId">Módulo <span class="req">*</span></label>
+        <p-select
+size="small"           id="moduloId"
+          formControlName="moduloId"
+          [options]="modulos()"
+          optionLabel="descripcion"
+          optionValue="moduloId"
+          placeholder="Seleccione módulo"
+          appendTo="body"
+          [disabled]="esEdicion()"
+        />
+        @if (invalid('moduloId')) {
+          <small class="err">Debe seleccionar un módulo</small>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="nameItem">Nombre <span class="req">*</span></label>
+        <input
+          pInputText
+          id="nameItem"
+          formControlName="nameItem"
+          placeholder="Nombre interno del item"
+        />
+        @if (invalid('nameItem')) {
+          <small class="err">El nombre es obligatorio</small>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="labelItem">Etiqueta <span class="req">*</span></label>
+        <input
+          pInputText
+          id="labelItem"
+          formControlName="labelItem"
+          placeholder="Texto visible en el menú"
+        />
+        @if (invalid('labelItem')) {
+          <small class="err">La etiqueta es obligatoria</small>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="routerLink">Ruta</label>
+        <input
+          pInputText
+          id="routerLink"
+          formControlName="routerLink"
+          placeholder="/configuracion/..."
+        />
+      </div>
+
+      <div class="campo">
+        <label for="iconItem">Icono</label>
+        <input
+          pInputText
+          id="iconItem"
+          formControlName="iconItem"
+          placeholder="pi pi-..."
+        />
+      </div>
+
+      <div class="campo">
+        <label for="parentId">Padre ID</label>
+        <p-inputnumber size="small" id="parentId" formControlName="parentId" [min]="0" [showButtons]="true" />
+      </div>
+
+      <div class="campo">
+        <label for="levelId">Nivel</label>
+        <p-inputnumber size="small" id="levelId" formControlName="levelId" [min]="0" [showButtons]="true" />
+      </div>
+
+      @if (esEdicion()) {
+        <div class="campo">
+          <label>Estado <span class="req">*</span></label>
+          <p-selectbutton size="small"
+            [options]="snOptions"
+            formControlName="sn_activo"
+            optionLabel="label"
+            optionValue="value"
+          />
+        </div>
+      }
+
+      <div class="acciones-form">
+        <p-button
+          type="button"
+          label="Cancelar"
+          icon="pi pi-times"
+          severity="secondary"
+          size="small"
+          rounded
+          (onClick)="volver()"
+        />
+        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+      </div>
+    </form>
+  }
+</section>

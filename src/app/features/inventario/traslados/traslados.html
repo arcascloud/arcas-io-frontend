@@ -1,0 +1,210 @@
+<p-toast />
+<p-confirmDialog />
+
+<section class="page">
+  @if (!seleccionado()) {
+    <header class="page-header">
+      <div>
+        <h3 class="page-title">Traslados de Productos</h3>
+        <p class="page-subtitle">Movimiento de productos entre bodegas</p>
+      </div>
+      <p-button label="Nuevo Traslado" icon="pi pi-plus" size="small" rounded (onClick)="nuevoMae()" />
+    </header>
+
+    <p-table [value]="traslados()" [loading]="cargando()" dataKey="invtrasladomaeId" [paginator]="true" [rows]="10"
+      [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[10, 25, 50]" size="small">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width:4rem">#</th>
+          <th>Fecha</th>
+          <th>Referencia</th>
+          <th>Origen</th>
+          <th>Destino</th>
+          <th style="width:7rem" class="text-center">Procesado</th>
+          <th style="width:7rem" class="text-center">Estado</th>
+          <th style="width:4rem"></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr (click)="seleccionar(row)" style="cursor:pointer">
+          <td>{{ row.invtrasladomaeId }}</td>
+          <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td class="font-bold">{{ row.nroreferencia }}</td>
+          <td>{{ nombreBodega(row.bodegaOrigenId) }}</td>
+          <td>{{ nombreBodega(row.bodegaDestinoId) }}</td>
+          <td class="text-center">
+            <p-tag [value]="row.sn_procesado === 'S' ? 'Si' : 'No'" [severity]="row.sn_procesado === 'S' ? 'success' : 'warn'" />
+          </td>
+          <td class="text-center">
+            <p-tag [value]="row.sn_anulado === 'S' ? 'Anulado' : 'Activo'" [severity]="row.sn_anulado === 'S' ? 'danger' : 'success'" />
+          </td>
+          <td>
+            <p-button icon="pi pi-trash" severity="danger" text size="small" rounded
+              (onClick)="$event.stopPropagation(); seleccionar(row)" [disabled]="row.sn_procesado === 'S' || row.sn_anulado === 'S'" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="text-center p-3">No hay traslados registrados.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+
+  @if (seleccionado()) {
+    <header class="page-header">
+      <div class="flex align-items-center gap-2">
+        <p-button icon="pi pi-arrow-left" text size="small" rounded (onClick)="volver()" />
+        <div>
+          <h3 class="page-title">Traslado #{{ seleccionado()!.invtrasladomaeId || 'Nuevo' }}</h3>
+          <p class="page-subtitle">
+            {{ nombreBodega(formMae.value.bodegaOrigenId || 0) || 'Origen' }}
+            - {{ nombreBodega(formMae.value.bodegaDestinoId || 0) || 'Destino' }}
+          </p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        @if (seleccionado()!.invtrasladomaeId && seleccionado()!.sn_procesado === 'N' && seleccionado()!.sn_anulado === 'N') {
+          <p-button label="Procesar" icon="pi pi-check-circle" size="small" rounded severity="success" (onClick)="procesar()"
+            [disabled]="detalles().length === 0" />
+          <p-button label="Anular" icon="pi pi-times-circle" size="small" rounded severity="danger" (onClick)="anularTraslado()" />
+        }
+      </div>
+    </header>
+
+    @if (!seleccionado()!.invtrasladomaeId) {
+      <form [formGroup]="formMae" (ngSubmit)="guardarMae()" class="card form-card">
+        <div class="form-grid">
+          <div class="campo">
+            <label>Bodega Origen *</label>
+            <p-select formControlName="bodegaOrigenId" [options]="bodegas()" optionLabel="descripcion"
+              optionValue="bodegaId" placeholder="Seleccionar origen" styleClass="w-full" [appendTo]="'body'" />
+            @if (formMae.get('bodegaOrigenId')?.invalid && formMae.get('bodegaOrigenId')?.touched) {
+              <small class="err">Requerido</small>
+            }
+          </div>
+          <div class="campo">
+            <label>Bodega Destino *</label>
+            <p-select formControlName="bodegaDestinoId" [options]="bodegas()" optionLabel="descripcion"
+              optionValue="bodegaId" placeholder="Seleccionar destino" styleClass="w-full" [appendTo]="'body'" />
+            @if (formMae.get('bodegaDestinoId')?.invalid && formMae.get('bodegaDestinoId')?.touched) {
+              <small class="err">Requerido</small>
+            }
+          </div>
+          <div class="campo campo-full">
+            <label>Observaciones</label>
+            <input pInputText formControlName="observaciones" placeholder="Observaciones del traslado" />
+          </div>
+        </div>
+        <div class="acciones-form">
+          <p-button type="button" label="Cancelar" severity="secondary" text size="small" rounded (onClick)="volver()" />
+          <p-button type="submit" label="Crear Traslado" icon="pi pi-check" size="small" rounded severity="success" [raised]="true"
+            [loading]="guardando()" [disabled]="formMae.invalid" />
+        </div>
+      </form>
+    }
+
+    @if (seleccionado()!.invtrasladomaeId) {
+      <div class="card info-card">
+        <div class="info-grid">
+          <div><span class="info-label">Referencia:</span> <span class="font-bold">{{ seleccionado()!.nroreferencia }}</span></div>
+          <div><span class="info-label">Origen:</span> {{ nombreBodega(seleccionado()!.bodegaOrigenId) }}</div>
+          <div><span class="info-label">Destino:</span> {{ nombreBodega(seleccionado()!.bodegaDestinoId) }}</div>
+          <div><span class="info-label">Observaciones:</span> {{ seleccionado()!.observaciones || '-' }}</div>
+        </div>
+      </div>
+
+      @if (seleccionado()!.sn_procesado === 'N' && seleccionado()!.sn_anulado === 'N') {
+        <div [formGroup]="formDet" class="card agregar-item-card">
+          <div class="agregar-item-row">
+            <div class="campo campo-codbarra">
+              <label>Codigo de Barras</label>
+              <div class="flex gap-1">
+                <input pInputText [ngModel]="codBusqueda()" (ngModelChange)="codBusqueda.set($event)"
+                  (keyup.enter)="buscarProducto()" placeholder="Escanear o escribir codigo..." [ngModelOptions]="{standalone: true}" />
+                <p-button icon="pi pi-search" size="small" rounded severity="secondary" (onClick)="showHelperProductos()" />
+              </div>
+            </div>
+            <div class="campo campo-cantidad">
+              <label>Cantidad</label>
+              <p-inputNumber formControlName="cantidad" [min]="0.01" mode="decimal" [minFractionDigits]="2"
+                [maxFractionDigits]="2" size="small" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
+            </div>
+            <div class="campo campo-costo">
+              <label>Costo U.</label>
+              <p-inputNumber formControlName="costoUnitario" [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'"
+                [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" size="small"
+                [inputStyle]="{ 'width': '100%' }" styleClass="w-full" [readonly]="true" />
+            </div>
+            <div class="campo-btn">
+              <p-button icon="pi pi-plus" size="small" rounded severity="success" (onClick)="buscarProducto(); agregarItem()"
+                [loading]="guardando()" [disabled]="!formDet.value.descripcion" />
+            </div>
+          </div>
+          @if (formDet.value.descripcion) {
+            <div class="producto-encontrado">
+              <span class="font-bold">{{ formDet.value.descripcion }}</span>
+              <span class="text-sm text-color-secondary"> | Costo: {{ moneda(formDet.value.costoUnitario) }}</span>
+            </div>
+          }
+        </div>
+
+        <select formControlName="productoId" class="hidden-select">
+          <option [ngValue]="null">-</option>
+          @for (p of productos(); track p.produtoId) {
+            <option [ngValue]="p.produtoId">{{ p.descripcion }}</option>
+          }
+        </select>
+      }
+
+      <p-table [value]="detalles()" [loading]="cargandoDet()" dataKey="invtrasladodetId" [paginator]="true" [rows]="15" size="small">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width:3rem">#</th>
+            <th>Cod. Barra</th>
+            <th>Producto</th>
+            <th style="width:7rem" class="text-right">Cantidad</th>
+            <th style="width:8rem" class="text-right">Costo U.</th>
+            <th style="width:8rem" class="text-right">Total</th>
+            @if (seleccionado()!.sn_procesado === 'N' && seleccionado()!.sn_anulado === 'N') {
+              <th style="width:5rem" class="text-center"></th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td>{{ row.nrofila }}</td>
+            <td class="font-bold">{{ row.codbarra }}</td>
+            <td>{{ row.descripcion }}</td>
+            <td class="text-right font-bold">{{ row.cantidad }}</td>
+            <td class="text-right">{{ moneda(row.costoUnitario) }}</td>
+            <td class="text-right font-bold">{{ moneda(row.costoTotal) }}</td>
+            @if (seleccionado()!.sn_procesado === 'N' && seleccionado()!.sn_anulado === 'N') {
+              <td class="text-center">
+                <p-button icon="pi pi-trash" text severity="danger" size="small" rounded (onClick)="eliminarItem(row)" />
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="text-center p-3">No hay items en este traslado.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <div class="card totales-card">
+        <div class="total-line">
+          <span>Total Traslado:</span>
+          <span class="font-bold">{{ moneda(totalTraslado()) }}</span>
+        </div>
+        <div class="total-line">
+          <span>Items:</span>
+          <span class="font-bold">{{ detalles().length }}</span>
+        </div>
+      </div>
+    }
+  }
+</section>

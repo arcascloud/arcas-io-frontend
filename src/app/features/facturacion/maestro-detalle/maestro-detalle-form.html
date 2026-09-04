@@ -1,0 +1,136 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">{{ titulo() }}</h1>
+      <p class="page-subtitle">{{ config?.subtitulo }}</p>
+    </div>
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text size="small" rounded
+      (onClick)="volver()" />
+  </header>
+
+  @if (cargando()) {
+  <div class="card">Cargando datos...</div>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="guardar()">
+    <div class="card form-grid">
+      @for (c of camposMae; track c.key) {
+      @if (!c.oculto) {
+      <div class="campo">
+        <label [for]="c.key">{{ c.label }} @if (c.requerido) {<span class="req">*</span>}</label>
+
+        @if (c.tipo === 'texto') {
+        @if (c.soloLectura) {
+        <input pInputText pSize="small" [id]="c.key" [formControlName]="c.key" readonly class="bg-gray-100" />
+        } @else {
+        <input pInputText [id]="c.key" [formControlName]="c.key" maxlength="120" [placeholder]="c.label"
+          [ngClass]="{ 'ng-invalid': invalid(c.key) }" />
+        }
+        } @else if (c.tipo === 'numero') {
+        <p-inputnumber size="small" [formControlName]="c.key" [showButtons]="true"
+          [ngClass]="{ 'ng-invalid': invalid(c.key) }" />
+        } @else if (c.tipo === 'select') {
+        <div class="flex gap-2">
+          @if (c.key === 'documentoId') {
+          <p-select size="small" [formControlName]="c.key" [options]="opcionesDocumento()" optionLabel="label"
+            optionValue="value" placeholder="Tipo documento..." styleClass="w-full" filter filterBy="label"
+            [appendTo]="'body'" (ngModelChange)="onDocumentoIdChange()" />
+          } @else if (c.key === 'nrodocumento') {
+          <p-select size="small" [formControlName]="c.key" [options]="opcionesNroDocumento()" optionLabel="label"
+            optionValue="value" placeholder="Nro. documento..." styleClass="w-full" filter filterBy="label"
+            [appendTo]="'body'" />
+          } @else {
+          <p-select size="small" [formControlName]="c.key" [options]="opciones(c)" optionLabel="label"
+            optionValue="value" placeholder="Seleccionar..." styleClass="w-full" [filter]="c.filtro ?? false"
+            filterBy="label" [appendTo]="'body'" />
+          }
+          @if (c.selector) {
+          <p-button type="button" icon="pi pi-search" severity="secondary" (onClick)="abrirSelector(c.selector)" />
+          }
+        </div>
+        } @else if (c.tipo === 'fecha') {
+        <p-datepicker [formControlName]="c.key" dateFormat="dd/mm/yy" styleClass="w-full" />
+        }
+
+        @if (invalid(c.key)) {
+        <small class="err">{{ c.label }} es obligatorio</small>
+        }
+      </div>
+      }
+      }
+    </div>
+
+    @if (camposDet.length > 0) {
+    <div class="card">
+      <div class="detalles-head">
+        <h2 class="detalles-title">Detalles</h2>
+        <p-button type="button" label="Agregar fila" icon="pi pi-plus" variant="text" severity="success" size="small"
+          [rounded]="true" (onClick)="nuevaFila()" />
+      </div>
+
+      <p-table [value]="dets()" [scrollable]="true" scrollHeight="400px" styleClass="det-table" [paginator]="true"
+        [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small">
+        <ng-template #header>
+          <tr>
+            @for (c of camposDet; track c.key) {
+            @if (!c.oculto) {
+            <th>{{ c.label }}</th>
+            }
+            }
+            <th style="width: 80px"></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row let-idx="rowIndex">
+          <tr>
+            @for (c of camposDet; track c.key) {
+            @if (!c.oculto) {
+            <td>
+              @if (c.tipo === 'numero') {
+              <p-inputnumber size="small" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" />
+              } @else if (c.tipo === 'fecha') {
+              <p-datepicker [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy"
+                styleClass="w-full" />
+              } @else if (c.tipo === 'select') {
+              @if (c.key === 'formapagoId') {
+              <p-select size="small" [ngModel]="row[c.key]"
+                (ngModelChange)="row[c.key] = $event; onFormaPagoChange(row)" [ngModelOptions]="{ standalone: true }"
+                [options]="opciones(c)" optionLabel="label" optionValue="value" placeholder="Seleccionar..."
+                styleClass="w-full" [filter]="c.filtro ?? false" filterBy="label" appendTo="body" />
+              } @else {
+              <p-select size="small" [ngModel]="row[c.key]" (ngModelChange)="row[c.key] = $event"
+                [ngModelOptions]="{ standalone: true }" [options]="opciones(c)" optionLabel="label" optionValue="value"
+                placeholder="Seleccionar..." styleClass="w-full" [filter]="c.filtro ?? false" filterBy="label"
+                appendTo="body" [disabled]="isCampoDesactivado(row, c.key)" />
+              }
+              } @else {
+              <input pInputText pSize="small" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }"
+                [disabled]="isCampoDesactivado(row, c.key)"
+                [placeholder]="isCampoDesactivado(row, c.key) ? '' : c.label" />
+              }
+            </td>
+            }
+            }
+            <td>
+              <p-button type="button" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" size="small"
+                [disabled]="!esNuevaFila(row)" (onClick)="quitarFila(idx)" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="100" class="text-center p-3">Sin detalles. Agregue filas.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+    }
+
+    <div class="acciones-form">
+      <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small"
+        [rounded]="true" (onClick)="volver()" />
+      <p-button type="submit" label="Guardar" icon="pi pi-check" variant="text" severity="success" size="small"
+        [rounded]="true" [loading]="guardando()" />
+    </div>
+  </form>
+  }
+</section>

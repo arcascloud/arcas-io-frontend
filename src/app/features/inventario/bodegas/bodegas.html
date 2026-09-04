@@ -1,0 +1,106 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Bodegas</h1>
+      <p class="page-subtitle">Administración de bodegas</p>
+    </div>
+    <!-- Se aplica el estándar para botones de "Agregar" -->
+    <p-button
+      label="Nueva bodega"
+      icon="pi pi-plus"
+      size="small"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      severity="success"
+      (onClick)="nuevo()" />
+  </header>
+
+  <div class="filtros card">
+    <div class="campo">
+      <label>Buscar</label>
+      <!-- Se aplica el estándar para inputs (pSize y class="w-full") -->
+      <input
+        pInputText
+        pSize="small"
+        class="w-full"
+        type="text"
+        placeholder="Descripción..."
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        (keyup.enter)="buscar()"
+      />
+    </div>
+    <div class="campo acciones">
+      <p-button
+        label="Buscar"
+        icon="pi pi-search"
+        size="small"
+        [rounded]="true"
+        (onClick)="buscar()" />
+
+      <!-- Reemplazo de atributo obsoleto 'text' por 'variant="text"' -->
+      <p-button
+        label="Limpiar"
+        icon="pi pi-times"
+        severity="secondary"
+        variant="text"
+        size="small"
+        [rounded]="true"
+        (onClick)="limpiarFiltros()"
+      />
+    </div>
+  </div>
+
+  <!-- Propiedad 'layout="list"' forzada para evitar el modo grid por defecto -->
+  <p-dataview
+    #dv
+    [value]="filtered()"
+    [loading]="cargando()"
+    dataKey="bodegaId"
+    layout="list"
+    [paginator]="true"
+    [rows]="20"
+    [rowsPerPageOptions]="[10, 20, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+  >
+    <ng-template #list let-items>
+      <div class="dv-cards">
+        @for (c of items; track c.bodegaId) {
+          <div class="dv-card">
+            <div class="dv-top">
+              <span class="dv-title">{{ c.descripcion }}</span>
+              <p-tag [value]="activoLbl(c.sn_activo)" [severity]="activoSev(c.sn_activo)" />
+            </div>
+
+            <div class="dv-body">
+              <div class="dv-row">
+                <span class="dv-label">ID</span>
+                <span class="dv-value">{{ c.bodegaId }}</span>
+              </div>
+            </div>
+
+            <div class="dv-actions" (click)="$event.stopPropagation()">
+              <!-- Botón de edición estandarizado -->
+              <p-button
+                icon="pi pi-pencil"
+                pTooltip="Editar"
+                severity="warn"
+                variant="text"
+                size="small"
+                [rounded]="true"
+                (onClick)="editar(c.bodegaId, $event)"
+              />
+            </div>
+          </div>
+        }
+      </div>
+    </ng-template>
+
+    <!-- En PrimeNG 18 el template vacío correcto es #empty (no #emptymessage) -->
+    <ng-template #empty>
+      <div class="text-center p-4">No hay bodegas que coincidan con los filtros.</div>
+    </ng-template>
+  </p-dataview>
+</section>

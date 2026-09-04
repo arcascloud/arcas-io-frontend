@@ -1,0 +1,282 @@
+.combo-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  min-height: 70vh;
+}
+
+.combo-col-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.combo-col-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.filtros {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  padding: 0.75rem;
+
+  .campo {
+    flex: 1;
+  }
+
+  .acciones {
+    display: flex;
+    gap: 0.35rem;
+    flex: 0;
+  }
+}
+
+.combo-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(70vh - 4rem);
+  padding: 0;
+
+  &.loading {
+    opacity: 0.6;
+  }
+}
+
+.combo-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--c-border);
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--c-surface-ground);
+  }
+
+  &.selected {
+    background: rgba(16, 185, 129, 0.08);
+    border-left: 3px solid var(--c-primary);
+    padding-left: calc(1rem - 3px);
+  }
+}
+
+.combo-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.combo-item-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--c-text);
+}
+
+.combo-item-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.combo-action-btn {
+  background: none;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  padding: 0.2rem 0.35rem;
+  cursor: pointer;
+  color: var(--c-text-muted);
+  transition: all 0.15s;
+
+  &:hover {
+    color: var(--c-primary);
+    border-color: var(--c-primary);
+  }
+}
+
+.combo-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.combo-item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.combo-item-label {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.combo-item-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+/* Columna derecha - Detalle */
+.combo-detail {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.combo-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--c-border);
+
+  h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--c-text);
+  }
+}
+
+.combo-detail-count {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.detail-items {
+  padding: 0;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--c-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.detail-item-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--c-surface-ground);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    mix-blend-mode: multiply;
+  }
+}
+
+.detail-item-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-text-muted);
+  font-size: 1.2rem;
+}
+
+.detail-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.detail-item-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-item-barcode {
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+}
+
+.detail-item-qty,
+.detail-item-price {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  min-width: 60px;
+}
+
+.detail-item-qty-label,
+.detail-item-price-label {
+  font-size: 0.6rem;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+}
+
+.detail-item-qty-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.detail-item-price-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-primary);
+}
+
+.combo-detail-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+}
+
+.loading-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.p-3 {
+  padding: 1.5rem;
+}
+
+@media (max-width: 960px) {
+  .combo-layout {
+    grid-template-columns: 1fr;
+  }
+}

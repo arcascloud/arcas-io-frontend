@@ -1,0 +1,89 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Proveedores</h1>
+      <p class="page-subtitle">Administración de proveedores (CXP)</p>
+    </div>
+    <p-button label="Nuevo proveedor" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+  </header>
+
+  <div class="filtros card">
+    <div class="campo">
+      <label>Buscar</label>
+      <input
+        pInputText
+        type="text"
+        placeholder="Nombre, RTN, nro. proveedor..."
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        (keyup.enter)="buscar()"
+      />
+    </div>
+    <div class="campo acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button
+        label="Limpiar"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        size="small"
+        (onClick)="limpiarFiltros()"
+      />
+    </div>
+  </div>
+
+  <p-table
+    [value]="filtered()"
+    [loading]="cargando()"
+    dataKey="proveedorId"
+    [paginator]="true"
+    [rows]="20"
+    [rowsPerPageOptions]="[10, 20, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
+    styleClass="p-datatable-striped">
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 4rem">#</th>
+        <th>Nombre</th>
+        <th>Nro. Proveedor</th>
+        <th>RTN</th>
+        <th style="width: 8rem">Lím. Crédito</th>
+        <th style="width: 8rem">Días Plazo</th>
+        <th style="width: 7rem" class="text-center">Estado</th>
+        <th style="width: 4rem" class="text-center"></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-p>
+      <tr (click)="editar(p.proveedorId)" style="cursor: pointer">
+        <td>{{ p.proveedorId }}</td>
+        <td class="font-bold">{{ p.nombres }} {{ p.apellidos }}</td>
+        <td>{{ p.nroproveedor }}</td>
+        <td>{{ p.rtn || '-' }}</td>
+        <td class="text-right">{{ moneda(p.limiteCredito) }}</td>
+        <td class="text-right">{{ p.diasplazo }}</td>
+        <td class="text-center">
+          <p-tag [value]="activoLbl(p.sn_activo)" [severity]="activoSev(p.sn_activo)" />
+        </td>
+        <td class="text-center">
+          <p-button
+            icon="pi pi-pencil"
+            size="small"
+            variant="text"
+            [rounded]="true"
+            severity="secondary"
+            (onClick)="$event.stopPropagation(); editar(p.proveedorId)" />
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="empty">
+      <tr>
+        <td colspan="8" class="text-center p-4">No hay proveedores que coincidan con los filtros.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</section>

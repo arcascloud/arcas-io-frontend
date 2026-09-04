@@ -1,0 +1,88 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Anular Factura</h1>
+      <p class="page-subtitle">Registro de facturas anuladas</p>
+    </div>
+  </header>
+
+  <div class="card filtros-card">
+    <div class="filtros-row">
+      <div class="campo campo-busqueda">
+        <span class="p-input-icon-left">
+          <input pInputText type="text" pSize="small"
+            placeholder="Buscar por # factura o nombre del cliente..."
+            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" class="busqueda-input" />
+        </span>
+      </div>
+      <div class="filtros-acciones">
+        <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" (onClick)="limpiar()" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card tabla-card">
+    <p-table [value]="filtered()" [loading]="cargando()" [paginator]="true" [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} facturas"
+      styleClass="facturas-table">
+      <ng-template #header>
+        <tr>
+          <th style="width:5rem"># Factura</th>
+          <th style="width:6rem">Fecha</th>
+          <th style="width:4rem" class="th-hora">Hora</th>
+          <th>Cliente</th>
+          <th style="width:6rem">Tipo</th>
+          <th style="width:7rem">Total</th>
+          <th style="width:5rem">Anulada</th>
+          <th style="width:5rem">Contab.</th>
+          <th style="width:8rem" class="acciones-header">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-f>
+        <tr [class.row-anulada]="f.sn_anulada === 'S'" class="fila-click">
+          <td>
+            <span class="nro-factura">{{ f.nrofactura }}</span>
+          </td>
+          <td>{{ fechaCorta(f.fecharegistro) }}</td>
+          <td class="hora-cell">{{ horaCorta(f.fecharegistro) }}</td>
+          <td>
+            <span class="cliente-nombre">{{ f.nombrecliente || 'Sin cliente' }}</span>
+          </td>
+          <td>
+            <p-tag [value]="getTipoLabel(f.tipofactura)" [severity]="getTipoSeverity(f.tipofactura)" styleClass="tag-sm" />
+          </td>
+          <td class="text-right total-cell">{{ moneda(f.total) }}</td>
+          <td>
+            <p-tag [value]="f.sn_anulada === 'S' ? 'Si' : 'No'" [severity]="f.sn_anulada === 'S' ? 'danger' : 'success'" styleClass="tag-sm" />
+          </td>
+          <td>
+            <p-tag [value]="f.sn_contabilizada === 'S' ? 'Si' : 'No'" [severity]="f.sn_contabilizada === 'S' ? 'info' : 'secondary'" styleClass="tag-sm" />
+          </td>
+          <td class="acciones-cell">
+            <div class="acciones-row">
+              <p-button icon="pi pi-eye" severity="info" text rounded size="small"
+                (onClick)="ver(f.facturaId); $event.stopPropagation()" pTooltip="Ver factura" tooltipPosition="top" />
+              <p-button icon="pi pi-ban" severity="danger" text rounded size="small"
+                (onClick)="anular(f, $event)" [disabled]="f.sn_anulada === 'S'"
+                pTooltip="Anular factura" tooltipPosition="top" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="9" class="empty-state">
+            <div class="empty-content">
+              <i class="pi pi-file"></i>
+              <p>No hay facturas registradas</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <p-confirmDialog [style]="{ width: '450px' }" acceptLabel="Si, anular" rejectLabel="Cancelar" />
+</section>

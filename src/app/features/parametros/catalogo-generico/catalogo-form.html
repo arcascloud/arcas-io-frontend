@@ -1,0 +1,99 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">{{ titulo() }}</h1>
+      <p class="page-subtitle">{{ config?.subtitulo }}</p>
+    </div>
+    <p-button
+      label="Volver"
+      icon="pi pi-arrow-left"
+      severity="secondary"
+      text
+      size="small"
+      rounded
+      (onClick)="volver()"
+    />
+  </header>
+
+  @if (cargando()) {
+    <div class="card">Cargando datos...</div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="card">
+      <div class="form-grid">
+        @for (c of campos; track c.key) {
+          <div class="campo">
+            <label [for]="c.key">{{ c.label }} @if (c.requerido) {<span class="req">*</span>}</label>
+
+            @if (c.tipo === 'texto') {
+              <input
+                pInputText
+                [id]="c.key"
+                [formControlName]="c.key"
+                maxlength="50"
+                [placeholder]="c.label"
+                [ngClass]="{ 'ng-invalid': invalid(c.key) }"
+              />
+            } @else if (c.tipo === 'numero') {
+              <p-inputnumber size="small"
+                [formControlName]="c.key"
+                [showButtons]="true"
+                [ngClass]="{ 'ng-invalid': invalid(c.key) }"
+              />
+            } @else if (c.tipo === 'select') {
+              <p-select
+                size="small"
+                [formControlName]="c.key"
+                [options]="opciones(c)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar..."
+                styleClass="w-full"
+                [appendTo]="'body'"
+              />
+            } @else if (c.tipo === 'fecha') {
+              <p-datepicker
+                [formControlName]="c.key"
+                dateFormat="dd/mm/yy"
+                [showIcon]="true"
+                [appendTo]="'body'"
+                styleClass="w-full"
+              />
+            }
+
+            @if (invalid(c.key)) {
+              <small class="err">{{ c.label }} es obligatorio</small>
+            }
+          </div>
+        }
+
+        @if (!config.sinEstado) {
+          <div class="campo">
+            <label>Estado <span class="req">*</span></label>
+            <p-select
+              size="small"
+              formControlName="sn_activo"
+              [options]="snOptions"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              [appendTo]="'body'"
+            />
+          </div>
+        }
+      </div>
+
+      <div class="acciones-form">
+        <p-button
+          type="button"
+          label="Cancelar"
+          icon="pi pi-times"
+          severity="secondary"
+          size="small"
+          rounded
+          (onClick)="volver()"
+        />
+        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+      </div>
+    </form>
+  }
+</section>

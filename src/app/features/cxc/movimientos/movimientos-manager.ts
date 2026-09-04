@@ -1,0 +1,303 @@
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { timeout, catchError, of } from 'rxjs';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { DataViewModule } from 'primeng/dataview';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { CardModule } from 'primeng/card';
+import { SkeletonModule } from 'primeng/skeleton';
+import { MessageService } from 'primeng/api';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { PaginatorModule } from 'primeng/paginator';
+import { CxcService } from '../../../core/services/cxc.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
+import { CxcCliente } from '../../../core/models/cxc.models';
+
+@Component({
+  selector: 'app-movimientos-manager',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ToolbarModule,
+    ButtonModule,
+    InputTextModule,
+    DataViewModule,
+    TagModule,
+    TooltipModule,
+    CardModule,
+    SkeletonModule,
+    InputNumberModule,
+    SelectModule,
+    DatePickerModule,
+    PaginatorModule,
+  ],
+  templateUrl: './movimientos-manager.html',
+  styleUrl: './movimientos-manager.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class MovimientosManager implements OnInit {
+  private service = inject(CxcService);
+  private msgs = inject(MessageService);
+  private auth = inject(AuthService);
+  private destroyRef = inject(DestroyRef);
+  private catalogService = inject(CatalogoParametrosService);
+
+  // ===== CLIENTES =====
+  data = signal<CxcCliente[]>([]);
+  cargando = signal(false);
+  selectedCliente = signal<CxcCliente | null>(null);
+  q = signal('');
+  page = signal(1);
+  limit = signal(15);
+  totalClientes = signal(0);
+
+  // ===== MOVIMIENTOS =====
+  movimientosData = signal<any[]>([]);
+  movimientosLoading = signal(false);
+  movimientoSaving = signal(false);
+  movimientoModel = signal<any>({
+    clienteId: null,
+    tipomov: 'D',
+    concepto: '',
+    importe: 0,
+    nroreferencia: '',
+    fecharegistro: new Date().toISOString(),
+  });
+
+  movimientoFecha = computed(() => {
+    const f = this.movimientoModel().fecharegistro;
+    if (!f) return null;
+    const d = new Date(f);
+    return isNaN(d.getTime()) ? null : d;
+  });
+
+  // Documentos fiscales
+  documentosOptions = signal<{ label: string; value: any }[]>([]);
+  documentoSelected = signal<any>(null);
+
+  readonly tipoMovOptions = [
+    { label: 'Débito', value: 'D' },
+    { label: 'Crédito', value: 'C' },
+  ];
+
+  // Referencias de débitos existentes (nroreferencia únicos de movimientos tipo D)
+  debitoReferencias = computed(() => {
+    const refs = this.movimientosData()
+      .filter(m => m.tipomov === 'D' && m.nroreferencia)
+      .map(m => String(m.nroreferencia));
+    return [...new Set(refs)];
+  });
+
+  ngOnInit() {
+    this.loadClientes();
+    this.loadDocumentos();
+  }
+
+  // ===== CLIENTES =====
+  loadClientes() {
+    this.cargando.set(true);
+    this.service.getClientes(this.page(), this.limit(), this.q()).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(10000),
+      catchError(() => of({ data: [], total: 0 }))
+    ).subscribe({
+      next: (res) => {
+        this.data.set(res.data);
+        this.totalClientes.set(res.total);
+        this.cargando.set(false);
+      },
+      error: () => this.cargando.set(false),
+    });
+  }
+
+  onPageChange(event: any) {
+    this.page.set(event.page + 1);
+    this.limit.set(event.rows);
+    this.loadClientes();
+  }
+
+  limpiarFiltros() {
+    this.q.set('');
+    this.loadClientes();
+  }
+
+  seleccionarCliente(cliente: CxcCliente) {
+    this.selectedCliente.set(cliente);
+    this.loadMovimientos(cliente.clienteId);
+  }
+
+  getClienteNombre(c: CxcCliente): string {
+    return `${c.nombres || ''} ${c.apellidos || ''}`.trim();
+  }
+
+  moneda(val: number): string {
+    if (val == null || isNaN(val)) return '0.00';
+    const partes = val.toFixed(2).split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return partes.join('.');
+  }
+
+  // ===== DOCUMENTOS FISCALES =====
+  loadDocumentos() {
+    const user = this.auth.currentUser();
+    this.catalogService.getAll<any>('/parametros/tcotipodocumentofiscal').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const filtered = (res || []).filter((r: any) => {
+          const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
+          const mismaEmpresa = user?.empresaId ? Number(r.empresaId) === Number(user.empresaId) : true;
+          return activo && mismaEmpresa;
+        });
+        const opts = filtered.map((r: any) => ({
+          label: r.descripcion || r.nombre || r.descripcioncorta || String(r.tipodocumentofiscalId || r.documentoId || r.id),
+          value: r.tipodocumentofiscalId ?? r.documentoId ?? r.id,
+        }));
+        this.documentosOptions.set(opts);
+      },
+      error: () => this.documentosOptions.set([]),
+    });
+  }
+
+  // ===== MOVIMIENTOS =====
+  private loadMovimientos(clienteId: number) {
+    this.movimientosLoading.set(true);
+    this.service.getMovimientosByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.movimientosData.set(res);
+        this.movimientosLoading.set(false);
+      },
+      error: () => this.movimientosLoading.set(false),
+    });
+  }
+
+  onMovimientoFechaChange(d: Date | null) {
+    this.movimientoModel.set({ ...this.movimientoModel(), fecharegistro: d ? d.toISOString() : null });
+  }
+
+  cancelarMovimiento() {
+    this.movimientoModel.set({
+      tipomov: 'D',
+      concepto: '',
+      importe: 0,
+      nroreferencia: '',
+      fecharegistro: new Date().toISOString(),
+    });
+    this.documentoSelected.set(null);
+  }
+
+  guardarMovimiento() {
+    const cliente = this.selectedCliente();
+    if (!cliente) {
+      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear un movimiento' });
+      return;
+    }
+
+    const raw = { ...this.movimientoModel() };
+    const payload: any = {
+      ...raw,
+      clienteId: cliente.clienteId,
+      importe: Number(raw.importe) || 0,
+      tipomov: raw.tipomov || 'D',
+    };
+
+    try {
+      if (payload.fecharegistro) {
+        const d = new Date(payload.fecharegistro);
+        if (!isNaN(d.getTime())) payload.fecharegistro = d.toISOString();
+      }
+    } catch (e) { }
+
+    if (!payload.concepto || !payload.clienteId) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Complete concepto y cliente' });
+      return;
+    }
+
+    if (typeof payload.importe !== 'number' || payload.importe <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Importe inválido', detail: 'El importe debe ser mayor que 0' });
+      return;
+    }
+
+    // Validar débito: referencia obligatoria y no duplicada
+    if (payload.tipomov === 'D') {
+      if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
+        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el número de factura o préstamo de referencia' });
+        return;
+      }
+      const refStr = String(payload.nroreferencia).trim();
+      const refsUsadas = this.debitoReferencias();
+      if (refsUsadas.includes(refStr)) {
+        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un débito con referencia "${refStr}". No se pueden crear débitos duplicados.` });
+        return;
+      }
+    }
+
+    // Validar crédito: referencia obligatoria, debe existir como débito
+    if (payload.tipomov === 'C') {
+      if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
+        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de débito al que aplica el abono' });
+        return;
+      }
+      const refsDisponibles = this.debitoReferencias();
+      if (!refsDisponibles.includes(String(payload.nroreferencia))) {
+        this.msgs.add({ severity: 'warn', summary: 'Referencia inválida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningún débito existente` });
+        return;
+      }
+    }
+
+    const user = this.auth.currentUser();
+    if (user) {
+      payload.empresaId = payload.empresaId ?? user.empresaId;
+      if (user.idsucursal != null) payload.Idsucursal = payload.Idsucursal ?? user.idsucursal;
+      payload.usuarioCreated = payload.usuarioCreated ?? user.usuario ?? user.nombre;
+    }
+
+    payload.nrocliente = payload.nrocliente ?? cliente.nrocliente;
+    payload.moduloId = payload.moduloId ?? 4;
+    payload.documentoId = payload.documentoId ?? 3;
+    payload.sn_doc_anulado = 'N';
+    payload.sn_cotabilizada = 'N';
+    payload.factordecambio = payload.factordecambio || 1;
+
+    if (this.documentoSelected()) {
+      payload.tipodocumentofiscalId = payload.tipodocumentofiscalId ?? this.documentoSelected();
+      payload.documentoId = payload.documentoId ?? this.documentoSelected();
+    }
+
+    this.movimientoSaving.set(true);
+    this.service.createMovimiento(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.movimientosData.set([...this.movimientosData(), res]);
+        this.movimientoSaving.set(false);
+        this.cancelarMovimiento();
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Movimiento registrado correctamente' });
+      },
+      error: (err) => {
+        console.error('[MovimientosManager] Error guardando movimiento', err);
+        let detail = 'No se pudo guardar el movimiento';
+        if (err?.error?.message) detail = err.error.message;
+        else if (err?.message) detail = err.message;
+        this.movimientoSaving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail });
+      },
+    });
+  }
+
+  getTipoMovLabel(tipo: string): string {
+    const tipos: Record<string, string> = { 'C': 'Crédito', 'A': 'Abono', 'D': 'Débito' };
+    return tipos[tipo] || tipo;
+  }
+
+  getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'warning' | 'info' {
+    if (tipo === 'A') return 'success';
+    if (tipo === 'C') return 'info';
+    return 'danger';
+  }
+}

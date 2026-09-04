@@ -1,0 +1,45 @@
+import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
+import { MessageService } from 'primeng/api';
+
+export const errorInterceptor: HttpInterceptorFn = (req, next) => {
+  const router = inject(Router);
+  const msgs = inject(MessageService);
+
+  return next(req).pipe(
+    catchError((error: HttpErrorResponse) => {
+      // Evitamos mostrar Toast para un 401, el usuario simplemente debe ser redirigido a Login.
+      if (error.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.navigateByUrl('/login');
+      } else {
+        // Para cualquier otro error, sacamos el mensaje que provea el Backend NestJS o un mensaje genérico
+        let detail = 'Ocurrió un error en el servidor.';
+        
+        if (typeof error.error === 'string') {
+          detail = error.error;
+        } else if (error.error?.message) {
+          // NestJS suele devolver { statusCode: 4xx, message: "..." }
+          detail = Array.isArray(error.error.message) 
+            ? error.error.message.join(', ') // Si es error de class-validator de Nest
+            : error.error.message;
+        }
+
+        // Mostrar notificación estándar en todo el ERP
+        if (error.status === 404) {
+          msgs.add({ severity: 'warn', summary: 'No encontrado', detail });
+        } else if (error.status === 409) {
+          msgs.add({ severity: 'error', summary: 'Conflicto de Datos', detail });
+        } else if (error.status === 403) {
+          msgs.add({ severity: 'error', summary: 'Acceso Denegado', detail: 'No tienes permisos para esta acción.' });
+        } else {
+          msgs.add({ severity: 'error', summary: 'Error', detail });
+        }
+      }
+      return throwError(() => error);
+    }),
+  );
+};

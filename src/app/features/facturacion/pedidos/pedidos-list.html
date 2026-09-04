@@ -1,0 +1,85 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Pedidos</h1>
+      <p class="page-subtitle">Pedidos de clientes</p>
+    </div>
+    <div>
+      <p-button label="Nuevo" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="nuevo()" />
+    </div>
+  </header>
+
+  <div class="card filtros-card">
+    <div class="filtros-row">
+      <div class="campo campo-busqueda">
+        <span class="p-input-icon-left">
+          <input pInputText type="text" pSize="small"
+            placeholder="Buscar por # pedido, nombre del cliente o teléfono..."
+            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" class="busqueda-input" />
+        </span>
+      </div>
+      <div class="filtros-acciones">
+        <i class="pi pi-search"></i>
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="limpiar()" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card tabla-card">
+    <p-table [value]="filtered()" [loading]="cargando()"
+    showGridlines
+    [tableStyle]="{ 'min-width': '40rem' }"
+     [paginator]="true" [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} pedidos"
+      styleClass="pedidos-table">
+      <ng-template #header>
+        <tr>
+          <th style="width:5rem"># Pedido</th>
+          <th style="width:6rem">Fecha</th>
+          <th style="width:5rem" class="th-hora">Hora</th>
+          <th>Cliente</th>
+          <th style="width:8rem">Teléfono</th>
+          <th style="width:5rem">Envío Gratis</th>
+          <th style="width:5rem">Facturado</th>
+          <th style="width:8rem" class="acciones-header">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-p>
+        <tr (click)="editar(p.pospedmaeId)" class="fila-click">
+          <td>
+            <span class="nro-factura">{{ p.pospedmaeId }}</span>
+          </td>
+          <td>{{ fechaCorta(p.fecharegistro) }}</td>
+          <td class="hora-cell">{{ horaCorta(p.fecharegistro) }}</td>
+          <td>
+            <span class="cliente-nombre">{{ p.nombrecliente || 'Sin cliente' }}</span>
+          </td>
+          <td>{{ p.nrotelefono || '-' }}</td>
+          <td>
+            <p-tag [value]="getEnvioLabel(p.sn_enviogratis)" [severity]="getEnvioSeverity(p.sn_enviogratis)" styleClass="tag-sm" />
+          </td>
+          <td>
+            <p-tag [value]="getFacturadoLabel(p.sn_facturado)" [severity]="getFacturadoSeverity(p.sn_facturado)" styleClass="tag-sm" />
+          </td>
+          <td class="acciones-cell">
+            <div class="acciones-row">
+              <p-button icon="pi pi-pencil" severity="info" text rounded size="small"
+                (onClick)="editar(p.pospedmaeId); $event.stopPropagation()" pTooltip="Editar" tooltipPosition="top" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="empty-state">
+            <div class="empty-content">
+              <i class="pi pi-shopping-cart"></i>
+              <p>No hay pedidos registrados</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</section>

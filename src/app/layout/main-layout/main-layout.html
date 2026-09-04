@@ -1,0 +1,72 @@
+<div class="layout-wrapper" [class.sidebar-hidden]="sidebarHidden()" [class.sidebar-open]="mobileSidebarOpen()">
+  <!-- Sidebar overlay (mobile only) -->
+  <div class="sidebar-overlay" (click)="mobileSidebarOpen.set(false)"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="assets/images/arcas-logo.svg" alt="Logo Arcas Software" class="sidebar-logo-img" />
+        <span class="sidebar-title">Arcas Software</span>
+      </div>
+      <button class="sidebar-pin" [class.visible]="!sidebarHidden()" [class.pinned]="pinned()" (click)="togglePin()"
+        title="Fijar sidebar"></button>
+      <button class="sidebar-close-mobile" (click)="mobileSidebarOpen.set(false)" title="Cerrar menú">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    <div class="sidebar-menu" (click)="onMenuClick($event)">
+      <p-panelmenu [model]="menuItems()" class="w-full md:w-80" />
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="layout-main">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <p-button [icon]="toggleIcon" (onClick)="toggleSidebar()"
+          severity="secondary" raised="true" iconOnly rounded size="small"
+          class="sidebar-toggle"></p-button>
+      </div>
+      <div class="topbar-right">
+
+
+        <div class="user-chip hidden-mobile">
+          <div class="user-chip-info">
+            <span class="user-name">{{ user()?.nombre }}</span>
+          </div>
+          <span class="user-avatar">
+            <p-avatar [label]="initials" shape="circle" size="small" />
+          </span>
+        </div>
+
+         <p-button type="button" (click)="visible = true"
+         [rounded]="true" [text]="true"
+         icon="pi pi-arrow-left" />
+
+        <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-sign-out" (onClick)="cerrarSesion()"
+          size="small" iconOnly pTooltip="Presione para salir de la app" tooltipPosition="bottom" />
+
+
+
+      </div>
+    </header>
+
+            <p-drawer header="Left Drawer" [(visible)]="visible" position="right">
+                <p>
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+                    consequat.
+                </p>
+            </p-drawer>
+
+    <!-- Content -->
+    <main class="layout-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<!-- Globales: notificaciones y confirmaciones -->
+<p-toast />
+<p-confirmdialog />

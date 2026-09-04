@@ -1,0 +1,70 @@
+:host {
+  display: block;
+}
+
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.prestamo-form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-col-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.form-col .p-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-col label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+}
+
+.req {
+  color: var(--c-danger);
+}
+
+:host ::ng-deep {
+  .p-inputtext,
+  .p-select,
+  .p-inputnumber,
+  .p-datepicker {
+    width: 100%;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-border);
+  margin-top: 1rem;
+}
+
+.p-error {
+  font-size: 0.75rem;
+}

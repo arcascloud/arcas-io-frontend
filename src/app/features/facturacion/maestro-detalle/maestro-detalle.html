@@ -1,0 +1,77 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">{{ config?.titulo }}</h1>
+      <p class="page-subtitle">{{ config?.subtitulo }}</p>
+    </div>
+    <div>
+      @if (!config.soloLectura) {
+        <p-button label="Nuevo" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="nuevo()" />
+      }
+    </div>
+  </header>
+
+  <div class="filtros card">
+    <div class="campo">
+      <label>Buscar</label>
+      <input
+        pInputText
+        type="text"
+        placeholder="Buscar..."
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        (keyup.enter)="buscar()"
+        pSize="small"
+      />
+    </div>
+    <div class="campo acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" />
+      <p-button
+        label="Limpiar"
+        icon="pi pi-times"
+        severity="secondary"
+        variant="text"
+        size="small"
+        [rounded]="true"
+        (onClick)="limpiarFiltros()"
+      />
+    </div>
+  </div>
+
+  <p-dataview
+    [value]="filtered()"
+    [loading]="cargando()"
+    [paginator]="true"
+    [rows]="20"
+    [rowsPerPageOptions]="[10, 20, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
+    [layout]="list"
+  >
+    <ng-template #list let-items>
+      <div class="dv-cards">
+        @for (item of items; track item?.[config.idKeyMae]) {
+          <div class="dv-card" (click)="!config.soloLectura && editar(item[config.idKeyMae])">
+            <div class="dv-top">
+              <span class="dv-title">{{ config.tituloLista(item) }}</span>
+            </div>
+
+            <div class="dv-body">
+              @for (f of config.filasLista(item); track f.label) {
+                <div class="dv-row">
+                  <span class="dv-label">{{ f.label }}</span>
+                  <span class="dv-value">{{ f.value }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <div class="text-center p-3">No hay registros.</div>
+    </ng-template>
+  </p-dataview>
+</section>

@@ -1,0 +1,407 @@
+<section class="page">
+  <form [formGroup]="form">
+    <div class="nf-layout">
+      <div class="nf-col nf-col-left">
+        <p-toolbar class="mb-3 nf-toolbar">
+          <ng-template #start>
+            <div class="campo">
+              <label for="tipofactura">Tipo factura<span class="req">*</span></label>
+              <p-selectbutton size="small" id="tipofactura" [options]="tipoOptions" formControlName="tipofactura"
+                optionLabel="label" size="small" optionValue="value" aria-labelledby="tipo-factura"
+                (onChange)="onTipoFacturaChange()" />
+            </div>
+
+            <div class="campo">
+              <label for="snFacturaconNombreId">Factura con nombre<span class="req">*</span></label>
+              <p-selectbutton size="small" id="snFacturaconNombreId" [options]="snNombreOptions" formControlName="snNombreOptions"
+                optionLabel="label" size="small" optionValue="value" aria-labelledby="snFacturaconNombreId" />
+            </div>
+
+
+            <div class="campo ml-campo">
+              <label for="clienteId">Cliente <span class="req">*</span></label>
+              <p-select size="small" id="clienteId" formControlName="clienteId" [options]="clientes()"
+                optionLabel="label" optionValue="value" filter showClear
+                placeholder="Seleccionar cliente..." styleClass="w-full" [appendTo]="'body'" (onChange)="onClienteChange()"
+                [ngClass]="{ 'ng-invalid': invalid('clienteId') }" [disabled]="esContado()" />
+              @if (invalid('clienteId')) {
+              <small class="err">Seleccione el cliente</small>
+              }
+            </div>
+
+            <!-- agregar nuevo cliente -->
+            <p-button icon="pi pi-plus-circle" class="ml-campo btn-add-cliente" size="small" variant="text" severity="info"
+              [rounded]="true"
+              pTooltip="ALT + 2 Buscar cliente | Agregar nuevo cliente" showDelay="1000" hideDelay="300"
+              (onClick)="abrirNuevoCliente()" />
+
+            @if (esContado() && form.get('snNombreOptions')?.value === 'S') {
+            <div class="campo ml-campo">
+              <label for="nombreClienteManual">Nombre del cliente<span class="req">*</span></label>
+              <input pInputText id="nombreClienteManual" pSize="small" [ngModel]="nombreClienteManual()"
+                (ngModelChange)="nombreClienteManual.set($event)" [ngModelOptions]="{ standalone: true }"
+                placeholder="Nombre del cliente" class="w-full" />
+            </div>
+            }
+
+
+
+          </ng-template>
+
+          <ng-template #end>
+
+            <p-button label="volver" icon="pi pi-arrow-left" [rounded]="true" variant="text" severity="secondary" size="small"
+              (onClick)="salir()" />
+
+          </ng-template>
+        </p-toolbar>
+
+
+        <p-toolbar class="mb-3 nf-toolbar">
+          <ng-template #start>
+            <div class="nf-busqueda">
+              <input pInputText type="text" pSize="small" [value]="qProducto()" (input)="onBuscarProducto($event)"
+                placeholder="Buscar producto o escanear código de barras..." />
+              <!-- Buscar producto-->
+              <p-button size="small" icon="pi pi-search" pTooltip="ALT + 1 Buscar producto"
+                showDelay="1000" hideDelay="300" variant="text" severity="info" [rounded]="true" (onClick)="showHelperProductos()" />
+            </div>
+
+            <div class="campo ml-campo">
+              <label>Tipo Descuento</label>
+              <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
+                placeholder="Sin descuento" [showClear]="true" styleClass="w-full" [appendTo]="'body'" [ngModel]="descuentoGlobalId()"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()" />
+            </div>
+          </ng-template>
+          <ng-template #end>
+
+            <!-- voy a mover si las factura es excenta de isv -->
+
+            <div class="campo">
+              <label>Exenta de ISV</label>
+              <p-selectbutton size="small" [options]="snOptions" formControlName="sn_excenta" optionLabel="label"
+                optionValue="value" size="small" (onChange)="recalcularExenta()" />
+            </div>
+            @if (form.get('nrocarnet')?.value && form.get('sn_excenta')?.value === 'S') {
+            <div class="campo ml-campo">
+              <label for="nrocarnet">Nro. Carnet<span class="req">*</span></label>
+              <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet" />
+              @if (invalid('nrocarnet')) {
+              <small class="err">Ingrese el número de carnet</small>
+              }
+            </div>
+            }
+
+          </ng-template>
+        </p-toolbar>
+
+        <p-table [value]="filas()" size="small" [scrollable]="true" scrollHeight="400px"
+          [tableStyle]="{ 'min-width': '50rem' }" styleClass="det-table"
+          [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+          [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+          <ng-template #header>
+            <tr>
+              <th style="width: 5rem">Acción</th>
+              <th style="width: 25rem">Producto</th>
+              <th style="width: 3rem">Imagen</th>
+              <th style="width: 2rem">PrecioVta</th>
+              <th tyle="width: 8rem">Cantidad</th>
+              <th>Subtotal</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-row let-idx="rowIndex">
+            <tr>
+              <td>
+                <p-button icon="pi pi-times"
+                [rounded]="true" severity="danger" (onClick)="quitarFila(idx)"
+                  size="small"
+                  />
+              </td>
+
+              <td class="cell-producto">
+                <span class="cod-barra">Cod. {{ row.codbarra }}</span>
+                <span class="desc-linea">{{ row.descripcion }}</span>
+                <span class="desc-linea">
+                  existencia: <p-badge [value]="getExistencia(row.productoId) + ''" badgeSize="small" severity="secondary" />
+                  disponibilidad: <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)" styleClass="tag-sm" />
+                </span>
+
+              </td>
+
+              <td>
+                @if (row.imagenUrl) {
+                <img [src]="row.imagenUrl" [alt]="row.descripcion" width="50" class="img-producto"
+                  (mouseenter)="onImgHover(row.imagenUrl, $event)"
+                  (mousemove)="onImgMove($event)"
+                  (mouseleave)="onImgLeave()" />
+                } @else {
+                <i class="pi pi-images" style="color: slateblue"></i>
+                }
+              </td>
+
+              <td>{{ moneda(row.precioventa) }}</td>
+
+              <td>
+                <p-inputnumber
+                  [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" [min]="0"
+                  [step]="1"
+                  [showButtons]="true"
+                  spinnerMode="horizontal"
+                  buttonLayout="horizontal"
+                  size="small"
+                  mode="currency" currency="HNL" [locale]="'es-HN'"
+                  [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+                  [inputStyle]="{ 'width': '100%' }"
+                  (ngModelChange)="recalcularFila(row)" >
+                 <ng-template #incrementbuttonicon>
+                        <span class="pi pi-plus"></span>
+                    </ng-template>
+                                    <ng-template #decrementbuttonicon>
+                        <span class="pi pi-minus"></span>
+                    </ng-template>
+                </p-inputnumber>
+              </td>
+
+              <td>{{ moneda(row.subTotal) }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="100" class="text-center p-3">Sin artículos. Agregue el primer artículo.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+
+        <div class="card mt-3 nf-totales">
+          <div class="nf-totales-split">
+            <div class="nf-totales-col-btns">
+              <p-button type="button" label="Nueva" icon="pi pi-file" variant="text" severity="success"
+                size="small" [rounded]="true" (onClick)="nueva()" pTooltip="ESC Cancelar" />
+              @if (form.get('tipofactura')?.value === 'C') {
+              <p-button type="button" label="Facturar" icon="pi pi-check-circle" size="small" [rounded]="true"
+                variant="text" severity="success" [loading]="guardando()" (onClick)="facturar()" pTooltip="ALT + 8 Finalizar" />
+              } @else {
+              <p-button type="button"
+                label="Pagar" variant="text" severity="info" icon="pi pi-credit-card" size="small"
+                 [rounded]="true"
+                 (onClick)="dialogPagos.set(true)"
+                [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
+                pTooltip="ALT + 6 Pago" />
+              }
+              <p-button type="button" label="Salir"
+              variant="text" severity="secondary"
+                icon="pi pi-sign-out"
+                size="small" [rounded]="true" (onClick)="salir()" />
+            </div>
+            <div class="nf-totales-col-data">
+              <div class="nf-total-block">
+                <div class="font-bold">Subtotal venta</div>
+                <div>{{ moneda(totales().subTotal) }}</div>
+              </div>
+              <div class="nf-total-block">
+                <div class="font-bold">Impuesto (15%)</div>
+                <div>{{ moneda(totales().impuesto) }}</div>
+              </div>
+              <div class="nf-total-block">
+                <div class="font-bold">Descuento</div>
+                <div>- {{ moneda(totales().descuento) }}</div>
+              </div>
+              <div class="nf-total-block nf-total-grand">
+                <div>Gran Total</div>
+                <div>{{ moneda(totales().total) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="nf-col nf-col-right">
+
+        <div class="invoice-side">
+          <div class="pago-block">
+            <div class="invoice-party-title">Resumen de Pago</div>
+            <div class="pago-resumen">
+              <div class="pago-resumen-inline">
+                <span>Total Factura: <span class="font-bold">{{ moneda(totales().total) }}</span></span>
+                <span>Total Pagos: <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
+                    [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0">{{ moneda(totalPagos())
+                    }}</span></span>
+                @if (pendiente() > 0) {
+                <span>Pendiente: <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span>
+                }
+                @if (cambioTotal() > 0) {
+                <span>Cambio: <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span>
+                }
+              </div>
+            </div>
+            @if (pagosConImporte().length === 0) {
+            <small class="text-muted mt-1 block">Ingrese importe en las formas de pago</small>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</section>
+
+
+<p-dialog header="Formas de Pago" [(visible)]="dialogPagos" [modal]="true" [style]="{ width: '80vw', height: '85vh' }"
+  [contentStyle]="{ overflow: 'auto' }" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+  <div class="pago-dialog-body">
+      <p-table [value]="pagos()" size="small" [scrollable]="true" scrollHeight="flex"
+        [tableStyle]="{ 'min-width': '100%' }" styleClass="pago-table"
+        [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+      <ng-template #header>
+        <tr>
+          <th style="width: 25%">Forma de Pago</th>
+          <th style="width: 20%">Tarjeta</th>
+          <th style="width: 15%">Nro. Tarjeta</th>
+          <th style="width: 15%">Autorización</th>
+          <th style="width: 10%">Importe</th>
+          <th style="width: 5%"></th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-pago let-idx="rowIndex">
+        <tr>
+          <td>
+            <p-select size="small" [options]="formaspago()" optionLabel="label" optionValue="value"
+              placeholder="Seleccionar..." styleClass="w-full" [(ngModel)]="pago.formapagoId"
+              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" />
+          </td>
+          <td>
+            @if (esTarjeta(pago)) {
+            <p-select size="small" [options]="tarjetas()" optionLabel="label" optionValue="value"
+              placeholder="Seleccionar..." styleClass="w-full" showClear [(ngModel)]="pago.tarjetacreditoId"
+              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" />
+            }
+          </td>
+          <td>
+            @if (esTarjeta(pago)) {
+            <input pInputText size="small" [(ngModel)]="pago.nrotarjeta" [ngModelOptions]="{ standalone: true }"
+              placeholder="Nro. tarjeta" class="w-full" />
+            }
+          </td>
+          <td>
+            @if (esTarjeta(pago) || esTransferencia(pago)) {
+            <input pInputText size="small" [(ngModel)]="pago.nroautorizacion" [ngModelOptions]="{ standalone: true }"
+              placeholder="Autorización" class="w-full" />
+            }
+          </td>
+          <td>
+            <p-inputnumber size="small" [(ngModel)]="pago.importe" [ngModelOptions]="{ standalone: true }" [min]="0"
+              mode="currency" currency="HNL" [locale]="'es-HN'"
+              [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+              [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
+          </td>
+          <td class="text-center">
+            <p-button icon="pi pi-times" [rounded]="true" severity="danger" size="small"
+              (onClick)="quitarPago(idx)" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="7" class="text-center p-3">
+            Sin formas de pago. Presione "Agregar pago" para comenzar.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="pago-dialog-footer">
+      <div class="pago-dialog-totales">
+        <div class="pago-resumen-line">
+          <span>Total Factura:</span>
+          <span class="font-bold">{{ moneda(totales().total) }}</span>
+        </div>
+        <div class="pago-resumen-line">
+          <span>Total Pagos:</span>
+          <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
+            [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0">{{ moneda(totalPagos()) }}</span>
+        </div>
+        @if (pendiente() > 0) {
+        <div class="pago-resumen-line pendiente-line">
+          <span>Pendiente:</span>
+          <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span>
+        </div>
+        }
+        @if (cambioTotal() > 0) {
+        <div class="pago-resumen-line">
+          <span>Cambio:</span>
+          <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span>
+        </div>
+        }
+      </div>
+      <div class="pago-dialog-actions">
+        <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small" [rounded]="true"
+          (onClick)="dialogPagos.set(false)" />
+        <p-button type="button" label="Facturar" icon="pi pi-shopping-cart" [loading]="guardando()" size="small"
+          severity="success" variant="text" [rounded]="true"
+          (onClick)="facturar()" />
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Ventas Suspendidas (ALT + 4)" [(visible)]="dialogSuspendidas" [modal]="true"
+  [style]="{ width: '70vw' }" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+  <p-table [value]="ventasSuspendidas()" size="small" [scrollable]="true" scrollHeight="400px"
+    styleClass="det-table"
+    [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+    [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+    <ng-template #header>
+      <tr>
+        <th style="width: 10rem">Fecha</th>
+        <th>Cliente</th>
+        <th>Artículos</th>
+        <th style="width: 10rem" class="text-right">Total</th>
+        <th style="width: 8rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-v let-idx="rowIndex">
+      <tr>
+        <td>{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>{{ v.nombreClienteManual || v.nrocliente || 'N/A' }}</td>
+        <td>{{ v.filas?.length ?? 0 }}</td>
+        <td class="text-right">{{ moneda(v.totales?.total) }}</td>
+        <td class="text-center">
+          <p-button icon="pi pi-upload" [rounded]="true" severity="success" size="small"
+            pTooltip="Restaurar" (onClick)="restaurarVenta(v)" />
+          <p-button icon="pi pi-trash" [rounded]="true" severity="danger" size="small"
+            pTooltip="Eliminar" (onClick)="eliminarVentaSuspendida(v)" />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="5" class="text-center p-3">No hay ventas suspendidas</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-dialog>
+
+<p-dialog header="Atajos de Teclado (ALT + 9)" [(visible)]="dialogAtajos" [modal]="true"
+  [style]="{ width: '420px' }" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+  <div class="atajos-list">
+    @for (a of atajos; track a.tecla) {
+    <div class="atajo-row">
+      <kbd>{{ a.tecla }}</kbd>
+      <span>{{ a.accion }}</span>
+    </div>
+    }
+  </div>
+</p-dialog>
+
+@if (zoomVisible()) {
+<img [src]="zoomUrl()" class="img-zoom-overlay"
+  [style.left.px]="zoomX()" [style.top.px]="zoomY()" />
+}

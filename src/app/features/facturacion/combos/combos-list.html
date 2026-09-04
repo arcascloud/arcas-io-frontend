@@ -1,0 +1,146 @@
+<p-toast />
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h3 class="page-title">Combos</h3>
+      <p class="page-subtitle">Combos de productos</p>
+    </div>
+    <p-button label="Nuevo" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="nuevo()" />
+  </header>
+
+  <div class="combo-layout">
+    <div class="combo-col-left">
+      <div class="filtros card">
+        <div class="campo">
+          <label>Buscar</label>
+          <input
+            pInputText
+            type="text"
+            placeholder="Buscar..."
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event)"
+            (keyup.enter)="buscar()"
+            pSize="small"
+          />
+        </div>
+        <div class="campo acciones">
+          <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" />
+          <p-button
+            label="Limpiar"
+            icon="pi pi-times"
+            severity="secondary"
+            text
+            size="small"
+            (onClick)="limpiarFiltros()"
+          />
+        </div>
+      </div>
+
+      <div class="combo-list card" [class.loading]="cargando()">
+        @if (cargando()) {
+          <div class="loading-placeholder">
+            <i class="pi pi-spin pi-spinner" style="font-size: 1.5rem; color: var(--c-primary)"></i>
+          </div>
+        }
+        @for (item of filtered(); track item.poscbomaeId) {
+          <div
+            class="combo-item"
+            [class.selected]="comboSeleccionado()?.poscbomaeId === item.poscbomaeId"
+            (click)="seleccionarCombo(item)"
+          >
+            <div class="combo-item-header">
+              <span class="combo-item-title">{{ titulo(item) }}</span>
+              <div class="combo-item-actions">
+                <button
+                  class="combo-action-btn"
+                  pTooltip="Editar"
+                  (click)="editar(item.poscbomaeId, $event)"
+                >
+                  <i class="pi pi-pencil"></i>
+                </button>
+              </div>
+            </div>
+            <div class="combo-item-body">
+              @for (f of filas(item); track f.label) {
+                <div class="combo-item-row">
+                  <span class="combo-item-label">{{ f.label }}</span>
+                  <span class="combo-item-value">{{ f.value }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        } @empty {
+          @if (!cargando()) {
+            <div class="text-center p-3">No hay registros.</div>
+          }
+        }
+      </div>
+    </div>
+
+    <div class="combo-col-right">
+      @if (comboSeleccionado()) {
+        <div class="combo-detail card">
+          <div class="combo-detail-header">
+            <h4>{{ titulo(comboSeleccionado()!) }}</h4>
+            <span class="combo-detail-count">{{ comboItems().length }} producto{{ comboItems().length !== 1 ? 's' : '' }}</span>
+          </div>
+
+          @if (cargandoItems()) {
+            <div class="loading-placeholder">
+              <i class="pi pi-spin pi-spinner" style="font-size: 1.5rem; color: var(--c-primary)"></i>
+            </div>
+          }
+
+          <p-dataview
+            [value]="comboItems()"
+            [loading]="cargandoItems()"
+            [paginator]="true"
+            [rows]="10"
+            [rowsPerPageOptions]="[5, 10, 20]"
+            size="small"
+            [layout]="'list'"
+          >
+            <ng-template #list let-items>
+              <div class="detail-items">
+                @for (det of items; track det.poscbodetId) {
+                  <div class="detail-item">
+                    <div class="detail-item-img">
+                      @if (det.img) {
+                        <img [src]="resolverImagen(det.img)" [alt]="det.descripcion" loading="lazy" />
+                      } @else {
+                        <div class="detail-item-placeholder">
+                          <i class="pi pi-image"></i>
+                        </div>
+                      }
+                    </div>
+                    <div class="detail-item-info">
+                      <span class="detail-item-name">{{ det.descripcion || 'Producto #' + det.productoId }}</span>
+                      <span class="detail-item-barcode">{{ det.codbarra }}</span>
+                    </div>
+                    <div class="detail-item-qty">
+                      <span class="detail-item-qty-label">Cant</span>
+                      <span class="detail-item-qty-value">{{ det.cantidad }}</span>
+                    </div>
+                    <div class="detail-item-price">
+                      <span class="detail-item-price-label">P. Venta</span>
+                      <span class="detail-item-price-value">{{ formatearPrecio(det.precioventa) }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </ng-template>
+
+            <ng-template #emptymessage>
+              <div class="text-center p-3">Este combo no tiene productos.</div>
+            </ng-template>
+          </p-dataview>
+        </div>
+      } @else {
+        <div class="combo-detail-placeholder card">
+          <i class="pi pi-arrow-left"></i>
+          <p>Selecciona un combo para ver sus productos</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>

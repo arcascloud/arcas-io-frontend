@@ -1,0 +1,247 @@
+﻿.nf-layout {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.nf-col {
+  min-width: 0;
+}
+
+.nf-col-left {
+  flex: 1 1 70%;
+  min-width: 0;
+}
+
+.nf-col-right {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.nf-toolbar {
+  .p-toolbar-start,
+  .p-toolbar-end {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .p-toolbar-end {
+    margin-left: auto;
+  }
+}
+
+.nf-busqueda {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+
+  input[pinputtext] {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.toolbar-campos {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  width: 100%;
+
+  .campo {
+    flex: 1 1 200px;
+    min-width: 150px;
+  }
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .req {
+    color: #ef4444;
+  }
+
+  .err {
+    color: #ef4444;
+    font-size: 0.75rem;
+  }
+
+  p-select,
+  p-inputnumber,
+  p-datepicker {
+    width: 100%;
+  }
+
+  input[pinputtext] {
+    width: 100%;
+  }
+}
+
+.invoice-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.resumen-block {
+  padding: 1rem;
+}
+
+.resumen-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem 0;
+  color: var(--text-color);
+}
+
+.resumen-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding: 0.2rem 0;
+}
+
+.resumen-total {
+  border-top: 1px solid var(--surface-border);
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.det-table {
+  p-inputnumber {
+    width: 100%;
+  }
+
+  input {
+    width: 100%;
+  }
+
+  ::ng-deep .p-datatable-tbody > tr > td {
+    padding: 0.25rem 0.75rem;
+  }
+
+  ::ng-deep .p-datatable-thead > tr > th {
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+.nf-totales {
+  .p-card-body,
+  .card-body {
+    padding: 0;
+  }
+
+  .nf-totales-split {
+    display: flex;
+    align-items: center;
+  }
+
+  .nf-totales-col-btns {
+    width: 30%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    padding: 0.2rem 1rem;
+    border-right: 1px solid var(--c-border);
+  }
+
+  .nf-totales-col-data {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.15rem 1.5rem;
+    padding: 0.2rem 1rem;
+
+    .nf-total-block {
+      flex: unset;
+      min-width: unset;
+    }
+  }
+}
+
+.nf-total-block {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 120px;
+
+  .font-bold {
+    font-size: 0.8rem;
+    color: var(--text-muted-color);
+  }
+
+  > div:last-child {
+    font-size: 1.05rem;
+    color: var(--text-color);
+  }
+}
+
+.nf-total-grand {
+  border-left: 1px solid var(--c-border);
+  padding-left: 1rem;
+
+  > div:last-child {
+    font-size: 1.35rem;
+    color: var(--primary-color);
+  }
+}
+
+.cell-producto {
+  line-height: 1;
+
+  .cod-barra {
+    display: block;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-muted-color);
+    margin-bottom: -2px;
+  }
+
+  .desc-linea {
+    display: block;
+  }
+}
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+}
+
+.text-right {
+  text-align: right;
+}
+
+@media (max-width: 1024px) {
+  .nf-layout {
+    flex-direction: column;
+  }
+
+  .nf-col-left,
+  .nf-col-right {
+    width: 100% !important;
+  }
+}
+
+:host ::ng-deep .btn-whatsapp .p-button {
+  background-color: #25d366;
+  border-color: #25d366;
+  color: #fff;
+  &:hover {
+    background-color: #1da851;
+    border-color: #1da851;
+  }
+}

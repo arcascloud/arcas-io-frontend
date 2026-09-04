@@ -1,0 +1,84 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Empleados</h1>
+      <p class="page-subtitle">Registro de empleados de planilla</p>
+    </div>
+    <p-button
+      label="Nuevo empleado"
+      icon="pi pi-plus"
+      rounded
+      size="small"
+      (onClick)="nuevo()"
+    />
+  </header>
+
+  <div class="card">
+    <div class="buscar">
+      <div class="p-inputgroup flex-1">
+        <input
+          pInputText
+          placeholder="Buscar por nombre, DNI, teléfono o email..."
+          [(ngModel)]="q"
+          (keyup.enter)="buscar()"
+        />
+        <p-button icon="pi pi-search" severity="secondary" size="small" (onClick)="buscar()" />
+      </div>
+      <p-button
+        label="Limpiar"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        size="small"
+        (onClick)="limpiarFiltros()"
+      />
+    </div>
+
+    @if (cargando()) {
+      <div class="centro">Cargando empleados...</div>
+    } @else if (filtered().length === 0) {
+      <div class="centro">No se encontraron empleados</div>
+    } @else {
+      <p-dataview [value]="filtered()" [rows]="10" layout="list">
+        <ng-template #list let-items>
+          <div class="grid-lista">
+            @for (e of items; track e.empleadoId) {
+              <div class="item">
+                <div class="item-body">
+                  <div class="item-titulo">
+                    {{ e.nombres }} {{ e.apellidos }}
+                  </div>
+                  <div class="item-det">
+                    <span>DNI: {{ e.dni }}</span>
+                    <span>Tel: {{ e.telefono }}</span>
+                    <span>Cel: {{ e.celular }}</span>
+                    <span>Email: {{ e.email }}</span>
+                  </div>
+                  <div class="item-tags">
+                    <p-tag
+                      [value]="activoLbl(e.sn_activo)"
+                      [severity]="activoSev(e.sn_activo)"
+                      rounded
+                    />
+                  </div>
+                </div>
+                <div class="item-acciones">
+                  <p-button
+                    icon="pi pi-pencil"
+                    severity="secondary"
+                    size="small"
+                    rounded
+                    [text]="true"
+                    pTooltip="Editar"
+                    tooltipPosition="left"
+                    (onClick)="editar(e.empleadoId)"
+                  />
+                </div>
+              </div>
+            }
+          </div>
+        </ng-template>
+      </p-dataview>
+    }
+  </div>
+</section>

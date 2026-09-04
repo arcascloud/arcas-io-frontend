@@ -1,0 +1,87 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Kardex</h1>
+      <p class="page-subtitle">Trazabilidad de movimientos de inventario</p>
+    </div>
+  </header>
+
+  <div class="filtros card">
+    <div class="campo">
+      <label>Buscar</label>
+      <input
+        pInputText
+        type="text"
+        placeholder="Código de barras, referencia..."
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        (keyup.enter)="buscar()"
+      />
+    </div>
+    <div class="campo acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
+      <p-button
+        label="Limpiar"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        size="small"
+        rounded
+        (onClick)="limpiarFiltros()"
+      />
+    </div>
+  </div>
+
+  <p-dataview
+    [value]="filtered()"
+    [loading]="cargando()"
+    dataKey="invkardexId"
+    [paginator]="true"
+    [rows]="20"
+    layout="list"
+    size="small"
+    [rowsPerPageOptions]="[10, 20, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+  >
+    <ng-template #list let-items>
+      <div class="dv-cards">
+        @for (k of items; track k.invkardexId) {
+          <div class="dv-card">
+            <div class="dv-top">
+              <span class="dv-title">{{ k.codbarra }}</span>
+              <p-tag [value]="k.tipomov === 'E' ? 'Entrada' : 'Salida'" [severity]="k.tipomov === 'E' ? 'success' : 'danger'" />
+            </div>
+
+            <div class="dv-body">
+              <div class="dv-row">
+                <span class="dv-label">Fecha</span>
+                <span class="dv-value">{{ k.fecharegistro ? (k.fecharegistro | date: 'short') : '-' }}</span>
+              </div>
+              <div class="dv-row">
+                <span class="dv-label">Referencia</span>
+                <span class="dv-value">{{ k.nroreferencia }}</span>
+              </div>
+              <div class="dv-row">
+                <span class="dv-label">Cantidad</span>
+                <span class="dv-value">{{ k.cantidad }}</span>
+              </div>
+              <div class="dv-row">
+                <span class="dv-label">Saldo actual</span>
+                <span class="dv-value">{{ k.saldoActual }}</span>
+              </div>
+              <div class="dv-row">
+                <span class="dv-label">Costo total</span>
+                <span class="dv-value">{{ moneda(k.costoTotal) }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <div class="text-center p-3">No hay movimientos registrados.</div>
+    </ng-template>
+  </p-dataview>
+</section>
