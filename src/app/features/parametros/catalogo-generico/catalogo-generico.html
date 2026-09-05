@@ -1,23 +1,34 @@
 <section class="page">
   <header class="page-header">
     <div>
-      <h1 class="page-title">{{ config?.titulo }}</h1>
-      <p class="page-subtitle">{{ config?.subtitulo }}</p>
+      <h1 class="page-title">{{ config()?.titulo || '' }}</h1>
+      <p class="page-subtitle">{{ config()?.subtitulo || '' }}</p>
     </div>
     <div>
-      <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()" />
+      <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()"
+      variant="text"
+      [raised]="true" severity="success" [rounded]="true" />
+
     </div>
   </header>
 
   <div class="filtros card">
     <div class="campo">
       <label>Buscar</label>
-      <input pInputText type="text" placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)"
+      <input pInputText type="text"
+      pSize="small"
+       placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()" />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
-      <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small"
+      <p-button label="Buscar"
+      severity="info"
+      variant="text"
+      icon="pi pi-search" size="small" (onClick)="buscar()"
+      [rounded]="true" />
+      <p-button label="Limpiar"
+       [rounded]="true"
+        icon="pi pi-times" severity="secondary" text size="small"
         (onClick)="limpiarFiltros()" />
     </div>
   </div>
@@ -29,17 +40,17 @@
     [paginator]="true"
     [rows]="20"
     [rowsPerPageOptions]="[10, 20, 50]"
+    [tableStyle]="{ 'min-width': '20rem' }"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-    size="small"
-    styleClass="p-datatable-striped">
+    size="small">
 
     <ng-template pTemplate="header">
       <tr>
         @for (col of campos(); track col.key) {
           <th>{{ col.label }}</th>
         }
-        @if (!config.sinEstado) {
+        @if (config() && config()!.sinEstado !== true) {
           <th style="width: 8rem" class="text-center">Estado</th>
         }
         <th style="width: 4rem" class="text-center"></th>
@@ -47,11 +58,11 @@
     </ng-template>
 
     <ng-template pTemplate="body" let-item>
-      <tr>
+      <tr (click)="editar(item[config?.idKey])" style="cursor: pointer">
         @for (col of campos(); track col.key) {
           <td>{{ item[col.key] || '-' }}</td>
         }
-        @if (!config.sinEstado) {
+        @if (config() && config()!.sinEstado !== true) {
           <td class="text-center">
             <p-tag [value]="activoLbl(item.sn_activo)" [severity]="activoSev(item.sn_activo)" />
           </td>
@@ -63,7 +74,7 @@
             variant="text"
             [rounded]="true"
             severity="secondary"
-            (onClick)="editar(item[config.idKey])" />
+            (click)="$event.stopPropagation(); editar(item[config?.idKey])" />
         </td>
       </tr>
     </ng-template>

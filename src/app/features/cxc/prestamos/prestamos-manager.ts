@@ -1,9 +1,8 @@
-import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { timeout, catchError, of } from 'rxjs';
-import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DataViewModule } from 'primeng/dataview';
@@ -15,7 +14,9 @@ import { MessageService } from 'primeng/api';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { PaginatorModule } from 'primeng/paginator';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CxcCliente } from '../../../core/models/cxc.models';
@@ -26,7 +27,6 @@ import { CxcCliente } from '../../../core/models/cxc.models';
   imports: [
     CommonModule,
     FormsModule,
-    ToolbarModule,
     ButtonModule,
     InputTextModule,
     DataViewModule,
@@ -37,7 +37,9 @@ import { CxcCliente } from '../../../core/models/cxc.models';
     InputNumberModule,
     SelectModule,
     DatePickerModule,
-    PaginatorModule,
+    ProgressSpinnerModule,
+    IconFieldModule,
+    InputIconModule,
   ],
   templateUrl: './prestamos-manager.html',
   styleUrl: './prestamos-manager.scss',
@@ -58,13 +60,20 @@ export class PrestamosManager implements OnInit {
   limit = signal(15);
   totalClientes = signal(0);
 
-  // ===== PRÉSTAMOS =====
-  prestamosData = signal<any[]>([]);
+  private _searchEffect = effect(() => {
+    this.q();
+    this.page.set(1);
+    untracked(() => this.loadClientes());
+  });
+
+  // ===== PRESTAMO (maximo 1 por cliente) =====
+  prestamoData = signal<any | null>(null);
   prestamosLoading = signal(false);
   prestamoSaving = signal(false);
+
   prestamoModel = signal<any>({
     clienteId: null,
-    nroprestamo: null,
+    nroprestamo: '',
     capital: 0,
     cuotas: 1,
     tasa: 0,
@@ -88,9 +97,7 @@ export class PrestamosManager implements OnInit {
     { label: 'Inactivo', value: 'N' },
   ];
 
-  ngOnInit() {
-    this.loadClientes();
-  }
+  ngOnInit() { }
 
   // ===== CLIENTES =====
   loadClientes() {
@@ -117,35 +124,92 @@ export class PrestamosManager implements OnInit {
 
   limpiarFiltros() {
     this.q.set('');
-    this.loadClientes();
+    this.selectedCliente.set(null);
+    this.prestamoData.set(null);
+    this.planPago.set([]);
+    this.showPlanPago.set(false);
+    this.limpiarFormulario();
   }
 
   seleccionarCliente(cliente: CxcCliente) {
     this.selectedCliente.set(cliente);
-    this.loadPrestamos(cliente.clienteId);
+    this.prestamoData.set(null);
+    this.planPago.set([]);
+    this.showPlanPago.set(false);
+    this.loadPrestamoCliente(cliente.clienteId);
   }
 
   getClienteNombre(c: CxcCliente): string {
-    return `${c.nombres || ''} ${c.apellidos || ''}`.trim();
+    const nombres = c.nombres || '';
+    const apellidos = c.apellidos || '';
+    const full = `${nombres} ${apellidos}`.trim();
+    return full || c.razonsocial || c.nrocliente || 'Sin nombre';
   }
 
-  moneda(val: number): string {
-    if (val == null || isNaN(val)) return 'L 0.00';
-    const partes = val.toFixed(2).split('.');
+  moneda(val: any): string {
+    const num = Number(val) || 0;
+    if (isNaN(num)) return '0.00';
+    const partes = num.toFixed(2).split('.');
     partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return 'L ' + partes.join('.');
+    return partes.join('.');
   }
 
-  // ===== PRÉSTAMOS =====
-  private loadPrestamos(clienteId: number) {
+  // ===== PRESTAMO =====
+  private loadPrestamoCliente(clienteId: number) {
     this.prestamosLoading.set(true);
     this.service.getPrestamosByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        this.prestamosData.set(res);
-        this.prestamosLoading.set(false);
+      next: (res: any) => {
+        const pres = Array.isArray(res) ? res[0] : (res?.value ? res.value[0] : res);
+        if (pres && pres.prestamoId) {
+          this.prestamoData.set(pres);
+          this.prestamoModel.set({
+            prestamoId: pres.prestamoId,
+            clienteId: pres.clienteId,
+            nroprestamo: pres.nroprestamo || '',
+            capital: Number(pres.capital) || 0,
+            cuotas: Number(pres.cuotas) || 0,
+            tasa: Number(pres.tasa) || 0,
+            vlrcuota: this.calcularCuotaValue(Number(pres.capital), Number(pres.cuotas), Number(pres.tasa)),
+            fecharegistro: pres.fecharegistro,
+            sn_activo: pres.sn_activo || 'S',
+          });
+          // Plan de pago: loading sigue activo hasta que termine
+          this.loadPlanPago(pres.prestamoId);
+        } else {
+          this.prestamoData.set(null);
+          this.limpiarFormulario();
+          this.planPago.set([]);
+          this.showPlanPago.set(false);
+          this.prestamosLoading.set(false);
+        }
       },
       error: () => this.prestamosLoading.set(false),
     });
+  }
+
+  private loadPlanPago(prestamoId: number) {
+    this.showPlanPago.set(false);
+    this.planPago.set([]);
+    this.service.getPrestamoPPByPrestamo(prestamoId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const cuotas = (res || []).sort((a: any, b: any) => (a.nrofila || 0) - (b.nrofila || 0));
+        this.planPago.set(cuotas);
+        this.showPlanPago.set(cuotas.length > 0);
+        this.prestamosLoading.set(false);
+      },
+      error: () => {
+        this.planPago.set([]);
+        this.showPlanPago.set(false);
+        this.prestamosLoading.set(false);
+      },
+    });
+  }
+
+  private calcularCuotaValue(capital: number, cuotas: number, tasaAnual: number): number {
+    if (capital <= 0 || cuotas <= 0 || tasaAnual <= 0) return 0;
+    const tasaMensual = tasaAnual / 100 / 12;
+    const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
+    return Math.round(capital * factor * 100) / 100;
   }
 
   onPrestamoFechaChange(d: Date | null) {
@@ -157,16 +221,14 @@ export class PrestamosManager implements OnInit {
     const capital = Number(raw.capital) || 0;
     const cuotas = Number(raw.cuotas) || 0;
     const tasaAnual = Number(raw.tasa) || 0;
-    if (capital <= 0 || cuotas <= 0 || tasaAnual <= 0) return;
-    const tasaMensual = tasaAnual / 100 / 12;
-    const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
-    const cuotaFija = Math.round(capital * factor * 100) / 100;
-    this.prestamoModel.set({ ...this.prestamoModel(), vlrcuota: cuotaFija });
+    const vlrcuota = this.calcularCuotaValue(capital, cuotas, tasaAnual);
+    this.prestamoModel.set({ ...this.prestamoModel(), vlrcuota });
   }
 
-  cancelarPrestamo() {
+  private limpiarFormulario() {
     this.prestamoModel.set({
-      nroprestamo: null,
+      clienteId: this.selectedCliente()?.clienteId ?? null,
+      nroprestamo: '',
       capital: 0,
       cuotas: 1,
       tasa: 0,
@@ -179,19 +241,24 @@ export class PrestamosManager implements OnInit {
   guardarPrestamo() {
     const cliente = this.selectedCliente();
     if (!cliente) {
-      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear un préstamo' });
+      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear un prestamo' });
+      return;
+    }
+
+    // Validar que no tenga prestamo activo
+    if (this.prestamoData()) {
+      this.msgs.add({ severity: 'warn', summary: 'Ya existe', detail: 'Este cliente ya tiene un prestamo registrado' });
       return;
     }
 
     const raw = { ...this.prestamoModel() };
     const payload: any = {
-      ...raw,
       clienteId: cliente.clienteId,
+      nroprestamo: raw.nroprestamo || '',
       capital: Number(raw.capital) || 0,
       cuotas: Number(raw.cuotas) || 1,
       tasa: Number(raw.tasa) || 0,
-      vlrcuota: Number(raw.vlrcuota) || 0,
-      nroprestamo: raw.nroprestamo || '',
+      fecharegistro: raw.fecharegistro,
       sn_activo: raw.sn_activo || 'S',
       sn_contabilizado: 'N',
     };
@@ -222,22 +289,23 @@ export class PrestamosManager implements OnInit {
     this.prestamoSaving.set(true);
     this.service.createPrestamo(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
-        this.prestamosData.set([...this.prestamosData(), res]);
-        this.cancelarPrestamo();
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Préstamo registrado correctamente' });
+        this.prestamoData.set(res);
+        this.prestamoModel.set({
+          ...this.prestamoModel(),
+          prestamoId: res.prestamoId,
+          nroprestamo: res.nroprestamo,
+        });
+        this.prestamoSaving.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Prestamo registrado correctamente' });
 
+        // Guardar plan de pago si existe
         const plan = this.planPago();
         if (plan.length > 0 && res?.prestamoId) {
           this.guardarPlanPagoConPrestamo(res.prestamoId, plan, cliente.clienteId);
-        } else {
-          this.prestamoSaving.set(false);
-          this.showPlanPago.set(false);
-          this.planPago.set([]);
         }
       },
       error: (err) => {
-        console.error('[PrestamosManager] Error guardando préstamo', err);
-        let detail = 'No se pudo guardar el préstamo';
+        let detail = 'No se pudo guardar el prestamo';
         if (err?.error?.message) detail = err.error.message;
         else if (err?.message) detail = err.message;
         this.prestamoSaving.set(false);
@@ -269,8 +337,6 @@ export class PrestamosManager implements OnInit {
           completadas++;
           if (completadas + errores === total) {
             this.prestamoSaving.set(false);
-            this.showPlanPago.set(false);
-            this.planPago.set([]);
             this.msgs.add({ severity: 'success', summary: 'Plan de pago', detail: `${completadas} cuotas guardadas` });
           }
         },
@@ -278,8 +344,6 @@ export class PrestamosManager implements OnInit {
           errores++;
           if (completadas + errores === total) {
             this.prestamoSaving.set(false);
-            this.showPlanPago.set(false);
-            this.planPago.set([]);
             this.msgs.add({ severity: errores > 0 ? 'warn' : 'success', summary: 'Plan de pago', detail: `${completadas} guardadas, ${errores} errores` });
           }
         },
@@ -302,7 +366,7 @@ export class PrestamosManager implements OnInit {
       return;
     }
     if (tasaAnual <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'La tasa de interés debe ser mayor a 0' });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'La tasa de interes debe ser mayor a 0' });
       return;
     }
 
@@ -350,10 +414,5 @@ export class PrestamosManager implements OnInit {
       nroprestamo,
       vlrcuota: Math.round(cuotaFija * 100) / 100,
     });
-  }
-
-  cancelarPlanPago() {
-    this.showPlanPago.set(false);
-    this.planPago.set([]);
   }
 }

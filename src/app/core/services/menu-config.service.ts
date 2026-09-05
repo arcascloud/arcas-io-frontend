@@ -87,7 +87,7 @@ export class MenuConfigService {
         children: [
           { label: 'Caja', icon: 'dollar', route: '/cxc/caja' },
           { label: 'Clientes', icon: 'users', route: '/cxc/clientes' },
-          { label: 'Préstamos', icon: 'hand-holding-usd', route: '/cxc/prestamos' },
+          { label: 'Préstamos', icon: 'pi pi-briefcase', route: '/cxc/prestamos' },
           { label: 'Movimientos', icon: 'history', route: '/cxc/movimientos' },
           { label: 'Histórico', icon: 'book', route: '/cxc/historico' },
           { label: 'Antigüedad de Saldos', icon: 'chart-bar', route: '/cxc/antiguedad-saldos' },

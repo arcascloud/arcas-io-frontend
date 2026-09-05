@@ -83,21 +83,6 @@
   font-size: 0.85rem;
 }
 
-/* Totales */
-.totales-card {
-  display: flex;
-  justify-content: flex-end;
-  gap: 2rem;
-  padding: 0.75rem 1rem;
-}
-
-.total-line {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  font-size: 0.9rem;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .page-header {
@@ -115,10 +100,5 @@
   .campo-costo {
     flex: 1 1 100%;
     min-width: 100%;
-  }
-
-  .totales-card {
-    flex-direction: column;
-    gap: 0.5rem;
   }
 }

@@ -3,10 +3,10 @@
 }
 
 .card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 1.25rem;
+  background: var(--c-bg);
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
 }
 
 .prestamo-form-columns {

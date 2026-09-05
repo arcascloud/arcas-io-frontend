@@ -7,7 +7,7 @@
     <p-button
       label="Volver"
       icon="pi pi-arrow-left"
-      severity="secondary"
+      severity="contrast"
       text
       size="small"
       rounded
@@ -27,6 +27,7 @@
             @if (c.tipo === 'texto') {
               <input
                 pInputText
+                pSize="small"
                 [id]="c.key"
                 [formControlName]="c.key"
                 maxlength="50"
@@ -35,6 +36,7 @@
               />
             } @else if (c.tipo === 'numero') {
               <p-inputnumber size="small"
+                size="small"
                 [formControlName]="c.key"
                 [showButtons]="true"
                 [ngClass]="{ 'ng-invalid': invalid(c.key) }"
@@ -52,6 +54,7 @@
               />
             } @else if (c.tipo === 'fecha') {
               <p-datepicker
+                size="small"
                 [formControlName]="c.key"
                 dateFormat="dd/mm/yy"
                 [showIcon]="true"
@@ -92,7 +95,10 @@
           rounded
           (onClick)="volver()"
         />
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+        <p-button type="submit" label="Guardar"
+        [raised]="true" severity="success"
+        [rounded]="true"
+        icon="pi pi-check" rounded size="small" [loading]="guardando()" />
       </div>
     </form>
   }

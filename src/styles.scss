@@ -50,13 +50,14 @@
   --c-bg: #1e2e3b;
   --c-bg-muted: #1e2e3b00;
   --c-surface: #1e2e3b;
-  --c-surface-muted: #182b40;
+  --c-surface-muted: #2d3d50b4;
   --c-border: #1e2e3b;
   --c-border-strong: #2c4d6f;
   --c-text: var(--color-texto-label);
   --c-text-secondary: var(--texto-secundario);
   --c-text-muted: #8aa9c9;
   --c-text-faint: #5f86ab;
+  --c-disabled-color: #1f2f3a;
   --c-primary: #3d8bff;
   --c-primary-strong: #0070f2;
   --c-success: #2fd48a;
@@ -102,6 +103,7 @@
 
   --p-form-field-background: #213341;
   --p-form-field-border-color: #39495b;
+  
 
   --p-navigation-item-color: #7f8790;
   --p-navigation-item-icon-color: #558dc6;
@@ -116,6 +118,9 @@
   --p-inputtext-color: var(--color-texto-input);
   --p-inputtext-background: #213341;
   --p-inputtext-border-color: #39495b;
+  --p-inputtext-disabled-color: var(--c-text-muted);
+  --p-inputtext-disabled-background: var(--c-bg);
+  --p-inputtext-disabled-border-color: #2a3a4a;
 
   --p-togglebutton-color: var(--color-texto-input);
   ---p-togglebutton-background: var(--color-texto-input);
@@ -136,8 +141,11 @@
 
   --p-select-color: var(--color-texto-input);
   --p-select-background: var(--p-form-field-background);
+  --p-select-disabled-background: var(--c-bg);
+  --p-select-disabled-color: var(--c-text-muted);
 
-  --p-select-disabled-background: var(--p-form-field-background);
+  --p-inputnumber-disabled-background: var(--c-bg);
+  --p-datepicker-disabled-background: var(--c-bg);
 
   --p-toolbar-border-color: var(--for-border-color-alls);
 
@@ -179,6 +187,17 @@ thead th {
 tr {
   color: var(--c-text);
 }
+
+
+ul {
+    display: block;
+    list-style-type: none;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    padding-inline-start: 12px;
+    unicode-bidi: isolate;
+}
+
 
 .p-inputtext {
   color: var(--c-text);
@@ -313,11 +332,10 @@ tr {
 
 /* Tarjeta genérica */
 .card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
+  background: var(--c-bg);
   padding: 1rem 1.25rem;
-  box-shadow: var(--shadow-sm);
+   border-bottom: 1px solid var(--for-border-color-alls);
+
 }
 
 // =====================================================
@@ -401,7 +419,7 @@ tr {
 
   .card {
     padding: 0.75rem;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
   }
 
   .totales-grid {

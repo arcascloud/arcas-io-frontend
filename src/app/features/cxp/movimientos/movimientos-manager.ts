@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -51,6 +51,7 @@ export class CxpMovimientosManager implements OnInit {
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
 
+  // ===== PROVEEDORES =====
   data = signal<Proveedor[]>([]);
   cargando = signal(false);
   selectedProveedor = signal<Proveedor | null>(null);
@@ -59,6 +60,14 @@ export class CxpMovimientosManager implements OnInit {
   limit = signal(15);
   totalProveedores = signal(0);
 
+  // Effect para resetear pagina y recargar cuando cambie el filtro (q)
+  private _searchEffect = effect(() => {
+    this.q();
+    this.page.set(1);
+    this.loadProveedores();
+  });
+
+  // ===== MOVIMIENTOS =====
   movimientosData = signal<any[]>([]);
   movimientosLoading = signal(false);
   movimientoSaving = signal(false);
@@ -77,8 +86,8 @@ export class CxpMovimientosManager implements OnInit {
   documentoSelected = signal<any>(null);
 
   readonly tipoMovOptions = [
-    { label: 'Débito', value: 'D' },
-    { label: 'Crédito', value: 'C' },
+    { label: 'Debito', value: 'D' },
+    { label: 'Credito', value: 'C' },
   ];
 
   get debitoReferencias(): string[] {
@@ -89,10 +98,10 @@ export class CxpMovimientosManager implements OnInit {
   }
 
   ngOnInit() {
-    this.loadProveedores();
     this.loadDocumentos();
   }
 
+  // ===== PROVEEDORES =====
   loadProveedores() {
     this.cargando.set(true);
     this.service.getProveedoresPag(this.page(), this.limit(), this.q()).pipe(
@@ -117,7 +126,8 @@ export class CxpMovimientosManager implements OnInit {
 
   limpiarFiltros() {
     this.q.set('');
-    this.loadProveedores();
+    this.selectedProveedor.set(null);
+    this.movimientosData.set([]);
   }
 
   seleccionarProveedor(proveedor: Proveedor) {
@@ -126,7 +136,10 @@ export class CxpMovimientosManager implements OnInit {
   }
 
   getProveedorNombre(p: Proveedor): string {
-    return `${p.nombres || ''} ${p.apellidos || ''}`.trim();
+    const nombres = p.nombres || '';
+    const apellidos = p.apellidos || '';
+    const full = `${nombres} ${apellidos}`.trim();
+    return full || p.razonsocial || p.nroproveedor || 'Sin nombre';
   }
 
   moneda(val: number): string {
@@ -136,6 +149,7 @@ export class CxpMovimientosManager implements OnInit {
     return partes.join('.');
   }
 
+  // ===== DOCUMENTOS FISCALES =====
   loadDocumentos() {
     const user = this.auth.currentUser();
     this.catalogService.getAll<any>('/parametros/tcotipodocumentofiscal').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -155,6 +169,7 @@ export class CxpMovimientosManager implements OnInit {
     });
   }
 
+  // ===== MOVIMIENTOS =====
   private loadMovimientos(proveedorId: number) {
     this.movimientosLoading.set(true);
     this.service.getMovimientosByProveedor(proveedorId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -168,6 +183,7 @@ export class CxpMovimientosManager implements OnInit {
 
   cancelarMovimiento() {
     this.movimientoModel.set({
+      proveedorId: this.selectedProveedor()?.proveedorId ?? null,
       tipomov: 'D',
       descripcion1: '',
       importe: 0,
@@ -201,29 +217,31 @@ export class CxpMovimientosManager implements OnInit {
     }
 
     if (typeof payload.importe !== 'number' || payload.importe <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Importe inválido', detail: 'El importe debe ser mayor que 0' });
+      this.msgs.add({ severity: 'warn', summary: 'Importe invalido', detail: 'El importe debe ser mayor que 0' });
       return;
     }
 
+    // Validar debito: referencia obligatoria y no duplicada
     if (payload.tipomov === 'D') {
       if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el número de factura o préstamo de referencia' });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el numero de factura o prestamo de referencia' });
         return;
       }
       const refStr = String(payload.nroreferencia).trim();
       if (this.debitoReferencias.includes(refStr)) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un débito con referencia "${refStr}". No se pueden crear débitos duplicados.` });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un debito con referencia "${refStr}". No se pueden crear debitos duplicados.` });
         return;
       }
     }
 
+    // Validar credito: referencia obligatoria, debe existir como debito
     if (payload.tipomov === 'C') {
       if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de débito al que aplica el abono' });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de debito al que aplica el abono' });
         return;
       }
       if (!this.debitoReferencias.includes(String(payload.nroreferencia))) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia inválida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningún débito existente` });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia invalida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningun debito existente` });
         return;
       }
     }
@@ -268,7 +286,7 @@ export class CxpMovimientosManager implements OnInit {
   }
 
   getTipoMovLabel(tipo: string): string {
-    const tipos: Record<string, string> = { 'C': 'Crédito', 'A': 'Abono', 'D': 'Débito' };
+    const tipos: Record<string, string> = { 'C': 'Credito', 'A': 'Abono', 'D': 'Debito' };
     return tipos[tipo] || tipo;
   }
 

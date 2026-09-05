@@ -133,6 +133,26 @@ Invoke-RestMethod -Uri 'http://localhost:3000/api/ENDPOINT' -Method GET -Headers
 - **`input()` returns `undefined` not `null`**: Use `!= null` instead of `!== null`
 - **Zoneless signals**: `signal()`, `computed()`, `effect()` only in field initializers (injection context)
 - **PrimeNG Select width**: Always add `.p-select { width: 100% }` in component SCSS
+- **Route reuse en componentes genéricos**: Cuando un componente se reutiliza al navegar entre rutas hermanas (ej. `/inventario/categorias` → `/inventario/marcas`), `ngOnInit` solo corre una vez y `route.data.subscribe()` no se dispara de nuevo. **Solución**: Suscribirse a `router.events` con filtro `NavigationEnd` y extraer el nombre del catálogo de la URL:
+  ```typescript
+  ngOnInit() {
+    this.cargarConfig();
+    this.navSub = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => this.cargarConfig());
+  }
+
+  private cargarConfig() {
+    const partes = this.router.url.split('/').filter(p => p);
+    const nombre = partes[partes.length - 1]; // ej: 'categorias'
+    const config = CATALOGOS_PARAMETROS[nombre];
+    if (config) {
+      this.config.set(config);
+      this.campos.set(config.campos);
+      this.load();
+    }
+  }
+  ```
 
 ### Backend entity patterns
 - **Default values in entities**: If column has `default: 'N'` in entity but DB default is different (or NULL), the entity default wins on INSERT via TypeORM. Check DB defaults independently.
@@ -1220,3 +1240,38 @@ this.confirmationService.confirm({
     }
 });
 ```
+
+## Bitácora – 04/09/2026
+
+### Completado
+
+#### Fix crítico: catalogo-generico no cargaba al cambiar entre catálogos en el menú
+- **Problema**: Al navegar entre catálogos del mismo módulo (ej. `/contabilidad/ctacontables` → `/contabilidad/grupocontable`), Angular reutiliza el componente `CatalogoGenerico`. `ngOnInit` solo corre una vez, y `route.data.subscribe()` no se dispara con los datos de la nueva ruta porque la suscripción original estaba vinculada a la primera ruta.
+- **Síntoma**: "Catalogo desconocido:" en el toast de error, sin actividad en la red.
+- **Solución**: 
+  - Suscribirse a `router.events` con filtro `NavigationEnd` para detectar cada navegación completada
+  - Extraer el nombre del catálogo directamente de la URL: `router.url.split('/').filter(p => p)[last]`
+  - Ej: `/inventario/categorias` → `categorias`, `/contabilidad/ctacontables` → `ctacontables`
+  - Esto funciona aunque Angular reutilice el componente, porque `router.events` es un observable global
+- **Archivo**: `src/app/features/parametros/catalogo-generico/catalogo-generico.ts`
+- **Código clave**:
+  ```typescript
+  ngOnInit() {
+    this.cargarConfig();
+    this.navSub = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => this.cargarConfig());
+  }
+
+  private cargarConfig() {
+    const partes = this.router.url.split('/').filter(p => p);
+    const nombre = partes[partes.length - 1];
+    const config = CATALOGOS_PARAMETROS[nombre];
+    if (!config) { /* error */ return; }
+    if (this.config() && this.config()!.ruta === config.ruta) return;
+    this.config.set(config);
+    this.campos.set(config.campos);
+    this.load();
+  }
+  ```
+- **Nota**: También se agregó `ngOnDestroy` para limpiar las suscripciones y evitar memory leaks.

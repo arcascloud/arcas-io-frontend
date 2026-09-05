@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,6 +16,8 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { PaginatorModule } from 'primeng/paginator';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
@@ -39,6 +41,8 @@ import { CxcCliente } from '../../../core/models/cxc.models';
     SelectModule,
     DatePickerModule,
     PaginatorModule,
+    IconFieldModule,
+    InputIconModule,
   ],
   templateUrl: './movimientos-manager.html',
   styleUrl: './movimientos-manager.scss',
@@ -59,6 +63,13 @@ export class MovimientosManager implements OnInit {
   page = signal(1);
   limit = signal(15);
   totalClientes = signal(0);
+
+  // Effect para resetear pagina y recargar cuando cambie el filtro (q)
+  private _searchEffect = effect(() => {
+    this.q();
+    this.page.set(1);
+    untracked(() => this.loadClientes());
+  });
 
   // ===== MOVIMIENTOS =====
   movimientosData = signal<any[]>([]);
@@ -85,11 +96,11 @@ export class MovimientosManager implements OnInit {
   documentoSelected = signal<any>(null);
 
   readonly tipoMovOptions = [
-    { label: 'Débito', value: 'D' },
-    { label: 'Crédito', value: 'C' },
+    { label: 'Debito', value: 'D' },
+    { label: 'Credito', value: 'C' },
   ];
 
-  // Referencias de débitos existentes (nroreferencia únicos de movimientos tipo D)
+  // Referencias de debitos existentes (nroreferencia unicos de movimientos tipo D)
   debitoReferencias = computed(() => {
     const refs = this.movimientosData()
       .filter(m => m.tipomov === 'D' && m.nroreferencia)
@@ -98,7 +109,6 @@ export class MovimientosManager implements OnInit {
   });
 
   ngOnInit() {
-    this.loadClientes();
     this.loadDocumentos();
   }
 
@@ -127,7 +137,8 @@ export class MovimientosManager implements OnInit {
 
   limpiarFiltros() {
     this.q.set('');
-    this.loadClientes();
+    this.selectedCliente.set(null);
+    this.movimientosData.set([]);
   }
 
   seleccionarCliente(cliente: CxcCliente) {
@@ -136,12 +147,16 @@ export class MovimientosManager implements OnInit {
   }
 
   getClienteNombre(c: CxcCliente): string {
-    return `${c.nombres || ''} ${c.apellidos || ''}`.trim();
+    const nombres = c.nombres || '';
+    const apellidos = c.apellidos || '';
+    const full = `${nombres} ${apellidos}`.trim();
+    return full || c.razonsocial || c.nrocliente || 'Sin nombre';
   }
 
-  moneda(val: number): string {
-    if (val == null || isNaN(val)) return '0.00';
-    const partes = val.toFixed(2).split('.');
+  moneda(val: any): string {
+    const num = Number(val) || 0;
+    if (isNaN(num)) return '0.00';
+    const partes = num.toFixed(2).split('.');
     partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     return partes.join('.');
   }
@@ -184,6 +199,7 @@ export class MovimientosManager implements OnInit {
 
   cancelarMovimiento() {
     this.movimientoModel.set({
+      clienteId: this.selectedCliente()?.clienteId ?? null,
       tipomov: 'D',
       concepto: '',
       importe: 0,
@@ -191,6 +207,8 @@ export class MovimientosManager implements OnInit {
       fecharegistro: new Date().toISOString(),
     });
     this.documentoSelected.set(null);
+    this.selectedCliente.set(null);
+    this.movimientosData.set([]);
   }
 
   guardarMovimiento() {
@@ -221,33 +239,33 @@ export class MovimientosManager implements OnInit {
     }
 
     if (typeof payload.importe !== 'number' || payload.importe <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Importe inválido', detail: 'El importe debe ser mayor que 0' });
+      this.msgs.add({ severity: 'warn', summary: 'Importe invalido', detail: 'El importe debe ser mayor que 0' });
       return;
     }
 
-    // Validar débito: referencia obligatoria y no duplicada
+    // Validar debito: referencia obligatoria y no duplicada
     if (payload.tipomov === 'D') {
       if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el número de factura o préstamo de referencia' });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el numero de factura o prestamo de referencia' });
         return;
       }
       const refStr = String(payload.nroreferencia).trim();
       const refsUsadas = this.debitoReferencias();
       if (refsUsadas.includes(refStr)) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un débito con referencia "${refStr}". No se pueden crear débitos duplicados.` });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un debito con referencia "${refStr}". No se pueden crear debitos duplicados.` });
         return;
       }
     }
 
-    // Validar crédito: referencia obligatoria, debe existir como débito
+    // Validar credito: referencia obligatoria, debe existir como debito
     if (payload.tipomov === 'C') {
       if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de débito al que aplica el abono' });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de debito al que aplica el abono' });
         return;
       }
       const refsDisponibles = this.debitoReferencias();
       if (!refsDisponibles.includes(String(payload.nroreferencia))) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia inválida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningún débito existente` });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia invalida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningun debito existente` });
         return;
       }
     }
@@ -291,7 +309,7 @@ export class MovimientosManager implements OnInit {
   }
 
   getTipoMovLabel(tipo: string): string {
-    const tipos: Record<string, string> = { 'C': 'Crédito', 'A': 'Abono', 'D': 'Débito' };
+    const tipos: Record<string, string> = { 'C': 'Credito', 'A': 'Abono', 'D': 'Debito' };
     return tipos[tipo] || tipo;
   }
 

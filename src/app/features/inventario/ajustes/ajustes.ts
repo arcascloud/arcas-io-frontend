@@ -296,8 +296,4 @@ export class Ajustes implements OnInit {
   moneda(n: number | undefined): string {
     return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
   }
-
-  totalAjuste(): number {
-    return this.detalles().reduce((sum, d) => sum + (d.costoTotal || 0), 0);
-  }
 }

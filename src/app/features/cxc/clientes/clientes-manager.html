@@ -6,8 +6,26 @@
       @if (!selectedCliente() && !showForm() && !nuevoCliente()) {
       <div class="empty-state">
         <i class="pi pi-arrow-right empty-icon"></i>
-        <h3>Seleccione un cliente</h3>
+        <h3>Pulse un cliente</h3>
         <p>Haga clic en un cliente de la lista para ver su información</p>
+
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search " />
+              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
+              <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
+                [rounded]="true" size="small"></p-button>
+            </p-iconField>
+          </div>
+        </div>
+
+        <p-button label="Agregar nuevo cliente" icon="pi pi-plus" (click)="nuevo()" variant="text" severity="success"
+          [rounded]="true" class="mr-2" size="small"></p-button>
+
+
       </div>
       }
 
@@ -25,18 +43,10 @@
               <span>Estado de Cuenta</span>
             </p-tab>
             <p-tab value="2" [disabled]="nuevoCliente()">
-              <i class="pi pi-file-text"></i>
-              <span>Notas Cred/Deb</span>
-            </p-tab>
-            <p-tab value="3" [disabled]="nuevoCliente()">
-              <i class="pi pi-money-bill"></i>
-              <span>Préstamos</span>
-            </p-tab>
-            <p-tab value="4" [disabled]="nuevoCliente()">
               <i class="pi pi-address-book"></i>
               <span>Referencias</span>
             </p-tab>
-            <p-tab value="5" [disabled]="nuevoCliente()">
+            <p-tab value="3" [disabled]="nuevoCliente()">
               <i class="pi pi-users"></i>
               <span>Parientes</span>
             </p-tab>
@@ -45,7 +55,8 @@
           <p-tabpanels>
             <p-tabpanel value="0">
               <div class="tab-content">
-                <app-cliente-form #clienteFormRef [clienteIdInput]="nuevoCliente() ? null : (selectedCliente()?.clienteId ?? null)"
+                <app-cliente-form #clienteFormRef
+                  [clienteIdInput]="nuevoCliente() ? null : (selectedCliente()?.clienteId ?? null)"
                   (saved)="onFormSaved()" (cancelled)="onFormCancelled()" />
               </div>
             </p-tabpanel>
@@ -121,240 +132,6 @@
             </p-tabpanel>
 
             <p-tabpanel value="2">
-              <div class="tab-content">
-                <div class="tab-header">
-                  <h4>Notas de Crédito / Débito</h4>
-                </div>
-
-                <div class="card nota-form-inline mb-3">
-                  <div class="tab-header">
-                    <span *ngIf="notaModel().tipomov === 'C' && notaModel().nroreferencia" class="saldo-disponible">
-                      Saldo disponible ref. {{ notaModel().nroreferencia }}: <strong>{{
-                        moneda(saldoDisponiblePorRef(notaModel().nroreferencia)) }}</strong>
-                    </span>
-                    <span *ngIf="notaModel().tipomov === 'C' && !notaModel().nroreferencia" class="saldo-disponible">
-                      Seleccione un débito de referencia
-                    </span>
-                  </div>
-                  <div class="p-fluid">
-                    <div class="p-grid">
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Tipo</label>
-                          <p-select size="small" [options]="notaTipoOptions" [ngModel]="notaModel().tipomov"
-                            (ngModelChange)="notaModel.set({...notaModel(), tipomov: $event, nroreferencia: ''})"
-                            styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar tipo"></p-select>
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Documento Fiscal</label>
-                          <p-select size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()"
-                            (ngModelChange)="documentoSelected.set($event)" styleClass="w-full" [appendTo]="'body'"
-                            placeholder="Seleccionar documento"></p-select>
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Concepto</label>
-                          <input pInputText pSize="small" [ngModel]="notaModel().concepto"
-                            (ngModelChange)="notaModel.set({...notaModel(), concepto: $event})" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Importe</label>
-                          <p-inputNumber size="small" [ngModel]="notaModel().importe"
-                            (ngModelChange)="notaModel.set({...notaModel(), importe: $event})" mode="currency"
-                            currency="HNL" [locale]="'es-HN'" [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2"
-                            [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Nro. Referencia</label>
-                          <p-select size="small" *ngIf="notaModel().tipomov === 'C'"
-                            [options]="debitoReferencias().map(r => ({label: r, value: r}))"
-                            [ngModel]="notaModel().nroreferencia"
-                            (ngModelChange)="notaModel.set({...notaModel(), nroreferencia: $event})"
-                            placeholder="Seleccione débito" styleClass="w-full" [appendTo]="'body'"></p-select>
-                          <input *ngIf="notaModel().tipomov !== 'C'" pInputText [ngModel]="notaModel().nroreferencia"
-                            (ngModelChange)="notaModel.set({...notaModel(), nroreferencia: $event})" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Fecha</label>
-                          <p-datepicker [ngModel]="notaFecha()" (ngModelChange)="onFechaChange($event)"
-                            dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
-                        </div>
-                      </div>
-                      <div class="p-col-12">
-                        <div class="d-flex gap-2 justify-content-end mt-3">
-                          <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
-                            (click)="cancelarNota()" [rounded]="true" size="small"></p-button>
-                          <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
-                            [loading]="notaSaving()" (click)="guardarNota()" [rounded]="true" size="small"></p-button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p-dataView [value]="notasData()" [loading]="notasLoading()" size="small" layout="list"
-                  class="notas-dataview">
-                  <ng-template #list let-nota>
-                    <div class="nota-item">
-                      <div class="nota-fecha">{{ nota.fecharegistro | date:'dd/MM/yyyy' }}</div>
-                      <div class="nota-concepto">{{ nota.concepto }}</div>
-                      <div class="nota-tipo" [ngClass]="nota.tipomov === 'C' ? 'credito' : 'debito'">
-                        {{ nota.tipomov === 'C' ? 'Crédito' : 'Débito' }}
-                      </div>
-                      <div class="nota-importe">{{ moneda(nota.importe) }}</div>
-                    </div>
-                  </ng-template>
-                </p-dataView>
-              </div>
-            </p-tabpanel>
-
-            <p-tabpanel value="3">
-              <div class="tab-content">
-                <div class="tab-header">
-                  <h4>Préstamos</h4>
-                </div>
-
-                <div class="prestamo-form-columns mb-3">
-                  <div class="form-col">
-                    <h5 class="form-col-title">Datos del Préstamo</h5>
-                    <div class="p-fluid">
-                      <div class="p-field">
-                        <label>Nro. Préstamo</label>
-                        <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo"
-                          (ngModelChange)="prestamoModel.set({...prestamoModel(), nroprestamo: $event})"
-                          placeholder="Se genera al guardar plan" [readonly]="true" />
-                      </div>
-                      <div class="p-field">
-                        <label>Capital</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().capital"
-                          (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})"
-                          (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0.01"
-                          [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
-                          [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
-                      </div>
-                      <div class="p-field">
-                        <label>Tasa %</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().tasa"
-                          (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})"
-                          (blur)="calcularCuota()" mode="decimal" [min]="0" [step]="0.01" [minFractionDigits]="2"
-                          [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
-                      </div>
-                      <div class="p-field">
-                        <label>Fecha</label>
-                        <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)"
-                          dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="form-col">
-                    <h5 class="form-col-title">Cuotas y Cálculo</h5>
-                    <div class="p-fluid">
-                      <div class="p-field">
-                        <label>Estado</label>
-                        <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo"
-                          (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"
-                          styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar estado"></p-select>
-                      </div>
-                      <div class="p-field">
-                        <label>Cuotas</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().cuotas"
-                          (ngModelChange)="prestamoModel.set({...prestamoModel(), cuotas: $event})"
-                          (blur)="calcularCuota()" [min]="1"></p-inputNumber>
-                      </div>
-                      <div class="p-field">
-                        <label>Valor Cuota</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().vlrcuota" [readonly]="true"
-                          mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0" [minFractionDigits]="2"
-                          [maxFractionDigits]="2" [useGrouping]="true"
-                          [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="form-actions mb-3">
-                  <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
-                    (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
-                    (click)="cancelarPrestamo()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
-                    [loading]="prestamoSaving()" (click)="guardarPrestamo()" [rounded]="true" size="small"></p-button>
-                </div>
-
-                <p-dataView [value]="prestamosData()" [loading]="prestamosLoading()" size="small" layout="list"
-                  class="prestamos-dataview">
-                  <ng-template #list let-pres>
-                    <div class="prestamo-item">
-                      <div class="prestamo-nro">#{{ pres.nroprestamo || pres.prestamoId }}</div>
-                      <div class="prestamo-capital">Capital: {{ moneda(pres.capital) }}</div>
-                      <div class="prestamo-cuotas">{{ pres.cuotas }} cuotas de {{ moneda(pres.vlrcuota || pres.capital /
-                        pres.cuotas) }}</div>
-                      <div class="prestamo-estado">
-                        <span class="estado-badge" [ngClass]="pres.sn_activo === 'S' ? 'activo' : 'inactivo'">
-                          {{ pres.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}
-                        </span>
-                      </div>
-                    </div>
-                  </ng-template>
-                </p-dataView>
-
-                @if (showPlanPago() && planPago().length > 0) {
-                <div class="card mt-3">
-                  <div class="tab-header">
-                    <h4>Plan de Pago - Amortización</h4>
-                    <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary"
-                      (click)="cancelarPlanPago()" [rounded]="true" size="small"></p-button>
-                  </div>
-                  <div class="table-responsive">
-                    <table class="table table-striped">
-                      <thead>
-                        <tr>
-                          <th>Cuota</th>
-                          <th>Fecha Pago</th>
-                          <th class="col-importe">Cuota</th>
-                          <th class="col-importe">Capital</th>
-                          <th class="col-importe">Interés</th>
-                          <th class="col-importe">Saldo</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        @for (fila of planPago(); track fila.nrofila) {
-                        <tr>
-                          <td>{{ fila.nrofila }}</td>
-                          <td>{{ fila.FechaPago | date:'dd/MM/yyyy' }}</td>
-                          <td class="col-importe">{{ moneda(fila.vlrcuota) }}</td>
-                          <td class="col-importe">{{ moneda(fila.capital) }}</td>
-                          <td class="col-importe">{{ moneda(fila.interes) }}</td>
-                          <td class="col-importe">{{ moneda(fila.saldo) }}</td>
-                        </tr>
-                        }
-                      </tbody>
-                      <tfoot>
-                        <tr class="fw-bold">
-                          <td colspan="2">Totales</td>
-                          <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.vlrcuota, 0)) }}</td>
-                          <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.capital, 0)) }}</td>
-                          <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.interes, 0)) }}</td>
-                          <td class="col-importe"></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                </div>
-                }
-              </div>
-            </p-tabpanel>
-
-            <p-tabpanel value="4">
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Referencias</h4>
@@ -454,7 +231,7 @@
               </div>
             </p-tabpanel>
 
-            <p-tabpanel value="5">
+            <p-tabpanel value="3">
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Parientes</h4>
@@ -540,9 +317,7 @@
 
         </div>
 
-        <p-button label="Nuevo" icon="pi pi-plus" (click)="nuevo()" 
-          variant="text"
-          severity="success" [rounded]="true"
+        <p-button label="Nuevo" icon="pi pi-plus" (click)="nuevo()" variant="text" severity="success" [rounded]="true"
           size="small"></p-button>
 
 
@@ -637,7 +412,8 @@
       </div>
 
       <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
-        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)" styleClass="paginator-compact"></p-paginator>
+        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"></p-paginator>
       }
     </div>
   </div>

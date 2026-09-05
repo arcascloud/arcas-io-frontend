@@ -1,241 +1,253 @@
 <div class="prestamos-manager">
   <div class="split-layout">
+
+    <!-- Columna izquierda: formulario prestamo + plan de pago -->
     <div class="left-column">
-      <p-toolbar>
-        <ng-template #start>
-          <div class="toolbar-title">
-            <i class="pi pi-users"></i>
-            <span>Clientes</span>
-          </div>
-        </ng-template>
-      </p-toolbar>
-
-      <div class="search-bar">
-        <div class="search-input-wrapper">
-          <i class="pi pi-search"></i>
-          <input
-            type="text"
-            pInputText
-            [ngModel]="q()"
-            (ngModelChange)="q.set($event)"
-            (keyup.enter)="loadClientes()"
-            placeholder="Buscar por nombre, DNI, RTN..."
-            class="search-input"
-          />
-          <p-button
-            *ngIf="q()"
-            icon="pi pi-times"
-            (click)="limpiarFiltros()"
-            severity="secondary"
-            [rounded]="true"
-            size="small"
-            class="clear-btn"
-          ></p-button>
-        </div>
-      </div>
-
-      <div class="clientes-count">
-        <h4>Clientes: {{ totalClientes() }}</h4>
-      </div>
-
-      @if (cargando()) {
-        <div class="loading-skeleton">
-          @for (i of [1,2,3,4,5]; track i) {
-            <div class="skeleton-item">
-              <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
-              <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
-            </div>
-          }
-        </div>
-      } @else if (data().length === 0) {
-        <div class="empty-state">
-          <i class="pi pi-users empty-icon"></i>
-          <h3>No hay clientes</h3>
-          <p>No se encontraron clientes registrados.</p>
-        </div>
-      } @else {
-        <div class="clientes-grid">
-          @for (cliente of data(); track cliente.clienteId) {
-            <div
-              class="cliente-card"
-              [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
-              (click)="seleccionarCliente(cliente)"
-            >
-              <div class="cliente-card-header">
-                <span class="cliente-nro">{{ cliente.nrocliente }}</span>
-                <p-tag
-                  [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
-                  [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
-                  class="tag-small"
-                />
-              </div>
-              <h3 class="cliente-nombre-large">{{ getClienteNombre(cliente) }}</h3>
-              <div class="cliente-details">
-                <div class="detail-row">
-                  <i class="pi pi-id-card"></i>
-                  <span>{{ cliente.dni }}</span>
-                </div>
-                @if (cliente.rtn) {
-                  <div class="detail-row">
-                    <i class="pi pi-file-text"></i>
-                    <span>{{ cliente.rtn }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-        </div>
-
-        <p-paginator
-          [first]="(page() - 1) * limit()"
-          [rows]="limit()"
-          [totalRecords]="totalClientes()"
-          [rowsPerPageOptions]="[5, 10, 15]"
-          (onPageChange)="onPageChange($event)"
-          class="mt-3"
-        ></p-paginator>
-      }
-    </div>
-
-    <div class="right-column">
       @if (!selectedCliente()) {
-        <div class="empty-state">
-          <i class="pi pi-arrow-left empty-icon"></i>
-          <h3>Seleccione un cliente</h3>
-          <p>Haga clic en un cliente de la lista para gestionar préstamos</p>
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Seleccione un cliente</h3>
+        <p>Haga clic en un cliente de la lista para ver su prestamo</p>
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
+              <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
+                [rounded]="true" size="small"></p-button>
+            </p-iconField>
+          </div>
         </div>
+      </div>
       }
 
       @if (selectedCliente()) {
-        <div class="cliente-detail">
-          <div class="cliente-header">
-            <div class="cliente-header-info">
-              <h2>{{ getClienteNombre(selectedCliente()) }}</h2>
-              <span class="cliente-nro-badge">{{ selectedCliente()?.nrocliente }}</span>
+      <div class="cliente-detail">
+        <div class="cliente-header-inline">
+          <span class="cliente-inline-codigo">Codigo.: {{ selectedCliente()?.nrocliente }} -</span>
+          <span class="cliente-inline-nombre">{{ getClienteNombre(selectedCliente()) }}</span>
+        </div>
+
+        @if (prestamosLoading()) {
+        <div class="loading-center">
+          <p-progressSpinner strokeWidth="4" fill="transparent" animationDuration=".8s"></p-progressSpinner>
+          <span class="loading-text">Cargando prestamo...</span>
+        </div>
+        } @else {
+        <div class="tab-content">
+          <!-- Formulario dos columnas -->
+          <div class="prestamo-form-columns mb-3">
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Datos del Prestamo</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Nro. Prestamo</label>
+                  <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo"
+                    [readonly]="true" />
+                </div>
+                <div class="p-field">
+                  <label>Capital</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().capital"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})"
+                    (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'"
+                    [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Tasa %</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().tasa"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})"
+                    (blur)="calcularCuota()" mode="decimal" [min]="0" [step]="0.01"
+                    [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [inputStyle]="{ 'width': '100%' }"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Fecha</label>
+                  <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)"
+                    dateFormat="dd/mm/yy" [showIcon]="true"
+                    [disabled]="!!prestamoData()"></p-datepicker>
+                </div>
+              </div>
+            </div>
+
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Cuotas y Calculo</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Estado</label>
+                  <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar estado"
+                    [disabled]="!!prestamoData()"></p-select>
+                </div>
+                <div class="p-field">
+                  <label>Cuotas</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().cuotas"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), cuotas: $event})"
+                    (blur)="calcularCuota()" [min]="1"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Valor Cuota</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().vlrcuota" [readonly]="true"
+                    mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0"
+                    [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+                    [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="tab-content">
+          <!-- Botones: solo visibles si NO tiene prestamo (para crear) -->
+          @if (!prestamoData()) {
+          <div class="prestamo-actions mb-3">
+            <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+              (click)="limpiarFormulario()" [rounded]="true" size="small"></p-button>
+            <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
+              (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
+            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+              [loading]="prestamoSaving()" (click)="guardarPrestamo()" [rounded]="true"
+              size="small"></p-button>
+          </div>
+          }
+
+          <!-- Plan de pago -->
+          @if (showPlanPago() && planPago().length > 0) {
+          <div class="card">
             <div class="tab-header">
-              <h4>Préstamos</h4>
+              <h4>Plan de Pago - Amortizacion</h4>
+              <span class="cuotas-info">{{ planPago().length }} cuotas</span>
             </div>
-
-            <div class="prestamo-form-columns mb-3">
-              <!-- Columna Izquierda: Datos del préstamo -->
-              <div class="prestamo-col">
-                <h5 class="prestamo-col-title">Datos del Préstamo</h5>
-                <div class="p-fluid">
-                  <div class="p-field">
-                    <label>Nro. Préstamo</label>
-                    <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo" (ngModelChange)="prestamoModel.set({...prestamoModel(), nroprestamo: $event})" placeholder="Se genera al guardar plan" [readonly]="true" />
-                  </div>
-                  <div class="p-field">
-                    <label>Capital</label>
-                    <p-inputNumber size="small" [ngModel]="prestamoModel().capital" (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})" (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
-                  </div>
-                  <div class="p-field">
-                    <label>Tasa %</label>
-                    <p-inputNumber size="small" [ngModel]="prestamoModel().tasa" (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})" (blur)="calcularCuota()" mode="decimal" [min]="0" [step]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
-                  </div>
-                  <div class="p-field">
-                    <label>Fecha</label>
-                    <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)" dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Columna Derecha: Cuotas y cálculo -->
-              <div class="prestamo-col">
-                <h5 class="prestamo-col-title">Cuotas y Cálculo</h5>
-                <div class="p-fluid">
-                  <div class="p-field">
-                    <label>Estado</label>
-                    <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo" (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar estado"></p-select>
-                  </div>
-                  <div class="p-field">
-                    <label>Cuotas</label>
-                    <p-inputNumber size="small" [ngModel]="prestamoModel().cuotas" (ngModelChange)="prestamoModel.set({...prestamoModel(), cuotas: $event})" (blur)="calcularCuota()" [min]="1"></p-inputNumber>
-                  </div>
-                  <div class="p-field">
-                    <label>Valor Cuota</label>
-                    <p-inputNumber size="small" [ngModel]="prestamoModel().vlrcuota" [readonly]="true" mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
-                  </div>
-                </div>
-              </div>
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Cuota</th>
+                    <th>Fecha Pago</th>
+                    <th class="col-importe">Cuota</th>
+                    <th class="col-importe">Capital</th>
+                    <th class="col-importe">Interes</th>
+                    <th class="col-importe">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (fila of planPago(); track fila.nrofila) {
+                  <tr [class.fila-pagada]="fila.sn_pagada === 'S'">
+                    <td>{{ fila.nrofila }}</td>
+                    <td>{{ fila.FechaPago | date:'dd/MM/yyyy' }}</td>
+                    <td class="col-importe">{{ moneda(fila.vlrcuota) }}</td>
+                    <td class="col-importe">{{ moneda(fila.capital) }}</td>
+                    <td class="col-importe">{{ moneda(fila.interes) }}</td>
+                    <td class="col-importe">{{ moneda(fila.saldo) }}</td>
+                  </tr>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr class="fw-bold">
+                    <td colspan="2">Totales</td>
+                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.vlrcuota || 0), 0)) }}</td>
+                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.capital || 0), 0)) }}</td>
+                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.interes || 0), 0)) }}</td>
+                    <td class="col-importe"></td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
+          </div>
+          }
+        </div>
+        }
+      </div>
+      }
+    </div>
 
-            <div class="prestamo-actions mb-3">
-              <p-button label="Generar Plan de Pago" icon="pi pi-table" severity="secondary" (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
-              <p-button label="Limpiar" icon="pi pi-times" severity="secondary" (click)="cancelarPrestamo()" [rounded]="true" size="small"></p-button>
-              <p-button label="Guardar" icon="pi pi-check" [loading]="prestamoSaving()" (click)="guardarPrestamo()" [rounded]="true" size="small"></p-button>
-            </div>
+    <!-- Columna derecha: lista de clientes -->
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+            (keyup.enter)="loadClientes()" placeholder="Buscar por nombre, DNI, RTN..."
+            class="search-input" />
+          <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
+            [rounded]="true" size="small" class="clear-btn"></p-button>
+        </div>
+      </div>
 
-            <p-dataView
-              [value]="prestamosData()"
-              [loading]="prestamosLoading()"
-              size="small"
-              layout="list"
-              class="prestamos-dataview"
-            >
-              <ng-template #list let-pres>
-                <div class="prestamo-item">
-                  <div class="prestamo-nro">#{{ pres.nroprestamo || pres.prestamoId }}</div>
-                  <div class="prestamo-capital">Capital: {{ moneda(pres.capital) }}</div>
-                  <div class="prestamo-cuotas">{{ pres.cuotas }} cuotas de {{ moneda(pres.vlrcuota || pres.capital / pres.cuotas) }}</div>
-                  <div class="prestamo-estado">
-                    <span class="estado-badge" [ngClass]="pres.sn_activo === 'S' ? 'activo' : 'inactivo'">
-                      {{ pres.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </div>
-                </div>
-              </ng-template>
-            </p-dataView>
-
-            @if (showPlanPago() && planPago().length > 0) {
-              <div class="card mt-3">
-                <div class="tab-header">
-                  <h4>Plan de Pago - Amortización</h4>
-                  <p-button label="Cancelar" icon="pi pi-times" severity="secondary" (click)="cancelarPlanPago()" [rounded]="true" size="small"></p-button>
-                </div>
-                <div class="table-responsive">
-                  <table class="table table-striped">
-                    <thead>
-                      <tr>
-                        <th>Cuota</th>
-                        <th>Fecha Pago</th>
-                        <th class="col-importe">Cuota</th>
-                        <th class="col-importe">Capital</th>
-                        <th class="col-importe">Interés</th>
-                        <th class="col-importe">Saldo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (fila of planPago(); track fila.nrofila) {
-                        <tr>
-                          <td>{{ fila.nrofila }}</td>
-                          <td>{{ fila.FechaPago | date:'dd/MM/yyyy' }}</td>
-                          <td class="col-importe">{{ moneda(fila.vlrcuota) }}</td>
-                          <td class="col-importe">{{ moneda(fila.capital) }}</td>
-                          <td class="col-importe">{{ moneda(fila.interes) }}</td>
-                          <td class="col-importe">{{ moneda(fila.saldo) }}</td>
-                        </tr>
-                      }
-                    </tbody>
-                    <tfoot>
-                      <tr class="fw-bold">
-                        <td colspan="2">Totales</td>
-                        <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.vlrcuota, 0)) }}</td>
-                        <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.capital, 0)) }}</td>
-                        <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.interes, 0)) }}</td>
-                        <td class="col-importe"></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            }
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay clientes</h3>
+        <p>No se encontraron clientes registrados.</p>
+      </div>
+      } @else {
+      <div class="clientes-lista">
+        @for (cliente of data(); track cliente.clienteId) {
+        <div class="cliente-item-ficha"
+          [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)">
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ cliente.nrocliente }}</span>
+            <p-tag [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ cliente.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ cliente.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ cliente.dni }}</span>
+          </div>
+          @if (cliente.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ cliente.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa interes:</span>
+            <span class="ficha-value">{{ cliente.interes }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ cliente.categoria }}</span>
           </div>
         </div>
+        }
+      </div>
+
+      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"></p-paginator>
       }
     </div>
   </div>
