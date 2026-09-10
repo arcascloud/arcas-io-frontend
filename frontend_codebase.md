@@ -1,5 +1,5 @@
 # ERP Arcas - Código Fuente Completo
-> Generado automáticamente el 1/9/2026, 11:59:50 p. m.
+> Generado automáticamente el 10/9/2026, 10:14:07 a. m.
 
 ---
 
@@ -41,7 +41,7 @@
               { "glob": "**/*", "input": "public" },
               { "glob": "**/*", "input": "src/assets", "output": "assets" }
             ],
-            "styles": [
+            "styles": ["node_modules/primeflex/primeflex.css",
               "src/styles.scss",
               "node_modules/primeicons/primeicons.css"
             ]
@@ -140,9 +140,11 @@
     "@primeicons/core": "^8.0.0",
     "@primeng/themes": "^21.0.4",
     "@primeuix/themes": "^1.0.0",
+    "@qwen-code/sdk": "^0.1.8",
     "chart.js": "^4.5.1",
     "pdfjs-dist": "^6.3.289",
     "pdfmake": "^0.3.11",
+    "primeflex": "^4.0.0",
     "primeicons": "^8.0.0",
     "primeng": "^21.1.9",
     "rxjs": "~7.8.0",
@@ -1308,6 +1310,104 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
       { key: 'ultnropda', label: 'Últ. PDA', tipo: 'numero' },
     ],
   },
+
+  // ─── Inventario ──────────────────────────────────────────
+  categorias: {
+    ruta: '/inventario/categorias',
+    titulo: 'Categorías',
+    subtitulo: 'Categorías de productos',
+    idKey: 'categoriaId',
+    icono: 'pi-tags',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  marcas: {
+    ruta: '/inventario/marcas',
+    titulo: 'Marcas',
+    subtitulo: 'Marcas de productos',
+    idKey: 'marcaId',
+    icono: 'pi-bookmark',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  modelos: {
+    ruta: '/inventario/modelos',
+    titulo: 'Modelos',
+    subtitulo: 'Modelos de productos',
+    idKey: 'modeloId',
+    icono: 'pi-box',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  colores: {
+    ruta: '/inventario/colores',
+    titulo: 'Colores',
+    subtitulo: 'Colores de productos',
+    idKey: 'colorId',
+    icono: 'pi-palette',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  'unidades-medida': {
+    ruta: '/inventario/unidades-medida',
+    titulo: 'Unidades de Medida',
+    subtitulo: 'Unidades de medida',
+    idKey: 'unidadmedidaId',
+    icono: 'pi-arrows-h',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  embalajes: {
+    ruta: '/inventario/embalajes',
+    titulo: 'Embalajes',
+    subtitulo: 'Tipos de embalaje',
+    idKey: 'embalajeId',
+    icono: 'pi-shopping-bag',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  bodegas: {
+    ruta: '/inventario/bodegas',
+    titulo: 'Bodegas',
+    subtitulo: 'Bodegas',
+    idKey: 'bodegaId',
+    icono: 'pi-building',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  ubicaciones: {
+    ruta: '/inventario/ubicaciones',
+    titulo: 'Ubicaciones',
+    subtitulo: 'Ubicaciones',
+    idKey: 'ubicacionId',
+    icono: 'pi-map-marker',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  pasillos: {
+    ruta: '/inventario/pasillos',
+    titulo: 'Pasillos',
+    subtitulo: 'Pasillos',
+    idKey: 'pasilloId',
+    icono: 'pi-directions',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  casas: {
+    ruta: '/inventario/casas',
+    titulo: 'Casas',
+    subtitulo: 'Casas',
+    idKey: 'casaId',
+    icono: 'pi-home',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  testantes: {
+    ruta: '/inventario/testantes',
+    titulo: 'Testantes',
+    subtitulo: 'Testantes',
+    idKey: 'testanteId',
+    icono: 'pi-verified',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  tags: {
+    ruta: '/inventario/tags',
+    titulo: 'Tags',
+    subtitulo: 'Tags de productos',
+    idKey: 'tagsId',
+    icono: 'pi-hashtag',
+    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
 };
 ```
 
@@ -1347,7 +1447,20 @@ export interface CxcMovimiento {
 
 export interface CxcHistorico {
   historicoclienteId: number;
-  [key: string]: any;
+  clienteId: number;
+  fecharegistro: string;
+  nrocliente: string;
+  dni: string;
+  cliente: string;
+  modulo: string;
+  abreviatura: string;
+  nroreferencia: string;
+  tipomov: string;
+  importe: number;
+  concepto: string;
+  sn_doc_anulado: string;
+  sn_cotabilizada: string;
+  clienteMovId: number;
 }
 
 export interface CxcSaldoFavor {
@@ -2363,6 +2476,7 @@ export interface CompraMae {
   sn_pagada: 'S' | 'N';
   sn_cotabilizada: 'S' | 'N';
   sn_anulada: 'S' | 'N';
+  sn_procesada: 'S' | 'N';
   empresaId: number;
   usuarioCreated: string;
   usuarioUpdated?: string;
@@ -3451,7 +3565,7 @@ export class CatalogoParametrosService {
 
   /**
    * Obtiene todos los registros de un catálogo genérico.
-   * @param ruta - Ruta del catálogo a consultar (ej. '/currencies', '/taxes').
+   * @param ruta - Ruta del catálogo a consultar (ej. '/parametros/estados').
    * @returns Observable con el arreglo de registros del catálogo.
    */
   getAll<T>(ruta: string): Observable<T[]> {
@@ -3686,6 +3800,28 @@ export class CxcService {
    */
   getHistorico(): Observable<CxcHistorico[]> {
     return this.api.get<CxcHistorico[]>('/cxc/historico');
+  }
+
+  /**
+   * Obtiene el histórico de transacciones con filtros.
+   * @param dni - Filtro por DNI (opcional)
+   * @param cliente - Filtro por nombre/razón social (opcional)
+   * @param fechaDesde - Fecha desde (opcional)
+   * @param fechaHasta - Fecha hasta (opcional)
+   * @returns Observable con la lista de registros históricos filtrados
+   */
+  getHistoricoConFiltros(
+    dni?: string,
+    cliente?: string,
+    fechaDesde?: string,
+    fechaHasta?: string,
+  ): Observable<CxcHistorico[]> {
+    const params: Record<string, string | number> = {};
+    if (dni && dni.trim()) params['dni'] = dni.trim();
+    if (cliente && cliente.trim()) params['cliente'] = cliente.trim();
+    if (fechaDesde && fechaDesde.trim()) params['fechaDesde'] = fechaDesde.trim();
+    if (fechaHasta && fechaHasta.trim()) params['fechaHasta'] = fechaHasta.trim();
+    return this.api.get<CxcHistorico[]>('/cxc/historico/filtros', params);
   }
 
   /**
@@ -4394,7 +4530,7 @@ export class MenuConfigService {
         children: [
           { label: 'Caja', icon: 'dollar', route: '/cxc/caja' },
           { label: 'Clientes', icon: 'users', route: '/cxc/clientes' },
-          { label: 'Préstamos', icon: 'hand-holding-usd', route: '/cxc/prestamos' },
+          { label: 'Préstamos', icon: 'pi pi-briefcase', route: '/cxc/prestamos' },
           { label: 'Movimientos', icon: 'history', route: '/cxc/movimientos' },
           { label: 'Histórico', icon: 'book', route: '/cxc/historico' },
           { label: 'Antigüedad de Saldos', icon: 'chart-bar', route: '/cxc/antiguedad-saldos' },
@@ -4408,7 +4544,6 @@ export class MenuConfigService {
         children: [
           { label: 'Proveedores', icon: 'users', route: '/cxp/proveedores' },
           { label: 'Compras', icon: 'shopping-bag', route: '/cxp/compras' },
-          { label: 'Detalle de Compras', icon: 'list', route: '/cxp/compras-det' },
           { label: 'Movimientos', icon: 'history', route: '/cxp/movimientos' },
           { label: 'Históricos', icon: 'book', route: '/cxp/historicos' },
           { label: 'Saldos a favor', icon: 'heart', route: '/cxp/saldos-av' },
@@ -6438,10 +6573,10 @@ export const CONFIGURACION_ROUTES: Routes = [
 }
 
 .card {
-  background: var(--p-content-background);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: var(--p-content-border-radius);
-  padding: 1.25rem;
+  background: var(--c-bg);
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
 }
 
 .form-grid {
@@ -6716,6 +6851,7 @@ export const CONTABILIDAD_ROUTES: Routes = [
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
       [globalFilterFields]="['cliente', 'nrocliente', 'dni']"
       styleClass="p-datatable-striped"
+      size="small"
     >
       <ng-template #header>
         <tr>
@@ -7050,6 +7186,650 @@ export class AntiguedadSaldos implements OnInit {
 
 ---
 
+## 📄 src\app\features\cxc\caja\caja.html
+
+```typescript
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h3 class="page-title">Caja</h3>
+      <p class="page-subtitle">Abonos a cuenta de clientes</p>
+    </div>
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text size="small" rounded
+      (onClick)="volver()" />
+  </header>
+
+  @if (cargando()) {
+  <div class="card">Cargando datos...</div>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="guardar()">
+    <div class="card form-grid">
+      <div class="campo">
+        <label>Cliente <span class="req">*</span></label>
+        <div class="flex gap-2">
+          <p-select size="small" formControlName="clienteId" [options]="clientes()" optionLabel="cliente"
+            optionValue="clienteId" placeholder="Seleccionar cliente..." styleClass="w-full" [filter]="true"
+            filterBy="cliente" [appendTo]="'body'" />
+          <p-button size="small" type="button" icon="pi pi-search" severity="info" [rounded]="true"
+            (onClick)="abrirClientes()" />
+        </div>
+        @if (invalid('clienteId')) {
+        <small class="err">Cliente es obligatorio</small>
+        }
+      </div>
+      <div class="campo">
+        <label>Nombre Cliente</label>
+        <input pInputText pSize="small" formControlName="nombrecliente" readonly />
+      </div>
+      <div class="campo">
+        <label>Tipo Documento Fiscal</label>
+        <p-select size="small" formControlName="documentoId" [options]="documentosFiltrados()" optionLabel="label"
+          optionValue="value" placeholder="Tipo documento..." styleClass="w-full" [filter]="true" filterBy="label"
+          [appendTo]="'body'" (ngModelChange)="onDocumentoIdChange()" />
+      </div>
+      <div class="campo">
+        <label>Nro. Documento</label>
+        <p-select size="small" formControlName="nrodocumento" [options]="nrosDocumento()" optionLabel="label"
+          optionValue="value" placeholder="Nro. documento..." styleClass="w-full" [filter]="true" filterBy="label"
+          [appendTo]="'body'" />
+      </div>
+
+
+    </div>
+
+          <div class="ml-1 mb-3 grid">
+        <div class="col-fixed" style="width:95%"></div>
+        <label>Concepto</label>
+        <input pInputText pSize="small" formControlName="concepto" maxlength="120" placeholder="Concepto..."
+          class="w-full" />
+      </div>
+
+    <div class="card">
+      <div class="detalles-head">
+        <h4 class="detalles-title">Formas de Pago</h4>
+        <p-button type="button" label="Agregar fila" icon="pi pi-plus" variant="text" severity="success" size="small"
+          [rounded]="true" (onClick)="nuevaFila()" />
+      </div>
+
+      <p-table [value]="dets()" [scrollable]="true" scrollHeight="400px" styleClass="det-table" [paginator]="true"
+        [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small">
+        <ng-template #header>
+          <tr>
+            <th style="width:50px">#</th>
+            <th>Forma de Pago</th>
+            <th>Importe</th>
+            <th>Tarjeta</th>
+            <th>Nro. Tarjeta</th>
+            <th>Autorización</th>
+            <th style="width:50px"></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row let-idx="rowIndex">
+          <tr>
+            <td>{{ idx + 1 }}</td>
+            <td>
+              <p-select size="small" [ngModel]="row['formapagoId']"
+                (ngModelChange)="row['formapagoId'] = $event; onFormaPagoChange(row)"
+                [ngModelOptions]="{ standalone: true }" [options]="opcionesFp()" optionLabel="label" optionValue="value"
+                placeholder="Seleccionar..." styleClass="w-full" [filter]="true" filterBy="label" [appendTo]="'body'" />
+            </td>
+            <td>
+              <p-inputnumber size="small" [(ngModel)]="row['importe']" [ngModelOptions]="{ standalone: true }" [min]="0"
+                mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
+                [useGrouping]="true" styleClass="w-8rem" [inputStyle]="{ 'width': '100%' }" />
+            </td>
+            <td>
+              <p-select size="small" [ngModel]="row['tarjetacreditoId']"
+                (ngModelChange)="row['tarjetacreditoId'] = $event" [ngModelOptions]="{ standalone: true }"
+                [options]="opcionesTarjeta()" optionLabel="label" optionValue="value" placeholder="Seleccionar..."
+                styleClass="w-full" [filter]="true" filterBy="label" [appendTo]="'body'"
+                [disabled]="isCampoDesactivado(row, 'tarjetacreditoId')" />
+            </td>
+            <td>
+              <input pInputText pSize="small" [(ngModel)]="row['nrotarjeta']" [ngModelOptions]="{ standalone: true }"
+                [disabled]="isCampoDesactivado(row, 'nrotarjeta')" placeholder="Nro. tarjeta" />
+            </td>
+            <td>
+              <input pInputText pSize="small" [(ngModel)]="row['nroautorizacion']"
+                [ngModelOptions]="{ standalone: true }" [disabled]="isCampoDesactivado(row, 'nroautorizacion')"
+                placeholder="Autorización" />
+            </td>
+            <td>
+              <p-button type="button" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" size="small"
+                [disabled]="!esNuevaFila(row)" (onClick)="quitarFila(idx)" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="7" class="text-center p-3">Sin detalles. Agregue filas.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <div class="acciones-form">
+      <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small"
+        [rounded]="true" (onClick)="volver()" />
+      <p-button type="submit" label="Guardar" icon="pi pi-check" variant="text" severity="success" size="small"
+        [rounded]="true" [loading]="guardando()" />
+    </div>
+  </form>
+  }
+</section>
+
+
+
+```
+
+---
+
+## 📄 src\app\features\cxc\caja\caja.scss
+
+```typescript
+:host {
+  display: block;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  p-select,
+  p-inputnumber,
+  p-datepicker {
+    width: 100%;
+  }
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-texto-label);
+  }
+}
+
+.acciones-form {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.detalles-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.detalles-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.det-table {
+  p-inputnumber {
+    width: 100%;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\cxc\caja\caja.ts
+
+```typescript
+import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { MessageService } from 'primeng/api';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { FacturacionService } from '../../../core/services/facturacion.service';
+import { CxcService } from '../../../core/services/cxc.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
+import { EntitySelectorHelper, EntitySelectorConfig } from '../../helpers/entity-selector';
+import { FooterHelper } from '../../helpers/footer';
+
+@Component({
+  selector: 'app-caja',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    InputNumberModule,
+    SelectModule,
+    TableModule,
+  ],
+  providers: [DialogService],
+  templateUrl: './caja.html',
+  styleUrl: './caja.scss',
+})
+export class Caja implements OnInit {
+  private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private service = inject(FacturacionService);
+  private api = inject(ApiService);
+  private auth = inject(AuthService);
+  private destroyRef = inject(DestroyRef);
+  private dialogService = inject(DialogService);
+  private cxcService = inject(CxcService);
+  private navegacion = inject(NavegacionService);
+  private msgs = inject(MessageService);
+  ref: DynamicDialogRef | undefined;
+
+  esEdicion = signal(false);
+  cargando = signal(false);
+  guardando = signal(false);
+
+  clientes = signal<any[]>([]);
+  documentosFiscales = signal<any[]>([]);
+  formasPago = signal<any[]>([]);
+  tarjetas = signal<any[]>([]);
+  documentosPendientes = signal<any[]>([]);
+  documentosFiltrados = signal<any[]>([]);
+  nrosDocumento = signal<any[]>([]);
+
+  dets = signal<any[]>([]);
+  detGuardados = new Set<number>();
+  private itemId = 0;
+  private contadorFila = 0;
+
+  form!: FormGroup;
+
+  ngOnInit() {
+    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    this.buildForm();
+    this.cargarOpciones();
+    this.vigilarCliente();
+
+    if (id && id !== 'nuevo') {
+      this.esEdicion.set(true);
+      this.itemId = Number(id);
+      this.cargando.set(true);
+      this.service.getMaeOne<any>('/cxc/caja-mae', this.itemId).subscribe({
+        next: (mae) => {
+          this.form.patchValue({
+            moduloId: mae?.moduloId ?? 4,
+            clienteId: mae?.clienteId,
+            nrocliente: mae?.nrocliente ?? '',
+            nombrecliente: mae?.nombrecliente ?? '',
+            concepto: mae?.concepto ?? '',
+            documentoId: mae?.documentoId,
+            nrodocumento: mae?.nrodocumento,
+            tipomov: mae?.tipomov ?? 'C',
+            sn_cotabilizada: mae?.sn_cotabilizada ?? 'N',
+            sn_anulado: mae?.sn_anulado ?? 'N',
+            fec_anulacion: mae?.fec_anulacion ?? null,
+            partidaId: mae?.partidaId ?? 0,
+          });
+          this.cargarDets();
+        },
+        error: () => {
+          this.cargando.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'Registro no encontrado' });
+          this.volver();
+        },
+      });
+    } else {
+      this.cargando.set(false);
+    }
+  }
+
+  private buildForm() {
+    this.form = this.fb.group({
+      moduloId: [4],
+      clienteId: [null, Validators.required],
+      nrocliente: [''],
+      nombrecliente: [''],
+      concepto: [''],
+      documentoId: [null],
+      nrodocumento: [null],
+      tipomov: ['C'],
+      sn_cotabilizada: ['N'],
+      sn_anulado: ['N'],
+      fec_anulacion: [null],
+      partidaId: [0],
+    });
+  }
+
+  private cargarOpciones() {
+    this.api.get<any>('/cxc/clientes-con-saldo').subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data ?? []);
+        this.clientes.set(items);
+      },
+    });
+    this.api.get<any>('/parametros/tcotipodocumentofiscal').subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data ?? []);
+        const filtrados = items.filter((i: any) => ['FAC', 'NDB', 'PRE'].includes(i.abreviatura));
+        this.documentosFiscales.set(filtrados.map((i: any) => ({
+          label: i.descripcion,
+          value: i.tipodocumentofiscalId,
+        })));
+      },
+    });
+    this.api.get<any>('/parametros/formas-pago').subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data ?? []);
+        this.formasPago.set(items.map((i: any) => ({
+          label: i.descripcion,
+          value: i.formapagoId,
+        })));
+      },
+    });
+    this.api.get<any>('/parametros/tarjetas-credito').subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data ?? []);
+        this.tarjetas.set(items.map((i: any) => ({
+          label: i.descripcion,
+          value: i.tarjetacreditoId,
+        })));
+      },
+    });
+  }
+
+  private vigilarCliente() {
+    this.form.get('clienteId')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((clienteId) => {
+      if (!clienteId) {
+        this.form.patchValue({ nrocliente: '', nombrecliente: '' });
+        this.documentosPendientes.set([]);
+        this.documentosFiltrados.set([]);
+        this.nrosDocumento.set([]);
+        return;
+      }
+      this.api.get<any>(`/cxc/clientes/${clienteId}`).subscribe({
+        next: (cliente) => this.form.patchValue({
+          nrocliente: cliente?.nrocliente ?? '',
+          nombrecliente: `${cliente?.nombres ?? ''} ${cliente?.apellidos ?? ''}`.trim(),
+        }),
+        error: () => this.form.patchValue({ nrocliente: '', nombrecliente: '' }),
+      });
+      this.cxcService.getDocumentosPendientesCliente(clienteId).subscribe({
+        next: (docs) => {
+          this.documentosPendientes.set(docs);
+          this.filtrarDocumentos(docs);
+        },
+        error: () => {
+          this.documentosPendientes.set([]);
+          this.documentosFiltrados.set([]);
+          this.nrosDocumento.set([]);
+        },
+      });
+    });
+  }
+
+  private filtrarDocumentos(docs: any[]) {
+    const tiposUnicos = [...new Set(docs.map(d => d.documentoId))];
+    const allOpts = this.documentosFiscales();
+    const filtradas = allOpts.filter(o => tiposUnicos.includes(o.value));
+    this.documentosFiltrados.set(filtradas);
+    this.form.get('documentoId')?.setValue(null);
+    this.form.get('nrodocumento')?.setValue(null);
+    this.nrosDocumento.set([]);
+  }
+
+  onDocumentoIdChange() {
+    const docId = this.form.get('documentoId')?.value;
+    this.form.get('nrodocumento')?.setValue(null);
+    if (docId) {
+      const docs = this.documentosPendientes().filter(d => d.documentoId === docId);
+      this.nrosDocumento.set(docs.map(d => ({
+        label: `${d.nroreferencia} (Saldo: ${d.saldo.toFixed(2)})`,
+        value: d.nroreferencia,
+      })));
+    } else {
+      this.nrosDocumento.set([]);
+    }
+  }
+
+  abrirClientes() {
+    const config: EntitySelectorConfig = {
+      titulo: 'Seleccionar cliente con saldo',
+      columns: [
+        { key: 'nrocliente', label: 'Nro.' },
+        { key: 'cliente', label: 'Nombre' },
+        { key: 'dni', label: 'DNI' },
+        { key: 'rtn', label: 'RTN' },
+      ],
+      loadData: () => {
+        return new Promise<any[]>((resolve) => {
+          this.api.get<any>('/cxc/clientes-con-saldo').subscribe({
+            next: (res) => {
+              const items = Array.isArray(res) ? res : (res?.data ?? []);
+              resolve(items);
+            },
+            error: () => resolve([]),
+          });
+        });
+      },
+    };
+
+    this.ref = this.dialogService.open(EntitySelectorHelper, {
+      header: config.titulo,
+      width: '60vw',
+      modal: true,
+      contentStyle: { overflow: 'auto' },
+      data: { config },
+      templates: { footer: FooterHelper },
+    });
+
+    this.ref.onClose.subscribe((cliente: any) => {
+      if (cliente) {
+        this.form.patchValue({
+          clienteId: cliente.clienteId,
+          nrocliente: cliente.nrocliente ?? '',
+          nombrecliente: `${cliente.nombres ?? ''} ${cliente.apellidos ?? ''}`.trim(),
+        });
+      }
+    });
+  }
+
+  opcionesFp(): { label: string; value: any }[] {
+    return this.formasPago();
+  }
+
+  opcionesTarjeta(): { label: string; value: any }[] {
+    return this.tarjetas();
+  }
+
+  esEfectivo(row: any): boolean {
+    const opts = this.formasPago();
+    const selected = opts.find((o: any) => o.value === row['formapagoId']);
+    return selected ? /efectivo/i.test(selected.label) : false;
+  }
+
+  onFormaPagoChange(row: any) {
+    if (this.esEfectivo(row)) {
+      row['tarjetacreditoId'] = null;
+      row['nrotarjeta'] = '';
+      row['nroautorizacion'] = '';
+    }
+  }
+
+  isCampoDesactivado(row: any, key: string): boolean {
+    const camposTarjeta = ['tarjetacreditoId', 'nrotarjeta', 'nroautorizacion'];
+    return camposTarjeta.includes(key) && this.esEfectivo(row);
+  }
+
+  private cargarDets() {
+    this.service.getDet<any>(`/cxc/caja-det/factura/${this.itemId}`).subscribe({
+      next: (mios) => {
+        this.dets.set((mios ?? []).map((d) => ({ ...d })));
+        for (const d of (mios ?? [])) this.detGuardados.add(d['cxccajadetId']);
+        this.contadorFila = (mios ?? []).length;
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.service.getDet<any>('/cxc/caja-det').subscribe({
+          next: (todos) => {
+            const mios = (todos ?? []).filter((d) => d['cxccajaId'] === this.itemId);
+            this.dets.set(mios.map((d) => ({ ...d })));
+            for (const d of mios) this.detGuardados.add(d['cxccajadetId']);
+            this.contadorFila = mios.length;
+            this.cargando.set(false);
+          },
+          error: () => {
+            this.cargando.set(false);
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los detalles' });
+          },
+        });
+      },
+    });
+  }
+
+  nuevaFila() {
+    this.contadorFila += 1;
+    this.dets.update((d) => [...d, {
+      __local: true,
+      nrofila: this.contadorFila,
+      formapagoId: null,
+      importe: 0,
+      tarjetacreditoId: null,
+      nrotarjeta: '',
+      nroautorizacion: '',
+      factordecambio: 0,
+    }]);
+  }
+
+  quitarFila(idx: number) {
+    const fila = this.dets()[idx];
+    if (fila['cxccajadetId'] && this.detGuardados.has(fila['cxccajadetId'])) return;
+    this.dets.update((d) => d.filter((_, i) => i !== idx));
+  }
+
+  esNuevaFila(fila: any): boolean {
+    return !fila['cxccajadetId'] || !this.detGuardados.has(fila['cxccajadetId']);
+  }
+
+  invalid(ctrl: string): boolean {
+    const c = this.form.get(ctrl);
+    return !!c && c.invalid && (c.dirty || c.touched);
+  }
+
+  volver() {
+    this.navegacion.volver(['/cxc/caja-mae']);
+  }
+
+  guardar() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const maeBody = {
+      ...this.form.getRawValue(),
+      ...(this.esEdicion() ? {} : { empresaId: this.auth.currentUser()?.empresaId }),
+    };
+
+    this.guardando.set(true);
+    const maeOp = this.esEdicion()
+      ? this.service.updateMae<any>('/cxc/caja-mae', this.itemId, maeBody)
+      : this.service.createMae<any>('/cxc/caja-mae', maeBody);
+
+    maeOp.subscribe({
+      next: (mae) => {
+        const maeId = this.esEdicion() ? this.itemId : mae['cxccajaId'];
+        this.guardarDets(maeId);
+      },
+      error: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la caja' });
+      },
+    });
+  }
+
+  private guardarDets(maeId: number) {
+    const pendientes = this.dets().length;
+    if (pendientes === 0) {
+      this.finalizar();
+      return;
+    }
+
+    let completados = 0;
+    const ok = () => {
+      completados += 1;
+      if (completados === pendientes) this.finalizar();
+    };
+    const fail = () => {
+      this.guardando.set(false);
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar uno de los detalles' });
+    };
+
+    const empresaId = this.auth.currentUser()?.empresaId;
+    for (const fila of this.dets()) {
+      const detId = fila['cxccajadetId'];
+      const body = { ...fila, cxccajaId: maeId, empresaId };
+      delete body.__local;
+      if (detId && this.detGuardados.has(detId)) {
+        this.service.updateDet<any>('/cxc/caja-det', detId, body).subscribe({ next: ok, error: fail });
+      } else {
+        this.service.createDet<any>('/cxc/caja-det', body).subscribe({ next: ok, error: fail });
+      }
+    }
+  }
+
+  private finalizar() {
+    this.guardando.set(false);
+    this.msgs.add({
+      severity: 'success',
+      summary: 'Guardado',
+      detail: this.esEdicion() ? 'Caja actualizada' : 'Caja creada correctamente',
+    });
+    this.form.reset({
+      moduloId: 4,
+      clienteId: null,
+      nrocliente: '',
+      nombrecliente: '',
+      concepto: '',
+      documentoId: null,
+      nrodocumento: null,
+      tipomov: 'C',
+      sn_cotabilizada: 'N',
+      sn_anulado: 'N',
+      fec_anulacion: null,
+      partidaId: 0,
+    });
+    this.dets.set([]);
+    this.detGuardados.clear();
+    this.contadorFila = 0;
+    this.documentosPendientes.set([]);
+    this.documentosFiltrados.set([]);
+    this.nrosDocumento.set([]);
+    this.esEdicion.set(false);
+    this.itemId = 0;
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\features\cxc\cartas-recordatorio\cartas-recordatorio.html
 
 ```typescript
@@ -7103,6 +7883,9 @@ export class AntiguedadSaldos implements OnInit {
         (ngModelChange)="tipoFiltro.set($event)"
         optionLabel="label"
         optionValue="value"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        placeholder="Seleccionar tipo"
       ></p-select>
     </div>
 
@@ -7152,6 +7935,7 @@ export class AntiguedadSaldos implements OnInit {
       [showCurrentPageReport]="true"
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
       styleClass="p-datatable-striped"
+      size="small"
     >
       <ng-template #header>
         <tr>
@@ -7742,7 +8526,7 @@ export class CartasRecordatorio implements OnInit {
         }
         <div class="p-field">
           <label>Nombres <span class="req">*</span></label>
-          <input pInputText pSize="small" [formControl]="form.get('nombres')" maxlength="50" placeholder="Nombres" />
+          <input #primerCampo pInputText pSize="small" [formControl]="form.get('nombres')" maxlength="50" placeholder="Nombres" />
           @if (form.get('nombres')?.invalid && form.get('nombres')?.touched) {
             <small class="p-error">Los nombres son obligatorios</small>
           }
@@ -7773,13 +8557,15 @@ export class CartasRecordatorio implements OnInit {
           <input pInputText pSize="small" [formControl]="form.get('rtn')" maxlength="50" placeholder="RTN" />
         </div>
         }
-        <div class="p-field">
-          <label>Sexo</label>
-          <p-select size="small" [formControl]="form.get('sexo')" [options]="sexoOptions" optionLabel="label" optionValue="value" placeholder="Seleccione sexo" [showClear]="true" />
-        </div>
-        <div class="p-field">
-          <label>Fecha de nacimiento</label>
-          <p-datepicker [formControl]="form.get('fechanacimiento')" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" />
+        <div class="form-row">
+          <div class="p-field">
+            <label>Sexo</label>
+            <p-select size="small" [formControl]="form.get('sexo')" [options]="sexoOptions" optionLabel="label" optionValue="value" placeholder="Seleccione sexo" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
+          </div>
+          <div class="p-field">
+            <label>Fecha de nacimiento</label>
+            <p-datepicker [formControl]="form.get('fechanacimiento')" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" />
+          </div>
         </div>
       </div>
       @if (!modoFacturacion()) {
@@ -7787,15 +8573,15 @@ export class CartasRecordatorio implements OnInit {
         <h5 class="form-col-title">Clasificación y Crédito</h5>
         <div class="p-field">
           <label>Estado civil</label>
-          <p-select size="small" [formControl]="form.get('estadocivil')" [options]="estadoCivilOptions" optionLabel="label" optionValue="value" placeholder="Seleccione estado civil" [showClear]="true" />
+          <p-select size="small" [formControl]="form.get('estadocivil')" [options]="estadoCivilOptions" optionLabel="label" optionValue="value" placeholder="Seleccione estado civil" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
         </div>
         <div class="p-field">
           <label>Categoría</label>
-          <p-select size="small" [formControl]="form.get('categoria')" [options]="categoriaOptions" optionLabel="label" optionValue="value" placeholder="Seleccione categoría" [showClear]="true" />
+          <p-select size="small" [formControl]="form.get('categoria')" [options]="categoriaOptions" optionLabel="label" optionValue="value" placeholder="Seleccione categoría" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
         </div>
         <div class="p-field">
           <label>Límite de crédito</label>
-          <p-inputNumber size="small" [formControl]="form.get('limiteCredito')" [mode]="'currency'" currency="HNL" [minFractionDigits]="2" [maxFractionDigits]="2" />
+          <p-inputNumber size="small" [formControl]="form.get('limiteCredito')" mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" />
         </div>
         <div class="p-field">
           <label>Días de plazo</label>
@@ -7803,11 +8589,11 @@ export class CartasRecordatorio implements OnInit {
         </div>
         <div class="p-field">
           <label>Interés (%)</label>
-          <p-inputNumber size="small" [formControl]="form.get('interes')" [minFractionDigits]="2" [maxFractionDigits]="2" />
+          <p-inputNumber size="small" [formControl]="form.get('interes')" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }" />
         </div>
         <div class="p-field">
           <label>Moratorio (%)</label>
-          <p-inputNumber size="small" [formControl]="form.get('moratorio')" [minFractionDigits]="2" [maxFractionDigits]="2" />
+          <p-inputNumber size="small" [formControl]="form.get('moratorio')" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }" />
         </div>
         @if (esEdicion()) {
           <div class="p-field">
@@ -7820,11 +8606,11 @@ export class CartasRecordatorio implements OnInit {
     </div>
     <div class="form-actions">
       @if (modoFacturacion()) {
-        <p-button label="Cancelar" icon="pi pi-times" class="p-button-text" (onClick)="cancelar()" />
+        <p-button label="Cancelar" icon="pi pi-times" size="small" variant="text" severity="secondary" [rounded]="true" (onClick)="cancelar()" />
       } @else {
-        <p-button label="Limpiar" icon="pi pi-times" class="p-button-text" (onClick)="cancelar()" />
+        <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" severity="secondary" [rounded]="true" (onClick)="cancelar()" />
       }
-      <p-button label="Guardar" icon="pi pi-check" class="p-button-primary" [loading]="guardando()" (onClick)="guardar()" />
+      <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" severity="success" [rounded]="true" [loading]="guardando()" (onClick)="guardar()" />
     </div>
   </div>
 }
@@ -7841,10 +8627,10 @@ export class CartasRecordatorio implements OnInit {
 }
 
 .card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 1.25rem;
+  background: var(--c-bg);
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
 }
 
 .prestamo-form-columns {
@@ -7857,6 +8643,12 @@ export class CartasRecordatorio implements OnInit {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
 }
 
 .form-col-title {
@@ -7914,7 +8706,7 @@ export class CartasRecordatorio implements OnInit {
 ## 📄 src\app\features\cxc\clientes\cliente-form.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, input, output } from '@angular/core';
+import { Component, inject, signal, OnInit, input, output, effect, Injector, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7962,12 +8754,40 @@ export class ClienteForm implements OnInit {
   // ===== MODO RUTA (original) =====
   private _clienteId = 0;
   private _modoInline = false;
+  private injector = inject(Injector);
 
   esEdicion = signal(false);
   cargando = signal(false);
   guardando = signal(false);
   titulo = signal('Nuevo cliente');
   modoFacturacion = signal(false);
+
+  @ViewChild('primerCampo') primerCampo?: ElementRef<HTMLInputElement>;
+
+  focusPrimerCampo() {
+    setTimeout(() => this.primerCampo?.nativeElement?.focus(), 100);
+  }
+
+  // Reaccionar a cambios en clienteIdInput (modo inline)
+  private _clienteEffect = effect(() => {
+    const id = this.clienteIdInput();
+    if (this._modoInline) {
+      this._clienteId = id ?? 0;
+      this.esEdicion.set(!!id);
+      this.titulo.set(id ? 'Editar cliente' : 'Nuevo cliente');
+      if (id) {
+        this.cargarCliente(id);
+      } else if (this.form) {
+        this.form.reset({
+          nombres: '', apellidos: '', razonsocial: '', nrocliente: '',
+          dni: '', sexo: 'M', estadocivil: 'S', rtn: '',
+          limiteCredito: 0, diasplazo: 0, interes: 0, moratorio: 0,
+          categoria: 'A', sn_activo: 'S', fechanacimiento: null,
+        });
+        this.cargando.set(false);
+      }
+    }
+  }, { injector: this.injector });
 
   readonly snOptions = [
     { label: 'Activo', value: 'S' },
@@ -8028,12 +8848,12 @@ export class ClienteForm implements OnInit {
     // Detectar modo: si viene clienteIdInput() -> modo inline
     // Si no, usar route params (modo original)
     const inlineId = this.clienteIdInput();
-    if (inlineId != null) {
+    if (inlineId !== undefined) {
       this._modoInline = true;
-      this._clienteId = inlineId;
-      this.esEdicion.set(inlineId > 0);
-      this.titulo.set(inlineId > 0 ? 'Editar cliente' : 'Nuevo cliente');
-      if (inlineId > 0) {
+      this._clienteId = inlineId ?? 0;
+      this.esEdicion.set(!!inlineId);
+      this.titulo.set(inlineId ? 'Editar cliente' : 'Nuevo cliente');
+      if (inlineId) {
         this.cargarCliente(inlineId);
       }
     } else {
@@ -8163,189 +8983,53 @@ export class ClienteForm implements OnInit {
 ```typescript
 <div class="clientes-manager">
   <div class="split-layout" [class.form-active]="showForm()">
-    <div class="left-column" [class.hidden]="showForm()">
-      <p-toolbar>
-        <ng-template #start>
-          <div class="toolbar-title">
-            <i class="pi pi-users"></i>
-            <span>Clientes</span>
+
+    <div class="left-column">
+      <!-- Empty state -->
+      @if (!selectedCliente() && !showForm() && !nuevoCliente()) {
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Pulse un cliente</h3>
+        <p>Haga clic en un cliente de la lista para ver su información</p>
+
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search " />
+              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
+              <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
+                [rounded]="true" size="small"></p-button>
+            </p-iconField>
           </div>
-        </ng-template>
-        <ng-template #end>
-          <p-button
-            label="Nuevo"
-            icon="pi pi-plus"
-            (click)="nuevo()"
-            [rounded]="true"
-            size="small"
-          ></p-button>
-        </ng-template>
-      </p-toolbar>
-
-      <div class="search-bar">
-        <div class="search-input-wrapper">
-          <i class="pi pi-search"></i>
-          <input
-            type="text"
-            pInputText
-            [ngModel]="q()"
-            (ngModelChange)="q.set($event)"
-            placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..."
-            class="search-input"
-          />
-          <p-button
-            *ngIf="q()"
-            icon="pi pi-times"
-            (click)="limpiarFiltros()"
-            severity="secondary"
-            [rounded]="true"
-            size="small"
-            class="clear-btn"
-          ></p-button>
         </div>
+
+        <p-button label="Agregar nuevo cliente" icon="pi pi-plus" (click)="nuevo()" variant="text" severity="success"
+          [rounded]="true" class="mr-2" size="small"></p-button>
+
+
       </div>
-
-      <div class="clientes-count">
-        <h4>Clientes: {{ totalClientes() }}</h4>
-      </div>
-
-      @if (cargando()) {
-        <div class="loading-skeleton">
-          @for (i of [1,2,3,4,5]; track i) {
-            <div class="skeleton-item">
-              <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
-              <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
-              <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
-            </div>
-          }
-        </div>
-      } @else if (data().length === 0) {
-        <div class="empty-state">
-          <i class="pi pi-users empty-icon"></i>
-          <h3>No hay clientes</h3>
-          <p>No se encontraron clientes registrados.</p>
-          <p-button label="Nuevo" icon="pi pi-plus" (click)="nuevo()" severity="success" [rounded]="true" size="small"></p-button>
-        </div>
-      } @else {
-        <div class="clientes-grid">
-          @for (cliente of data(); track cliente.clienteId) {
-            <div
-              class="cliente-card"
-              [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
-              (click)="seleccionarCliente(cliente)"
-
-            >
-              <div class="cliente-card-header">
-                <span class="cliente-nro">{{ cliente.nrocliente }}</span>
-                <p-tag
-                  [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
-                  [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
-                  class="tag-small"
-                />
-              </div>
-              <h3 class="cliente-nombre-large">
-                {{ getClienteNombre(cliente) }}
-              </h3>
-              <div class="cliente-details">
-                <div class="detail-row">
-                  <i class="pi pi-id-card" ></i>
-                  <span>{{ cliente.dni }}</span>
-                </div>
-                @if (cliente.rtn) {
-                  <div class="detail-row">
-                    <i class="pi pi-file-text" ></i>
-                    <span>{{ cliente.rtn }}</span>
-                  </div>
-                }
-                <div class="detail-row">
-                  <i class="pi pi-wallet" ></i>
-                  <span>Límite: {{ moneda(cliente.limiteCredito) }}</span>
-                </div>
-              </div>
-              <div class="cliente-actions-bar">
-                <p-button
-                  icon="pi pi-pencil"
-                  (click)="editarCliente(cliente, $event)"
-                  [rounded]="true"
-                  size="small"
-                  text
-                  pTooltip="Editar"
-                  tooltipPosition="left"
-                ></p-button>
-              </div>
-            </div>
-          }
-        </div>
-
-        <!-- Paginador -->
-        <p-paginator
-          [first]="(page() - 1) * limit()"
-          [rows]="limit()"
-          [totalRecords]="totalClientes()"
-          [rowsPerPageOptions]="[5, 10, 15]"
-          (onPageChange)="onPageChange($event)"
-          class="mt-3"
-        ></p-paginator>
-
-      }
-    </div>
-
-    <div class="right-column">
-      @if (showForm()) {
-        <div class="form-back-bar">
-          <p-button icon="pi pi-arrow-left" label="Volver al listado" [rounded]="true" size="small" text (click)="onFormCancelled()" />
-          <span class="form-back-title">{{ editingCliente() ? 'Editar cliente' : 'Nuevo cliente' }}</span>
-        </div>
-        <div class="form-inline-wrapper">
-          <app-cliente-form
-            [clienteIdInput]="editingCliente()?.clienteId ?? null"
-            (saved)="onFormSaved()"
-            (cancelled)="onFormCancelled()"
-          ></app-cliente-form>
-        </div>
-      } @else if (!selectedCliente()) {
-        <div class="empty-state">
-          <i class="pi pi-arrow-left empty-icon"></i>
-          <h3>Seleccione un cliente</h3>
-          <p>Haga clic en un cliente de la lista para ver su información</p>
-        </div>
       }
 
-      @if (selectedCliente() && !showForm()) {
+      <!-- Tabs detalle -->
+      @if ((selectedCliente() || nuevoCliente()) && !showForm()) {
       <div class="cliente-detail">
-        <div class="cliente-header">
-          <div class="cliente-header-info">
-            <h2>{{ getClienteNombre(selectedCliente()) }}</h2>
-            <span class="cliente-nro-badge">{{ selectedCliente()?.nrocliente }}</span>
-          </div>
-          <p-button
-            icon="pi pi-pencil"
-            label="Editar"
-            (click)="editarCliente(selectedCliente()!, $event)"
-            [rounded]="true"
-            size="small"
-          ></p-button>
-        </div>
-
-        <p-tabs [activeIndex]="activeTabIndex()" (activeIndexChange)="activeTabIndex.set($event)">
+        <p-tabs [value]="activeTabValue()" (valueChange)="activeTabValue.set($event)">
           <p-tablist>
             <p-tab value="0">
               <i class="pi pi-wallet"></i>
+              <span>Cliente</span>
+            </p-tab>
+            <p-tab value="1" [disabled]="nuevoCliente()">
+              <i class="pi pi-wallet"></i>
               <span>Estado de Cuenta</span>
             </p-tab>
-            <p-tab value="1">
-              <i class="pi pi-file-text"></i>
-              <span>Notas Cred/Deb</span>
-            </p-tab>
-            <p-tab value="2">
-              <i class="pi pi-money-bill"></i>
-              <span>Préstamos</span>
-            </p-tab>
-            <p-tab value="3">
+            <p-tab value="2" [disabled]="nuevoCliente()">
               <i class="pi pi-address-book"></i>
               <span>Referencias</span>
             </p-tab>
-            <p-tab value="4">
+            <p-tab value="3" [disabled]="nuevoCliente()">
               <i class="pi pi-users"></i>
               <span>Parientes</span>
             </p-tab>
@@ -8354,6 +9038,14 @@ export class ClienteForm implements OnInit {
           <p-tabpanels>
             <p-tabpanel value="0">
               <div class="tab-content">
+                <app-cliente-form #clienteFormRef
+                  [clienteIdInput]="nuevoCliente() ? null : (selectedCliente()?.clienteId ?? null)"
+                  (saved)="onFormSaved()" (cancelled)="onFormCancelled()" />
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="1">
+              <div class="tab-content">
                 <div class="tab-header">
                   <h4>Estado de Cuenta</h4>
                   <div class="saldo-total">
@@ -8361,7 +9053,6 @@ export class ClienteForm implements OnInit {
                   </div>
                 </div>
 
-                <!-- Detalle Estado de Cuenta -->
                 <div class="detalle-estado-cuenta" *ngIf="!estadoCuentaLoading(); else loadingSkeleton">
                   <div class="table-responsive">
                     <table class="table table-striped">
@@ -8386,7 +9077,8 @@ export class ClienteForm implements OnInit {
                           </td>
                           <td class="col-ref">{{ mov.nroreferencia || '—' }}</td>
                           <td>{{ mov.concepto }}</td>
-                          <td class="col-importe" [ngClass]="{'text-success': mov.tipomov === 'D', 'text-danger': mov.tipomov !== 'D'}">
+                          <td class="col-importe"
+                            [ngClass]="{'text-success': mov.tipomov === 'D', 'text-danger': mov.tipomov !== 'D'}">
                             {{ mov.tipomov === 'D' ? '+' : '-' }}{{ moneda(mov.importe) }}
                           </td>
                         </tr>
@@ -8407,226 +9099,22 @@ export class ClienteForm implements OnInit {
                 <ng-template #loadingSkeleton>
                   <div class="loading-skeleton">
                     @for (i of [1,2,3,4,5]; track i) {
-                      <div class="skeleton-row">
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                        <div class="skeleton-col"></div>
-                      </div>
+                    <div class="skeleton-row">
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                    </div>
                     }
                   </div>
                 </ng-template>
               </div>
             </p-tabpanel>
 
-            <p-tabpanel value="1">
-              <div class="tab-content">
-                <div class="tab-header">
-                  <h4>Notas de Crédito / Débito</h4>
-                </div>
-
-                <div class="card nota-form-inline mb-3">
-                  <div class="tab-header">
-                    <span *ngIf="notaModel().tipomov === 'C' && notaModel().nroreferencia" class="saldo-disponible">
-                      Saldo disponible ref. {{ notaModel().nroreferencia }}: <strong>{{ moneda(saldoDisponiblePorRef(notaModel().nroreferencia)) }}</strong>
-                    </span>
-                    <span *ngIf="notaModel().tipomov === 'C' && !notaModel().nroreferencia" class="saldo-disponible">
-                      Seleccione un débito de referencia
-                    </span>
-                  </div>
-                  <div class="p-fluid">
-                    <div class="p-grid">
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Tipo</label>
-                          <p-select size="small" [options]="notaTipoOptions" [ngModel]="notaModel().tipomov" (ngModelChange)="notaModel.set({...notaModel(), tipomov: $event, nroreferencia: ''})"></p-select>
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Documento Fiscal</label>
-                          <p-select size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()" (ngModelChange)="documentoSelected.set($event)"></p-select>
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Concepto</label>
-                          <input pInputText pSize="small" [ngModel]="notaModel().concepto" (ngModelChange)="notaModel.set({...notaModel(), concepto: $event})" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Importe</label>
-                          <p-inputNumber size="small" [ngModel]="notaModel().importe" (ngModelChange)="notaModel.set({...notaModel(), importe: $event})" [mode]="'decimal'" [min]="0"></p-inputNumber>
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Nro. Referencia</label>
-                          <p-select size="small" *ngIf="notaModel().tipomov === 'C'" [options]="debitoReferencias().map(r => ({label: r, value: r}))" [ngModel]="notaModel().nroreferencia" (ngModelChange)="notaModel.set({...notaModel(), nroreferencia: $event})" placeholder="Seleccione débito"></p-select>
-                          <input *ngIf="notaModel().tipomov !== 'C'" pInputText [ngModel]="notaModel().nroreferencia" (ngModelChange)="notaModel.set({...notaModel(), nroreferencia: $event})" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="p-field">
-                          <label>Fecha</label>
-                          <p-datepicker [ngModel]="notaFecha()" (ngModelChange)="onFechaChange($event)" dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
-                        </div>
-                      </div>
-                      <div class="p-col-12">
-                        <div class="d-flex gap-2 justify-content-end mt-3">
-                          <p-button label="Limpiar" icon="pi pi-times" severity="secondary" (click)="cancelarNota()" [rounded]="true" size="small"></p-button>
-                          <p-button label="Guardar" icon="pi pi-check" [loading]="notaSaving()" (click)="guardarNota()" [rounded]="true" size="small"></p-button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p-dataView
-                  [value]="notasData()"
-                  [loading]="notasLoading()"
-                  layout="list"
-                  class="notas-dataview"
-                >
-                  <ng-template #list let-nota>
-                    <div class="nota-item">
-                      <div class="nota-fecha">{{ nota.fecharegistro | date:'dd/MM/yyyy' }}</div>
-                      <div class="nota-concepto">{{ nota.concepto }}</div>
-                      <div class="nota-tipo" [ngClass]="nota.tipomov === 'C' ? 'credito' : 'debito'">
-                        {{ nota.tipomov === 'C' ? 'Crédito' : 'Débito' }}
-                      </div>
-                      <div class="nota-importe">{{ moneda(nota.importe) }}</div>
-                    </div>
-                  </ng-template>
-                </p-dataView>
-              </div>
-            </p-tabpanel>
-
             <p-tabpanel value="2">
-              <div class="tab-content">
-                <div class="tab-header">
-                  <h4>Préstamos</h4>
-                </div>
-
-                <div class="prestamo-form-columns mb-3">
-                  <div class="form-col">
-                    <h5 class="form-col-title">Datos del Préstamo</h5>
-                    <div class="p-fluid">
-                      <div class="p-field">
-                        <label>Nro. Préstamo</label>
-                        <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo" (ngModelChange)="prestamoModel.set({...prestamoModel(), nroprestamo: $event})" placeholder="Se genera al guardar plan" [readonly]="true" />
-                      </div>
-                      <div class="p-field">
-                        <label>Capital</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().capital" (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})" (blur)="calcularCuota()" [mode]="'decimal'" [min]="0.01"></p-inputNumber>
-                      </div>
-                      <div class="p-field">
-                        <label>Tasa %</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().tasa" (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})" (blur)="calcularCuota()" [mode]="'decimal'" [min]="0" [step]="0.01"></p-inputNumber>
-                      </div>
-                      <div class="p-field">
-                        <label>Fecha</label>
-                        <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)" dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="form-col">
-                    <h5 class="form-col-title">Cuotas y Cálculo</h5>
-                    <div class="p-fluid">
-                      <div class="p-field">
-                        <label>Estado</label>
-                        <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo" (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"></p-select>
-                      </div>
-                      <div class="p-field">
-                        <label>Cuotas</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().cuotas" (ngModelChange)="prestamoModel.set({...prestamoModel(), cuotas: $event})" (blur)="calcularCuota()" [min]="1"></p-inputNumber>
-                      </div>
-                      <div class="p-field">
-                        <label>Valor Cuota</label>
-                        <p-inputNumber size="small" [ngModel]="prestamoModel().vlrcuota" [readonly]="true" [mode]="'decimal'" [min]="0"></p-inputNumber>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="form-actions mb-3">
-                  <p-button label="Generar Plan de Pago" icon="pi pi-table" severity="secondary" (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Limpiar" icon="pi pi-times" severity="secondary" (click)="cancelarPrestamo()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Guardar" icon="pi pi-check" [loading]="prestamoSaving()" (click)="guardarPrestamo()" [rounded]="true" size="small"></p-button>
-                </div>
-
-                <p-dataView
-                  [value]="prestamosData()"
-                  [loading]="prestamosLoading()"
-                  layout="list"
-                  class="prestamos-dataview"
-                >
-                  <ng-template #list let-pres>
-                    <div class="prestamo-item">
-                      <div class="prestamo-nro">#{{ pres.nroprestamo || pres.prestamoId }}</div>
-                      <div class="prestamo-capital">Capital: {{ moneda(pres.capital) }}</div>
-                      <div class="prestamo-cuotas">{{ pres.cuotas }} cuotas de {{ moneda(pres.vlrcuota || pres.capital / pres.cuotas) }}</div>
-                      <div class="prestamo-estado">
-                        <span class="estado-badge" [ngClass]="pres.sn_activo === 'S' ? 'activo' : 'inactivo'">
-                          {{ pres.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}
-                        </span>
-                      </div>
-                    </div>
-                  </ng-template>
-                </p-dataView>
-
-                <!-- Tabla de Amortización Generada -->
-                @if (showPlanPago() && planPago().length > 0) {
-                  <div class="card mt-3">
-                    <div class="tab-header">
-                      <h4>Plan de Pago - Amortización</h4>
-                      <p-button label="Cancelar" icon="pi pi-times" severity="secondary" (click)="cancelarPlanPago()" [rounded]="true" size="small"></p-button>
-                    </div>
-                    <div class="table-responsive">
-                      <table class="table table-striped">
-                        <thead>
-                          <tr>
-                            <th>Cuota</th>
-                            <th>Fecha Pago</th>
-                            <th class="col-importe">Cuota</th>
-                            <th class="col-importe">Capital</th>
-                            <th class="col-importe">Interés</th>
-                            <th class="col-importe">Saldo</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          @for (fila of planPago(); track fila.nrofila) {
-                            <tr>
-                              <td>{{ fila.nrofila }}</td>
-                              <td>{{ fila.FechaPago | date:'dd/MM/yyyy' }}</td>
-                              <td class="col-importe">{{ moneda(fila.vlrcuota) }}</td>
-                              <td class="col-importe">{{ moneda(fila.capital) }}</td>
-                              <td class="col-importe">{{ moneda(fila.interes) }}</td>
-                              <td class="col-importe">{{ moneda(fila.saldo) }}</td>
-                            </tr>
-                          }
-                        </tbody>
-                        <tfoot>
-                          <tr class="fw-bold">
-                            <td colspan="2">Totales</td>
-                            <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.vlrcuota, 0)) }}</td>
-                            <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.capital, 0)) }}</td>
-                            <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.interes, 0)) }}</td>
-                            <td class="col-importe"></td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  </div>
-                }
-              </div>
-            </p-tabpanel>
-
-            <p-tabpanel value="3">
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Referencias</h4>
@@ -8638,23 +9126,32 @@ export class ClienteForm implements OnInit {
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Nombres</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().nombres" (ngModelChange)="referenciaModel.set({...referenciaModel(), nombres: $event})" placeholder="Nombres" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().nombres"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), nombres: $event})"
+                          placeholder="Nombres" />
                       </div>
                       <div class="p-field">
                         <label>Apellidos</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().apellidos" (ngModelChange)="referenciaModel.set({...referenciaModel(), apellidos: $event})" placeholder="Apellidos" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().apellidos"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), apellidos: $event})"
+                          placeholder="Apellidos" />
                       </div>
                       <div class="p-field">
                         <label>DNI</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().dni" (ngModelChange)="referenciaModel.set({...referenciaModel(), dni: $event})" placeholder="DNI" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().dni"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), dni: $event})"
+                          placeholder="DNI" />
                       </div>
                       <div class="p-field">
                         <label>Fecha de Nacimiento</label>
-                        <p-datepicker [ngModel]="referenciaFecha()" (ngModelChange)="onReferenciaFechaChange($event)" dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
+                        <p-datepicker [ngModel]="referenciaFecha()" (ngModelChange)="onReferenciaFechaChange($event)"
+                          dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
                       </div>
                       <div class="p-field">
                         <label>Tipo</label>
-                        <p-select size="small" [options]="referenciaTipoOptions" [ngModel]="referenciaModel().tipo" (ngModelChange)="referenciaModel.set({...referenciaModel(), tipo: $event})" placeholder="Seleccione"></p-select>
+                        <p-select size="small" [options]="referenciaTipoOptions" [ngModel]="referenciaModel().tipo"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), tipo: $event})"
+                          placeholder="Seleccione tipo" styleClass="w-full" [appendTo]="'body'"></p-select>
                       </div>
                     </div>
                   </div>
@@ -8663,39 +9160,49 @@ export class ClienteForm implements OnInit {
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Teléfono</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().telefono" (ngModelChange)="referenciaModel.set({...referenciaModel(), telefono: $event})" placeholder="Teléfono fijo" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().telefono"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), telefono: $event})"
+                          placeholder="Teléfono fijo" />
                       </div>
                       <div class="p-field">
                         <label>Celular</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().celular" (ngModelChange)="referenciaModel.set({...referenciaModel(), celular: $event})" placeholder="Celular" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().celular"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), celular: $event})"
+                          placeholder="Celular" />
                       </div>
                       <div class="p-field">
                         <label>Parentesco</label>
-                        <p-select size="small" [options]="referenciaParentescoOptions" [ngModel]="referenciaModel().parentesco" (ngModelChange)="referenciaModel.set({...referenciaModel(), parentesco: $event})" placeholder="Seleccione"></p-select>
+                        <p-select size="small" [options]="referenciaParentescoOptions"
+                          [ngModel]="referenciaModel().parentesco"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), parentesco: $event})"
+                          placeholder="Seleccione parentesco" styleClass="w-full" [appendTo]="'body'"></p-select>
                       </div>
                       <div class="p-field">
                         <label>Dirección</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().direccion1" (ngModelChange)="referenciaModel.set({...referenciaModel(), direccion1: $event})" placeholder="Dirección" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().direccion1"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), direccion1: $event})"
+                          placeholder="Dirección" />
                       </div>
                       <div class="p-field">
                         <label>Lugar de Trabajo</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().lugarTrabajo" (ngModelChange)="referenciaModel.set({...referenciaModel(), lugarTrabajo: $event})" placeholder="Lugar de trabajo" />
+                        <input pInputText pSize="small" [ngModel]="referenciaModel().lugarTrabajo"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), lugarTrabajo: $event})"
+                          placeholder="Lugar de trabajo" />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div class="form-actions mb-3">
-                  <p-button label="Limpiar" icon="pi pi-times" severity="secondary" (click)="cancelarReferencia()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Guardar" icon="pi pi-check" [loading]="referenciaSaving()" (click)="guardarReferencia()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+                    (click)="cancelarReferencia()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+                    [loading]="referenciaSaving()" (click)="guardarReferencia()" [rounded]="true"
+                    size="small"></p-button>
                 </div>
 
-                <p-dataView
-                  [value]="referenciasData()"
-                  [loading]="referenciasLoading()"
-                  layout="list"
-                  class="referencias-dataview"
-                >
+                <p-dataView [value]="referenciasData()" [loading]="referenciasLoading()" size="small" layout="list"
+                  class="referencias-dataview">
                   <ng-template #list let-ref>
                     <div class="referencia-item">
                       <div class="ref-nombre">{{ ref.nombres || ref.nombre }}</div>
@@ -8707,7 +9214,7 @@ export class ClienteForm implements OnInit {
               </div>
             </p-tabpanel>
 
-            <p-tabpanel value="4">
+            <p-tabpanel value="3">
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Parientes</h4>
@@ -8719,15 +9226,20 @@ export class ClienteForm implements OnInit {
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Nombres</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().nombres" (ngModelChange)="parienteModel.set({...parienteModel(), nombres: $event})" placeholder="Nombres" />
+                        <input pInputText pSize="small" [ngModel]="parienteModel().nombres"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), nombres: $event})"
+                          placeholder="Nombres" />
                       </div>
                       <div class="p-field">
                         <label>Apellidos</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().apellidos" (ngModelChange)="parienteModel.set({...parienteModel(), apellidos: $event})" placeholder="Apellidos" />
+                        <input pInputText pSize="small" [ngModel]="parienteModel().apellidos"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), apellidos: $event})"
+                          placeholder="Apellidos" />
                       </div>
                       <div class="p-field">
                         <label>DNI</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().dni" (ngModelChange)="parienteModel.set({...parienteModel(), dni: $event})" placeholder="DNI" />
+                        <input pInputText pSize="small" [ngModel]="parienteModel().dni"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), dni: $event})" placeholder="DNI" />
                       </div>
                     </div>
                   </div>
@@ -8736,27 +9248,30 @@ export class ClienteForm implements OnInit {
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Parentesco</label>
-                        <p-select size="small" [options]="parienteParentescoOptions" [ngModel]="parienteModel().parentesco" (ngModelChange)="parienteModel.set({...parienteModel(), parentesco: $event})" placeholder="Seleccione"></p-select>
+                        <p-select size="small" [options]="parienteParentescoOptions"
+                          [ngModel]="parienteModel().parentesco"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), parentesco: $event})"
+                          placeholder="Seleccione parentesco" styleClass="w-full" [appendTo]="'body'"></p-select>
                       </div>
                       <div class="p-field">
                         <label>Teléfono</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().telefono" (ngModelChange)="parienteModel.set({...parienteModel(), telefono: $event})" placeholder="Teléfono de contacto" />
+                        <input pInputText pSize="small" [ngModel]="parienteModel().telefono"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), telefono: $event})"
+                          placeholder="Teléfono de contacto" />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div class="form-actions mb-3">
-                  <p-button label="Limpiar" icon="pi pi-times" severity="secondary" (click)="cancelarPariente()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Guardar" icon="pi pi-check" [loading]="parienteSaving()" (click)="guardarPariente()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+                    (click)="cancelarPariente()" [rounded]="true" size="small"></p-button>
+                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+                    [loading]="parienteSaving()" (click)="guardarPariente()" [rounded]="true" size="small"></p-button>
                 </div>
 
-                <p-dataView
-                  [value]="parientesData()"
-                  [loading]="parientesLoading()"
-                  layout="list"
-                  class="parientes-dataview"
-                >
+                <p-dataView [value]="parientesData()" [loading]="parientesLoading()" size="small" layout="list"
+                  class="parientes-dataview">
                   <ng-template #list let-par>
                     <div class="pariente-item">
                       <div class="par-nombre">{{ par.nombres }} {{ par.apellidos }}</div>
@@ -8770,6 +9285,118 @@ export class ClienteForm implements OnInit {
           </p-tabpanels>
         </p-tabs>
       </div>
+      }
+    </div>
+
+    <!-- Columna derecha: lista de clientes -->
+    <div class="right-column" [class.hidden]="showForm()">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+            placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="search-input" />
+          <p-button *ngIf="q()" label="Limpiar" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
+            [rounded]="true" size="small" class="clear-btn"></p-button>
+
+        </div>
+
+        <p-button label="Nuevo" icon="pi pi-plus" (click)="nuevo()" variant="text" severity="success" [rounded]="true"
+          size="small"></p-button>
+
+
+      </div>
+
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay clientes</h3>
+        <p>No se encontraron clientes registrados.</p>
+        <p-button label="Nuevo" icon="pi pi-plus" (click)="nuevo()" severity="success" [rounded]="true"
+          size="small"></p-button>
+      </div>
+      } @else {
+      <div class="clientes-lista">
+        @for (cliente of data(); track cliente.clienteId) {
+        <div class="cliente-item-ficha" [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)">
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ cliente.nrocliente }}</span>
+            <p-tag [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ cliente.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ cliente.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ cliente.dni }}</span>
+          </div>
+          @if (cliente.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ cliente.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Disponible Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa interes:</span>
+            <span class="ficha-value">{{ cliente.interes }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa moratoria:</span>
+            <span class="ficha-value">{{ cliente.moratorio }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ cliente.categoria }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Estado:</span>
+            <span class="ficha-value">{{ cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Razon social:</span>
+            <span class="ficha-value">{{ cliente.razonsocial }}</span>
+          </div>
+          <div class="item-ficha-actions">
+            <p-button icon="pi pi-pencil" (click)="editarCliente(cliente, $event)" [rounded]="true" size="small" text
+              pTooltip="Editar" tooltipPosition="left" />
+          </div>
+        </div>
+        }
+      </div>
+
+      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"></p-paginator>
       }
     </div>
   </div>
@@ -8787,6 +9414,13 @@ export class ClienteForm implements OnInit {
   flex-direction: column;
 }
 
+.p-tabpanels {
+  background: var(--p-tabs-tabpanel-background);
+  color: var(--p-tabs-tabpanel-color);
+  padding: 0.875rem 1.125rem 1.125rem 0.0rem;
+  outline: 0 none;
+}
+
 .split-layout {
   display: flex;
   flex: 1;
@@ -8794,10 +9428,18 @@ export class ClienteForm implements OnInit {
 }
 
 .left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg);
+  overflow: hidden;
+}
+
+.right-column {
   width: 380px;
   min-width: 350px;
   max-width: 450px;
-  border-right: 1px solid var(--c-border);
+  border-left: 1px solid var(--c-border);
   display: flex;
   flex-direction: column;
   background: var(--c-surface);
@@ -8807,32 +9449,19 @@ export class ClienteForm implements OnInit {
   }
 }
 
-.right-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--c-bg);
-  overflow: hidden;
-}
-
-.toolbar-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: var(--c-text);
-}
-
 .search-bar {
   padding: 1rem;
   border-bottom: 1px solid var(--c-border);
-}
-
-.search-input-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+
+  .search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
 }
 
 .search-input-wrapper .pi-search {
@@ -8845,7 +9474,7 @@ export class ClienteForm implements OnInit {
 .search-input {
   width: 100%;
   padding: 0.5rem 0.75rem 0.5rem 2.5rem;
-  border: 1px solid var(--c-border);
+  border: 1px solid var(--for-border-color-alls);
   border-radius: 6px;
   background: var(--c-bg);
   color: var(--c-text);
@@ -8856,78 +9485,9 @@ export class ClienteForm implements OnInit {
   right: 0.25rem;
 }
 
-.clientes-dataview {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem;
-}
+// ===== Empty states =====
 
-.cliente-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-  gap: 1rem;
-}
-
-.cliente-item:hover {
-  background: var(--p-form-field-background);
-}
-
-.cliente-item.selected {
-  background: var(p-form-field-background);
-  border: 1px solid var(--p-form-field-border-color);
-}
-
-/* Soporta las tarjetas usadas en la plantilla y un hover sin JS inline */
-.cliente-card {
-  transition: box-shadow 0.2s, border-color 0.2s;
-}
-
-.cliente-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border-color: var(--c-primary);
-}
-
-.cliente-card.selected {
-  background: var(--p-form-field-background);
-  border: 1px solid var(--p-form-field-border-color);
-}
-
-.cliente-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.cliente-nro {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--c-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.cliente-nombre {
-  font-weight: 500;
-  color: var(--c-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cliente-dni {
-  font-size: 0.75rem;
-  color: var(--c-text-muted);
-}
-
-.cliente-actions {
-  flex-shrink: 0;
-}
-
-.right-column .empty-state {
+.empty-state {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -8937,54 +9497,53 @@ export class ClienteForm implements OnInit {
   color: var(--c-text-muted);
   padding: 2rem;
   text-align: center;
+
+  &.inline {
+    height: 100%;
+    flex: unset;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--c-primary);
+    opacity: 0.5;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--c-text-secondary, #6c757d);
+  }
 }
 
-.right-column .empty-state i {
-  font-size: 3rem;
-  opacity: 0.5;
+// ===== Skeleton =====
+
+.loading-skeleton {
+  padding: 20px;
 }
 
-.right-column .empty-state h3 {
-  margin: 0;
-  font-size: 1.25rem;
+.skeleton-item {
+  border: 1px solid var(--c-border);
+  padding: 15px;
+  margin: 10px;
+  border-radius: 4px;
+  background: var(--c-bg);
 }
 
-.right-column .empty-state p {
-  margin: 0;
-  font-size: 0.9rem;
-}
+// ===== Cliente detail (left column) =====
 
 .cliente-detail {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.cliente-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--c-border);
-  background: var(--c-surface);
-}
-
-.cliente-header-info h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.cliente-nro-badge {
-  display: inline-block;
-  margin-top: 0.25rem;
-  padding: 0.125rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: #dbeafe;
-  color: var(--c-primary-strong);
-  border-radius: 4px;
 }
 
 .tab-content {
@@ -9011,22 +9570,14 @@ export class ClienteForm implements OnInit {
 .saldo-total {
   font-size: 1rem;
   color: var(--c-text-muted);
+
+  strong {
+    font-size: 1.25rem;
+    color: var(--c-text);
+  }
 }
 
-.saldo-total strong {
-  font-size: 1.25rem;
-  color: var(--c-text);
-}
-
-.saldo-disponible {
-  font-size: 0.875rem;
-  color: var(--c-primary);
-  font-weight: 500;
-}
-
-.saldo-disponible strong {
-  color: var(--c-primary);
-}
+// ===== Estado de cuenta =====
 
 .detalle-estado-cuenta {
   .table {
@@ -9054,178 +9605,15 @@ export class ClienteForm implements OnInit {
   }
 }
 
-.movimientos-dataview,
-.notas-dataview,
-.prestamos-dataview,
+// ===== Dataviews (referencias y parientes) =====
+
 .referencias-dataview,
 .parientes-dataview {
-  .p-dataview-content {
+  :host ::ng-deep .p-dataview-content {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
-}
-
-.movimiento-item {
-  display: grid;
-  grid-template-columns: 100px 1fr auto 140px;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 6px;
-  align-items: center;
-}
-
-.mov-fecha {
-  font-size: 0.85rem;
-  color: var(--c-text-muted);
-  font-weight: 500;
-}
-
-.mov-concepto {
-  font-weight: 500;
-  color: var(--c-text);
-}
-
-.mov-detalle {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  align-items: flex-end;
-}
-
-.mov-tipo {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.125rem 0.5rem;
-  border-radius: 4px;
-  text-transform: uppercase;
-}
-
-.mov-tipo.success {
-  background: #d1fae5;
-  color: var(--c-success);
-}
-
-.mov-tipo.info {
-  background: #e0f2fe;
-  color: var(--c-info);
-}
-
-.mov-tipo.danger {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.mov-tipo.warning {
-  background: #ffedd5;
-  color: var(--c-warning);
-}
-
-.mov-ref {
-  font-size: 0.75rem;
-  color: var(--c-text-muted);
-}
-
-.mov-importe {
-  font-weight: 600;
-  font-size: 0.95rem;
-  text-align: right;
-}
-
-.mov-importe.negativo {
-  color: var(--c-danger);
-}
-
-.nota-item {
-  display: grid;
-  grid-template-columns: 100px 1fr auto 140px;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 6px;
-  align-items: center;
-}
-
-.nota-fecha {
-  font-size: 0.85rem;
-  color: var(--c-text-muted);
-  font-weight: 500;
-}
-
-.nota-concepto {
-  font-weight: 500;
-  color: var(--c-text);
-}
-
-.nota-tipo {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.125rem 0.5rem;
-  border-radius: 4px;
-  text-transform: uppercase;
-}
-
-.nota-tipo.credito {
-  background: #d1fae5;
-  color: var(--c-success);
-}
-
-.nota-tipo.debito {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.nota-importe {
-  font-weight: 600;
-  font-size: 0.95rem;
-  text-align: right;
-}
-
-.prestamo-item {
-  display: grid;
-  grid-template-columns: 100px 1fr auto 120px;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 6px;
-  align-items: center;
-}
-
-.prestamo-nro {
-  font-weight: 600;
-  color: var(--c-primary);
-}
-
-.prestamo-capital {
-  font-weight: 500;
-  color: var(--c-text);
-}
-
-.prestamo-cuotas {
-  font-size: 0.85rem;
-  color: var(--c-text-muted);
-}
-
-.estado-badge {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.125rem 0.5rem;
-  border-radius: 4px;
-  text-transform: uppercase;
-}
-
-.estado-badge.activo {
-  background: #d1fae5;
-  color: var(--c-success);
-}
-
-.estado-badge.inactivo {
-  background: #fee2e2;
-  color: #b91c1c;
 }
 
 .referencia-item {
@@ -9286,177 +9674,7 @@ export class ClienteForm implements OnInit {
   color: var(--c-text-muted);
 }
 
-@media (max-width: 1024px) {
-  .left-column {
-    width: 320px;
-  }
-}
-
-@media (max-width: 768px) {
-  .split-layout {
-    flex-direction: column;
-  }
-
-  .left-column {
-    width: 100%;
-    max-width: none;
-    border-right: none;
-    border-bottom: 1px solid var(--c-border);
-    max-height: 40vh;
-  }
-
-  .movimiento-item,
-  .nota-item,
-  .prestamo-item,
-  .referencia-item,
-  .pariente-item {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-    text-align: left;
-  }
-
-  .mov-detalle,
-  .mov-importe,
-  .nota-importe,
-  .prestamo-cuotas,
-  .prestamo-estado {
-    width: 100%;
-  }
-}
-/* Additional structural styles */
-.clientes-count {
-  padding: 0.625rem 1rem;
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
-}
-
-.clientes-count h4 {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--c-text-muted);
-}
-
-.loading-skeleton {
-  padding: 20px;
-}
-
-.skeleton-item {
-  border: 1px solid var(--c-border);
-  padding: 15px;
-  margin: 10px;
-  border-radius: 4px;
-  background: var(--c-bg);
-}
-
-.empty-state .empty-icon {
-  font-size: 3rem;
-  color: var(--c-text-muted);
-  opacity: 0.5;
-}
-
-.clientes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 15px;
-  padding: 15px;
-  max-height: calc(100vh - 300px);
-  overflow-y: auto;
-}
-
-.cliente-card {
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 15px;
-  background: var(--c-surface);
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.cliente-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-:host ::ng-deep .tag-small .p-tag {
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.cliente-nombre-large {
-  margin: 0 0 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--c-text);
-}
-
-.cliente-details {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.85rem;
-  color: var(--c-text-muted);
-}
-
-.detail-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.detail-row i {
-  font-size: 0.85rem;
-}
-
-.cliente-actions-bar {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--c-border);
-  display: flex;
-  gap: 8px;
-}
-.cliente-actions-bar p-button {
-  flex: 1;
-}
-
-.form-back-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid var(--c-border);
-  background: var(--c-surface);
-}
-
-.form-back-title {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--c-text);
-}
-
-.form-inline-wrapper {
-  flex: 1;
-  overflow: auto;
-  padding: 1rem;
-}
-
-.form-inline-wrapper .p-fluid {
-  max-width: 100%;
-}
-
-.nota-form-inline,
-.prestamo-form-inline,
-.referencia-form-inline,
-.pariente-form-inline {
-  input.p-inputtext,
-  .p-select,
-  .p-inputnumber,
-  .p-datepicker {
-    width: 100%;
-  }
-}
+// ===== Formulario 2 columnas =====
 
 .prestamo-form-columns {
   display: grid;
@@ -9512,6 +9730,183 @@ export class ClienteForm implements OnInit {
   border-radius: 8px;
 }
 
+// ===== Lista de clientes (fichas) =====
+
+.clientes-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cliente-item-ficha {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    border-color: var(--c-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &.selected {
+    border-color: var(--for-border-color-alls);
+    background: var(--master-background);
+  }
+}
+
+.item-ficha-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.375rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.item-ficha-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  line-height: 1.3;
+}
+
+.item-ficha-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.375rem;
+  margin-top: 0.375rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.ficha-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  min-width: 140px;
+  flex-shrink: 0;
+}
+
+.ficha-value {
+  font-size: 0.85rem;
+  color: var(--c-text);
+  font-weight: 500;
+}
+
+// ===== Paginador compacto =====
+
+.paginator-compact {
+  display: flex;
+  justify-content: center;
+
+  ::ng-deep .p-paginator {
+    background: transparent;
+    padding: 0.25rem;
+    gap: 0.25rem;
+
+    .p-paginator-content {
+      gap: 0.15rem;
+    }
+
+    .p-paginator-page,
+    .p-paginator-prev,
+    .p-paginator-next,
+    .p-paginator-first,
+    .p-paginator-last {
+      min-width: 1.6rem;
+      height: 1.6rem;
+      font-size: 0.7rem;
+      border-radius: 50%;
+    }
+
+    .p-paginator-current {
+      font-size: 0.7rem;
+      color: var(--c-text-muted);
+    }
+
+    .p-paginator-page-options {
+      height: 1.6rem;
+      font-size: 0.7rem;
+
+      .p-select-label {
+        font-size: 0.7rem;
+      }
+    }
+  }
+}
+
+// ===== Responsive =====
+
+@media (max-width: 1024px) {
+  .right-column {
+    width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .split-layout {
+    flex-direction: column;
+  }
+
+  .left-column {
+    order: 2;
+  }
+
+  .right-column {
+    order: 1;
+    width: 100%;
+    max-width: none;
+    border-left: none;
+    border-bottom: 1px solid var(--c-border);
+    max-height: 40vh;
+  }
+
+  .referencia-item,
+  .pariente-item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    text-align: left;
+  }
+
+  .cliente-detail {
+    .p-tablist-content {
+      overflow-x: visible;
+    }
+
+    .p-tablist-tab-list {
+      flex-wrap: wrap;
+      row-gap: 0.25rem;
+    }
+
+    .p-tab {
+      flex: 1 1 45%;
+      min-width: 45%;
+      justify-content: center;
+      font-size: 0.8rem;
+      padding: 0.5rem 0.35rem;
+
+      span {
+        white-space: nowrap;
+      }
+    }
+
+    .p-tablist-prev-button,
+    .p-tablist-next-button {
+      display: none;
+    }
+
+    .p-tablist-active-bar {
+      display: none;
+    }
+  }
+}
+
 ```
 
 ---
@@ -9519,32 +9914,29 @@ export class ClienteForm implements OnInit {
 ## 📄 src\app\features\cxc\clientes\clientes-manager.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { timeout, catchError, of } from 'rxjs';
-import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DataViewModule } from 'primeng/dataview';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { TabsModule } from 'primeng/tabs';
-import { CardModule } from 'primeng/card';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService } from 'primeng/api';
-import { DialogModule } from 'primeng/dialog';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { PaginatorModule } from 'primeng/paginator';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 import { CxcCliente } from '../../../core/models/cxc.models';
 import { ClienteForm } from './cliente-form';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 
 @Component({
   selector: 'app-clientes-manager',
@@ -9552,23 +9944,21 @@ import { ClienteForm } from './cliente-form';
   imports: [
     CommonModule,
     FormsModule,
-    ToolbarModule,
     ButtonModule,
     InputTextModule,
     DataViewModule,
     TagModule,
     TooltipModule,
     TabsModule,
-    CardModule,
     SkeletonModule,
-    DialogModule,
-    InputNumberModule,
     SelectModule,
     DatePickerModule,
-PaginatorModule,
+    PaginatorModule,
+    IconFieldModule,
+    InputIconModule, 
     ClienteForm,
   ],
-  templateUrl:'./clientes-manager.html',
+  templateUrl: './clientes-manager.html',
   styleUrl: './clientes-manager.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -9578,20 +9968,9 @@ export class ClientesManager implements OnInit {
   private route = inject(ActivatedRoute);
   private msgs = inject(MessageService);
   private auth = inject(AuthService);
-  private catalogService = inject(CatalogoParametrosService);
   private destroyRef = inject(DestroyRef);
 
   // ===== OPCIONES DE SELECTS =====
-  readonly notaTipoOptions = [
-    { label: 'Crédito', value: 'C' },
-    { label: 'Débito', value: 'D' },
-  ];
-
-  readonly estadoOptions = [
-    { label: 'Activo', value: 'S' },
-    { label: 'Inactivo', value: 'N' },
-  ];
-
   readonly referenciaTipoOptions = [
     { label: 'Personal', value: 'Personal' },
     { label: 'Comercial', value: 'Comercial' },
@@ -9623,14 +10002,11 @@ export class ClientesManager implements OnInit {
   showForm = signal(false);
   editingCliente = signal<CxcCliente | null>(null);
 
-  // ===== FORMULARIO INLINE NOTAS =====
-  // showNotaForm = signal(false); // Ya no necesario, formulario siempre visible
-
-  // Effect para resetear página y recargar cuando cambie el filtro (q)
+  // Effect para resetear pagina y recargar cuando cambie el filtro (q)
   private _searchEffect = effect(() => {
     this.q();
     this.page.set(1);
-    this.loadClientes();
+    untracked(() => this.loadClientes());
   });
 
   data = signal<CxcCliente[]>([]);
@@ -9640,41 +10016,6 @@ export class ClientesManager implements OnInit {
   cargando = signal(false);
 
   q = signal('');
-
-  // Notas (formulario inline)
-  notaSaving = signal(false);
-  notaModel = signal<any>({
-    clienteId: null,
-    tipomov: 'C',
-    concepto: '',
-    importe: 0,
-    nroreferencia: '',
-    fecharegistro: new Date().toISOString(),
-  });
-
-  // Préstamos (formulario inline)
-  prestamoSaving = signal(false);
-  prestamoModel = signal<any>({
-    clienteId: null,
-    nroprestamo: null,
-    capital: 0,
-    cuotas: 1,
-    tasa: 0,
-    vlrcuota: 0,
-    fecharegistro: new Date().toISOString(),
-    sn_activo: 'S',
-  });
-
-  prestamoFecha = computed(() => {
-    const f = this.prestamoModel().fecharegistro;
-    if (!f) return null;
-    const d = new Date(f);
-    return isNaN(d.getTime()) ? null : d;
-  });
-
-  onPrestamoFechaChange(d: Date | null) {
-    this.prestamoModel.set({ ...this.prestamoModel(), fecharegistro: d ? d.toISOString() : null });
-  }
 
   // Referencias (formulario inline)
   referenciaSaving = signal(false);
@@ -9714,36 +10055,13 @@ export class ClientesManager implements OnInit {
     telefono: '',
   });
 
-  // Plan de pago (amortización)
-  planPago = signal<any[]>([]);
-  showPlanPago = signal(false);
-
-  // Documentos select
-  documentosOptions = signal<{label:string,value:any}[]>([]);
-  documentoSelected = signal<any>(null);
-
-  // Fecha auxiliar para p-datepicker (no usar new() en templates)
-  notaFecha = computed(() => {
-    const f = this.notaModel().fecharegistro;
-    if (!f) return null;
-    const d = new Date(f);
-    return isNaN(d.getTime()) ? null : d;
-  });
-
-  onFechaChange(d: Date | null) {
-    this.notaModel.set({ ...this.notaModel(), fecharegistro: d ? d.toISOString() : null });
-  }
-
   selectedCliente = signal<CxcCliente | null>(null);
+  nuevoCliente = signal(false);
+
+  @ViewChild('clienteFormRef') clienteFormRef?: any;
 
   estadoCuentaData = signal<any[]>([]);
   estadoCuentaLoading = signal(false);
-
-  notasData = signal<any[]>([]);
-  notasLoading = signal(false);
-
-  prestamosData = signal<any[]>([]);
-  prestamosLoading = signal(false);
 
   referenciasData = signal<any[]>([]);
   referenciasLoading = signal(false);
@@ -9751,58 +10069,20 @@ export class ClientesManager implements OnInit {
   parientesData = signal<any[]>([]);
   parientesLoading = signal(false);
 
-  activeTabIndex = signal(0);
+  activeTabValue = signal<string>('0');
 
-  // Saldo pendiente computado (evita recalcular en cada ciclo de detección de cambios)
+  // Saldo pendiente computado (evita recalcular en cada ciclo de deteccion de cambios)
   saldoPendiente = computed(() =>
     this.estadoCuentaData().reduce((sum, m) => {
       const importe = Number(m.importe || 0);
-      // D = Débito (cargo) suma, C = Crédito / A = Abono restan
+      // D = Debito (cargo) suma, C = Credito / A = Abono restan
       if (m.tipomov === 'D') return sum + importe;
       return sum - importe;
     }, 0)
   );
 
-  totalDebitos = computed(() =>
-    this.estadoCuentaData()
-      .filter(m => m.tipomov === 'D')
-      .reduce((sum, m) => sum + Number(m.importe || 0), 0)
-  );
-
-  totalCreditos = computed(() =>
-    this.estadoCuentaData()
-      .filter(m => m.tipomov === 'C')
-      .reduce((sum, m) => sum + Number(m.importe || 0), 0)
-  );
-
-  saldoDisponible = computed(() => this.totalDebitos() - this.totalCreditos());
-
-  // Referencias de débitos existentes (nroreferencia únicos de movimientos tipo D)
-  debitoReferencias = computed(() => {
-    const refs = this.estadoCuentaData()
-      .filter(m => m.tipomov === 'D' && m.nroreferencia)
-      .map(m => String(m.nroreferencia));
-    return [...new Set(refs)];
-  });
-
-  // Referencias ya usadas por notas de débito (no se pueden repetir)
-  debitoReferenciasUsadas = computed(() => this.debitoReferencias());
-
-  // Saldo disponible por referencia de débito específica
-  saldoDisponiblePorRef(ref: string): number {
-    if (!ref) return 0;
-    const debitos = this.estadoCuentaData()
-      .filter(m => m.tipomov === 'D' && String(m.nroreferencia) === ref)
-      .reduce((sum, m) => sum + Number(m.importe || 0), 0);
-    const creditos = this.estadoCuentaData()
-      .filter(m => m.tipomov === 'C' && String(m.nroreferencia) === ref)
-      .reduce((sum, m) => sum + Number(m.importe || 0), 0);
-    return Math.max(debitos - creditos, 0);
-  }
-
   ngOnInit() {
-    this.loadClientes();
-    this.loadDocumentos();
+    // Sin loadClientes() aqui porque el _searchEffect lo ejecuta automaticamente
   }
 
   loadClientes() {
@@ -9810,20 +10090,14 @@ export class ClientesManager implements OnInit {
     this.service.getClientes(this.page(), this.limit(), this.q()).pipe(
       takeUntilDestroyed(this.destroyRef),
       timeout(10000),
-      catchError(err => {
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'La carga tardó demasiado o falló.' });
-        return of({ data: [], total: 0 });
-      })
+      catchError(() => of({ data: [], total: 0 }))
     ).subscribe({
       next: (res) => {
         this.data.set(res.data);
         this.totalClientes.set(res.total);
         this.cargando.set(false);
       },
-      error: (err) => {
-        this.cargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los clientes' });
-      },
+      error: () => this.cargando.set(false),
     });
   }
 
@@ -9831,309 +10105,6 @@ export class ClientesManager implements OnInit {
     this.page.set(event.page + 1);
     this.limit.set(event.rows);
     this.loadClientes();
-  }
-
-  loadDocumentos() {
-    // Cargar tipos de documento fiscal filtrados por empresa y activos
-    const user = this.auth.currentUser();
-    this.catalogService.getAll<any>('/parametros/tcotipodocumentofiscal').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        const filtered = (res || []).filter((r: any) => {
-          // campo activo puede ser sn_activo === 'S' o activo === true
-          const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
-          const mismaEmpresa = user?.empresaId ? Number(r.empresaId) === Number(user.empresaId) : true;
-          return activo && mismaEmpresa;
-        });
-        const opts = filtered.map((r: any) => ({ label: r.descripcion || r.nombre || r.descripcioncorta || String(r.tipodocumentofiscalId || r.documentoId || r.id), value: r.tipodocumentofiscalId ?? r.documentoId ?? r.id }));
-        this.documentosOptions.set(opts);
-      },
-      error: () => {
-        this.documentosOptions.set([]);
-      },
-    });
-  }
-
-  cancelarNota() {
-    this.notaModel.set({
-      tipomov: 'C',
-      concepto: '',
-      importe: 0,
-      nroreferencia: '',
-      fecharegistro: new Date().toISOString(),
-    });
-  }
-
-  guardarNota() {
-    const raw = { ...this.notaModel() };
-    const cliente = this.selectedCliente();
-
-    if (!cliente) {
-      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear una nota' });
-      return;
-    }
-
-    // Normalizar campos
-    const payload: any = {
-      ...raw,
-      importe: Number(raw.importe) || 0,
-      tipomov: raw.tipomov || 'C',
-      clienteId: cliente.clienteId,
-    };
-
-    // Formatear fecha a ISO si viene como yyyy-MM-dd o Date
-    try {
-      if (payload.fecharegistro) {
-        const d = new Date(payload.fecharegistro);
-        if (!isNaN(d.getTime())) payload.fecharegistro = d.toISOString();
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // Validaciones básicas
-    if (!payload.concepto || !payload.clienteId) {
-      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Complete concepto y cliente' });
-      return;
-    }
-
-    // Importe debe ser mayor que 0 (no aceptar negativos ni cero)
-    if (typeof payload.importe !== 'number' || payload.importe <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Importe inválido', detail: 'El importe debe ser mayor que 0' });
-      return;
-    }
-
-    // Validar débito: referencia obligatoria y no duplicada
-    if (payload.tipomov === 'D') {
-      if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el número de factura o préstamo de referencia' });
-        return;
-      }
-      const refStr = String(payload.nroreferencia).trim();
-      if (this.debitoReferenciasUsadas().includes(refStr)) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe una nota de débito con referencia "${refStr}". No se pueden crear débitos duplicados.` });
-        return;
-      }
-    }
-
-    // Validar crédito: referencia obligatoria, debe existir como débito, y no exceder saldo de ese débito
-    if (payload.tipomov === 'C') {
-      if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de débito al que aplica el abono' });
-        return;
-      }
-      const refsDisponibles = this.debitoReferencias();
-      if (!refsDisponibles.includes(String(payload.nroreferencia))) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia inválida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningún débito existente` });
-        return;
-      }
-      const saldoRef = this.saldoDisponiblePorRef(String(payload.nroreferencia));
-      if (saldoRef <= 0) {
-        this.msgs.add({ severity: 'warn', summary: 'Débito saldado', detail: `El débito ref. ${payload.nroreferencia} ya fue pagado completamente` });
-        return;
-      }
-      if (payload.importe > saldoRef) {
-        this.msgs.add({ severity: 'warn', summary: 'Excede saldo', detail: `El abono (${payload.importe}) excede el saldo del débito ref. ${payload.nroreferencia} (${saldoRef.toFixed(2)})` });
-        return;
-      }
-    }
-
-    // Añadir usuario/empresa contextuales si están disponibles para cumplir el contrato del backend
-    const user = this.auth.currentUser();
-    if (user) {
-      payload.usuarioCreated = payload.usuarioCreated || user.usuario || user.nombre;
-      // Incluir explícitamente empresaId/idsucursal por si el backend los espera en el body
-      payload.empresaId = payload.empresaId ?? user.empresaId;
-      if (user.idsucursal != null) payload.Idsucursal = payload.Idsucursal ?? user.idsucursal;
-    }
-
-    this.notaSaving.set(true);
-
-    // Use createMovimiento (movimientos endpoint) which accepts debito/credito movimientos
-    // Add defaults required by backend
-    payload.moduloId = payload.moduloId ?? 4;
-    payload.documentoId = payload.documentoId ?? 3;
-    payload.nrocliente = payload.nrocliente ?? this.selectedCliente()?.nrocliente ?? payload.nrocliente;
-    // include selected documento fiscal if any
-    if (this.documentoSelected()) {
-      payload.tipodocumentofiscalId = payload.tipodocumentofiscalId ?? this.documentoSelected();
-      payload.documentoId = payload.documentoId ?? this.documentoSelected();
-    }
-    // Ensure Idsucursal is present if available
-    payload.Idsucursal = payload.Idsucursal ?? (user?.idsucursal ?? payload.Idsucursal);
-    // Ensure importe is numeric
-    payload.importe = Number(payload.importe) || 0;
-    // Marcar como no anulado por defecto
-    payload.sn_doc_anulado = payload.sn_doc_anulado ?? 'N';
-
-    this.service.createMovimiento(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        // agregar a la lista local para reflejar inmediatamente
-        this.notasData.set([...(this.notasData() || []), res]);
-        // si es movimiento, también añadir al estado de cuenta
-        this.estadoCuentaData.set([...(this.estadoCuentaData() || []), res]);
-        this.notaSaving.set(false);
-        this.notaModel.set({
-          tipomov: 'C',
-          concepto: '',
-          importe: 0,
-          nroreferencia: '',
-          fecharegistro: new Date().toISOString(),
-        });
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Nota registrada correctamente' });
-      },
-      error: (err) => {
-        // Mostrar detalle útil si está disponible
-        console.error('[ClientesManager] Error guardando nota', err);
-        let detail = 'No se pudo guardar la nota';
-        if (err?.error?.message) detail = err.error.message;
-        else if (err?.message) detail = err.message;
-        this.notaSaving.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail });
-      },
-    });
-  }
-
-  // ===== PRÉSTAMOS =====
-  cancelarPrestamo() {
-    this.prestamoModel.set({
-      nroprestamo: null,
-      capital: 0,
-      cuotas: 1,
-      tasa: 0,
-      vlrcuota: 0,
-      fecharegistro: new Date().toISOString(),
-      sn_activo: 'S',
-    });
-  }
-
-  guardarPrestamo() {
-    const cliente = this.selectedCliente();
-    if (!cliente) {
-      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear un préstamo' });
-      return;
-    }
-
-    const raw = { ...this.prestamoModel() };
-    const payload: any = {
-      ...raw,
-      clienteId: cliente.clienteId,
-      capital: Number(raw.capital) || 0,
-      cuotas: Number(raw.cuotas) || 1,
-      tasa: Number(raw.tasa) || 0,
-      vlrcuota: Number(raw.vlrcuota) || 0,
-      nroprestamo: raw.nroprestamo || '',
-      sn_activo: raw.sn_activo || 'S',
-      sn_contabilizado: 'N',
-    };
-
-    // Formatear fecha
-    try {
-      if (payload.fecharegistro) {
-        const d = new Date(payload.fecharegistro);
-        if (!isNaN(d.getTime())) payload.fecharegistro = d.toISOString();
-      }
-    } catch (e) { }
-
-    // Validaciones
-    if (!payload.capital || payload.capital <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital debe ser mayor a 0' });
-      return;
-    }
-    if (!payload.cuotas || payload.cuotas <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Las cuotas deben ser mayor a 0' });
-      return;
-    }
-
-    const user = this.auth.currentUser();
-    if (user) {
-      payload.empresaId = payload.empresaId ?? user.empresaId;
-      if (user.idsucursal != null) payload.Idsucursal = payload.Idsucursal ?? user.idsucursal;
-      payload.usuarioCreated = payload.usuarioCreated ?? user.usuario ?? user.nombre;
-    }
-
-    this.prestamoSaving.set(true);
-    this.service.createPrestamo(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        this.prestamosData.set([...(this.prestamosData() || []), res]);
-        this.prestamoModel.set({
-          nroprestamo: null,
-          capital: 0,
-          cuotas: 1,
-          tasa: 0,
-          vlrcuota: 0,
-          fecharegistro: new Date().toISOString(),
-          sn_activo: 'S',
-        });
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Préstamo registrado correctamente' });
-
-        // Si hay plan de pago generado, guardarlo vinculado al préstamo
-        const plan = this.planPago();
-        if (plan.length > 0 && res?.prestamoId) {
-          this.guardarPlanPagoConPrestamo(res.prestamoId, plan, cliente.clienteId);
-        } else {
-          this.prestamoSaving.set(false);
-          this.showPlanPago.set(false);
-          this.planPago.set([]);
-        }
-      },
-      error: (err) => {
-        console.error('[ClientesManager] Error guardando préstamo', err);
-        let detail = 'No se pudo guardar el préstamo';
-        if (err?.error?.message) detail = err.error.message;
-        else if (err?.message) detail = err.message;
-        this.prestamoSaving.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail });
-      },
-    });
-  }
-
-  private guardarPlanPagoConPrestamo(prestamoId: number, plan: any[], clienteId: number) {
-    const user = this.auth.currentUser();
-
-    const requests = plan.map((fila) => {
-      const payload = {
-        ...fila,
-        prestamoId,
-        clienteId,
-        empresaId: user?.empresaId,
-        usuarioCreated: user?.usuario || user?.nombre,
-      };
-      return this.service.createPrestamoPP(payload);
-    });
-
-    let completadas = 0;
-    let errores = 0;
-
-    requests.forEach((req) => {
-      req.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-        next: () => {
-          completadas++;
-          if (completadas + errores === plan.length) {
-            this.prestamoSaving.set(false);
-            this.showPlanPago.set(false);
-            this.planPago.set([]);
-            this.msgs.add({
-              severity: 'success',
-              summary: 'Plan de pago',
-              detail: `${completadas} cuotas guardadas`,
-            });
-          }
-        },
-        error: () => {
-          errores++;
-          if (completadas + errores === plan.length) {
-            this.prestamoSaving.set(false);
-            this.showPlanPago.set(false);
-            this.planPago.set([]);
-            this.msgs.add({
-              severity: errores > 0 ? 'warn' : 'success',
-              summary: 'Plan de pago',
-              detail: `${completadas} guardadas, ${errores} errores`,
-            });
-          }
-        },
-      });
-    });
   }
 
   // ===== REFERENCIAS =====
@@ -10173,7 +10144,7 @@ export class ClientesManager implements OnInit {
     };
 
     if (!payload.nombres || !payload.telefono1) {
-      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Complete nombre y teléfono' });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Complete nombre y telefono' });
       return;
     }
 
@@ -10199,7 +10170,6 @@ export class ClientesManager implements OnInit {
         this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Referencia registrada correctamente' });
       },
       error: (err) => {
-        console.error('[ClientesManager] Error guardando referencia', err);
         let detail = 'No se pudo guardar la referencia';
         if (err?.error?.message) detail = err.error.message;
         else if (err?.message) detail = err.message;
@@ -10260,7 +10230,6 @@ export class ClientesManager implements OnInit {
         this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Pariente registrado correctamente' });
       },
       error: (err) => {
-        console.error('[ClientesManager] Error guardando pariente', err);
         let detail = 'No se pudo guardar el pariente';
         if (err?.error?.message) detail = err.error.message;
         else if (err?.message) detail = err.message;
@@ -10270,125 +10239,56 @@ export class ClientesManager implements OnInit {
     });
   }
 
-  // ===== PLAN DE PAGO (AMORTIZACIÓN) =====
-  calcularCuota() {
-    const raw = this.prestamoModel();
-    const capital = Number(raw.capital) || 0;
-    const cuotas = Number(raw.cuotas) || 0;
-    const tasaAnual = Number(raw.tasa) || 0;
-
-    if (capital <= 0 || cuotas <= 0 || tasaAnual <= 0) return;
-
-    const tasaMensual = tasaAnual / 100 / 12;
-    const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
-    const cuotaFija = Math.round(capital * factor * 100) / 100;
-
-    this.prestamoModel.set({ ...this.prestamoModel(), vlrcuota: cuotaFija });
-  }
-
-  generarPlanPago() {
-    const raw = this.prestamoModel();
-    const capital = Number(raw.capital) || 0;
-    const cuotas = Number(raw.cuotas) || 0;
-    const tasaAnual = Number(raw.tasa) || 0;
-
-    if (capital <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital debe ser mayor a 0' });
-      return;
-    }
-    if (cuotas <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Las cuotas deben ser mayor a 0' });
-      return;
-    }
-    if (tasaAnual <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'La tasa de interés debe ser mayor a 0' });
-      return;
-    }
-
-    // Generar nroprestamo: YYYYMMDD + empresaId + usuarioId + SS (segundos)
-    const now = new Date();
-    const user = this.auth.currentUser();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    const nroprestamo = `${yyyy}${mm}${dd}${user?.empresaId ?? ''}${user?.usuarioId ?? ''}${ss}`;
-
-    // Fórmula de French (cuota fija)
-    const tasaMensual = tasaAnual / 100 / 12;
-    const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
-    const cuotaFija = capital * factor;
-
-    const plan: any[] = [];
-    let saldo = capital;
-    const fechaBase = raw.fecharegistro ? new Date(raw.fecharegistro) : new Date();
-
-    for (let i = 1; i <= cuotas; i++) {
-      const interes = saldo * tasaMensual;
-      const capitalPago = cuotaFija - interes;
-      saldo = saldo - capitalPago;
-
-      const fechaPago = new Date(fechaBase);
-      fechaPago.setMonth(fechaPago.getMonth() + i);
-
-      plan.push({
-        nrofila: i,
-        FechaPago: fechaPago.toISOString(),
-        vlrcuota: Math.round(cuotaFija * 100) / 100,
-        capital: Math.round(capitalPago * 100) / 100,
-        interes: Math.round(interes * 100) / 100,
-        mora: 0,
-        saldo: Math.round(Math.abs(saldo) * 100) / 100,
-        sn_pagada: 'N',
-        sn_anulada: 'N',
-      });
-    }
-
-    this.planPago.set(plan);
-    this.showPlanPago.set(true);
-
-    // Actualizar modelo con nroprestamo generado y valor de cuota
-    this.prestamoModel.set({
-      ...this.prestamoModel(),
-      nroprestamo,
-      vlrcuota: Math.round(cuotaFija * 100) / 100,
-    });
-  }
-
-  cancelarPlanPago() {
-    this.showPlanPago.set(false);
-    this.planPago.set([]);
-  }
-
   limpiarFiltros() {
     this.q.set('');
-    }
+    this.selectedCliente.set(null);
+    this.nuevoCliente.set(false);
+    this.showForm.set(false);
+    this.editingCliente.set(null);
+    this.activeTabValue.set('0');
+    this.estadoCuentaData.set([]);
+    this.referenciasData.set([]);
+    this.parientesData.set([]);
+  }
 
   nuevo() {
-    this.editingCliente.set(null);
-    this.showForm.set(true);
+    this.selectedCliente.set(null);
+    this.nuevoCliente.set(true);
+    this.activeTabValue.set('0');
+    this.estadoCuentaData.set([]);
+    this.referenciasData.set([]);
+    this.parientesData.set([]);
+
+    setTimeout(() => {
+      this.clienteFormRef?.nativeElement?.focusPrimerCampo();
+    }, 200);
   }
 
   onFormSaved() {
+    this.nuevoCliente.set(false);
     this.showForm.set(false);
     this.editingCliente.set(null);
-    this.loadClientes(); // refrescar lista
+    this.loadClientes();
   }
 
   onFormCancelled() {
+    this.nuevoCliente.set(false);
     this.showForm.set(false);
     this.editingCliente.set(null);
   }
 
   editarCliente(cliente: CxcCliente, event: Event) {
     event.stopPropagation();
-    this.editingCliente.set(cliente);
-    this.showForm.set(true);
+    this.seleccionarCliente(cliente);
   }
 
   seleccionarCliente(cliente: CxcCliente) {
+    this.nuevoCliente.set(false);
     this.selectedCliente.set(cliente);
-    this.activeTabIndex.set(0); // Focus en Estado de Cuenta
+    this.activeTabValue.set('0');
+    this.estadoCuentaData.set([]);
+    this.referenciasData.set([]);
+    this.parientesData.set([]);
     this.cargarDatosCliente(cliente.clienteId);
   }
 
@@ -10400,24 +10300,6 @@ export class ClientesManager implements OnInit {
         this.estadoCuentaLoading.set(false);
       },
       error: () => this.estadoCuentaLoading.set(false),
-    });
-
-    this.notasLoading.set(true);
-    this.service.getHistoricoByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        this.notasData.set(res);
-        this.notasLoading.set(false);
-      },
-      error: () => this.notasLoading.set(false),
-    });
-
-    this.prestamosLoading.set(true);
-    this.service.getPrestamosByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        this.prestamosData.set(res);
-        this.prestamosLoading.set(false);
-      },
-      error: () => this.prestamosLoading.set(false),
     });
 
     this.referenciasLoading.set(true);
@@ -10439,8 +10321,8 @@ export class ClientesManager implements OnInit {
     });
   }
 
-  onTabChange(index: number) {
-    this.activeTabIndex.set(index);
+  onTabChange(index: string) {
+    this.activeTabValue.set(index);
   }
 
   getClienteNombre(c: CxcCliente): string {
@@ -10452,9 +10334,9 @@ export class ClientesManager implements OnInit {
 
   getTipoMovLabel(tipo: string): string {
     const tipos: Record<string, string> = {
-      'C': 'Crédito',
+      'C': 'Credito',
       'A': 'Abono',
-      'D': 'Débito',
+      'D': 'Debito',
     };
     return tipos[tipo] || tipo;
   }
@@ -10467,6 +10349,7 @@ export class ClientesManager implements OnInit {
 
   moneda(n: number | undefined): string {
     const val = Number(n) || 0;
+    if (isNaN(val)) return '0.00';
     const partes = val.toFixed(2).split('.');
     partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     return partes.join('.');
@@ -10502,16 +10385,18 @@ export class ClientesManager implements OnInit {
         [ngModel]="q()"
         (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()"
+        pSize="small"
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
-        text
+        variant="text"
         size="small"
+        [rounded]="true"
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -10525,6 +10410,8 @@ export class ClientesManager implements OnInit {
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
+    [layout]="'list'"
   >
     <ng-template #list let-items>
       <div class="dv-cards">
@@ -10704,22 +10591,19 @@ export class Consulta implements OnInit {
 ```typescript
 import { Routes } from '@angular/router';
 import { Consulta } from './consulta/consulta';
+import { HistoricoManager } from './historico/historico-manager';
 
 export const CXC_ROUTES: Routes = [
   { path: '', redirectTo: 'caja', pathMatch: 'full' },
 
-  // Caja - formulario directo
+  // Caja - componente dedicado
   {
     path: 'caja',
-    data: { nombre: 'caja' },
-    loadComponent: () =>
-      import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm),
+    loadComponent: () => import('./caja/caja').then((m) => m.Caja),
   },
   {
     path: 'caja/editar/:id',
-    data: { nombre: 'caja' },
-    loadComponent: () =>
-      import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm),
+    loadComponent: () => import('./caja/caja').then((m) => m.Caja),
   },
 
   // Clientes - Nuevo gestor con layout dividido
@@ -10759,10 +10643,8 @@ export const CXC_ROUTES: Routes = [
   },
   {
     path: 'historico',
-    component: Consulta,
-    data: {
-      consulta: { nombre: 'historico', titulo: 'Histórico', ruta: '/cxc/historico', idKey: 'historicoclienteId' },
-    },
+    loadComponent: () =>
+      import('./historico/historico-manager').then((m) => m.HistoricoManager),
   },
   {
     path: 'saldo-favor',
@@ -10779,206 +10661,656 @@ export const CXC_ROUTES: Routes = [
 
 ---
 
+## 📄 src\app\features\cxc\historico\historico-manager.html
+
+```typescript
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Histórico de Movimientos</h1>
+      <p class="page-subtitle">Consulta de movimientos de cuentas por cobrar por cliente</p>
+    </div>
+  </header>
+
+  <!-- FILTROS -->
+  <div class="filtros card mb-3">
+    <div class="p-grid">
+      <div class="p-col-12 p-md-3">
+        <div class="p-field">
+          <label>DNI</label>
+          <input pInputText pSize="small" [ngModel]="dni()" (ngModelChange)="dni.set($event)"
+            placeholder="Buscar por DNI" />
+        </div>
+      </div>
+      <div class="p-col-12 p-md-3">
+        <div class="p-field">
+          <label>Cliente</label>
+          <input pInputText pSize="small" [ngModel]="cliente()" (ngModelChange)="cliente.set($event)"
+            placeholder="Nombre o razón social" />
+        </div>
+      </div>
+      <div class="p-col-12 p-md-2">
+        <div class="p-field">
+          <label>Desde</label>
+          <p-datepicker pSize="small" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)"
+            dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+        </div>
+      </div>
+      <div class="p-col-12 p-md-2">
+        <div class="p-field">
+          <label>Hasta</label>
+          <p-datepicker pSize="small" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)"
+            dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+        </div>
+      </div>
+      <div class="p-col-12 p-md-2">
+        <div class="p-field" style="margin-top: 1.5rem">
+          <div class="d-flex gap-2">
+            <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true"
+              (onClick)="buscar()" [raised]="true" severity="success"></p-button>
+            <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text"
+              [rounded]="true" severity="secondary" (onClick)="limpiarFiltros()"></p-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE RESULTADOS -->
+  <div class="tabla card">
+    <p-table id="gridhisto" [value]="filtered()" [loading]="cargando()" [paginator]="true" [rows]="limit()"
+      [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      size="small" [tableStyle]="{ 'min-width': '20rem' }"
+      selectionMode="single" [(selection)]="selectedRow"
+      dataKey="clienteMovId"
+      [globalFilterFields]="['dni', 'cliente', 'nrocliente', 'concepto']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 8rem">Fecha</th>
+          <th style="width: 6rem">Nro. Cliente</th>
+          <th style="width: 6rem">DNI</th>
+          <th>Cliente</th>
+          <th style="width: 8rem">Módulo</th>
+          <th style="width: 6rem">Ref.</th>
+          <th style="width: 6rem">Tipo</th>
+          <th style="width: 6rem">Importe</th>
+          <th>Concepto</th>
+          <th style="width: 6rem">Anulado</th>
+          <th style="width: 6rem">Contabil.</th>
+          <th style="width: 4rem"></th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-item>
+        <tr [class.selected-row]="selectedRow?.clienteMovId === item.clienteMovId">
+          <td>{{ getFecha(item.fecharegistro) }}</td>
+          <td>{{ item.nrocliente }}</td>
+          <td>{{ item.dni }}</td>
+          <td>{{ item.cliente }}</td>
+          <td>{{ item.modulo }}</td>
+          <td>{{ item.nroreferencia }}</td>
+          <td>
+            <p-tag [value]="getTipoMovLabel(item.tipomov)"
+              [severity]="getTipoMovSeverity(item.tipomov)" />
+          </td>
+          <td class="font-bold">{{ moneda(item.importe) }}</td>
+          <td>{{ item.concepto || '-' }}</td>
+          <td class="text-center">
+            <p-tag [value]="item.sn_doc_anulado === 'S' ? 'Sí' : 'No'"
+              [severity]="item.sn_doc_anulado === 'S' ? 'danger' : 'success'" />
+          </td>
+          <td class="text-center">
+            <p-tag [value]="item.sn_cotabilizada === 'S' ? 'Sí' : 'No'"
+              [severity]="item.sn_cotabilizada === 'S' ? 'info' : 'success'" />
+          </td>
+          <td class="text-center">
+            <p-button label="Ver" icon="pi pi-eye" size="small"
+              variant="text" [rounded]="true" severity="info"
+              (onClick)="irAmovimientos(item.clienteId)" />
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="empty">
+        <tr>
+          <td colspan="12" class="text-center p-4">No hay registros.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- DETALLE DEL MOVIMIENTO SELECCIONADO (readonly) -->
+  @if (selectedRow) {
+  <div class="detalle card mt-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Fecha</label>
+            <input pInputText [value]="getFecha(selectedRow.fecharegistro)" disabled readonly
+              styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Cliente</label>
+            <input pInputText [value]="selectedRow.cliente" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>DNI</label>
+            <input pInputText [value]="selectedRow.dni" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Nro. Cliente</label>
+            <input pInputText [value]="selectedRow.nrocliente" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Módulo</label>
+            <input pInputText [value]="selectedRow.modulo" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Abreviatura</label>
+            <input pInputText [value]="selectedRow.abreviatura" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Referencia</label>
+            <input pInputText [value]="selectedRow.nroreferencia" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Tipo de Movimiento</label>
+            <p-select [value]="selectedRow.tipomov" [options]="tipoMovOptions" disabled
+              styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Importe</label>
+            <p-inputNumber [value]="selectedRow.importe" mode="currency" currency="HNL"
+              [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
+              [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" disabled></p-inputNumber>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-8">
+          <div class="p-field">
+            <label>Concepto</label>
+            <input pInputText [value]="selectedRow.concepto" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Documento Anulado</label>
+            <p-select [value]="selectedRow.sn_doc_anulado" [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]"
+              disabled styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Contabilizado</label>
+            <p-select [value]="selectedRow.sn_cotabilizada" [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]"
+              disabled styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Cliente Mov ID</label>
+            <input pInputText [value]="selectedRow.clienteMovId" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\cxc\historico\historico-manager.scss
+
+```typescript
+.historico-manager {
+  .filtros.card {
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+  }
+
+  .tabla.card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .detalle.card {
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+  }
+
+  .p-field label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .p-field input[disabled],
+  .p-field p-select[disabled] {
+    background: var(--c-surface) !important;
+    opacity: 0.8;
+  }
+
+  .font-bold {
+    font-weight: 700;
+  }
+
+  .selected-row {
+    background-color: rgba(16, 185, 129, 0.08) !important;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\cxc\historico\historico-manager.ts
+
+```typescript
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timeout, catchError, of } from 'rxjs';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TableModule } from 'primeng/table';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { TagModule } from 'primeng/tag';
+import { MessageService } from 'primeng/api';
+import { CxcService } from '../../../core/services/cxc.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { CxcHistorico } from '../../../core/models/cxc.models';
+
+@Component({
+  selector: 'app-historico-manager',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    InputTextModule,
+    TableModule,
+    InputNumberModule,
+    SelectModule,
+    DatePickerModule,
+    TagModule,
+  ],
+  templateUrl: './historico-manager.html',
+  styleUrl: './historico-manager.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class HistoricoManager implements OnInit {
+  private service = inject(CxcService);
+  private msgs = inject(MessageService);
+  private auth = inject(AuthService);
+  private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+
+  // ===== FILTROS =====
+  dni = signal('');
+  cliente = signal('');
+  fechaDesde = signal<string | null>(null);
+  fechaHasta = signal<string | null>(null);
+
+  // ===== DATOS =====
+  data = signal<CxcHistorico[]>([]);
+  filtered = signal<CxcHistorico[]>([]);
+  cargando = signal(false);
+  totalRecords = signal(0);
+
+  // ===== SELECCION =====
+  selectedRow: CxcHistorico | null = null;
+
+  // ===== PAGINACION =====
+  page = signal(1);
+  limit = signal(20);
+
+  // ===== TIPOS DE MOVIMIENTO =====
+  readonly tipoMovOptions = [
+    { label: 'Debito', value: 'D' },
+    { label: 'Credito', value: 'C' },
+  ];
+
+  ngOnInit() {
+    this.cargarHistorico();
+  }
+
+  private cargarHistorico() {
+    this.cargando.set(true);
+    this.service.getHistoricoConFiltros(
+      this.dni(),
+      this.cliente(),
+      this.fechaDesde(),
+      this.fechaHasta(),
+    ).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(15000),
+      catchError(() => of([]))
+    ).subscribe({
+      next: (res) => {
+        const datos = res ?? [];
+        this.data.set(datos);
+        this.filtered.set(datos);
+        this.totalRecords.set(datos.length);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los registros históricos' });
+      },
+    });
+  }
+
+  buscar() {
+    this.cargarHistorico();
+  }
+
+  limpiarFiltros() {
+    this.dni.set('');
+    this.cliente.set('');
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.selectedRow = null;
+    this.cargarHistorico();
+  }
+
+  getTipoMovLabel(tipo: string): string {
+    const tipos: Record<string, string> = { 'C': 'Crédito', 'D': 'Débito' };
+    return tipos[tipo] || tipo;
+  }
+
+  getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'info' {
+    if (tipo === 'C') return 'info';
+    return 'danger';
+  }
+
+  moneda(val: any): string {
+    const num = Number(val) || 0;
+    if (isNaN(num)) return '0.00';
+    const partes = num.toFixed(2).split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return partes.join('.');
+  }
+
+  getNombreCliente(item: CxcHistorico): string {
+    return item.cliente || item.nrocliente || 'Sin nombre';
+  }
+
+  getFecha(fecha: string): string {
+    if (!fecha) return '';
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return fecha;
+    return d.toLocaleDateString('es-HN');
+  }
+
+  irAmovimientos(clienteId: number) {
+    this.router.navigate(['/cxc/movimientos'], {
+      queryParams: { clienteId }
+    });
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\features\cxc\movimientos\movimientos-manager.html
 
 ```typescript
 <div class="movimientos-manager">
   <div class="split-layout">
+
+    <!-- Columna izquierda: detalle / formulario -->
     <div class="left-column">
-      <p-toolbar>
-        <ng-template #start>
-          <div class="toolbar-title">
-            <i class="pi pi-users"></i>
-            <span>Clientes</span>
-          </div>
-        </ng-template>
-      </p-toolbar>
-
-      <div class="search-bar">
-        <div class="search-input-wrapper">
-          <i class="pi pi-search"></i>
-          <input
-            type="text"
-            pInputText
-            [ngModel]="q()"
-            (ngModelChange)="q.set($event)"
-            (keyup.enter)="loadClientes()"
-            placeholder="Buscar por nombre, DNI, RTN..."
-            class="search-input"
-          />
-          <p-button
-            *ngIf="q()"
-            icon="pi pi-times"
-            (click)="limpiarFiltros()"
-            severity="secondary"
-            [rounded]="true"
-            size="small"
-            class="clear-btn"
-          ></p-button>
-        </div>
-      </div>
-
-      <div class="clientes-count">
-        <h4>Clientes: {{ totalClientes() }}</h4>
-      </div>
-
-      @if (cargando()) {
-        <div class="loading-skeleton">
-          @for (i of [1,2,3,4,5]; track i) {
-            <div class="skeleton-item">
-              <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
-              <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
-            </div>
-          }
-        </div>
-      } @else if (data().length === 0) {
-        <div class="empty-state">
-          <i class="pi pi-users empty-icon"></i>
-          <h3>No hay clientes</h3>
-          <p>No se encontraron clientes registrados.</p>
-        </div>
-      } @else {
-        <div class="clientes-grid">
-          @for (cliente of data(); track cliente.clienteId) {
-            <div
-              class="cliente-card"
-              [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
-              (click)="seleccionarCliente(cliente)"
-            >
-              <div class="cliente-card-header">
-                <span class="cliente-nro">{{ cliente.nrocliente }}</span>
-                <p-tag
-                  [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
-                  [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
-                  class="tag-small"
-                />
-              </div>
-              <h3 class="cliente-nombre-large">{{ getClienteNombre(cliente) }}</h3>
-              <div class="cliente-details">
-                <div class="detail-row">
-                  <i class="pi pi-id-card"></i>
-                  <span>{{ cliente.dni }}</span>
-                </div>
-                @if (cliente.rtn) {
-                  <div class="detail-row">
-                    <i class="pi pi-file-text"></i>
-                    <span>{{ cliente.rtn }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-        </div>
-
-        <p-paginator
-          [first]="(page() - 1) * limit()"
-          [rows]="limit()"
-          [totalRecords]="totalClientes()"
-          [rowsPerPageOptions]="[5, 10, 15]"
-          (onPageChange)="onPageChange($event)"
-          class="mt-3"
-        ></p-paginator>
-      }
-    </div>
-
-    <div class="right-column">
       @if (!selectedCliente()) {
-        <div class="empty-state">
-          <i class="pi pi-arrow-left empty-icon"></i>
-          <h3>Seleccione un cliente</h3>
-          <p>Haga clic en un cliente de la lista para gestionar movimientos</p>
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Seleccione un cliente</h3>
+        <p>Haga clic en un cliente de la lista para gestionar movimientos</p>
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
+              <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
+                [rounded]="true" size="small"></p-button>
+            </p-iconField>
+          </div>
         </div>
+      </div>
       }
 
       @if (selectedCliente()) {
-        <div class="cliente-detail">
-          <div class="cliente-header">
-            <div class="cliente-header-info">
-              <h2>{{ getClienteNombre(selectedCliente()) }}</h2>
-              <span class="cliente-nro-badge">{{ selectedCliente()?.nrocliente }}</span>
+      <div class="cliente-detail">
+        <div class="cliente-header-inline">
+          <span class="cliente-inline-codigo">Codigo.: {{ selectedCliente()?.nrocliente }} -</span>
+          <span class="cliente-inline-nombre">{{ getClienteNombre(selectedCliente()) }}</span>
+        </div>
+         
+
+        <div class="tab-content">
+          <div class="tab-header">
+            <h4>Movimientos</h4>
+          </div>
+
+          <!-- Formulario dos columnas -->
+          <div class="prestamo-form-columns mb-3">
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Datos del Movimiento</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Tipo</label>
+                  <p-select size="small" [options]="tipoMovOptions" [ngModel]="movimientoModel().tipomov"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), tipomov: $event, nroreferencia: ''})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar tipo"></p-select>
+                </div>
+                <div class="p-field">
+                  <label>Documento Fiscal</label>
+                  <p-select size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()"
+                    (ngModelChange)="documentoSelected.set($event)" placeholder="Seleccionar documento"
+                    styleClass="w-full" [appendTo]="'body'"></p-select>
+                </div>
+                <div class="p-field">
+                  <label>Concepto</label>
+                  <input pInputText pSize="small" [ngModel]="movimientoModel().concepto"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), concepto: $event})"
+                    placeholder="Descripcion del movimiento" />
+                </div>
+
+              </div>
+            </div>
+
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Referencia y Fecha</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Fecha</label>
+                  <p-datepicker [ngModel]="movimientoFecha()"
+                   size="small"
+                   (ngModelChange)="onMovimientoFechaChange($event)"
+                    dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
+                </div>
+
+                <div class="p-field">
+                  <label>Nro. Referencia</label>
+                  <p-select size="small" *ngIf="movimientoModel().tipomov === 'C'"
+                    [options]="debitoReferencias().map(r => ({label: r, value: r}))"
+                    [ngModel]="movimientoModel().nroreferencia"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
+                    placeholder="Seleccione debito" styleClass="w-full" [appendTo]="'body'"></p-select>
+                  <input 
+                    pSize="small"
+                    *ngIf="movimientoModel().tipomov !== 'C'" pInputText
+                    [ngModel]="movimientoModel().nroreferencia"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
+                    placeholder="Nro. de factura o documento" />
+                </div>
+
+                 <div class="p-field">
+                  <label>Importe</label>
+                  <p-inputNumber size="small" [ngModel]="movimientoModel().importe"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), importe: $event})" mode="currency"
+                    currency="HNL" [locale]="'es-HN'" [min]="0.01" [minFractionDigits]="2"
+                    [maxFractionDigits]="2" [useGrouping]="true"
+                    [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="tab-content">
-            <div class="tab-header">
-              <h4>Movimientos</h4>
-            </div>
+          <!-- Botones de accion -->
+          <div class="prestamo-actions mb-3">
+            <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+              (click)="cancelarMovimiento()" [rounded]="true" size="small"></p-button>
+            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+              [loading]="movimientoSaving()" (click)="guardarMovimiento()" [rounded]="true"
+              size="small"></p-button>
+          </div>
 
-            <!-- Formulario dos columnas estilo Préstamos -->
-            <div class="prestamo-form-columns mb-3">
-              <!-- Columna Izquierda: Datos del movimiento -->
-              <div class="prestamo-col">
-                <h5 class="prestamo-col-title">Datos del Movimiento</h5>
-                <div class="p-fluid">
-                  <div class="p-field">
-                    <label>Tipo</label>
-                    <p-select size="small" [options]="tipoMovOptions" [ngModel]="movimientoModel().tipomov" (ngModelChange)="movimientoModel.set({...movimientoModel(), tipomov: $event, nroreferencia: ''})"></p-select>
-                  </div>
-                  <div class="p-field">
-                    <label>Documento Fiscal</label>
-                    <p-select size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()" (ngModelChange)="documentoSelected.set($event)" placeholder="Seleccione"></p-select>
-                  </div>
-                  <div class="p-field">
-                    <label>Concepto</label>
-                    <input pInputText pSize="small" [ngModel]="movimientoModel().concepto" (ngModelChange)="movimientoModel.set({...movimientoModel(), concepto: $event})" placeholder="Descripción del movimiento" />
-                  </div>
-                  <div class="p-field">
-                    <label>Importe</label>
-                    <p-inputNumber size="small" [ngModel]="movimientoModel().importe" (ngModelChange)="movimientoModel.set({...movimientoModel(), importe: $event})" [mode]="'decimal'" [min]="0.01"></p-inputNumber>
-                  </div>
-                </div>
-              </div>
 
-              <!-- Columna Derecha: Referencia y fecha -->
-              <div class="prestamo-col">
-                <h5 class="prestamo-col-title">Referencia y Fecha</h5>
-                <div class="p-fluid">
-                  <div class="p-field">
-                    <label>Nro. Referencia</label>
-                    <p-select size="small" *ngIf="movimientoModel().tipomov === 'C'" [options]="debitoReferencias().map(r => ({label: r, value: r}))" [ngModel]="movimientoModel().nroreferencia" (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})" placeholder="Seleccione débito"></p-select>
-                    <input *ngIf="movimientoModel().tipomov !== 'C'" pInputText [ngModel]="movimientoModel().nroreferencia" (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})" placeholder="Nro. de factura o documento" />
-                  </div>
-                  <div class="p-field">
-                    <label>Fecha</label>
-                    <p-datepicker [ngModel]="movimientoFecha()" (ngModelChange)="onMovimientoFechaChange($event)" dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
-                  </div>
-                </div>
-              </div>
-            </div>
+        </div>
+      </div>
+      }
+    </div>
 
-            <!-- Botones de acción -->
-            <div class="prestamo-actions mb-3">
-              <p-button label="Limpiar" icon="pi pi-times" severity="secondary" (click)="cancelarMovimiento()" [rounded]="true" size="small"></p-button>
-              <p-button label="Guardar" icon="pi pi-check" [loading]="movimientoSaving()" (click)="guardarMovimiento()" [rounded]="true" size="small"></p-button>
-            </div>
+    <!-- Columna derecha: lista de clientes -->
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+            (keyup.enter)="loadClientes()" placeholder="Buscar por nombre, DNI, RTN..."
+            class="search-input" />
+          <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
+            [rounded]="true" size="small" class="clear-btn"></p-button>
+        </div>
+      </div>
 
-            <!-- Lista de movimientos -->
-            <p-dataView
-              [value]="movimientosData()"
-              [loading]="movimientosLoading()"
-              layout="list"
-              class="movimientos-dataview"
-            >
-              <ng-template #list let-mov>
-                <div class="movimiento-item">
-                  <div class="mov-fecha">{{ mov.fecharegistro | date:'dd/MM/yyyy' }}</div>
-                  <div class="mov-tipo" [ngClass]="mov.tipomov === 'D' ? 'debito' : 'credito'">
-                    {{ getTipoMovLabel(mov.tipomov) }}
-                  </div>
-                  <div class="mov-concepto">{{ mov.concepto }}</div>
-                  <div class="mov-ref">{{ mov.nroreferencia || '—' }}</div>
-                  <div class="mov-importe" [ngClass]="mov.tipomov === 'D' ? 'text-success' : 'text-danger'">
-                    {{ mov.tipomov === 'D' ? '+' : '-' }}{{ moneda(mov.importe) }}
-                  </div>
-                </div>
-              </ng-template>
-            </p-dataView>
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay clientes</h3>
+        <p>No se encontraron clientes registrados.</p>
+      </div>
+      } @else {
+      <div class="clientes-lista">
+        @for (cliente of data(); track cliente.clienteId) {
+        <div class="cliente-item-ficha"
+          [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)">
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ cliente.nrocliente }}</span>
+            <p-tag [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ cliente.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ cliente.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ cliente.dni }}</span>
+          </div>
+          @if (cliente.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ cliente.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Disponible Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa interes:</span>
+            <span class="ficha-value">{{ cliente.interes }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa moratoria:</span>
+            <span class="ficha-value">{{ cliente.moratorio }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ cliente.categoria }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Estado:</span>
+            <span class="ficha-value">{{ cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Razon social:</span>
+            <span class="ficha-value">{{ cliente.razonsocial }}</span>
           </div>
         </div>
+        }
+      </div>
+
+      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"></p-paginator>
       }
     </div>
   </div>
 </div>
+
 ```
 
 ---
@@ -10998,17 +11330,23 @@ export const CXC_ROUTES: Routes = [
   overflow: hidden;
 }
 
-.left-column {
-  width: 380px;
-  min-width: 350px;
-  max-width: 450px;
-  border-right: 1px solid var(--c-border);
-  display: flex;
-  flex-direction: column;
-  background: var(--c-surface);
+.cliente-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid var(--c-border);
+    background: var(--c-surface);
 }
 
-.right-column {
+
+.tab-content {
+    overflow-y: auto;
+    max-height: 70vh;
+    padding: 0.5rem;
+}
+
+.left-column {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -11016,24 +11354,37 @@ export const CXC_ROUTES: Routes = [
   overflow: hidden;
 }
 
-.toolbar-title {
+.right-column {
+  width: 380px;
+  min-width: 350px;
+  max-width: 450px;
+  border-left: 1px solid var(--c-border);
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: var(--c-text);
+  flex-direction: column;
+  background: var(--c-surface);
 }
+
+// ===== Utilidades =====
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+// ===== Busqueda y lista (columna derecha) =====
 
 .search-bar {
   padding: 1rem;
   border-bottom: 1px solid var(--c-border);
-}
-
-.search-input-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+
+  .search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
 }
 
 .search-input-wrapper .pi-search {
@@ -11046,7 +11397,7 @@ export const CXC_ROUTES: Routes = [
 .search-input {
   width: 100%;
   padding: 0.5rem 0.75rem 0.5rem 2.5rem;
-  border: 1px solid var(--c-border);
+  border: 1px solid var(--for-border-color-alls);
   border-radius: 6px;
   background: var(--c-bg);
   color: var(--c-text);
@@ -11057,18 +11408,40 @@ export const CXC_ROUTES: Routes = [
   right: 0.25rem;
 }
 
-.clientes-count {
-  padding: 0.625rem 1rem;
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
+// ===== Empty states =====
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--c-text-muted);
+  padding: 2rem;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--c-primary);
+    opacity: 0.6;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--c-text-secondary, #6c757d);
+  }
 }
 
-.clientes-count h4 {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--c-text-muted);
-}
+// ===== Skeleton =====
 
 .loading-skeleton {
   padding: 20px;
@@ -11082,134 +11455,97 @@ export const CXC_ROUTES: Routes = [
   background: var(--c-bg);
 }
 
-.empty-state {
+// ===== Lista de clientes (fichas) =====
+
+.clientes-lista {
   flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  color: var(--c-text-muted);
-  padding: 2rem;
-  text-align: center;
+  gap: 0.5rem;
 }
 
-.empty-state .empty-icon {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.clientes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 15px;
-  padding: 15px;
-  max-height: calc(100vh - 300px);
-  overflow-y: auto;
-}
-
-.cliente-card {
+.cliente-item-ficha {
+  padding: 0.75rem 1rem;
   border: 1px solid var(--c-border);
   border-radius: 8px;
-  padding: 15px;
   background: var(--c-surface);
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    border-color: var(--c-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &.selected {
+    border-color: var(--for-border-color-alls);
+    background: var(--master-background);
+  }
 }
 
-.cliente-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border-color: var(--c-primary);
-}
-
-.cliente-card.selected {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-}
-
-.cliente-card-header {
+.item-ficha-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.375rem;
+  border-bottom: 1px solid var(--c-border);
 }
 
-.cliente-nro {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--c-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.item-ficha-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  line-height: 1.3;
 }
 
-.cliente-nombre-large {
-  margin: 0 0 12px;
-  font-size: 1.1rem;
+.ficha-label {
+  font-size: 0.8rem;
   font-weight: 600;
+  color: var(--c-text-muted);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.ficha-value {
+  font-size: 0.85rem;
   color: var(--c-text);
+  font-weight: 500;
 }
 
-.cliente-details {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.85rem;
-  color: var(--c-text-muted);
-}
-
-.detail-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.detail-row i {
-  font-size: 0.85rem;
-}
-
-.right-column .empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  color: var(--c-text-muted);
-  padding: 2rem;
-  text-align: center;
-}
-
-.right-column .empty-state i {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.right-column .empty-state h3 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.right-column .empty-state p {
-  margin: 0;
-  font-size: 0.9rem;
-}
+// ===== Detalle del cliente (columna izquierda) =====
 
 .cliente-detail {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.cliente-header-inline {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface);
+  min-height: 2.2rem;
+}
+
+.cliente-inline-codigo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.cliente-inline-nombre {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--c-text);
 }
 
 .cliente-header {
@@ -11223,7 +11559,7 @@ export const CXC_ROUTES: Routes = [
 
 .cliente-header-info h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.10rem;
   font-weight: 600;
 }
 
@@ -11234,7 +11570,7 @@ export const CXC_ROUTES: Routes = [
   font-size: 0.75rem;
   font-weight: 600;
   background: #dbeafe;
-  color: var(--c-primary-strong);
+  color: var(--c-primary-strong, #1d4ed8);
   border-radius: 4px;
 }
 
@@ -11259,8 +11595,66 @@ export const CXC_ROUTES: Routes = [
   font-weight: 600;
 }
 
+// ===== Formulario dos columnas =====
+
+.prestamo-form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.prestamo-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.prestamo-col-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.prestamo-col .p-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.prestamo-col label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+}
+
+.prestamo-col input.p-inputtext,
+.prestamo-col .p-select,
+.prestamo-col .p-inputnumber,
+.prestamo-col .p-datepicker {
+  width: 100%;
+}
+
+.prestamo-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+}
+
+// ===== Lista de movimientos =====
+
 .movimientos-dataview {
-  .p-dataview-content {
+  :host ::ng-deep .p-dataview-content {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -11330,62 +11724,52 @@ export const CXC_ROUTES: Routes = [
   color: #b91c1c;
 }
 
-.prestamo-form-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 1.25rem;
-}
+// ===== Paginador compacto =====
 
-.prestamo-col {
+.paginator-compact {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  justify-content: center;
+
+  ::ng-deep .p-paginator {
+    background: transparent;
+    padding: 0.25rem;
+    gap: 0.25rem;
+
+    .p-paginator-content {
+      gap: 0.15rem;
+    }
+
+    .p-paginator-page,
+    .p-paginator-prev,
+    .p-paginator-next,
+    .p-paginator-first,
+    .p-paginator-last {
+      min-width: 1.6rem;
+      height: 1.6rem;
+      font-size: 0.7rem;
+      border-radius: 50%;
+    }
+
+    .p-paginator-current {
+      font-size: 0.7rem;
+      color: var(--c-text-muted);
+    }
+
+    .p-paginator-page-options {
+      height: 1.6rem;
+      font-size: 0.7rem;
+
+      .p-select-label {
+        font-size: 0.7rem;
+      }
+    }
+  }
 }
 
-.prestamo-col-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--c-text-muted);
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--c-border);
-}
-
-.prestamo-col .p-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.prestamo-col label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--c-text-muted);
-}
-
-.prestamo-col input.p-inputtext,
-.prestamo-col .p-select,
-.prestamo-col .p-inputnumber,
-.prestamo-col .p-datepicker {
-  width: 100%;
-}
-
-.prestamo-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  padding: 0.75rem 1rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-}
+// ===== Responsive =====
 
 @media (max-width: 1024px) {
-  .left-column {
+  .right-column {
     width: 320px;
   }
 }
@@ -11396,9 +11780,14 @@ export const CXC_ROUTES: Routes = [
   }
 
   .left-column {
+    order: 2;
+  }
+
+  .right-column {
+    order: 1;
     width: 100%;
     max-width: none;
-    border-right: none;
+    border-left: none;
     border-bottom: 1px solid var(--c-border);
     max-height: 40vh;
   }
@@ -11416,7 +11805,8 @@ export const CXC_ROUTES: Routes = [
 ## 📄 src\app\features\cxc\movimientos\movimientos-manager.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11434,6 +11824,8 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { PaginatorModule } from 'primeng/paginator';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
@@ -11457,6 +11849,8 @@ import { CxcCliente } from '../../../core/models/cxc.models';
     SelectModule,
     DatePickerModule,
     PaginatorModule,
+    IconFieldModule,
+    InputIconModule,
   ],
   templateUrl: './movimientos-manager.html',
   styleUrl: './movimientos-manager.scss',
@@ -11468,6 +11862,7 @@ export class MovimientosManager implements OnInit {
   private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
+  private route = inject(ActivatedRoute);
 
   // ===== CLIENTES =====
   data = signal<CxcCliente[]>([]);
@@ -11477,6 +11872,13 @@ export class MovimientosManager implements OnInit {
   page = signal(1);
   limit = signal(15);
   totalClientes = signal(0);
+
+  // Effect para resetear pagina y recargar cuando cambie el filtro (q)
+  private _searchEffect = effect(() => {
+    this.q();
+    this.page.set(1);
+    untracked(() => this.loadClientes());
+  });
 
   // ===== MOVIMIENTOS =====
   movimientosData = signal<any[]>([]);
@@ -11503,11 +11905,11 @@ export class MovimientosManager implements OnInit {
   documentoSelected = signal<any>(null);
 
   readonly tipoMovOptions = [
-    { label: 'Débito', value: 'D' },
-    { label: 'Crédito', value: 'C' },
+    { label: 'Debito', value: 'D' },
+    { label: 'Credito', value: 'C' },
   ];
 
-  // Referencias de débitos existentes (nroreferencia únicos de movimientos tipo D)
+  // Referencias de debitos existentes (nroreferencia unicos de movimientos tipo D)
   debitoReferencias = computed(() => {
     const refs = this.movimientosData()
       .filter(m => m.tipomov === 'D' && m.nroreferencia)
@@ -11516,8 +11918,45 @@ export class MovimientosManager implements OnInit {
   });
 
   ngOnInit() {
-    this.loadClientes();
     this.loadDocumentos();
+    // Si viene clienteId por query param, auto-seleccionar ese cliente
+    const clienteIdParam = this.route.snapshot.queryParamMap.get('clienteId');
+    if (clienteIdParam) {
+      const id = Number(clienteIdParam);
+      if (!isNaN(id) && id > 0) {
+        this.autoSelectCliente(id);
+      }
+    }
+  }
+
+  /**
+   * Carga un cliente directamente por ID y lo selecciona.
+   * Se usa cuando se navega desde historico con ?clienteId=X
+   */
+  private autoSelectCliente(clienteId: number) {
+    this.cargando.set(true);
+    this.service.getCliente(clienteId).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(10000),
+      catchError(() => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el cliente' });
+        return of(null);
+      })
+    ).subscribe({
+      next: (cliente) => {
+        this.cargando.set(false);
+        if (cliente) {
+          // Agregar el cliente a la lista si no está
+          const lista = this.data();
+          const existe = lista.find(c => c.clienteId === cliente.clienteId);
+          if (!existe) {
+            this.data.set([cliente, ...lista]);
+          }
+          this.seleccionarCliente(cliente);
+        }
+      },
+    });
   }
 
   // ===== CLIENTES =====
@@ -11545,7 +11984,8 @@ export class MovimientosManager implements OnInit {
 
   limpiarFiltros() {
     this.q.set('');
-    this.loadClientes();
+    this.selectedCliente.set(null);
+    this.movimientosData.set([]);
   }
 
   seleccionarCliente(cliente: CxcCliente) {
@@ -11554,12 +11994,16 @@ export class MovimientosManager implements OnInit {
   }
 
   getClienteNombre(c: CxcCliente): string {
-    return `${c.nombres || ''} ${c.apellidos || ''}`.trim();
+    const nombres = c.nombres || '';
+    const apellidos = c.apellidos || '';
+    const full = `${nombres} ${apellidos}`.trim();
+    return full || c.razonsocial || c.nrocliente || 'Sin nombre';
   }
 
-  moneda(val: number): string {
-    if (val == null || isNaN(val)) return '0.00';
-    const partes = val.toFixed(2).split('.');
+  moneda(val: any): string {
+    const num = Number(val) || 0;
+    if (isNaN(num)) return '0.00';
+    const partes = num.toFixed(2).split('.');
     partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     return partes.join('.');
   }
@@ -11602,6 +12046,7 @@ export class MovimientosManager implements OnInit {
 
   cancelarMovimiento() {
     this.movimientoModel.set({
+      clienteId: this.selectedCliente()?.clienteId ?? null,
       tipomov: 'D',
       concepto: '',
       importe: 0,
@@ -11609,6 +12054,8 @@ export class MovimientosManager implements OnInit {
       fecharegistro: new Date().toISOString(),
     });
     this.documentoSelected.set(null);
+    this.selectedCliente.set(null);
+    this.movimientosData.set([]);
   }
 
   guardarMovimiento() {
@@ -11639,33 +12086,33 @@ export class MovimientosManager implements OnInit {
     }
 
     if (typeof payload.importe !== 'number' || payload.importe <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Importe inválido', detail: 'El importe debe ser mayor que 0' });
+      this.msgs.add({ severity: 'warn', summary: 'Importe invalido', detail: 'El importe debe ser mayor que 0' });
       return;
     }
 
-    // Validar débito: referencia obligatoria y no duplicada
+    // Validar debito: referencia obligatoria y no duplicada
     if (payload.tipomov === 'D') {
       if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el número de factura o préstamo de referencia' });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el numero de factura o prestamo de referencia' });
         return;
       }
       const refStr = String(payload.nroreferencia).trim();
       const refsUsadas = this.debitoReferencias();
       if (refsUsadas.includes(refStr)) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un débito con referencia "${refStr}". No se pueden crear débitos duplicados.` });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un debito con referencia "${refStr}". No se pueden crear debitos duplicados.` });
         return;
       }
     }
 
-    // Validar crédito: referencia obligatoria, debe existir como débito
+    // Validar credito: referencia obligatoria, debe existir como debito
     if (payload.tipomov === 'C') {
       if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de débito al que aplica el abono' });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de debito al que aplica el abono' });
         return;
       }
       const refsDisponibles = this.debitoReferencias();
       if (!refsDisponibles.includes(String(payload.nroreferencia))) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia inválida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningún débito existente` });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia invalida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningun debito existente` });
         return;
       }
     }
@@ -11709,7 +12156,7 @@ export class MovimientosManager implements OnInit {
   }
 
   getTipoMovLabel(tipo: string): string {
-    const tipos: Record<string, string> = { 'C': 'Crédito', 'A': 'Abono', 'D': 'Débito' };
+    const tipos: Record<string, string> = { 'C': 'Credito', 'A': 'Abono', 'D': 'Debito' };
     return tipos[tipo] || tipo;
   }
 
@@ -11729,245 +12176,259 @@ export class MovimientosManager implements OnInit {
 ```typescript
 <div class="prestamos-manager">
   <div class="split-layout">
+
+    <!-- Columna izquierda: formulario prestamo + plan de pago -->
     <div class="left-column">
-      <p-toolbar>
-        <ng-template #start>
-          <div class="toolbar-title">
-            <i class="pi pi-users"></i>
-            <span>Clientes</span>
-          </div>
-        </ng-template>
-      </p-toolbar>
-
-      <div class="search-bar">
-        <div class="search-input-wrapper">
-          <i class="pi pi-search"></i>
-          <input
-            type="text"
-            pInputText
-            [ngModel]="q()"
-            (ngModelChange)="q.set($event)"
-            (keyup.enter)="loadClientes()"
-            placeholder="Buscar por nombre, DNI, RTN..."
-            class="search-input"
-          />
-          <p-button
-            *ngIf="q()"
-            icon="pi pi-times"
-            (click)="limpiarFiltros()"
-            severity="secondary"
-            [rounded]="true"
-            size="small"
-            class="clear-btn"
-          ></p-button>
-        </div>
-      </div>
-
-      <div class="clientes-count">
-        <h4>Clientes: {{ totalClientes() }}</h4>
-      </div>
-
-      @if (cargando()) {
-        <div class="loading-skeleton">
-          @for (i of [1,2,3,4,5]; track i) {
-            <div class="skeleton-item">
-              <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
-              <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
-            </div>
-          }
-        </div>
-      } @else if (data().length === 0) {
-        <div class="empty-state">
-          <i class="pi pi-users empty-icon"></i>
-          <h3>No hay clientes</h3>
-          <p>No se encontraron clientes registrados.</p>
-        </div>
-      } @else {
-        <div class="clientes-grid">
-          @for (cliente of data(); track cliente.clienteId) {
-            <div
-              class="cliente-card"
-              [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
-              (click)="seleccionarCliente(cliente)"
-            >
-              <div class="cliente-card-header">
-                <span class="cliente-nro">{{ cliente.nrocliente }}</span>
-                <p-tag
-                  [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
-                  [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
-                  class="tag-small"
-                />
-              </div>
-              <h3 class="cliente-nombre-large">{{ getClienteNombre(cliente) }}</h3>
-              <div class="cliente-details">
-                <div class="detail-row">
-                  <i class="pi pi-id-card"></i>
-                  <span>{{ cliente.dni }}</span>
-                </div>
-                @if (cliente.rtn) {
-                  <div class="detail-row">
-                    <i class="pi pi-file-text"></i>
-                    <span>{{ cliente.rtn }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-        </div>
-
-        <p-paginator
-          [first]="(page() - 1) * limit()"
-          [rows]="limit()"
-          [totalRecords]="totalClientes()"
-          [rowsPerPageOptions]="[5, 10, 15]"
-          (onPageChange)="onPageChange($event)"
-          class="mt-3"
-        ></p-paginator>
-      }
-    </div>
-
-    <div class="right-column">
       @if (!selectedCliente()) {
-        <div class="empty-state">
-          <i class="pi pi-arrow-left empty-icon"></i>
-          <h3>Seleccione un cliente</h3>
-          <p>Haga clic en un cliente de la lista para gestionar préstamos</p>
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Seleccione un cliente</h3>
+        <p>Haga clic en un cliente de la lista para ver su prestamo</p>
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
+              <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
+                [rounded]="true" size="small"></p-button>
+            </p-iconField>
+          </div>
         </div>
+      </div>
       }
 
       @if (selectedCliente()) {
-        <div class="cliente-detail">
-          <div class="cliente-header">
-            <div class="cliente-header-info">
-              <h2>{{ getClienteNombre(selectedCliente()) }}</h2>
-              <span class="cliente-nro-badge">{{ selectedCliente()?.nrocliente }}</span>
+      <div class="cliente-detail">
+        <div class="cliente-header-inline">
+          <span class="cliente-inline-codigo">Codigo.: {{ selectedCliente()?.nrocliente }} -</span>
+          <span class="cliente-inline-nombre">{{ getClienteNombre(selectedCliente()) }}</span>
+        </div>
+
+        @if (prestamosLoading()) {
+        <div class="loading-center">
+          <p-progressSpinner strokeWidth="4" fill="transparent" animationDuration=".8s"></p-progressSpinner>
+          <span class="loading-text">Cargando prestamo...</span>
+        </div>
+        } @else {
+        <div class="tab-content">
+          <!-- Formulario dos columnas -->
+          <div class="prestamo-form-columns mb-3">
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Datos del Prestamo</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Nro. Prestamo</label>
+                  <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo"
+                    [readonly]="true" />
+                </div>
+                <div class="p-field">
+                  <label>Capital</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().capital"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})"
+                    (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'"
+                    [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Tasa %</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().tasa"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})"
+                    (blur)="calcularCuota()" mode="decimal" [min]="0" [step]="0.01"
+                    [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [inputStyle]="{ 'width': '100%' }"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Fecha</label>
+                  <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)"
+                    dateFormat="dd/mm/yy" [showIcon]="true"
+                    [disabled]="!!prestamoData()"></p-datepicker>
+                </div>
+              </div>
+            </div>
+
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Cuotas y Calculo</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Estado</label>
+                  <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar estado"
+                    [disabled]="!!prestamoData()"></p-select>
+                </div>
+                <div class="p-field">
+                  <label>Cuotas</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().cuotas"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), cuotas: $event})"
+                    (blur)="calcularCuota()" [min]="1"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Valor Cuota</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().vlrcuota" [readonly]="true"
+                    mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0"
+                    [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+                    [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="tab-content">
+          <!-- Botones: solo visibles si NO tiene prestamo (para crear) -->
+          @if (!prestamoData()) {
+          <div class="prestamo-actions mb-3">
+            <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+              (click)="limpiarFormulario()" [rounded]="true" size="small"></p-button>
+            <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
+              (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
+            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+              [loading]="prestamoSaving()" (click)="guardarPrestamo()" [rounded]="true"
+              size="small"></p-button>
+          </div>
+          }
+
+          <!-- Plan de pago -->
+          @if (showPlanPago() && planPago().length > 0) {
+          <div class="card">
             <div class="tab-header">
-              <h4>Préstamos</h4>
+              <h4>Plan de Pago - Amortizacion</h4>
+              <span class="cuotas-info">{{ planPago().length }} cuotas</span>
             </div>
-
-            <div class="prestamo-form-columns mb-3">
-              <!-- Columna Izquierda: Datos del préstamo -->
-              <div class="prestamo-col">
-                <h5 class="prestamo-col-title">Datos del Préstamo</h5>
-                <div class="p-fluid">
-                  <div class="p-field">
-                    <label>Nro. Préstamo</label>
-                    <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo" (ngModelChange)="prestamoModel.set({...prestamoModel(), nroprestamo: $event})" placeholder="Se genera al guardar plan" [readonly]="true" />
-                  </div>
-                  <div class="p-field">
-                    <label>Capital</label>
-                    <p-inputNumber size="small" [ngModel]="prestamoModel().capital" (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})" (blur)="calcularCuota()" [mode]="'decimal'" [min]="0.01"></p-inputNumber>
-                  </div>
-                  <div class="p-field">
-                    <label>Tasa %</label>
-                    <p-inputNumber size="small" [ngModel]="prestamoModel().tasa" (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})" (blur)="calcularCuota()" [mode]="'decimal'" [min]="0" [step]="0.01"></p-inputNumber>
-                  </div>
-                  <div class="p-field">
-                    <label>Fecha</label>
-                    <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)" dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Columna Derecha: Cuotas y cálculo -->
-              <div class="prestamo-col">
-                <h5 class="prestamo-col-title">Cuotas y Cálculo</h5>
-                <div class="p-fluid">
-                  <div class="p-field">
-                    <label>Estado</label>
-                    <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo" (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"></p-select>
-                  </div>
-                  <div class="p-field">
-                    <label>Cuotas</label>
-                    <p-inputNumber size="small" [ngModel]="prestamoModel().cuotas" (ngModelChange)="prestamoModel.set({...prestamoModel(), cuotas: $event})" (blur)="calcularCuota()" [min]="1"></p-inputNumber>
-                  </div>
-                  <div class="p-field">
-                    <label>Valor Cuota</label>
-                    <p-inputNumber size="small" [ngModel]="prestamoModel().vlrcuota" [readonly]="true" [mode]="'decimal'" [min]="0"></p-inputNumber>
-                  </div>
-                </div>
-              </div>
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Cuota</th>
+                    <th>Fecha Pago</th>
+                    <th class="col-importe">Cuota</th>
+                    <th class="col-importe">Capital</th>
+                    <th class="col-importe">Interes</th>
+                    <th class="col-importe">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (fila of planPago(); track fila.nrofila) {
+                  <tr [class.fila-pagada]="fila.sn_pagada === 'S'">
+                    <td>{{ fila.nrofila }}</td>
+                    <td>{{ fila.FechaPago | date:'dd/MM/yyyy' }}</td>
+                    <td class="col-importe">{{ moneda(fila.vlrcuota) }}</td>
+                    <td class="col-importe">{{ moneda(fila.capital) }}</td>
+                    <td class="col-importe">{{ moneda(fila.interes) }}</td>
+                    <td class="col-importe">{{ moneda(fila.saldo) }}</td>
+                  </tr>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr class="fw-bold">
+                    <td colspan="2">Totales</td>
+                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.vlrcuota || 0), 0)) }}</td>
+                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.capital || 0), 0)) }}</td>
+                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.interes || 0), 0)) }}</td>
+                    <td class="col-importe"></td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
+          </div>
+          }
+        </div>
+        }
+      </div>
+      }
+    </div>
 
-            <div class="prestamo-actions mb-3">
-              <p-button label="Generar Plan de Pago" icon="pi pi-table" severity="secondary" (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
-              <p-button label="Limpiar" icon="pi pi-times" severity="secondary" (click)="cancelarPrestamo()" [rounded]="true" size="small"></p-button>
-              <p-button label="Guardar" icon="pi pi-check" [loading]="prestamoSaving()" (click)="guardarPrestamo()" [rounded]="true" size="small"></p-button>
-            </div>
+    <!-- Columna derecha: lista de clientes -->
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+            (keyup.enter)="loadClientes()" placeholder="Buscar por nombre, DNI, RTN..."
+            class="search-input" />
+          <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
+            [rounded]="true" size="small" class="clear-btn"></p-button>
+        </div>
+      </div>
 
-            <p-dataView
-              [value]="prestamosData()"
-              [loading]="prestamosLoading()"
-              layout="list"
-              class="prestamos-dataview"
-            >
-              <ng-template #list let-pres>
-                <div class="prestamo-item">
-                  <div class="prestamo-nro">#{{ pres.nroprestamo || pres.prestamoId }}</div>
-                  <div class="prestamo-capital">Capital: {{ moneda(pres.capital) }}</div>
-                  <div class="prestamo-cuotas">{{ pres.cuotas }} cuotas de {{ moneda(pres.vlrcuota || pres.capital / pres.cuotas) }}</div>
-                  <div class="prestamo-estado">
-                    <span class="estado-badge" [ngClass]="pres.sn_activo === 'S' ? 'activo' : 'inactivo'">
-                      {{ pres.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </div>
-                </div>
-              </ng-template>
-            </p-dataView>
-
-            @if (showPlanPago() && planPago().length > 0) {
-              <div class="card mt-3">
-                <div class="tab-header">
-                  <h4>Plan de Pago - Amortización</h4>
-                  <p-button label="Cancelar" icon="pi pi-times" severity="secondary" (click)="cancelarPlanPago()" [rounded]="true" size="small"></p-button>
-                </div>
-                <div class="table-responsive">
-                  <table class="table table-striped">
-                    <thead>
-                      <tr>
-                        <th>Cuota</th>
-                        <th>Fecha Pago</th>
-                        <th class="col-importe">Cuota</th>
-                        <th class="col-importe">Capital</th>
-                        <th class="col-importe">Interés</th>
-                        <th class="col-importe">Saldo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (fila of planPago(); track fila.nrofila) {
-                        <tr>
-                          <td>{{ fila.nrofila }}</td>
-                          <td>{{ fila.FechaPago | date:'dd/MM/yyyy' }}</td>
-                          <td class="col-importe">{{ moneda(fila.vlrcuota) }}</td>
-                          <td class="col-importe">{{ moneda(fila.capital) }}</td>
-                          <td class="col-importe">{{ moneda(fila.interes) }}</td>
-                          <td class="col-importe">{{ moneda(fila.saldo) }}</td>
-                        </tr>
-                      }
-                    </tbody>
-                    <tfoot>
-                      <tr class="fw-bold">
-                        <td colspan="2">Totales</td>
-                        <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.vlrcuota, 0)) }}</td>
-                        <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.capital, 0)) }}</td>
-                        <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + f.interes, 0)) }}</td>
-                        <td class="col-importe"></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            }
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay clientes</h3>
+        <p>No se encontraron clientes registrados.</p>
+      </div>
+      } @else {
+      <div class="clientes-lista">
+        @for (cliente of data(); track cliente.clienteId) {
+        <div class="cliente-item-ficha"
+          [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)">
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ cliente.nrocliente }}</span>
+            <p-tag [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ cliente.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ cliente.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ cliente.dni }}</span>
+          </div>
+          @if (cliente.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ cliente.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa interes:</span>
+            <span class="ficha-value">{{ cliente.interes }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ cliente.categoria }}</span>
           </div>
         </div>
+        }
+      </div>
+
+      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"></p-paginator>
       }
     </div>
   </div>
 </div>
+
 ```
 
 ---
@@ -11988,16 +12449,6 @@ export class MovimientosManager implements OnInit {
 }
 
 .left-column {
-  width: 380px;
-  min-width: 350px;
-  max-width: 450px;
-  border-right: 1px solid var(--c-border);
-  display: flex;
-  flex-direction: column;
-  background: var(--c-surface);
-}
-
-.right-column {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -12005,24 +12456,46 @@ export class MovimientosManager implements OnInit {
   overflow: hidden;
 }
 
-.toolbar-title {
+.right-column {
+  width: 380px;
+  min-width: 350px;
+  border-left: 1px solid var(--c-border);
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: var(--c-text);
+  flex-direction: column;
+  background: var(--c-surface);
 }
+
+// ===== Utilidades =====
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+// ===== Inputs disabled (refuerzo visual) =====
+
+app-prestamos-manager {
+  .p-inputtext[readonly],
+  .p-inputtext:disabled {
+    color: var(--c-text-muted) !important;
+    font-style: italic;
+  }
+}
+
+// ===== Busqueda y lista (columna derecha) =====
 
 .search-bar {
   padding: 1rem;
   border-bottom: 1px solid var(--c-border);
-}
-
-.search-input-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+
+  .search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
 }
 
 .search-input-wrapper .pi-search {
@@ -12035,7 +12508,7 @@ export class MovimientosManager implements OnInit {
 .search-input {
   width: 100%;
   padding: 0.5rem 0.75rem 0.5rem 2.5rem;
-  border: 1px solid var(--c-border);
+  border: 1px solid var(--for-border-color-alls);
   border-radius: 6px;
   background: var(--c-bg);
   color: var(--c-text);
@@ -12046,18 +12519,57 @@ export class MovimientosManager implements OnInit {
   right: 0.25rem;
 }
 
-.clientes-count {
-  padding: 0.625rem 1rem;
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
+// ===== Loading center =====
+
+.loading-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+
+  .loading-text {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+  }
 }
 
-.clientes-count h4 {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 500;
+// ===== Empty states =====
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
   color: var(--c-text-muted);
+  padding: 2rem;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--c-primary);
+    opacity: 0.6;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--c-text-secondary, #6c757d);
+  }
 }
+
+// ===== Skeleton =====
 
 .loading-skeleton {
   padding: 20px;
@@ -12071,166 +12583,105 @@ export class MovimientosManager implements OnInit {
   background: var(--c-bg);
 }
 
-.empty-state {
+// ===== Lista de clientes (fichas) =====
+
+.clientes-lista {
   flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  color: var(--c-text-muted);
-  padding: 2rem;
-  text-align: center;
+  gap: 0.5rem;
 }
 
-.empty-state .empty-icon {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.clientes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 15px;
-  padding: 15px;
-  max-height: calc(100vh - 300px);
-  overflow-y: auto;
-}
-
-.cliente-card {
+.cliente-item-ficha {
+  padding: 0.75rem 1rem;
   border: 1px solid var(--c-border);
   border-radius: 8px;
-  padding: 15px;
   background: var(--c-surface);
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    border-color: var(--c-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &.selected {
+    border-color: var(--for-border-color-alls);
+    background: var(--master-background);
+  }
 }
 
-.cliente-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border-color: var(--c-primary);
-}
-
-.cliente-card.selected {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-}
-
-.cliente-card-header {
+.item-ficha-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.375rem;
+  border-bottom: 1px solid var(--c-border);
 }
 
-.cliente-nro {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--c-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.item-ficha-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  line-height: 1.3;
 }
 
-.cliente-nombre-large {
-  margin: 0 0 12px;
-  font-size: 1.1rem;
+.ficha-label {
+  font-size: 0.8rem;
   font-weight: 600;
+  color: var(--c-text-muted);
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.ficha-value {
+  font-size: 0.85rem;
   color: var(--c-text);
+  font-weight: 500;
 }
 
-.cliente-details {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.85rem;
-  color: var(--c-text-muted);
-}
-
-.detail-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.detail-row i {
-  font-size: 0.85rem;
-}
-
-.right-column .empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  color: var(--c-text-muted);
-  padding: 2rem;
-  text-align: center;
-}
-
-.right-column .empty-state i {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.right-column .empty-state h3 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.right-column .empty-state p {
-  margin: 0;
-  font-size: 0.9rem;
-}
+// ===== Detalle del cliente (columna izquierda) =====
 
 .cliente-detail {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
-.cliente-header {
+.cliente-header-inline {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 1.5rem;
   border-bottom: 1px solid var(--c-border);
   background: var(--c-surface);
+  min-height: 2.2rem;
 }
 
-.cliente-header-info h2 {
-  margin: 0;
-  font-size: 1.25rem;
+.cliente-inline-codigo {
+  font-size: 0.85rem;
   font-weight: 600;
+  color: var(--c-text-muted);
+  white-space: nowrap;
 }
 
-.cliente-nro-badge {
-  display: inline-block;
-  margin-top: 0.25rem;
-  padding: 0.125rem 0.5rem;
-  font-size: 0.75rem;
+.cliente-inline-nombre {
+  font-size: 1.1rem;
   font-weight: 600;
-  background: #dbeafe;
-  color: var(--c-primary-strong);
-  border-radius: 4px;
+  color: var(--c-text);
 }
 
 .tab-content {
+  flex: 1;
   overflow-y: auto;
-  max-height: 70vh;
   padding: 1.5rem;
+  min-height: 0;
 }
 
 .tab-header {
@@ -12248,110 +12699,12 @@ export class MovimientosManager implements OnInit {
   font-weight: 600;
 }
 
-.prestamos-dataview {
-  .p-dataview-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-}
-
-.prestamo-item {
-  display: grid;
-  grid-template-columns: 100px 1fr auto 120px;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 6px;
-  align-items: center;
-}
-
-.prestamo-nro {
-  font-weight: 600;
-  color: var(--c-primary);
-}
-
-.prestamo-capital {
-  font-weight: 500;
-  color: var(--c-text);
-}
-
-.prestamo-cuotas {
-  font-size: 0.85rem;
+.tab-header .cuotas-info {
+  font-size: 0.8rem;
   color: var(--c-text-muted);
 }
 
-.estado-badge {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.125rem 0.5rem;
-  border-radius: 4px;
-  text-transform: uppercase;
-}
-
-.estado-badge.activo {
-  background: #d1fae5;
-  color: var(--c-success);
-}
-
-.estado-badge.inactivo {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.table-responsive {
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-
-  th, td {
-    padding: 0.5rem 0.75rem;
-    text-align: left;
-  }
-
-  th {
-    background: var(--c-surface);
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: var(--c-text-muted);
-    border-bottom: 2px solid var(--c-border);
-  }
-
-  td {
-    border-bottom: 1px solid var(--c-border);
-    font-size: 0.9rem;
-  }
-
-  .col-importe {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .fw-bold {
-    font-weight: 600;
-  }
-
-  .text-end {
-    text-align: right;
-  }
-}
-
-.table-striped tbody tr:nth-child(even) {
-  background: var(--c-surface-muted);
-}
-
-.prestamo-form-inline {
-  input.p-inputtext,
-  .p-select,
-  .p-inputnumber,
-  .p-datepicker {
-    width: 100%;
-  }
-}
+// ===== Formulario dos columnas =====
 
 .prestamo-form-columns {
   display: grid;
@@ -12407,8 +12760,56 @@ export class MovimientosManager implements OnInit {
   border-radius: 8px;
 }
 
+// ===== Tabla amortizacion =====
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+
+  th {
+    background: var(--c-surface);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  td {
+    border-bottom: 1px solid var(--c-border);
+    font-size: 0.9rem;
+  }
+
+  .col-importe {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fw-bold {
+    font-weight: 600;
+  }
+}
+
+.table-striped tbody tr:nth-child(even) {
+  background: var(--c-surface-muted);
+}
+
+.fila-pagada {
+  opacity: 0.5;
+}
+
+// ===== Responsive =====
+
 @media (max-width: 1024px) {
-  .left-column {
+  .right-column {
     width: 320px;
   }
 }
@@ -12419,16 +12820,20 @@ export class MovimientosManager implements OnInit {
   }
 
   .left-column {
+    order: 2;
+  }
+
+  .right-column {
+    order: 1;
     width: 100%;
     max-width: none;
-    border-right: none;
+    border-left: none;
     border-bottom: 1px solid var(--c-border);
     max-height: 40vh;
   }
 
-  .prestamo-item {
+  .prestamo-form-columns {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
   }
 }
 
@@ -12439,12 +12844,11 @@ export class MovimientosManager implements OnInit {
 ## 📄 src\app\features\cxc\prestamos\prestamos-manager.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { timeout, catchError, of } from 'rxjs';
-import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DataViewModule } from 'primeng/dataview';
@@ -12456,7 +12860,9 @@ import { MessageService } from 'primeng/api';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { PaginatorModule } from 'primeng/paginator';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CxcCliente } from '../../../core/models/cxc.models';
@@ -12467,7 +12873,6 @@ import { CxcCliente } from '../../../core/models/cxc.models';
   imports: [
     CommonModule,
     FormsModule,
-    ToolbarModule,
     ButtonModule,
     InputTextModule,
     DataViewModule,
@@ -12478,7 +12883,9 @@ import { CxcCliente } from '../../../core/models/cxc.models';
     InputNumberModule,
     SelectModule,
     DatePickerModule,
-    PaginatorModule,
+    ProgressSpinnerModule,
+    IconFieldModule,
+    InputIconModule,
   ],
   templateUrl: './prestamos-manager.html',
   styleUrl: './prestamos-manager.scss',
@@ -12499,13 +12906,20 @@ export class PrestamosManager implements OnInit {
   limit = signal(15);
   totalClientes = signal(0);
 
-  // ===== PRÉSTAMOS =====
-  prestamosData = signal<any[]>([]);
+  private _searchEffect = effect(() => {
+    this.q();
+    this.page.set(1);
+    untracked(() => this.loadClientes());
+  });
+
+  // ===== PRESTAMO (maximo 1 por cliente) =====
+  prestamoData = signal<any | null>(null);
   prestamosLoading = signal(false);
   prestamoSaving = signal(false);
+
   prestamoModel = signal<any>({
     clienteId: null,
-    nroprestamo: null,
+    nroprestamo: '',
     capital: 0,
     cuotas: 1,
     tasa: 0,
@@ -12529,9 +12943,7 @@ export class PrestamosManager implements OnInit {
     { label: 'Inactivo', value: 'N' },
   ];
 
-  ngOnInit() {
-    this.loadClientes();
-  }
+  ngOnInit() { }
 
   // ===== CLIENTES =====
   loadClientes() {
@@ -12558,35 +12970,92 @@ export class PrestamosManager implements OnInit {
 
   limpiarFiltros() {
     this.q.set('');
-    this.loadClientes();
+    this.selectedCliente.set(null);
+    this.prestamoData.set(null);
+    this.planPago.set([]);
+    this.showPlanPago.set(false);
+    this.limpiarFormulario();
   }
 
   seleccionarCliente(cliente: CxcCliente) {
     this.selectedCliente.set(cliente);
-    this.loadPrestamos(cliente.clienteId);
+    this.prestamoData.set(null);
+    this.planPago.set([]);
+    this.showPlanPago.set(false);
+    this.loadPrestamoCliente(cliente.clienteId);
   }
 
   getClienteNombre(c: CxcCliente): string {
-    return `${c.nombres || ''} ${c.apellidos || ''}`.trim();
+    const nombres = c.nombres || '';
+    const apellidos = c.apellidos || '';
+    const full = `${nombres} ${apellidos}`.trim();
+    return full || c.razonsocial || c.nrocliente || 'Sin nombre';
   }
 
-  moneda(val: number): string {
-    if (val == null || isNaN(val)) return 'L 0.00';
-    const partes = val.toFixed(2).split('.');
+  moneda(val: any): string {
+    const num = Number(val) || 0;
+    if (isNaN(num)) return '0.00';
+    const partes = num.toFixed(2).split('.');
     partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return 'L ' + partes.join('.');
+    return partes.join('.');
   }
 
-  // ===== PRÉSTAMOS =====
-  private loadPrestamos(clienteId: number) {
+  // ===== PRESTAMO =====
+  private loadPrestamoCliente(clienteId: number) {
     this.prestamosLoading.set(true);
     this.service.getPrestamosByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        this.prestamosData.set(res);
-        this.prestamosLoading.set(false);
+      next: (res: any) => {
+        const pres = Array.isArray(res) ? res[0] : (res?.value ? res.value[0] : res);
+        if (pres && pres.prestamoId) {
+          this.prestamoData.set(pres);
+          this.prestamoModel.set({
+            prestamoId: pres.prestamoId,
+            clienteId: pres.clienteId,
+            nroprestamo: pres.nroprestamo || '',
+            capital: Number(pres.capital) || 0,
+            cuotas: Number(pres.cuotas) || 0,
+            tasa: Number(pres.tasa) || 0,
+            vlrcuota: this.calcularCuotaValue(Number(pres.capital), Number(pres.cuotas), Number(pres.tasa)),
+            fecharegistro: pres.fecharegistro,
+            sn_activo: pres.sn_activo || 'S',
+          });
+          // Plan de pago: loading sigue activo hasta que termine
+          this.loadPlanPago(pres.prestamoId);
+        } else {
+          this.prestamoData.set(null);
+          this.limpiarFormulario();
+          this.planPago.set([]);
+          this.showPlanPago.set(false);
+          this.prestamosLoading.set(false);
+        }
       },
       error: () => this.prestamosLoading.set(false),
     });
+  }
+
+  private loadPlanPago(prestamoId: number) {
+    this.showPlanPago.set(false);
+    this.planPago.set([]);
+    this.service.getPrestamoPPByPrestamo(prestamoId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const cuotas = (res || []).sort((a: any, b: any) => (a.nrofila || 0) - (b.nrofila || 0));
+        this.planPago.set(cuotas);
+        this.showPlanPago.set(cuotas.length > 0);
+        this.prestamosLoading.set(false);
+      },
+      error: () => {
+        this.planPago.set([]);
+        this.showPlanPago.set(false);
+        this.prestamosLoading.set(false);
+      },
+    });
+  }
+
+  private calcularCuotaValue(capital: number, cuotas: number, tasaAnual: number): number {
+    if (capital <= 0 || cuotas <= 0 || tasaAnual <= 0) return 0;
+    const tasaMensual = tasaAnual / 100 / 12;
+    const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
+    return Math.round(capital * factor * 100) / 100;
   }
 
   onPrestamoFechaChange(d: Date | null) {
@@ -12598,16 +13067,14 @@ export class PrestamosManager implements OnInit {
     const capital = Number(raw.capital) || 0;
     const cuotas = Number(raw.cuotas) || 0;
     const tasaAnual = Number(raw.tasa) || 0;
-    if (capital <= 0 || cuotas <= 0 || tasaAnual <= 0) return;
-    const tasaMensual = tasaAnual / 100 / 12;
-    const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
-    const cuotaFija = Math.round(capital * factor * 100) / 100;
-    this.prestamoModel.set({ ...this.prestamoModel(), vlrcuota: cuotaFija });
+    const vlrcuota = this.calcularCuotaValue(capital, cuotas, tasaAnual);
+    this.prestamoModel.set({ ...this.prestamoModel(), vlrcuota });
   }
 
-  cancelarPrestamo() {
+  private limpiarFormulario() {
     this.prestamoModel.set({
-      nroprestamo: null,
+      clienteId: this.selectedCliente()?.clienteId ?? null,
+      nroprestamo: '',
       capital: 0,
       cuotas: 1,
       tasa: 0,
@@ -12620,19 +13087,24 @@ export class PrestamosManager implements OnInit {
   guardarPrestamo() {
     const cliente = this.selectedCliente();
     if (!cliente) {
-      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear un préstamo' });
+      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear un prestamo' });
+      return;
+    }
+
+    // Validar que no tenga prestamo activo
+    if (this.prestamoData()) {
+      this.msgs.add({ severity: 'warn', summary: 'Ya existe', detail: 'Este cliente ya tiene un prestamo registrado' });
       return;
     }
 
     const raw = { ...this.prestamoModel() };
     const payload: any = {
-      ...raw,
       clienteId: cliente.clienteId,
+      nroprestamo: raw.nroprestamo || '',
       capital: Number(raw.capital) || 0,
       cuotas: Number(raw.cuotas) || 1,
       tasa: Number(raw.tasa) || 0,
-      vlrcuota: Number(raw.vlrcuota) || 0,
-      nroprestamo: raw.nroprestamo || '',
+      fecharegistro: raw.fecharegistro,
       sn_activo: raw.sn_activo || 'S',
       sn_contabilizado: 'N',
     };
@@ -12663,22 +13135,23 @@ export class PrestamosManager implements OnInit {
     this.prestamoSaving.set(true);
     this.service.createPrestamo(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
-        this.prestamosData.set([...this.prestamosData(), res]);
-        this.cancelarPrestamo();
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Préstamo registrado correctamente' });
+        this.prestamoData.set(res);
+        this.prestamoModel.set({
+          ...this.prestamoModel(),
+          prestamoId: res.prestamoId,
+          nroprestamo: res.nroprestamo,
+        });
+        this.prestamoSaving.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Prestamo registrado correctamente' });
 
+        // Guardar plan de pago si existe
         const plan = this.planPago();
         if (plan.length > 0 && res?.prestamoId) {
           this.guardarPlanPagoConPrestamo(res.prestamoId, plan, cliente.clienteId);
-        } else {
-          this.prestamoSaving.set(false);
-          this.showPlanPago.set(false);
-          this.planPago.set([]);
         }
       },
       error: (err) => {
-        console.error('[PrestamosManager] Error guardando préstamo', err);
-        let detail = 'No se pudo guardar el préstamo';
+        let detail = 'No se pudo guardar el prestamo';
         if (err?.error?.message) detail = err.error.message;
         else if (err?.message) detail = err.message;
         this.prestamoSaving.set(false);
@@ -12710,8 +13183,6 @@ export class PrestamosManager implements OnInit {
           completadas++;
           if (completadas + errores === total) {
             this.prestamoSaving.set(false);
-            this.showPlanPago.set(false);
-            this.planPago.set([]);
             this.msgs.add({ severity: 'success', summary: 'Plan de pago', detail: `${completadas} cuotas guardadas` });
           }
         },
@@ -12719,8 +13190,6 @@ export class PrestamosManager implements OnInit {
           errores++;
           if (completadas + errores === total) {
             this.prestamoSaving.set(false);
-            this.showPlanPago.set(false);
-            this.planPago.set([]);
             this.msgs.add({ severity: errores > 0 ? 'warn' : 'success', summary: 'Plan de pago', detail: `${completadas} guardadas, ${errores} errores` });
           }
         },
@@ -12743,7 +13212,7 @@ export class PrestamosManager implements OnInit {
       return;
     }
     if (tasaAnual <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'La tasa de interés debe ser mayor a 0' });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'La tasa de interes debe ser mayor a 0' });
       return;
     }
 
@@ -12792,11 +13261,6 @@ export class PrestamosManager implements OnInit {
       vlrcuota: Math.round(cuotaFija * 100) / 100,
     });
   }
-
-  cancelarPlanPago() {
-    this.showPlanPago.set(false);
-    this.planPago.set([]);
-  }
 }
 
 ```
@@ -12831,9 +13295,10 @@ export class PrestamosManager implements OnInit {
         <th>Bodega</th>
         <th>Ref.</th>
         <th style="width:7rem" class="text-right">Total</th>
-        <th style="width:6rem">Tipo</th>
-        <th style="width:6rem">Pagada</th>
-        <th style="width:6rem">Estado</th>
+          <th style="width:6rem">Tipo</th>
+          <th style="width:6rem">Pagada</th>
+          <th style="width:6.5rem">Procesada</th>
+          <th style="width:6rem">Estado</th>
         <th style="width:8rem">Acciones</th>
       </tr>
     </ng-template>
@@ -12849,12 +13314,16 @@ export class PrestamosManager implements OnInit {
           <p-tag [value]="row.TipoCompra === 'F' ? 'Fiscal' : 'Otra'"
             [severity]="row.TipoCompra === 'F' ? 'info' : 'warn'" [style]="{'font-size':'0.75rem'}" />
         </td>
-        <td>
-          <p-tag [value]="row.sn_pagada === 'S' ? 'Sí' : 'No'" [severity]="row.sn_pagada === 'S' ? 'success' : 'warn'"
-            [style]="{'font-size':'0.75rem'}" />
-        </td>
-        <td>
-          <p-tag [value]="row.sn_anulada === 'S' ? 'Anulada' : 'Activa'"
+          <td>
+            <p-tag [value]="row.sn_pagada === 'S' ? 'Sí' : 'No'" [severity]="row.sn_pagada === 'S' ? 'success' : 'warn'"
+              [style]="{'font-size':'0.75rem'}" />
+          </td>
+          <td>
+            <p-tag [value]="row.sn_procesada === 'S' ? 'Sí' : 'No'" [severity]="row.sn_procesada === 'S' ? 'success' : 'warn'"
+              [style]="{'font-size':'0.75rem'}" />
+          </td>
+          <td>
+            <p-tag [value]="row.sn_anulada === 'S' ? 'Anulada' : 'Activa'"
             [severity]="row.sn_anulada === 'S' ? 'danger' : 'success'" [style]="{'font-size':'0.75rem'}" />
         </td>
         <td>
@@ -12919,27 +13388,31 @@ export class PrestamosManager implements OnInit {
 
       <!-- MI MODIFICACION ARFM20260901 -->
 
-      @if (seleccionado()?.compraId !== 0) {
+      @if (seleccionado()?.compraId !== 0 && seleccionado()?.sn_procesada !== 'S' && seleccionado()?.sn_anulada !== 'S') {
       <!-- para editar el item que se va agregar o modificar-->
       <form [formGroup]="formDet" class="form-grid-captura">
         <div>
           <label class="block mb-1 text-sm font-medium">Código Barra</label>
-          <p-autoComplete [(ngModel)]="codBarraBusqueda"
+          <p-autoComplete [(ngModel)]="productoSeleccionado"
             [ngModelOptions]="{ standalone: true }"
             [suggestions]="productosFiltrados"
             (completeMethod)="onCodBarraSearch($event)" (onSelect)="onProductoSelect($event)"
-            (onClear)="onCodBarraClear()" [minLength]="8" field="codbarra"
+            (onClear)="onCodBarraClear()" (onBlur)="onCodBarraBlur()" [minLength]="8"
+            optionLabel="codbarra"
             placeholder="Mínimo 8 dígitos" [style]="{ width: '100%' }" [inputStyle]="{ width: '100%' }"
             size="small" [dropdown]="false">
             <ng-template let-producto pTemplate="item">
-              <span>{{ producto.codbarra }}</span>
+              <div class="flex align-items-center gap-2">
+                <span class="font-bold">{{ producto.codbarra }}</span>
+                <span> - {{ producto.descripcion }}</span>
+              </div>
             </ng-template>
           </p-autoComplete>
         </div>
         <div class="w-full">
           <label class="block mb-1 text-sm font-medium">Descripción *</label>
           <input pInputText formControlName="descripcion" class="w-full" pSize="small"
-            placeholder="Nombre del producto" [readonly]="productoSeleccionado() != null" />
+            placeholder="Nombre del producto" [readonly]="productoSeleccionado?.produtoId != null" />
         </div>
         <div>
           <label class="block mb-1 text-sm font-medium">Cantidad *</label>
@@ -12969,7 +13442,7 @@ export class PrestamosManager implements OnInit {
         </div>
         <div class="flex align-items-end gap-1">
           @if (itemEditando()) {
-          <p-button size="small" label="Actualizar" icon="pi pi-check" 
+          <p-button size="small" label="Actualizar" icon="pi pi-check"
           severity="warn" (onClick)="guardarDet()"
           variant="text"  [rounded]="true"
             [disabled]="formDet.invalid" />
@@ -12992,15 +13465,18 @@ export class PrestamosManager implements OnInit {
         @if (seleccionado()?.compraId !== 0) {
         @if (puedeUsarOcr()) {
         <p-button label="OCR Factura" icon="pi pi-camera" size="small" variant="text" severity="info"
-          (onClick)="dialogOcr.set(true)" pTooltip="Leer factura con OCR" tooltipPosition="top" [rounded]="true" />
+          (onClick)="dialogOcr.set(true)" pTooltip="Leer factura con OCR" tooltipPosition="top" [rounded]="true"
+          [disabled]="seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'" />
         }
         @if (itemsSeleccionados().length > 0) {
         <p-button label="Eliminar ({{ itemsSeleccionados().length }})" icon="pi pi-trash" size="small" severity="danger"
-          variant="text" (onClick)="eliminarSeleccionados()" [rounded]="true" />
+          variant="text" (onClick)="eliminarSeleccionados()" [rounded]="true"
+          [disabled]="seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'" />
         }
-        <p-button label="Procesar" icon="pi pi-check-circle" variant="text" size="small" [rounded]="true"
+        <p-button label="Procesar" icon="pi pi-check-circle"
+           variant="text" size="small" [rounded]="true"
           severity="success" (onClick)="procesar()"
-          [disabled]="detalles().length === 0 || seleccionado()!.sn_anulada === 'S'" />
+          [disabled]="detalles().length === 0 || seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'" />
         <p-button label="Anular" icon="pi pi-times-circle" size="small" severity="danger" variant="text"
           (onClick)="anularCompra(seleccionado()!)" [rounded]="true" [disabled]="seleccionado()!.sn_anulada === 'S'" />
         <p-button label="Imprimir" icon="pi pi-printer" size="small" severity="secondary" variant="text"
@@ -13012,12 +13488,17 @@ export class PrestamosManager implements OnInit {
             <span>Total Compra:</span>
             <span class="font-bold">{{ moneda(seleccionado()!.total) }}</span>
           </div>
-          <div class="total-line">
-            <span>Estado Pago:</span>
-            <p-tag [value]="seleccionado()!.sn_pagada === 'S' ? 'Pagada' : 'Pendiente'"
-              [severity]="seleccionado()!.sn_pagada === 'S' ? 'success' : 'warn'" [style]="{'font-size':'0.75rem'}" />
+            <div class="total-line">
+              <span>Estado Pago:</span>
+              <p-tag [value]="seleccionado()!.sn_pagada === 'S' ? 'Pagada' : 'Pendiente'"
+                [severity]="seleccionado()!.sn_pagada === 'S' ? 'success' : 'warn'" [style]="{'font-size':'0.75rem'}" />
+            </div>
+            <div class="total-line">
+              <span>Procesada:</span>
+              <p-tag [value]="seleccionado()!.sn_procesada === 'S' ? 'Sí' : 'No'"
+                [severity]="seleccionado()!.sn_procesada === 'S' ? 'success' : 'warn'" [style]="{'font-size':'0.75rem'}" />
+            </div>
           </div>
-        </div>
       </div>
 
     </div> <!-- CIERRA sticky-header -->
@@ -13068,9 +13549,9 @@ export class PrestamosManager implements OnInit {
             <td>
               <div class="flex gap-1">
                 <p-button icon="pi pi-pencil" text severity="warn" size="small" (onClick)="editarItem(row)"
-                  [disabled]="seleccionado()!.sn_anulada === 'S'" pTooltip="Editar" />
+                  [disabled]="seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'" pTooltip="Editar" />
                 <p-button icon="pi pi-trash" text severity="danger" size="small" (onClick)="eliminarDet(row)"
-                  [disabled]="seleccionado()!.sn_anulada === 'S'" pTooltip="Eliminar" />
+                  [disabled]="seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'" pTooltip="Eliminar" />
               </div>
             </td>
           </tr>
@@ -13097,11 +13578,11 @@ export class PrestamosManager implements OnInit {
   <form [formGroup]="formProducto" class="flex flex-column gap-3">
     <div>
       <label class="block mb-1 text-sm font-medium">Código de Barra</label>
-      <input pInputText formControlName="codbarra" class="w-full" />
+      <input pInputText pSize="small" formControlName="codbarra" class="w-full" />
     </div>
     <div>
       <label class="block mb-1 text-sm font-medium">Descripción *</label>
-      <input pInputText formControlName="descripcion" class="w-full" />
+      <input pInputText pSize="small" formControlName="descripcion" class="w-full" />
     </div>
     <div class="form-grid-2">
       <div>
@@ -13118,7 +13599,7 @@ export class PrestamosManager implements OnInit {
     <div>
       <label class="block mb-1 text-sm font-medium">Impuesto *</label>
       <p-select formControlName="impuestoId" [options]="impuestos()" placeholder="Seleccionar impuesto"
-        styleClass="w-full" [appendTo]="'body'" />
+        size="small" styleClass="w-full" [appendTo]="'body'" />
     </div>
   </form>
   <ng-template pTemplate="footer">
@@ -13418,8 +13899,7 @@ export class ComprasManager implements OnInit {
   preciovtaDefaultPorcentaje: number = 0;
 
   productosFiltrados: Producto[] = [];
-  productoSeleccionado = signal<Producto | null>(null);
-  codBarraBusqueda = '';
+  productoSeleccionado: Producto | null = null;
   
   formProducto = this.fb.group({
     codbarra: [''],
@@ -13540,8 +14020,7 @@ export class ComprasManager implements OnInit {
     this.formMae.patchValue(compra);
     this.formDet.reset({ productoId: null, codbarra: '', descripcion: '', cantidad: 1, precio: 0, precioventa: 0, preciovtaId: this.preciovtaDefaultId });
     this.itemEditando.set(null);
-    this.productoSeleccionado.set(null);
-    this.codBarraBusqueda = '';
+    this.productoSeleccionado = null;
     this.cargarDetalles(compra.compraId);
   }
 
@@ -13628,8 +14107,7 @@ export class ComprasManager implements OnInit {
   nuevoDet() {
     this.formDet.reset({ productoId: null, codbarra: '', descripcion: '', cantidad: 1, precio: 0, precioventa: 0, preciovtaId: this.preciovtaDefaultId });
     this.itemEditando.set(null);
-    this.productoSeleccionado.set(null);
-    this.codBarraBusqueda = '';
+    this.productoSeleccionado = null;
     this.dialogDet.set(true);
   }
 
@@ -13640,10 +14118,19 @@ export class ComprasManager implements OnInit {
     const mae = this.seleccionado();
     if (!mae) return;
 
+    let finalCodbarra = val.codbarra || '';
+    if (this.productoSeleccionado) {
+      if (typeof this.productoSeleccionado === 'string') {
+        finalCodbarra = this.productoSeleccionado;
+      } else if ((this.productoSeleccionado as any).codbarra) {
+        finalCodbarra = (this.productoSeleccionado as any).codbarra;
+      }
+    }
+
     const payload: any = {
       compraId: mae.compraId,
       bodegaId: mae.bodegaId,
-      codbarra: val.codbarra || '',
+      codbarra: finalCodbarra,
       descripcion: val.descripcion || '',
       productoId: val.productoId || null,
       cantidad: val.cantidad || 1,
@@ -13661,8 +14148,7 @@ export class ComprasManager implements OnInit {
           this.msgs.add({ severity: 'success', summary: 'Actualizado', detail: 'Item actualizado' });
           this.formDet.reset({ productoId: null, codbarra: '', descripcion: '', cantidad: 1, precio: 0, precioventa: 0, preciovtaId: this.preciovtaDefaultId });
           this.itemEditando.set(null);
-          this.productoSeleccionado.set(null);
-          this.codBarraBusqueda = '';
+          this.productoSeleccionado = null;
           this.cargarDetalles(mae.compraId);
         },
         error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo actualizar el item' }),
@@ -13672,8 +14158,7 @@ export class ComprasManager implements OnInit {
         next: () => {
           this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Item agregado' });
           this.formDet.reset({ productoId: null, codbarra: '', descripcion: '', cantidad: 1, precio: 0, precioventa: 0, preciovtaId: this.preciovtaDefaultId });
-          this.productoSeleccionado.set(null);
-          this.codBarraBusqueda = '';
+          this.productoSeleccionado = null;
           this.cargarDetalles(mae.compraId);
         },
         error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo guardar el item' }),
@@ -13683,13 +14168,18 @@ export class ComprasManager implements OnInit {
 
   editarItem(row: CompraDet) {
     this.itemEditando.set(row.cxpcomprasdetId);
-    this.codBarraBusqueda = row.codbarra || '';
+    
     if (row.productoId) {
       const prod = this.productos().find(p => p.produtoId === row.productoId);
-      this.productoSeleccionado.set(prod || null);
+      // Si no encuentra el producto en caché, armamos un objeto para que el autocomplete lo muestre
+      this.productoSeleccionado = prod || { produtoId: row.productoId, codbarra: row.codbarra, descripcion: row.descripcion } as any;
+    } else if (row.codbarra) {
+      // Si no hay producto asociado (ej. OCR o manual), asignamos el string del codbarra
+      this.productoSeleccionado = row.codbarra as any;
     } else {
-      this.productoSeleccionado.set(null);
+      this.productoSeleccionado = null;
     }
+
     this.formDet.patchValue({
       codbarra: row.codbarra || '',
       descripcion: row.descripcion || '',
@@ -13703,8 +14193,7 @@ export class ComprasManager implements OnInit {
 
   cancelarEdicion() {
     this.itemEditando.set(null);
-    this.productoSeleccionado.set(null);
-    this.codBarraBusqueda = '';
+    this.productoSeleccionado = null;
     this.formDet.reset({ productoId: null, codbarra: '', descripcion: '', cantidad: 1, precio: 0, precioventa: 0, preciovtaId: this.preciovtaDefaultId });
   }
 
@@ -13721,9 +14210,8 @@ export class ComprasManager implements OnInit {
   }
 
   onProductoSelect(event: any) {
-    const prod: Producto = event;
-    this.productoSeleccionado.set(prod);
-    this.codBarraBusqueda = prod.codbarra || '';
+    const prod: Producto = event.value;
+    this.productoSeleccionado = prod;
     this.formDet.patchValue({
       productoId: prod.produtoId,
       codbarra: prod.codbarra || '',
@@ -13732,9 +14220,16 @@ export class ComprasManager implements OnInit {
   }
 
   onCodBarraClear() {
-    this.productoSeleccionado.set(null);
-    this.codBarraBusqueda = '';
+    this.productoSeleccionado = null;
     this.formDet.patchValue({ productoId: null, codbarra: '', descripcion: '' });
+  }
+
+  onCodBarraBlur() {
+    if (!this.productoSeleccionado) {
+      this.formDet.patchValue({ productoId: null, codbarra: '', descripcion: '' });
+    } else if (typeof this.productoSeleccionado === 'string') {
+      this.formDet.patchValue({ codbarra: this.productoSeleccionado });
+    }
   }
 
   onPrecioVtaChange(preciovtaId: number | null) {
@@ -13846,6 +14341,7 @@ export class ComprasManager implements OnInit {
         this.service.procesarCompra(mae.compraId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: (res: any) => {
             this.msgs.add({ severity: 'success', summary: 'Procesada', detail: res?.message || 'Compra procesada' });
+            this.seleccionado.update(s => s ? { ...s, sn_procesada: 'S' } : null);
             this.cargarCompras();
             this.cargarDetalles(mae.compraId);
           },
@@ -14587,14 +15083,7 @@ export const CXP_ROUTES: Routes = [
     loadComponent: () => import('./compras/compras-manager').then((m) => m.ComprasManager),
   },
 
-  // Consultas (solo lectura)
-  {
-    path: 'compras-det',
-    component: Consulta,
-    data: {
-      consulta: { nombre: 'compras-det', titulo: 'Detalle de Compras', ruta: '/cxp/compras-det', idKey: 'cxpcomprasdetId' },
-    },
-  },
+  // Movimientos
   {
     path: 'movimientos',
     loadComponent: () => import('./movimientos/movimientos-manager').then((m) => m.CxpMovimientosManager),
@@ -14625,192 +15114,187 @@ export const CXP_ROUTES: Routes = [
 ```typescript
 <div class="movimientos-manager">
   <div class="split-layout">
+
+    <!-- Columna izquierda: detalle / formulario -->
     <div class="left-column">
-      <p-toolbar>
-        <ng-template #start>
-          <div class="toolbar-title">
-            <i class="pi pi-truck"></i>
-            <span>Proveedores</span>
-          </div>
-        </ng-template>
-      </p-toolbar>
-
-      <div class="search-bar">
-        <div class="search-input-wrapper">
-          <i class="pi pi-search"></i>
-          <input
-            type="text"
-            pInputText
-            [ngModel]="q()"
-            (ngModelChange)="q.set($event)"
-            (keyup.enter)="loadProveedores()"
-            placeholder="Buscar por nombre, RTN, nro. proveedor..."
-            class="search-input"
-          />
-          <p-button
-            *ngIf="q()"
-            icon="pi pi-times"
-            (click)="limpiarFiltros()"
-            severity="secondary"
-            [rounded]="true"
-            size="small"
-            class="clear-btn"
-          ></p-button>
-        </div>
-      </div>
-
-      <div class="clientes-count">
-        <h4>Proveedores: {{ totalProveedores() }}</h4>
-      </div>
-
-      @if (cargando()) {
-        <div class="loading-skeleton">
-          @for (i of [1,2,3,4,5]; track i) {
-            <div class="skeleton-item">
-              <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
-              <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
-            </div>
-          }
-        </div>
-      } @else if (data().length === 0) {
-        <div class="empty-state">
-          <i class="pi pi-truck empty-icon"></i>
-          <h3>No hay proveedores</h3>
-          <p>No se encontraron proveedores registrados.</p>
-        </div>
-      } @else {
-        <div class="clientes-grid">
-          @for (proveedor of data(); track proveedor.proveedorId) {
-            <div
-              class="cliente-card"
-              [class.selected]="selectedProveedor()?.proveedorId === proveedor.proveedorId"
-              (click)="seleccionarProveedor(proveedor)"
-            >
-              <div class="cliente-card-header">
-                <span class="cliente-nro">{{ proveedor.nroproveedor }}</span>
-                <p-tag
-                  [value]="proveedor.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
-                  [severity]="proveedor.sn_activo === 'S' ? 'success' : 'danger'"
-                  class="tag-small"
-                />
-              </div>
-              <h3 class="cliente-nombre-large">{{ getProveedorNombre(proveedor) }}</h3>
-              <div class="cliente-details">
-                <div class="detail-row">
-                  <i class="pi pi-id-card"></i>
-                  <span>{{ proveedor.dni }}</span>
-                </div>
-                @if (proveedor.rtn) {
-                  <div class="detail-row">
-                    <i class="pi pi-file-text"></i>
-                    <span>{{ proveedor.rtn }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-        </div>
-
-        <p-paginator
-          [first]="(page() - 1) * limit()"
-          [rows]="limit()"
-          [totalRecords]="totalProveedores()"
-          [rowsPerPageOptions]="[5, 10, 15]"
-          (onPageChange)="onPageChange($event)"
-          class="mt-3"
-        ></p-paginator>
-      }
-    </div>
-
-    <div class="right-column">
       @if (!selectedProveedor()) {
-        <div class="empty-state">
-          <i class="pi pi-arrow-left empty-icon"></i>
-          <h3>Seleccione un proveedor</h3>
-          <p>Haga clic en un proveedor de la lista para gestionar movimientos</p>
-        </div>
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Seleccione un proveedor</h3>
+        <p>Haga clic en un proveedor de la lista para gestionar movimientos</p>
+      </div>
       }
 
       @if (selectedProveedor()) {
-        <div class="cliente-detail">
-          <div class="cliente-header">
-            <div class="cliente-header-info">
-              <h2>{{ getProveedorNombre(selectedProveedor()) }}</h2>
-              <span class="cliente-nro-badge">{{ selectedProveedor()?.nroproveedor }}</span>
-            </div>
-          </div>
-
-          <div class="tab-content">
-            <div class="tab-header">
-              <h4>Movimientos</h4>
-            </div>
-
-            <div class="prestamo-form-columns mb-3">
-              <div class="prestamo-col">
-                <h5 class="prestamo-col-title">Datos del Movimiento</h5>
-                <div class="p-fluid">
-                  <div class="p-field">
-                    <label>Tipo</label>
-                    <p-select size="small" [options]="tipoMovOptions" [ngModel]="movimientoModel().tipomov" (ngModelChange)="movimientoModel.set({...movimientoModel(), tipomov: $event, nroreferencia: ''})"></p-select>
-                  </div>
-                  <div class="p-field">
-                    <label>Documento Fiscal</label>
-                    <p-select size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()" (ngModelChange)="documentoSelected.set($event)" placeholder="Seleccione"></p-select>
-                  </div>
-                  <div class="p-field">
-                    <label>Concepto</label>
-                    <input pInputText pSize="small" [ngModel]="movimientoModel().descripcion1" (ngModelChange)="movimientoModel.set({...movimientoModel(), descripcion1: $event})" placeholder="Descripcion del movimiento" />
-                  </div>
-                  <div class="p-field">
-                    <label>Importe</label>
-                    <p-inputNumber size="small" [ngModel]="movimientoModel().importe" (ngModelChange)="movimientoModel.set({...movimientoModel(), importe: $event})" [mode]="'decimal'" [min]="0.01"></p-inputNumber>
-                  </div>
-                </div>
-              </div>
-
-              <div class="prestamo-col">
-                <h5 class="prestamo-col-title">Referencia y Fecha</h5>
-                <div class="p-fluid">
-                  <div class="p-field">
-                    <label>Nro. Referencia</label>
-                    <p-select size="small" *ngIf="movimientoModel().tipomov === 'C'" [options]="debitoReferencias.map(r => ({label: r, value: r}))" [ngModel]="movimientoModel().nroreferencia" (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})" placeholder="Seleccione debito"></p-select>
-                    <input *ngIf="movimientoModel().tipomov !== 'C'" pInputText [ngModel]="movimientoModel().nroreferencia" (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})" placeholder="Nro. de factura o documento" />
-                  </div>
-                  <div class="p-field">
-                    <label>Fecha</label>
-                    <p-datepicker [ngModel]="movimientoFecha" (ngModelChange)="movimientoFecha = $event" dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="prestamo-actions mb-3">
-              <p-button label="Limpiar" icon="pi pi-times" severity="secondary" (click)="cancelarMovimiento()" [rounded]="true" size="small"></p-button>
-              <p-button label="Guardar" icon="pi pi-check" [loading]="movimientoSaving()" (click)="guardarMovimiento()" [rounded]="true" size="small"></p-button>
-            </div>
-
-            <p-dataView
-              [value]="movimientosData()"
-              [loading]="movimientosLoading()"
-              layout="list"
-              class="movimientos-dataview"
-            >
-              <ng-template #list let-mov>
-                <div class="movimiento-item">
-                  <div class="mov-fecha">{{ mov.fecharegistro | date:'dd/MM/yyyy' }}</div>
-                  <div class="mov-tipo" [ngClass]="mov.tipomov === 'D' ? 'debito' : 'credito'">
-                    {{ getTipoMovLabel(mov.tipomov) }}
-                  </div>
-                  <div class="mov-concepto">{{ mov.descripcion1 }}</div>
-                  <div class="mov-ref">{{ mov.nroreferencia || '---' }}</div>
-                  <div class="mov-importe" [ngClass]="mov.tipomov === 'D' ? 'text-danger' : 'text-success'">
-                    {{ mov.tipomov === 'D' ? '+' : '-' }}{{ moneda(mov.importe) }}
-                  </div>
-                </div>
-              </ng-template>
-            </p-dataView>
+      <div class="cliente-detail">
+        <div class="cliente-header">
+          <div class="cliente-header-info">
+            <h2>{{ getProveedorNombre(selectedProveedor()) }}</h2>
+            <span class="cliente-nro-badge">{{ selectedProveedor()?.nroproveedor }}</span>
           </div>
         </div>
+
+        <div class="tab-content">
+          <div class="tab-header">
+            <h4>Movimientos</h4>
+          </div>
+
+          <!-- Formulario dos columnas -->
+          <div class="prestamo-form-columns mb-3">
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Datos del Movimiento</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Tipo</label>
+                  <p-select size="small" [options]="tipoMovOptions" [ngModel]="movimientoModel().tipomov"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), tipomov: $event, nroreferencia: ''})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar tipo"></p-select>
+                </div>
+                <div class="p-field">
+                  <label>Documento Fiscal</label>
+                  <p-select size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()"
+                    (ngModelChange)="documentoSelected.set($event)" placeholder="Seleccionar documento"
+                    styleClass="w-full" [appendTo]="'body'"></p-select>
+                </div>
+                <div class="p-field">
+                  <label>Concepto</label>
+                  <input pInputText pSize="small" [ngModel]="movimientoModel().descripcion1"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), descripcion1: $event})"
+                    placeholder="Descripcion del movimiento" />
+                </div>
+                <div class="p-field">
+                  <label>Importe</label>
+                  <p-inputNumber size="small" [ngModel]="movimientoModel().importe"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), importe: $event})"
+                    [mode]="'decimal'" [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                </div>
+              </div>
+            </div>
+
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Referencia y Fecha</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Nro. Referencia</label>
+                  <p-select size="small" *ngIf="movimientoModel().tipomov === 'C'"
+                    [options]="debitoReferencias.map(r => ({label: r, value: r}))"
+                    [ngModel]="movimientoModel().nroreferencia"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
+                    placeholder="Seleccione debito" styleClass="w-full" [appendTo]="'body'"></p-select>
+                  <input *ngIf="movimientoModel().tipomov !== 'C'" pInputText
+                    [ngModel]="movimientoModel().nroreferencia"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
+                    placeholder="Nro. de factura o documento" />
+                </div>
+                <div class="p-field">
+                  <label>Fecha</label>
+                  <p-datepicker [ngModel]="movimientoFecha" (ngModelChange)="movimientoFecha = $event"
+                    dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones de accion -->
+          <div class="prestamo-actions mb-3">
+            <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+              (click)="cancelarMovimiento()" [rounded]="true" size="small"></p-button>
+            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+              [loading]="movimientoSaving()" (click)="guardarMovimiento()" [rounded]="true"
+              size="small"></p-button>
+          </div>
+
+          <!-- Lista de movimientos -->
+          <p-dataView [value]="movimientosData()" [loading]="movimientosLoading()" size="small" layout="list"
+            class="movimientos-dataview">
+            <ng-template #list let-mov>
+              <div class="movimiento-item">
+                <div class="mov-fecha">{{ mov.fecharegistro | date:'dd/MM/yyyy' }}</div>
+                <div class="mov-tipo" [ngClass]="mov.tipomov === 'D' ? 'debito' : 'credito'">
+                  {{ getTipoMovLabel(mov.tipomov) }}
+                </div>
+                <div class="mov-concepto">{{ mov.descripcion1 }}</div>
+                <div class="mov-ref">{{ mov.nroreferencia || '---' }}</div>
+                <div class="mov-importe"
+                  [ngClass]="mov.tipomov === 'D' ? 'text-danger' : 'text-success'">
+                  {{ mov.tipomov === 'D' ? '+' : '-' }}{{ moneda(mov.importe) }}
+                </div>
+              </div>
+            </ng-template>
+          </p-dataView>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Columna derecha: lista de proveedores -->
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+            (keyup.enter)="loadProveedores()" placeholder="Buscar por nombre, RTN, nro. proveedor..."
+            class="search-input" />
+          <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
+            [rounded]="true" size="small" class="clear-btn"></p-button>
+        </div>
+      </div>
+
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-truck empty-icon"></i>
+        <h3>No hay proveedores</h3>
+        <p>No se encontraron proveedores registrados.</p>
+      </div>
+      } @else {
+      <div class="clientes-lista">
+        @for (proveedor of data(); track proveedor.proveedorId) {
+        <div class="cliente-item-ficha"
+          [class.selected]="selectedProveedor()?.proveedorId === proveedor.proveedorId"
+          (click)="seleccionarProveedor(proveedor)">
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ proveedor.nroproveedor }}</span>
+            <p-tag [value]="proveedor.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="proveedor.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ proveedor.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ proveedor.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ proveedor.dni }}</span>
+          </div>
+          @if (proveedor.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ proveedor.rtn }}</span>
+          </div>
+          }
+        </div>
+        }
+      </div>
+
+      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalProveedores()"
+        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"></p-paginator>
       }
     </div>
   </div>
@@ -14836,16 +15320,6 @@ export const CXP_ROUTES: Routes = [
 }
 
 .left-column {
-  width: 380px;
-  min-width: 350px;
-  max-width: 450px;
-  border-right: 1px solid var(--c-border);
-  display: flex;
-  flex-direction: column;
-  background: var(--c-surface);
-}
-
-.right-column {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -14853,24 +15327,37 @@ export const CXP_ROUTES: Routes = [
   overflow: hidden;
 }
 
-.toolbar-title {
+.right-column {
+  width: 380px;
+  min-width: 350px;
+  max-width: 450px;
+  border-left: 1px solid var(--c-border);
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: var(--c-text);
+  flex-direction: column;
+  background: var(--c-surface);
 }
+
+// ===== Utilidades =====
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+// ===== Busqueda y lista (columna derecha) =====
 
 .search-bar {
   padding: 1rem;
   border-bottom: 1px solid var(--c-border);
-}
-
-.search-input-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+
+  .search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
 }
 
 .search-input-wrapper .pi-search {
@@ -14883,7 +15370,7 @@ export const CXP_ROUTES: Routes = [
 .search-input {
   width: 100%;
   padding: 0.5rem 0.75rem 0.5rem 2.5rem;
-  border: 1px solid var(--c-border);
+  border: 1px solid var(--for-border-color-alls);
   border-radius: 6px;
   background: var(--c-bg);
   color: var(--c-text);
@@ -14894,18 +15381,40 @@ export const CXP_ROUTES: Routes = [
   right: 0.25rem;
 }
 
-.clientes-count {
-  padding: 0.625rem 1rem;
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
+// ===== Empty states =====
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--c-text-muted);
+  padding: 2rem;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--c-primary);
+    opacity: 0.6;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--c-text-secondary, #6c757d);
+  }
 }
 
-.clientes-count h4 {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--c-text-muted);
-}
+// ===== Skeleton =====
 
 .loading-skeleton {
   padding: 20px;
@@ -14919,128 +15428,68 @@ export const CXP_ROUTES: Routes = [
   background: var(--c-bg);
 }
 
-.empty-state {
+// ===== Lista de proveedores (fichas) =====
+
+.clientes-lista {
   flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  color: var(--c-text-muted);
-  padding: 2rem;
-  text-align: center;
+  gap: 0.5rem;
 }
 
-.empty-state .empty-icon {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.clientes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 15px;
-  padding: 15px;
-  max-height: calc(100vh - 300px);
-  overflow-y: auto;
-}
-
-.cliente-card {
+.cliente-item-ficha {
+  padding: 0.75rem 1rem;
   border: 1px solid var(--c-border);
   border-radius: 8px;
-  padding: 15px;
   background: var(--c-surface);
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    border-color: var(--c-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &.selected {
+    border-color: var(--for-border-color-alls);
+    background: var(--master-background);
+  }
 }
 
-.cliente-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border-color: var(--c-primary);
-}
-
-.cliente-card.selected {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-}
-
-.cliente-card-header {
+.item-ficha-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.375rem;
+  border-bottom: 1px solid var(--c-border);
 }
 
-.cliente-nro {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--c-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.item-ficha-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  line-height: 1.3;
 }
 
-.cliente-nombre-large {
-  margin: 0 0 12px;
-  font-size: 1.1rem;
+.ficha-label {
+  font-size: 0.8rem;
   font-weight: 600;
+  color: var(--c-text-muted);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.ficha-value {
+  font-size: 0.85rem;
   color: var(--c-text);
+  font-weight: 500;
 }
 
-.cliente-details {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.85rem;
-  color: var(--c-text-muted);
-}
-
-.detail-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.detail-row i {
-  font-size: 0.85rem;
-}
-
-.right-column .empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  color: var(--c-text-muted);
-  padding: 2rem;
-  text-align: center;
-}
-
-.right-column .empty-state i {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.right-column .empty-state h3 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.right-column .empty-state p {
-  margin: 0;
-  font-size: 0.9rem;
-}
+// ===== Detalle del proveedor (columna izquierda) =====
 
 .cliente-detail {
   flex: 1;
@@ -15095,6 +15544,64 @@ export const CXP_ROUTES: Routes = [
   font-size: 1.1rem;
   font-weight: 600;
 }
+
+// ===== Formulario dos columnas =====
+
+.prestamo-form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.prestamo-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.prestamo-col-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.prestamo-col .p-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.prestamo-col label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+}
+
+.prestamo-col input.p-inputtext,
+.prestamo-col .p-select,
+.prestamo-col .p-inputnumber,
+.prestamo-col .p-datepicker {
+  width: 100%;
+}
+
+.prestamo-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+}
+
+// ===== Lista de movimientos =====
 
 .movimientos-dataview {
   :host ::ng-deep .p-dataview-content {
@@ -15167,62 +15674,52 @@ export const CXP_ROUTES: Routes = [
   color: #b91c1c;
 }
 
-.prestamo-form-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 1.25rem;
-}
+// ===== Paginador compacto =====
 
-.prestamo-col {
+.paginator-compact {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  justify-content: center;
+
+  ::ng-deep .p-paginator {
+    background: transparent;
+    padding: 0.25rem;
+    gap: 0.25rem;
+
+    .p-paginator-content {
+      gap: 0.15rem;
+    }
+
+    .p-paginator-page,
+    .p-paginator-prev,
+    .p-paginator-next,
+    .p-paginator-first,
+    .p-paginator-last {
+      min-width: 1.6rem;
+      height: 1.6rem;
+      font-size: 0.7rem;
+      border-radius: 50%;
+    }
+
+    .p-paginator-current {
+      font-size: 0.7rem;
+      color: var(--c-text-muted);
+    }
+
+    .p-paginator-page-options {
+      height: 1.6rem;
+      font-size: 0.7rem;
+
+      .p-select-label {
+        font-size: 0.7rem;
+      }
+    }
+  }
 }
 
-.prestamo-col-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--c-text-muted);
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--c-border);
-}
-
-.prestamo-col .p-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.prestamo-col label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--c-text-muted);
-}
-
-.prestamo-col input.p-inputtext,
-.prestamo-col .p-select,
-.prestamo-col .p-inputnumber,
-.prestamo-col .p-datepicker {
-  width: 100%;
-}
-
-.prestamo-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  padding: 0.75rem 1rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-}
+// ===== Responsive =====
 
 @media (max-width: 1024px) {
-  .left-column {
+  .right-column {
     width: 320px;
   }
 }
@@ -15233,9 +15730,14 @@ export const CXP_ROUTES: Routes = [
   }
 
   .left-column {
+    order: 2;
+  }
+
+  .right-column {
+    order: 1;
     width: 100%;
     max-width: none;
-    border-right: none;
+    border-left: none;
     border-bottom: 1px solid var(--c-border);
     max-height: 40vh;
   }
@@ -15253,7 +15755,7 @@ export const CXP_ROUTES: Routes = [
 ## 📄 src\app\features\cxp\movimientos\movimientos-manager.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15306,6 +15808,7 @@ export class CxpMovimientosManager implements OnInit {
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
 
+  // ===== PROVEEDORES =====
   data = signal<Proveedor[]>([]);
   cargando = signal(false);
   selectedProveedor = signal<Proveedor | null>(null);
@@ -15314,6 +15817,14 @@ export class CxpMovimientosManager implements OnInit {
   limit = signal(15);
   totalProveedores = signal(0);
 
+  // Effect para resetear pagina y recargar cuando cambie el filtro (q)
+  private _searchEffect = effect(() => {
+    this.q();
+    this.page.set(1);
+    this.loadProveedores();
+  });
+
+  // ===== MOVIMIENTOS =====
   movimientosData = signal<any[]>([]);
   movimientosLoading = signal(false);
   movimientoSaving = signal(false);
@@ -15332,8 +15843,8 @@ export class CxpMovimientosManager implements OnInit {
   documentoSelected = signal<any>(null);
 
   readonly tipoMovOptions = [
-    { label: 'Débito', value: 'D' },
-    { label: 'Crédito', value: 'C' },
+    { label: 'Debito', value: 'D' },
+    { label: 'Credito', value: 'C' },
   ];
 
   get debitoReferencias(): string[] {
@@ -15344,10 +15855,10 @@ export class CxpMovimientosManager implements OnInit {
   }
 
   ngOnInit() {
-    this.loadProveedores();
     this.loadDocumentos();
   }
 
+  // ===== PROVEEDORES =====
   loadProveedores() {
     this.cargando.set(true);
     this.service.getProveedoresPag(this.page(), this.limit(), this.q()).pipe(
@@ -15372,7 +15883,8 @@ export class CxpMovimientosManager implements OnInit {
 
   limpiarFiltros() {
     this.q.set('');
-    this.loadProveedores();
+    this.selectedProveedor.set(null);
+    this.movimientosData.set([]);
   }
 
   seleccionarProveedor(proveedor: Proveedor) {
@@ -15381,7 +15893,10 @@ export class CxpMovimientosManager implements OnInit {
   }
 
   getProveedorNombre(p: Proveedor): string {
-    return `${p.nombres || ''} ${p.apellidos || ''}`.trim();
+    const nombres = p.nombres || '';
+    const apellidos = p.apellidos || '';
+    const full = `${nombres} ${apellidos}`.trim();
+    return full || p.razonsocial || p.nroproveedor || 'Sin nombre';
   }
 
   moneda(val: number): string {
@@ -15391,6 +15906,7 @@ export class CxpMovimientosManager implements OnInit {
     return partes.join('.');
   }
 
+  // ===== DOCUMENTOS FISCALES =====
   loadDocumentos() {
     const user = this.auth.currentUser();
     this.catalogService.getAll<any>('/parametros/tcotipodocumentofiscal').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -15410,6 +15926,7 @@ export class CxpMovimientosManager implements OnInit {
     });
   }
 
+  // ===== MOVIMIENTOS =====
   private loadMovimientos(proveedorId: number) {
     this.movimientosLoading.set(true);
     this.service.getMovimientosByProveedor(proveedorId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -15423,6 +15940,7 @@ export class CxpMovimientosManager implements OnInit {
 
   cancelarMovimiento() {
     this.movimientoModel.set({
+      proveedorId: this.selectedProveedor()?.proveedorId ?? null,
       tipomov: 'D',
       descripcion1: '',
       importe: 0,
@@ -15456,29 +15974,31 @@ export class CxpMovimientosManager implements OnInit {
     }
 
     if (typeof payload.importe !== 'number' || payload.importe <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Importe inválido', detail: 'El importe debe ser mayor que 0' });
+      this.msgs.add({ severity: 'warn', summary: 'Importe invalido', detail: 'El importe debe ser mayor que 0' });
       return;
     }
 
+    // Validar debito: referencia obligatoria y no duplicada
     if (payload.tipomov === 'D') {
       if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el número de factura o préstamo de referencia' });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el numero de factura o prestamo de referencia' });
         return;
       }
       const refStr = String(payload.nroreferencia).trim();
       if (this.debitoReferencias.includes(refStr)) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un débito con referencia "${refStr}". No se pueden crear débitos duplicados.` });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un debito con referencia "${refStr}". No se pueden crear debitos duplicados.` });
         return;
       }
     }
 
+    // Validar credito: referencia obligatoria, debe existir como debito
     if (payload.tipomov === 'C') {
       if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de débito al que aplica el abono' });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de debito al que aplica el abono' });
         return;
       }
       if (!this.debitoReferencias.includes(String(payload.nroreferencia))) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia inválida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningún débito existente` });
+        this.msgs.add({ severity: 'warn', summary: 'Referencia invalida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningun debito existente` });
         return;
       }
     }
@@ -15523,7 +16043,7 @@ export class CxpMovimientosManager implements OnInit {
   }
 
   getTipoMovLabel(tipo: string): string {
-    const tipos: Record<string, string> = { 'C': 'Crédito', 'A': 'Abono', 'D': 'Débito' };
+    const tipos: Record<string, string> = { 'C': 'Credito', 'A': 'Abono', 'D': 'Debito' };
     return tipos[tipo] || tipo;
   }
 
@@ -16039,7 +16559,7 @@ export class CxpProveedorForm implements OnInit {
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="proveedorId"
@@ -16048,44 +16568,53 @@ export class CxpProveedorForm implements OnInit {
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-  >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (p of items; track p.proveedorId) {
-          <div class="dv-card" (click)="editar(p.proveedorId)">
-            <div class="dv-top">
-              <span class="dv-title">{{ p.nombres }} {{ p.apellidos }}</span>
-              <p-tag [value]="activoLbl(p.sn_activo)" [severity]="activoSev(p.sn_activo)" />
-            </div>
+    size="small"
+    styleClass="p-datatable-striped">
 
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Nro. proveedor</span>
-                <span class="dv-value">{{ p.nroproveedor }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Razón social</span>
-                <span class="dv-value">{{ p.razonsocial || '-' }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">RTN</span>
-                <span class="dv-value">{{ p.rtn || '-' }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Límite crédito</span>
-                <span class="dv-value">{{ moneda(p.limiteCredito) }}</span>
-              </div>
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 4rem">#</th>
+        <th>Nombre</th>
+        <th>Nro. Proveedor</th>
+        <th>RTN</th>
+        <th style="width: 8rem">Lím. Crédito</th>
+        <th style="width: 8rem">Días Plazo</th>
+        <th style="width: 7rem" class="text-center">Estado</th>
+        <th style="width: 4rem" class="text-center"></th>
+      </tr>
     </ng-template>
 
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay proveedores que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-p>
+      <tr (click)="editar(p.proveedorId)" style="cursor: pointer">
+        <td>{{ p.proveedorId }}</td>
+        <td class="font-bold">{{ p.nombres }} {{ p.apellidos }}</td>
+        <td>{{ p.nroproveedor }}</td>
+        <td>{{ p.rtn || '-' }}</td>
+        <td class="text-right">{{ moneda(p.limiteCredito) }}</td>
+        <td class="text-right">{{ p.diasplazo }}</td>
+        <td class="text-center">
+          <p-tag [value]="activoLbl(p.sn_activo)" [severity]="activoSev(p.sn_activo)" />
+        </td>
+        <td class="text-center">
+          <p-button
+            icon="pi pi-pencil"
+            size="small"
+            variant="text"
+            [rounded]="true"
+            severity="secondary"
+            (onClick)="$event.stopPropagation(); editar(p.proveedorId)" />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+
+    <ng-template pTemplate="empty">
+      <tr>
+        <td colspan="8" class="text-center p-4">No hay proveedores que coincidan con los filtros.</td>
+      </tr>
+    </ng-template>
+  </p-table>
 </section>
+
 ```
 
 ---
@@ -16093,37 +16622,39 @@ export class CxpProveedorForm implements OnInit {
 ## 📄 src\app\features\cxp\proveedores\proveedores.scss
 
 ```typescript
-.dv-cards {
-  padding: 0.75rem;
-}
+.filtros {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
 
-.dv-card {
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    transform: translateY(-1px);
-  }
-
-  .dv-row {
+  .campo {
+    flex: 1;
     display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.15rem 0;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    label {
+      font-weight: 500;
+      font-size: 0.85rem;
+      color: var(--c-text-muted, #64748b);
+    }
   }
 
-  .dv-label {
-    color: #64748b;
-    font-size: 0.78rem;
-  }
-
-  .dv-value {
-    font-weight: 600;
-    color: #334155;
-    text-align: right;
+  .acciones {
+    flex: 0;
+    flex-direction: row;
+    gap: 0.5rem;
   }
 }
+
+@media (max-width: 768px) {
+  .filtros {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 ```
 
 ---
@@ -16135,7 +16666,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
@@ -16150,7 +16681,7 @@ import { Proveedor } from '../../../core/models/inventario.models';
   imports: [
     CommonModule,
     FormsModule,
-    DataViewModule,
+    TableModule,
     ButtonModule,
     InputTextModule,
     TagModule,
@@ -16235,6 +16766,7 @@ export class CxpProveedores implements OnInit {
     return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
   }
 }
+
 ```
 
 ---
@@ -16935,6 +17467,9 @@ export class AnularFacturas implements OnInit {
                       currency="HNL"
                       locale="es-HN"
                       [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [useGrouping]="true"
+                      [inputStyle]="{ 'width': '100%' }"
                       [style]="{ width: '110px' }"
                       [ngClass]="{ 'precio-invalid': !precioValido(item) }"
                     />
@@ -17949,7 +18484,7 @@ export class CombosForm implements OnInit {
       <h3 class="page-title">Combos</h3>
       <p class="page-subtitle">Combos de productos</p>
     </div>
-    <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()" />
+    <p-button label="Nuevo" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="nuevo()" />
   </header>
 
   <div class="combo-layout">
@@ -17964,10 +18499,11 @@ export class CombosForm implements OnInit {
             [ngModel]="q()"
             (ngModelChange)="q.set($event)"
             (keyup.enter)="buscar()"
+            pSize="small"
           />
         </div>
         <div class="campo acciones">
-          <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+          <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" />
           <p-button
             label="Limpiar"
             icon="pi pi-times"
@@ -18040,7 +18576,8 @@ export class CombosForm implements OnInit {
             [paginator]="true"
             [rows]="10"
             [rowsPerPageOptions]="[5, 10, 20]"
-            layout="list"
+            size="small"
+            [layout]="'list'"
           >
             <ng-template #list let-items>
               <div class="detail-items">
@@ -18151,9 +18688,8 @@ export class CombosForm implements OnInit {
   }
 
   &.selected {
-    background: rgba(16, 185, 129, 0.08);
-    border-left: 3px solid var(--c-primary);
-    padding-left: calc(1rem - 3px);
+    border-color: var(--for-border-color-alls);
+    background: var(--master-background);
   }
 }
 
@@ -18700,7 +19236,8 @@ export class CombosList implements OnInit {
   }
 
   <!-- Dialog Correo -->
-  <p-dialog header="Enviar factura por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '420px' }" [closable]="true" styleClass="correo-dialog">
+  <p-dialog header="Enviar factura por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '420px' }" [draggable]="false" [resizable]="false"
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true" styleClass="correo-dialog">
     <div class="correo-form">
       <label class="correo-label">Correo electronico del destinatario</label>
       <input pInputText pSize="small" type="email" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
@@ -18708,8 +19245,8 @@ export class CombosList implements OnInit {
     </div>
     <ng-template pTemplate="footer">
       <div class="correo-footer">
-        <p-button label="Cancelar" severity="secondary" text (onClick)="dialogCorreo.set(false)" size="small" />
-        <p-button label="Enviar" icon="pi pi-send" (onClick)="enviarCorreo()" [loading]="enviando()" size="small" />
+        <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+        <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="enviando()" />
       </div>
     </ng-template>
   </p-dialog>
@@ -19483,7 +20020,7 @@ export class ConsultaFacturaDetalle implements OnInit {
       </div>
       <div class="filtros-acciones">
         <i class="pi pi-search"></i>
-        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" (onClick)="limpiar()" />
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="limpiar()" />
       </div>
     </div>
   </div>
@@ -19556,7 +20093,8 @@ export class ConsultaFacturaDetalle implements OnInit {
     </p-table>
   </div>
 
-  <p-dialog header="Enviar factura por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '420px' }" [closable]="true" styleClass="correo-dialog">
+  <p-dialog header="Enviar factura por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '420px' }" [draggable]="false" [resizable]="false"
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true" styleClass="correo-dialog">
     <div class="correo-form">
       <label class="correo-label">Correo electronico del destinatario</label>
       <input pInputText type="email" pSize="small" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
@@ -19564,8 +20102,8 @@ export class ConsultaFacturaDetalle implements OnInit {
     </div>
     <ng-template pTemplate="footer">
       <div class="correo-footer">
-        <p-button label="Cancelar" severity="secondary" text (onClick)="dialogCorreo.set(false)" size="small" />
-        <p-button label="Enviar" icon="pi pi-send" (onClick)="enviarCorreo()" [loading]="enviando()" size="small" />
+        <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+        <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="enviando()" />
       </div>
     </ng-template>
   </p-dialog>
@@ -20161,12 +20699,15 @@ export class ConsultaFacturas implements OnInit {
             <ng-template #start>
               <div class="nf-busqueda">
                 <input pInputText pSize="small" [value]="qProducto()" (input)="onBuscarProducto($event)" placeholder="Buscar producto o escanear código de barras..." />
-                <p-button icon="pi pi-search" severity="info" (onClick)="showHelperProductos()" pTooltip="Buscar producto" />
+                <p-button icon="pi pi-search" severity="info" size="small" [rounded]="true" (onClick)="showHelperProductos()" pTooltip="Buscar producto" />
               </div>
             </ng-template>
           </p-toolbar>
 
-          <p-table [value]="filas()" [scrollable]="true" scrollHeight="400px" styleClass="det-table">
+          <p-table [value]="filas()" [scrollable]="true" scrollHeight="400px" styleClass="det-table"
+            size="small"
+            [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+            [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
             <ng-template #header>
               <tr>
                 <th style="width: 3rem"></th>
@@ -20195,7 +20736,7 @@ export class ConsultaFacturas implements OnInit {
                   <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)" styleClass="tag-sm" />
                 </td>
                 <td>
-                  <p-inputnumber size="small" [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recalcularFila(row)" [min]="0" mode="decimal" [minFractionDigits]="0" [maxFractionDigits]="2" />
+                  <p-inputnumber size="small" [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recalcularFila(row)" [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" />
                 </td>
                 <td>
                   <span class="text-right">{{ moneda(row.subTotal) }}</span>
@@ -20212,12 +20753,12 @@ export class ConsultaFacturas implements OnInit {
           <div class="nf-totales card mt-3">
             <div class="nf-totales-split">
               <div class="nf-totales-col-btns">
-                <p-button label="Nueva" icon="pi pi-plus" severity="secondary" size="small" (onClick)="volver()" />
-                <p-button label="Guardar" icon="pi pi-check" size="small" [loading]="guardando()" (onClick)="guardar()" />
-                <p-button icon="pi pi-print" severity="secondary" size="small" (onClick)="imprimirPDF()" [disabled]="!esEdicion()" pTooltip="Imprimir" />
-                <p-button icon="pi pi-download" severity="secondary" size="small" (onClick)="descargarPDF()" [disabled]="!esEdicion()" pTooltip="Descargar PDF" />
-                <p-button icon="pi pi-envelope" severity="info" size="small" (onClick)="abrirDialogCorreo()" [disabled]="!esEdicion()" pTooltip="Enviar por correo" />
-                <p-button icon="pi pi-whatsapp" severity="success" size="small" (onClick)="compartir()" [disabled]="!esEdicion()" pTooltip="Compartir" styleClass="btn-whatsapp" />
+                <p-button label="Nueva" icon="pi pi-plus" severity="secondary" size="small" [rounded]="true" (onClick)="volver()" />
+                <p-button label="Guardar" icon="pi pi-check" size="small" [rounded]="true" [loading]="guardando()" (onClick)="guardar()" />
+                <p-button icon="pi pi-print" severity="secondary" size="small" [rounded]="true" (onClick)="imprimirPDF()" [disabled]="!esEdicion()" pTooltip="Imprimir" />
+                <p-button icon="pi pi-download" severity="secondary" size="small" [rounded]="true" (onClick)="descargarPDF()" [disabled]="!esEdicion()" pTooltip="Descargar PDF" />
+                <p-button icon="pi pi-envelope" severity="info" size="small" [rounded]="true" (onClick)="abrirDialogCorreo()" [disabled]="!esEdicion()" pTooltip="Enviar por correo" />
+                <p-button icon="pi pi-whatsapp" severity="success" size="small" [rounded]="true" (onClick)="compartir()" [disabled]="!esEdicion()" pTooltip="Compartir" styleClass="btn-whatsapp" />
               </div>
               <div class="nf-totales-col-data">
                 <div class="nf-total-block">
@@ -20260,14 +20801,15 @@ export class ConsultaFacturas implements OnInit {
     </form>
   }
 
-<p-dialog header="Enviar cotización por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '400px' }" [closable]="true">
+<p-dialog header="Enviar cotización por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '400px' }" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true">
   <div class="campo">
     <label>Correo electrónico</label>
     <input pInputText pSize="small" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)" placeholder="correo@ejemplo.com" style="width:100%" />
   </div>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogCorreo.set(false)" />
-    <p-button label="Enviar" icon="pi pi-send" (onClick)="enviarCorreo()" [loading]="guardando()" />
+    <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+    <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="guardando()" />
   </ng-template>
 </p-dialog>
 </section>
@@ -21153,80 +21695,102 @@ export class CotizacionesForm implements OnInit {
       <p class="page-subtitle">Cotizaciones de venta</p>
     </div>
     <div>
-      <p-button label="Nueva" icon="pi pi-plus" size="small" (onClick)="nuevo()" />
+      <p-button label="Nueva" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="nuevo()" />
     </div>
   </header>
 
-  <div class="filtros card">
-    <div class="campo">
-      <label>Buscar</label>
-      <input
-        pInputText
-        type="text"
-        placeholder="Buscar..."
-        [ngModel]="q()"
-        (ngModelChange)="q.set($event)"
-        (keyup.enter)="buscar()"
-      />
-    </div>
-    <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
-      <p-button
-        label="Limpiar"
-        icon="pi pi-times"
-        severity="secondary"
-        text
-        size="small"
-        (onClick)="limpiarFiltros()"
-      />
+  <div class="card filtros-card">
+    <div class="filtros-row">
+      <div class="campo campo-busqueda">
+        <span class="p-input-icon-left">
+          <input pInputText type="text" pSize="small"
+            placeholder="Buscar por # cotización, nombre del cliente o atendió..."
+            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" class="busqueda-input" />
+        </span>
+      </div>
+      <div class="filtros-acciones">
+        <i class="pi pi-search"></i>
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="limpiar()" />
+      </div>
     </div>
   </div>
 
-  <p-dataview
-    [value]="filtered()"
-    [loading]="cargando()"
-    [paginator]="true"
-    [rows]="20"
-    [rowsPerPageOptions]="[10, 20, 50]"
-    [showCurrentPageReport]="true"
-    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-  >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (item of items; track item?.poscotmaeId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">Cotización #{{ item.poscotmaeId }}</span>
-              <p-tag [value]="estadoLabel(item)" [severity]="estadoSeverity(item)" styleClass="tag-sm" />
+  <div class="card tabla-card">
+    <p-table [value]="filtered()" [loading]="cargando()"
+    showGridlines
+    [tableStyle]="{ 'min-width': '40rem' }"
+     [paginator]="true" [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} cotizaciones"
+      styleClass="cotizaciones-table">
+      <ng-template #header>
+        <tr>
+          <th style="width:6rem"># Cotización</th>
+          <th style="width:6rem">Fecha</th>
+          <th style="width:5rem" class="th-hora">Hora</th>
+          <th>Cliente</th>
+          <th style="width:8rem">Atendió</th>
+          <th style="width:6rem">Estado</th>
+          <th style="width:10rem" class="acciones-header">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr (click)="editar(item.poscotmaeId)" class="fila-click" [class.row-anulada]="item.sn_estadocarrito === 'X'">
+          <td>
+            <span class="nro-factura">{{ item.poscotmaeId }}</span>
+          </td>
+          <td>{{ fechaCorta(item.fecharegistro) }}</td>
+          <td class="hora-cell">{{ horaCorta(item.fecharegistro) }}</td>
+          <td>
+            <span class="cliente-nombre">{{ item.Nombrecliente || 'Sin cliente' }}</span>
+          </td>
+          <td>{{ item.atendio || '-' }}</td>
+          <td>
+            <p-tag [value]="estadoLabel(item)" [severity]="estadoSeverity(item)" styleClass="tag-sm" />
+          </td>
+          <td class="acciones-cell">
+            <div class="acciones-row">
+              <p-button icon="pi pi-pencil" severity="info" text rounded size="small"
+                (onClick)="editar(item.poscotmaeId); $event.stopPropagation()" pTooltip="Editar" tooltipPosition="top" />
+              <p-button icon="pi pi-envelope" severity="warn" text rounded size="small"
+                (onClick)="abrirCorreo(item, $event)" pTooltip="Enviar por correo" tooltipPosition="top"
+                [disabled]="!esActiva(item)" />
+              <p-button icon="pi pi-trash" severity="danger" text rounded size="small"
+                (onClick)="eliminar(item, $event)" pTooltip="Eliminar" tooltipPosition="top"
+                [disabled]="!esActiva(item)" />
             </div>
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Cliente</span>
-                <span class="dv-value">{{ item.Nombrecliente || '-' }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Atendió</span>
-                <span class="dv-value">{{ item.atendio || '-' }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Fecha</span>
-                <span class="dv-value">{{ item.fecharegistro ? (item.fecharegistro | date:'dd/MM/yyyy HH:mm') : '-' }}</span>
-              </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="7" class="empty-state">
+            <div class="empty-content">
+              <i class="pi pi-file"></i>
+              <p>No hay cotizaciones registradas</p>
             </div>
-            <div class="dv-actions">
-              <p-button icon="pi pi-pencil" severity="info" text rounded size="small" (onClick)="editar(item.poscotmaeId)" pTooltip="Editar" />
-              <p-button icon="pi pi-trash" severity="danger" text rounded size="small" (onClick)="eliminar(item, $event)" pTooltip="Eliminar" [disabled]="item.sn_estadocarrito === 'F'" />
-            </div>
-          </div>
-        }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <p-confirmDialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+  <p-dialog header="Enviar cotización por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '420px' }" [draggable]="false" [resizable]="false"
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true" styleClass="correo-dialog">
+    <div class="correo-form">
+      <label class="correo-label">Correo electrónico del destinatario</label>
+      <input pInputText type="email" pSize="small" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
+        placeholder="correo@ejemplo.com" class="correo-input" />
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="correo-footer">
+        <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+        <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="enviando()" />
       </div>
     </ng-template>
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay cotizaciones registradas.</div>
-    </ng-template>
-  </p-dataview>
-
-  <p-confirmDialog />
+  </p-dialog>
 </section>
 
 ```
@@ -21236,65 +21800,190 @@ export class CotizacionesForm implements OnInit {
 ## 📄 src\app\features\facturacion\cotizaciones\cotizaciones-list\cotizaciones-list.scss
 
 ```typescript
-﻿.dv-cards {
-  padding: 0.75rem;
+﻿.filtros-card {
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
 }
 
-.dv-card {
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+.filtros-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
 
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    transform: translateY(-1px);
+.campo-busqueda {
+  flex: 1;
+  max-width: 400px;
+}
+
+.busqueda-input {
+  width: 100%;
+  padding-left: 2.5rem;
+}
+
+.filtros-acciones {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+
+  i {
+    font-size: 0.9rem;
+    color: var(--c-text-muted);
+    line-height: 1;
+  }
+}
+
+.tabla-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.cotizaciones-table {
+  :host ::ng-deep .p-datatable-tbody > tr > td {
+    padding: 0.6rem 0.75rem;
+    vertical-align: middle;
   }
 
-  .dv-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-  }
-
-  .dv-title {
-    font-weight: 700;
-    font-size: 0.95rem;
-  }
-
-  .dv-body {
-    margin-bottom: 0.5rem;
-  }
-
-  .dv-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.15rem 0;
-  }
-
-  .dv-label {
-    color: #64748b;
-    font-size: 0.78rem;
-  }
-
-  .dv-value {
+  :host ::ng-deep .p-datatable-thead > tr > th {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.75rem;
     font-weight: 600;
-    color: #334155;
-    text-align: right;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: var(--c-surface-ground);
+    border-bottom: 2px solid var(--c-border);
   }
 
-  .dv-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.25rem;
-    border-top: 1px solid var(--surface-border);
-    padding-top: 0.5rem;
+  :host ::ng-deep .p-datatable-tbody > tr {
+    transition: background-color 0.15s;
   }
+
+  :host ::ng-deep .p-datatable-tbody > tr:hover {
+    background-color: var(--c-surface-ground);
+  }
+
+  :host ::ng-deep .p-datatable-tbody > tr > td {
+    border-bottom: 1px solid var(--c-border);
+  }
+}
+
+.fila-click {
+  cursor: pointer;
+}
+
+.nro-factura {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--c-text);
+}
+
+.cliente-nombre {
+  color: var(--c-text);
+  font-size: 0.85rem;
+}
+
+.hora-cell {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.th-hora {
+  font-size: 0.7rem !important;
+}
+
+.acciones-header {
+  text-align: center !important;
+}
+
+.acciones-cell {
+  text-align: center !important;
+}
+
+.acciones-row {
+  display: flex;
+  gap: 0.15rem;
+  justify-content: center;
 }
 
 .tag-sm {
-  font-size: 0.7rem;
-  padding: 0.15rem 0.45rem;
+  :host ::ng-deep & {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+  }
+}
+
+.row-anulada {
+  opacity: 0.45;
+
+  .nro-factura,
+  .cliente-nombre {
+    text-decoration: line-through;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem !important;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.3;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+// ==================== Dialog Correo ====================
+
+.correo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.correo-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+}
+
+.correo-input {
+  width: 100%;
+}
+
+.correo-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+// ==================== Responsive ====================
+
+@media (max-width: 768px) {
+  .filtros-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .campo-busqueda {
+    max-width: 100%;
+  }
+
+  .acciones-row {
+    flex-wrap: wrap;
+  }
 }
 
 ```
@@ -21309,19 +21998,21 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApiService } from '../../../../core/services/api.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-cotizaciones-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataViewModule, ButtonModule, InputTextModule, TagModule, TooltipModule, ConfirmDialogModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule, ConfirmDialogModule, DialogModule],
   providers: [ConfirmationService],
   templateUrl: './cotizaciones-list.html',
   styleUrl: './cotizaciones-list.scss',
@@ -21332,11 +22023,17 @@ export class CotizacionesList implements OnInit {
   private msgs = inject(MessageService);
   private confirmation = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
+  private auth = inject(AuthService);
 
   data = signal<any[]>([]);
   filtered = signal<any[]>([]);
   cargando = signal(false);
   q = signal('');
+
+  dialogCorreo = signal(false);
+  emailDestino = signal('');
+  enviando = signal(false);
+  seleccionada = signal<any>(null);
 
   ngOnInit() {
     this.load();
@@ -21359,23 +22056,23 @@ export class CotizacionesList implements OnInit {
   }
 
   filtrar() {
-    const q = this.q().toLowerCase();
+    const texto = this.q().toLowerCase().trim();
+    if (!texto) {
+      this.filtered.set(this.data());
+      return;
+    }
     this.filtered.set(
       this.data().filter((i) => {
-        if (!q) return true;
-        return JSON.stringify(i).toLowerCase().includes(q);
+        const nro = String(i.poscotmaeId ?? '');
+        const cliente = (i.Nombrecliente ?? '').toLowerCase();
+        const atendio = (i.atendio ?? '').toLowerCase();
+        return nro.includes(texto) || cliente.includes(texto) || atendio.includes(texto);
       }),
     );
   }
 
-  buscar() {
-    this.filtrar();
-  }
-
-  limpiarFiltros() {
-    this.q.set('');
-    this.filtrar();
-  }
+  buscar() { this.filtrar(); }
+  limpiar() { this.q.set(''); this.filtrar(); }
 
   nuevo() {
     this.router.navigate(['/facturacion/cotizaciones/editar', 'nuevo']);
@@ -21393,6 +22090,8 @@ export class CotizacionesList implements OnInit {
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Eliminar',
       rejectLabel: 'Cancelar',
+      acceptButtonProps: { severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { severity: 'secondary', variant: 'text', size: 'small', rounded: true },
       accept: () => {
         this.api.delete<any>('/facturacion/cotizaciones', item.poscotmaeId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
@@ -21405,6 +22104,25 @@ export class CotizacionesList implements OnInit {
         });
       },
     });
+  }
+
+  fechaCorta(fecha: string | Date): string {
+    if (!fecha) return '-';
+    const d = new Date(fecha);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${dd}/${mm}/${yy}`;
+  }
+
+  horaCorta(fecha: string | Date): string {
+    if (!fecha) return '-';
+    const d = new Date(fecha);
+    return d.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  moneda(n: number | undefined): string {
+    return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
   }
 
   estadoLabel(item: any): string {
@@ -21425,8 +22143,40 @@ export class CotizacionesList implements OnInit {
     }
   }
 
-  moneda(n: number | undefined): string {
-    return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
+  esActiva(item: any): boolean {
+    return item.sn_estadocarrito === 'A';
+  }
+
+  // ==================== CORREO ====================
+
+  abrirCorreo(item: any, event?: Event) {
+    event?.stopPropagation();
+    this.seleccionada.set(item);
+    this.emailDestino.set('');
+    this.dialogCorreo.set(true);
+  }
+
+  enviarCorreo() {
+    const email = this.emailDestino();
+    if (!email || !email.includes('@')) {
+      this.msgs.add({ severity: 'warn', summary: 'Correo inválido', detail: 'Ingrese un correo electrónico válido' });
+      return;
+    }
+    const item = this.seleccionada();
+    if (!item) return;
+    this.enviando.set(true);
+    const empresaId = this.auth.currentUser()?.empresaId;
+    this.api.post<any>(`facturacion/cotizaciones/${item.poscotmaeId}/enviar-correo?empresaId=${empresaId}`, { email }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res: any) => {
+        this.enviando.set(false);
+        this.dialogCorreo.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Correo enviado', detail: res.message || 'Cotización enviada a ' + email });
+      },
+      error: (err: any) => {
+        this.enviando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al enviar correo' });
+      },
+    });
   }
 }
 
@@ -21517,9 +22267,8 @@ export const FACTURACION_ROUTES: Routes = [
   },
   {
     path: 'pedidos',
-    data: { nombre: 'pedidos' },
     loadComponent: () =>
-      import('./maestro-detalle/maestro-detalle').then((m) => m.MaestroDetalle),
+      import('./pedidos/pedidos-list').then((m) => m.PedidosList),
   },
   {
     path: 'pedidos/editar/:id',
@@ -21557,190 +22306,137 @@ export const FACTURACION_ROUTES: Routes = [
       <h1 class="page-title">{{ titulo() }}</h1>
       <p class="page-subtitle">{{ config?.subtitulo }}</p>
     </div>
-    <p-button
-      label="Volver"
-      icon="pi pi-arrow-left"
-      severity="secondary"
-      text
-      size="small"
-      rounded
-      (onClick)="volver()"
-    />
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text size="small" rounded
+      (onClick)="volver()" />
   </header>
 
   @if (cargando()) {
-    <div class="card">Cargando datos...</div>
+  <div class="card">Cargando datos...</div>
   } @else {
-    <form [formGroup]="form" (ngSubmit)="guardar()">
-      <div class="card form-grid">
-        @for (c of camposMae; track c.key) {
-          @if (!c.oculto) {
-          <div class="campo">
-            <label [for]="c.key">{{ c.label }} @if (c.requerido) {<span class="req">*</span>}</label>
+  <form [formGroup]="form" (ngSubmit)="guardar()">
+    <div class="card form-grid">
+      @for (c of camposMae; track c.key) {
+      @if (!c.oculto) {
+      <div class="campo">
+        <label [for]="c.key">{{ c.label }} @if (c.requerido) {<span class="req">*</span>}</label>
 
-            @if (c.tipo === 'texto') {
-              @if (c.soloLectura) {
-                <input pInputText pSize="small" [id]="c.key" [formControlName]="c.key" readonly class="bg-gray-100" />
-              } @else {
-                <input
-                  pInputText
-                  [id]="c.key"
-                  [formControlName]="c.key"
-                  maxlength="120"
-                  [placeholder]="c.label"
-                  [ngClass]="{ 'ng-invalid': invalid(c.key) }"
-                />
-              }
-            } @else if (c.tipo === 'numero') {
-              <p-inputnumber size="small"
-                [formControlName]="c.key"
-                [showButtons]="true"
-                [ngClass]="{ 'ng-invalid': invalid(c.key) }"
-              />
-            } @else if (c.tipo === 'select') {
-              <div class="flex gap-2">
-                @if (c.key === 'documentoId') {
-                  <p-select
-size="small"                     [formControlName]="c.key"
-                    [options]="opcionesDocumento()"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Tipo documento..."
-                    styleClass="flex-1"
-                    filter
-                    filterBy="label"
-                    appendTo="body"
-                    (ngModelChange)="onDocumentoIdChange()"
-                  />
-                } @else if (c.key === 'nrodocumento') {
-                  <p-select
-size="small"                     [formControlName]="c.key"
-                    [options]="opcionesNroDocumento()"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Nro. documento..."
-                    styleClass="flex-1"
-                    filter
-                    filterBy="label"
-                    appendTo="body"
-                  />
-                } @else {
-                  <p-select
-size="small"                     [formControlName]="c.key"
-                    [options]="opciones(c)"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Seleccionar..."
-                    styleClass="flex-1"
-                    [filter]="c.filtro ?? false"
-                    filterBy="label"
-                    appendTo="body"
-                  />
-                }
-                @if (c.selector) {
-                  <p-button type="button" icon="pi pi-search" severity="secondary" (onClick)="abrirSelector(c.selector)" />
-                }
-              </div>
-            } @else if (c.tipo === 'fecha') {
-              <p-datepicker
-                [formControlName]="c.key"
-                dateFormat="dd/mm/yy"
-                styleClass="w-full"
-              />
-            }
-
-            @if (invalid(c.key)) {
-              <small class="err">{{ c.label }} es obligatorio</small>
-            }
-          </div>
+        @if (c.tipo === 'texto') {
+        @if (c.soloLectura) {
+        <input pInputText pSize="small" [id]="c.key" [formControlName]="c.key" readonly class="bg-gray-100" />
+        } @else {
+        <input pInputText [id]="c.key" [formControlName]="c.key" maxlength="120" [placeholder]="c.label"
+          [ngClass]="{ 'ng-invalid': invalid(c.key) }" />
+        }
+        } @else if (c.tipo === 'numero') {
+        <p-inputnumber size="small" [formControlName]="c.key" [showButtons]="true"
+          [ngClass]="{ 'ng-invalid': invalid(c.key) }" />
+        } @else if (c.tipo === 'select') {
+        <div class="flex gap-2">
+          @if (c.key === 'documentoId') {
+          <p-select size="small" [formControlName]="c.key" [options]="opcionesDocumento()" optionLabel="label"
+            optionValue="value" placeholder="Tipo documento..." styleClass="w-full" filter filterBy="label"
+            [appendTo]="'body'" (ngModelChange)="onDocumentoIdChange()" />
+          } @else if (c.key === 'nrodocumento') {
+          <p-select size="small" [formControlName]="c.key" [options]="opcionesNroDocumento()" optionLabel="label"
+            optionValue="value" placeholder="Nro. documento..." styleClass="w-full" filter filterBy="label"
+            [appendTo]="'body'" />
+          } @else {
+          <p-select size="small" [formControlName]="c.key" [options]="opciones(c)" optionLabel="label"
+            optionValue="value" placeholder="Seleccionar..." styleClass="w-full" [filter]="c.filtro ?? false"
+            filterBy="label" [appendTo]="'body'" />
           }
+          @if (c.selector) {
+          <p-button type="button" icon="pi pi-search" severity="secondary" (onClick)="abrirSelector(c.selector)" />
+          }
+        </div>
+        } @else if (c.tipo === 'fecha') {
+        <p-datepicker [formControlName]="c.key" dateFormat="dd/mm/yy" styleClass="w-full" />
+        }
+
+        @if (invalid(c.key)) {
+        <small class="err">{{ c.label }} es obligatorio</small>
         }
       </div>
-
-      @if (camposDet.length > 0) {
-      <div class="card">
-        <div class="detalles-head">
-          <h2 class="detalles-title">Detalles</h2>
-          <p-button
-            type="button"
-            label="Agregar fila"
-            icon="pi pi-plus"
-            severity="secondary"
-            size="small"
-            (onClick)="nuevaFila()"
-          />
-        </div>
-
-        <p-table [value]="dets()" [scrollable]="true" scrollHeight="400px" styleClass="det-table">
-          <ng-template #header>
-            <tr>
-              @for (c of camposDet; track c.key) {
-                @if (!c.oculto) {
-                <th>{{ c.label }}</th>
-                }
-              }
-              <th style="width: 80px"></th>
-            </tr>
-          </ng-template>
-          <ng-template #body let-row let-idx="rowIndex">
-            <tr>
-              @for (c of camposDet; track c.key) {
-                @if (!c.oculto) {
-                <td>
-                  @if (c.tipo === 'numero') {
-                    <p-inputnumber size="small" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" />
-                  } @else if (c.tipo === 'fecha') {
-                    <p-datepicker [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" styleClass="w-full" />
-                   } @else if (c.tipo === 'select') {
-                     @if (c.key === 'formapagoId') {
-                       <p-select size="small" [ngModel]="row[c.key]" (ngModelChange)="row[c.key] = $event; onFormaPagoChange(row)" [ngModelOptions]="{ standalone: true }" [options]="opciones(c)" optionLabel="label" optionValue="value" placeholder="Seleccionar..." styleClass="w-full" [filter]="c.filtro ?? false" filterBy="label" appendTo="body" />
-                     } @else {
-                       <p-select size="small" [ngModel]="row[c.key]" (ngModelChange)="row[c.key] = $event" [ngModelOptions]="{ standalone: true }" [options]="opciones(c)" optionLabel="label" optionValue="value" placeholder="Seleccionar..." styleClass="w-full" [filter]="c.filtro ?? false" filterBy="label" appendTo="body" [disabled]="isCampoDesactivado(row, c.key)" />
-                     }
-                   } @else {
-                     <input pInputText pSize="small" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" [disabled]="isCampoDesactivado(row, c.key)" [placeholder]="isCampoDesactivado(row, c.key) ? '' : c.label" />
-                  }
-                </td>
-                }
-              }
-              <td>
-                <p-button
-                  type="button"
-                  icon="pi pi-trash"
-                  severity="danger"
-                  text
-                  rounded
-                  size="small"
-                  [disabled]="!esNuevaFila(row)"
-                  (onClick)="quitarFila(idx)"
-                />
-              </td>
-            </tr>
-          </ng-template>
-          <ng-template #emptymessage>
-            <tr>
-              <td colspan="100" class="text-center p-3">Sin detalles. Agregue filas.</td>
-            </tr>
-          </ng-template>
-        </p-table>
-      </div>
       }
+      }
+    </div>
 
-      <div class="acciones-form">
-        <p-button
-          type="button"
-          label="Cancelar"
-          icon="pi pi-times"
-          severity="secondary"
-          size="small"
-          rounded
-          (onClick)="volver()"
-        />
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+    @if (camposDet.length > 0) {
+    <div class="card">
+      <div class="detalles-head">
+        <h2 class="detalles-title">Detalles</h2>
+        <p-button type="button" label="Agregar fila" icon="pi pi-plus" variant="text" severity="success" size="small"
+          [rounded]="true" (onClick)="nuevaFila()" />
       </div>
-    </form>
+
+      <p-table [value]="dets()" [scrollable]="true" scrollHeight="400px" styleClass="det-table" [paginator]="true"
+        [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small">
+        <ng-template #header>
+          <tr>
+            @for (c of camposDet; track c.key) {
+            @if (!c.oculto) {
+            <th>{{ c.label }}</th>
+            }
+            }
+            <th style="width: 80px"></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row let-idx="rowIndex">
+          <tr>
+            @for (c of camposDet; track c.key) {
+            @if (!c.oculto) {
+            <td>
+              @if (c.tipo === 'numero') {
+              <p-inputnumber size="small" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" />
+              } @else if (c.tipo === 'fecha') {
+              <p-datepicker [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy"
+                styleClass="w-full" />
+              } @else if (c.tipo === 'select') {
+              @if (c.key === 'formapagoId') {
+              <p-select size="small" [ngModel]="row[c.key]"
+                (ngModelChange)="row[c.key] = $event; onFormaPagoChange(row)" [ngModelOptions]="{ standalone: true }"
+                [options]="opciones(c)" optionLabel="label" optionValue="value" placeholder="Seleccionar..."
+                styleClass="w-full" [filter]="c.filtro ?? false" filterBy="label" appendTo="body" />
+              } @else {
+              <p-select size="small" [ngModel]="row[c.key]" (ngModelChange)="row[c.key] = $event"
+                [ngModelOptions]="{ standalone: true }" [options]="opciones(c)" optionLabel="label" optionValue="value"
+                placeholder="Seleccionar..." styleClass="w-full" [filter]="c.filtro ?? false" filterBy="label"
+                appendTo="body" [disabled]="isCampoDesactivado(row, c.key)" />
+              }
+              } @else {
+              <input pInputText pSize="small" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }"
+                [disabled]="isCampoDesactivado(row, c.key)"
+                [placeholder]="isCampoDesactivado(row, c.key) ? '' : c.label" />
+              }
+            </td>
+            }
+            }
+            <td>
+              <p-button type="button" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" size="small"
+                [disabled]="!esNuevaFila(row)" (onClick)="quitarFila(idx)" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="100" class="text-center p-3">Sin detalles. Agregue filas.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+    }
+
+    <div class="acciones-form">
+      <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small"
+        [rounded]="true" (onClick)="volver()" />
+      <p-button type="submit" label="Guardar" icon="pi pi-check" variant="text" severity="success" size="small"
+        [rounded]="true" [loading]="guardando()" />
+    </div>
+  </form>
   }
 </section>
+
 ```
 
 ---
@@ -22269,7 +22965,7 @@ export class MaestroDetalleForm implements OnInit {
     </div>
     <div>
       @if (!config.soloLectura) {
-        <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()" />
+        <p-button label="Nuevo" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="nuevo()" />
       }
     </div>
   </header>
@@ -22284,16 +22980,18 @@ export class MaestroDetalleForm implements OnInit {
         [ngModel]="q()"
         (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()"
+        pSize="small"
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
-        text
+        variant="text"
         size="small"
+        [rounded]="true"
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -22307,6 +23005,8 @@ export class MaestroDetalleForm implements OnInit {
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
+    [layout]="list"
   >
     <ng-template #list let-items>
       <div class="dv-cards">
@@ -22334,6 +23034,7 @@ export class MaestroDetalleForm implements OnInit {
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -22408,6 +23109,7 @@ export class MaestroDetalle implements OnInit {
   data = signal<any[]>([]);
   filtered = signal<any[]>([]);
   cargando = signal(false);
+  layout: 'list' | 'grid' = 'list';
 
   q = signal('');
 
@@ -22477,167 +23179,80 @@ export class MaestroDetalle implements OnInit {
 
 ```typescript
 <section class="page">
+
   <form [formGroup]="form">
-    <div class="nf-layout">
-      <div class="nf-col nf-col-left">
-        <p-toolbar class="mb-3 nf-toolbar">
-          <ng-template #start>
-            <div class="campo">
-              <label for="tipofactura">Tipo factura<span class="req">*</span></label>
-              <p-selectbutton size="small" id="tipofactura" [options]="tipoOptions" formControlName="tipofactura"
-                optionLabel="label" [size]="vsize()" optionValue="value" aria-labelledby="tipo-factura"
-                (onChange)="onTipoFacturaChange()" />
-            </div>
-
-            <div class="campo">
-              <label for="snFacturaconNombreId">Factura con nombre<span class="req">*</span></label>
-              <p-selectbutton size="small" id="snFacturaconNombreId" [options]="snNombreOptions" formControlName="snNombreOptions"
-                optionLabel="label" [size]="vsize()" optionValue="value" aria-labelledby="snFacturaconNombreId" />
-            </div>
-
-
-            <div class="campo ml-campo">
-              <label for="clienteId">Cliente <span class="req">*</span></label>
-              <p-select size="small" id="clienteId" formControlName="clienteId" [options]="clientes()"
-                optionLabel="label" [size]="vsize()" optionValue="value" filter showClear
-                placeholder="Seleccionar cliente..." styleClass="w-full" (onChange)="onClienteChange()"
-                [ngClass]="{ 'ng-invalid': invalid('clienteId') }" [disabled]="esContado()" />
-              @if (invalid('clienteId')) {
-              <small class="err">Seleccione el cliente</small>
-              }
-            </div>
-
-            <!-- agregar nuevo cliente -->
-            <p-button icon="pi pi-plus-circle" class="ml-campo btn-add-cliente" [size]="vsize()" severity="info"
-              pTooltip="ALT + 2 Buscar cliente | Agregar nuevo cliente" showDelay="1000" hideDelay="300"
-              (onClick)="abrirNuevoCliente()" />
-
-            @if (esContado() && form.get('snNombreOptions')?.value === 'S') {
-            <div class="campo ml-campo">
-              <label for="nombreClienteManual">Nombre del cliente<span class="req">*</span></label>
-              <input pInputText id="nombreClienteManual" pSize="small" [ngModel]="nombreClienteManual()"
-                (ngModelChange)="nombreClienteManual.set($event)" [ngModelOptions]="{ standalone: true }"
-                placeholder="Nombre del cliente" class="w-full" />
-            </div>
-            }
-
-
-
-          </ng-template>
-
-          <ng-template #end>
-
-            <p-button label="volver" icon="pi pi-arrow-left" [rounded]="true" severity="secondary" [size]="vsize()"
-              (onClick)="salir()" />
-
-          </ng-template>
-        </p-toolbar>
-
-
-        <p-toolbar class="mb-3 nf-toolbar">
-          <ng-template #start>
+    <div class="grid">
+      <!-- Columna 1: Campos de header izquierdo-->
+      <div class="col-12 xl:col-9">
+        <div class="formgrid grid">
+          <div class="field col col-12 md:col">
             <div class="nf-busqueda">
-              <input pInputText type="text" pSize="small" [value]="qProducto()" (input)="onBuscarProducto($event)"
-                placeholder="Buscar producto o escanear código de barras..." />
-              <!-- Buscar producto-->
-              <p-button [size]="vsize()" icon="pi pi-search" pTooltip="ALT + 1 Buscar producto"
-                showDelay="1000" hideDelay="300" severity="info" (onClick)="showHelperProductos()" />
+              <input pInputText type="text" pSize="small" style="width: 96%;" [value]="qProducto()"
+                (input)="onBuscarProducto($event)" placeholder="Buscar producto o escanear código de barras..." />
+              <p-button size="small" icon="pi pi-search" pTooltip="ALT + 1 Buscar producto" showDelay="1000"
+                hideDelay="300" severity="info" [rounded]="true" (onClick)="showHelperProductos()" />
             </div>
+          </div>
+        </div>
 
-            <div class="campo ml-campo">
-              <label>Tipo Descuento</label>
-              <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
-                placeholder="Sin descuento" [showClear]="true" styleClass="w-full" [ngModel]="descuentoGlobalId()"
-                [ngModelOptions]="{ standalone: true }"
-                (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()" />
-            </div>
-          </ng-template>
-          <ng-template #end>
-
-            <!-- voy a mover si las factura es excenta de isv -->
-
-            <div class="campo">
-              <label>Exenta de ISV</label>
-              <p-selectbutton size="small" [options]="snOptions" formControlName="sn_excenta" optionLabel="label"
-                optionValue="value" [size]="vsize()" (onChange)="recalcularExenta()" />
-            </div>
-            @if (form.get('nrocarnet')?.value && form.get('sn_excenta')?.value === 'S') {
-            <div class="campo ml-campo">
-              <label for="nrocarnet">Nro. Carnet<span class="req">*</span></label>
-              <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet" />
-              @if (invalid('nrocarnet')) {
-              <small class="err">Ingrese el número de carnet</small>
-              }
-            </div>
-            }
-
-          </ng-template>
-        </p-toolbar>
-
-        <p-table [value]="filas()" [size]="vsize()" [scrollable]="true" scrollHeight="400px"
-          [tableStyle]="{ 'min-width': '50rem' }" styleClass="det-table">
+        <p-table [value]="filas()" size="small" [scrollable]="true" scrollHeight="280px"
+          [tableStyle]="{ 'min-width': '50rem' }" styleClass="det-table" [rows]="5">
           <ng-template #header>
             <tr>
-              <th style="width: 5rem">Acción</th>
-              <th style="width: 17rem">Producto</th>
-              <th style="width: 3rem">Imagen</th>
-              <th style="width: 2rem">PrecioVta</th>
-              <th>Cantidad</th>
-              <th>Subtotal</th>
+              <th style="color: var(--color-texto-label); width: 17rem">Producto</th>
+              <th style="color: var(--color-texto-label); width: 3rem">Imagen</th>
+              <th style="color: var(--color-texto-label); width: 12rem;">Cantidad</th>
+              <th style="color: var(--color-texto-label); width: 8rem;">PrecioVta</th>
+              <th style="color: var(--color-texto-label); width: 8rem;">Subtotal</th>
+              <th style="color: var(--color-texto-label); width: 5rem">Acción</th>
             </tr>
           </ng-template>
           <ng-template #body let-row let-idx="rowIndex">
             <tr>
-              <td>
-                <p-button icon="pi pi-times" 
-                [rounded]="true" severity="danger" (onClick)="quitarFila(idx)"
-                  [size]="vsize()" 
-                  />
-              </td>
-
               <td class="cell-producto">
                 <span class="cod-barra">Cod. {{ row.codbarra }}</span>
                 <span class="desc-linea">{{ row.descripcion }}</span>
                 <span class="desc-linea">
-                  existencia: <p-badge [value]="getExistencia(row.productoId) + ''" badgeSize="small" severity="secondary" />
-                  disponibilidad: <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)" styleClass="tag-sm" />
+                  existencia: <p-badge [value]="getExistencia(row.productoId) + ''" badgeSize="small"
+                    severity="secondary" />
+                  disponibilidad: <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)"
+                    styleClass="tag-sm" />
                 </span>
-
               </td>
 
               <td>
                 @if (row.imagenUrl) {
                 <img [src]="row.imagenUrl" [alt]="row.descripcion" width="50" class="img-producto"
-                  (mouseenter)="onImgHover(row.imagenUrl, $event)"
-                  (mousemove)="onImgMove($event)"
+                  (mouseenter)="onImgHover(row.imagenUrl, $event)" (mousemove)="onImgMove($event)"
                   (mouseleave)="onImgLeave()" />
                 } @else {
                 <i class="pi pi-images" style="color: slateblue"></i>
                 }
               </td>
 
-              <td>{{ moneda(row.precioventa) }}</td>
-
               <td>
-                <p-inputnumber 
-                  [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" [min]="0"
-                  [step]="1" 
-                  [showButtons]="true"
-                  spinnerMode="horizontal"
-                  buttonLayout="horizontal"
-                  size="small"
-                  [inputStyle]="{ 'max-width': '3.5rem' }" 
-                  (ngModelChange)="recalcularFila(row)" >
-                 <ng-template #incrementbuttonicon>
-                        <span class="pi pi-plus"></span>
-                    </ng-template>  
-                                    <ng-template #decrementbuttonicon>
-                        <span class="pi pi-minus"></span>
-                    </ng-template>
+                <p-inputnumber [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" [min]="0" [step]="1"
+                  [showButtons]="true" spinnerMode="horizontal" buttonLayout="horizontal" size="small" mode="currency"
+                  currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+                  styleClass="w-10rem" [inputStyle]="{ 'width': '100%' }" (ngModelChange)="recalcularFila(row)">
+                  <ng-template #incrementbuttonicon>
+                    <span class="pi pi-plus"></span>
+                  </ng-template>
+                  <ng-template #decrementbuttonicon>
+                    <span class="pi pi-minus"></span>
+                  </ng-template>
                 </p-inputnumber>
               </td>
 
+              <td>{{ moneda(row.precioventa) }}</td>
+
               <td>{{ moneda(row.subTotal) }}</td>
+
+              <td>
+                <p-button icon="pi pi-times" [rounded]="true" severity="danger" (onClick)="quitarFila(idx)"
+                  size="small" />
+              </td>
+
             </tr>
           </ng-template>
           <ng-template #emptymessage>
@@ -22647,38 +23262,27 @@ export class MaestroDetalle implements OnInit {
           </ng-template>
         </p-table>
 
-
-        <div class="card mt-3 nf-totales">
+        <div class="campo col-12 md:col-fixed">
+          <label>Descuento</label>
+          <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
+            placeholder="Sin descuento" [showClear]="true" style="width: 96%;" [appendTo]="'body'"
+            [ngModel]="descuentoGlobalId()" [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()" />
+        </div>
+        <p-divider> </p-divider>
+        <div class="mt-2 nf-totales">
           <div class="nf-totales-split">
-            <div class="nf-totales-col-btns">
-              <p-button type="button" label="Nueva" icon="pi pi-file"  variant="text" severity="success"
-                [size]="vsize()" (onClick)="nueva()" pTooltip="ESC Cancelar" />
-              @if (form.get('tipofactura')?.value === 'C') {
-              <p-button type="button" label="Facturar" icon="pi pi-check-circle" [size]="vsize()" [rounded]="true"
-                severity="primary" [loading]="guardando()" (onClick)="facturar()" pTooltip="ALT + 8 Finalizar" />
-              } @else {
-              <p-button type="button" 
-                label="Pagar" variant="text" severity="info" icon="pi pi-credit-card" [size]="vsize()"
-                 (onClick)="dialogPagos.set(true)"
-                [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
-                pTooltip="ALT + 6 Pago" />
-              }
-              <p-button type="button" label="Salir" 
-              variant="text" severity="secondary"
-                icon="pi pi-sign-out"
-                [size]="vsize()" (onClick)="salir()" />
-            </div>
             <div class="nf-totales-col-data">
-              <div class="nf-total-block">
-                <div class="font-bold">Subtotal venta</div>
+              <div class="nf-total-block nf-total-grand">
+                <div>Subtotal venta</div>
                 <div>{{ moneda(totales().subTotal) }}</div>
               </div>
-              <div class="nf-total-block">
-                <div class="font-bold">Impuesto (15%)</div>
+              <div class="nf-total-block nf-total-grand">
+                <div>Impuesto </div>
                 <div>{{ moneda(totales().impuesto) }}</div>
               </div>
-              <div class="nf-total-block">
-                <div class="font-bold">Descuento</div>
+              <div class="nf-total-block nf-total-grand">
+                <div>Descuento</div>
                 <div>- {{ moneda(totales().descuento) }}</div>
               </div>
               <div class="nf-total-block nf-total-grand">
@@ -22689,51 +23293,164 @@ export class MaestroDetalle implements OnInit {
           </div>
         </div>
 
-      </div>
+      </div> <!-- Fin campos de header izquierdo-->
 
-      <div class="nf-col nf-col-right">
+      <!-- Columna 2: Campos de header derecho-->
+      <div class="col-12 xl:col-3">
+        <div class="p-2 for-border-color-alls border-2 border-round m-2 nf-side-panel">
 
-        <div class="invoice-side">
-          <div class="pago-block">
-            <div class="invoice-party-title">Resumen de Pago</div>
-            <div class="pago-resumen">
-              <div class="pago-resumen-inline">
-                <span>Total Factura: <span class="font-bold">{{ moneda(totales().total) }}</span></span>
-                <span>Total Pagos: <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
-                    [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0">{{ moneda(totalPagos())
-                    }}</span></span>
-                @if (pendiente() > 0) {
-                <span>Pendiente: <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span>
-                }
-                @if (cambioTotal() > 0) {
-                <span>Cambio: <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span>
-                }
+          <div class="field">
+            <div class="campo">
+              <label for="tipofactura">Tipo factura<span class="req">*</span></label>
+              <p-selectbutton size="small" id="tipofactura" [options]="tipoOptions" formControlName="tipofactura"
+                optionLabel="label" optionValue="value" aria-labelledby="tipo-factura"
+                (onChange)="onTipoFacturaChange()" />
+            </div>
+          </div>
+          <div class="field">
+
+            <div class="p-0 grid">
+              <div class="p-2 col-5">
+                <div class="campo">
+                  <label for="snFacturaconNombreId">Factura con nombre</label>
+                  <p-selectbutton size="small" id="snFacturaconNombreId" [options]="snNombreOptions"
+                    formControlName="snNombreOptions" optionLabel="label" optionValue="value"
+                    aria-labelledby="snFacturaconNombreId" />
+                </div>
+              </div>
+              <div class="p-2 ml-2 mt-2 col-5">
+                <p-button icon="pi pi-plus" class="ml-campo btn-add-cliente" size="small" severity="info"
+                  [raised]="true" [rounded]="true" pTooltip="ALT + 2 Agregar nuevo cliente" [appendTo]="'body'"
+                  showDelay="1000" hideDelay="300" (onClick)="abrirNuevoCliente()" />
               </div>
             </div>
-            @if (pagosConImporte().length === 0) {
-            <small class="text-muted mt-1 block">Ingrese importe en las formas de pago</small>
-            }
           </div>
+          <div class="p-0 field">
+            <div class="campo">
+              <label for="clienteId">Cliente <span class="req">*</span></label>
+              <p-select size="small" id="clienteId" formControlName="clienteId" [options]="clientes()"
+                optionLabel="label" optionValue="value" filter showClear placeholder="Seleccionar cliente..."
+                styleClass="w-full" [appendTo]="'body'" (onChange)="onClienteChange()"
+                [ngClass]="{ 'ng-invalid': invalid('clienteId') }" [disabled]="esContado()" />
+              @if (invalid('clienteId')) {
+              <small class="err">Seleccione el cliente</small>
+              }
+            </div>
+            <div class="field">
+              @if (esContado() && form.get('snNombreOptions')?.value === 'S') {
+              <div class="campo ml-campo">
+                <label for="nombreClienteManual">Nombre del cliente<span class="req">*</span></label>
+                <input pInputText id="nombreClienteManual" pSize="small" [ngModel]="nombreClienteManual()"
+                  (ngModelChange)="nombreClienteManual.set($event)" [ngModelOptions]="{ standalone: true }"
+                  placeholder="Nombre del cliente" class="w-full" />
+              </div>
+              }
+            </div>
+
+            <div class="field">
+              <div class="campo">
+                <label>Exenta de ISV</label>
+                <p-selectbutton size="small" [options]="snOptions" formControlName="sn_excenta" optionLabel="label"
+                  optionValue="value" (onChange)="recalcularExenta()" />
+              </div>
+            </div>
+            <div class="field">
+              @if (form.get('sn_excenta')?.value === 'S') {
+              <div class="campo ml-campo">
+                <label for="nrocarnet">Nro. Carnet<span class="req">*</span></label>
+                <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet" />
+                @if (invalid('nrocarnet')) {
+                <small class="err">Ingrese el número de carnet</small>
+                }
+              </div>
+              }
+            </div>
+
+            <div class="field">
+              <div class="nf-col nf-col-right">
+                <div class="invoice-side">
+                  <div class="pago-block">
+                    <div class="invoice-party-title">Resumen de Pago</div>
+                    <div class="pago-resumen">
+                      <div class="pago-resumen-inline">
+                        <span>Total Factura: <span class="font-bold">{{ moneda(totales().total) }}</span></span>
+                        <span>Total Pagos: <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
+                            [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0">{{
+                            moneda(totalPagos())
+                            }}</span></span>
+                        @if (pendiente() > 0) {
+                        <span>Pendiente: <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span>
+                        }
+                        @if (cambioTotal() > 0) {
+                        <span>Cambio: <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span>
+                        }
+                      </div>
+                    </div>
+                    @if (pagosConImporte().length === 0) {
+                    <small class="text-muted mt-1 block">Ingrese importe en las formas de pago</small>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <div class="field">
+
+              <p-button type="button" label="Salir" variant="text" severity="secondary" icon="pi pi-sign-out"
+                size="small" [rounded]="true" (onClick)="salir()" />
+
+              <p-button type="button" label="Nueva" icon="pi pi-file" variant="text" severity="success" size="small"
+                [rounded]="true" (onClick)="nueva()" pTooltip="ESC Cancelar" />
+              @if (form.get('tipofactura')?.value === 'C') {
+              <p-button type="button" label="Facturar" icon="pi pi-check-circle" size="small" [rounded]="true"
+                variant="text" severity="success" [loading]="guardando()" (onClick)="facturar()"
+                pTooltip="ALT + 8 Finalizar" />
+              } @else {
+              <p-button type="button" label="Pagar" variant="text" severity="info" icon="pi pi-credit-card" size="small"
+                [rounded]="true" (onClick)="dialogPagos.set(true)"
+                [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
+                pTooltip="ALT + 6 Pago" />
+              }
+
+            </div>
+
+
+
+
+          </div>
+
         </div>
+
+
       </div>
     </div>
+
+
+
+
   </form>
 </section>
 
 
 <p-dialog header="Formas de Pago" [(visible)]="dialogPagos" [modal]="true" [style]="{ width: '80vw', height: '85vh' }"
-  [contentStyle]="{ overflow: 'auto' }" [draggable]="false" [resizable]="false">
+  [contentStyle]="{ overflow: 'auto' }" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
   <div class="pago-dialog-body">
-    <p-table [value]="pagos()" [size]="vsize()" [scrollable]="true" scrollHeight="flex"
-      [tableStyle]="{ 'min-width': '100%' }" styleClass="pago-table">
+    <div class="pago-add-row">
+      <p-button size="small" label="Agregar pago" icon="pi pi-plus" severity="success" variant="text" [raised]="true"
+        [rounded]="true" (onClick)="agregarPago()" />
+    </div>
+    <p-table [value]="pagos()" size="small" [scrollable]="true" scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '100%' }">
       <ng-template #header>
         <tr>
-          <th style="width: 25%">Forma de Pago</th>
-          <th style="width: 20%">Tarjeta</th>
-          <th style="width: 15%">Nro. Tarjeta</th>
-          <th style="width: 15%">Autorización</th>
-          <th style="width: 10%">Importe</th>
-          <th style="width: 5%"></th>
+          <th style="color: var(--color-texto-label); width: 25%">Forma de Pago</th>
+          <th style="color: var(--color-texto-label); width: 20%">Tarjeta</th>
+          <th style="color: var(--color-texto-label); width: 15%">Nro. Tarjeta</th>
+          <th style="color: var(--color-texto-label); width: 15%">Autorización</th>
+          <th style="color: var(--color-texto-label); width: 10%">Importe</th>
+          <th style="color: var(--color-texto-label); width: 5%"></th>
         </tr>
       </ng-template>
       <ng-template #body let-pago let-idx="rowIndex">
@@ -22741,13 +23458,13 @@ export class MaestroDetalle implements OnInit {
           <td>
             <p-select size="small" [options]="formaspago()" optionLabel="label" optionValue="value"
               placeholder="Seleccionar..." styleClass="w-full" [(ngModel)]="pago.formapagoId"
-              [ngModelOptions]="{ standalone: true }" />
+              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" />
           </td>
           <td>
             @if (esTarjeta(pago)) {
             <p-select size="small" [options]="tarjetas()" optionLabel="label" optionValue="value"
               placeholder="Seleccionar..." styleClass="w-full" showClear [(ngModel)]="pago.tarjetacreditoId"
-              [ngModelOptions]="{ standalone: true }" />
+              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" />
             }
           </td>
           <td>
@@ -22764,11 +23481,11 @@ export class MaestroDetalle implements OnInit {
           </td>
           <td>
             <p-inputnumber size="small" [(ngModel)]="pago.importe" [ngModelOptions]="{ standalone: true }" [min]="0"
-              mode="currency" currency="HNL" locale="es-HN" styleClass="w-full" />
+              mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
+              [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
           </td>
           <td class="text-center">
-            <p-button icon="pi pi-times" [rounded]="true" severity="danger" [size]="vsize()"
-              (onClick)="quitarPago(idx)" />
+            <p-button icon="pi pi-times" [rounded]="true" severity="danger" size="small" (onClick)="quitarPago(idx)" />
           </td>
         </tr>
       </ng-template>
@@ -22780,45 +23497,51 @@ export class MaestroDetalle implements OnInit {
         </tr>
       </ng-template>
     </p-table>
-
-    <div class="pago-dialog-footer">
-      <div class="pago-dialog-totales">
-        <div class="pago-resumen-line">
-          <span>Total Factura:</span>
-          <span class="font-bold">{{ moneda(totales().total) }}</span>
-        </div>
-        <div class="pago-resumen-line">
-          <span>Total Pagos:</span>
-          <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
-            [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0">{{ moneda(totalPagos()) }}</span>
-        </div>
-        @if (pendiente() > 0) {
-        <div class="pago-resumen-line pendiente-line">
-          <span>Pendiente:</span>
-          <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span>
-        </div>
-        }
-        @if (cambioTotal() > 0) {
-        <div class="pago-resumen-line">
-          <span>Cambio:</span>
-          <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span>
-        </div>
-        }
-      </div>
-      <div class="pago-dialog-actions">
-        <p-button type="button" label="Cancelar" icon="pi pi-times" severity="secondary" [size]="vsize()"
-          (onClick)="dialogPagos.set(false)" />
-        <p-button type="button" label="Facturar" icon="pi pi-shopping-cart" [loading]="guardando()" [size]="vsize()"
-          (onClick)="facturar()" />
-      </div>
-    </div>
   </div>
+  <ng-template pTemplate="footer">
+
+    <div class="grid w-full">
+      <div class="col-12 md:col-6 lg:col-3">
+        <span>Total Factura:</span>
+        <span class="font-bold"> {{ moneda(totales().total) }}</span>
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        <span>Total Pagos:</span>
+        <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
+          [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"> {{ moneda(totalPagos()) }}</span>
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        @if (pendiente() > 0) {
+        <span> Pendiente:</span>
+        <span class="font-bold text-warn"> {{ moneda(pendiente()) }}</span>
+        }
+
+      </div>
+
+      <div class="col-12 md:col-6 lg:col-3">
+        @if (cambioTotal() > 0) {
+        <span>Cambio:</span>
+        <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span>
+        }
+      </div>
+
+    </div>
+
+    <div class="pago-dialog-actions">
+      <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small"
+        [rounded]="true" (onClick)="dialogPagos.set(false)" />
+      <p-button type="button" label="Facturar" icon="pi pi-shopping-cart" [loading]="guardando()" size="small"
+        severity="success" variant="text" [rounded]="true" (onClick)="facturar()" />
+    </div>
+  </ng-template>
 </p-dialog>
 
 <p-dialog header="Ventas Suspendidas (ALT + 4)" [(visible)]="dialogSuspendidas" [modal]="true"
-  [style]="{ width: '70vw' }" [draggable]="false" [resizable]="false">
-  <p-table [value]="ventasSuspendidas()" [size]="vsize()" [scrollable]="true" scrollHeight="400px"
-    styleClass="det-table">
+  [style]="{ width: '70vw' }" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+  <p-table [value]="ventasSuspendidas()" size="small" [scrollable]="true" scrollHeight="400px" styleClass="det-table"
+    [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
     <ng-template #header>
       <tr>
         <th style="width: 10rem">Fecha</th>
@@ -22835,10 +23558,10 @@ export class MaestroDetalle implements OnInit {
         <td>{{ v.filas?.length ?? 0 }}</td>
         <td class="text-right">{{ moneda(v.totales?.total) }}</td>
         <td class="text-center">
-          <p-button icon="pi pi-upload" [rounded]="true" severity="success" [size]="vsize()"
-            pTooltip="Restaurar" (onClick)="restaurarVenta(v)" />
-          <p-button icon="pi pi-trash" [rounded]="true" severity="danger" [size]="vsize()"
-            pTooltip="Eliminar" (onClick)="eliminarVentaSuspendida(v)" />
+          <p-button icon="pi pi-upload" [rounded]="true" severity="success" size="small" pTooltip="Restaurar"
+            (onClick)="restaurarVenta(v)" />
+          <p-button icon="pi pi-trash" [rounded]="true" severity="danger" size="small" pTooltip="Eliminar"
+            (onClick)="eliminarVentaSuspendida(v)" />
         </td>
       </tr>
     </ng-template>
@@ -22850,8 +23573,8 @@ export class MaestroDetalle implements OnInit {
   </p-table>
 </p-dialog>
 
-<p-dialog header="Atajos de Teclado (ALT + 9)" [(visible)]="dialogAtajos" [modal]="true"
-  [style]="{ width: '420px' }" [draggable]="false" [resizable]="false">
+<p-dialog header="Atajos de Teclado (ALT + 9)" [(visible)]="dialogAtajos" [modal]="true" [style]="{ width: '420px' }"
+  [draggable]="false" [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
   <div class="atajos-list">
     @for (a of atajos; track a.tecla) {
     <div class="atajo-row">
@@ -22863,9 +23586,9 @@ export class MaestroDetalle implements OnInit {
 </p-dialog>
 
 @if (zoomVisible()) {
-<img [src]="zoomUrl()" class="img-zoom-overlay"
-  [style.left.px]="zoomX()" [style.top.px]="zoomY()" />
+<img [src]="zoomUrl()" class="img-zoom-overlay" [style.left.px]="zoomX()" [style.top.px]="zoomY()" />
 }
+
 ```
 
 ---
@@ -22873,6 +23596,21 @@ export class MaestroDetalle implements OnInit {
 ## 📄 src\app\features\facturacion\nueva-factura\nueva-factura.scss
 
 ```typescript
+.field {
+    margin-bottom: 0.2rem;
+}
+
+.col-5 {
+    flex: 0 0 auto;
+    padding: 0.2rem;
+    width: 41.6667%;
+}
+
+.nf-side-panel {
+  min-width: 275px;
+  min-height: 200px;
+}
+
 .nf-layout {
   display: flex;
   gap: 1.25rem;
@@ -22896,11 +23634,17 @@ export class MaestroDetalle implements OnInit {
 
 .nf-toolbar {
   ::ng-deep .p-toolbar-group-start,
+  ::ng-deep .p-toolbar-group-center,
   ::ng-deep .p-toolbar-group-end {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     min-height: 0;
+  }
+
+  ::ng-deep .p-toolbar-group-center {
+    flex: 1;
+    justify-content: center;
   }
 
   ::ng-deep .p-toolbar-group-end {
@@ -22924,12 +23668,16 @@ export class MaestroDetalle implements OnInit {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  margin-top: 14px;
+  margin-top: 18px;
 
   input[pinputtext] {
     flex: 1;
     min-width: 0;
   }
+}
+
+.nf-toolbar .nf-busqueda {
+  margin-top: 12;
 }
 
 .invoice-side {
@@ -22983,7 +23731,7 @@ export class MaestroDetalle implements OnInit {
   label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-color);
+    color: var(--color-texto-label);
   }
 
   .req {
@@ -23007,7 +23755,7 @@ export class MaestroDetalle implements OnInit {
 }
 
 .ml-campo {
-  margin-left: 1rem;
+  margin-left: 0.5rem;
 }
 
 .btn-add-cliente {
@@ -23249,7 +23997,7 @@ export class MaestroDetalle implements OnInit {
 .img-producto {
   mix-blend-mode: multiply;
   background: transparent;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .campo-full {
@@ -23293,6 +24041,21 @@ export class MaestroDetalle implements OnInit {
   }
 }
 
+@media (max-width: 767px) {
+  section.page {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  .nf-busqueda {
+    margin-top: 0;
+  }
+
+  .nf-totales .nf-totales-col-data {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .atajos-list {
   display: flex;
   flex-direction: column;
@@ -23328,7 +24091,13 @@ export class MaestroDetalle implements OnInit {
     font-size: 0.85rem;
     color: var(--text-color);
   }
+
 }
+
+ .surface-border{
+  color: var(--for-border-color-alls);
+ }
+
 ```
 
 ---
@@ -23361,6 +24130,7 @@ import { Producto } from '../../../core/models/inventario.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
+import { DividerModule } from 'primeng/divider';
 
 interface Opcion {
   label: string;
@@ -23408,6 +24178,7 @@ interface PagoFactura {
     ToolbarModule,
     TagModule,
      TooltipModule,
+     DividerModule,
   ],
   providers: [DialogService],
   templateUrl: './nueva-factura.html',
@@ -23495,13 +24266,13 @@ export class NuevaFactura implements OnInit {
   ];
 
  readonly snNombreOptions = [
-    { label: 'Si', value: 'S' },
-    { label: 'No', value: 'N' }
+    { label: 'No', value: 'N' },
+    { label: 'Si', value: 'S' }
   ];
 
   readonly snOptions = [
-    { label: 'Sí', value: 'S' },
     { label: 'No', value: 'N' },
+    { label: 'Sí', value: 'S' }
   ];
 
   constructor(public dialogService: DialogService) {}
@@ -24569,8 +25340,795 @@ export class NuevaFactura implements OnInit {
           detail: data?.descripcion,
           life: 3000,
         });
-      } 
+      }
     });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\nueva-factura\respaldo.html
+
+```typescript
+<section class="page">
+  <form [formGroup]="form">
+    <div class="nf-layout">
+      <div class="nf-col nf-col-left">
+        <p-toolbar class="mb-3 nf-toolbar">
+          <ng-template #start>
+            <div class="campo">
+              <label for="tipofactura">Tipo factura<span class="req">*</span></label>
+              <p-selectbutton size="small" id="tipofactura" [options]="tipoOptions" formControlName="tipofactura"
+                optionLabel="label" size="small" optionValue="value" aria-labelledby="tipo-factura"
+                (onChange)="onTipoFacturaChange()" />
+            </div>
+
+            <div class="campo">
+              <label for="snFacturaconNombreId">Factura con nombre<span class="req">*</span></label>
+              <p-selectbutton size="small" id="snFacturaconNombreId" [options]="snNombreOptions" formControlName="snNombreOptions"
+                optionLabel="label" size="small" optionValue="value" aria-labelledby="snFacturaconNombreId" />
+            </div>
+
+
+            <div class="campo ml-campo">
+              <label for="clienteId">Cliente <span class="req">*</span></label>
+              <p-select size="small" id="clienteId" formControlName="clienteId" [options]="clientes()"
+                optionLabel="label" optionValue="value" filter showClear
+                placeholder="Seleccionar cliente..." styleClass="w-full" [appendTo]="'body'" (onChange)="onClienteChange()"
+                [ngClass]="{ 'ng-invalid': invalid('clienteId') }" [disabled]="esContado()" />
+              @if (invalid('clienteId')) {
+              <small class="err">Seleccione el cliente</small>
+              }
+            </div>
+
+            <!-- agregar nuevo cliente -->
+            <p-button icon="pi pi-plus-circle" class="ml-campo btn-add-cliente" size="small" variant="text" severity="info"
+              [rounded]="true"
+              pTooltip="ALT + 2 Buscar cliente | Agregar nuevo cliente" showDelay="1000" hideDelay="300"
+              (onClick)="abrirNuevoCliente()" />
+
+            @if (esContado() && form.get('snNombreOptions')?.value === 'S') {
+            <div class="campo ml-campo">
+              <label for="nombreClienteManual">Nombre del cliente<span class="req">*</span></label>
+              <input pInputText id="nombreClienteManual" pSize="small" [ngModel]="nombreClienteManual()"
+                (ngModelChange)="nombreClienteManual.set($event)" [ngModelOptions]="{ standalone: true }"
+                placeholder="Nombre del cliente" class="w-full" />
+            </div>
+            }
+
+
+
+          </ng-template>
+
+          <ng-template #end>
+
+            <p-button label="volver" icon="pi pi-arrow-left" [rounded]="true" variant="text" severity="secondary" size="small"
+              (onClick)="salir()" />
+
+          </ng-template>
+        </p-toolbar>
+
+
+        <p-toolbar class="mb-3 nf-toolbar">
+          <ng-template #start>
+            <div class="nf-busqueda">
+              <input pInputText type="text" pSize="small" [value]="qProducto()" (input)="onBuscarProducto($event)"
+                placeholder="Buscar producto o escanear código de barras..." />
+              <!-- Buscar producto-->
+              <p-button size="small" icon="pi pi-search" pTooltip="ALT + 1 Buscar producto"
+                showDelay="1000" hideDelay="300" variant="text" severity="info" [rounded]="true" (onClick)="showHelperProductos()" />
+            </div>
+
+            <div class="campo ml-campo">
+              <label>Tipo Descuento</label>
+              <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
+                placeholder="Sin descuento" [showClear]="true" styleClass="w-full" [appendTo]="'body'" [ngModel]="descuentoGlobalId()"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()" />
+            </div>
+          </ng-template>
+          <ng-template #end>
+
+            <!-- voy a mover si las factura es excenta de isv -->
+
+            <div class="campo">
+              <label>Exenta de ISV</label>
+              <p-selectbutton size="small" [options]="snOptions" formControlName="sn_excenta" optionLabel="label"
+                optionValue="value" size="small" (onChange)="recalcularExenta()" />
+            </div>
+            @if (form.get('nrocarnet')?.value && form.get('sn_excenta')?.value === 'S') {
+            <div class="campo ml-campo">
+              <label for="nrocarnet">Nro. Carnet<span class="req">*</span></label>
+              <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet" />
+              @if (invalid('nrocarnet')) {
+              <small class="err">Ingrese el número de carnet</small>
+              }
+            </div>
+            }
+
+          </ng-template>
+        </p-toolbar>
+
+        <p-table [value]="filas()" size="small" [scrollable]="true" scrollHeight="400px"
+          [tableStyle]="{ 'min-width': '50rem' }" styleClass="det-table"
+          [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+          [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+          <ng-template #header>
+            <tr>
+              <th style="width: 5rem">Acción</th>
+              <th style="width: 25rem">Producto</th>
+              <th style="width: 3rem">Imagen</th>
+              <th style="width: 2rem">PrecioVta</th>
+              <th tyle="width: 8rem">Cantidad</th>
+              <th>Subtotal</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-row let-idx="rowIndex">
+            <tr>
+              <td>
+                <p-button icon="pi pi-times"
+                [rounded]="true" severity="danger" (onClick)="quitarFila(idx)"
+                  size="small"
+                  />
+              </td>
+
+              <td class="cell-producto">
+                <span class="cod-barra">Cod. {{ row.codbarra }}</span>
+                <span class="desc-linea">{{ row.descripcion }}</span>
+                <span class="desc-linea">
+                  existencia: <p-badge [value]="getExistencia(row.productoId) + ''" badgeSize="small" severity="secondary" />
+                  disponibilidad: <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)" styleClass="tag-sm" />
+                </span>
+
+              </td>
+
+              <td>
+                @if (row.imagenUrl) {
+                <img [src]="row.imagenUrl" [alt]="row.descripcion" width="50" class="img-producto"
+                  (mouseenter)="onImgHover(row.imagenUrl, $event)"
+                  (mousemove)="onImgMove($event)"
+                  (mouseleave)="onImgLeave()" />
+                } @else {
+                <i class="pi pi-images" style="color: slateblue"></i>
+                }
+              </td>
+
+              <td>{{ moneda(row.precioventa) }}</td>
+
+              <td>
+                <p-inputnumber
+                  [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" [min]="0"
+                  [step]="1"
+                  [showButtons]="true"
+                  spinnerMode="horizontal"
+                  buttonLayout="horizontal"
+                  size="small"
+                  mode="currency" currency="HNL" [locale]="'es-HN'"
+                  [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+                  [inputStyle]="{ 'width': '100%' }"
+                  (ngModelChange)="recalcularFila(row)" >
+                 <ng-template #incrementbuttonicon>
+                        <span class="pi pi-plus"></span>
+                    </ng-template>
+                                    <ng-template #decrementbuttonicon>
+                        <span class="pi pi-minus"></span>
+                    </ng-template>
+                </p-inputnumber>
+              </td>
+
+              <td>{{ moneda(row.subTotal) }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="100" class="text-center p-3">Sin artículos. Agregue el primer artículo.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+
+        <div class="card mt-3 nf-totales">
+          <div class="nf-totales-split">
+            <div class="nf-totales-col-btns">
+              <p-button type="button" label="Nueva" icon="pi pi-file" variant="text" severity="success"
+                size="small" [rounded]="true" (onClick)="nueva()" pTooltip="ESC Cancelar" />
+              @if (form.get('tipofactura')?.value === 'C') {
+              <p-button type="button" label="Facturar" icon="pi pi-check-circle" size="small" [rounded]="true"
+                variant="text" severity="success" [loading]="guardando()" (onClick)="facturar()" pTooltip="ALT + 8 Finalizar" />
+              } @else {
+              <p-button type="button"
+                label="Pagar" variant="text" severity="info" icon="pi pi-credit-card" size="small"
+                 [rounded]="true"
+                 (onClick)="dialogPagos.set(true)"
+                [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
+                pTooltip="ALT + 6 Pago" />
+              }
+              <p-button type="button" label="Salir"
+              variant="text" severity="secondary"
+                icon="pi pi-sign-out"
+                size="small" [rounded]="true" (onClick)="salir()" />
+            </div>
+            <div class="nf-totales-col-data">
+              <div class="nf-total-block">
+                <div class="font-bold">Subtotal venta</div>
+                <div>{{ moneda(totales().subTotal) }}</div>
+              </div>
+              <div class="nf-total-block">
+                <div class="font-bold">Impuesto (15%)</div>
+                <div>{{ moneda(totales().impuesto) }}</div>
+              </div>
+              <div class="nf-total-block">
+                <div class="font-bold">Descuento</div>
+                <div>- {{ moneda(totales().descuento) }}</div>
+              </div>
+              <div class="nf-total-block nf-total-grand">
+                <div>Gran Total</div>
+                <div>{{ moneda(totales().total) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="nf-col nf-col-right">
+
+        <div class="invoice-side">
+          <div class="pago-block">
+            <div class="invoice-party-title">Resumen de Pago</div>
+            <div class="pago-resumen">
+              <div class="pago-resumen-inline">
+                <span>Total Factura: <span class="font-bold">{{ moneda(totales().total) }}</span></span>
+                <span>Total Pagos: <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
+                    [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0">{{ moneda(totalPagos())
+                    }}</span></span>
+                @if (pendiente() > 0) {
+                <span>Pendiente: <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span>
+                }
+                @if (cambioTotal() > 0) {
+                <span>Cambio: <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span>
+                }
+              </div>
+            </div>
+            @if (pagosConImporte().length === 0) {
+            <small class="text-muted mt-1 block">Ingrese importe en las formas de pago</small>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</section>
+
+
+<p-dialog header="Formas de Pago" [(visible)]="dialogPagos" [modal]="true" [style]="{ width: '80vw', height: '85vh' }"
+  [contentStyle]="{ overflow: 'auto' }" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+  <div class="pago-dialog-body">
+      <p-table [value]="pagos()" size="small" [scrollable]="true" scrollHeight="flex"
+        [tableStyle]="{ 'min-width': '100%' }" styleClass="pago-table"
+        [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+      <ng-template #header>
+        <tr>
+          <th style="width: 25%">Forma de Pago</th>
+          <th style="width: 20%">Tarjeta</th>
+          <th style="width: 15%">Nro. Tarjeta</th>
+          <th style="width: 15%">Autorización</th>
+          <th style="width: 10%">Importe</th>
+          <th style="width: 5%"></th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-pago let-idx="rowIndex">
+        <tr>
+          <td>
+            <p-select size="small" [options]="formaspago()" optionLabel="label" optionValue="value"
+              placeholder="Seleccionar..." styleClass="w-full" [(ngModel)]="pago.formapagoId"
+              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" />
+          </td>
+          <td>
+            @if (esTarjeta(pago)) {
+            <p-select size="small" [options]="tarjetas()" optionLabel="label" optionValue="value"
+              placeholder="Seleccionar..." styleClass="w-full" showClear [(ngModel)]="pago.tarjetacreditoId"
+              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" />
+            }
+          </td>
+          <td>
+            @if (esTarjeta(pago)) {
+            <input pInputText size="small" [(ngModel)]="pago.nrotarjeta" [ngModelOptions]="{ standalone: true }"
+              placeholder="Nro. tarjeta" class="w-full" />
+            }
+          </td>
+          <td>
+            @if (esTarjeta(pago) || esTransferencia(pago)) {
+            <input pInputText size="small" [(ngModel)]="pago.nroautorizacion" [ngModelOptions]="{ standalone: true }"
+              placeholder="Autorización" class="w-full" />
+            }
+          </td>
+          <td>
+            <p-inputnumber size="small" [(ngModel)]="pago.importe" [ngModelOptions]="{ standalone: true }" [min]="0"
+              mode="currency" currency="HNL" [locale]="'es-HN'"
+              [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+              [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
+          </td>
+          <td class="text-center">
+            <p-button icon="pi pi-times" [rounded]="true" severity="danger" size="small"
+              (onClick)="quitarPago(idx)" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="7" class="text-center p-3">
+            Sin formas de pago. Presione "Agregar pago" para comenzar.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="pago-dialog-footer">
+      <div class="pago-dialog-totales">
+        <div class="pago-resumen-line">
+          <span>Total Factura:</span>
+          <span class="font-bold">{{ moneda(totales().total) }}</span>
+        </div>
+        <div class="pago-resumen-line">
+          <span>Total Pagos:</span>
+          <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
+            [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0">{{ moneda(totalPagos()) }}</span>
+        </div>
+        @if (pendiente() > 0) {
+        <div class="pago-resumen-line pendiente-line">
+          <span>Pendiente:</span>
+          <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span>
+        </div>
+        }
+        @if (cambioTotal() > 0) {
+        <div class="pago-resumen-line">
+          <span>Cambio:</span>
+          <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span>
+        </div>
+        }
+      </div>
+      <div class="pago-dialog-actions">
+        <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small" [rounded]="true"
+          (onClick)="dialogPagos.set(false)" />
+        <p-button type="button" label="Facturar" icon="pi pi-shopping-cart" [loading]="guardando()" size="small"
+          severity="success" variant="text" [rounded]="true"
+          (onClick)="facturar()" />
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Ventas Suspendidas (ALT + 4)" [(visible)]="dialogSuspendidas" [modal]="true"
+  [style]="{ width: '70vw' }" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+  <p-table [value]="ventasSuspendidas()" size="small" [scrollable]="true" scrollHeight="400px"
+    styleClass="det-table"
+    [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+    [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+    <ng-template #header>
+      <tr>
+        <th style="width: 10rem">Fecha</th>
+        <th>Cliente</th>
+        <th>Artículos</th>
+        <th style="width: 10rem" class="text-right">Total</th>
+        <th style="width: 8rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-v let-idx="rowIndex">
+      <tr>
+        <td>{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>{{ v.nombreClienteManual || v.nrocliente || 'N/A' }}</td>
+        <td>{{ v.filas?.length ?? 0 }}</td>
+        <td class="text-right">{{ moneda(v.totales?.total) }}</td>
+        <td class="text-center">
+          <p-button icon="pi pi-upload" [rounded]="true" severity="success" size="small"
+            pTooltip="Restaurar" (onClick)="restaurarVenta(v)" />
+          <p-button icon="pi pi-trash" [rounded]="true" severity="danger" size="small"
+            pTooltip="Eliminar" (onClick)="eliminarVentaSuspendida(v)" />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="5" class="text-center p-3">No hay ventas suspendidas</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-dialog>
+
+<p-dialog header="Atajos de Teclado (ALT + 9)" [(visible)]="dialogAtajos" [modal]="true"
+  [style]="{ width: '420px' }" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+  <div class="atajos-list">
+    @for (a of atajos; track a.tecla) {
+    <div class="atajo-row">
+      <kbd>{{ a.tecla }}</kbd>
+      <span>{{ a.accion }}</span>
+    </div>
+    }
+  </div>
+</p-dialog>
+
+@if (zoomVisible()) {
+<img [src]="zoomUrl()" class="img-zoom-overlay"
+  [style.left.px]="zoomX()" [style.top.px]="zoomY()" />
+}
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\pedidos\pedidos-list.html
+
+```typescript
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Pedidos</h1>
+      <p class="page-subtitle">Pedidos de clientes</p>
+    </div>
+    <div>
+      <p-button label="Nuevo" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="nuevo()" />
+    </div>
+  </header>
+
+  <div class="card filtros-card">
+    <div class="filtros-row">
+      <div class="campo campo-busqueda">
+        <span class="p-input-icon-left">
+          <input pInputText type="text" pSize="small"
+            placeholder="Buscar por # pedido, nombre del cliente o teléfono..."
+            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" class="busqueda-input" />
+        </span>
+      </div>
+      <div class="filtros-acciones">
+        <i class="pi pi-search"></i>
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="limpiar()" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card tabla-card">
+    <p-table [value]="filtered()" [loading]="cargando()"
+    showGridlines
+    [tableStyle]="{ 'min-width': '40rem' }"
+     [paginator]="true" [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} pedidos"
+      styleClass="pedidos-table">
+      <ng-template #header>
+        <tr>
+          <th style="width:5rem"># Pedido</th>
+          <th style="width:6rem">Fecha</th>
+          <th style="width:5rem" class="th-hora">Hora</th>
+          <th>Cliente</th>
+          <th style="width:8rem">Teléfono</th>
+          <th style="width:5rem">Envío Gratis</th>
+          <th style="width:5rem">Facturado</th>
+          <th style="width:8rem" class="acciones-header">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-p>
+        <tr (click)="editar(p.pospedmaeId)" class="fila-click">
+          <td>
+            <span class="nro-factura">{{ p.pospedmaeId }}</span>
+          </td>
+          <td>{{ fechaCorta(p.fecharegistro) }}</td>
+          <td class="hora-cell">{{ horaCorta(p.fecharegistro) }}</td>
+          <td>
+            <span class="cliente-nombre">{{ p.nombrecliente || 'Sin cliente' }}</span>
+          </td>
+          <td>{{ p.nrotelefono || '-' }}</td>
+          <td>
+            <p-tag [value]="getEnvioLabel(p.sn_enviogratis)" [severity]="getEnvioSeverity(p.sn_enviogratis)" styleClass="tag-sm" />
+          </td>
+          <td>
+            <p-tag [value]="getFacturadoLabel(p.sn_facturado)" [severity]="getFacturadoSeverity(p.sn_facturado)" styleClass="tag-sm" />
+          </td>
+          <td class="acciones-cell">
+            <div class="acciones-row">
+              <p-button icon="pi pi-pencil" severity="info" text rounded size="small"
+                (onClick)="editar(p.pospedmaeId); $event.stopPropagation()" pTooltip="Editar" tooltipPosition="top" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="empty-state">
+            <div class="empty-content">
+              <i class="pi pi-shopping-cart"></i>
+              <p>No hay pedidos registrados</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\pedidos\pedidos-list.scss
+
+```typescript
+.filtros-card {
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.filtros-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.campo-busqueda {
+  flex: 1;
+  max-width: 400px;
+}
+
+.busqueda-input {
+  width: 100%;
+  padding-left: 2.5rem;
+}
+
+.filtros-acciones {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+
+  i {
+    font-size: 0.9rem;
+    color: var(--c-text-muted);
+    line-height: 1;
+  }
+}
+
+.tabla-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.pedidos-table {
+  :host ::ng-deep .p-datatable-tbody > tr > td {
+    padding: 0.6rem 0.75rem;
+    vertical-align: middle;
+  }
+
+  :host ::ng-deep .p-datatable-thead > tr > th {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: var(--c-surface-ground);
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  :host ::ng-deep .p-datatable-tbody > tr {
+    transition: background-color 0.15s;
+  }
+
+  :host ::ng-deep .p-datatable-tbody > tr:hover {
+    background-color: var(--c-surface-ground);
+  }
+
+  :host ::ng-deep .p-datatable-tbody > tr > td {
+    border-bottom: 1px solid var(--c-border);
+  }
+}
+
+.fila-click {
+  cursor: pointer;
+}
+
+.nro-factura {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--c-text);
+}
+
+.cliente-nombre {
+  color: var(--c-text);
+  font-size: 0.85rem;
+}
+
+.hora-cell {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.th-hora {
+  font-size: 0.7rem !important;
+}
+
+.acciones-header {
+  text-align: center !important;
+}
+
+.acciones-cell {
+  text-align: center !important;
+}
+
+.acciones-row {
+  display: flex;
+  gap: 0.15rem;
+  justify-content: center;
+}
+
+.tag-sm {
+  :host ::ng-deep & {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem !important;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.3;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .filtros-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .campo-busqueda {
+    max-width: 100%;
+  }
+
+  .acciones-row {
+    flex-wrap: wrap;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\pedidos\pedidos-list.ts
+
+```typescript
+import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+
+@Component({
+  selector: 'app-pedidos-list',
+  standalone: true,
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule],
+  templateUrl: './pedidos-list.html',
+  styleUrl: './pedidos-list.scss',
+})
+export class PedidosList implements OnInit {
+  private api = inject(ApiService);
+  private router = inject(Router);
+  private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+
+  pedidos = signal<any[]>([]);
+  filtered = signal<any[]>([]);
+  cargando = signal(false);
+  q = signal('');
+
+  ngOnInit() {
+    this.load();
+  }
+
+  load() {
+    this.cargando.set(true);
+    this.api.get<any>('/facturacion/pedidos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res: any) => {
+        const items = Array.isArray(res) ? res : (res?.value ?? []);
+        this.pedidos.set(items);
+        this.filtrar();
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los pedidos' });
+      },
+    });
+  }
+
+  filtrar() {
+    const texto = this.q().toLowerCase().trim();
+    if (!texto) {
+      this.filtered.set(this.pedidos());
+      return;
+    }
+    this.filtered.set(
+      this.pedidos().filter((p) => {
+        const nro = String(p.pospedmaeId ?? '');
+        const cliente = (p.nombrecliente ?? '').toLowerCase();
+        const telefono = (p.nrotelefono ?? '').toLowerCase();
+        return nro.includes(texto) || cliente.includes(texto) || telefono.includes(texto);
+      }),
+    );
+  }
+
+  buscar() { this.filtrar(); }
+  limpiar() { this.q.set(''); this.filtrar(); }
+
+  editar(id: number) {
+    this.router.navigate(['/facturacion/pedidos/editar', id]);
+  }
+
+  nuevo() {
+    this.router.navigate(['/facturacion/pedidos/editar', 'nuevo']);
+  }
+
+  fechaCorta(fecha: string | Date): string {
+    if (!fecha) return '-';
+    const d = new Date(fecha);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${dd}/${mm}/${yy}`;
+  }
+
+  horaCorta(fecha: string | Date): string {
+    if (!fecha) return '-';
+    const d = new Date(fecha);
+    return d.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  moneda(n: number | undefined): string {
+    return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
+  }
+
+  getEnvioLabel(val: string): string {
+    return val === 'S' ? 'Si' : 'No';
+  }
+
+  getEnvioSeverity(val: string): string {
+    return val === 'S' ? 'success' : 'secondary';
+  }
+
+  getFacturadoLabel(val: string): string {
+    return val === 'S' ? 'Si' : 'No';
+  }
+
+  getFacturadoSeverity(val: string): string {
+    return val === 'S' ? 'info' : 'warn';
   }
 }
 
@@ -31047,6 +32605,7 @@ export class ProductosHelperList implements OnInit {
 ## 📄 src\app\features\inventario\ajustes\ajustes.html
 
 ```typescript
+<p-toast />
 <p-confirmDialog />
 
 <section class="page">
@@ -31056,20 +32615,12 @@ export class ProductosHelperList implements OnInit {
         <h3 class="page-title">Ajuste de Inventarios</h3>
         <p class="page-subtitle">Entradas y salidas de productos por ajuste directo</p>
       </div>
-      <p-button label="Nuevo Ajuste" icon="pi pi-plus" size="small" (onClick)="nuevoMae()" />
+      <p-button label="Nuevo Ajuste" icon="pi pi-plus" size="small" rounded (onClick)="nuevoMae()" />
     </header>
 
-    <p-table
-      [value]="maestros()"
-      [loading]="cargando()"
-      dataKey="invmovmaeid"
-      [paginator]="true"
-      [rows]="10"
-      [showCurrentPageReport]="true"
-      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-      [rowsPerPageOptions]="[10, 25, 50]"
-      styleClass="p-datatable-sm"
-    >
+    <p-table [value]="ajustes()" [loading]="cargando()" dataKey="invmovmaeid" [paginator]="true" [rows]="10"
+      [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[10, 25, 50]" size="small">
       <ng-template pTemplate="header">
         <tr>
           <th style="width:4rem">#</th>
@@ -31079,7 +32630,7 @@ export class ProductosHelperList implements OnInit {
           <th style="width:7rem">Tipo</th>
           <th style="width:6rem">Estado</th>
           <th style="width:6rem">Creado por</th>
-          <th style="width:8rem">Acciones</th>
+          <th style="width:4rem"></th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
@@ -31096,132 +32647,173 @@ export class ProductosHelperList implements OnInit {
           </td>
           <td>{{ row.usuarioCreated }}</td>
           <td>
-            <p-button icon="pi pi-trash" severity="danger" text size="small" (onClick)="$event.stopPropagation(); eliminarMae(row)" />
+            <p-button icon="pi pi-trash" severity="danger" text size="small" rounded
+              (onClick)="$event.stopPropagation(); seleccionar(row)" [disabled]="row.sn_anulado === 'S'" />
           </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
-        <tr><td colspan="8" class="text-center p-3">No hay ajustes de inventario registrados.</td></tr>
+        <tr>
+          <td colspan="8" class="text-center p-3">No hay ajustes de inventario registrados.</td>
+        </tr>
       </ng-template>
     </p-table>
-  } @else {
+  }
+
+  @if (seleccionado()) {
     <header class="page-header">
       <div class="flex align-items-center gap-2">
-        <p-button icon="pi pi-arrow-left" text size="small" (onClick)="volver()" />
+        <p-button icon="pi pi-arrow-left" text size="small" rounded (onClick)="volver()" />
         <div>
-          <h3 class="page-title">Ajuste #{{ seleccionado()!.invmovmaeid }}</h3>
+          <h3 class="page-title">Ajuste #{{ seleccionado()!.invmovmaeid || 'Nuevo' }}</h3>
           <p class="page-subtitle">
-            {{ seleccionado()!.concepto }} — {{ nombreBodega(seleccionado()!.bodegaId) }}
-            — <p-tag [value]="seleccionado()!.sn_entrada === 'S' ? 'Entrada' : 'Salida'" [severity]="seleccionado()!.sn_entrada === 'S' ? 'success' : 'danger'" [style]="{'font-size':'0.7rem'}" />
+            {{ formMae.value.concepto || 'Sin concepto' }}
+            — {{ nombreBodega(formMae.value.bodegaId || 0) || 'Sin bodega' }}
+            — <p-tag [value]="formMae.value.sn_entrada === 'S' ? 'Entrada' : 'Salida'" [severity]="formMae.value.sn_entrada === 'S' ? 'success' : 'danger'" [style]="{'font-size':'0.7rem'}" />
           </p>
         </div>
       </div>
       <div class="flex gap-2">
-        <p-button label="Agregar Item" icon="pi pi-plus" size="small" (onClick)="nuevoDet()" [disabled]="todosProcesados()" />
-        <p-button label="Procesar" icon="pi pi-check-circle" size="small" severity="success" (onClick)="procesar()" [disabled]="detalles().length === 0 || todosProcesados()" />
+        @if (seleccionado()!.invmovmaeid && seleccionado()!.sn_anulado === 'N') {
+          @if (!todosProcesados()) {
+            <p-button label="Procesar" icon="pi pi-check-circle" size="small" rounded severity="success" (onClick)="procesar()"
+              [disabled]="detalles().length === 0" />
+          }
+        }
       </div>
     </header>
 
-    <p-table
-      [value]="detalles()"
-      [loading]="cargandoDet()"
-      dataKey="invmovdetid"
-      [paginator]="true"
-      [rows]="15"
-      styleClass="p-datatable-sm"
-    >
-      <ng-template pTemplate="header">
-        <tr>
-          <th style="width:3rem">#</th>
-          <th style="width:8rem">Cod. Barra</th>
-          <th>Producto</th>
-          <th style="width:7rem" class="text-right">Cantidad</th>
-          <th style="width:7rem" class="text-right">Costo U.</th>
-          <th style="width:7rem" class="text-right">Costo T.</th>
-          <th style="width:5rem">Estado</th>
-          <th style="width:7rem">Acciones</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-row>
-        <tr>
-          <td>{{ row.nrofila }}</td>
-          <td>{{ row.codbarra }}</td>
-          <td>{{ row.descripcion }}</td>
-          <td class="text-right font-bold">{{ row.cantidad }}</td>
-          <td class="text-right">{{ row.costoUnitario | number:'1.2-2' }}</td>
-          <td class="text-right">{{ row.costoTotal | number:'1.2-2' }}</td>
-          <td>
-            @if (row.verificador === 1) {
-              <p-tag value="Procesado" severity="success" [style]="{'font-size':'0.7rem'}" />
-            } @else {
-              <p-tag value="Pendiente" severity="warn" [style]="{'font-size':'0.7rem'}" />
+    <form [formGroup]="formMae" (ngSubmit)="guardarMae()" class="card form-card">
+      <div class="form-grid">
+        <div class="campo">
+          <label>Bodega *</label>
+          <p-select formControlName="bodegaId" [options]="bodegas()" optionLabel="descripcion"
+            optionValue="bodegaId" placeholder="Seleccionar bodega" styleClass="w-full" [appendTo]="'body'"
+            [disabled]="!esNuevo()" />
+          @if (formMae.get('bodegaId')?.invalid && formMae.get('bodegaId')?.touched) {
+            <small class="err">Requerido</small>
+          }
+        </div>
+        <div class="campo">
+          <label>Tipo de Movimiento *</label>
+          <p-select formControlName="sn_entrada" [options]="[{label:'Entrada de producto', value:'S'},{label:'Salida de producto', value:'N'}]"
+            optionLabel="label" optionValue="value" styleClass="w-full" [appendTo]="'body'"
+            [disabled]="!esNuevo()" />
+        </div>
+        <div class="campo campo-full">
+          <label>Concepto *</label>
+          <input pInputText formControlName="concepto" placeholder="Ej: Ajuste por merma" [readonly]="!esNuevo()" class="w-full" />
+          @if (formMae.get('concepto')?.invalid && formMae.get('concepto')?.touched) {
+            <small class="err">Requerido</small>
+          }
+        </div>
+      </div>
+      @if (esNuevo()) {
+        <div class="acciones-form">
+          <p-button type="button" label="Cancelar" severity="secondary" text size="small" rounded (onClick)="volver()" />
+          <p-button type="submit" label="Crear Ajuste" icon="pi pi-check" size="small" rounded severity="success" [raised]="true"
+            [loading]="guardando()" [disabled]="formMae.invalid" />
+        </div>
+      }
+    </form>
+
+    <div class="card info-card">
+      <div class="info-grid">
+        <div><span class="info-label">Estado:</span>
+          <p-tag [value]="seleccionado()!.sn_anulado === 'S' ? 'Anulado' : 'Activo'" [severity]="seleccionado()!.sn_anulado === 'S' ? 'danger' : 'info'" [style]="{'font-size':'0.7rem'}" />
+        </div>
+      </div>
+    </div>
+
+    @if (seleccionado()!.sn_anulado === 'N' && !todosProcesados()) {
+      <div [formGroup]="formDet" class="card agregar-item-card">
+          <div class="agregar-item-row">
+            <div class="campo campo-codbarra">
+              <label>Codigo de Barras</label>
+              <div class="flex gap-1">
+                <input pInputText [ngModel]="codBusqueda()" (ngModelChange)="onCodBarraInput($event)"
+                  (keyup.enter)="buscarProducto()" placeholder="Escanear o escribir codigo..." [ngModelOptions]="{standalone: true}" />
+                <p-button icon="pi pi-search" size="small" rounded severity="secondary" (onClick)="showHelperProductos()" />
+              </div>
+            </div>
+            <div class="campo campo-cantidad">
+              <label>Cantidad</label>
+              <p-inputNumber formControlName="cantidad" [min]="0.01" mode="decimal" [minFractionDigits]="2"
+                [maxFractionDigits]="2" size="small" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
+            </div>
+            <div class="campo campo-costo">
+              <label>Costo U.</label>
+              <p-inputNumber formControlName="costoUnitario" [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'"
+                [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" size="small"
+                [inputStyle]="{ 'width': '100%' }" styleClass="w-full" [readonly]="true" />
+            </div>
+            <div class="campo-btn">
+              <p-button icon="pi pi-plus" size="small" rounded severity="success" (onClick)="buscarProducto(); agregarItem()"
+                [loading]="guardando()" [disabled]="seleccionado()!.sn_anulado === 'S' || todosProcesados()" />
+            </div>
+          </div>
+          @if (formDet.value.descripcion) {
+            <div class="producto-encontrado">
+              <span class="font-bold">{{ formDet.value.descripcion }}</span>
+              <span class="text-sm text-color-secondary"> | Costo: {{ moneda(formDet.value.costoUnitario) }}</span>
+            </div>
+          }
+        </div>
+
+        <select [ngModel]="formDet.value.productoId" (ngModelChange)="formDet.patchValue({productoId: $event})" [ngModelOptions]="{standalone: true}" class="hidden-select">
+          <option [ngValue]="null">-</option>
+          @for (p of productos(); track p.produtoId) {
+            <option [ngValue]="p.produtoId">{{ p.descripcion }}</option>
+          }
+        </select>
+      }
+
+      <p-table [value]="detalles()" [loading]="cargandoDet()" dataKey="invmovdetid" [paginator]="true" [rows]="15" size="small">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width:3rem">#</th>
+            <th>Cod. Barra</th>
+            <th>Producto</th>
+            <th style="width:7rem" class="text-right">Cantidad</th>
+            <th style="width:8rem" class="text-right">Costo U.</th>
+            <th style="width:8rem" class="text-right">Total</th>
+            <th style="width:6rem" class="text-center">Estado</th>
+            @if (seleccionado()!.sn_anulado === 'N' && !todosProcesados()) {
+              <th style="width:5rem" class="text-center"></th>
             }
-          </td>
-          <td>
-            <p-button icon="pi pi-trash" text severity="danger" size="small" (onClick)="eliminarDet(row)" [disabled]="row.verificador === 1" />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr><td colspan="8" class="text-center p-3">No hay items en este ajuste.</td></tr>
-      </ng-template>
-    </p-table>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td>{{ row.nrofila }}</td>
+            <td class="font-bold">{{ row.codbarra }}</td>
+            <td>{{ row.descripcion }}</td>
+            <td class="text-right font-bold">{{ row.cantidad }}</td>
+            <td class="text-right">{{ moneda(row.costoUnitario) }}</td>
+            <td class="text-right font-bold">{{ moneda(row.costoTotal) }}</td>
+            <td class="text-center">
+              @if (row.verificador === 1) {
+                <p-tag value="Procesado" severity="success" [style]="{'font-size':'0.7rem'}" />
+              } @else {
+                <p-tag value="Pendiente" severity="warn" [style]="{'font-size':'0.7rem'}" />
+              }
+            </td>
+            @if (seleccionado()!.sn_anulado === 'N' && !todosProcesados()) {
+              <td class="text-center">
+                <p-button icon="pi pi-trash" text severity="danger" size="small" rounded (onClick)="eliminarItem(row)"
+                  [disabled]="row.verificador === 1" />
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="8" class="text-center p-3">No hay items en este ajuste.</td>
+          </tr>
+        </ng-template>
+      </p-table>
   }
 </section>
-
-<!-- Dialog Maestro -->
-<p-dialog [header]="esEdicion() ? 'Editar Ajuste de Inventario' : 'Nuevo Ajuste de Inventario'" [modal]="true" [draggable]="false" [style]="{width:'450px', minHeight:'300px'}" [(visible)]="dialogMae">
-  <form [formGroup]="formMae" class="flex flex-column gap-3">
-    <div>
-      <label class="block mb-1 text-sm font-medium">Concepto *</label>
-      <input pInputText formControlName="concepto" class="w-full" placeholder="Ej: Ajuste por merma" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Bodega *</label>
-      <p-select formControlName="bodegaId" [options]="bodegas()" optionLabel="descripcion" optionValue="bodegaId" placeholder="Seleccionar bodega" styleClass="w-full" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Tipo de Movimiento *</label>
-      <p-select formControlName="sn_entrada" [options]="[{label:'Entrada de producto', value:'S'},{label:'Salida de producto', value:'N'}]" optionLabel="label" optionValue="value" styleClass="w-full" />
-    </div>
-  </form>
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogMae.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarMae()" [disabled]="formMae.invalid" />
-  </ng-template>
-</p-dialog>
-
-<!-- Dialog Detalle -->
-<p-dialog header="Item de Ajuste" 
-[modal]="true" [draggable]="false" [style]="{width:'500px', minHeight:'500px'}" [(visible)]="dialogDet">
-  <form [formGroup]="formDet" class="flex flex-column gap-3">
-    <div>
-      <label class="block mb-1 text-sm font-medium">Producto *</label>
-      <p-select formControlName="producto" 
-        [options]="productos()" 
-        
-        optionLabel="descripcion" 
-        optionValue="codbarra" placeholder="Buscar por descripcion..." 
-        [filter]="true" [filterBy]="'descripcion'" styleClass="w-full" [style]="{'min-height':'44px'}" [showClear]="true">
-        <ng-template let-producto pTemplate="item">
-          <div class="flex flex-column">
-            <span>{{ producto.codbarra }}</span> |
-            <span>{{ producto.descripcion }}</span> 
-            
-          </div>
-        </ng-template>
-      </p-select>
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Cantidad *</label>
-      <p-inputNumber formControlName="cantidad" [min]="0.01" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" styleClass="w-full" />
-    </div>
-  </form>
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogDet.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarDet()" [disabled]="formDet.invalid" />
-  </ng-template>
-</p-dialog>
 
 ```
 
@@ -31230,13 +32822,108 @@ export class ProductosHelperList implements OnInit {
 ## 📄 src\app\features\inventario\ajustes\ajustes.scss
 
 ```typescript
-:host { display: block; }
+.form-card {
+  max-width: 800px;
+}
 
-::ng-deep .p-datatable-tbody > tr {
-  cursor: default;
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 2rem;
 
-  &:hover {
-    background: var(--c-surface-ground);
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  label {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--c-text-muted, #64748b);
+  }
+}
+
+.campo-full {
+  grid-column: 1 / -1;
+}
+
+.acciones-form {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--c-border, #e2e8f0);
+}
+
+.req { color: var(--c-error, #ef4444); }
+.err { color: var(--c-error, #ef4444); font-size: 0.75rem; }
+.hidden-select { display: none; }
+
+/* Info card */
+.info-card {
+  margin-bottom: 1rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem 2rem;
+  font-size: 0.9rem;
+}
+
+.info-label {
+  color: var(--c-text-muted, #64748b);
+  font-weight: 500;
+}
+
+/* Agregar item */
+.agregar-item-card {
+  margin-bottom: 1rem;
+}
+
+.agregar-item-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.campo-codbarra { flex: 3; }
+.campo-cantidad { flex: 1; min-width: 100px; }
+.campo-costo { flex: 1; min-width: 100px; }
+.campo-btn { flex: 0; padding-bottom: 0.15rem; }
+
+.producto-encontrado {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--c-surface-ground, #f8fafc);
+  border-radius: 0.375rem;
+  border: 1px solid var(--c-border, #e2e8f0);
+  font-size: 0.85rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .agregar-item-row {
+    flex-wrap: wrap;
+  }
+
+  .campo-codbarra,
+  .campo-cantidad,
+  .campo-costo {
+    flex: 1 1 100%;
+    min-width: 100%;
   }
 }
 
@@ -31247,7 +32934,7 @@ export class ProductosHelperList implements OnInit {
 ## 📄 src\app\features\inventario\ajustes\ajustes.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -31255,29 +32942,32 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToolbarModule } from 'primeng/toolbar';
-import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { AjusteInventarioService } from '../../../core/services/ajuste-inventario.service';
 import { BodegasService } from '../../../core/services/bodegas.service';
 import { ProductosService } from '../../../core/services/productos.service';
+import { Bodega, Producto } from '../../../core/models/inventario.models';
+import { ProductosHelperList } from '../../helpers/productos';
+import { FooterHelper } from '../../helpers/footer';
 
 @Component({
   selector: 'app-ajustes',
   standalone: true,
+  providers: [DialogService],
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
     TableModule, ButtonModule, InputTextModule, InputNumberModule,
-    DialogModule, TagModule, ToastModule, ConfirmDialogModule,
-    ToolbarModule, SelectModule, TooltipModule,
+    SelectModule, TagModule, ToastModule, ConfirmDialogModule, TooltipModule,
   ],
   templateUrl: './ajustes.html',
   styleUrl: './ajustes.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Ajustes implements OnInit {
   private fb = inject(FormBuilder);
@@ -31287,18 +32977,21 @@ export class Ajustes implements OnInit {
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
+  private dialogService = inject(DialogService);
 
-  maestros = signal<any[]>([]);
+  ref: DynamicDialogRef | undefined;
+
+  ajustes = signal<any[]>([]);
   detalles = signal<any[]>([]);
-  bodegas = signal<any[]>([]);
-  productos = signal<any[]>([]);
+  bodegas = signal<Bodega[]>([]);
+  productos = signal<Producto[]>([]);
+
   seleccionado = signal<any | null>(null);
   cargando = signal(false);
   cargandoDet = signal(false);
+  guardando = signal(false);
 
-  dialogMae = signal(false);
-  dialogDet = signal(false);
-  esEdicion = signal(false);
+  codBusqueda = signal('');
 
   formMae = this.fb.group({
     concepto: ['', Validators.required],
@@ -31307,58 +33000,54 @@ export class Ajustes implements OnInit {
   });
 
   formDet = this.fb.group({
-    producto: [null as string | null, Validators.required],
-    cantidad: [0, [Validators.required, Validators.min(0.01)]],
+    codbarra: ['', Validators.required],
+    productoId: [null as number | null],
+    descripcion: [''],
+    cantidad: [1, [Validators.required, Validators.min(0.01)]],
+    costoUnitario: [0],
   });
 
   ngOnInit() {
+    this.cargarAjustes();
     this.cargarBodegas();
     this.cargarProductos();
-    this.cargarMaestros();
+  }
+
+  cargarAjustes() {
+    this.cargando.set(true);
+    this.service.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.ajustes.set(data || []); this.cargando.set(false); },
+      error: () => { this.cargando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los ajustes' }); },
+    });
   }
 
   cargarBodegas() {
     this.bodegasService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data: any) => this.bodegas.set(data?.value || data || []),
+      next: (data) => this.bodegas.set(data || []),
     });
   }
 
   cargarProductos() {
     this.productosService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data: any) => this.productos.set(data?.value || data || []),
+      next: (data) => this.productos.set(data || []),
     });
   }
 
-  cargarMaestros() {
-    this.cargando.set(true);
-    this.service.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data: any) => {
-        this.maestros.set(data?.value || data || []);
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.cargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los ajustes' });
-      },
+  seleccionar(ajuste: any) {
+    this.seleccionado.set(ajuste);
+    this.formMae.patchValue({
+      concepto: ajuste.concepto || '',
+      bodegaId: ajuste.bodegaId || null,
+      sn_entrada: ajuste.sn_entrada || 'S',
     });
+    this.cargarDetalles(ajuste.invmovmaeid);
   }
 
-  seleccionar(row: any) {
-    this.seleccionado.set(row);
-    this.cargarDetalles(row.invmovmaeid);
-  }
-
-  cargarDetalles(invmovmaeid: number) {
+  cargarDetalles(maeId: number) {
     this.cargandoDet.set(true);
-    this.service.getDet(invmovmaeid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data: any) => {
-        this.detalles.set(data?.value || data || []);
-        this.cargandoDet.set(false);
-      },
-      error: () => {
-        this.cargandoDet.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los items' });
-      },
+    this.service.getDet(maeId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.detalles.set(data || []); this.cargandoDet.set(false); },
+      error: () => { this.cargandoDet.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los items' }); },
     });
   }
 
@@ -31368,97 +33057,139 @@ export class Ajustes implements OnInit {
   }
 
   nuevoMae() {
-    this.esEdicion.set(false);
     this.formMae.reset({ concepto: '', bodegaId: null, sn_entrada: 'S' });
-    this.dialogMae.set(true);
-  }
-
-  editarMae(row: any) {
-    this.esEdicion.set(true);
-    this.formMae.patchValue({ concepto: row.concepto, bodegaId: row.bodegaId, sn_entrada: row.sn_entrada });
-    this.seleccionado.set(row);
-    this.dialogMae.set(true);
+    this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1, costoUnitario: 0 });
+    this.codBusqueda.set('');
+    this.detalles.set([]);
+    this.seleccionado.set({ invmovmaeid: 0, sn_procesado: 'N', sn_anulado: 'N', concepto: '', bodegaId: 0 });
   }
 
   guardarMae() {
     if (this.formMae.invalid) return;
     const val = this.formMae.value;
-    const obs$ = this.esEdicion()
-      ? this.service.update(this.seleccionado()!.invmovmaeid, val as any)
-      : this.service.create(val as any);
-
-    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res: any) => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: this.esEdicion() ? 'Ajuste actualizado' : 'Ajuste creado' });
-        this.dialogMae.set(false);
-        this.cargarMaestros();
-        if (!this.esEdicion() && res.invmovmaeid) {
-          this.seleccionar(res);
-        }
+    this.guardando.set(true);
+    this.service.create({
+      concepto: val.concepto || '',
+      bodegaId: val.bodegaId || 0,
+      sn_entrada: val.sn_entrada || 'S',
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Creado', detail: 'Ajuste creado' });
+        this.seleccionado.set(res);
+        this.cargarAjustes();
       },
-      error: () => this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar' }),
+      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo crear' }); },
     });
   }
 
-  eliminarMae(row: any) {
+  onCodBarraInput(valor: string) {
+    this.codBusqueda.set(valor);
+    if (valor.length >= 12) {
+      this.buscarProducto();
+    }
+  }
+
+  buscarProducto() {
+    const q = this.codBusqueda().trim();
+    if (!q) return;
+    const prod = this.productos().find(p => p.codbarra === q);
+    if (prod) {
+      this.formDet.patchValue({
+        productoId: prod.produtoId,
+        codbarra: prod.codbarra,
+        descripcion: prod.descripcion,
+        costoUnitario: prod.cstounit || 0,
+      });
+    } else {
+      this.msgs.add({ severity: 'warn', summary: 'No encontrado', detail: 'Producto no encontrado por código de barras' });
+    }
+  }
+
+  showHelperProductos() {
+    this.ref = this.dialogService.open(ProductosHelperList, {
+      header: 'Seleccionar un producto',
+      width: '50vw',
+      modal: true,
+      contentStyle: { overflow: 'auto' },
+      breakpoints: { '960px': '75vw', '640px': '90vw' },
+      templates: { footer: FooterHelper },
+    });
+    this.ref.onClose.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: any) => {
+      if (data && 'codbarra' in data) {
+        this.agregarDirecto(data);
+      }
+    });
+  }
+
+  agregarDirecto(prod: any) {
+    const mae = this.seleccionado();
+    if (!mae || !mae.invmovmaeid) {
+      this.msgs.add({ severity: 'warn', summary: 'Atención', detail: 'Primero guarde el encabezado del ajuste' });
+      return;
+    }
+    this.guardando.set(true);
+    this.service.createDet({
+      invmovmaeid: mae.invmovmaeid,
+      bodegaId: mae.bodegaId,
+      codbarra: prod.codbarra,
+      cantidad: 1,
+      sn_entrada: mae.sn_entrada || 'S',
+      empresaId: mae.empresaId,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Agregado', detail: prod.descripcion });
+        this.cargarDetalles(mae.invmovmaeid);
+      },
+      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar' }); },
+    });
+  }
+
+  agregarItem() {
+    if (this.formDet.invalid) return;
+    const mae = this.seleccionado();
+    if (!mae || !mae.invmovmaeid) {
+      this.msgs.add({ severity: 'warn', summary: 'Atención', detail: 'Primero guarde el encabezado del ajuste' });
+      return;
+    }
+    const val = this.formDet.value;
+    this.guardando.set(true);
+    this.service.createDet({
+      invmovmaeid: mae.invmovmaeid,
+      bodegaId: mae.bodegaId,
+      codbarra: val.codbarra || '',
+      cantidad: val.cantidad || 0,
+      sn_entrada: mae.sn_entrada || 'S',
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Agregado', detail: 'Item agregado' });
+        this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1, costoUnitario: 0 });
+        this.codBusqueda.set('');
+        this.cargarDetalles(mae.invmovmaeid);
+      },
+      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar' }); },
+    });
+  }
+
+  eliminarItem(row: any) {
     this.confirm.confirm({
-      message: `¿Eliminar ajuste #${row.invmovmaeid}?`,
+      message: `¿Eliminar item "${row.descripcion || row.codbarra}"?`,
       header: 'Confirmar',
       acceptLabel: 'Eliminar',
       rejectLabel: 'Cancelar',
       accept: () => {
-        this.service.remove(row.invmovmaeid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: () => {
-            this.msgs.add({ severity: 'success', summary: 'Eliminado' });
-            if (this.seleccionado()?.invmovmaeid === row.invmovmaeid) this.volver();
-            this.cargarMaestros();
-          },
-        });
-      },
-    });
-  }
-
-  nuevoDet() {
-    this.formDet.reset({ producto: null, cantidad: 0 });
-    this.dialogDet.set(true);
-  }
-
-  guardarDet() {
-    if (this.formDet.invalid) return;
-    const val = this.formDet.value;
-    const mae = this.seleccionado();
-
-    const payload: any = {
-      invmovmaeid: mae.invmovmaeid,
-      bodegaId: mae.bodegaId,
-      codbarra: val.producto,
-      cantidad: val.cantidad || 0,
-      sn_entrada: mae.sn_entrada,
-      empresaId: mae.empresaId,
-    };
-
-    this.service.createDet(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Item agregado' });
-        this.dialogDet.set(false);
-        this.cargarDetalles(mae.invmovmaeid);
-      },
-      error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo guardar el item' }),
-    });
-  }
-
-  eliminarDet(row: any) {
-    this.confirm.confirm({
-      message: `¿Eliminar item "${row.codbarra}"?`,
-      header: 'Confirmar',
-      accept: () => {
+        this.confirm.close();
         this.service.removeDet(row.invmovdetid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             this.msgs.add({ severity: 'success', summary: 'Eliminado' });
             this.cargarDetalles(this.seleccionado()!.invmovmaeid);
           },
+          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo eliminar' }),
         });
       },
+      reject: () => this.confirm.close(),
     });
   }
 
@@ -31474,14 +33205,15 @@ export class Ajustes implements OnInit {
       accept: () => {
         this.confirm.close();
         this.service.procesar(mae.invmovmaeid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: (res: any) => {
-            this.msgs.add({ severity: 'success', summary: 'Procesado', detail: res.message || 'Ajuste procesado' });
-            this.cargarMaestros();
+          next: (res) => {
+            this.msgs.add({ severity: 'success', summary: 'Procesado', detail: res?.message || 'Ajuste procesado' });
+            this.cargarAjustes();
             this.cargarDetalles(mae.invmovmaeid);
           },
           error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo procesar' }),
         });
       },
+      reject: () => this.confirm.close(),
     });
   }
 
@@ -31489,8 +33221,16 @@ export class Ajustes implements OnInit {
     return this.detalles().length > 0 && this.detalles().every(d => d.verificador === 1);
   }
 
+  esNuevo(): boolean {
+    return !this.seleccionado()?.invmovmaeid;
+  }
+
   nombreBodega(id: number): string {
     return this.bodegas().find(b => b.bodegaId === id)?.descripcion || `Bodega ${id}`;
+  }
+
+  moneda(n: number | undefined): string {
+    return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
   }
 }
 
@@ -31540,11 +33280,14 @@ export class Ajustes implements OnInit {
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -31633,7 +33376,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { BodegasService } from '../../../core/services/bodegas.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -31641,7 +33384,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-bodega-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './bodega-form.html',
   styleUrl: './bodega-form.scss',
 })
@@ -31755,14 +33498,26 @@ export class BodegaForm implements OnInit {
       <h1 class="page-title">Bodegas</h1>
       <p class="page-subtitle">Administración de bodegas</p>
     </div>
-    <p-button label="Nueva bodega" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+    <!-- Se aplica el estándar para botones de "Agregar" -->
+    <p-button
+      label="Nueva bodega"
+      icon="pi pi-plus"
+      size="small"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      severity="success"
+      (onClick)="nuevo()" />
   </header>
 
   <div class="filtros card">
     <div class="campo">
       <label>Buscar</label>
+      <!-- Se aplica el estándar para inputs (pSize y class="w-full") -->
       <input
         pInputText
+        pSize="small"
+        class="w-full"
         type="text"
         placeholder="Descripción..."
         [ngModel]="q()"
@@ -31771,22 +33526,33 @@ export class BodegaForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button
+        label="Buscar"
+        icon="pi pi-search"
+        size="small"
+        [rounded]="true"
+        (onClick)="buscar()" />
+
+      <!-- Reemplazo de atributo obsoleto 'text' por 'variant="text"' -->
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
-        text
+        variant="text"
         size="small"
+        [rounded]="true"
         (onClick)="limpiarFiltros()"
       />
     </div>
   </div>
 
+  <!-- Propiedad 'layout="list"' forzada para evitar el modo grid por defecto -->
   <p-dataview
+    #dv
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="bodegaId"
+    layout="list"
     [paginator]="true"
     [rows]="20"
     [rowsPerPageOptions]="[10, 20, 50]"
@@ -31810,14 +33576,15 @@ export class BodegaForm implements OnInit {
             </div>
 
             <div class="dv-actions" (click)="$event.stopPropagation()">
+              <!-- Botón de edición estandarizado -->
               <p-button
                 icon="pi pi-pencil"
                 pTooltip="Editar"
-                (onClick)="editar(c.bodegaId, $event)"
                 severity="warn"
-                text
+                variant="text"
                 size="small"
-                rounded
+                [rounded]="true"
+                (onClick)="editar(c.bodegaId, $event)"
               />
             </div>
           </div>
@@ -31825,11 +33592,13 @@ export class BodegaForm implements OnInit {
       </div>
     </ng-template>
 
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay bodegas que coincidan con los filtros.</div>
+    <!-- En PrimeNG 18 el template vacío correcto es #empty (no #emptymessage) -->
+    <ng-template #empty>
+      <div class="text-center p-4">No hay bodegas que coincidan con los filtros.</div>
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -31990,11 +33759,14 @@ export class Bodegas implements OnInit {
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -32083,7 +33855,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { CasasService } from '../../../core/services/casas.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -32091,7 +33863,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-casa-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './casa-form.html',
   styleUrl: './casa-form.scss',
 })
@@ -32221,13 +33993,14 @@ export class CasaForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -32238,6 +34011,8 @@ export class CasaForm implements OnInit {
     [loading]="cargando()"
     dataKey="casaId"
     [paginator]="true"
+    layout="list"
+    size="small"
     [rows]="20"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
@@ -32280,6 +34055,7 @@ export class CasaForm implements OnInit {
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -32401,136 +34177,83 @@ export class Casas implements OnInit {
 ## 📄 src\app\features\inventario\catalogo-list\catalogo-list.html
 
 ```typescript
-<p-toast />
-<section class="page catalogo-page">
+<section class="page">
   <header class="page-header">
-    <div class="header-left">
-      <h1 class="page-title"><i class="pi" [ngClass]="config().icono"></i> {{ config().titulo }}</h1>
-      <span class="page-count">{{ totalItems() }} registro{{ totalItems() !== 1 ? 's' : '' }}</span>
+    <div>
+      <h1 class="page-title">{{ config().titulo }}</h1>
+      <p class="page-subtitle">{{ config().subtitulo }}</p>
     </div>
-    <div class="header-right">
-      <div class="search-box">
-        <i class="pi pi-search search-icon"></i>
-        <input
-          pInputText
-          [(ngModel)]="busqueda"
-          placeholder="Buscar..."
-          class="search-input"
-          pSize="small"
-        />
-      </div>
-      <div class="view-toggles">
-        <button
-          class="view-btn"
-          [class.active]="layout() === 'grid'"
-          (click)="layout.set('grid')"
-          pTooltip="Cuadrícula"
-        >
-          <i class="pi pi-th-large"></i>
-        </button>
-        <button
-          class="view-btn"
-          [class.active]="layout() === 'list'"
-          (click)="layout.set('list')"
-          pTooltip="Lista"
-        >
-          <i class="pi pi-list"></i>
-        </button>
-      </div>
-      <p-button
-        [label]="config().tituloNuevo"
-        icon="pi pi-plus"
-        rounded
-        size="small"
-        (onClick)="nuevo()"
-      />
+    <div>
+      <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()" />
     </div>
   </header>
 
-  @if (cargando()) {
-    <div class="loading-container">
-      <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: var(--c-primary)"></i>
-      <p>Cargando...</p>
+  <div class="filtros card">
+    <div class="campo">
+      <label>Buscar</label>
+      <input pInputText type="text" placeholder="Buscar..." [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
+        (keyup.enter)="buscar()" />
     </div>
-  }
+    <div class="campo acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small"
+        (onClick)="limpiarFiltros()" />
+    </div>
+  </div>
 
-  @if (!cargando() && layout() === 'grid') {
-    <div class="catalogo-grid">
-      @for (item of filtered(); track trackById($index, item)) {
-        <div class="catalogo-card" (click)="editar(item[config().idKey])">
-          <div class="card-icon">
-            <i class="pi" [ngClass]="config().icono"></i>
-          </div>
-          <div class="card-body">
-            <h3 class="card-title">{{ item.descripcion }}</h3>
-            <div class="card-meta">
-              <span class="card-id">#{{ item[config().idKey] }}</span>
-              <p-tag
-                [value]="activoLbl(item.sn_activo)"
-                [severity]="activoSev(item.sn_activo)"
-                styleClass="tag-sm"
-              />
-            </div>
-          </div>
-          <div class="card-actions" (click)="$event.stopPropagation()">
-            <p-button
-              icon="pi pi-pencil"
-              pTooltip="Editar"
-              (onClick)="editar(item[config().idKey], $event)"
-              severity="warn"
-              text
-              size="small"
-              rounded
-            />
-          </div>
-        </div>
-      } @empty {
-        <div class="sin-resultados">
-          <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
-          <p>No se encontraron registros</p>
-        </div>
-      }
-    </div>
-  }
+  <p-table
+    [value]="filtered()"
+    [loading]="cargando()"
+    [paginator]="true"
+    [rows]="20"
+    [rowsPerPageOptions]="[10, 20, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
+    styleClass="p-datatable-striped">
 
-  @if (!cargando() && layout() === 'list') {
-    <div class="catalogo-list">
-      @for (item of filtered(); track trackById($index, item)) {
-        <div class="list-row" (click)="editar(item[config().idKey])">
-          <div class="list-icon">
-            <i class="pi" [ngClass]="config().icono"></i>
-          </div>
-          <div class="list-info">
-            <h4>{{ item.descripcion }}</h4>
-            <span class="list-id">#{{ item[config().idKey] }}</span>
-          </div>
-          <div class="list-status">
-            <p-tag
-              [value]="activoLbl(item.sn_activo)"
-              [severity]="activoSev(item.sn_activo)"
-              styleClass="tag-sm"
-            />
-          </div>
-          <div class="list-actions" (click)="$event.stopPropagation()">
-            <p-button
-              icon="pi pi-pencil"
-              pTooltip="Editar"
-              (onClick)="editar(item[config().idKey], $event)"
-              severity="warn"
-              text
-              size="small"
-              rounded
-            />
-          </div>
-        </div>
-      } @empty {
-        <div class="sin-resultados">
-          <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
-          <p>No se encontraron registros</p>
-        </div>
-      }
-    </div>
-  }
+    <ng-template pTemplate="header">
+      <tr>
+        @for (col of config().campos; track col.key) {
+          <th>{{ col.label }}</th>
+        }
+        @if (!config().sinEstado) {
+          <th style="width: 8rem" class="text-center">Estado</th>
+        }
+        <th style="width: 4rem" class="text-center"></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        @for (col of config().campos; track col.key) {
+          <td>{{ item[col.key] || '-' }}</td>
+        }
+        @if (!config().sinEstado) {
+          <td class="text-center">
+            <p-tag [value]="activoLbl(item.sn_activo)" [severity]="activoSev(item.sn_activo)" />
+          </td>
+        }
+        <td class="text-center">
+          <p-button
+            icon="pi pi-pencil"
+            size="small"
+            variant="text"
+            [rounded]="true"
+            severity="secondary"
+            (onClick)="editar(item[config().idKey])" />
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="empty">
+      <tr>
+        <td [attr.colspan]="config().campos.length + (!config().sinEstado ? 2 : 1)" class="text-center p-4">
+          No hay registros.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
 </section>
 
 ```
@@ -32540,337 +34263,29 @@ export class Casas implements OnInit {
 ## 📄 src\app\features\inventario\catalogo-list\catalogo-list.scss
 
 ```typescript
-.catalogo-page {
-  background: var(--c-surface-ground);
-  min-height: 100vh;
-}
-
-.page-header {
+.filtros {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.875rem 1.5rem;
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
 
-  .header-left {
-    display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-}
-
-.page-title {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--c-text);
-
-  i { color: var(--c-primary); }
-}
-
-.page-count {
-  font-size: 0.75rem;
-  color: var(--c-text-muted);
-}
-
-.search-box {
-  position: relative;
-
-  .search-icon {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--c-text-muted);
-    font-size: 0.85rem;
-    pointer-events: none;
-  }
-
-  .search-input {
-    padding-left: 0.75rem;
-    padding-right: 2.25rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    height: 36px;
-    width: 200px;
-    transition: width 0.2s;
-
-    &:focus { width: 260px; }
-  }
-}
-
-.view-toggles {
-  display: flex;
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  overflow: hidden;
-
-  .view-btn {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: var(--c-surface);
-    color: var(--c-text-muted);
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: all 0.15s;
-
-    &:hover {
-      background: var(--c-surface-ground);
-      color: var(--c-text);
-    }
-
-    &.active {
-      background: var(--c-primary);
-      color: white;
-    }
-
-    &:first-child { border-right: 1px solid var(--c-border); }
-  }
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 0;
-  gap: 1rem;
-  color: var(--c-text-muted);
-}
-
-/* Grid layout */
-.catalogo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-  padding: 1.5rem;
-}
-
-.catalogo-card {
-  background: var(--c-surface);
-  border-radius: 12px;
-  padding: 1.25rem;
-  border: 1px solid var(--c-border);
-  cursor: pointer;
-  transition: box-shadow 0.2s, transform 0.2s;
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-  }
-
-  .card-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--c-primary) 10%, transparent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 0.75rem;
-
-    i {
-      font-size: 1.25rem;
-      color: var(--c-primary);
-    }
-  }
-
-  .card-body {
-    margin-bottom: 0.75rem;
-  }
-
-  .card-title {
-    margin: 0 0 0.35rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--c-text);
-  }
-
-  .card-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    .card-id {
-      font-size: 0.75rem;
-      color: var(--c-text-muted);
-    }
-
-    ::ng-deep .tag-sm {
-      font-size: 0.65rem !important;
-      padding: 0.15rem 0.5rem !important;
-    }
-  }
-
-  .card-actions {
-    display: flex;
-    justify-content: flex-end;
-  }
-}
-
-/* List layout */
-.catalogo-list {
-  padding: 1rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.list-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: var(--c-surface);
-  border-radius: 8px;
-  border: 1px solid var(--c-border);
-  cursor: pointer;
-  transition: box-shadow 0.15s, background 0.15s;
-
-  &:hover {
-    background: color-mix(in srgb, var(--c-primary) 3%, var(--c-surface));
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  }
-
-  .list-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--c-primary) 10%, transparent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-
-    i {
-      font-size: 1rem;
-      color: var(--c-primary);
-    }
-  }
-
-  .list-info {
+  .campo {
     flex: 1;
-    min-width: 0;
-
-    h4 {
-      margin: 0;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--c-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .list-id {
-      font-size: 0.7rem;
-      color: var(--c-text-muted);
-    }
-  }
-
-  .list-status {
-    flex-shrink: 0;
-
-    ::ng-deep .tag-sm {
-      font-size: 0.65rem !important;
-      padding: 0.15rem 0.5rem !important;
-    }
-  }
-
-  .list-actions {
-    flex-shrink: 0;
-  }
-}
-
-.sin-resultados {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 4rem 0;
-  gap: 0.5rem;
-  color: var(--c-text-muted);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.6rem;
-    padding: 0.75rem;
-
-    .header-left { justify-content: space-between; }
-    .header-right {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-  }
-
-  .search-box {
-    width: 100%;
-    .search-input {
-      width: 100%;
-      height: 40px;
-      &:focus { width: 100%; }
-    }
-  }
-
-  .catalogo-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-    padding: 0.75rem;
-  }
-
-  .catalogo-card {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
+    flex-direction: column;
+    gap: 0.25rem;
 
-    .card-icon {
-      width: 40px;
-      height: 40px;
-      margin-bottom: 0;
+    label {
+      font-weight: 500;
+      font-size: 0.85rem;
+      color: var(--c-text-muted, #64748b);
     }
-
-    .card-body { flex: 1; }
-    .card-actions { justify-content: flex-end; }
   }
 
-  .catalogo-list {
-    padding: 0.75rem;
-    gap: 0.4rem;
-  }
-
-  .list-row {
-    padding: 0.5rem;
+  .acciones {
+    flex: 0;
+    flex-direction: row;
     gap: 0.5rem;
-
-    .list-icon {
-      width: 36px;
-      height: 36px;
-    }
-
-    .list-info h4 { font-size: 0.8rem; }
   }
 }
 
@@ -32881,19 +34296,21 @@ export class Casas implements OnInit {
 ## 📄 src\app\features\inventario\catalogo-list\catalogo-list.ts
 
 ```typescript
-import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
+
+export interface CampoColumna {
+  key: string;
+  label: string;
+}
 
 export interface CatalogoConfig {
   titulo: string;
@@ -32902,16 +34319,14 @@ export interface CatalogoConfig {
   idKey: string;
   icono: string;
   tituloNuevo: string;
+  campos: CampoColumna[];
+  sinEstado?: boolean;
 }
 
 @Component({
   selector: 'app-catalogo-list',
   standalone: true,
-  imports: [
-    CommonModule, FormsModule, DataViewModule, ButtonModule,
-    InputTextModule, TagModule, TooltipModule, ToastModule,
-  ],
-  providers: [MessageService],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule],
   templateUrl: './catalogo-list.html',
   styleUrl: './catalogo-list.scss',
 })
@@ -32919,8 +34334,7 @@ export class CatalogoList implements OnInit {
   private catalogoService = inject(CatalogoParametrosService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private messageService = inject(MessageService);
-  private destroyRef = inject(DestroyRef);
+  private msgs = inject(MessageService);
 
   config = signal<CatalogoConfig>({
     titulo: '',
@@ -32929,58 +34343,70 @@ export class CatalogoList implements OnInit {
     idKey: '',
     icono: '',
     tituloNuevo: '',
+    campos: [],
   });
 
   data = signal<any[]>([]);
+  filtered = signal<any[]>([]);
   cargando = signal(false);
   busqueda = signal('');
-  layout = signal<'grid' | 'list'>('grid');
-
-  filtered = computed(() => {
-    const q = this.busqueda().toLowerCase();
-    const items = this.data();
-    if (!q) return items;
-    return items.filter((item: any) =>
-      item.descripcion?.toLowerCase().includes(q)
-    );
-  });
-
-  totalItems = computed(() => this.filtered().length);
 
   ngOnInit() {
-    const data = this.route.snapshot.data?.['catalogo'] as CatalogoConfig;
-    if (data) {
-      this.config.set(data);
-    }
-    this.load();
+    this.route.paramMap.subscribe(() => {
+      const data = this.route.snapshot.data?.['catalogo'] as CatalogoConfig;
+      if (data) {
+        this.config.set(data);
+      }
+      this.busqueda.set('');
+      this.load();
+    });
   }
 
   load() {
     this.cargando.set(true);
-    this.catalogoService.getAll(this.config().ruta)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res: any) => {
-          this.data.set(res);
-          this.cargando.set(false);
-        },
-        error: () => {
-          this.cargando.set(false);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: `No se pudieron cargar los ${this.config().titulo}`,
-          });
-        },
-      });
+    this.catalogoService.getAll<any>(this.config().ruta).subscribe({
+      next: (res) => {
+        this.data.set(res);
+        this.filtrar();
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: `No se pudieron cargar ${this.config().titulo}`,
+        });
+      },
+    });
+  }
+
+  filtrar() {
+    const q = this.busqueda().toLowerCase();
+    this.filtered.set(
+      this.data().filter((item) => {
+        if (!q) return true;
+        return this.config().campos.some(
+          (c) => String(item?.[c.key] ?? '').toLowerCase().includes(q),
+        );
+      }),
+    );
+  }
+
+  buscar() {
+    this.filtrar();
+  }
+
+  limpiarFiltros() {
+    this.busqueda.set('');
+    this.filtrar();
   }
 
   nuevo() {
     this.router.navigate(['nuevo'], { relativeTo: this.route });
   }
 
-  editar(id: number, e?: Event) {
-    e?.stopPropagation();
+  editar(id: number) {
     this.router.navigate(['editar', id], { relativeTo: this.route });
   }
 
@@ -32991,8 +34417,6 @@ export class CatalogoList implements OnInit {
   activoSev(sn: string): 'success' | 'danger' {
     return sn === 'S' ? 'success' : 'danger';
   }
-
-  trackById = (_: number, item: any) => item[this.config().idKey];
 }
 
 ```
@@ -33008,63 +34432,47 @@ export class CatalogoList implements OnInit {
       <h1 class="page-title">{{ titulo() }}</h1>
       <p class="page-subtitle">Registro de categoría de producto</p>
     </div>
-    <p-button
-      label="Volver"
-      icon="pi pi-arrow-left"
-      severity="secondary"
-      text
-      size="small"
-      rounded
-      (onClick)="volver()"
-    />
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" variant="text"
+      [rounded]="true" size="small" (onClick)="volver()" />
   </header>
 
   @if (cargando()) {
-    <div class="card">Cargando datos...</div>
+  <div class="card">Cargando datos...</div>
   } @else {
-    <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
-      <div class="campo">
-        <label for="descripcion">Descripción <span class="req">*</span></label>
-        <input
-          pInputText
-          id="descripcion"
-          formControlName="descripcion"
-          maxlength="50"
-          placeholder="Nombre de la categoría"
-          [ngClass]="{ 'ng-invalid': invalid('descripcion') }"
-        />
-        @if (invalid('descripcion')) {
-          <small class="err">La descripción es obligatoria</small>
-        }
-      </div>
-
-      @if (esEdicion()) {
-        <div class="campo">
-          <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
-            [options]="snOptions"
-            formControlName="sn_activo"
-            optionLabel="label"
-            optionValue="value"
-          />
-        </div>
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
+    <div class="campo">
+      <label for="descripcion">Descripción <span class="req">*</span></label>
+      <input pInputText id="descripcion"
+      pSize="small"
+      formControlName="descripcion" maxlength="50"
+        placeholder="Nombre de la categoría" [ngClass]="{ 'ng-invalid': invalid('descripcion') }" />
+      @if (invalid('descripcion')) {
+      <small class="err">La descripción es obligatoria</small>
       }
+    </div>
 
-      <div class="acciones-form">
-        <p-button
-          type="button"
-          label="Cancelar"
-          icon="pi pi-times"
-          severity="secondary"
-          size="small"
-          rounded
-          (onClick)="volver()"
-        />
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
-      </div>
-    </form>
+    @if (esEdicion()) {
+    <div class="campo">
+      <label>Estado <span class="req">*</span></label>
+      <p-select size="small" [options]="snOptions" formControlName="sn_activo" optionLabel="label" optionValue="value"
+        placeholder="Estado" styleClass="w-full" [appendTo]="'body'" />
+    </div>
+    }
+
+    <div class="acciones-form">
+      <p-button type="button" label="Cancelar" icon="pi pi-times" severity="secondary" size="small" variant="text"
+        [rounded]="true" (onClick)="volver()" />
+      <p-button type="submit" label="Guardar"
+      icon="pi pi-check"
+      variant="text"
+      [rounded]="true"
+       severity="success"
+       size="small" [loading]="guardando()" />
+    </div>
+  </form>
   }
 </section>
+
 ```
 
 ---
@@ -33138,11 +34546,19 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { MessageService } from 'primeng/api';
 import { CategoriasService } from '../../../core/services/categorias.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { SelectModule } from 'primeng/select';
 
 @Component({
   selector: 'app-categoria-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    SelectButtonModule,
+    SelectModule,
+  ],
   templateUrl: './categoria-form.html',
   styleUrl: './categoria-form.scss',
 })
@@ -33243,6 +34659,7 @@ export class CategoriaForm implements OnInit {
     });
   }
 }
+
 ```
 
 ---
@@ -33272,13 +34689,14 @@ export class CategoriaForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -33290,10 +34708,15 @@ export class CategoriaForm implements OnInit {
     dataKey="categoriaId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
   >
+
+
+
     <ng-template #list let-items>
       <div class="dv-cards">
         @for (c of items; track c.categoriaId) {
@@ -33331,6 +34754,7 @@ export class CategoriaForm implements OnInit {
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -33491,11 +34915,14 @@ export class Categorias implements OnInit {
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -33584,7 +35011,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { ColoresService } from '../../../core/services/colores.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -33592,7 +35019,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-color-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './color-form.html',
   styleUrl: './color-form.scss',
 })
@@ -33722,13 +35149,14 @@ export class ColorForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -33740,6 +35168,8 @@ export class ColorForm implements OnInit {
     dataKey="colorId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -33953,12 +35383,12 @@ export class Compras {}
       <h3 class="page-title">Consulta de Compras</h3>
       <p class="page-subtitle">Órdenes de compra y facturas de proveedores</p>
     </div>
-    <p-button label="Nueva Compra" icon="pi pi-plus" size="small" (onClick)="nuevoMae()" />
+    <p-button label="Nueva Compra" icon="pi pi-plus" size="small" rounded (onClick)="nuevoMae()" />
   </header>
 
   <p-table [value]="compras()" [loading]="cargando()" dataKey="compraId" [paginator]="true" [rows]="10"
     [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-    [rowsPerPageOptions]="[10, 25, 50]" styleClass="p-datatable-sm">
+    [rowsPerPageOptions]="[10, 25, 50]" size="small">
     <ng-template pTemplate="header">
       <tr>
         <th style="width:4rem">#</th>
@@ -33994,7 +35424,7 @@ export class Compras {}
             [severity]="row.sn_anulada === 'S' ? 'danger' : 'success'" [style]="{'font-size':'0.75rem'}" />
         </td>
         <td>
-          <p-button icon="pi pi-trash" severity="danger" text size="small"
+          <p-button icon="pi pi-trash" severity="danger" text size="small" rounded
             (onClick)="$event.stopPropagation(); anularCompra(row)" [disabled]="row.sn_anulada === 'S'" />
         </td>
       </tr>
@@ -34008,7 +35438,7 @@ export class Compras {}
   } @else {
   <header class="page-header">
     <div class="flex align-items-center gap-2">
-      <p-button icon="pi pi-arrow-left" text size="small" (onClick)="volver()" />
+      <p-button icon="pi pi-arrow-left" text size="small" rounded (onClick)="volver()" />
       <div>
         <h3 class="page-title">Compra #{{ seleccionado()!.compraId }}</h3>
         <p class="page-subtitle">
@@ -34019,17 +35449,17 @@ export class Compras {}
       </div>
     </div>
     <div class="flex gap-2">
-      <p-button label="Agregar Item" icon="pi pi-plus" size="small" (onClick)="nuevoDet()"
+      <p-button label="Agregar Item" icon="pi pi-plus" size="small" rounded (onClick)="nuevoDet()"
         [disabled]="seleccionado()!.sn_anulada === 'S'" />
-      <p-button label="Procesar" icon="pi pi-check-circle" size="small" severity="success" (onClick)="procesar()"
+      <p-button label="Procesar" icon="pi pi-check-circle" size="small" rounded severity="success" (onClick)="procesar()"
         [disabled]="detalles().length === 0 || seleccionado()!.sn_anulada === 'S'" />
-      <p-button label="Anular" icon="pi pi-times-circle" size="small" severity="danger"
+      <p-button label="Anular" icon="pi pi-times-circle" size="small" rounded severity="danger"
         (onClick)="anularCompra(seleccionado()!)" [disabled]="seleccionado()!.sn_anulada === 'S'" />
     </div>
   </header>
 
   <p-table [value]="detalles()" [loading]="cargandoDet()" dataKey="cxpcomprasdetId" [paginator]="true" [rows]="15"
-    styleClass="p-datatable-sm">
+    size="small">
     <ng-template pTemplate="header">
       <tr>
         <th style="width:3rem">#</th>
@@ -34050,7 +35480,7 @@ export class Compras {}
         <td class="text-right">{{ moneda(row.precio) }}</td>
         <td class="text-right font-bold">{{ moneda(row.subtotal) }}</td>
         <td>
-          <p-button icon="pi pi-trash" text severity="danger" size="small" (onClick)="eliminarDet(row)"
+          <p-button icon="pi pi-trash" text severity="danger" size="small" rounded (onClick)="eliminarDet(row)"
             [disabled]="seleccionado()!.sn_anulada === 'S'" />
         </td>
       </tr>
@@ -34077,7 +35507,7 @@ export class Compras {}
 </section>
 
 <!-- Dialog Nueva Compra -->
-<p-dialog header="Nueva Compra" [modal]="true" [draggable]="false" [style]="{width:'550px', minHeight:'350px'}"
+<p-dialog header="Nueva Compra" [modal]="true" [draggable]="false" [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{width:'550px', minHeight:'350px'}"
   [(visible)]="dialogMae">
   <form [formGroup]="formMae" class="flex flex-column gap-3">
     <div class="form-grid-2">
@@ -34085,7 +35515,7 @@ export class Compras {}
         <label class="block mb-1 text-sm font-medium">Proveedor *</label>
         <p-select formControlName="proveedorId" [options]="proveedores()" optionLabel="nombres"
           optionValue="proveedorId" placeholder="Seleccionar proveedor" [filter]="true"
-          [filterBy]="'nombres,apellidos,razonsocial'" styleClass="w-full">
+          [filterBy]="'nombres,apellidos,razonsocial'" styleClass="w-full" [appendTo]="'body'">
           <ng-template let-prov pTemplate="item">
             <span>{{ prov.nombres }} {{ prov.apellidos }}</span>
           </ng-template>
@@ -34094,7 +35524,7 @@ export class Compras {}
       <div>
         <label class="block mb-1 text-sm font-medium">Bodega *</label>
         <p-select formControlName="bodegaId" [options]="bodegas()" optionLabel="descripcion" optionValue="bodegaId"
-          placeholder="Seleccionar bodega" styleClass="w-full" />
+          placeholder="Seleccionar bodega" styleClass="w-full" [appendTo]="'body'" />
       </div>
     </div>
     <div class="form-grid-2">
@@ -34102,19 +35532,19 @@ export class Compras {}
         <label class="block mb-1 text-sm font-medium">Tipo de Compra *</label>
         <p-select formControlName="TipoCompra"
           [options]="[{label:'Factura Fiscal', value:'F'},{label:'Otro Documento', value:'O'}]" optionLabel="label"
-          optionValue="value" styleClass="w-full" />
+          optionValue="value" styleClass="w-full" [appendTo]="'body'" />
       </div>
       <div>
         <label class="block mb-1 text-sm font-medium">Documento Fiscal</label>
         <p-select formControlName="documentoId" [options]="documentosFiscales()" optionLabel="label" optionValue="value"
-          placeholder="Seleccionar documento" styleClass="w-full" [showClear]="true" />
+          placeholder="Seleccionar documento" styleClass="w-full" [showClear]="true" [appendTo]="'body'" />
       </div>
     </div>
     <div class="form-grid-2">
       <div>
         <label class="block mb-1 text-sm font-medium">Moneda *</label>
         <p-select formControlName="monedaId" [options]="monedas()" optionLabel="label" optionValue="value"
-          placeholder="Seleccionar moneda" styleClass="w-full" />
+          placeholder="Seleccionar moneda" styleClass="w-full" [appendTo]="'body'" />
       </div>
       <div>
         <label class="block mb-1 text-sm font-medium">Nro. Referencia</label>
@@ -34124,20 +35554,20 @@ export class Compras {}
     </div>
   </form>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogMae.set(false)" />
-    <p-button label="Crear Compra" icon="pi pi-check" (onClick)="guardarMae()" [disabled]="formMae.invalid" />
+    <p-button label="Cancelar" severity="secondary" text size="small" rounded (onClick)="dialogMae.set(false)" />
+    <p-button label="Crear Compra" icon="pi pi-check" size="small" rounded severity="success" [raised]="true" (onClick)="guardarMae()" [disabled]="formMae.invalid" />
   </ng-template>
 </p-dialog>
 
 <!-- Dialog Agregar Item -->
-<p-dialog header="Agregar Producto" [modal]="true" [draggable]="false" [style]="{width:'500px', minHeight:'350px'}"
+<p-dialog header="Agregar Producto" [modal]="true" [draggable]="false" [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{width:'500px', minHeight:'350px'}"
   [(visible)]="dialogDet">
   <form [formGroup]="formDet" class="flex flex-column gap-3">
     <div>
       <label class="block mb-1 text-sm font-medium">Producto *</label>
       <p-select formControlName="productoId" [options]="productos()" optionLabel="descripcion" optionValue="produtoId"
         placeholder="Buscar producto..." [filter]="true" [filterBy]="'descripcion,codbarra'" styleClass="w-full"
-        [showClear]="true">
+        [showClear]="true" [appendTo]="'body'">
         <ng-template let-prod pTemplate="item">
           <div class="flex flex-column">
             <span class="text-sm font-medium">{{ prod.descripcion }}</span>
@@ -34151,18 +35581,19 @@ export class Compras {}
       <div>
         <label class="block mb-1 text-sm font-medium">Cantidad *</label>
         <p-inputNumber formControlName="cantidad" [min]="0.01" mode="decimal" [minFractionDigits]="2"
-          [maxFractionDigits]="2" styleClass="w-full" />
+          [maxFractionDigits]="2" size="small" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
       </div>
       <div>
         <label class="block mb-1 text-sm font-medium">Precio Unitario *</label>
-        <p-inputNumber formControlName="precio" [min]="0.01" mode="decimal" [minFractionDigits]="2"
-          [maxFractionDigits]="2" styleClass="w-full" />
+        <p-inputNumber formControlName="precio" [min]="0.01" mode="currency" currency="HNL" [locale]="'es-HN'"
+          [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" size="small"
+          [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
       </div>
     </div>
   </form>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogDet.set(false)" />
-    <p-button label="Agregar" icon="pi pi-check" (onClick)="guardarDet()" [disabled]="formDet.invalid" />
+    <p-button label="Cancelar" severity="secondary" text size="small" rounded (onClick)="dialogDet.set(false)" />
+    <p-button label="Agregar" icon="pi pi-check" size="small" rounded severity="success" [raised]="true" (onClick)="guardarDet()" [disabled]="formDet.invalid" />
   </ng-template>
 </p-dialog>
 
@@ -34218,6 +35649,7 @@ export class Compras {}
 import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -34261,6 +35693,7 @@ export class ConsultaCompras implements OnInit {
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
+  private router = inject(Router);
 
   compras = signal<CompraMae[]>([]);
   detalles = signal<CompraDet[]>([]);
@@ -34398,21 +35831,7 @@ export class ConsultaCompras implements OnInit {
   }
 
   nuevoMae() {
-    this.esEdicion.set(false);
-    this.formMae.reset({
-      TipoCompra: 'F',
-      proveedorId: null,
-      bodegaId: null,
-      documentoId: null,
-      monedaId: null,
-      nroreferencia: '',
-      subtotal: 0,
-      descuento: 0,
-      impuesto: 0,
-      total: 0,
-    });
-    this.totalFactura.set(0);
-    this.dialogMae.set(true);
+    this.router.navigate(['/cxp/compras']);
   }
 
   guardarMae() {
@@ -34617,11 +36036,14 @@ export class ConsultaCompras implements OnInit {
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -34710,7 +36132,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { EmbalajesService } from '../../../core/services/embalajes.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -34718,7 +36140,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-embalaje-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './embalaje-form.html',
   styleUrl: './embalaje-form.scss',
 })
@@ -34848,13 +36270,14 @@ export class EmbalajeForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -34866,6 +36289,8 @@ export class EmbalajeForm implements OnInit {
     dataKey="embalajeId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -34907,6 +36332,7 @@ export class EmbalajeForm implements OnInit {
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -35049,13 +36475,14 @@ export class Embalajes implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -35068,6 +36495,10 @@ export class Embalajes implements OnInit {
     [paginator]="true"
     [rows]="10"
     layout="list"
+    size="small"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    [rowsPerPageOptions]="[10, 20, 50]"
   >
     <ng-template #list let-items>
       <div class="grid grid-nogutter">
@@ -35289,64 +36720,64 @@ export const INVENTARIO_ROUTES: Routes = [
   { path: 'productos/editar/:id', loadComponent: () => import('./productos/producto-form').then(m => m.ProductoForm) },
 
   // Categorías
-  { path: 'categorias', data: { catalogo: { titulo: 'Categorías', subtitulo: 'Administración de categorías de productos', ruta: '/inventario/categorias', idKey: 'categoriaId', icono: 'pi-tags', tituloNuevo: 'Nueva categoría' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'categorias/nuevo', loadComponent: () => import('./categorias/categoria-form').then(m => m.CategoriaForm) },
-  { path: 'categorias/editar/:id', loadComponent: () => import('./categorias/categoria-form').then(m => m.CategoriaForm) },
+  { path: 'categorias', data: { catalogo: { titulo: 'Categorías', subtitulo: 'Administración de categorías de productos', ruta: '/inventario/categorias', idKey: 'categoriaId', icono: 'pi-tags', tituloNuevo: 'Nueva categoría', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'categorias/nuevo', data: { nombre: 'categorias' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'categorias/editar/:id', data: { nombre: 'categorias' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Marcas
-  { path: 'marcas', data: { catalogo: { titulo: 'Marcas', subtitulo: 'Administración de marcas', ruta: '/inventario/marcas', idKey: 'marcaId', icono: 'pi-bookmark', tituloNuevo: 'Nueva marca' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'marcas/nuevo', loadComponent: () => import('./marcas/marca-form').then(m => m.MarcaForm) },
-  { path: 'marcas/editar/:id', loadComponent: () => import('./marcas/marca-form').then(m => m.MarcaForm) },
+  { path: 'marcas', data: { catalogo: { titulo: 'Marcas', subtitulo: 'Administración de marcas', ruta: '/inventario/marcas', idKey: 'marcaId', icono: 'pi-bookmark', tituloNuevo: 'Nueva marca', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'marcas/nuevo', data: { nombre: 'marcas' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'marcas/editar/:id', data: { nombre: 'marcas' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Modelos
-  { path: 'modelos', data: { catalogo: { titulo: 'Modelos', subtitulo: 'Administración de modelos', ruta: '/inventario/modelos', idKey: 'modeloId', icono: 'pi-box', tituloNuevo: 'Nuevo modelo' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'modelos/nuevo', loadComponent: () => import('./modelos/modelo-form').then(m => m.ModeloForm) },
-  { path: 'modelos/editar/:id', loadComponent: () => import('./modelos/modelo-form').then(m => m.ModeloForm) },
+  { path: 'modelos', data: { catalogo: { titulo: 'Modelos', subtitulo: 'Administración de modelos', ruta: '/inventario/modelos', idKey: 'modeloId', icono: 'pi-box', tituloNuevo: 'Nuevo modelo', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'modelos/nuevo', data: { nombre: 'modelos' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'modelos/editar/:id', data: { nombre: 'modelos' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Colores
-  { path: 'colores', data: { catalogo: { titulo: 'Colores', subtitulo: 'Administración de colores', ruta: '/inventario/colores', idKey: 'colorId', icono: 'pi-palette', tituloNuevo: 'Nuevo color' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'colores/nuevo', loadComponent: () => import('./colores/color-form').then(m => m.ColorForm) },
-  { path: 'colores/editar/:id', loadComponent: () => import('./colores/color-form').then(m => m.ColorForm) },
+  { path: 'colores', data: { catalogo: { titulo: 'Colores', subtitulo: 'Administración de colores', ruta: '/inventario/colores', idKey: 'colorId', icono: 'pi-palette', tituloNuevo: 'Nuevo color', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'colores/nuevo', data: { nombre: 'colores' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'colores/editar/:id', data: { nombre: 'colores' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Unidades de Medida
-  { path: 'unidades-medida', data: { catalogo: { titulo: 'Unidades de Medida', subtitulo: 'Administración de unidades de medida', ruta: '/inventario/unidades-medida', idKey: 'unidadmedidaId', icono: 'pi-arrows-h', tituloNuevo: 'Nueva unidad' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'unidades-medida/nuevo', loadComponent: () => import('./unidades-medida/unidad-medida-form').then(m => m.UnidadMedidaForm) },
-  { path: 'unidades-medida/editar/:id', loadComponent: () => import('./unidades-medida/unidad-medida-form').then(m => m.UnidadMedidaForm) },
+  { path: 'unidades-medida', data: { catalogo: { titulo: 'Unidades de Medida', subtitulo: 'Administración de unidades de medida', ruta: '/inventario/unidades-medida', idKey: 'unidadmedidaId', icono: 'pi-arrows-h', tituloNuevo: 'Nueva unidad', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'unidades-medida/nuevo', data: { nombre: 'unidades-medida' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'unidades-medida/editar/:id', data: { nombre: 'unidades-medida' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Embalajes
-  { path: 'embalajes', data: { catalogo: { titulo: 'Embalajes', subtitulo: 'Administración de embalajes', ruta: '/inventario/embalajes', idKey: 'embalajeId', icono: 'pi-shopping-bag', tituloNuevo: 'Nuevo embalaje' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'embalajes/nuevo', loadComponent: () => import('./embalajes/embalaje-form').then(m => m.EmbalajeForm) },
-  { path: 'embalajes/editar/:id', loadComponent: () => import('./embalajes/embalaje-form').then(m => m.EmbalajeForm) },
+  { path: 'embalajes', data: { catalogo: { titulo: 'Embalajes', subtitulo: 'Administración de embalajes', ruta: '/inventario/embalajes', idKey: 'embalajeId', icono: 'pi-shopping-bag', tituloNuevo: 'Nuevo embalaje', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'embalajes/nuevo', data: { nombre: 'embalajes' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'embalajes/editar/:id', data: { nombre: 'embalajes' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Bodegas
-  { path: 'bodegas', data: { catalogo: { titulo: 'Bodegas', subtitulo: 'Administración de bodegas', ruta: '/inventario/bodegas', idKey: 'bodegaId', icono: 'pi-building', tituloNuevo: 'Nueva bodega' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'bodegas/nuevo', loadComponent: () => import('./bodegas/bodega-form').then(m => m.BodegaForm) },
-  { path: 'bodegas/editar/:id', loadComponent: () => import('./bodegas/bodega-form').then(m => m.BodegaForm) },
+  { path: 'bodegas', data: { catalogo: { titulo: 'Bodegas', subtitulo: 'Administración de bodegas', ruta: '/inventario/bodegas', idKey: 'bodegaId', icono: 'pi-building', tituloNuevo: 'Nueva bodega', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'bodegas/nuevo', data: { nombre: 'bodegas' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'bodegas/editar/:id', data: { nombre: 'bodegas' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Ubicaciones
-  { path: 'ubicaciones', data: { catalogo: { titulo: 'Ubicaciones', subtitulo: 'Administración de ubicaciones', ruta: '/inventario/ubicaciones', idKey: 'ubicacionId', icono: 'pi-map-marker', tituloNuevo: 'Nueva ubicación' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'ubicaciones/nuevo', loadComponent: () => import('./ubicaciones/ubicacion-form').then(m => m.UbicacionForm) },
-  { path: 'ubicaciones/editar/:id', loadComponent: () => import('./ubicaciones/ubicacion-form').then(m => m.UbicacionForm) },
+  { path: 'ubicaciones', data: { catalogo: { titulo: 'Ubicaciones', subtitulo: 'Administración de ubicaciones', ruta: '/inventario/ubicaciones', idKey: 'ubicacionId', icono: 'pi-map-marker', tituloNuevo: 'Nueva ubicación', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'ubicaciones/nuevo', data: { nombre: 'ubicaciones' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'ubicaciones/editar/:id', data: { nombre: 'ubicaciones' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Pasillos
-  { path: 'pasillos', data: { catalogo: { titulo: 'Pasillos', subtitulo: 'Administración de pasillos', ruta: '/inventario/pasillos', idKey: 'pasilloId', icono: 'pi-directions', tituloNuevo: 'Nuevo pasillo' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'pasillos/nuevo', loadComponent: () => import('./pasillos/pasillo-form').then(m => m.PasilloForm) },
-  { path: 'pasillos/editar/:id', loadComponent: () => import('./pasillos/pasillo-form').then(m => m.PasilloForm) },
+  { path: 'pasillos', data: { catalogo: { titulo: 'Pasillos', subtitulo: 'Administración de pasillos', ruta: '/inventario/pasillos', idKey: 'pasilloId', icono: 'pi-directions', tituloNuevo: 'Nuevo pasillo', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'pasillos/nuevo', data: { nombre: 'pasillos' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'pasillos/editar/:id', data: { nombre: 'pasillos' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Casas
-  { path: 'casas', data: { catalogo: { titulo: 'Casas', subtitulo: 'Administración de casas', ruta: '/inventario/casas', idKey: 'casaId', icono: 'pi-home', tituloNuevo: 'Nueva casa' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'casas/nuevo', loadComponent: () => import('./casas/casa-form').then(m => m.CasaForm) },
-  { path: 'casas/editar/:id', loadComponent: () => import('./casas/casa-form').then(m => m.CasaForm) },
+  { path: 'casas', data: { catalogo: { titulo: 'Casas', subtitulo: 'Administración de casas', ruta: '/inventario/casas', idKey: 'casaId', icono: 'pi-home', tituloNuevo: 'Nueva casa', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'casas/nuevo', data: { nombre: 'casas' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'casas/editar/:id', data: { nombre: 'casas' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Testantes
-  { path: 'testantes', data: { catalogo: { titulo: 'Testantes', subtitulo: 'Administración de testantes', ruta: '/inventario/testantes', idKey: 'testanteId', icono: 'pi-verified', tituloNuevo: 'Nuevo testante' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'testantes/nuevo', loadComponent: () => import('./testantes/testante-form').then(m => m.TestanteForm) },
-  { path: 'testantes/editar/:id', loadComponent: () => import('./testantes/testante-form').then(m => m.TestanteForm) },
+  { path: 'testantes', data: { catalogo: { titulo: 'Testantes', subtitulo: 'Administración de testantes', ruta: '/inventario/testantes', idKey: 'testanteId', icono: 'pi-verified', tituloNuevo: 'Nuevo testante', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'testantes/nuevo', data: { nombre: 'testantes' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'testantes/editar/:id', data: { nombre: 'testantes' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Tags
-  { path: 'tags', data: { catalogo: { titulo: 'Tags', subtitulo: 'Administración de tags', ruta: '/inventario/tags', idKey: 'tagsId', icono: 'pi-hashtag', tituloNuevo: 'Nuevo tag' } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
-  { path: 'tags/nuevo', loadComponent: () => import('./tags/tag-form').then(m => m.TagForm) },
-  { path: 'tags/editar/:id', loadComponent: () => import('./tags/tag-form').then(m => m.TagForm) },
+  { path: 'tags', data: { catalogo: { titulo: 'Tags', subtitulo: 'Administración de tags', ruta: '/inventario/tags', idKey: 'tagsId', icono: 'pi-hashtag', tituloNuevo: 'Nuevo tag', campos: [{ key: 'descripcion', label: 'Descripción' }] } satisfies CatalogoConfig }, loadComponent: () => import('./catalogo-list/catalogo-list').then(m => m.CatalogoList) },
+  { path: 'tags/nuevo', data: { nombre: 'tags' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'tags/editar/:id', data: { nombre: 'tags' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
 
   // Proveedores
   { path: 'proveedores', loadComponent: () => import('./proveedores/proveedores').then(m => m.Proveedores) },
@@ -35400,13 +36831,14 @@ export const INVENTARIO_ROUTES: Routes = [
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -35418,6 +36850,8 @@ export const INVENTARIO_ROUTES: Routes = [
     dataKey="invkardexId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -35627,11 +37061,14 @@ export class Kardex implements OnInit {
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -35720,7 +37157,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { MarcasService } from '../../../core/services/marcas.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -35728,7 +37165,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-marca-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './marca-form.html',
   styleUrl: './marca-form.scss',
 })
@@ -35858,13 +37295,14 @@ export class MarcaForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -35876,6 +37314,8 @@ export class MarcaForm implements OnInit {
     dataKey="marcaId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -35917,6 +37357,7 @@ export class MarcaForm implements OnInit {
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -36077,11 +37518,14 @@ export class Marcas implements OnInit {
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -36170,7 +37614,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { ModelosService } from '../../../core/services/modelos.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -36178,7 +37622,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-modelo-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './modelo-form.html',
   styleUrl: './modelo-form.scss',
 })
@@ -36308,13 +37752,14 @@ export class ModeloForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -36326,6 +37771,8 @@ export class ModeloForm implements OnInit {
     dataKey="modeloId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -36367,6 +37814,7 @@ export class ModeloForm implements OnInit {
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -36527,11 +37975,14 @@ export class Modelos implements OnInit {
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -36620,7 +38071,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { PasillosService } from '../../../core/services/pasillos.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -36628,7 +38079,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-pasillo-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './pasillo-form.html',
   styleUrl: './pasillo-form.scss',
 })
@@ -36758,13 +38209,14 @@ export class PasilloForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -36776,6 +38228,8 @@ export class PasilloForm implements OnInit {
     dataKey="pasilloId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -36817,6 +38271,7 @@ export class PasilloForm implements OnInit {
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -37002,16 +38457,19 @@ export class Pasillos implements OnInit {
       <div class="campo">
         <label for="categoriaId">Categoría <span class="req">*</span></label>
         <p-select
-size="small"           id="categoriaId"
+          size="small"
+          id="categoriaId"
           formControlName="categoriaId"
           [options]="categorias()"
           optionLabel="descripcion"
           optionValue="categoriaId"
           placeholder="Seleccione categoría"
+          styleClass="w-full"
           [fluid]="true"
           [showClear]="true"
           [loading]="categoriasCargando()"
           [ngClass]="{ 'ng-invalid': invalid('categoriaId') }"
+          [appendTo]="'body'"
         />
         @if (invalid('categoriaId')) {
           <small class="err">Seleccione una categoría</small>
@@ -37025,9 +38483,11 @@ size="small"           id="categoriaId"
           formControlName="cstounit"
           mode="currency"
           currency="HNL"
-          locale="es-HN"
+          [locale]="'es-HN'"
           [minFractionDigits]="2"
           [maxFractionDigits]="2"
+          [useGrouping]="true"
+          [inputStyle]="{ 'width': '100%' }"
         />
       </div>
 
@@ -37038,9 +38498,11 @@ size="small"           id="categoriaId"
           formControlName="cstoprom"
           mode="currency"
           currency="HNL"
-          locale="es-HN"
+          [locale]="'es-HN'"
           [minFractionDigits]="2"
           [maxFractionDigits]="2"
+          [useGrouping]="true"
+          [inputStyle]="{ 'width': '100%' }"
         />
       </div>
 
@@ -37051,9 +38513,11 @@ size="small"           id="categoriaId"
           formControlName="precioventa"
           mode="currency"
           currency="HNL"
-          locale="es-HN"
+          [locale]="'es-HN'"
           [minFractionDigits]="2"
           [maxFractionDigits]="2"
+          [useGrouping]="true"
+          [inputStyle]="{ 'width': '100%' }"
         />
       </div>
 
@@ -37064,9 +38528,11 @@ size="small"           id="categoriaId"
           formControlName="puntoretorno"
           mode="currency"
           currency="HNL"
-          locale="es-HN"
+          [locale]="'es-HN'"
           [minFractionDigits]="2"
           [maxFractionDigits]="2"
+          [useGrouping]="true"
+          [inputStyle]="{ 'width': '100%' }"
         />
       </div>
 
@@ -37080,6 +38546,7 @@ size="small"           id="categoriaId"
             optionValue="value"
             placeholder="Estado"
             styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -37223,6 +38690,8 @@ export class ProductoForm implements OnInit {
     { label: 'Inactivo', value: 'N' },
   ];
 
+  layout: 'grid' | 'list' = 'grid';
+  options: any[] = ['grid','list'];
   private produtoId = 0;
 
   form!: FormGroup;
@@ -37354,6 +38823,7 @@ export class ProductoForm implements OnInit {
     });
   }
 }
+
 ```
 
 ---
@@ -37376,74 +38846,73 @@ export class ProductoForm implements OnInit {
       <input
         pInputText
         type="text"
-        placeholder="Descripción, código, categoría..."
+        placeholder="Descripción, código..."
         [ngModel]="q()"
         (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()"
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
   </div>
 
-  <div class="card">
-    <p-dataview
-      [value]="filtered()"
-      [loading]="cargando()"
-      dataKey="produtoId"
-      [paginator]="true"
-      [rows]="12"
-      [rowsPerPageOptions]="[12, 24, 48]"
-      layout="grid"
-    >
-      <ng-template #grid let-items>
-        <div class="productos-grid">
-          @for (p of items; track p.produtoId) {
-          <div class="producto-card">
-            <div class="producto-img-area">
-              @if (getItemImagen(p)) {
-                <img [src]="getItemImagen(p)" [alt]="p.descripcion" loading="lazy" />
-              } @else {
-                <i class="pi pi-image"></i>
-              }
-              <p-tag [value]="activoLbl(p.sn_activo)" [severity]="activoSev(p.sn_activo)" class="producto-tag" />
-            </div>
-            <div class="producto-info">
-              <span class="producto-cod">Cod: {{ p.codbarra || '-' }}</span>
-              <div class="producto-desc">{{ p.descripcion }}</div>
-              @if (p.descripcion_corta) {
-                <div class="producto-desc-corta">{{ p.descripcion_corta }}</div>
-              }
-              <div class="producto-footer">
-                <span class="producto-precio">{{ moneda(p.precioventa) }}</span>
-                <p-button
-                  icon="pi pi-pencil"
-                  severity="warn"
-                  text
-                  size="small"
-                  rounded
-                  (onClick)="editar(p.produtoId, $event)"
-                />
-              </div>
-            </div>
-          </div>
-          }
-        </div>
-      </ng-template>
+  <div class="tabla-responsive">
+  <p-table
+    [value]="filtered()"
+    [loading]="cargando()"
+    dataKey="produtoId"
+    [paginator]="true"
+    [rows]="20"
+    [rowsPerPageOptions]="[10, 20, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
+    styleClass="p-datatable-striped">
 
-      <ng-template #emptymessage>
-        <div class="text-center p-3">No hay productos que coincidan con los filtros.</div>
-      </ng-template>
-    </p-dataview>
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 12rem">Cod.</th>
+        <th>Descripción</th>
+        <th style="width: 7rem" class="text-center">Estado</th>
+        <th style="width: 4rem" class="text-center"></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-p>
+      <tr (click)="editar(p.produtoId)" style="cursor: pointer">
+        <td class="font-bold">{{ p.codbarra || '-' }}</td>
+        <td>{{ p.descripcion }}</td>
+        <td class="text-center">
+          <p-tag [value]="activoLbl(p.sn_activo)" [severity]="activoSev(p.sn_activo)" />
+        </td>
+        <td class="text-center">
+          <p-button
+            icon="pi pi-pencil"
+            size="small"
+            variant="text"
+            [rounded]="true"
+            severity="secondary"
+            (onClick)="$event.stopPropagation(); editar(p.produtoId)" />
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="empty">
+      <tr>
+        <td colspan="4" class="text-center p-4">No hay productos que coincidan con los filtros.</td>
+      </tr>
+    </ng-template>
+  </p-table>
   </div>
 </section>
 
@@ -37454,99 +38923,62 @@ export class ProductoForm implements OnInit {
 ## 📄 src\app\features\inventario\productos\productos.scss
 
 ```typescript
-.productos-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 0.5rem;
-
-  @media (max-width: 960px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.producto-card {
-  border: 1px solid var(--surface-border);
-  border-radius: 0.5rem;
-  overflow: hidden;
+.filtros {
   display: flex;
-  flex-direction: column;
-  background: var(--surface-card);
-  transition: box-shadow 0.2s;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
 
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  .campo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    label {
+      font-weight: 500;
+      font-size: 0.85rem;
+      color: var(--c-text-muted, #64748b);
+    }
+  }
+
+  .acciones {
+    flex: 0;
+    flex-direction: row;
+    gap: 0.5rem;
   }
 }
 
-.producto-img-area {
-  position: relative;
-  display: flex;
-  align-items: center;
-  padding: 3rem 0.75rem 0.75rem;
-  background: var(--surface-50);
-  min-height: 100px;
+.tabla-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
-  img {
-    width: 120px;
-    height: 120px;
-    object-fit: contain;
-    border-radius: 0.5rem;
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+
+    p-button {
+      width: 100%;
+
+      ::ng-deep .p-button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   }
 
-  .pi {
-    font-size: 2rem;
-    color: var(--surface-300);
+  .filtros {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .producto-tag {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
+  .tabla-responsive {
+    margin: 0 -1rem;
+    padding: 0 1rem;
   }
-}
-
-.producto-info {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 0.25rem;
-}
-
-.producto-cod {
-  font-size: 0.78rem;
-  color: var(--text-muted-color);
-  font-weight: 500;
-}
-
-.producto-desc {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-color);
-}
-
-.producto-desc-corta {
-  font-size: 0.85rem;
-  color: var(--text-muted-color);
-}
-
-.producto-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-  padding-top: 0.75rem;
-}
-
-.producto-precio {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--c-primary);
 }
 
 ```
@@ -37560,14 +38992,12 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
-import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-productos',
@@ -37575,11 +39005,10 @@ import { forkJoin } from 'rxjs';
   imports: [
     CommonModule,
     FormsModule,
-    DataViewModule,
+    TableModule,
     ButtonModule,
     InputTextModule,
     TagModule,
-    TooltipModule,
   ],
   templateUrl: './productos.html',
   styleUrl: './productos.scss',
@@ -37589,8 +39018,6 @@ export class Productos implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private msgs = inject(MessageService);
-
-  private imagenCache = new Map<string, string>();
 
   data = signal<any[]>([]);
   filtered = signal<any[]>([]);
@@ -37604,19 +39031,9 @@ export class Productos implements OnInit {
 
   load() {
     this.cargando.set(true);
-    forkJoin([
-      this.api.get<any[]>('/inventario/productos'),
-      this.api.get<any[]>('/inventario/productos-img')
-    ]).subscribe({
-      next: ([productos, imagenes]) => {
-        const imgMap = new Map<number, string>();
-        for (const img of imagenes) {
-          if (img.img) imgMap.set(img.productoId, img.img);
-        }
-        this.data.set(productos.map(p => ({
-          ...p,
-          imagen: imgMap.get(p.produtoId) || ''
-        })));
+    this.api.get<any[]>('/inventario/productos').subscribe({
+      next: (res) => {
+        this.data.set(res);
         this.filtrar();
         this.cargando.set(false);
       },
@@ -37658,24 +39075,9 @@ export class Productos implements OnInit {
     this.router.navigate(['nuevo'], { relativeTo: this.route });
   }
 
-  editar(id?: number, e?: Event) {
-    e?.stopPropagation();
+  editar(id?: number) {
     if (!id) return;
     this.router.navigate(['editar', id], { relativeTo: this.route });
-  }
-
-  resolverImagen(imagen: string | null): string {
-    if (!imagen) return '';
-    const cacheKey = imagen.substring(0, 100);
-    if (this.imagenCache.has(cacheKey)) return this.imagenCache.get(cacheKey)!;
-    const result = /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
-    this.imagenCache.set(cacheKey, result);
-    return result;
-  }
-
-  getItemImagen(item: any): string {
-    if (item.imagen) return this.resolverImagen(item.imagen);
-    return '';
   }
 
   activoLbl(sn: string): string {
@@ -37685,14 +39087,8 @@ export class Productos implements OnInit {
   activoSev(sn: string): 'success' | 'danger' {
     return sn === 'S' ? 'success' : 'danger';
   }
-
-  moneda(n: number | undefined): string {
-    return (n ?? 0).toLocaleString('es-HN', {
-      style: 'currency',
-      currency: 'HNL',
-    });
-  }
 }
+
 ```
 
 ---
@@ -37802,28 +39198,34 @@ export class Productos implements OnInit {
       <div class="campo">
         <label for="sexo">Sexo</label>
         <p-select
-size="small"           id="sexo"
+          size="small"
+          id="sexo"
           formControlName="sexo"
           [options]="sexoOptions"
           optionLabel="label"
           optionValue="value"
           placeholder="Seleccione sexo"
+          styleClass="w-full"
           [fluid]="true"
           [showClear]="true"
+          [appendTo]="'body'"
         />
       </div>
 
       <div class="campo">
         <label for="estadocivil">Estado civil</label>
         <p-select
-size="small"           id="estadocivil"
+          size="small"
+          id="estadocivil"
           formControlName="estadocivil"
           [options]="estadoCivilOptions"
           optionLabel="label"
           optionValue="value"
           placeholder="Seleccione estado civil"
+          styleClass="w-full"
           [fluid]="true"
           [showClear]="true"
+          [appendTo]="'body'"
         />
       </div>
 
@@ -37832,10 +39234,13 @@ size="small"           id="estadocivil"
         <p-inputnumber size="small"
           id="limiteCredito"
           formControlName="limiteCredito"
-          [mode]="'currency'"
+          mode="currency"
           currency="HNL"
+          [locale]="'es-HN'"
           [minFractionDigits]="2"
           [maxFractionDigits]="2"
+          [useGrouping]="true"
+          [inputStyle]="{ 'width': '100%' }"
         />
       </div>
 
@@ -37847,6 +39252,7 @@ size="small"           id="estadocivil"
           [min]="0"
           [max]="999"
           [useGrouping]="false"
+          [inputStyle]="{ 'width': '100%' }"
         />
       </div>
 
@@ -37857,6 +39263,8 @@ size="small"           id="estadocivil"
           formControlName="interes"
           [minFractionDigits]="2"
           [maxFractionDigits]="2"
+          [useGrouping]="true"
+          [inputStyle]="{ 'width': '100%' }"
         />
       </div>
 
@@ -37867,31 +39275,39 @@ size="small"           id="estadocivil"
           formControlName="moratorio"
           [minFractionDigits]="2"
           [maxFractionDigits]="2"
+          [useGrouping]="true"
+          [inputStyle]="{ 'width': '100%' }"
         />
       </div>
 
       <div class="campo">
         <label for="categoria">Categoría</label>
         <p-select
-size="small"           id="categoria"
+          size="small"
+          id="categoria"
           formControlName="categoria"
           [options]="categoriaOptions"
           optionLabel="label"
           optionValue="value"
           placeholder="Seleccione categoría"
+          styleClass="w-full"
           [fluid]="true"
           [showClear]="true"
+          [appendTo]="'body'"
         />
       </div>
 
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -38215,13 +39631,14 @@ export class ProveedorForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -38233,6 +39650,8 @@ export class ProveedorForm implements OnInit {
     dataKey="proveedorId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -38453,31 +39872,23 @@ export class Proveedores implements OnInit {
         <h3 class="page-title">Requisiciones de Inventario</h3>
         <p class="page-subtitle">Solicitudes de productos entre bodegas</p>
       </div>
-      <p-button label="Nueva Requisición" icon="pi pi-plus" size="small" (onClick)="nuevoMae()" />
+      <p-button label="Nueva Requisición" icon="pi pi-plus" size="small" rounded (onClick)="nuevoMae()" />
     </header>
 
-    <p-table
-      [value]="maestros()"
-      [loading]="cargando()"
-      dataKey="invreqmaeid"
-      [paginator]="true"
-      [rows]="10"
-      [showCurrentPageReport]="true"
-      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-      [rowsPerPageOptions]="[10, 25, 50]"
-      styleClass="p-datatable-sm"
-    >
+    <p-table [value]="requisiciones()" [loading]="cargando()" dataKey="invreqmaeid" [paginator]="true" [rows]="10"
+      [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[10, 25, 50]" size="small">
       <ng-template pTemplate="header">
         <tr>
           <th style="width:4rem">#</th>
           <th>Fecha</th>
-          <th>Bodega Origen</th>
-          <th>Bodega Destino</th>
+          <th>Origen</th>
+          <th>Destino</th>
           <th>Concepto</th>
           <th style="width:6rem">Prioridad</th>
           <th style="width:7rem">Estado</th>
           <th style="width:6rem">Creado por</th>
-          <th style="width:8rem">Acciones</th>
+          <th style="width:4rem"></th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
@@ -38495,148 +39906,190 @@ export class Proveedores implements OnInit {
           </td>
           <td>{{ row.usuarioCreated }}</td>
           <td>
-            <p-button icon="pi pi-trash" severity="danger" text size="small" (onClick)="$event.stopPropagation(); eliminarMae(row)" [disabled]="row.sn_estado !== 'P'" />
+            <p-button icon="pi pi-trash" severity="danger" text size="small" rounded
+              (onClick)="$event.stopPropagation(); seleccionar(row)" [disabled]="row.sn_estado !== 'P'" />
           </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
-        <tr><td colspan="9" class="text-center p-3">No hay requisiciones registradas.</td></tr>
+        <tr>
+          <td colspan="9" class="text-center p-3">No hay requisiciones registradas.</td>
+        </tr>
       </ng-template>
     </p-table>
-  } @else {
+  }
+
+  @if (seleccionado()) {
     <header class="page-header">
       <div class="flex align-items-center gap-2">
-        <p-button icon="pi pi-arrow-left" text size="small" (onClick)="volver()" />
+        <p-button icon="pi pi-arrow-left" text size="small" rounded (onClick)="volver()" />
         <div>
-          <h3 class="page-title">Requisición #{{ seleccionado()!.invreqmaeid }}</h3>
+          <h3 class="page-title">Requisición #{{ seleccionado()!.invreqmaeid || 'Nueva' }}</h3>
           <p class="page-subtitle">
-            {{ seleccionado()!.concepto }} — {{ nombreBodega(seleccionado()!.bodegaOrigenId) }} → {{ nombreBodega(seleccionado()!.bodegaDestinoId) }}
-            — <p-tag [value]="prioridadLabel(seleccionado()!.prioridad || 'M')" [severity]="prioridadSeverity(seleccionado()!.prioridad || 'M')" [style]="{'font-size':'0.7rem'}" />
-            — <p-tag [value]="estadoLabel(seleccionado()!.sn_estado)" [severity]="estadoSeverity(seleccionado()!.sn_estado)" [style]="{'font-size':'0.7rem'}" />
-            @if (seleccionado()!.fechaEntrega) {
-              — Entrega: {{ seleccionado()!.fechaEntrega | date:'dd/MM/yyyy' }}
-            }
-            @if (seleccionado()!.observaciones) {
-              <br />{{ seleccionado()!.observaciones }}
+            {{ nombreBodega(formMae.value.bodegaOrigenId || 0) }}
+            → {{ nombreBodega(formMae.value.bodegaDestinoId || 0) }}
+            — <p-tag [value]="prioridadLabel(formMae.value.prioridad || 'M')" [severity]="prioridadSeverity(formMae.value.prioridad || 'M')" [style]="{'font-size':'0.7rem'}" />
+            @if (seleccionado()!.sn_estado) {
+              — <p-tag [value]="estadoLabel(seleccionado()!.sn_estado)" [severity]="estadoSeverity(seleccionado()!.sn_estado)" [style]="{'font-size':'0.7rem'}" />
             }
           </p>
         </div>
       </div>
       <div class="flex gap-2">
-        @if (esPendiente()) {
-          <p-button label="Agregar Item" icon="pi pi-plus" size="small" (onClick)="nuevoDet()" />
-          <p-button label="Aprobar" icon="pi pi-check-circle" size="small" severity="success" (onClick)="procesar()" [disabled]="detalles().length === 0" />
-          <p-button label="Anular" icon="pi pi-times-circle" size="small" severity="danger" (onClick)="anular()" />
+        @if (seleccionado()!.invreqmaeid && esPendiente()) {
+          <p-button label="Aprobar" icon="pi pi-check-circle" size="small" rounded severity="success" (onClick)="procesar()"
+            [disabled]="detalles().length === 0" />
+          <p-button label="Anular" icon="pi pi-times-circle" size="small" rounded severity="danger" (onClick)="anular()" />
         }
       </div>
     </header>
 
-    <p-table
-      [value]="detalles()"
-      [loading]="cargandoDet()"
-      dataKey="invreqdetid"
-      [paginator]="true"
-      [rows]="15"
-      styleClass="p-datatable-sm"
-    >
+    <form [formGroup]="formMae" (ngSubmit)="guardarMae()" class="card form-card">
+      <div class="form-grid">
+        <div class="campo">
+          <label>Bodega Origen *</label>
+          <p-select formControlName="bodegaOrigenId" [options]="bodegas()" optionLabel="descripcion"
+            optionValue="bodegaId" placeholder="Seleccionar origen" styleClass="w-full" [appendTo]="'body'"
+            [disabled]="!esNuevo()" />
+          @if (formMae.get('bodegaOrigenId')?.invalid && formMae.get('bodegaOrigenId')?.touched) {
+            <small class="err">Requerido</small>
+          }
+        </div>
+        <div class="campo">
+          <label>Bodega Destino *</label>
+          <p-select formControlName="bodegaDestinoId" [options]="bodegas()" optionLabel="descripcion"
+            optionValue="bodegaId" placeholder="Seleccionar destino" styleClass="w-full" [appendTo]="'body'"
+            [disabled]="!esNuevo()" />
+          @if (formMae.get('bodegaDestinoId')?.invalid && formMae.get('bodegaDestinoId')?.touched) {
+            <small class="err">Requerido</small>
+          }
+        </div>
+        <div class="campo">
+          <label>Concepto *</label>
+          <input pInputText formControlName="concepto" placeholder="Ej: Solicitud para sucursal" [readonly]="!esNuevo()" class="w-full" />
+          @if (formMae.get('concepto')?.invalid && formMae.get('concepto')?.touched) {
+            <small class="err">Requerido</small>
+          }
+        </div>
+        <div class="campo">
+          <label>Prioridad *</label>
+          <p-select formControlName="prioridad" [options]="prioridades()" optionLabel="label" optionValue="value"
+            placeholder="Seleccionar prioridad" styleClass="w-full" [appendTo]="'body'"
+            [disabled]="!esNuevo()" />
+        </div>
+        <div class="campo">
+          <label>Fecha de Entrega</label>
+          <p-datepicker formControlName="fechaEntrega" dateFormat="dd/mm/yy" placeholder="Fecha límite"
+            styleClass="w-full" [showIcon]="true" [showClear]="true" [appendTo]="'body'"
+            [disabled]="!esNuevo()" />
+        </div>
+        <div class="campo campo-full">
+          <label>Observaciones</label>
+          <textarea pTextarea formControlName="observaciones" rows="3" placeholder="Notas adicionales..."
+            [readonly]="!esNuevo()" class="w-full"></textarea>
+        </div>
+      </div>
+      @if (esNuevo()) {
+        <div class="acciones-form">
+          <p-button type="button" label="Cancelar" severity="secondary" text size="small" rounded (onClick)="volver()" />
+          <p-button type="submit" label="Crear Requisición" icon="pi pi-check" size="small" rounded severity="success" [raised]="true"
+            [loading]="guardando()" [disabled]="formMae.invalid" />
+        </div>
+      }
+    </form>
+
+    <div class="card info-card">
+      <div class="info-grid">
+        <div><span class="info-label">Estado:</span>
+          <p-tag [value]="estadoLabel(seleccionado()!.sn_estado)" [severity]="estadoSeverity(seleccionado()!.sn_estado)" [style]="{'font-size':'0.7rem'}" />
+        </div>
+      </div>
+    </div>
+
+    @if (esPendiente()) {
+      <div [formGroup]="formDet" class="card agregar-item-card">
+        <div class="agregar-item-row">
+          <div class="campo campo-codbarra">
+            <label>Codigo de Barras</label>
+            <div class="flex gap-1">
+                <input pInputText [ngModel]="codBusqueda()" (ngModelChange)="onCodBarraInput($event)"
+                  (keyup.enter)="buscarProducto()" placeholder="Escanear o escribir codigo..." [ngModelOptions]="{standalone: true}" />
+              <p-button icon="pi pi-search" size="small" rounded severity="secondary" (onClick)="showHelperProductos()" />
+            </div>
+          </div>
+          <div class="campo campo-cantidad">
+            <label>Cant. Solicitada</label>
+            <p-inputNumber formControlName="cantidadSolicitada" [min]="0.01" mode="decimal" [minFractionDigits]="2"
+              [maxFractionDigits]="2" size="small" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
+          </div>
+          <div class="campo-btn">
+            <p-button icon="pi pi-plus" size="small" rounded severity="success" (onClick)="buscarProducto(); agregarItem()"
+              [loading]="guardando()" [disabled]="seleccionado()!.sn_anulado === 'S' || seleccionado()!.sn_procesado === 'S'" />
+          </div>
+        </div>
+        @if (formDet.value.descripcion) {
+          <div class="producto-encontrado">
+            <span class="font-bold">{{ formDet.value.descripcion }}</span>
+          </div>
+        }
+      </div>
+
+        <select [ngModel]="formDet.value.productoId" (ngModelChange)="formDet.patchValue({productoId: $event})" [ngModelOptions]="{standalone: true}" class="hidden-select">
+        <option [ngValue]="null">-</option>
+        @for (p of productos(); track p.produtoId) {
+          <option [ngValue]="p.produtoId">{{ p.descripcion }}</option>
+        }
+      </select>
+    }
+
+    <p-table [value]="detalles()" [loading]="cargandoDet()" dataKey="invreqdetid" [paginator]="true" [rows]="15" size="small">
       <ng-template pTemplate="header">
         <tr>
           <th style="width:3rem">#</th>
-          <th style="width:8rem">Cod. Barra</th>
+          <th>Cod. Barra</th>
           <th>Producto</th>
           <th style="width:8rem" class="text-right">Cant. Solicitada</th>
           <th style="width:8rem" class="text-right">Cant. Entregada</th>
-          <th style="width:6rem">Estado</th>
-          <th style="width:7rem">Acciones</th>
+          <th style="width:6rem" class="text-center">Estado</th>
+          @if (esPendiente()) {
+            <th style="width:5rem" class="text-center"></th>
+          }
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
           <td>{{ row.nrofila }}</td>
-          <td>{{ row.codbarra }}</td>
+          <td class="font-bold">{{ row.codbarra }}</td>
           <td>{{ row.descripcion }}</td>
           <td class="text-right font-bold">{{ row.cantidadSolicitada }}</td>
           <td class="text-right">{{ row.cantidadEntregada }}</td>
-          <td>
+          <td class="text-center">
             <p-tag [value]="row.sn_estado === 'P' ? 'Pendiente' : row.sn_estado === 'A' ? 'Aprobado' : 'Recibido'"
               [severity]="row.sn_estado === 'P' ? 'warn' : row.sn_estado === 'A' ? 'success' : 'info'"
               [style]="{'font-size':'0.7rem'}" />
           </td>
-          <td>
-            <p-button icon="pi pi-trash" text severity="danger" size="small" (onClick)="eliminarDet(row)" [disabled]="!esPendiente()" />
-          </td>
+          @if (esPendiente()) {
+            <td class="text-center">
+              <p-button icon="pi pi-trash" text severity="danger" size="small" rounded (onClick)="eliminarItem(row)" />
+            </td>
+          }
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
-        <tr><td colspan="7" class="text-center p-3">No hay items en esta requisición.</td></tr>
+        <tr>
+          <td colspan="7" class="text-center p-3">No hay items en esta requisición.</td>
+        </tr>
       </ng-template>
     </p-table>
+
+    <div class="card totales-card">
+      <div class="total-line">
+        <span>Items:</span>
+        <span class="font-bold">{{ detalles().length }}</span>
+      </div>
+    </div>
   }
 </section>
-
-<!-- Dialog Maestro -->
-<p-dialog [header]="esEdicion() ? 'Editar Requisición' : 'Nueva Requisición'" [modal]="true" [draggable]="false" [style]="{width:'480px', minHeight:'300px'}" [(visible)]="dialogMae">
-  <form [formGroup]="formMae" class="flex flex-column gap-3">
-    <div>
-      <label class="block mb-1 text-sm font-medium">Concepto *</label>
-      <input pInputText formControlName="concepto" class="w-full" placeholder="Ej: Solicitud de productos para sucursal" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Prioridad *</label>
-      <p-select formControlName="prioridad" [options]="prioridades()" optionLabel="label" optionValue="value" placeholder="Seleccionar prioridad" styleClass="w-full" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Fecha de Entrega</label>
-      <p-datepicker formControlName="fechaEntrega" dateFormat="dd/mm/yy" placeholder="Fecha límite de entrega" styleClass="w-full" [showIcon]="true" [showClear]="true" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Observaciones</label>
-      <textarea pTextarea formControlName="observaciones" class="w-full" rows="3" placeholder="Notas adicionales sobre la requisición..."></textarea>
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Bodega Origen *</label>
-      <p-select formControlName="bodegaOrigenId" [options]="bodegas()" optionLabel="descripcion" optionValue="bodegaId" placeholder="Seleccionar bodega origen" styleClass="w-full" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Bodega Destino *</label>
-      <p-select formControlName="bodegaDestinoId" [options]="bodegas()" optionLabel="descripcion" optionValue="bodegaId" placeholder="Seleccionar bodega destino" styleClass="w-full" />
-    </div>
-  </form>
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogMae.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarMae()" [disabled]="formMae.invalid" />
-  </ng-template>
-</p-dialog>
-
-<!-- Dialog Detalle -->
-<p-dialog header="Item de Requisición"
-[modal]="true" [draggable]="false" [style]="{width:'500px', minHeight:'400px'}" [(visible)]="dialogDet">
-  <form [formGroup]="formDet" class="flex flex-column gap-3">
-    <div>
-      <label class="block mb-1 text-sm font-medium">Producto *</label>
-      <p-select formControlName="producto"
-        [options]="productos()"
-        optionLabel="descripcion"
-        optionValue="codbarra" placeholder="Buscar por descripción..."
-        [filter]="true" [filterBy]="'descripcion'" styleClass="w-full" [style]="{'min-height':'44px'}" [showClear]="true">
-        <ng-template let-producto pTemplate="item">
-          <div class="flex flex-column">
-            <span>{{ producto.codbarra }}</span> |
-            <span>{{ producto.descripcion }}</span>
-          </div>
-        </ng-template>
-      </p-select>
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Cantidad Solicitada *</label>
-      <p-inputNumber formControlName="cantidadSolicitada" [min]="0.01" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" styleClass="w-full" />
-    </div>
-  </form>
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogDet.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarDet()" [disabled]="formDet.invalid" />
-  </ng-template>
-</p-dialog>
 
 ```
 
@@ -38645,13 +40098,126 @@ export class Proveedores implements OnInit {
 ## 📄 src\app\features\inventario\requisiciones\requisiciones.scss
 
 ```typescript
-:host { display: block; }
+.form-card {
+  max-width: 800px;
+}
 
-::ng-deep .p-datatable-tbody > tr {
-  cursor: default;
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 2rem;
 
-  &:hover {
-    background: var(--c-surface-ground);
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  label {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--c-text-muted, #64748b);
+  }
+}
+
+.campo-full {
+  grid-column: 1 / -1;
+}
+
+.acciones-form {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--c-border, #e2e8f0);
+}
+
+.req { color: var(--c-error, #ef4444); }
+.err { color: var(--c-error, #ef4444); font-size: 0.75rem; }
+.hidden-select { display: none; }
+
+/* Info card */
+.info-card {
+  margin-bottom: 1rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem 2rem;
+  font-size: 0.9rem;
+}
+
+.info-label {
+  color: var(--c-text-muted, #64748b);
+  font-weight: 500;
+}
+
+/* Agregar item */
+.agregar-item-card {
+  margin-bottom: 1rem;
+}
+
+.agregar-item-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.campo-codbarra { flex: 3; }
+.campo-cantidad { flex: 1; min-width: 100px; }
+.campo-btn { flex: 0; padding-bottom: 0.15rem; }
+
+.producto-encontrado {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--c-surface-ground, #f8fafc);
+  border-radius: 0.375rem;
+  border: 1px solid var(--c-border, #e2e8f0);
+  font-size: 0.85rem;
+}
+
+/* Totales */
+.totales-card {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2rem;
+  padding: 0.75rem 1rem;
+}
+
+.total-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .agregar-item-row {
+    flex-wrap: wrap;
+  }
+
+  .campo-codbarra,
+  .campo-cantidad {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .totales-card {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }
 
@@ -38662,7 +40228,7 @@ export class Proveedores implements OnInit {
 ## 📄 src\app\features\inventario\requisiciones\requisiciones.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -38670,31 +40236,35 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToolbarModule } from 'primeng/toolbar';
-import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
 import { DatePickerModule } from 'primeng/datepicker';
 import { TextareaModule } from 'primeng/textarea';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { RequisicionInventarioService } from '../../../core/services/requisicion-inventario.service';
 import { BodegasService } from '../../../core/services/bodegas.service';
 import { ProductosService } from '../../../core/services/productos.service';
+import { Bodega, Producto } from '../../../core/models/inventario.models';
+import { ProductosHelperList } from '../../helpers/productos';
+import { FooterHelper } from '../../helpers/footer';
 
 @Component({
   selector: 'app-requisiciones',
   standalone: true,
+  providers: [DialogService],
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
     TableModule, ButtonModule, InputTextModule, InputNumberModule,
-    DialogModule, TagModule, ToastModule, ConfirmDialogModule,
-    ToolbarModule, SelectModule, TooltipModule, DatePickerModule, TextareaModule,
+    SelectModule, TagModule, ToastModule, ConfirmDialogModule, TooltipModule,
+    DatePickerModule, TextareaModule,
   ],
   templateUrl: './requisiciones.html',
   styleUrl: './requisiciones.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Requisiciones implements OnInit {
   private fb = inject(FormBuilder);
@@ -38704,18 +40274,21 @@ export class Requisiciones implements OnInit {
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
+  private dialogService = inject(DialogService);
 
-  maestros = signal<any[]>([]);
+  ref: DynamicDialogRef | undefined;
+
+  requisiciones = signal<any[]>([]);
   detalles = signal<any[]>([]);
-  bodegas = signal<any[]>([]);
-  productos = signal<any[]>([]);
+  bodegas = signal<Bodega[]>([]);
+  productos = signal<Producto[]>([]);
+
   seleccionado = signal<any | null>(null);
   cargando = signal(false);
   cargandoDet = signal(false);
+  guardando = signal(false);
 
-  dialogMae = signal(false);
-  dialogDet = signal(false);
-  esEdicion = signal(false);
+  codBusqueda = signal('');
 
   prioridades = signal<{ label: string; value: string }[]>([
     { label: 'Baja', value: 'B' },
@@ -38725,67 +40298,65 @@ export class Requisiciones implements OnInit {
   ]);
 
   formMae = this.fb.group({
-    concepto: ['', Validators.required],
     bodegaOrigenId: [null as number | null, Validators.required],
     bodegaDestinoId: [null as number | null, Validators.required],
+    concepto: ['', Validators.required],
     prioridad: ['M', Validators.required],
     fechaEntrega: [null as Date | null],
     observaciones: [''],
   });
 
   formDet = this.fb.group({
-    producto: [null as string | null, Validators.required],
-    cantidadSolicitada: [0, [Validators.required, Validators.min(0.01)]],
+    codbarra: ['', Validators.required],
+    productoId: [null as number | null],
+    descripcion: [''],
+    cantidadSolicitada: [1, [Validators.required, Validators.min(0.01)]],
   });
 
   ngOnInit() {
+    this.cargarRequisiciones();
     this.cargarBodegas();
     this.cargarProductos();
-    this.cargarMaestros();
+  }
+
+  cargarRequisiciones() {
+    this.cargando.set(true);
+    this.service.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.requisiciones.set(data || []); this.cargando.set(false); },
+      error: () => { this.cargando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las requisiciones' }); },
+    });
   }
 
   cargarBodegas() {
     this.bodegasService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data: any) => this.bodegas.set(data?.value || data || []),
+      next: (data) => this.bodegas.set(data || []),
     });
   }
 
   cargarProductos() {
     this.productosService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data: any) => this.productos.set(data?.value || data || []),
+      next: (data) => this.productos.set(data || []),
     });
   }
 
-  cargarMaestros() {
-    this.cargando.set(true);
-    this.service.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data: any) => {
-        this.maestros.set(data?.value || data || []);
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.cargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las requisiciones' });
-      },
+  seleccionar(req: any) {
+    this.seleccionado.set(req);
+    this.formMae.patchValue({
+      bodegaOrigenId: req.bodegaOrigenId || null,
+      bodegaDestinoId: req.bodegaDestinoId || null,
+      concepto: req.concepto || '',
+      prioridad: req.prioridad || 'M',
+      fechaEntrega: req.fechaEntrega ? new Date(req.fechaEntrega) : null,
+      observaciones: req.observaciones || '',
     });
+    this.cargarDetalles(req.invreqmaeid);
   }
 
-  seleccionar(row: any) {
-    this.seleccionado.set(row);
-    this.cargarDetalles(row.invreqmaeid);
-  }
-
-  cargarDetalles(invreqmaeid: number) {
+  cargarDetalles(maeId: number) {
     this.cargandoDet.set(true);
-    this.service.getDet(invreqmaeid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data: any) => {
-        this.detalles.set(data?.value || data || []);
-        this.cargandoDet.set(false);
-      },
-      error: () => {
-        this.cargandoDet.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los items' });
-      },
+    this.service.getDet(maeId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.detalles.set(data || []); this.cargandoDet.set(false); },
+      error: () => { this.cargandoDet.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los items' }); },
     });
   }
 
@@ -38795,116 +40366,141 @@ export class Requisiciones implements OnInit {
   }
 
   nuevoMae() {
-    this.esEdicion.set(false);
-    this.formMae.reset({ concepto: '', bodegaOrigenId: null, bodegaDestinoId: null, prioridad: 'M', fechaEntrega: null, observaciones: '' });
-    this.dialogMae.set(true);
-  }
-
-  editarMae(row: any) {
-    if (row.sn_estado !== 'P') {
-      this.msgs.add({ severity: 'warn', summary: 'Solo pendientes', detail: 'Solo se pueden editar requisiciones pendientes' });
-      return;
-    }
-    this.esEdicion.set(true);
-    this.formMae.patchValue({
-      concepto: row.concepto,
-      bodegaOrigenId: row.bodegaOrigenId,
-      bodegaDestinoId: row.bodegaDestinoId,
-      prioridad: row.prioridad || 'M',
-      fechaEntrega: row.fechaEntrega ? new Date(row.fechaEntrega) : null,
-      observaciones: row.observaciones || '',
-    });
-    this.seleccionado.set(row);
-    this.dialogMae.set(true);
+    this.formMae.reset({ bodegaOrigenId: null, bodegaDestinoId: null, concepto: '', prioridad: 'M', fechaEntrega: null, observaciones: '' });
+    this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidadSolicitada: 1 });
+    this.codBusqueda.set('');
+    this.detalles.set([]);
+    this.seleccionado.set({ invreqmaeid: 0, sn_procesado: 'N', sn_anulado: 'N', sn_estado: 'P', concepto: '' });
   }
 
   guardarMae() {
     if (this.formMae.invalid) return;
     const val = this.formMae.value;
-
     if (val.bodegaOrigenId === val.bodegaDestinoId) {
       this.msgs.add({ severity: 'warn', summary: 'Bodegas', detail: 'La bodega origen y destino deben ser diferentes' });
       return;
     }
-
-    const obs$ = this.esEdicion()
-      ? this.service.update(this.seleccionado()!.invreqmaeid, val as any)
-      : this.service.create(val as any);
-
-    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res: any) => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: this.esEdicion() ? 'Requisición actualizada' : 'Requisición creada' });
-        this.dialogMae.set(false);
-        this.cargarMaestros();
-        if (!this.esEdicion() && res.invreqmaeid) {
-          this.seleccionar(res);
-        }
+    this.guardando.set(true);
+    this.service.create({
+      bodegaOrigenId: val.bodegaOrigenId || 0,
+      bodegaDestinoId: val.bodegaDestinoId || 0,
+      concepto: val.concepto || '',
+      prioridad: (val.prioridad || 'M') as 'B' | 'M' | 'A' | 'U',
+      fechaEntrega: val.fechaEntrega ? val.fechaEntrega.toISOString().slice(0, 10) : null,
+      observaciones: val.observaciones || '',
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Creada', detail: 'Requisición creada' });
+        this.seleccionado.set(res);
+        this.cargarRequisiciones();
       },
-      error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo guardar' }),
+      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo crear' }); },
     });
   }
 
-  eliminarMae(row: any) {
-    if (row.sn_estado !== 'P') {
-      this.msgs.add({ severity: 'warn', summary: 'Solo pendientes', detail: 'Solo se pueden eliminar requisiciones pendientes' });
+  onCodBarraInput(valor: string) {
+    this.codBusqueda.set(valor);
+    if (valor.length >= 12) {
+      this.buscarProducto();
+    }
+  }
+
+  buscarProducto() {
+    const q = this.codBusqueda().trim();
+    if (!q) return;
+    const prod = this.productos().find(p => p.codbarra === q);
+    if (prod) {
+      this.formDet.patchValue({
+        productoId: prod.produtoId,
+        codbarra: prod.codbarra,
+        descripcion: prod.descripcion,
+      });
+    } else {
+      this.msgs.add({ severity: 'warn', summary: 'No encontrado', detail: 'Producto no encontrado por código de barras' });
+    }
+  }
+
+  showHelperProductos() {
+    this.ref = this.dialogService.open(ProductosHelperList, {
+      header: 'Seleccionar un producto',
+      width: '50vw',
+      modal: true,
+      contentStyle: { overflow: 'auto' },
+      breakpoints: { '960px': '75vw', '640px': '90vw' },
+      templates: { footer: FooterHelper },
+    });
+    this.ref.onClose.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: any) => {
+      if (data && 'codbarra' in data) {
+        this.agregarDirecto(data);
+      }
+    });
+  }
+
+  agregarDirecto(prod: any) {
+    const mae = this.seleccionado();
+    if (!mae || !mae.invreqmaeid) {
+      this.msgs.add({ severity: 'warn', summary: 'Atención', detail: 'Primero guarde el encabezado de la requisición' });
       return;
     }
+    this.guardando.set(true);
+    this.service.createDet({
+      invreqmaeid: mae.invreqmaeid,
+      codbarra: prod.codbarra,
+      cantidadSolicitada: 1,
+      empresaId: mae.empresaId,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Agregado', detail: prod.descripcion });
+        this.cargarDetalles(mae.invreqmaeid);
+      },
+      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar' }); },
+    });
+  }
+
+  agregarItem() {
+    if (this.formDet.invalid) return;
+    const mae = this.seleccionado();
+    if (!mae || !mae.invreqmaeid) {
+      this.msgs.add({ severity: 'warn', summary: 'Atención', detail: 'Primero guarde el encabezado de la requisición' });
+      return;
+    }
+    const val = this.formDet.value;
+    this.guardando.set(true);
+    this.service.createDet({
+      invreqmaeid: mae.invreqmaeid,
+      codbarra: val.codbarra || '',
+      cantidadSolicitada: val.cantidadSolicitada || 0,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Agregado', detail: 'Item agregado' });
+        this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidadSolicitada: 1 });
+        this.codBusqueda.set('');
+        this.cargarDetalles(mae.invreqmaeid);
+      },
+      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar' }); },
+    });
+  }
+
+  eliminarItem(row: any) {
     this.confirm.confirm({
-      message: `¿Eliminar requisición #${row.invreqmaeid}?`,
+      message: `¿Eliminar item "${row.descripcion || row.codbarra}"?`,
       header: 'Confirmar',
       acceptLabel: 'Eliminar',
       rejectLabel: 'Cancelar',
       accept: () => {
-        this.service.remove(row.invreqmaeid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: () => {
-            this.msgs.add({ severity: 'success', summary: 'Eliminada' });
-            if (this.seleccionado()?.invreqmaeid === row.invreqmaeid) this.volver();
-            this.cargarMaestros();
-          },
-        });
-      },
-    });
-  }
-
-  nuevoDet() {
-    this.formDet.reset({ producto: null, cantidadSolicitada: 0 });
-    this.dialogDet.set(true);
-  }
-
-  guardarDet() {
-    if (this.formDet.invalid) return;
-    const val = this.formDet.value;
-    const mae = this.seleccionado();
-
-    const payload: any = {
-      invreqmaeid: mae.invreqmaeid,
-      codbarra: val.producto,
-      cantidadSolicitada: val.cantidadSolicitada || 0,
-      empresaId: mae.empresaId,
-    };
-
-    this.service.createDet(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Item agregado' });
-        this.dialogDet.set(false);
-        this.cargarDetalles(mae.invreqmaeid);
-      },
-      error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo guardar el item' }),
-    });
-  }
-
-  eliminarDet(row: any) {
-    this.confirm.confirm({
-      message: `¿Eliminar item "${row.codbarra}"?`,
-      header: 'Confirmar',
-      accept: () => {
+        this.confirm.close();
         this.service.removeDet(row.invreqdetid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             this.msgs.add({ severity: 'success', summary: 'Eliminado' });
             this.cargarDetalles(this.seleccionado()!.invreqmaeid);
           },
+          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo eliminar' }),
         });
       },
+      reject: () => this.confirm.close(),
     });
   }
 
@@ -38917,15 +40513,17 @@ export class Requisiciones implements OnInit {
       acceptLabel: 'Aprobar',
       rejectLabel: 'Cancelar',
       accept: () => {
+        this.confirm.close();
         this.service.procesar(mae.invreqmaeid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: (res: any) => {
-            this.msgs.add({ severity: 'success', summary: 'Aprobada', detail: res.message || 'Requisición aprobada' });
-            this.cargarMaestros();
+          next: (res) => {
+            this.msgs.add({ severity: 'success', summary: 'Aprobada', detail: res?.message || 'Requisición aprobada' });
+            this.cargarRequisiciones();
             this.cargarDetalles(mae.invreqmaeid);
           },
           error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo procesar' }),
         });
       },
+      reject: () => this.confirm.close(),
     });
   }
 
@@ -38938,34 +40536,30 @@ export class Requisiciones implements OnInit {
       acceptLabel: 'Anular',
       rejectLabel: 'Cancelar',
       accept: () => {
+        this.confirm.close();
         this.service.anular(mae.invreqmaeid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: (res: any) => {
-            this.msgs.add({ severity: 'success', summary: 'Anulada', detail: res.message || 'Requisición anulada' });
-            this.cargarMaestros();
-            this.cargarDetalles(mae.invreqmaeid);
+          next: (res) => {
+            this.msgs.add({ severity: 'success', summary: 'Anulada', detail: res?.message || 'Requisición anulada' });
+            this.cargarRequisiciones();
+            this.volver();
           },
           error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo anular' }),
         });
       },
+      reject: () => this.confirm.close(),
     });
   }
 
-  nombreBodega(id: number): string {
-    return this.bodegas().find(b => b.bodegaId === id)?.descripcion || `Bodega ${id}`;
-  }
-
-  estadoLabel(estado: string): string {
-    const map: Record<string, string> = { P: 'Pendiente', A: 'Aprobada', R: 'Recibida', X: 'Anulada' };
-    return map[estado] || estado;
-  }
-
-  estadoSeverity(estado: string): string {
-    const map: Record<string, string> = { P: 'warn', A: 'success', R: 'info', X: 'danger' };
-    return map[estado] || 'secondary';
+  esNuevo(): boolean {
+    return !this.seleccionado()?.invreqmaeid;
   }
 
   esPendiente(): boolean {
     return this.seleccionado()?.sn_estado === 'P';
+  }
+
+  nombreBodega(id: number): string {
+    return this.bodegas().find(b => b.bodegaId === id)?.descripcion || `Bodega ${id}`;
   }
 
   prioridadLabel(p: string): string {
@@ -38976,6 +40570,16 @@ export class Requisiciones implements OnInit {
   prioridadSeverity(p: string): string {
     const map: Record<string, string> = { B: 'info', M: 'warn', A: 'danger', U: 'danger' };
     return map[p] || 'secondary';
+  }
+
+  estadoLabel(estado: string): string {
+    const map: Record<string, string> = { P: 'Pendiente', A: 'Aprobada', R: 'Recibida', X: 'Anulada' };
+    return map[estado] || estado;
+  }
+
+  estadoSeverity(estado: string): string {
+    const map: Record<string, string> = { P: 'warn', A: 'success', R: 'info', X: 'danger' };
+    return map[estado] || 'secondary';
   }
 }
 
@@ -39025,11 +40629,14 @@ export class Requisiciones implements OnInit {
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -39118,7 +40725,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { TagsService } from '../../../core/services/tags.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -39126,7 +40733,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-tag-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './tag-form.html',
   styleUrl: './tag-form.scss',
 })
@@ -39256,13 +40863,14 @@ export class TagForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -39274,6 +40882,8 @@ export class TagForm implements OnInit {
     dataKey="tagsId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -39315,6 +40925,7 @@ export class TagForm implements OnInit {
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -39436,206 +41047,264 @@ export class Tags implements OnInit {
 ## 📄 src\app\features\inventario\toma-inventarios\toma-inventarios.html
 
 ```typescript
+<p-toast />
 <p-confirmDialog />
 
-<section class="page">
+<section class="page" [class.page-fill]="seleccionado()">
   @if (!seleccionado()) {
-    <header class="page-header">
-      <div>
-        <h3 class="page-title">Toma de Inventarios</h3>
-        <p class="page-subtitle">Conteo fisico de existencias por bodega</p>
-      </div>
-      <p-button label="Nueva Toma" icon="pi pi-plus" size="small" (onClick)="nuevoMae()" />
-    </header>
+  <header class="page-header">
+    <div>
+      <h3 class="page-title">Toma de Inventarios</h3>
+      <p class="page-subtitle">Conteo fisico de existencias por bodega</p>
+    </div>
+    <p-button label="Nueva Toma" raised="true" rounded="true" variant="text" severity="success" icon="pi pi-plus"
+      size="small" (onClick)="nuevoMae()" />
+  </header>
 
-    <p-table
-      [value]="maestros()"
-      [loading]="cargando()"
-      dataKey="invfisId"
-      [paginator]="true"
-      [rows]="10"
-      [showCurrentPageReport]="true"
-      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-      [rowsPerPageOptions]="[10, 25, 50]"
-      styleClass="p-datatable-sm"
-    >
-      <ng-template pTemplate="header">
-        <tr>
-          <th style="width:4rem">#</th>
-          <th>Fecha</th>
-          <th>Bodega</th>
-          <th>Concepto</th>
-          <th style="width:6rem">Estado</th>
-          <th style="width:6rem">Creado por</th>
-          <th style="width:8rem">Acciones</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-row>
-        <tr (click)="seleccionar(row)" style="cursor:pointer">
-          <td>{{ row.invfisId }}</td>
-          <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>{{ nombreBodega(row.bodegaId) }}</td>
-          <td>{{ row.concepto }}</td>
-          <td>
-            <p-tag [value]="row.sn_anulado === 'S' ? 'Anulada' : 'Activa'" [severity]="row.sn_anulado === 'S' ? 'danger' : 'success'" [style]="{'font-size':'0.75rem'}" />
-          </td>
-          <td>{{ row.usuarioCreated }}</td>
-          <td>
-            <p-button icon="pi pi-trash" severity="danger" text size="small" (onClick)="$event.stopPropagation(); eliminarMae(row)" />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr><td colspan="7" class="text-center p-3">No hay tomas de inventario registradas.</td></tr>
-      </ng-template>
-    </p-table>
+  <p-table id="grid1" [value]="maestros()" [loading]="cargando()" dataKey="invfisId" [paginator]="true" [rows]="10"
+    [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    [rowsPerPageOptions]="[10, 25, 50]" styleClass="p-datatable-sm">
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width:4rem">#</th>
+        <th>Fecha</th>
+        <th>Bodega</th>
+        <th>Concepto</th>
+        <th style="width:6rem">Estado</th>
+        <th style="width:6rem">Creado por</th>
+        <th style="width:8rem">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr (click)="seleccionar(row)" style="cursor:pointer">
+        <td>{{ row.invfisId }}</td>
+        <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>{{ nombreBodega(row.bodegaId) }}</td>
+        <td>{{ row.concepto }}</td>
+        <td>
+          <p-tag [value]="row.sn_anulado === 'S' ? 'Anulada' : 'Activa'"
+            [severity]="row.sn_anulado === 'S' ? 'danger' : 'success'" [style]="{'font-size':'0.75rem'}" />
+        </td>
+        <td>{{ row.usuarioCreated }}</td>
+        <td>
+          <p-button icon="pi pi-trash" severity="danger" text size="small"
+            (onClick)="$event.stopPropagation(); eliminarMae(row)" [disabled]="row.sn_anulado === 'S'" />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="7" class="text-center p-3">No hay tomas de inventario registradas.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+
   } @else {
-    <header class="page-header">
-      <div class="flex align-items-center gap-2">
-        <p-button icon="pi pi-arrow-left" text size="small" (onClick)="volver()" />
-        <div>
-          <h3 class="page-title">Toma #{{ seleccionado()!.invfisId }}</h3>
-          <p class="page-subtitle">{{ seleccionado()!.concepto }} — {{ nombreBodega(seleccionado()!.bodegaId) }}</p>
-        </div>
-      </div>
-      <div class="flex gap-2">
-        <p-button label="Agregar Item" icon="pi pi-plus" size="small" (onClick)="nuevoDet()" [disabled]="todosAplicados()" />
-        <p-button label="Importar" icon="pi pi-upload" size="small" severity="secondary" (onClick)="abrirImport()" [disabled]="todosAplicados()" />
-        <p-button label="Procesar" icon="pi pi-check-circle" size="small" severity="success" (onClick)="procesar()" [disabled]="detalles().length === 0 || todosAplicados()" />
-      </div>
-    </header>
+  <div class="detail-fill">
+    <div class="sticky-header">
+      <p-card [header]="'Toma #' + (seleccionado()?.invfisId || 'Nueva')">
+        <form [formGroup]="formMae" class="flex flex-column gap-2">
+          <div class="form-grid-2">
+            <div>
+              <label class="block mb-1 text-sm font-medium">Bodega *</label>
+              <p-select size="small" formControlName="bodegaId" [options]="bodegas()" optionLabel="descripcion"
+                optionValue="bodegaId" placeholder="Seleccionar bodega" styleClass="w-full" [appendTo]="'body'" />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Concepto *</label>
+              <input pInputText formControlName="concepto" class="w-full" pSize="small"
+                placeholder="Ej: Toma fisica Agosto 2026" />
+            </div>
+          </div>
+        </form>
+      </p-card>
 
-    <p-table
-      [value]="detalles()"
-      [loading]="cargandoDet()"
-      dataKey="nvfisdetId"
-      [paginator]="true"
-      [rows]="15"
-      styleClass="p-datatable-sm"
-    >
-      <ng-template pTemplate="header">
-        <tr>
-          <th style="width:3rem">#</th>
-          <th style="width:8rem">Cod. Barra</th>
-          <th>Descripcion</th>
-          <th style="width:6rem" class="text-right">Existencia</th>
-          <th style="width:6rem" class="text-right">Fisico</th>
-          <th style="width:6rem" class="text-right">Ajuste E</th>
-          <th style="width:6rem" class="text-right">Ajuste S</th>
-          <th style="width:7rem" class="text-right">Costo U.</th>
-          <th style="width:7rem" class="text-right">Costo T.</th>
-          <th style="width:5rem">Estado</th>
-          <th style="width:7rem">Acciones</th>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-row>
-        <tr>
-          <td>{{ row.nrofila }}</td>
-          <td>{{ row.codbarra }}</td>
-          <td>{{ row.descripcion }}</td>
-          <td class="text-right">{{ row.existencia }}</td>
-          <td class="text-right font-bold">{{ row.fisico }}</td>
-          <td class="text-right" [style.color]="row.ajusteEntrada > 0 ? 'var(--c-success)' : ''">
-            {{ row.ajusteEntrada > 0 ? row.ajusteEntrada : '-' }}
-          </td>
-          <td class="text-right" [style.color]="row.ajusteSalida > 0 ? 'var(--c-error)' : ''">
-            {{ row.ajusteSalida > 0 ? row.ajusteSalida : '-' }}
-          </td>
-          <td class="text-right">{{ row.costoUnitario | number:'1.2-2' }}</td>
-          <td class="text-right">{{ row.costoTotal | number:'1.2-2' }}</td>
-          <td>
-            @if (row.sn_aplicado === 'S') {
+      @if (seleccionado()?.invfisId !== 0 && !todosAplicados()) {
+      <form [formGroup]="formDet" class="form-grid-captura">
+        <div>
+          <label class="block mb-1 text-sm font-medium">Código Barra</label>
+          <p-autoComplete [(ngModel)]="productoSeleccionado"
+            [ngModelOptions]="{ standalone: true }"
+            [suggestions]="productosFiltrados"
+            (completeMethod)="onCodBarraSearch($event)" (onSelect)="onProductoSelect($event)"
+            (onClear)="onCodBarraClear()" (onBlur)="onCodBarraBlur()" [minLength]="12"
+            optionLabel="codbarra"
+            placeholder="Mínimo 12 caracteres" [style]="{ width: '100%' }" [inputStyle]="{ width: '100%' }"
+            size="small" [dropdown]="false">
+            <ng-template let-producto pTemplate="item">
+              <div class="flex align-items-center gap-2">
+                <span class="font-bold">{{ producto.codbarra }}</span>
+                <span> - {{ producto.descripcion }}</span>
+              </div>
+            </ng-template>
+          </p-autoComplete>
+        </div>
+        <div class="w-full">
+          <label class="block mb-1 text-sm font-medium">Descripción</label>
+          <input pInputText formControlName="descripcion" class="w-full" pSize="small"
+            placeholder="Nombre del producto" [readonly]="productoSeleccionado?.produtoId != null" />
+        </div>
+        <div>
+          <label class="block mb-1 text-sm font-medium">Cant. Física *</label>
+          <p-inputNumber size="small" formControlName="fisico" [min]="0" mode="decimal" [minFractionDigits]="0"
+            [maxFractionDigits]="2" styleClass="w-8rem" [inputStyle]="{ 'width': '100%' }" [locale]="'en-US'" />
+        </div>
+        <div class="flex align-items-end gap-1">
+          @if (itemEditando()) {
+          <p-button size="small" label="Actualizar" icon="pi pi-check"
+            severity="warn" (onClick)="guardarDet()"
+            variant="text" [rounded]="true"
+            [disabled]="formDet.invalid || seleccionado()!.sn_anulado === 'S'" />
+          <p-button size="small" icon="pi pi-times" severity="secondary" text (onClick)="cancelarEdicion()" />
+          } @else {
+          <p-button size="small" label="Agregar" icon="pi pi-plus"
+            variant="text" [raised]="true" [rounded]="true"
+            severity="success" (onClick)="guardarDet()"
+            [disabled]="formDet.invalid || seleccionado()!.sn_anulado === 'S' || seleccionado()!.sn_procesado === 'S'" />
+          }
+        </div>
+      </form>
+      }
+
+      <div class="acciones-card">
+        <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" text (onClick)="volver()" />
+        @if (seleccionado()?.invfisId === 0) {
+        <p-button size="small" label="Guardar Toma" icon="pi pi-check" (onClick)="guardarMae()" variant="text"
+          [disabled]="formMae.invalid || seleccionado()!.sn_anulado === 'S'" />
+        }
+        @if (seleccionado()?.invfisId !== 0) {
+        <p-button label="Importar" icon="pi pi-upload" size="small" variant="text" severity="secondary"
+          (onClick)="abrirImport()" [rounded]="true"
+          [disabled]="todosAplicados() || seleccionado()!.sn_anulado === 'S'" pTooltip="Importar desde CSV/JSON/XML" />
+        @if (itemsSeleccionados().length > 0) {
+        <p-button label="Eliminar ({{ itemsSeleccionados().length }})" icon="pi pi-trash" size="small" severity="danger"
+          variant="text" (onClick)="eliminarSeleccionados()" [rounded]="true"
+          [disabled]="todosAplicados()" />
+        }
+        <p-button label="Procesar" icon="pi pi-check-circle" size="small" variant="text" [rounded]="true"
+          severity="success" (onClick)="procesar()"
+          [disabled]="detalles().length === 0 || todosAplicados()" />
+        <p-button label="Anular" icon="pi pi-times-circle" size="small" severity="danger" variant="text"
+          (onClick)="eliminarMae(seleccionado()!)" [rounded]="true"
+          [disabled]="seleccionado()!.sn_anulado === 'S'" />
+        }
+      </div>
+
+    </div>
+
+    <div class="detail-scroll">
+      <p-table id="grid2" [value]="detalles()" [loading]="cargandoDet()" dataKey="nvfisdetId" [paginator]="true"
+        [rows]="15" [scrollable]="true" scrollHeight="400px" size="small" [rowHover]="true">
+        <ng-template pTemplate="caption">
+          <div class="text-center w-full">
+            <span class="text-xl font-bold">Productos</span>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width:3rem">
+              <p-checkbox [binary]="true" [ngModel]="todosSeleccionados()" (ngModelChange)="toggleTodos($event)" />
+            </th>
+            <th style="width:3rem">#</th>
+            <th>Producto</th>
+            <th style="width:6rem" class="text-right">Existencia</th>
+            <th style="width:6rem" class="text-right">Físico</th>
+            <th style="width:6rem" class="text-right">Ajuste E</th>
+            <th style="width:6rem" class="text-right">Ajuste S</th>
+            <th style="width:7rem" class="text-right">Costo U.</th>
+            <th style="width:5rem">Estado</th>
+            <th style="width:7rem">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr [class.row-seleccionado]="isSelected(row)" [class.row-editando]="itemEditando() === row.nvfisdetId">
+            <td>
+              <p-checkbox [binary]="true" [ngModel]="isSelected(row)" (ngModelChange)="toggleRow(row, $event)" />
+            </td>
+            <td>{{ row.nrofila }}</td>
+            <td>
+              <div class="grid w-full align-items-center m-0">
+                <div class="col-4 p-0 text-xs font-bold text-color-secondary">
+                  {{ row.codbarra }}
+                </div>
+                <div class="col-8 p-0 text-sm font-medium text-overflow-ellipsis overflow-hidden">
+                  {{ row.descripcion }}
+                </div>
+              </div>
+            </td>
+            <td class="text-right">{{ row.existencia }}</td>
+            <td class="text-right font-bold">{{ row.fisico }}</td>
+            <td class="text-right" [style.color]="row.ajusteEntrada > 0 ? 'var(--c-success)' : ''">
+              {{ row.ajusteEntrada > 0 ? row.ajusteEntrada : '-' }}
+            </td>
+            <td class="text-right" [style.color]="row.ajusteSalida > 0 ? 'var(--c-error)' : ''">
+              {{ row.ajusteSalida > 0 ? row.ajusteSalida : '-' }}
+            </td>
+            <td class="text-right">{{ row.costoUnitario | number:'1.2-2' }}</td>
+            <td>
+              @if (row.sn_aplicado === 'S') {
               <p-tag value="Aplicado" severity="success" [style]="{'font-size':'0.7rem'}" />
-            } @else {
+              } @else {
               <p-tag value="Pendiente" severity="warn" [style]="{'font-size':'0.7rem'}" />
-            }
-          </td>
-          <td>
-            <p-button icon="pi pi-pencil" text severity="secondary" size="small" (onClick)="editarDet(row)" [disabled]="row.sn_aplicado === 'S'" />
-            <p-button icon="pi pi-refresh" text severity="info" size="small" (onClick)="cargarExistencia(row)" pTooltip="Cargar existencia del sistema" />
-            <p-button icon="pi pi-trash" text severity="danger" size="small" (onClick)="eliminarDet(row)" [disabled]="row.sn_aplicado === 'S'" />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr><td colspan="11" class="text-center p-3">No hay items en esta toma de inventario.</td></tr>
-      </ng-template>
-    </p-table>
+              }
+            </td>
+            <td>
+              <div class="flex gap-1">
+                <p-button icon="pi pi-pencil" text severity="warn" size="small" (onClick)="editarItem(row)"
+                  [disabled]="row.sn_aplicado === 'S'" pTooltip="Editar" />
+                <p-button icon="pi pi-refresh" text severity="info" size="small" (onClick)="cargarExistencia(row)"
+                  pTooltip="Cargar existencia del sistema" />
+                <p-button icon="pi pi-trash" text severity="danger" size="small" (onClick)="eliminarDet(row)"
+                  [disabled]="row.sn_aplicado === 'S'" pTooltip="Eliminar" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="10" class="text-center p-3">No hay items en esta toma de inventario.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+  </div>
   }
 </section>
 
-<!-- Dialog Maestro -->
-<p-dialog [header]="esEdicion() ? 'Editar Toma de Inventario' : 'Nueva Toma de Inventario'" 
-[modal]="true" [draggable]="false" [style]="{width:'450px', minHeight:'400px'}" [(visible)]="dialogMae">
-  <form [formGroup]="formMae" class="flex flex-column gap-3">
-    <div>
-      <label class="block mb-1 text-sm font-medium">Concepto *</label>
-      <input pInputText formControlName="concepto" class="w-full" placeholder="Ej: Toma fisica Agosto 2026" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Bodega *</label>
-      <p-select formControlName="bodegaId" [options]="bodegas()" optionLabel="descripcion" optionValue="bodegaId" placeholder="Seleccionar bodega" styleClass="w-full" />
-    </div>
-  </form>
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogMae.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarMae()" [disabled]="formMae.invalid" />
-  </ng-template>
-</p-dialog>
-
-<!-- Dialog Detalle -->
-<p-dialog header="Item de Inventario" [modal]="true" [draggable]="false" [style]="{width:'450px'}" [(visible)]="dialogDet">
-  <form [formGroup]="formDet" class="flex flex-column gap-3">
-    <div>
-      <label class="block mb-1 text-sm font-medium">Codigo de Barra *</label>
-      <input pInputText formControlName="codbarra" class="w-full" placeholder="Escanea o escribe el codigo" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Descripcion</label>
-      <input pInputText formControlName="descripcion" class="w-full" placeholder="Descripcion del producto" />
-    </div>
-    <div>
-      <label class="block mb-1 text-sm font-medium">Cantidad Fisica *</label>
-      <p-inputNumber formControlName="fisico" [min]="0" mode="decimal" [minFractionDigits]="0" [maxFractionDigits]="2" styleClass="w-full" />
-    </div>
-  </form>
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogDet.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarDet()" [disabled]="formDet.invalid" />
-  </ng-template>
-</p-dialog>
-
-<!-- Dialog Importar -->
-<p-dialog header="Importar Items" [modal]="true" [draggable]="false" [style]="{width:'550px'}" [(visible)]="dialogImport">
+<p-dialog header="Importar Items" [modal]="true" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{width:'550px'}" [(visible)]="dialogImport">
   <div class="flex flex-column gap-3">
     <p>Selecciona un archivo <b>CSV</b>, <b>JSON</b> o <b>XML</b> con los items a importar.</p>
     <p>El archivo debe tener columnas: <code>codbarra</code>, <code>fisico</code>, y opcionalmente <code>descripcion</code>.</p>
-    <p-fileUpload mode="basic" name="archivo" [auto]="true" accept=".csv,.json,.xml" [maxFileSize]="5000000" chooseLabel="Seleccionar archivo" (onSelect)="onArchivoSelect($event)" />
+    <p-fileUpload mode="basic" name="archivo" [auto]="true" accept=".csv,.json,.xml" [maxFileSize]="5000000"
+      chooseLabel="Seleccionar archivo" (onSelect)="onArchivoSelect($event)" />
     @if (itemsImport().length > 0) {
-      <div class="card" style="padding:0.5rem; background:var(--c-surface-ground)">
-        <b>{{ itemsImport().length }} items</b> listos para importar.
-        <p-table [value]="itemsImport()" [paginator]="true" [rows]="5" styleClass="p-datatable-sm mt-2">
-          <ng-template pTemplate="header">
-            <tr>
-              @for (col of objectKeys(itemsImport()[0]); track col) {
-                <th>{{ col }}</th>
-              }
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-row>
-            <tr>
-              @for (col of objectKeys(itemsImport()[0]); track col) {
-                <td>{{ row[col] }}</td>
-              }
-            </tr>
-          </ng-template>
-        </p-table>
-      </div>
+    <div class="card" style="padding:0.5rem; background:var(--c-surface-ground)">
+      <b>{{ itemsImport().length }} items</b> listos para importar.
+      <p-table [value]="itemsImport()" [paginator]="true" [rows]="5" size="small" styleClass="mt-2">
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of objectKeys(itemsImport()[0]); track col) {
+            <th>{{ col }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            @for (col of objectKeys(itemsImport()[0]); track col) {
+            <td>{{ row[col] }}</td>
+            }
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
     }
   </div>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text (onClick)="dialogImport.set(false)" />
-    <p-button label="Importar" icon="pi pi-upload" (onClick)="confirmarImport()" [disabled]="itemsImport().length === 0" />
+    <p-button label="Cancelar" severity="secondary" text size="small" rounded (onClick)="dialogImport.set(false)" />
+    <p-button label="Importar" icon="pi pi-upload" size="small" rounded severity="success" [raised]="true"
+      (onClick)="confirmarImport()" [disabled]="itemsImport().length === 0" />
   </ng-template>
 </p-dialog>
 
@@ -39646,7 +41315,9 @@ export class Tags implements OnInit {
 ## 📄 src\app\features\inventario\toma-inventarios\toma-inventarios.scss
 
 ```typescript
-:host { display: block; }
+:host {
+  display: block;
+}
 
 code {
   background: var(--c-surface-ground);
@@ -39655,12 +41326,117 @@ code {
   font-size: 0.8rem;
 }
 
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.page-fill {
+  height: calc(100vh - 76px);
+  max-height: calc(100vh - 76px);
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+.detail-fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0.5rem;
+}
+
+.detail-fill > .sticky-header {
+  flex-shrink: 0;
+  background: var(--c-surface-ground);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--c-border);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    flex-shrink: 1;
+    border-bottom: none;
+    box-shadow: none;
+  }
+}
+
+.detail-fill > .detail-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+
+  @media (max-width: 768px) {
+    flex: none;
+    overflow: visible;
+  }
+}
+
+.acciones-card {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+.form-grid-captura {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr 7rem auto;
+  gap: 0 0.75rem;
+  align-items: end;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
 ::ng-deep .p-datatable-tbody > tr {
   cursor: default;
 
   &:hover {
     background: var(--c-surface-ground);
   }
+
+  &.row-seleccionado {
+    background: color-mix(in srgb, var(--select-row) 10%, transparent);
+  }
+
+  &.row-editando {
+    background: color-mix(in srgb, var(--select-row) 15%, transparent);
+  }
+}
+
+::ng-deep .p-datatable {
+  --p-datatable-body-cell-border-color: #25374a;
 }
 
 ```
@@ -39670,7 +41446,7 @@ code {
 ## 📄 src\app\features\inventario\toma-inventarios\toma-inventarios.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -39682,57 +41458,78 @@ import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToolbarModule } from 'primeng/toolbar';
 import { SelectModule } from 'primeng/select';
+import { CheckboxModule } from 'primeng/checkbox';
+import { ScrollPanelModule } from 'primeng/scrollpanel';
+import { CardModule } from 'primeng/card';
+import { ToolbarModule } from 'primeng/toolbar';
+import { TooltipModule } from 'primeng/tooltip';
+import { AutoCompleteModule } from 'primeng/autocomplete';
 import { FileUploadModule } from 'primeng/fileupload';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { TomaInventarioService } from '../../../core/services/toma-inventario.service';
 import { BodegasService } from '../../../core/services/bodegas.service';
-import { TomaInventarioMae, TomaInventarioDet } from '../../../core/models/inventario.models';
+import { ProductosService } from '../../../core/services/productos.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { Bodega, Producto } from '../../../core/models/inventario.models';
+import { ProductosHelperList } from '../../helpers/productos';
+import { FooterHelper } from '../../helpers/footer';
 
 @Component({
   selector: 'app-toma-inventarios',
   standalone: true,
+  providers: [DialogService],
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
     TableModule, ButtonModule, InputTextModule, InputNumberModule,
     DialogModule, TagModule, ToastModule, ConfirmDialogModule,
-    ToolbarModule, SelectModule, FileUploadModule,
+    SelectModule, CheckboxModule, ScrollPanelModule, CardModule,
+    ToolbarModule, TooltipModule, AutoCompleteModule, FileUploadModule,
   ],
   templateUrl: './toma-inventarios.html',
   styleUrl: './toma-inventarios.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TomaInventarios implements OnInit {
   private fb = inject(FormBuilder);
   private service = inject(TomaInventarioService);
   private bodegasService = inject(BodegasService);
+  private productosService = inject(ProductosService);
+  private auth = inject(AuthService);
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
+  private dialogService = inject(DialogService);
+
+  ref: DynamicDialogRef | undefined;
 
   maestros = signal<any[]>([]);
   detalles = signal<any[]>([]);
-  bodegas = signal<any[]>([]);
+  bodegas = signal<Bodega[]>([]);
+
   seleccionado = signal<any | null>(null);
   cargando = signal(false);
   cargandoDet = signal(false);
-
-  dialogMae = signal(false);
-  dialogDet = signal(false);
-  dialogImport = signal(false);
-  esEdicion = signal(false);
+  itemsSeleccionados = signal<any[]>([]);
 
   formMae = this.fb.group({
-    concepto: ['', Validators.required],
     bodegaId: [null as number | null, Validators.required],
+    concepto: ['', Validators.required],
   });
 
   formDet = this.fb.group({
     codbarra: ['', Validators.required],
     descripcion: [''],
-    fisico: [0, Validators.required],
+    productoId: [null as number | null],
+    fisico: [0, [Validators.required, Validators.min(0)]],
   });
 
+  itemEditando = signal<number | null>(null);
+  productoSeleccionado: Producto | null = null;
+  productosFiltrados: Producto[] = [];
+
+  dialogImport = signal(false);
   archivoImport = signal<File | null>(null);
   itemsImport = signal<any[]>([]);
 
@@ -39763,6 +41560,10 @@ export class TomaInventarios implements OnInit {
 
   seleccionar(row: any) {
     this.seleccionado.set(row);
+    this.formMae.patchValue({ bodegaId: row.bodegaId, concepto: row.concepto });
+    this.formDet.reset({ codbarra: '', descripcion: '', productoId: null, fisico: 0 });
+    this.itemEditando.set(null);
+    this.productoSeleccionado = null;
     this.cargarDetalles(row.invfisId);
   }
 
@@ -39770,7 +41571,7 @@ export class TomaInventarios implements OnInit {
     this.cargandoDet.set(true);
     this.service.getDet(invfisId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data: any) => {
-        this.detalles.set(data?.value || data || []);
+        this.detalles.set((data?.value || data || []).sort((a: any, b: any) => (b.nrofila || 0) - (a.nrofila || 0)));
         this.cargandoDet.set(false);
       },
       error: () => {
@@ -39783,83 +41584,74 @@ export class TomaInventarios implements OnInit {
   volver() {
     this.seleccionado.set(null);
     this.detalles.set([]);
+    this.itemsSeleccionados.set([]);
   }
 
   nuevoMae() {
-    this.esEdicion.set(false);
-    this.formMae.reset();
-    this.dialogMae.set(true);
-  }
-
-  editarMae(row: any) {
-    this.esEdicion.set(true);
-    this.formMae.patchValue({ concepto: row.concepto, bodegaId: row.bodegaId });
-    this.seleccionado.set(row);
-    this.dialogMae.set(true);
+    this.formMae.reset({ bodegaId: null, concepto: '' });
+    this.seleccionado.set({
+      invfisId: 0,
+      empresaId: this.auth.currentUser()?.empresaId || 0,
+      fecharegistro: new Date().toISOString(),
+      bodegaId: 0,
+      concepto: '',
+      sn_anulado: 'N',
+      usuarioCreated: this.auth.currentUser()?.usuario || 'SYSTEM',
+    });
+    this.detalles.set([]);
   }
 
   guardarMae() {
     if (this.formMae.invalid) return;
     const val = this.formMae.value;
-    const obs$ = this.esEdicion()
-      ? this.service.update(this.seleccionado()!.invfisId, val as any)
-      : this.service.create(val as any);
+    const payload: any = {
+      bodegaId: val.bodegaId,
+      concepto: val.concepto,
+      sn_anulado: 'N',
+    };
 
-    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.service.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res: any) => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: this.esEdicion() ? 'Toma actualizada' : 'Toma creada' });
-        this.dialogMae.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Toma de inventario creada' });
         this.cargarMaestros();
-        if (!this.esEdicion() && res.invfisId) {
+        if (res?.invfisId) {
           this.seleccionar(res);
         }
       },
-      error: () => this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar' }),
-    });
-  }
-
-  eliminarMae(row: any) {
-    this.confirm.confirm({
-      message: `¿Eliminar toma de inventario #${row.invfisId}?`,
-      header: 'Confirmar',
-      acceptLabel: 'Eliminar',
-      rejectLabel: 'Cancelar',
-      accept: () => {
-        this.service.remove(row.invfisId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: () => {
-            this.msgs.add({ severity: 'success', summary: 'Eliminada' });
-            if (this.seleccionado()?.invfisId === row.invfisId) this.volver();
-            this.cargarMaestros();
-          },
-        });
+      error: (err) => {
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo guardar' });
       },
     });
   }
 
   nuevoDet() {
-    this.formDet.reset({ codbarra: '', descripcion: '', fisico: 0 });
-    this.dialogDet.set(true);
-  }
-
-  editarDet(row: any) {
-    this.formDet.patchValue({ codbarra: row.codbarra, descripcion: row.descripcion, fisico: row.fisico });
-    (this.formDet as any)._editId = row.nvfisdetId;
-    this.dialogDet.set(true);
+    this.formDet.reset({ codbarra: '', descripcion: '', productoId: null, fisico: 0 });
+    this.itemEditando.set(null);
+    this.productoSeleccionado = null;
   }
 
   guardarDet() {
     if (this.formDet.invalid) return;
     const val = this.formDet.value;
-    const editId = (this.formDet as any)._editId;
+    const mae = this.seleccionado();
+    if (!mae) return;
+
+    let finalCodbarra = val.codbarra || '';
+    if (this.productoSeleccionado) {
+      finalCodbarra = (this.productoSeleccionado as any).codbarra || finalCodbarra;
+    }
 
     const payload: any = {
-      invfisId: this.seleccionado()!.invfisId,
-      bodegaId: this.seleccionado()!.bodegaId,
-      codbarra: val.codbarra,
+      invfisId: mae.invfisId,
+      bodegaId: mae.bodegaId,
+      codbarra: finalCodbarra,
       descripcion: val.descripcion || '',
+      productoId: val.productoId || null,
       fisico: val.fisico || 0,
+      empresaId: mae.empresaId,
     };
 
+    const editId = this.itemEditando();
     const obs$ = editId
       ? this.service.updateDet(editId, payload)
       : this.service.createDet(payload);
@@ -39867,26 +41659,135 @@ export class TomaInventarios implements OnInit {
     obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.msgs.add({ severity: 'success', summary: 'Guardado', detail: editId ? 'Item actualizado' : 'Item agregado' });
-        this.dialogDet.set(false);
-        delete (this.formDet as any)._editId;
-        this.cargarDetalles(this.seleccionado()!.invfisId);
+        this.formDet.reset({ codbarra: '', descripcion: '', productoId: null, fisico: 0 });
+        this.itemEditando.set(null);
+        this.productoSeleccionado = null;
+        this.cargarDetalles(mae.invfisId);
       },
-      error: () => this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el item' }),
+      error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo guardar el item' }),
     });
+  }
+
+  editarItem(row: any) {
+    this.itemEditando.set(row.nvfisdetId);
+    this.productoSeleccionado = row.productoId
+      ? { produtoId: row.productoId, codbarra: row.codbarra, descripcion: row.descripcion } as any
+      : null;
+    this.formDet.patchValue({
+      codbarra: row.codbarra || '',
+      descripcion: row.descripcion || '',
+      productoId: row.productoId || null,
+      fisico: row.fisico || 0,
+    });
+  }
+
+  cancelarEdicion() {
+    this.itemEditando.set(null);
+    this.productoSeleccionado = null;
+    this.formDet.reset({ codbarra: '', descripcion: '', productoId: null, fisico: 0 });
+  }
+
+  showHelperProductos() {
+    this.ref = this.dialogService.open(ProductosHelperList, {
+      header: 'Seleccionar un producto',
+      width: '50vw',
+      modal: true,
+      contentStyle: { overflow: 'auto' },
+      breakpoints: { '960px': '75vw', '640px': '90vw' },
+      templates: { footer: FooterHelper },
+    });
+    this.ref.onClose.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: any) => {
+      if (data && 'codbarra' in data) {
+        this.productoSeleccionado = data;
+        this.formDet.patchValue({
+          codbarra: data.codbarra,
+          descripcion: data.descripcion,
+          productoId: data.produtoId,
+          fisico: 0,
+        });
+      }
+    });
+  }
+
+  onCodBarraSearch(event: any) {
+    const termino = event.query;
+    if (!termino || termino.length < 8) {
+      this.productosFiltrados = [];
+      return;
+    }
+    this.productosService.search(termino).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (productos) => this.productosFiltrados = productos || [],
+      error: () => this.productosFiltrados = [],
+    });
+  }
+
+  onProductoSelect(event: any) {
+    const prod: Producto = event.value;
+    this.productoSeleccionado = prod;
+    this.formDet.patchValue({
+      productoId: prod.produtoId,
+      codbarra: prod.codbarra || '',
+      descripcion: prod.descripcion,
+    });
+  }
+
+  onCodBarraClear() {
+    this.productoSeleccionado = null;
+    this.formDet.patchValue({ productoId: null, codbarra: '', descripcion: '' });
+  }
+
+  onCodBarraBlur() {
+    if (!this.productoSeleccionado) {
+      this.formDet.patchValue({ productoId: null, codbarra: '', descripcion: '' });
+    }
   }
 
   eliminarDet(row: any) {
     this.confirm.confirm({
-      message: `¿Eliminar item "${row.descripcion}"?`,
+      message: `¿Eliminar item "${row.descripcion || row.codbarra}"?`,
       header: 'Confirmar',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
       accept: () => {
+        this.confirm.close();
         this.service.removeDet(row.nvfisdetId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             this.msgs.add({ severity: 'success', summary: 'Eliminado' });
             this.cargarDetalles(this.seleccionado()!.invfisId);
           },
+          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo eliminar' }),
         });
       },
+      reject: () => this.confirm.close(),
+    });
+  }
+
+  eliminarSeleccionados() {
+    const seleccionados = this.itemsSeleccionados();
+    if (seleccionados.length === 0) return;
+    this.confirm.confirm({
+      message: `¿Eliminar ${seleccionados.length} item(s) seleccionado(s)?`,
+      header: 'Eliminar múltiple',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.confirm.close();
+        let eliminados = 0;
+        for (const item of seleccionados) {
+          this.service.removeDet(item.nvfisdetId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: () => {
+              eliminados++;
+              if (eliminados === seleccionados.length) {
+                this.msgs.add({ severity: 'success', summary: 'Eliminados', detail: `${eliminados} item(s) eliminado(s)` });
+                this.itemsSeleccionados.set([]);
+                this.cargarDetalles(this.seleccionado()!.invfisId);
+              }
+            },
+            error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo eliminar' }),
+          });
+        }
+      },
+      reject: () => this.confirm.close(),
     });
   }
 
@@ -39918,6 +41819,28 @@ export class TomaInventarios implements OnInit {
           error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo procesar' }),
         });
       },
+      reject: () => this.confirm.close(),
+    });
+  }
+
+  eliminarMae(mae: any) {
+    this.confirm.confirm({
+      message: `¿Anular toma de inventario #${mae.invfisId}?`,
+      header: 'Anular toma',
+      acceptLabel: 'Anular',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.confirm.close();
+        this.service.remove(mae.invfisId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Anulada', detail: 'Toma de inventario anulada' });
+            this.cargarMaestros();
+            if (this.seleccionado()?.invfisId === mae.invfisId) this.volver();
+          },
+          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo anular' }),
+        });
+      },
+      reject: () => this.confirm.close(),
     });
   }
 
@@ -39997,6 +41920,378 @@ export class TomaInventarios implements OnInit {
   objectKeys(obj: any): string[] {
     return Object.keys(obj || {});
   }
+
+  isSelected(row: any): boolean {
+    return this.itemsSeleccionados().some(i => i.nvfisdetId === row.nvfisdetId);
+  }
+
+  toggleRow(row: any, checked: boolean) {
+    const actual = this.itemsSeleccionados();
+    if (checked) {
+      this.itemsSeleccionados.set([...actual, row]);
+    } else {
+      this.itemsSeleccionados.set(actual.filter(i => i.nvfisdetId !== row.nvfisdetId));
+    }
+  }
+
+  todosSeleccionados(): boolean {
+    const det = this.detalles();
+    return det.length > 0 && det.every(d => this.isSelected(d));
+  }
+
+  toggleTodos(checked: boolean) {
+    this.itemsSeleccionados.set(checked ? [...this.detalles()] : []);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\inventario\traslados\traslados.html
+
+```typescript
+<p-toast />
+<p-confirmDialog />
+
+<section class="page">
+  @if (!seleccionado()) {
+    <header class="page-header">
+      <div>
+        <h3 class="page-title">Traslados de Productos</h3>
+        <p class="page-subtitle">Movimiento de productos entre bodegas</p>
+      </div>
+      <p-button label="Nuevo Traslado" icon="pi pi-plus" size="small" rounded (onClick)="nuevoMae()" />
+    </header>
+
+    <p-table [value]="traslados()" [loading]="cargando()" dataKey="invtrasladomaeId" [paginator]="true" [rows]="10"
+      [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[10, 25, 50]" size="small">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width:4rem">#</th>
+          <th>Fecha</th>
+          <th>Referencia</th>
+          <th>Origen</th>
+          <th>Destino</th>
+          <th style="width:7rem" class="text-center">Procesado</th>
+          <th style="width:7rem" class="text-center">Estado</th>
+          <th style="width:4rem"></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr (click)="seleccionar(row)" style="cursor:pointer">
+          <td>{{ row.invtrasladomaeId }}</td>
+          <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td class="font-bold">{{ row.nroreferencia }}</td>
+          <td>{{ nombreBodega(row.bodegaOrigenId) }}</td>
+          <td>{{ nombreBodega(row.bodegaDestinoId) }}</td>
+          <td class="text-center">
+            <p-tag [value]="row.sn_procesado === 'S' ? 'Si' : 'No'" [severity]="row.sn_procesado === 'S' ? 'success' : 'warn'" />
+          </td>
+          <td class="text-center">
+            <p-tag [value]="row.sn_anulado === 'S' ? 'Anulado' : 'Activo'" [severity]="row.sn_anulado === 'S' ? 'danger' : 'success'" />
+          </td>
+          <td>
+            <p-button icon="pi pi-trash" severity="danger" text size="small" rounded
+              (onClick)="$event.stopPropagation(); seleccionar(row)" [disabled]="row.sn_procesado === 'S' || row.sn_anulado === 'S'" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="text-center p-3">No hay traslados registrados.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+
+  @if (seleccionado()) {
+    <header class="page-header">
+      <div class="flex align-items-center gap-2">
+        <p-button icon="pi pi-arrow-left" text size="small" rounded (onClick)="volver()" />
+        <div>
+          <h3 class="page-title">Traslado #{{ seleccionado()!.invtrasladomaeId || 'Nuevo' }}</h3>
+          <p class="page-subtitle">
+            {{ nombreBodega(formMae.value.bodegaOrigenId || 0) || 'Origen' }}
+            - {{ nombreBodega(formMae.value.bodegaDestinoId || 0) || 'Destino' }}
+          </p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        @if (seleccionado()!.invtrasladomaeId && seleccionado()!.sn_procesado === 'N' && seleccionado()!.sn_anulado === 'N') {
+          <p-button label="Procesar" icon="pi pi-check-circle" size="small" rounded severity="success" (onClick)="procesar()"
+            [disabled]="detalles().length === 0" />
+          <p-button label="Anular" icon="pi pi-times-circle" size="small" rounded severity="danger" (onClick)="anularTraslado()" />
+        }
+      </div>
+    </header>
+
+    @if (!seleccionado()!.invtrasladomaeId) {
+      <form [formGroup]="formMae" (ngSubmit)="guardarMae()" class="card form-card">
+        <div class="form-grid">
+          <div class="campo">
+            <label>Bodega Origen *</label>
+            <p-select formControlName="bodegaOrigenId" [options]="bodegas()" optionLabel="descripcion"
+              optionValue="bodegaId" placeholder="Seleccionar origen" styleClass="w-full" [appendTo]="'body'" />
+            @if (formMae.get('bodegaOrigenId')?.invalid && formMae.get('bodegaOrigenId')?.touched) {
+              <small class="err">Requerido</small>
+            }
+          </div>
+          <div class="campo">
+            <label>Bodega Destino *</label>
+            <p-select formControlName="bodegaDestinoId" [options]="bodegas()" optionLabel="descripcion"
+              optionValue="bodegaId" placeholder="Seleccionar destino" styleClass="w-full" [appendTo]="'body'" />
+            @if (formMae.get('bodegaDestinoId')?.invalid && formMae.get('bodegaDestinoId')?.touched) {
+              <small class="err">Requerido</small>
+            }
+          </div>
+          <div class="campo campo-full">
+            <label>Observaciones</label>
+            <input pInputText formControlName="observaciones" placeholder="Observaciones del traslado" />
+          </div>
+        </div>
+        <div class="acciones-form">
+          <p-button type="button" label="Cancelar" severity="secondary" text size="small" rounded (onClick)="volver()" />
+          <p-button type="submit" label="Crear Traslado" icon="pi pi-check" size="small" rounded severity="success" [raised]="true"
+            [loading]="guardando()" [disabled]="formMae.invalid" />
+        </div>
+      </form>
+    }
+
+    @if (seleccionado()!.invtrasladomaeId) {
+      <div class="card info-card">
+        <div class="info-grid">
+          <div><span class="info-label">Referencia:</span> <span class="font-bold">{{ seleccionado()!.nroreferencia }}</span></div>
+          <div><span class="info-label">Origen:</span> {{ nombreBodega(seleccionado()!.bodegaOrigenId) }}</div>
+          <div><span class="info-label">Destino:</span> {{ nombreBodega(seleccionado()!.bodegaDestinoId) }}</div>
+          <div><span class="info-label">Observaciones:</span> {{ seleccionado()!.observaciones || '-' }}</div>
+        </div>
+      </div>
+
+      @if (seleccionado()!.sn_procesado === 'N' && seleccionado()!.sn_anulado === 'N') {
+        <div [formGroup]="formDet" class="card agregar-item-card">
+          <div class="agregar-item-row">
+            <div class="campo campo-codbarra">
+              <label>Codigo de Barras</label>
+              <div class="flex gap-1">
+                <input pInputText [ngModel]="codBusqueda()" (ngModelChange)="onCodBarraInput($event)"
+                  (keyup.enter)="buscarProducto()" placeholder="Escanear o escribir codigo..." [ngModelOptions]="{standalone: true}" />
+                <p-button icon="pi pi-search" size="small" rounded severity="secondary" (onClick)="showHelperProductos()" />
+              </div>
+            </div>
+            <div class="campo campo-cantidad">
+              <label>Cantidad</label>
+              <p-inputNumber formControlName="cantidad" [min]="0.01" mode="decimal" [minFractionDigits]="2"
+                [maxFractionDigits]="2" size="small" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
+            </div>
+            <div class="campo campo-costo">
+              <label>Costo U.</label>
+              <p-inputNumber formControlName="costoUnitario" [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'"
+                [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" size="small"
+                [inputStyle]="{ 'width': '100%' }" styleClass="w-full" [readonly]="true" />
+            </div>
+            <div class="campo-btn">
+              <p-button icon="pi pi-plus" size="small" rounded severity="success" (onClick)="buscarProducto(); agregarItem()"
+                [loading]="guardando()" [disabled]="!formDet.value.descripcion || seleccionado()!.sn_procesado === 'S' || seleccionado()!.sn_anulado === 'S'" />
+            </div>
+          </div>
+          @if (formDet.value.descripcion) {
+            <div class="producto-encontrado">
+              <span class="font-bold">{{ formDet.value.descripcion }}</span>
+              <span class="text-sm text-color-secondary"> | Costo: {{ moneda(formDet.value.costoUnitario) }}</span>
+            </div>
+          }
+        </div>
+
+        <select formControlName="productoId" class="hidden-select">
+          <option [ngValue]="null">-</option>
+          @for (p of productos(); track p.produtoId) {
+            <option [ngValue]="p.produtoId">{{ p.descripcion }}</option>
+          }
+        </select>
+      }
+
+      <p-table [value]="detalles()" [loading]="cargandoDet()" dataKey="invtrasladodetId" [paginator]="true" [rows]="15" size="small">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width:3rem">#</th>
+            <th>Cod. Barra</th>
+            <th>Producto</th>
+            <th style="width:7rem" class="text-right">Cantidad</th>
+            <th style="width:8rem" class="text-right">Costo U.</th>
+            <th style="width:8rem" class="text-right">Total</th>
+            @if (seleccionado()!.sn_procesado === 'N' && seleccionado()!.sn_anulado === 'N') {
+              <th style="width:5rem" class="text-center"></th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td>{{ row.nrofila }}</td>
+            <td class="font-bold">{{ row.codbarra }}</td>
+            <td>{{ row.descripcion }}</td>
+            <td class="text-right font-bold">{{ row.cantidad }}</td>
+            <td class="text-right">{{ moneda(row.costoUnitario) }}</td>
+            <td class="text-right font-bold">{{ moneda(row.costoTotal) }}</td>
+            @if (seleccionado()!.sn_procesado === 'N' && seleccionado()!.sn_anulado === 'N') {
+              <td class="text-center">
+                <p-button icon="pi pi-trash" text severity="danger" size="small" rounded (onClick)="eliminarItem(row)" />
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="text-center p-3">No hay items en este traslado.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <div class="card totales-card">
+        <div class="total-line">
+          <span>Total Traslado:</span>
+          <span class="font-bold">{{ moneda(totalTraslado()) }}</span>
+        </div>
+        <div class="total-line">
+          <span>Items:</span>
+          <span class="font-bold">{{ detalles().length }}</span>
+        </div>
+      </div>
+    }
+  }
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\inventario\traslados\traslados.scss
+
+```typescript
+.form-card {
+  max-width: 800px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 2rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  label {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--c-text-muted, #64748b);
+  }
+}
+
+.campo-full {
+  grid-column: 1 / -1;
+}
+
+.acciones-form {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--c-border, #e2e8f0);
+}
+
+.req { color: var(--c-error, #ef4444); }
+.err { color: var(--c-error, #ef4444); font-size: 0.75rem; }
+.hidden-select { display: none; }
+
+/* Info card */
+.info-card {
+  margin-bottom: 1rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem 2rem;
+  font-size: 0.9rem;
+}
+
+.info-label {
+  color: var(--c-text-muted, #64748b);
+  font-weight: 500;
+}
+
+/* Agregar item */
+.agregar-item-card {
+  margin-bottom: 1rem;
+}
+
+.agregar-item-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.campo-codbarra { flex: 3; }
+.campo-cantidad { flex: 1; min-width: 100px; }
+.campo-costo { flex: 1; min-width: 100px; }
+.campo-btn { flex: 0; padding-bottom: 0.15rem; }
+
+.producto-encontrado {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--c-surface-ground, #f8fafc);
+  border-radius: 0.375rem;
+  border: 1px solid var(--c-border, #e2e8f0);
+  font-size: 0.85rem;
+}
+
+/* Totales */
+.totales-card {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2rem;
+  padding: 0.75rem 1rem;
+}
+
+.total-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .agregar-item-row {
+    flex-wrap: wrap;
+  }
+
+  .campo-codbarra,
+  .campo-cantidad,
+  .campo-costo {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .totales-card {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }
 
 ```
@@ -40006,39 +42301,326 @@ export class TomaInventarios implements OnInit {
 ## 📄 src\app\features\inventario\traslados\traslados.ts
 
 ```typescript
-import { Component } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+import { BodegasService } from '../../../core/services/bodegas.service';
+import { ProductosService } from '../../../core/services/productos.service';
+import { Bodega, Producto } from '../../../core/models/inventario.models';
+import { ProductosHelperList } from '../../helpers/productos';
+import { FooterHelper } from '../../helpers/footer';
 
 @Component({
   selector: 'app-traslados',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <section class="page">
-      <header class="page-header">
-        <div>
-          <h3 class="page-title">Traslados de Productos</h3>
-          <p class="page-subtitle">Movimiento de productos entre bodegas</p>
-        </div>
-      </header>
-      <div class="card proximamente">
-        <i class="pi pi-clock"></i>
-        <h4>Próximamente</h4>
-        <p>Este módulo está en desarrollo.</p>
-      </div>
-    </section>
-  `,
-  styles: [`
-    .proximamente {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 3rem; gap: 0.5rem; color: var(--c-text-muted);
-      i { font-size: 3rem; opacity: 0.4; }
-      h4 { margin: 0; color: var(--c-text); }
-      p { margin: 0; font-size: 0.85rem; }
-    }
-  `],
+  providers: [DialogService],
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule,
+    TableModule, ButtonModule, InputTextModule, InputNumberModule,
+    SelectModule, TagModule, ToastModule, ConfirmDialogModule, TooltipModule,
+  ],
+  templateUrl: './traslados.html',
+  styleUrl: './traslados.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Traslados {}
+export class Traslados implements OnInit {
+  private fb = inject(FormBuilder);
+  private api = inject(ApiService);
+  private bodegasService = inject(BodegasService);
+  private productosService = inject(ProductosService);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+  private dialogService = inject(DialogService);
+
+  ref: DynamicDialogRef | undefined;
+
+  private pathMae = '/inventario/traslados-mae';
+  private pathDet = '/inventario/traslados-mae/det';
+
+  traslados = signal<any[]>([]);
+  detalles = signal<any[]>([]);
+  bodegas = signal<Bodega[]>([]);
+  productos = signal<Producto[]>([]);
+
+  seleccionado = signal<any | null>(null);
+  cargando = signal(false);
+  cargandoDet = signal(false);
+  guardando = signal(false);
+
+  codBusqueda = signal('');
+
+  formMae = this.fb.group({
+    bodegaOrigenId: [null as number | null, Validators.required],
+    bodegaDestinoId: [null as number | null, Validators.required],
+    observaciones: [''],
+  });
+
+  formDet = this.fb.group({
+    codbarra: ['', Validators.required],
+    productoId: [null as number | null],
+    descripcion: [''],
+    cantidad: [1, [Validators.required, Validators.min(0.01)]],
+    costoUnitario: [0],
+  });
+
+  ngOnInit() {
+    this.cargarTraslados();
+    this.cargarBodegas();
+    this.cargarProductos();
+  }
+
+  cargarTraslados() {
+    this.cargando.set(true);
+    this.api.get<any[]>(this.pathMae).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.traslados.set(data || []); this.cargando.set(false); },
+      error: () => { this.cargando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los traslados' }); },
+    });
+  }
+
+  cargarBodegas() {
+    this.bodegasService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.bodegas.set(data || []),
+    });
+  }
+
+  cargarProductos() {
+    this.productosService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.productos.set(data || []),
+    });
+  }
+
+  seleccionar(traslado: any) {
+    this.seleccionado.set(traslado);
+    this.cargarDetalles(traslado.invtrasladomaeId);
+  }
+
+  cargarDetalles(maeId: number) {
+    this.cargandoDet.set(true);
+    this.api.get<any[]>(`${this.pathMae}/${maeId}/det`).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.detalles.set(data || []); this.cargandoDet.set(false); },
+      error: () => { this.cargandoDet.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los items' }); },
+    });
+  }
+
+  volver() {
+    this.seleccionado.set(null);
+    this.detalles.set([]);
+  }
+
+  nuevoMae() {
+    this.formMae.reset({ bodegaOrigenId: null, bodegaDestinoId: null, observaciones: '' });
+    this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1, costoUnitario: 0 });
+    this.codBusqueda.set('');
+    this.detalles.set([]);
+    this.seleccionado.set({ invtrasladomaeId: 0, sn_procesado: 'N', sn_anulado: 'N', nroreferencia: '' });
+  }
+
+  guardarMae() {
+    if (this.formMae.invalid) return;
+    if (this.formMae.value.bodegaOrigenId === this.formMae.value.bodegaDestinoId) {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'Bodega origen y destino no pueden ser iguales' });
+      return;
+    }
+    const val = this.formMae.value;
+    this.guardando.set(true);
+    this.api.post<any>(this.pathMae, {
+      bodegaOrigenId: val.bodegaOrigenId,
+      bodegaDestinoId: val.bodegaDestinoId,
+      observaciones: val.observaciones || '',
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Creado', detail: 'Traslado creado' });
+        this.seleccionado.set(res);
+        this.cargarTraslados();
+      },
+      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo crear' }); },
+    });
+  }
+
+  onCodBarraInput(valor: string) {
+    this.codBusqueda.set(valor);
+    if (valor.length >= 12) {
+      this.buscarProducto();
+    }
+  }
+
+  buscarProducto() {
+    const q = this.codBusqueda().trim();
+    if (!q) return;
+    const prod = this.productos().find(p => p.codbarra === q);
+    if (prod) {
+      this.formDet.patchValue({
+        productoId: prod.produtoId,
+        codbarra: prod.codbarra,
+        descripcion: prod.descripcion,
+        costoUnitario: prod.cstounit || 0,
+      });
+    } else {
+      this.msgs.add({ severity: 'warn', summary: 'No encontrado', detail: 'Producto no encontrado por código de barras' });
+    }
+  }
+
+  showHelperProductos() {
+    this.ref = this.dialogService.open(ProductosHelperList, {
+      header: 'Seleccionar un producto',
+      width: '50vw',
+      modal: true,
+      contentStyle: { overflow: 'auto' },
+      breakpoints: { '960px': '75vw', '640px': '90vw' },
+      templates: { footer: FooterHelper },
+    });
+    this.ref.onClose.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: any) => {
+      if (data && 'codbarra' in data) {
+        this.agregarDirecto(data);
+      }
+    });
+  }
+
+  agregarDirecto(prod: any) {
+    const mae = this.seleccionado();
+    if (!mae || !mae.invtrasladomaeId) {
+      this.msgs.add({ severity: 'warn', summary: 'Atención', detail: 'Primero guarde el encabezado del traslado' });
+      return;
+    }
+    this.guardando.set(true);
+    this.api.post<any>(this.pathDet, {
+      invtrasladomaeId: mae.invtrasladomaeId,
+      codbarra: prod.codbarra,
+      productoId: prod.produtoId,
+      descripcion: prod.descripcion,
+      cantidad: 1,
+      costoUnitario: prod.cstounit || 0,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Agregado', detail: prod.descripcion });
+        this.cargarDetalles(mae.invtrasladomaeId);
+      },
+      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar' }); },
+    });
+  }
+
+  agregarItem() {
+    if (this.formDet.invalid) return;
+    const mae = this.seleccionado();
+    if (!mae || !mae.invtrasladomaeId) {
+      this.msgs.add({ severity: 'warn', summary: 'Atención', detail: 'Primero guarde el encabezado del traslado' });
+      return;
+    }
+    const val = this.formDet.value;
+    this.guardando.set(true);
+    this.api.post<any>(this.pathDet, {
+      invtrasladomaeId: mae.invtrasladomaeId,
+      codbarra: val.codbarra,
+      productoId: val.productoId,
+      descripcion: val.descripcion,
+      cantidad: val.cantidad,
+      costoUnitario: val.costoUnitario,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Agregado', detail: 'Item agregado' });
+        this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1, costoUnitario: 0 });
+        this.codBusqueda.set('');
+        this.cargarDetalles(mae.invtrasladomaeId);
+      },
+      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar' }); },
+    });
+  }
+
+  eliminarItem(row: any) {
+    this.confirm.confirm({
+      message: `¿Eliminar item "${row.descripcion || row.codbarra}"?`,
+      header: 'Confirmar',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.confirm.close();
+        this.api.delete<any>(this.pathDet, row.invtrasladodetId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Eliminado' });
+            this.cargarDetalles(this.seleccionado()!.invtrasladomaeId);
+          },
+          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo eliminar' }),
+        });
+      },
+      reject: () => this.confirm.close(),
+    });
+  }
+
+  procesar() {
+    const mae = this.seleccionado();
+    if (!mae) return;
+    this.confirm.confirm({
+      message: `¿Procesar traslado #${mae.invtrasladomaeId}? Se registrará salida en bodega origen y entrada en bodega destino.`,
+      header: 'Procesar traslado',
+      acceptLabel: 'Procesar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.confirm.close();
+        this.api.post<any>(`${this.pathMae}/${mae.invtrasladomaeId}/procesar`, {}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: (res) => {
+            this.msgs.add({ severity: 'success', summary: 'Procesado', detail: res?.message || 'Traslado procesado' });
+            this.cargarTraslados();
+            this.cargarDetalles(mae.invtrasladomaeId);
+          },
+          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo procesar' }),
+        });
+      },
+      reject: () => this.confirm.close(),
+    });
+  }
+
+  anularTraslado() {
+    const mae = this.seleccionado();
+    if (!mae) return;
+    this.confirm.confirm({
+      message: `¿Anular traslado #${mae.invtrasladomaeId}?`,
+      header: 'Anular traslado',
+      acceptLabel: 'Anular',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.confirm.close();
+        this.api.post<any>(`${this.pathMae}/${mae.invtrasladomaeId}/anular`, {}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: (res) => {
+            this.msgs.add({ severity: 'success', summary: 'Anulado', detail: res?.message || 'Traslado anulado' });
+            this.cargarTraslados();
+            this.volver();
+          },
+          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo anular' }),
+        });
+      },
+      reject: () => this.confirm.close(),
+    });
+  }
+
+  nombreBodega(id: number): string {
+    return this.bodegas().find(b => b.bodegaId === id)?.descripcion || `Bodega ${id}`;
+  }
+
+  moneda(n: number | undefined): string {
+    return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
+  }
+
+  totalTraslado(): number {
+    return this.detalles().reduce((sum, d) => sum + (d.costoTotal || 0), 0);
+  }
+}
 
 ```
 
@@ -40086,11 +42668,14 @@ export class Traslados {}
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -40179,7 +42764,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { UbicacionesService } from '../../../core/services/ubicaciones.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -40187,7 +42772,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-ubicacion-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './ubicacion-form.html',
   styleUrl: './ubicacion-form.scss',
 })
@@ -40317,13 +42902,14 @@ export class UbicacionForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -40335,6 +42921,8 @@ export class UbicacionForm implements OnInit {
     dataKey="ubicacionId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -40376,6 +42964,7 @@ export class UbicacionForm implements OnInit {
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -40536,11 +43125,14 @@ export class Ubicaciones implements OnInit {
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
+          <p-select size="small"
             [options]="snOptions"
             formControlName="sn_activo"
             optionLabel="label"
             optionValue="value"
+            placeholder="Estado"
+            styleClass="w-full"
+            [appendTo]="'body'"
           />
         </div>
       }
@@ -40629,7 +43221,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectButtonModule } from 'primeng/selectbutton';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { UnidadesMedidaService } from '../../../core/services/unidades-medida.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -40637,7 +43229,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-unidad-medida-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectButtonModule],
+  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './unidad-medida-form.html',
   styleUrl: './unidad-medida-form.scss',
 })
@@ -40767,13 +43359,14 @@ export class UnidadMedidaForm implements OnInit {
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
         size="small"
+        rounded
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -40785,6 +43378,8 @@ export class UnidadMedidaForm implements OnInit {
     dataKey="unidadmedidaId"
     [paginator]="true"
     [rows]="20"
+    layout="list"
+    size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -40956,7 +43551,7 @@ export class UnidadesMedida implements OnInit {
     <p-button
       label="Volver"
       icon="pi pi-arrow-left"
-      severity="secondary"
+      severity="contrast"
       text
       size="small"
       rounded
@@ -40967,63 +43562,72 @@ export class UnidadesMedida implements OnInit {
   @if (cargando()) {
     <div class="card">Cargando datos...</div>
   } @else {
-    <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
-      @for (c of campos; track c.key) {
-        <div class="campo">
-          <label [for]="c.key">{{ c.label }} @if (c.requerido) {<span class="req">*</span>}</label>
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="card">
+      <div class="form-grid">
+        @for (c of campos; track c.key) {
+          <div class="campo">
+            <label [for]="c.key">{{ c.label }} @if (c.requerido) {<span class="req">*</span>}</label>
 
-          @if (c.tipo === 'texto') {
-            <input
-              pInputText
-              [id]="c.key"
-              [formControlName]="c.key"
-              maxlength="50"
-              [placeholder]="c.label"
-              [ngClass]="{ 'ng-invalid': invalid(c.key) }"
-            />
-          } @else if (c.tipo === 'numero') {
-            <p-inputnumber size="small"
-              [formControlName]="c.key"
-              [showButtons]="true"
-              inputId="integeronly"
-              [ngClass]="{ 'ng-invalid': invalid(c.key) }"
-            />
-          } @else if (c.tipo === 'select') {
+            @if (c.tipo === 'texto') {
+              <input
+                pInputText
+                pSize="small"
+                [id]="c.key"
+                [formControlName]="c.key"
+                maxlength="50"
+                [placeholder]="c.label"
+                [ngClass]="{ 'ng-invalid': invalid(c.key) }"
+              />
+            } @else if (c.tipo === 'numero') {
+              <p-inputnumber size="small"
+                size="small"
+                [formControlName]="c.key"
+                [showButtons]="true"
+                [ngClass]="{ 'ng-invalid': invalid(c.key) }"
+              />
+            } @else if (c.tipo === 'select') {
+              <p-select
+                size="small"
+                [formControlName]="c.key"
+                [options]="opciones(c)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar..."
+                styleClass="w-full"
+                [appendTo]="'body'"
+              />
+            } @else if (c.tipo === 'fecha') {
+              <p-datepicker
+                size="small"
+                [formControlName]="c.key"
+                dateFormat="dd/mm/yy"
+                [showIcon]="true"
+                [appendTo]="'body'"
+                styleClass="w-full"
+              />
+            }
+
+            @if (invalid(c.key)) {
+              <small class="err">{{ c.label }} es obligatorio</small>
+            }
+          </div>
+        }
+
+        @if (!config.sinEstado) {
+          <div class="campo">
+            <label>Estado <span class="req">*</span></label>
             <p-select
-size="small"               [formControlName]="c.key"
-              [options]="opciones(c)"
+              size="small"
+              formControlName="sn_activo"
+              [options]="snOptions"
               optionLabel="label"
               optionValue="value"
-              placeholder="Seleccionar..."
               styleClass="w-full"
+              [appendTo]="'body'"
             />
-          } @else if (c.tipo === 'fecha') {
-            <p-datepicker
-              [formControlName]="c.key"
-              dateFormat="dd/mm/yy"
-              [showIcon]="true"
-              styleClass="w-full"
-            />
-          }
-
-          @if (invalid(c.key)) {
-            <small class="err">{{ c.label }} es obligatorio</small>
-          }
-        </div>
-      }
-
-      @if (!config.sinEstado) {
-      <div class="campo">
-        <label>Estado <span class="req">*</span></label>
-        <p-select
-size="small"           formControlName="sn_activo"
-          [options]="snOptions"
-          optionLabel="label"
-          optionValue="value"
-          styleClass="w-full"
-        />
+          </div>
+        }
       </div>
-    }
 
       <div class="acciones-form">
         <p-button
@@ -41035,11 +43639,15 @@ size="small"           formControlName="sn_activo"
           rounded
           (onClick)="volver()"
         />
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+        <p-button type="submit" label="Guardar"
+        [raised]="true" severity="success"
+        [rounded]="true"
+        icon="pi pi-check" rounded size="small" [loading]="guardando()" />
       </div>
     </form>
   }
 </section>
+
 ```
 
 ---
@@ -41047,12 +43655,61 @@ size="small"           formControlName="sn_activo"
 ## 📄 src\app\features\parametros\catalogo-generico\catalogo-form.scss
 
 ```typescript
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 2rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
 .campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  label {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--c-text-muted, #64748b);
+  }
+
   p-select,
-  p-inputnumber {
+  p-inputnumber,
+  input[pInputText] {
     width: 100%;
   }
 }
+
+.acciones-form {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--c-border, #e2e8f0);
+}
+
+.req {
+  color: var(--c-error, #ef4444);
+}
+
+.err {
+  color: var(--c-error, #ef4444);
+  font-size: 0.75rem;
+}
+
+:host ::ng-deep .p-inputnumber {
+  width: 100%;
+
+  input {
+    width: 100%;
+  }
+}
+
 ```
 
 ---
@@ -41242,79 +43899,93 @@ export class CatalogoForm implements OnInit {
 <section class="page">
   <header class="page-header">
     <div>
-      <h1 class="page-title">{{ config?.titulo }}</h1>
-      <p class="page-subtitle">{{ config?.subtitulo }}</p>
+      <h1 class="page-title">{{ config()?.titulo || '' }}</h1>
+      <p class="page-subtitle">{{ config()?.subtitulo || '' }}</p>
     </div>
     <div>
-      <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()" />
+      <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()"
+      variant="text"
+      [raised]="true" severity="success" [rounded]="true" />
+
     </div>
   </header>
 
   <div class="filtros card">
     <div class="campo">
       <label>Buscar</label>
-      <input
-        pInputText
-        type="text"
-        placeholder="Buscar..."
-        [ngModel]="q()"
-        (ngModelChange)="q.set($event)"
-        (keyup.enter)="buscar()"
-      />
+      <input pInputText type="text"
+      pSize="small"
+       placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)"
+        (keyup.enter)="buscar()" />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
-      <p-button
-        label="Limpiar"
-        icon="pi pi-times"
-        severity="secondary"
-        text
-        size="small"
-        (onClick)="limpiarFiltros()"
-      />
+      <p-button label="Buscar"
+      severity="info"
+      variant="text"
+      icon="pi pi-search" size="small" (onClick)="buscar()"
+      [rounded]="true" />
+      <p-button label="Limpiar"
+       [rounded]="true"
+        icon="pi pi-times" severity="secondary" text size="small"
+        (onClick)="limpiarFiltros()" />
     </div>
   </div>
 
-  <p-dataview
+  <div class="tabla-responsive">
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     [paginator]="true"
     [rows]="20"
     [rowsPerPageOptions]="[10, 20, 50]"
+    [tableStyle]="{ 'min-width': '20rem' }"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-  >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (item of items; track item?.[config.idKey]) {
-          <div class="dv-card" (click)="editar(item[config.idKey])">
-            <div class="dv-top">
-              <span class="dv-title">{{ titular(item) }}</span>
-              @if (!config.sinEstado) {
-                <p-tag [value]="activoLbl(item.sn_activo)" [severity]="activoSev(item.sn_activo)" />
-              }
-            </div>
+    size="small">
 
-            @if (filas(item).length) {
-              <div class="dv-body">
-                @for (f of filas(item); track f.label) {
-                  <div class="dv-row">
-                    <span class="dv-label">{{ f.label }}</span>
-                    <span class="dv-value">{{ f.value }}</span>
-                  </div>
-                }
-              </div>
-            }
-          </div>
+    <ng-template pTemplate="header">
+      <tr>
+        @for (col of campos(); track col.key) {
+          <th>{{ col.label }}</th>
         }
-      </div>
+        @if (config() && config()!.sinEstado !== true) {
+          <th style="width: 8rem" class="text-center">Estado</th>
+        }
+        <th style="width: 4rem" class="text-center"></th>
+      </tr>
     </ng-template>
 
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay registros.</div>
+    <ng-template pTemplate="body" let-item>
+      <tr (click)="editar(item[config?.idKey])" style="cursor: pointer">
+        @for (col of campos(); track col.key) {
+          <td>{{ item[col.key] || '-' }}</td>
+        }
+        @if (config() && config()!.sinEstado !== true) {
+          <td class="text-center">
+            <p-tag [value]="activoLbl(item.sn_activo)" [severity]="activoSev(item.sn_activo)" />
+          </td>
+        }
+        <td class="text-center">
+          <p-button
+            icon="pi pi-pencil"
+            size="small"
+            variant="text"
+            [rounded]="true"
+            severity="secondary"
+            (click)="$event.stopPropagation(); editar(item[config?.idKey])" />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+
+    <ng-template pTemplate="empty">
+      <tr>
+        <td colspan="10" class="text-center p-4">No hay registros.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+  </div>
 </section>
+
 ```
 
 ---
@@ -41322,37 +43993,68 @@ export class CatalogoForm implements OnInit {
 ## 📄 src\app\features\parametros\catalogo-generico\catalogo-generico.scss
 
 ```typescript
-.dv-cards {
-  padding: 0.75rem;
-}
+.filtros {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
 
-.dv-card {
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    transform: translateY(-1px);
-  }
-
-  .dv-row {
+  .campo {
+    flex: 1;
     display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.15rem 0;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    label {
+      font-weight: 500;
+      font-size: 0.85rem;
+      color: var(--c-text-muted, #64748b);
+    }
   }
 
-  .dv-label {
-    color: #64748b;
-    font-size: 0.78rem;
-  }
-
-  .dv-value {
-    font-weight: 600;
-    color: #334155;
-    text-align: right;
+  .acciones {
+    flex: 0;
+    flex-direction: row;
+    gap: 0.5rem;
   }
 }
+
+.tabla-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+
+    > div:last-child {
+      width: 100%;
+
+      p-button {
+        width: 100%;
+
+        ::ng-deep .p-button {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    }
+  }
+
+  .filtros {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tabla-responsive {
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+}
+
 ```
 
 ---
@@ -41360,11 +44062,12 @@ export class CatalogoForm implements OnInit {
 ## 📄 src\app\features\parametros\catalogo-generico\catalogo-generico.ts
 
 ```typescript
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
-import { DataViewModule } from 'primeng/dataview';
+import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
+import { filter, Subscription } from 'rxjs';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
@@ -41375,17 +44078,17 @@ import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo } from '../../../co
 @Component({
   selector: 'app-catalogo-generico',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataViewModule, ButtonModule, InputTextModule, TagModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule],
   templateUrl: './catalogo-generico.html',
   styleUrl: './catalogo-generico.scss',
 })
-export class CatalogoGenerico implements OnInit {
+export class CatalogoGenerico implements OnInit, OnDestroy {
   private service = inject(CatalogoParametrosService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private msgs = inject(MessageService);
 
-  config!: CatalogoConfig;
+  config = signal<CatalogoConfig | null>(null);
   campos = signal<CampoCatalogo[]>([]);
 
   data = signal<any[]>([]);
@@ -41394,21 +44097,58 @@ export class CatalogoGenerico implements OnInit {
 
   q = signal('');
 
+  private routeSub?: Subscription;
+  private navSub?: Subscription;
+
   ngOnInit() {
-    const nombre =
-      this.route.snapshot.data['nombre'] ?? this.route.snapshot.paramMap.get('nombre') ?? '';
-    this.config = CATALOGOS_PARAMETROS[nombre];
-    if (!this.config) {
-      this.msgs.add({ severity: 'error', summary: 'Error', detail: `Catálogo desconocido: ${nombre}` });
+    this.cargarConfig();
+
+    // Escuchar navegaciones para recargar cuando se cambia de catalogo
+    this.navSub = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.cargarConfig();
+    });
+  }
+
+  ngOnDestroy() {
+    this.routeSub?.unsubscribe();
+    this.navSub?.unsubscribe();
+  }
+
+  private cargarConfig() {
+    // Obtener el nombre del catalogo de la ruta actual
+    let rutaActual = this.router.url;
+    let nombre = '';
+
+    // Extraer el nombre del catalogo de la URL
+    // Ej: /inventario/categorias -> categorias
+    // Ej: /contabilidad/ctacontables -> ctacontables
+    const partes = rutaActual.split('/').filter(p => p);
+    if (partes.length > 0) {
+      nombre = partes[partes.length - 1];
+    }
+
+    const nuevoConfig = CATALOGOS_PARAMETROS[nombre];
+    if (!nuevoConfig) {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: `Catalogo desconocido: ${nombre}` });
       return;
     }
-    this.campos.set(this.config.campos);
+
+    // Solo recargar si cambio de catalogo
+    if (this.config() && this.config()!.ruta === nuevoConfig.ruta) {
+      return;
+    }
+
+    this.config.set(nuevoConfig);
+    this.campos.set(nuevoConfig.campos);
+    this.q.set('');
     this.load();
   }
 
   load() {
     this.cargando.set(true);
-    this.service.getAll<any>(this.config.ruta).subscribe({
+    this.service.getAll<any>(this.config()!.ruta).subscribe({
       next: (res) => {
         this.data.set(res);
         this.filtrar();
@@ -41416,20 +44156,9 @@ export class CatalogoGenerico implements OnInit {
       },
       error: () => {
         this.cargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: `No se pudieron cargar ${this.config.titulo}` });
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: `No se pudieron cargar ${this.config()!.titulo}` });
       },
     });
-  }
-
-  titular(item: any): string {
-    const p = this.config.campos.find((c) => c.principal) ?? this.config.campos[0];
-    return item?.[p?.key] ?? '';
-  }
-
-  filas(item: any): { label: string; value: any }[] {
-    return this.config.campos
-      .filter((c) => !(c.principal ?? false))
-      .map((c) => ({ label: c.label, value: item?.[c.key] ?? '-' }));
   }
 
   filtrar() {
@@ -41437,7 +44166,7 @@ export class CatalogoGenerico implements OnInit {
     this.filtered.set(
       this.data().filter((item) => {
         if (!q) return true;
-        return this.config.campos.some(
+        return this.config()!.campos.some(
           (c) => String(item?.[c.key] ?? '').toLowerCase().includes(q),
         );
       }),
@@ -41469,6 +44198,7 @@ export class CatalogoGenerico implements OnInit {
     return sn === 'S' ? 'success' : 'danger';
   }
 }
+
 ```
 
 ---
@@ -41998,6 +44728,7 @@ export class EmpresaForm implements OnInit {
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="empresaId"
+    [layout]="list"
     [paginator]="true"
     [rows]="20"
     [rowsPerPageOptions]="[10, 20, 50]"
@@ -42049,6 +44780,7 @@ export class EmpresaForm implements OnInit {
     </ng-template>
   </p-dataview>
 </section>
+
 ```
 
 ---
@@ -42493,10 +45225,10 @@ size="small"           id="puestoId"
 }
 
 .card {
-  background: var(--p-content-background);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: var(--p-content-border-radius);
-  padding: 1.25rem;
+  background: var(--c-bg);
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
 }
 
 .form-grid {
@@ -42863,10 +45595,10 @@ export class EmpleadoForm implements OnInit {
 }
 
 .card {
-  background: var(--p-content-background);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: var(--p-content-border-radius);
-  padding: 1.25rem;
+  background: var(--c-bg);
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
 }
 
 .buscar {
@@ -46694,7 +49426,7 @@ export const USUARIOS_ROUTES: Routes = [
     <div class="sidebar-header">
       <div class="sidebar-logo">
         <img src="assets/images/arcas-logo.svg" alt="Logo Arcas Software" class="sidebar-logo-img" />
-        <span class="sidebar-title">Arcas Software</span>
+        <span class="sidebar-title">Tienda</span>
       </div>
       <button class="sidebar-pin" [class.visible]="!sidebarHidden()" [class.pinned]="pinned()" (click)="togglePin()"
         title="Fijar sidebar"></button>
@@ -48117,8 +50849,7 @@ body {
 
 ```typescript
 /* You can add global styles to this file, and also import other style files */
-@layer primeng {
-}
+@layer primeng {}
 
 @font-face {
   font-family: 'Mukta';
@@ -48158,34 +50889,40 @@ body {
 :root {
   --font-family: 'Mukta', sans-serif;
 
- --color-texto-label: rgba(255, 255, 255, 0.4);
- --color-texto-input: rgba(255, 255, 255, 0.808);
---master-background:#213341;
---texto-secundario: #2c4d6f;
---select-row: #93b7d3;
-
+  --color-texto-label: rgba(255, 255, 255, 0.4);
+  --color-texto-input: rgba(255, 255, 255, 0.808);
+  --master-background: #213341;
+  --texto-secundario: #2c4d6f;
+  --select-row: #93b7d3;
+  --for-border-color-alls: #39495b;
 
   /* ===== Design tokens ===== */
   --c-bg: #1e2e3b;
+  --c-bg-muted: #1e2e3b00;
   --c-surface: #1e2e3b;
-  --c-surface-muted: #182b40;
+  --c-surface-muted: #2d3d50b4;
   --c-border: #1e2e3b;
   --c-border-strong: #2c4d6f;
   --c-text: var(--color-texto-label);
   --c-text-secondary: var(--texto-secundario);
   --c-text-muted: #8aa9c9;
   --c-text-faint: #5f86ab;
+  --c-disabled-color: #1f2f3a;
   --c-primary: #3d8bff;
   --c-primary-strong: #0070f2;
   --c-success: #2fd48a;
   --c-warning: #f5a623;
   --c-danger: #ff5c5c;
   --c-info: #38bdf8;
+  --c-uva: #604ec7ef;
+  --c-amarillo: #f5e949ef;
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1.25rem;
   --radius-full: 9999px;
+
+
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
@@ -48214,28 +50951,71 @@ body {
   --p-inputicon-font-size: 0.875rem;
   --p-paginator-font-size: 0.875rem;
 
---p-form-field-background:#213341;
---p-form-field-border-color:#39495b;
+  --p-form-field-background: #213341;
+  --p-form-field-border-color: #39495b;
+  
 
   --p-navigation-item-color: #7f8790;
-   --p-navigation-item-icon-color: #558dc6;
+  --p-navigation-item-icon-color: #558dc6;
 
   --p-panelmenu-item-focus-color: #558dc6;
-  --p-navigation-submenu-icon-color:#558dc6;
-
---p-datatable-body-cell-border-color: #25374a;
---p-datatable-header-cell-border-color: #25374a;
+  --p-navigation-submenu-icon-color: #558dc6;
 
 
---p-card-title-font-size: 1.05rem;
---p-card-background: var(--p-form-field-background);
+  --p-card-title-font-size: 1.05rem;
+  --p-card-background: var(--p-form-field-background);
 
---p-inputtext-color: var(--color-texto-input);
---p-inputtext-background: #213341;
---p-inputtext-border-color: #39495b;
+  --p-inputtext-color: var(--color-texto-input);
+  --p-inputtext-background: #213341;
+  --p-inputtext-border-color: #39495b;
+  --p-inputtext-disabled-color: var(--c-text-muted);
+  --p-inputtext-disabled-background: var(--c-bg);
+  --p-inputtext-disabled-border-color: #2a3a4a;
 
---p-select-color: var(--color-texto-input);
---p-select-background: var(--p-form-field-background);
+  --p-togglebutton-color: var(--color-texto-input);
+  ---p-togglebutton-background: var(--color-texto-input);
+
+
+  // para los botones selecionados del toggle button
+  --p-togglebutton-checked-color: var(--c-success);
+  --p-togglebutton-content-checked-background: var(--p-inputtext-background);
+
+
+  --p-togglebutton-background: var(--c-bg);
+  --p-togglebutton-checked-background: var(--c-bg);
+
+  --p-togglebutton-hover-color: var(--c-amarillo);
+  --p-togglebutton-border-color: var(--c-bg);
+  --p-togglebutton-checked-border-color: var(--c-bg);
+
+
+  --p-select-color: var(--color-texto-input);
+  --p-select-background: var(--p-form-field-background);
+  --p-select-disabled-background: var(--c-bg);
+  --p-select-disabled-color: var(--c-text-muted);
+
+  --p-inputnumber-disabled-background: var(--c-bg);
+  --p-datepicker-disabled-background: var(--c-bg);
+
+  --p-toolbar-border-color: var(--for-border-color-alls);
+
+  --p-datatable-body-cell-border-color: #25374a;
+  --p-datatable-header-cell-border-color: #25374a;
+  --p-datatable-header-cell-color: var(--color-texto-input);
+  --p-datatable-body-cell-sm-padding: 0.275rem 0.1rem;
+
+
+
+  --p-tag-secondary-background: var(--c-bg-muted);
+  --p-tag-success-background: var(--c-bg-muted);
+  --p-tag-info-background: var(--c-bg-muted);
+  --p-tag-warn-background: var(--c-bg-muted);
+  --p-tag-danger-background: var(--c-bg-muted);
+
+  --p-tag-rounded-border-radius: 5px 5px 5px 5px;
+
+ --surface-border:var(--for-border-color-alls);
+
 }
 
 body {
@@ -48246,19 +51026,42 @@ body {
 }
 
 label {
-  color: var(--c-text);          /* Color del texto */
- }
+  color: var(--c-text);
+  /* Color del texto */
+}
+
+thead th {
+  color: var(--c-text);
+}
+
+tr {
+  color: var(--c-text);
+}
+
+
+ul {
+    display: block;
+    list-style-type: none;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    padding-inline-start: 12px;
+    unicode-bidi: isolate;
+}
+
 
 .p-inputtext {
-  color: var(--c-text);          /* Color del texto */
- }
+  color: var(--c-text);
+  /* Color del texto */
+}
 
 .p-select {
-  color: var(--c-text);          /* Color del texto */
- }
+  color: var(--c-text);
+  /* Color del texto */
+}
 
 .p-card {
-  --p-card-body-padding: 0.75rem; /* O el valor que prefieras, ej: 10px, 0.5rem */
+  --p-card-body-padding: 0.75rem;
+  /* O el valor que prefieras, ej: 10px, 0.5rem */
 }
 
 
@@ -48270,6 +51073,7 @@ label {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -48280,33 +51084,38 @@ label {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
 }
 
 @keyframes pulseSoft {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.55;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .page > * {
+  .page>* {
     animation: fadeInUp var(--tr-smooth) both;
   }
 
-  .page > *:nth-child(2) {
+  .page>*:nth-child(2) {
     animation-delay: 0.04s;
   }
-  .page > *:nth-child(3) {
+
+  .page>*:nth-child(3) {
     animation-delay: 0.08s;
   }
-  .page > *:nth-child(4) {
+
+  .page>*:nth-child(4) {
     animation-delay: 0.12s;
   }
 }
@@ -48316,6 +51125,7 @@ label {
   from {
     background-position: 200% 0;
   }
+
   to {
     background-position: -200% 0;
   }
@@ -48372,11 +51182,10 @@ label {
 
 /* Tarjeta genérica */
 .card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
+  background: var(--c-bg);
   padding: 1rem 1.25rem;
-  box-shadow: var(--shadow-sm);
+   border-bottom: 1px solid var(--for-border-color-alls);
+
 }
 
 // =====================================================
@@ -48400,12 +51209,12 @@ label {
     font-size: 0.8rem;
   }
 
-  .p-datatable-tbody > tr > td {
+  .p-datatable-tbody>tr>td {
     padding: 0.5rem 0.4rem !important;
     white-space: nowrap;
   }
 
-  .p-datatable-thead > tr > th {
+  .p-datatable-thead>tr>th {
     padding: 0.5rem 0.4rem !important;
     font-size: 0.75rem;
     white-space: nowrap;
@@ -48423,6 +51232,7 @@ label {
 // Mejoras táctiles / accesibilidad
 // =====================================================
 @media (pointer: coarse) {
+
   .p-button,
   .p-inputtext,
   .p-select,
@@ -48439,12 +51249,12 @@ label {
     flex-direction: column;
     align-items: stretch;
 
-    > div:first-child {
+    >div:first-child {
       width: 100%;
     }
 
-    > div:last-child,
-    > p-button {
+    >div:last-child,
+    >p-button {
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
@@ -48459,17 +51269,17 @@ label {
 
   .card {
     padding: 0.75rem;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
   }
 
   .totales-grid {
     @media (max-width: 640px) {
-  .nf-totales-row {
-    .nf-total-block {
-      flex: 1 1 45%;
+      .nf-totales-row {
+        .nf-total-block {
+          flex: 1 1 45%;
+        }
+      }
     }
-  }
-}
   }
 }
 
@@ -48634,6 +51444,7 @@ label {
    Impresión de reportes
    ===================================================== */
 @media print {
+
   .layout-wrapper .sidebar,
   .layout-wrapper .topbar,
   .no-print,
@@ -48679,6 +51490,7 @@ label {
     margin: 0;
     font-size: 1.3rem;
   }
+
   p {
     margin: 0.2rem 0;
     font-size: 0.85rem;
@@ -48704,6 +51516,7 @@ label {
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
+
     .value {
       font-size: 1.25rem;
       font-weight: 700;

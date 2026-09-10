@@ -194,6 +194,7 @@ export class MovimientosManager implements OnInit {
       nroreferencia: movimiento.nroreferencia || '',
       fecharegistro: movimiento.fecharegistro || new Date().toISOString(),
     });
+    this.documentoSelected.set(movimiento.documentoId ?? null);
   }
 
   // ===== CLIENTES =====

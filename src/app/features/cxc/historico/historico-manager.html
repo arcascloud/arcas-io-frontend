@@ -1,0 +1,210 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Histórico de Movimientos</h1>
+      <p class="page-subtitle">Consulta de movimientos de cuentas por cobrar por cliente</p>
+    </div>
+  </header>
+
+  <!-- FILTROS -->
+  <div class="filtros card mb-3">
+    <div class="p-grid">
+      <div class="p-col-12 p-md-3">
+        <div class="p-field">
+          <label>DNI</label>
+          <input pInputText pSize="small" [ngModel]="dni()" (ngModelChange)="dni.set($event)"
+            placeholder="Buscar por DNI" />
+        </div>
+      </div>
+      <div class="p-col-12 p-md-3">
+        <div class="p-field">
+          <label>Cliente</label>
+          <input pInputText pSize="small" [ngModel]="cliente()" (ngModelChange)="cliente.set($event)"
+            placeholder="Nombre o razón social" />
+        </div>
+      </div>
+      <div class="p-col-12 p-md-2">
+        <div class="p-field">
+          <label>Desde</label>
+          <p-datepicker pSize="small" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)"
+            dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+        </div>
+      </div>
+      <div class="p-col-12 p-md-2">
+        <div class="p-field">
+          <label>Hasta</label>
+          <p-datepicker pSize="small" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)"
+            dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+        </div>
+      </div>
+      <div class="p-col-12 p-md-2">
+        <div class="p-field" style="margin-top: 1.5rem">
+          <div class="d-flex gap-2">
+            <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true"
+              (onClick)="buscar()" [raised]="true" severity="success"></p-button>
+            <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text"
+              [rounded]="true" severity="secondary" (onClick)="limpiarFiltros()"></p-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE RESULTADOS -->
+  <div class="tabla card">
+    <p-table id="gridhisto" [value]="filtered()" [loading]="cargando()" [paginator]="true" [rows]="limit()"
+      [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      size="small" [tableStyle]="{ 'min-width': '20rem' }"
+      selectionMode="single" [(selection)]="selectedRow"
+      dataKey="clienteMovId"
+      [globalFilterFields]="['dni', 'cliente', 'nrocliente', 'concepto']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 8rem">Fecha</th>
+          <th style="width: 6rem">Nro. Cliente</th>
+          <th style="width: 6rem">DNI</th>
+          <th>Cliente</th>
+          <th style="width: 8rem">Módulo</th>
+          <th style="width: 6rem">Ref.</th>
+          <th style="width: 6rem">Tipo</th>
+          <th style="width: 6rem">Importe</th>
+          <th>Concepto</th>
+          <th style="width: 6rem">Anulado</th>
+          <th style="width: 6rem">Contabil.</th>
+          <th style="width: 4rem"></th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-item>
+        <tr [class.selected-row]="selectedRow?.clienteMovId === item.clienteMovId">
+          <td>{{ getFecha(item.fecharegistro) }}</td>
+          <td>{{ item.nrocliente }}</td>
+          <td>{{ item.dni }}</td>
+          <td>{{ item.cliente }}</td>
+          <td>{{ item.modulo }}</td>
+          <td>{{ item.nroreferencia }}</td>
+          <td>
+            <p-tag [value]="getTipoMovLabel(item.tipomov)"
+              [severity]="getTipoMovSeverity(item.tipomov)" />
+          </td>
+          <td class="font-bold">{{ moneda(item.importe) }}</td>
+          <td>{{ item.concepto || '-' }}</td>
+          <td class="text-center">
+            <p-tag [value]="item.sn_doc_anulado === 'S' ? 'Sí' : 'No'"
+              [severity]="item.sn_doc_anulado === 'S' ? 'danger' : 'success'" />
+          </td>
+          <td class="text-center">
+            <p-tag [value]="item.sn_cotabilizada === 'S' ? 'Sí' : 'No'"
+              [severity]="item.sn_cotabilizada === 'S' ? 'info' : 'success'" />
+          </td>
+          <td class="text-center">
+            <p-button label="Ver" icon="pi pi-eye" size="small"
+              variant="text" [rounded]="true" severity="info"
+              (onClick)="irAmovimientos(item)" />
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="empty">
+        <tr>
+          <td colspan="12" class="text-center p-4">No hay registros.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- DETALLE DEL MOVIMIENTO SELECCIONADO (readonly) -->
+  @if (selectedRow) {
+  <div class="detalle card mt-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Fecha</label>
+            <input pInputText [value]="getFecha(selectedRow.fecharegistro)" disabled readonly
+              styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Cliente</label>
+            <input pInputText [value]="selectedRow.cliente" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>DNI</label>
+            <input pInputText [value]="selectedRow.dni" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Nro. Cliente</label>
+            <input pInputText [value]="selectedRow.nrocliente" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Módulo</label>
+            <input pInputText [value]="selectedRow.modulo" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Abreviatura</label>
+            <input pInputText [value]="selectedRow.abreviatura" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Referencia</label>
+            <input pInputText [value]="selectedRow.nroreferencia" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Tipo de Movimiento</label>
+            <p-select [value]="selectedRow.tipomov" [options]="tipoMovOptions" disabled
+              styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Importe</label>
+            <p-inputNumber [value]="selectedRow.importe" mode="currency" currency="HNL"
+              [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
+              [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" disabled></p-inputNumber>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-8">
+          <div class="p-field">
+            <label>Concepto</label>
+            <input pInputText [value]="selectedRow.concepto" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Documento Anulado</label>
+            <p-select [value]="selectedRow.sn_doc_anulado" [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]"
+              disabled styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Contabilizado</label>
+            <p-select [value]="selectedRow.sn_cotabilizada" [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]"
+              disabled styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Cliente Mov ID</label>
+            <input pInputText [value]="selectedRow.clienteMovId" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+</section>

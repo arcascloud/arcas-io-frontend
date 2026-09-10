@@ -78,6 +78,28 @@ export class CxcService {
   }
 
   /**
+   * Obtiene el histórico de transacciones con filtros.
+   * @param dni - Filtro por DNI (opcional)
+   * @param cliente - Filtro por nombre/razón social (opcional)
+   * @param fechaDesde - Fecha desde (opcional)
+   * @param fechaHasta - Fecha hasta (opcional)
+   * @returns Observable con la lista de registros históricos filtrados
+   */
+  getHistoricoConFiltros(
+    dni?: string,
+    cliente?: string,
+    fechaDesde?: string,
+    fechaHasta?: string,
+  ): Observable<CxcHistorico[]> {
+    const params: Record<string, string | number> = {};
+    if (dni && dni.trim()) params['dni'] = dni.trim();
+    if (cliente && cliente.trim()) params['cliente'] = cliente.trim();
+    if (fechaDesde && fechaDesde.trim()) params['fechaDesde'] = fechaDesde.trim();
+    if (fechaHasta && fechaHasta.trim()) params['fechaHasta'] = fechaHasta.trim();
+    return this.api.get<CxcHistorico[]>('/cxc/historico/filtros', params);
+  }
+
+  /**
    * Obtiene el histórico de transacciones de un cliente específico.
    * @param clienteId - Identificador del cliente
    * @returns Observable con la lista de registros históricos del cliente

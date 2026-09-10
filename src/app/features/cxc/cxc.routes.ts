@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { Consulta } from './consulta/consulta';
+import { HistoricoManager } from './historico/historico-manager';
 
 export const CXC_ROUTES: Routes = [
   { path: '', redirectTo: 'caja', pathMatch: 'full' },
@@ -51,10 +52,8 @@ export const CXC_ROUTES: Routes = [
   },
   {
     path: 'historico',
-    component: Consulta,
-    data: {
-      consulta: { nombre: 'historico', titulo: 'Histórico', ruta: '/cxc/historico', idKey: 'historicoclienteId' },
-    },
+    loadComponent: () =>
+      import('./historico/historico-manager').then((m) => m.HistoricoManager),
   },
   {
     path: 'saldo-favor',

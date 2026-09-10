@@ -1275,3 +1275,39 @@ this.confirmationService.confirm({
   }
   ```
 - **Nota**: También se agregó `ngOnDestroy` para limpiar las suscripciones y evitar memory leaks.
+#### Histórico de Clientes (`/cxc/historico`)
+- **Componente nuevo** `HistoricoManager` (`cxc/historico/`): tabla Poseidon con datos históricos de clientes
+- **Archivos**: `historico-manager.ts`, `historico-manager.html`, `historico-manager.scss`
+- **Ruta**: `/cxc/historico` agregada en `cxc.routes.ts`
+
+---
+
+## Bitácora – 10/09/2026
+
+### Completado
+
+#### CxC Histórico → Movimientos: Auto-carga con router state
+- **Problema original**: Al seleccionar un registro en `historico-manager`, el botón "Ver" navegaba a `/cxc/movimientos?clienteId=X` pero:
+  1. El formulario "Datos del Movimiento" nunca se prellenaba (no había de dónde sacar la info)
+  2. La columna izquierda solo mostraba código y nombre — nada de DNI, límite, categoría, etc.
+- **Solución de 4 cambios**:
+  1. **historico-manager.html**: Botón "Ver" pasa `item` completo (no solo `item.clienteId`)
+  2. **historico-manager.ts**: `irAmovimientos(item)` usa `router.navigate` con `state: { movimiento: item }` — el objeto queda en `history.state` sin serializarse en la URL
+  3. **movimientos-manager.ts**: 
+     - `ngOnInit` lee `history.state?.movimiento` además de `?clienteId=`
+     - `autoSelectCliente(id, movimiento?)` acepta movimiento opcional
+     - Nuevo método `precargarMovimiento(movimiento)`: setea `movimientoModel` con concepto, importe, fecha, tipo, referencia del registro histórico
+  4. **movimientos-manager.html**: Reemplaza `cliente-header-inline` por ficha completa usando clases `cliente-item-ficha` (mismas que la columna derecha)
+     - Muestra: Código, Apellidos, Nombres, DNI, RTN, Días plazo, Límite Crédito, Disponible, Tasa interés, Tasa moratoria, Categoría, Estado, Razón social
+  5. **movimientos-manager.scss**: Nueva clase `.cliente-item-ficha--header` (cursor: default, sin hover)
+- **Archivos modificados**:
+  - `Frontend/src/app/features/cxc/historico/historico-manager.ts` — `irAmovimientos(item)` con router state
+  - `Frontend/src/app/features/cxc/historico/historico-manager.html` — botón Ver pasa item completo
+  - `Frontend/src/app/features/cxc/movimientos/movimientos-manager.ts` — lee state, precarga movimiento
+  - `Frontend/src/app/features/cxc/movimientos/movimientos-manager.html` — ficha completa en izquierda
+  - `Frontend/src/app/features/cxc/movimientos/movimientos-manager.scss` — `.cliente-item-ficha--header`
+- **Nota**: `CxcHistorico` no trae `tipodocumentofiscalId`, así que "Documento Fiscal" queda para selección manual
+
+### Inicialización AGENTS.md
+- Archivo consolidado con contexto completo del proyecto, arquitectura, reglas, bitácoras y lecciones aprendidas
+- Actualizado a la fecha más reciente de trabajo (10/09/2026)

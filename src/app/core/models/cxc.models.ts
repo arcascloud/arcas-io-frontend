@@ -29,7 +29,21 @@ export interface CxcMovimiento {
 
 export interface CxcHistorico {
   historicoclienteId: number;
-  [key: string]: any;
+  clienteId: number;
+  fecharegistro: string;
+  nrocliente: string;
+  dni: string;
+  cliente: string;
+  modulo: string;
+  abreviatura: string;
+  documentoId: number;
+  nroreferencia: string;
+  tipomov: string;
+  importe: number;
+  concepto: string;
+  sn_doc_anulado: string;
+  sn_cotabilizada: string;
+  clienteMovId: number;
 }
 
 export interface CxcSaldoFavor {

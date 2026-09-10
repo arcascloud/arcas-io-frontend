@@ -43,7 +43,7 @@
                 </div>
                 <div class="p-field">
                   <label>Documento Fiscal</label>
-                  <p-select size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()"
+                  <p-select id="cbodocfiscal" size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()"
                     (ngModelChange)="documentoSelected.set($event)" placeholder="Seleccionar documento"
                     styleClass="w-full" [appendTo]="'body'"></p-select>
                 </div>

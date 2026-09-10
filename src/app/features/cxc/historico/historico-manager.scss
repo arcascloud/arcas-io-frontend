@@ -1,0 +1,44 @@
+.historico-manager {
+  .filtros.card {
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+  }
+
+  .tabla.card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .detalle.card {
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+  }
+
+  .p-field label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .p-field input[disabled],
+  .p-field p-select[disabled] {
+    background: var(--c-surface) !important;
+    opacity: 0.8;
+  }
+
+  .font-bold {
+    font-weight: 700;
+  }
+
+  .selected-row {
+    background-color: rgba(16, 185, 129, 0.08) !important;
+  }
+}
