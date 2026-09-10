@@ -1,4 +1,5 @@
 import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -54,6 +55,7 @@ export class MovimientosManager implements OnInit {
   private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
+  private route = inject(ActivatedRoute);
 
   // ===== CLIENTES =====
   data = signal<CxcCliente[]>([]);
@@ -64,11 +66,19 @@ export class MovimientosManager implements OnInit {
   limit = signal(15);
   totalClientes = signal(0);
 
-  // Effect para resetear pagina y recargar cuando cambie el filtro (q)
+  /** Flag para saber si la ruta viene de historico (con cliente preseleccionado) */
+  private vieneDeHistorico = false;
+
+  // Effect: recargar SOLO cuando el usuario cambia el filtro de búsqueda (q)
+  // NO se dispara en la carga inicial (controlado por ngOnInit)
+  private _qAnterior = '';
   private _searchEffect = effect(() => {
-    this.q();
-    this.page.set(1);
-    untracked(() => this.loadClientes());
+    const q = this.q();
+    if (q !== this._qAnterior) {
+      this._qAnterior = q;
+      this.page.set(1);
+      untracked(() => this.loadClientes());
+    }
   });
 
   // ===== MOVIMIENTOS =====
@@ -110,6 +120,80 @@ export class MovimientosManager implements OnInit {
 
   ngOnInit() {
     this.loadDocumentos();
+
+    // Leer clienteId de query params y movimiento completo de router state
+    const clienteIdParam = this.route.snapshot.queryParamMap.get('clienteId');
+    const movimientoState = (history.state as any)?.movimiento ?? null;
+
+    if (clienteIdParam) {
+      const id = Number(clienteIdParam);
+      if (!isNaN(id) && id > 0) {
+        // Viene de historico: auto-cargar SOLO este cliente
+        this.vieneDeHistorico = true;
+        this.autoSelectCliente(id, movimientoState);
+        return;
+      }
+    }
+
+    // Carga normal: cargar lista completa de clientes
+    this.loadClientes();
+  }
+
+  /**
+   * Carga un cliente directamente por ID y lo selecciona.
+   * Si viene de historico (vieneDeHistorico=true), solo pone este cliente en data()
+   * sin cargar la lista completa. Si no, agrega el cliente a la lista existente.
+   */
+  private autoSelectCliente(clienteId: number, movimiento?: any) {
+    this.cargando.set(true);
+    this.service.getCliente(clienteId).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(10000),
+      catchError(() => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el cliente' });
+        return of(null);
+      })
+    ).subscribe({
+      next: (cliente) => {
+        this.cargando.set(false);
+        if (cliente) {
+          if (this.vieneDeHistorico) {
+            // Solo este cliente en la lista (columna derecha)
+            this.data.set([cliente]);
+            this.totalClientes.set(1);
+          } else {
+            // Agregar el cliente a la lista si no está
+            const lista = this.data();
+            const existe = lista.find(c => c.clienteId === cliente.clienteId);
+            if (!existe) {
+              this.data.set([cliente, ...lista]);
+            }
+          }
+          this.seleccionarCliente(cliente);
+
+          // Prellenar formulario de movimiento si viene desde historico
+          if (movimiento) {
+            this.precargarMovimiento(movimiento);
+          }
+        }
+      },
+    });
+  }
+
+  /**
+   * Precarga "Datos del Movimiento" con el registro seleccionado
+   * en historico-manager (carga automatica, sin volver a seleccionar cliente).
+   */
+  private precargarMovimiento(movimiento: any) {
+    this.movimientoModel.set({
+      clienteId: movimiento.clienteId,
+      tipomov: movimiento.tipomov || 'D',
+      concepto: movimiento.concepto || '',
+      importe: Number(movimiento.importe) || 0,
+      nroreferencia: movimiento.nroreferencia || '',
+      fecharegistro: movimiento.fecharegistro || new Date().toISOString(),
+    });
   }
 
   // ===== CLIENTES =====

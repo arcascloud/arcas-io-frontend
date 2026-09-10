@@ -165,6 +165,17 @@
   }
 }
 
+// Ficha estatica en columna izquierda (desde historico) — sin cursor pointer ni hover
+.cliente-item-ficha--header {
+  cursor: default;
+  margin-bottom: 1rem;
+
+  &:hover {
+    border-color: var(--c-border);
+    box-shadow: none;
+  }
+}
+
 .item-ficha-header {
   display: flex;
   align-items: center;

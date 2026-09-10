@@ -25,12 +25,6 @@
 
       @if (selectedCliente()) {
       <div class="cliente-detail">
-        <div class="cliente-header-inline">
-          <span class="cliente-inline-codigo">Codigo.: {{ selectedCliente()?.nrocliente }} -</span>
-          <span class="cliente-inline-nombre">{{ getClienteNombre(selectedCliente()) }}</span>
-        </div>
-         
-
         <div class="tab-content">
           <div class="tab-header">
             <h4>Movimientos</h4>
@@ -81,7 +75,7 @@
                     [ngModel]="movimientoModel().nroreferencia"
                     (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
                     placeholder="Seleccione debito" styleClass="w-full" [appendTo]="'body'"></p-select>
-                  <input 
+                  <input
                     pSize="small"
                     *ngIf="movimientoModel().tipomov !== 'C'" pInputText
                     [ngModel]="movimientoModel().nroreferencia"
@@ -146,6 +140,8 @@
         <p>No se encontraron clientes registrados.</p>
       </div>
       } @else {
+
+      <!-- ARFM:2026109 Estos datos se debe auto-instanciarm cuando su procedencian sea del componente historico -->
       <div class="clientes-lista">
         @for (cliente of data(); track cliente.clienteId) {
         <div class="cliente-item-ficha"
