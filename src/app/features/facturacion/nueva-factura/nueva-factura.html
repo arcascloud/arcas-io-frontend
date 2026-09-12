@@ -95,7 +95,7 @@
         <div class="campo col-12 md:col-fixed">
           <label>Descuento</label>
           <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
-            placeholder="Sin descuento" [showClear]="true" style="width: 96%;" [appendTo]="'body'"
+            placeholder="Sin descuento" [showClear]="true" style="width: 100%;" [appendTo]="'body'"
             [ngModel]="descuentoGlobalId()" [ngModelOptions]="{ standalone: true }"
             (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()" />
         </div>

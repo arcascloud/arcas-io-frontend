@@ -114,6 +114,20 @@ export class CxpService {
     return this.api.get<any[]>('/cxp/historicos');
   }
 
+  getHistoricoConFiltros(
+    dni?: string,
+    proveedor?: string,
+    fechaDesde?: string,
+    fechaHasta?: string,
+  ): Observable<any[]> {
+    const params: Record<string, string> = {};
+    if (dni && dni.trim()) params['dni'] = dni.trim();
+    if (proveedor && proveedor.trim()) params['proveedor'] = proveedor.trim();
+    if (fechaDesde && fechaDesde.trim()) params['fechaDesde'] = fechaDesde.trim();
+    if (fechaHasta && fechaHasta.trim()) params['fechaHasta'] = fechaHasta.trim();
+    return this.api.get<any[]>('/cxp/historicos/filtros', params);
+  }
+
   getSaldosAv(): Observable<any[]> {
     return this.api.get<any[]>('/cxp/saldos-av');
   }

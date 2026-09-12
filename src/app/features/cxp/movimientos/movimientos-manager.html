@@ -13,13 +13,6 @@
 
       @if (selectedProveedor()) {
       <div class="cliente-detail">
-        <div class="cliente-header">
-          <div class="cliente-header-info">
-            <h2>{{ getProveedorNombre(selectedProveedor()) }}</h2>
-            <span class="cliente-nro-badge">{{ selectedProveedor()?.nroproveedor }}</span>
-          </div>
-        </div>
-
         <div class="tab-content">
           <div class="tab-header">
             <h4>Movimientos</h4>
@@ -75,7 +68,9 @@
                 </div>
                 <div class="p-field">
                   <label>Fecha</label>
-                  <p-datepicker [ngModel]="movimientoFecha" (ngModelChange)="movimientoFecha = $event"
+                  <p-datepicker [ngModel]="movimientoFecha()"
+                   size="small"
+                   (ngModelChange)="onMovimientoFechaChange($event)"
                     dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
                 </div>
               </div>

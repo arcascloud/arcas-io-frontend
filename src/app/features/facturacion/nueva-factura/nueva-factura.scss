@@ -406,8 +406,11 @@
   mix-blend-mode: multiply;
   background: transparent;
   border-radius: 8px;
+  object-fit: contain; /* Asegura que la imagen no se deforme */
+  width: 50px; /* Ajusta según el tamaño en tu tabla */
+  height: 50px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Separa la imagen del fondo oscuro */
 }
-
 .campo-full {
   grid-column: 1 / -1;
 }

@@ -31,10 +31,7 @@ export const CXP_ROUTES: Routes = [
   },
   {
     path: 'historicos',
-    component: Consulta,
-    data: {
-      consulta: { nombre: 'historicos', titulo: 'Históricos', ruta: '/cxp/historicos', idKey: 'cxphistoId' },
-    },
+    loadComponent: () => import('./historico/historico-manager').then((m) => m.CxpHistoricoManager),
   },
 
   { path: '**', redirectTo: 'proveedores' },

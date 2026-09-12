@@ -58,7 +58,9 @@
           </div>
           <div class="p-field">
             <label>Fecha de nacimiento</label>
-            <p-datepicker [formControl]="form.get('fechanacimiento')" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" />
+            <p-datepicker
+            [formControl]="form.get('fechanacimiento')" dateFormat="dd/mm/yy"
+            [showIcon]="true" size="small" styleClass="w-full" />
           </div>
         </div>
       </div>

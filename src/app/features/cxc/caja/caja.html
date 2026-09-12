@@ -27,10 +27,6 @@
         }
       </div>
       <div class="campo">
-        <label>Nombre Cliente</label>
-        <input pInputText pSize="small" formControlName="nombrecliente" readonly />
-      </div>
-      <div class="campo">
         <label>Tipo Documento Fiscal</label>
         <p-select size="small" formControlName="documentoId" [options]="documentosFiltrados()" optionLabel="label"
           optionValue="value" placeholder="Tipo documento..." styleClass="w-full" [filter]="true" filterBy="label"
@@ -46,23 +42,26 @@
 
     </div>
 
-          <div class="ml-1 mb-3 grid">
-        <div class="col-fixed" style="width:95%"></div>
-        <label>Concepto</label>
-        <input pInputText pSize="small" formControlName="concepto" maxlength="120" placeholder="Concepto..."
+
+    <div class="ml-1 mb-3 mt-2 grid">
+      <div class="col-fixed" style="width:100%">
+        <label>Concepto de pago</label>
+        <input pInputText pSize="small"
+        formControlName="concepto" maxlength="120" placeholder="Ingrese el concepto de pago..."
           class="w-full" />
       </div>
+    </div>
 
     <div class="card">
       <div class="detalles-head">
-        <h4 class="detalles-title">Formas de Pago</h4>
-        <p-button type="button" label="Agregar fila" icon="pi pi-plus" variant="text" severity="success" size="small"
+        <h4 class="detalles-title">Detalle de pagos</h4>
+        <p-button type="button" label="Agregar forma de pago" icon="pi pi-plus" variant="text" severity="success" size="small"
           [rounded]="true" (onClick)="nuevaFila()" />
       </div>
 
-      <p-table [value]="dets()" [scrollable]="true" scrollHeight="400px" styleClass="det-table" [paginator]="true"
-        [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
-        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small">
+      <p-table [value]="dets()" [scrollable]="true" scrollHeight="280px" styleClass="det-table"
+        [rows]="10"  [showCurrentPageReport]="true"
+         size="small">
         <ng-template #header>
           <tr>
             <th style="width:50px">#</th>
@@ -112,7 +111,7 @@
         </ng-template>
         <ng-template #emptymessage>
           <tr>
-            <td colspan="7" class="text-center p-3">Sin detalles. Agregue filas.</td>
+            <td colspan="7" class="text-center p-3">Sin detalles de pagos,  agregue una forma de pago.</td>
           </tr>
         </ng-template>
       </p-table>
@@ -127,5 +126,3 @@
   </form>
   }
 </section>
-
-

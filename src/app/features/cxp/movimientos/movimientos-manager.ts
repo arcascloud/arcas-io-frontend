@@ -1,7 +1,8 @@
-import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { timeout, catchError, of } from 'rxjs';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
@@ -50,6 +51,7 @@ export class CxpMovimientosManager implements OnInit {
   private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
+  private route = inject(ActivatedRoute);
 
   // ===== PROVEEDORES =====
   data = signal<Proveedor[]>([]);
@@ -61,10 +63,14 @@ export class CxpMovimientosManager implements OnInit {
   totalProveedores = signal(0);
 
   // Effect para resetear pagina y recargar cuando cambie el filtro (q)
+  private _qAnterior = '';
   private _searchEffect = effect(() => {
-    this.q();
-    this.page.set(1);
-    this.loadProveedores();
+    const q = this.q();
+    if (q !== this._qAnterior) {
+      this._qAnterior = q;
+      this.page.set(1);
+      untracked(() => this.loadProveedores());
+    }
   });
 
   // ===== MOVIMIENTOS =====
@@ -80,7 +86,12 @@ export class CxpMovimientosManager implements OnInit {
     fecharegistro: new Date().toISOString(),
   });
 
-  movimientoFecha: Date | null = new Date();
+  movimientoFecha = computed(() => {
+    const f = this.movimientoModel().fecharegistro;
+    if (!f) return null;
+    const d = new Date(f);
+    return isNaN(d.getTime()) ? null : d;
+  });
 
   documentosOptions = signal<{ label: string; value: any }[]>([]);
   documentoSelected = signal<any>(null);
@@ -89,6 +100,8 @@ export class CxpMovimientosManager implements OnInit {
     { label: 'Debito', value: 'D' },
     { label: 'Credito', value: 'C' },
   ];
+
+  vieneDeHistorico = false;
 
   get debitoReferencias(): string[] {
     const refs = this.movimientosData()
@@ -99,6 +112,23 @@ export class CxpMovimientosManager implements OnInit {
 
   ngOnInit() {
     this.loadDocumentos();
+
+    // Leer proveedorId de query params y movimiento completo de router state
+    const proveedorIdParam = this.route.snapshot.queryParamMap.get('proveedorId');
+    const movimientoState = (history.state as any)?.movimiento ?? null;
+
+    if (proveedorIdParam) {
+      const id = Number(proveedorIdParam);
+      if (!isNaN(id) && id > 0) {
+        // Viene de historico: auto-cargar SOLO este proveedor
+        this.vieneDeHistorico = true;
+        this.autoSelectProveedor(id, movimientoState);
+        return;
+      }
+    }
+
+    // Carga normal: cargar lista completa de proveedores
+    this.loadProveedores();
   }
 
   // ===== PROVEEDORES =====
@@ -133,6 +163,64 @@ export class CxpMovimientosManager implements OnInit {
   seleccionarProveedor(proveedor: Proveedor) {
     this.selectedProveedor.set(proveedor);
     this.loadMovimientos(proveedor.proveedorId);
+  }
+
+  /**
+   * Carga un proveedor directamente por ID y lo selecciona.
+   * Si viene de historico (vieneDeHistorico=true), solo pone este proveedor en data()
+   * sin cargar la lista completa. Si no, agrega el proveedor a la lista existente.
+   */
+  private autoSelectProveedor(proveedorId: number, movimiento?: any) {
+    this.cargando.set(true);
+    this.service.getProveedor(proveedorId).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(10000),
+      catchError(() => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el proveedor' });
+        return of(null);
+      })
+    ).subscribe({
+      next: (proveedor) => {
+        this.cargando.set(false);
+        if (proveedor) {
+          if (this.vieneDeHistorico) {
+            // Solo este proveedor en la lista (columna derecha)
+            this.data.set([proveedor]);
+            this.totalProveedores.set(1);
+          } else {
+            // Agregar el proveedor a la lista si no esta
+            const lista = this.data();
+            const existe = lista.find(p => p.proveedorId === proveedor.proveedorId);
+            if (!existe) {
+              this.data.set([proveedor, ...lista]);
+            }
+          }
+          this.seleccionarProveedor(proveedor);
+
+          // Prellenar formulario de movimiento si viene desde historico
+          if (movimiento) {
+            this.precargarMovimiento(movimiento);
+          }
+        }
+      },
+    });
+  }
+
+  /**
+   * Precarga "Datos del Movimiento" con el registro seleccionado
+   * en historico-manager (carga automatica, sin volver a seleccionar proveedor).
+   */
+  private precargarMovimiento(movimiento: any) {
+    this.movimientoModel.set({
+      proveedorId: movimiento.proveedorId,
+      tipomov: movimiento.tipomov || 'D',
+      descripcion1: movimiento.concepto || '',
+      importe: Number(movimiento.importe) || 0,
+      nroreferencia: movimiento.nroreferencia || '',
+      fecharegistro: movimiento.fecharegistro || new Date().toISOString(),
+    });
+    this.documentoSelected.set(movimiento.documentoId ?? null);
   }
 
   getProveedorNombre(p: Proveedor): string {
@@ -181,6 +269,10 @@ export class CxpMovimientosManager implements OnInit {
     });
   }
 
+  onMovimientoFechaChange(d: Date | null) {
+    this.movimientoModel.set({ ...this.movimientoModel(), fecharegistro: d ? d.toISOString() : null });
+  }
+
   cancelarMovimiento() {
     this.movimientoModel.set({
       proveedorId: this.selectedProveedor()?.proveedorId ?? null,
@@ -190,7 +282,6 @@ export class CxpMovimientosManager implements OnInit {
       nroreferencia: '',
       fecharegistro: new Date().toISOString(),
     });
-    this.movimientoFecha = new Date();
     this.documentoSelected.set(null);
   }
 
@@ -208,7 +299,7 @@ export class CxpMovimientosManager implements OnInit {
       codproveedor: proveedor.nroproveedor,
       importe: Number(raw.importe) || 0,
       tipomov: raw.tipomov || 'D',
-      fecharegistro: this.movimientoFecha ? this.movimientoFecha.toISOString() : new Date().toISOString(),
+      fecharegistro: this.movimientoFecha() ? this.movimientoFecha()!.toISOString() : new Date().toISOString(),
     };
 
     if (!payload.descripcion1 || !payload.proveedorId) {
