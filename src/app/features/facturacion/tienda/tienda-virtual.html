@@ -147,7 +147,8 @@ size="small"           [(ngModel)]="ordenarPor"
                 </div>
               }
               @if (producto.existencia > 0) {
-                <p-tag [value]="producto.existencia + ' disp.'" [severity]="getSeverity(producto.existencia)" styleClass="tag-stock" />
+                <p-tag [value]="producto.existencia + ' disp.'" [severity]="getSeverity(producto.existencia)"
+                styleClass="tag-stock" />
               } @else {
                 <p-tag value="Sin stock" severity="danger" styleClass="tag-stock" />
               }
@@ -159,10 +160,13 @@ size="small"           [(ngModel)]="ordenarPor"
                 <p class="card-desc">{{ producto.descripcion_corta }}</p>
               }
               <div class="card-footer">
-                <span class="card-precio">{{ formatearPrecio(producto.precioventa) }}</span>
+                <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
                 <p-button
                   icon="pi pi-cart-plus"
                   [rounded]="true"
+                  [raised]="true"
+                  variant="text"
+                  severity="secondary"
                   [disabled]="producto.existencia <= 0"
                   (click)="agregarAlCarrito(producto)"
                   pTooltip="Agregar al carrito"

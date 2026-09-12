@@ -16,12 +16,13 @@
     <div class="campo">
       <label>Buscar</label>
       <input pInputText type="text"
-      pSize="small"
+       pSize="small"
        placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()" />
     </div>
     <div class="campo acciones">
       <p-button label="Buscar"
+      size="small"
       severity="info"
       variant="text"
       icon="pi pi-search" size="small" (onClick)="buscar()"
@@ -58,7 +59,7 @@
     </ng-template>
 
     <ng-template pTemplate="body" let-item>
-      <tr (click)="editar(item[config?.idKey])" style="cursor: pointer">
+      <tr (click)="config() && editar(item[config()!.idKey])" style="cursor: pointer">
         @for (col of campos(); track col.key) {
           <td>{{ item[col.key] || '-' }}</td>
         }
@@ -74,7 +75,7 @@
             variant="text"
             [rounded]="true"
             severity="secondary"
-            (click)="$event.stopPropagation(); editar(item[config?.idKey])" />
+            (click)="$event.stopPropagation(); config() && editar(item[config()!.idKey])" />
         </td>
       </tr>
     </ng-template>

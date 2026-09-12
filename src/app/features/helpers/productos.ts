@@ -80,7 +80,8 @@ import { Producto } from '../../core/models/inventario.models';
               type="button"
               [text]="true"
               [rounded]="true"
-              icon="pi pi-plus"
+              severity="success"
+              icon="pi pi-chevron-circle-right"
               (click)="selectProduct(product); $event.stopPropagation()"
             />
           </td>

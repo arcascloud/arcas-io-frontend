@@ -1,23 +1,7 @@
-.dv-cards {
-  padding: 0.75rem;
+.text-right {
+  text-align: right;
 }
 
-.dv-card {
-  .dv-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.15rem 0;
-  }
-
-  .dv-label {
-    color: #64748b;
-    font-size: 0.78rem;
-  }
-
-  .dv-value {
-    font-weight: 600;
-    color: #334155;
-    text-align: right;
-  }
+.text-center {
+  text-align: center;
 }

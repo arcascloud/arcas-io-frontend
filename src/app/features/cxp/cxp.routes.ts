@@ -36,13 +36,6 @@ export const CXP_ROUTES: Routes = [
       consulta: { nombre: 'historicos', titulo: 'Históricos', ruta: '/cxp/historicos', idKey: 'cxphistoId' },
     },
   },
-  {
-    path: 'saldos-av',
-    component: Consulta,
-    data: {
-      consulta: { nombre: 'saldos-av', titulo: 'Saldos a favor', ruta: '/cxp/saldos-av', idKey: 'cxpsalfavId' },
-    },
-  },
 
   { path: '**', redirectTo: 'proveedores' },
 ];

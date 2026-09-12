@@ -70,11 +70,17 @@
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  margin-top: 18px;
+  margin-top: 0px;
 
   input[pinputtext] {
     flex: 1;
     min-width: 0;
+  }
+
+  ::ng-deep .p-inputicon {
+    top: 50%;
+    left:97%;
+    transform: translateY(calc(-50% + 7px));
   }
 }
 

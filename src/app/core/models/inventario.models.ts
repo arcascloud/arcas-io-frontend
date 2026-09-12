@@ -332,6 +332,29 @@ export interface CompraMae {
   detalles?: CompraDet[];
 }
 
+export interface ProductoDet {
+  productosdetsId: number;
+  produtoId: number;
+  tipo: string;
+  descripcion: string;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
+export interface ProductoImg {
+  productoimgId: number;
+  productoId: number;
+  img: string;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
 export interface CompraDet {
   cxpcomprasdetId: number;
   fecharegistro: string;

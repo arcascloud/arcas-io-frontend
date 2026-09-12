@@ -1,7 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
@@ -12,7 +12,7 @@ import { Kardex as KardexMov } from '../../../core/models/inventario.models';
 @Component({
   selector: 'app-kardex',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataViewModule, ButtonModule, InputTextModule, TagModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule],
   templateUrl: './kardex.html',
   styleUrl: './kardex.scss',
 })

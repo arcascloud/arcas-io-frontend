@@ -51,6 +51,8 @@
   --c-bg-muted: #1e2e3b00;
   --c-surface: #1e2e3b;
   --c-surface-muted: #2d3d50b4;
+  --c-card-background:#08131c;
+  --c-card-color-text: var(--color-texto-label);
   --c-border: #1e2e3b;
   --c-border-strong: #2c4d6f;
   --c-text: var(--color-texto-label);
@@ -103,7 +105,7 @@
 
   --p-form-field-background: #213341;
   --p-form-field-border-color: #39495b;
-  
+
 
   --p-navigation-item-color: #7f8790;
   --p-navigation-item-icon-color: #558dc6;

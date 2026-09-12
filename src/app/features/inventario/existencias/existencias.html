@@ -32,49 +32,85 @@
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
-    dataKey="invexistenciaId"
+    dataKey="productoId"
+    [expandedRowKeys]="expandedRows()"
     [paginator]="true"
     [rows]="10"
-    layout="list"
     size="small"
+    [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-    [rowsPerPageOptions]="[10, 20, 50]"
+    [tableStyle]="{ 'min-width': '60rem' }"
   >
-    <ng-template #list let-items>
-      <div class="grid grid-nogutter">
-        @for (e of items; track e.invexistenciaId) {
-        <div class="col-12 p-2">
-          <div class="flex flex-column sm:flex-row align-items-center p-3 gap-3 border-1 surface-border border-round">
-            <div class="existencia-img-container">
-              @if (getItemImagen(e)) {
-                <img [src]="getItemImagen(e)" [alt]="e.producto?.descripcion" loading="lazy" />
-              } @else {
-                <i class="pi pi-image"></i>
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 3rem"></th>
+        <th>Imagen</th>
+        <th>Código</th>
+        <th>Descripción</th>
+        <th class="text-right">Precio Vta.</th>
+        <th>Disponibilidad</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-rowData let-expanded="expanded">
+      <tr>
+        <td>
+          <button
+            type="button"
+            pButton
+            [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+            class="p-button-text p-button-sm p-button-rounded"
+            (click)="toggleRow(rowData)"
+          ></button>
+        </td>
+        <td>
+          @if (getItemImagen(rowData)) {
+            <img [src]="getItemImagen(rowData)" [alt]="rowData.descripcion" class="img-thumb" loading="lazy"
+              (mouseenter)="onImgHover(getItemImagen(rowData), $event)" (mousemove)="onImgMove($event)" (mouseleave)="onImgLeave()" />
+          } @else {
+            <div class="img-placeholder"><i class="pi pi-image"></i></div>
+          }
+        </td>
+        <td><span class="font-semibold">{{ rowData.codbarra }}</span></td>
+        <td>{{ rowData.descripcion }}</td>
+        <td class="text-right">{{ moneda(rowData.precioventa) }}</td>
+        <td>
+          <p-tag
+            [value]="rowData.disponibilidad"
+            [severity]="rowData.disponibilidad === 'Alta' ? 'success' : 'danger'"
+            styleClass="tag-sm"
+          />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="expandedrow" let-rowData>
+      <tr class="expanded-detail">
+        <td colspan="6">
+          <div class="expansion-content">
+            <p class="expansion-title">Existencias por bodega</p>
+            <div class="bodegas-grid">
+              @for (b of rowData.bodegas; track b.bodegaId) {
+                <div class="bodega-card">
+                  <span class="bodega-nombre">{{ b.descripcion }}</span>
+                  <span class="bodega-existencia" [class.agotado]="b.existencia === 0"> existencia {{ b.existencia }}</span>
+                </div>
               }
             </div>
-            <div class="flex flex-column sm:align-items-start gap-2 flex-1">
-              <div class="text-xl font-bold text-900">{{ e.producto?.descripcion }}</div>
-              <div class="text-sm text-600">Cod: {{ e.producto?.codbarra }}</div>
-              <div class="text-sm font-semibold">Bodega: {{ e.bodega?.descripcion }}</div>
-              <div class="flex gap-3 align-items-center">
-                <span class="text-sm">Existencia: <b>{{ e.existencia }}</b></span>
-                <span class="text-sm">C.U: <b>{{ moneda(e.costounitario) }}</b></span>
-                <span class="text-sm">PrVta: <b>{{ moneda(e.precioventa) }}</b></span>
-              </div>
-            </div>
-            <p-tag [value]="e.existencia > 0 ? 'Disponible' : 'Agotado'" [severity]="e.existencia > 0 ? 'success' : 'danger'" />
           </div>
-        </div>
-        }
-      </div>
+        </td>
+      </tr>
     </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6" class="text-center p-3">No hay existencias registradas.</td>
+      </tr>
+    </ng-template>
+  </p-table>
 
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay existencias registradas.</div>
-    </ng-template>
-  </p-dataview>
+  @if (zoomVisible()) {
+    <img [src]="zoomUrl()" class="img-zoom-overlay" [style.left.px]="zoomX()" [style.top.px]="zoomY()" />
+  }
 </section>

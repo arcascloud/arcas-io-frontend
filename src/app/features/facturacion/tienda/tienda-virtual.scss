@@ -413,7 +413,7 @@ $sidebar-width: 380px;
 }
 
 .producto-card {
-  background: var(--c-surface);
+  background: var(--c-card-background);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -452,6 +452,7 @@ $sidebar-width: 380px;
 
     ::ng-deep .tag-stock {
       position: absolute;
+      background-color: var(--c-card-background);
       top: 0.5rem;
       right: 0.5rem;
       font-size: 0.7rem !important;
@@ -466,7 +467,7 @@ $sidebar-width: 380px;
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--c-primary);
+    color: var(--c-card-color-text);
     font-weight: 600;
     margin-bottom: 0.25rem;
   }
@@ -502,7 +503,7 @@ $sidebar-width: 380px;
   .card-precio {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--c-primary);
+    color: var(--c-card-color-text);
   }
 }
 

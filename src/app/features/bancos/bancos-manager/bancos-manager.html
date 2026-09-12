@@ -1,0 +1,128 @@
+<p-toast />
+<p-confirmDialog />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Bancos</h1>
+      <p class="page-subtitle">Gestión de bancos y cuentas bancarias</p>
+    </div>
+  </header>
+
+  <div class="manager-layout">
+    <!-- ═══ COLUMNA IZQUIERDA: Bancos ═══ -->
+    <div class="col-izq">
+      <p-table [value]="bancos()" [loading]="cargando()" [paginator]="true" [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        size="small" dataKey="bancoId"
+        [globalFilterFields]="['descripcion']">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Banco</th>
+            <th style="width: 7rem" class="text-center">Estado</th>
+            <th style="width: 8rem" class="text-center">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-banco>
+          <tr (click)="seleccionar(banco)"
+            [class.row-seleccionada]="bancoSeleccionado()?.bancoId === banco.bancoId"
+            style="cursor: pointer">
+            <td class="font-bold">{{ banco.descripcion }}</td>
+            <td class="text-center">
+              <p-tag [value]="activoLbl(banco.sn_activo)" [severity]="activoSev(banco.sn_activo)" />
+            </td>
+            <td class="text-center">
+              <p-button icon="pi pi-pencil" size="small" variant="text" [rounded]="true" severity="secondary"
+                pTooltip="Editar banco" (click)="$event.stopPropagation(); editarBanco(banco)" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="3" class="text-center p-3">No hay bancos registrados.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      @if (bancoSeleccionado()) {
+        <div class="col-der-header">
+          <div class="flex align-items-center gap-2">
+            <p-button icon="pi pi-arrow-left" text size="small" rounded (click)="volver()" />
+            <div>
+              <h3 class="page-title" style="font-size: 1rem; margin: 0">{{ bancoSeleccionado()!.descripcion }}</h3>
+              <p class="page-subtitle" style="margin: 0">Cuentas bancarias vinculadas</p>
+            </div>
+          </div>
+        </div>
+
+        <p-table [value]="cuentas()" [loading]="cargandoCuentas()" [paginator]="true" [rows]="10"
+          [rowsPerPageOptions]="[10, 25]" [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+          size="small" dataKey="bcoctasId">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Nro. Cuenta</th>
+              <th style="width: 7rem" class="text-center">Estado</th>
+              <th style="width: 8rem" class="text-center">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-cuenta>
+            <tr>
+              <td class="font-bold">{{ cuenta.nrocuenta }}</td>
+              <td class="text-center">
+                <p-tag [value]="activoLbl(cuenta.sn_activo)" [severity]="activoSev(cuenta.sn_activo)" />
+              </td>
+              <td class="text-center">
+                <p-button icon="pi pi-pencil" size="small" variant="text" [rounded]="true" severity="secondary"
+                  pTooltip="Editar cuenta" (click)="editarCuenta(cuenta)" />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="3" class="text-center p-3">Este banco no tiene cuentas registradas.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else {
+        <div class="empty-state">
+          <i class="pi pi-building"></i>
+          <span>Seleccioná un banco de la izquierda para ver sus cuentas</span>
+        </div>
+      }
+
+
+    <p-button label="Nueva cuenta bancaria" icon="pi pi-plus"
+    size="small" rounded severity="warn"
+    variant="text"
+            (click)="nuevaCuenta()" />
+
+
+    </div>
+
+    <!-- ═══ COLUMNA DERECHA: Formularios ═══ -->
+    <div class="col-der">
+      @if (formCatalogo()) {
+        <app-catalogo-form
+          [catalogoNombre]="formCatalogo()!"
+          [itemIdInput]="formItemId()"
+          [queryParamsInput]="formQueryParams()"
+          (finalized)="onFormFinalized()" />
+      } @else {
+        <div class="empty-state">
+          <i class="pi pi-arrow-left"></i>
+          <span>Pulsá "Nueva entidad bancaria" o el ícono editar para cargar un registro</span>
+            <p-button label="Nueva entidad bancaria" icon="pi pi-plus"
+      size="small" [rounded]="true"
+      [raised]="true"
+      variant = "text"
+      severity="success"
+      class="mr-1"
+       (click)="nuevoBanco()" />
+
+        </div>
+      }
+    </div>
+  </div>
+</section>

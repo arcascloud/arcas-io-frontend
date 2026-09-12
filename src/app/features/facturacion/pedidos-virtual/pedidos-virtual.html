@@ -159,10 +159,12 @@
                 <p class="card-desc">{{ producto.descripcion_corta }}</p>
               }
               <div class="card-footer">
-                <span class="card-precio">{{ formatearPrecio(producto.precioventa) }}</span>
+                <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
                 <p-button
                   icon="pi pi-cart-plus"
                   [rounded]="true"
+                  [raised]="true"
+                  variant="text"
                   [disabled]="producto.existencia <= 0"
                   (click)="agregarAlPedido(producto)"
                   pTooltip="Agregar al pedido"
@@ -363,7 +365,7 @@
         severity="success"
         [fluid]="true"
         [loading]="procesando()"
-        [disabled]="procesando()"
+        [disabled]="procesando() || !formularioPagoValido()"
         (click)="procesarPago()"
       />
     </div>

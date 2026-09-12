@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -27,13 +27,22 @@ import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo } from '../../../co
   templateUrl: './catalogo-form.html',
   styleUrl: './catalogo-form.scss',
 })
-export class CatalogoForm implements OnInit {
+export class CatalogoForm implements OnInit, OnChanges {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private service = inject(CatalogoParametrosService);
   private api = inject(ApiService);
   private msgs = inject(MessageService);
+
+  /** Modo embebido: nombre del catálogo (ej: 'bancos', 'cuentas') */
+  @Input() catalogoNombre = '';
+  /** Modo embebido: ID del registro (0 = nuevo) */
+  @Input() itemIdInput: number | string = '';
+  /** Modo embebido: query params para pre-llenar campos */
+  @Input() queryParamsInput: Record<string, any> = {};
+  /** Se emite al guardar o cancelar (para que el padre cierre el form) */
+  @Output() finalized = new EventEmitter<void>();
 
   config!: CatalogoConfig;
   campos: CampoCatalogo[] = [];
@@ -55,9 +64,21 @@ export class CatalogoForm implements OnInit {
   form!: FormGroup;
 
   ngOnInit() {
-    const nombre =
-      this.route.snapshot.data['nombre'] ?? this.route.snapshot.paramMap.get('nombre') ?? '';
-    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    this.initForm();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['catalogoNombre'] || changes['itemIdInput']) {
+      this.initForm();
+    }
+  }
+
+  private initForm() {
+    // Modo embebido: usar @Inputs
+    const nombre = this.catalogoNombre || (this.route.snapshot.data['nombre'] ?? this.route.snapshot.paramMap.get('nombre') ?? '');
+    const id = this.itemIdInput !== null && this.itemIdInput !== undefined && this.itemIdInput !== ''
+      ? String(this.itemIdInput)
+      : this.route.snapshot.paramMap.get('id') ?? '';
 
     this.config = CATALOGOS_PARAMETROS[nombre];
     if (!this.config) {
@@ -87,6 +108,18 @@ export class CatalogoForm implements OnInit {
           this.volver();
         },
       });
+    } else {
+      // Pre-llenar campos desde queryParams (embebido) o route.queryParams (ruta)
+      const qp = Object.keys(this.queryParamsInput).length
+        ? this.queryParamsInput
+        : this.route.snapshot.queryParams;
+      const patch: Record<string, any> = {};
+      for (const c of this.campos) {
+        if (qp[c.key] != null) {
+          patch[c.key] = Number(qp[c.key]);
+        }
+      }
+      if (Object.keys(patch).length) this.form.patchValue(patch);
     }
   }
 
@@ -133,7 +166,12 @@ export class CatalogoForm implements OnInit {
   }
 
   volver() {
-    this.router.navigate(['../'], { relativeTo: this.route });
+    if (this.catalogoNombre) {
+      // Modo embebido: emitir evento para que el padre cierre
+      this.finalized.emit();
+    } else {
+      this.router.navigate(['../'], { relativeTo: this.route });
+    }
   }
 
   guardar() {

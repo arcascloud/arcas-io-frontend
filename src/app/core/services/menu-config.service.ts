@@ -103,7 +103,6 @@ export class MenuConfigService {
           { label: 'Compras', icon: 'shopping-bag', route: '/cxp/compras' },
           { label: 'Movimientos', icon: 'history', route: '/cxp/movimientos' },
           { label: 'Históricos', icon: 'book', route: '/cxp/historicos' },
-          { label: 'Saldos a favor', icon: 'heart', route: '/cxp/saldos-av' },
         ],
       },
 

@@ -4,12 +4,11 @@ import { Consulta } from '../cxc/consulta/consulta';
 export const BANCOS_ROUTES: Routes = [
   { path: '', redirectTo: 'bancos', pathMatch: 'full' },
 
-  // Catálogos genéricos
+  // Bancos Manager
   {
     path: 'bancos',
-    data: { nombre: 'bancos' },
     loadComponent: () =>
-      import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+      import('./bancos-manager/bancos-manager').then((m) => m.BancosManager),
   },
   {
     path: 'bancos/editar/:id',

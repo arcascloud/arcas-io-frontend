@@ -24,6 +24,9 @@ import { AuthService } from '../../../core/services/auth.service';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { DividerModule } from 'primeng/divider';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+
 
 interface Opcion {
   label: string;
@@ -72,6 +75,8 @@ interface PagoFactura {
     TagModule,
      TooltipModule,
      DividerModule,
+     InputIconModule,
+     IconFieldModule,
   ],
   providers: [DialogService],
   templateUrl: './nueva-factura.html',

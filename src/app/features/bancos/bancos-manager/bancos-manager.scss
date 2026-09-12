@@ -1,0 +1,65 @@
+/* ═══════════════ Layout manager 2 columnas ═══════════════ */
+.manager-layout {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: 1.25rem;
+  align-items: start;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col-izq {
+  min-width: 0;
+  margin-top: 1.25rem;
+}
+
+.col-der {
+  min-width: 0;
+  margin-top: -0.5rem;
+
+  .col-der-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 0.5rem;
+  }
+}
+
+/* ═══════════════ Fila seleccionada ═══════════════ */
+.row-seleccionada {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* ═══════════════ Estado vacío ═══════════════ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  span {
+    font-size: 0.9rem;
+  }
+}
+
+/* ═══════════════ Utilities ═══════════════ */
+.font-bold {
+  font-weight: 700;
+}

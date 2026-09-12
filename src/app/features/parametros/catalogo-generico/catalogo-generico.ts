@@ -122,7 +122,8 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
     this.router.navigate(['editar', 'nuevo'], { relativeTo: this.route });
   }
 
-  editar(id: number) {
+  editar(id: any) {
+    if (id == null) return;
     this.router.navigate(['editar', id], { relativeTo: this.route });
   }
 

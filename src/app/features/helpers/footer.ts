@@ -8,7 +8,11 @@ import { ButtonModule } from 'primeng/button';
     imports: [ButtonModule],
     template:  `
         <div class="flex w-full justify-content-end mt-3">
-            <p-button type="button" label="Cancelar" icon="pi pi-times" (onClick)="closeDialog({ buttonType: 'Cancel', summary: 'No hay producto seleccionado' })" />
+            <p-button type="button"
+            size="small"
+            [rounded]="true"
+            severity="secondary"
+            label="Cancelar" icon="pi pi-times" (onClick)="closeDialog({ buttonType: 'Cancel', summary: 'No hay producto seleccionado' })" />
         </div> `
 })
 export class FooterHelper {

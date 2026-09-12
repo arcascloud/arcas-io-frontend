@@ -99,7 +99,23 @@ export class PedidosVirtual implements OnInit {
   totalItems = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.cantidad), 0));
   totalPedido = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.subtotal), 0));
 
-  checkout: CheckoutPedido & { nrotarjeta?: string; tarjetacreditoId?: number; fechaexpiracion?: string; cvv?: string } = {
+  formularioPagoValido = computed(() => {
+    if (!this.checkout.nombrecliente) return false;
+    if (this.esTarjeta()) {
+      const num = this.checkout.nrotarjeta?.replace(/\s/g, '') || '';
+      return num.length >= 13
+        && this.validarLuhn(num)
+        && !!this.checkout.fechaexpiracion && /^\d{2}\/\d{2}$/.test(this.checkout.fechaexpiracion)
+        && !!this.checkout.cvv && this.checkout.cvv.length >= 3
+        && !!this.checkout.tarjetacreditoId;
+    }
+    if (this.esTransferencia()) {
+      return !!this.checkout.nroautorizacion && this.checkout.nroautorizacion.trim().length > 0;
+    }
+    return true;
+  });
+
+  checkout: CheckoutPedido & { nrotarjeta?: string; tarjetacreditoId?: number; fechaexpiracion?: string; cvv?: string; nroautorizacion?: string } = {
     pospedmaeId: 0,
     nombrecliente: '',
     nrotelefono: '',
@@ -352,8 +368,11 @@ export class PedidosVirtual implements OnInit {
       tarjetacreditoId: this.tarjetasCredito().length > 0 ? this.tarjetasCredito()[0].value : undefined,
       fechaexpiracion: '',
       cvv: '',
+      nroautorizacion: '',
       tipopago: '',
     };
+    this.onFormaPagoChange();
+    this.tarjetaError.set(null);
     this.dialogCheckout.set(true);
   }
 

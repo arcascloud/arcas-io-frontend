@@ -7,10 +7,20 @@
         <div class="formgrid grid">
           <div class="field col col-12 md:col">
             <div class="nf-busqueda">
-              <input pInputText type="text" pSize="small" style="width: 96%;" [value]="qProducto()"
-                (input)="onBuscarProducto($event)" placeholder="Buscar producto o escanear código de barras..." />
-              <p-button size="small" icon="pi pi-search" pTooltip="ALT + 1 Buscar producto" showDelay="1000"
-                hideDelay="300" severity="info" [rounded]="true" (onClick)="showHelperProductos()" />
+              <p-iconfield styleClass="w-full">
+                <input pInputText type="text" pSize="small" style="width: 100%;" [value]="qProducto()"
+                  (input)="onBuscarProducto($event)" fluid
+                  placeholder="Buscar producto o escanear código de barras..." />
+                <p-inputicon class="ml-10">
+                  <p-button id="btnbuscar" size="small"
+                   icon="pi pi-search" pTooltip="ALT + 1 Buscar producto" showDelay="1000"
+                    hideDelay="300" severity="info"
+                    [rounded]="true"
+                    variant="text" (onClick)="showHelperProductos()" />
+                </p-inputicon>
+
+              </p-iconfield>
+
             </div>
           </div>
         </div>
