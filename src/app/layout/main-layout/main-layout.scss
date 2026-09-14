@@ -120,21 +120,24 @@ $topbar-height: 60px;
   min-width: 0;
 
   .sidebar-logo-img {
-    width: 2.25rem;
-    height: 2.25rem;
+    margin-top:5px;
+    width: 2.75rem;
+    height: 2.75rem;
     min-width: 2.25rem;
     object-fit: contain;
   }
 }
 
 .sidebar-title {
-  font-weight: 700;
+   font-family: 'AstroSpace';
+  font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  color: var(--color-font-sidebar);
   flex: 1;
-  font-size: 1rem;
+  font-size: 1.5rem;
   letter-spacing: 0.2px;
 }
 
@@ -144,6 +147,54 @@ $topbar-height: 60px;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0.75rem;
+
+  // ===== User info en sidebar =====
+  .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.5rem;
+    border-bottom: var(--d-menu-separator-border);
+
+    :deep(.p-avatar) {
+      background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+      color: #fff;
+      font-weight: 700;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  .sidebar-user-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .sidebar-user-name {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-user-role {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 0 0;
+    margin-top: 0.5rem;
+    border-top: var(--d-menu-separator-border);
+  }
 
   &::-webkit-scrollbar {
     width: 6px;

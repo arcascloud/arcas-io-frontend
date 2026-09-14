@@ -393,6 +393,32 @@ $sidebar-width: 380px;
   }
 }
 
+.btn-ofertas {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--c-surface-ground);
+    color: var(--c-text);
+  }
+
+  &.active {
+    background: var(--c-success);
+    color: white;
+    border-color: var(--c-success);
+  }
+}
+
 /* Loading */
 .loading-container {
   display: flex;
@@ -504,6 +530,18 @@ $sidebar-width: 380px;
     font-size: 1rem;
     font-weight: 700;
     color: var(--c-card-color-text);
+  }
+
+  .card-precio-oferta {
+    color: var(--c-success);
+
+    .precio-original {
+      text-decoration: line-through;
+      color: var(--c-text-muted);
+      font-weight: 400;
+      font-size: 0.8rem;
+      margin-right: 0.4rem;
+    }
   }
 }
 

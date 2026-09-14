@@ -20,6 +20,7 @@ export interface Producto {
   fecUltvta?: string;
   puntoretorno: number;
   categoriaId: number;
+  impuestoId?: number;
   sn_activo: 'S' | 'N';
   empresaId: number;
   usuarioCreated: string;
@@ -373,4 +374,13 @@ export interface CompraDet {
   usuarioCreated: string;
   usuarioUpdated?: string;
   fechaUpdated?: string;
+}
+
+export interface TipoImpuesto {
+  impuestoId: number;
+  moduloId: number;
+  descripcion: string;
+  porcentaje: number;
+  sn_activo: string;
+  empresaId: number;
 }

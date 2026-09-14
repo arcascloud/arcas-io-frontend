@@ -32,7 +32,7 @@
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="usuariomodauthId"
@@ -41,65 +41,37 @@
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (p of items; track p.usuariomodauthId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ p.usuario }}</span>
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Anulaciones</span>
-                <span class="dv-value"><p-tag [value]="snLbl(p.sn_auth_anulaciones)" [severity]="snSev(p.sn_auth_anulaciones)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Facturación</span>
-                <span class="dv-value"><p-tag [value]="snLbl(p.sn_auth_facturacion)" [severity]="snSev(p.sn_auth_facturacion)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Contabilizar</span>
-                <span class="dv-value"><p-tag [value]="snLbl(p.sn_auth_contabilizar)" [severity]="snSev(p.sn_auth_contabilizar)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Devoluciones</span>
-                <span class="dv-value"><p-tag [value]="snLbl(p.sn_auth_devoluciones)" [severity]="snSev(p.sn_auth_devoluciones)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Reversión</span>
-                <span class="dv-value"><p-tag [value]="snLbl(p.sn_auth_reversion)" [severity]="snSev(p.sn_auth_reversion)" styleClass="dv-sn-tag" /></span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-pencil"
-                pTooltip="Editar"
-                (onClick)="editar(p.usuariomodauthId, $event)"
-                severity="warn"
-                text
-                size="small"
-                rounded
-              />
-              <p-button
-                icon="pi pi-trash"
-                pTooltip="Eliminar"
-                (onClick)="eliminar(p, $event)"
-                severity="danger"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Usuario</th>
+        <th style="width:6rem">Anulaciones</th>
+        <th style="width:6rem">Facturacion</th>
+        <th style="width:6rem">Contabilizar</th>
+        <th style="width:6rem">Devoluciones</th>
+        <th style="width:6rem">Reversion</th>
+        <th style="width:6rem"></th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay permisos que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-p>
+      <tr>
+        <td class="font-bold">{{ p.usuario }}</td>
+        <td><p-tag [value]="snLbl(p.sn_auth_anulaciones)" [severity]="snSev(p.sn_auth_anulaciones)" /></td>
+        <td><p-tag [value]="snLbl(p.sn_auth_facturacion)" [severity]="snSev(p.sn_auth_facturacion)" /></td>
+        <td><p-tag [value]="snLbl(p.sn_auth_contabilizar)" [severity]="snSev(p.sn_auth_contabilizar)" /></td>
+        <td><p-tag [value]="snLbl(p.sn_auth_devoluciones)" [severity]="snSev(p.sn_auth_devoluciones)" /></td>
+        <td><p-tag [value]="snLbl(p.sn_auth_reversion)" [severity]="snSev(p.sn_auth_reversion)" /></td>
+        <td>
+          <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(p.usuariomodauthId, $event)"
+            severity="warn" text size="small" rounded class="mr-1" />
+          <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(p, $event)"
+            severity="danger" text size="small" rounded />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="7" class="text-center p-3">No hay permisos que coincidan con los filtros.</td></tr>
+    </ng-template>
+  </p-table>
 </section>

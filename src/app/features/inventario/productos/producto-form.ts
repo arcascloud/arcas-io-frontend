@@ -16,7 +16,8 @@ import { MessageService } from 'primeng/api';
 import { ProductosService } from '../../../core/services/productos.service';
 import { CategoriasService } from '../../../core/services/categorias.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Categoria, ProductoDet, ProductoImg } from '../../../core/models/inventario.models';
+import { Categoria, ProductoDet, ProductoImg, TipoImpuesto } from '../../../core/models/inventario.models';
+import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 import { BadgeModule } from 'primeng/badge';
 
 /** Labels legibles para los tipos de atributo del producto */
@@ -63,6 +64,7 @@ export class ProductoForm implements OnInit {
   private router = inject(Router);
   private service = inject(ProductosService);
   private categoriasSvc = inject(CategoriasService);
+  private catalogoSvc = inject(CatalogoParametrosService);
   private auth = inject(AuthService);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
@@ -74,6 +76,7 @@ export class ProductoForm implements OnInit {
   titulo = signal('Nuevo producto');
   categorias = signal<Categoria[]>([]);
   categoriasCargando = signal(false);
+  impuestos = signal<TipoImpuesto[]>([]);
 
   // ── Atributos dinámicos (productosdet) ──────────────────────────
   atributos = signal<ProductoDet[]>([]);
@@ -125,6 +128,7 @@ export class ProductoForm implements OnInit {
     });
 
     this.cargarCategorias();
+    this.cargarImpuestos();
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -144,6 +148,7 @@ export class ProductoForm implements OnInit {
             precioventa: Number(p.precioventa),
             puntoretorno: Number(p.puntoretorno),
             categoriaId: p.categoriaId,
+            impuestoId: p.impuestoId,
             sn_activo: p.sn_activo === 'S' ? 'S' : 'N',
           });
           this.cargarAtributos();
@@ -172,6 +177,13 @@ export class ProductoForm implements OnInit {
         this.categoriasCargando.set(false);
         this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las categorías' });
       },
+    });
+  }
+
+  private cargarImpuestos() {
+    this.catalogoSvc.getAll<TipoImpuesto>('/parametros/impuestos').subscribe({
+      next: (list) => this.impuestos.set(list.filter((i) => i.sn_activo === 'S')),
+      error: () => this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'No se pudieron cargar los impuestos' }),
     });
   }
 

@@ -32,7 +32,7 @@
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="tusuarioscriptsId"
@@ -41,40 +41,27 @@
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (s of items; track s.tusuarioscriptsId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ s.script }}</span>
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Usuario</span>
-                <span class="dv-value">{{ s.usuario }}</span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-trash"
-                pTooltip="Eliminar"
-                (onClick)="eliminar(s, $event)"
-                severity="danger"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Usuario</th>
+        <th>Script</th>
+        <th style="width:6rem"></th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay scripts que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-s>
+      <tr>
+        <td class="font-bold">{{ s.usuario }}</td>
+        <td>{{ s.script }}</td>
+        <td>
+          <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(s, $event)"
+            severity="danger" text size="small" rounded />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="3" class="text-center p-3">No hay scripts que coincidan con los filtros.</td></tr>
+    </ng-template>
+  </p-table>
 </section>

@@ -136,6 +136,12 @@ export class NuevaFactura implements OnInit {
   private snImprimeFactura = false;
   private descuentosMap = new Map<number, number>();
 
+  /** Mapa productoId → { porcentaje, precioConDescuento } para ofertas/promos vigentes */
+  private ofertasMap = new Map<number, { porcentaje: number; precioConDescuento: number; desc: string }>();
+
+  /** IDs de descuentos que SÍ se acumulan con promos (ej: Tercera Edad) */
+  private descAcumulables = new Set<number>();
+
   nombreClienteManual = signal('');
   dialogAtajos = signal(false);
   dialogSuspendidas = signal(false);
@@ -355,17 +361,52 @@ export class NuevaFactura implements OnInit {
     this.api.get<any>('/facturacion/descuentos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
       const items = res?.value ?? res ?? [];
       this.descuentosMap.clear();
+      this.descAcumulables.clear();
       for (const d of items) {
         this.descuentosMap.set(d.descuentoId, Number(d.porcentaje) || 0);
+        // Detectar descuentos acumulables (tercera edad, vejez, etc.)
+        const desc = (d.descripcion ?? '').toLowerCase();
+        if (desc.includes('tercera') || desc.includes('vejez') || desc.includes('adulto mayor')) {
+          this.descAcumulables.add(d.descuentoId);
+        }
       }
       this.descuentos.set(items
         .filter((d: any) => d.sn_activo === 'S')
         .map((d: any) => ({ label: d.descripcion, value: d.descuentoId })));
     });
+
+    // Cargar ofertas/promociones vigentes
+    this.api.get<any>('/facturacion/combos-ofertas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
+      const ofertas = res?.value ?? res ?? [];
+      this.ofertasMap.clear();
+      for (const o of (Array.isArray(ofertas) ? ofertas : [])) {
+        this.ofertasMap.set(Number(o.productoId), {
+          porcentaje: Number(o.porcentaje),
+          precioConDescuento: Number(o.precioConDescuento),
+          desc: o.descuentoDesc ?? `${o.porcentaje}%`,
+        });
+      }
+    });
   }
 
   private resolverImagen(img: string): string {
     return /^data:/i.test(img) ? img : `data:image/png;base64,${img}`;
+  }
+
+  /** Retorna info de oferta/promo del producto, null si no tiene */
+  getOferta(productoId: number | null): { porcentaje: number; precioConDescuento: number; desc: string } | null {
+    return productoId ? this.ofertasMap.get(productoId) ?? null : null;
+  }
+
+  /** Verifica si el producto tiene oferta/promo vigente */
+  esOferta(productoId: number | null): boolean {
+    return productoId ? this.ofertasMap.has(productoId) : false;
+  }
+
+  /** Verifica si el descuento global es acumulable con promos (ej: tercera edad) */
+  esDescuentoAcumulable(): boolean {
+    const id = this.descuentoGlobalId();
+    return id != null && this.descAcumulables.has(id);
   }
 
   filtrarProductos() {
@@ -622,8 +663,19 @@ export class NuevaFactura implements OnInit {
     }
 
     const estado = !tieneRegistro ? 'SIN_STOCK' : existencia <= 0 ? 'AGOTADO' : 'ALTA';
-    const descuentoId = this.descuentoGlobalId();
-    const descuento = descuentoId ? (this.descuentosMap.get(descuentoId) ?? 0) : 0;
+    // Descuento: promo tiene prioridad, EXCEPTO tercera edad que se acumula
+    const oferta = this.getOferta(productoId);
+    const descuentoGlobal = this.descuentoGlobalId();
+    let descuento = 0;
+    if (oferta) {
+      descuento = oferta.porcentaje;
+      // Si el descuento global es acumulable (tercera edad), sumar ambos
+      if (descuentoGlobal && this.esDescuentoAcumulable()) {
+        descuento += this.descuentosMap.get(descuentoGlobal) ?? 0;
+      }
+    } else if (descuentoGlobal) {
+      descuento = this.descuentosMap.get(descuentoGlobal) ?? 0;
+    }
 
     this.varCodBarra.set(p.codbarra ?? '');
     this.varProducto.set(p.descripcion ?? '');
@@ -677,8 +729,18 @@ export class NuevaFactura implements OnInit {
     this.varPrecioVenta.set(Number(p.precioventa) || 0);
     this.dialogProductos.set(false);
 
-    const descuentoId = this.descuentoGlobalId();
-    const descuento = descuentoId ? (this.descuentosMap.get(descuentoId) ?? 0) : 0;
+    // Descuento: promo tiene prioridad, EXCEPTO tercera edad que se acumula
+    const oferta = this.getOferta(productoId);
+    const descuentoGlobal = this.descuentoGlobalId();
+    let descuento = 0;
+    if (oferta) {
+      descuento = oferta.porcentaje;
+      if (descuentoGlobal && this.esDescuentoAcumulable()) {
+        descuento += this.descuentosMap.get(descuentoGlobal) ?? 0;
+      }
+    } else if (descuentoGlobal) {
+      descuento = this.descuentosMap.get(descuentoGlobal) ?? 0;
+    }
 
     const row: FilaDet = {
       fila: ++this.contadorFila,
@@ -796,6 +858,7 @@ export class NuevaFactura implements OnInit {
       ctrl.setValidators([Validators.required]);
     } else {
       ctrl.clearValidators();
+      ctrl.setValue('');
     }
     ctrl.updateValueAndValidity();
     for (const r of this.filas()) {
@@ -806,9 +869,20 @@ export class NuevaFactura implements OnInit {
   onDescuentoGlobalChange() {
     const id = this.descuentoGlobalId();
     const porcentaje = id ? (this.descuentosMap.get(id) ?? 0) : 0;
+    const acumulable = this.esDescuentoAcumulable();
     for (const r of this.filas()) {
-      r.descuento = porcentaje;
-      this.recalcularFila(r);
+      if (this.esOferta(r.productoId)) {
+        if (acumulable) {
+          // Recalcular: promo + tercera edad
+          const promo = this.getOferta(r.productoId)!.porcentaje;
+          r.descuento = promo + porcentaje;
+          this.recalcularFila(r);
+        }
+        // Si NO es acumulable, no tocar la fila (mantiene promo)
+      } else {
+        r.descuento = porcentaje;
+        this.recalcularFila(r);
+      }
     }
   }
 

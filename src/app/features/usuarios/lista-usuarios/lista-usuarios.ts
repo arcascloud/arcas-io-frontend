@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -19,6 +20,7 @@ import { Usuario } from '../../../core/models/usuario.models';
     CommonModule,
     FormsModule,
     DataViewModule,
+    TableModule,
     ButtonModule,
     InputTextModule,
     SelectModule,

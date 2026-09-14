@@ -37,6 +37,22 @@
         </div>
 
         <div class="campo">
+          <label for="tipocombo">Tipo Combo</label>
+          <p-select
+            id="tipocombo"
+            formControlName="tipocombo"
+            [options]="TIPO_COMBO_OPTIONS"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar tipo"
+            styleClass="w-full"
+            [appendTo]="'body'"
+            [showClear]="true"
+            size="small"
+          />
+        </div>
+
+        <div class="campo">
           <label for="fec_vig_desde">Vigente Desde <span class="req">*</span></label>
           <p-datepicker
             id="fec_vig_desde"
@@ -55,6 +71,22 @@
             formControlName="fec_vig_hasta"
             dateFormat="dd/mm/yy"
             styleClass="w-full"
+          />
+        </div>
+
+        <div class="campo">
+          <label for="descuentoId">Descuento</label>
+          <p-select
+            id="descuentoId"
+            formControlName="descuentoId"
+            [options]="descuentos()"
+            optionLabel="descripcion"
+            optionValue="descuentoId"
+            placeholder="Sin descuento"
+            styleClass="w-full"
+            [appendTo]="'body'"
+            [showClear]="true"
+            size="small"
           />
         </div>
       </div>
@@ -99,6 +131,24 @@
                       }
                     </div>
                   </div>
+
+                  <!-- ARFM20260912 AGREGA AQUI UN P-SELECT PARA ESCOGER POR CAMBIAR EL DESCUENTO-->
+                  <div class="campo">
+                    <p-select
+                      [options]="descuentos()"
+                      optionLabel="descripcion"
+                      optionValue="descuentoId"
+                      placeholder="Sin descuento"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                      [showClear]="true"
+                      size="small"
+                      [ngModel]="descuentoPorProducto.get(producto.produtoId) ?? null"
+                      [ngModelOptions]="{standalone: true}"
+                      (ngModelChange)="onDescuentoCatalogoChange(producto.produtoId, $event)"
+                    />
+                  </div>
+
                   <div class="producto-accion">
                     <p-button
                       icon="pi pi-plus"

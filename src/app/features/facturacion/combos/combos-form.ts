@@ -16,13 +16,20 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
 import { NavegacionService } from '../../../core/services/navegacion.service';
 
+interface Descuento {
+  descuentoId: number;
+  descripcion: string;
+  porcentaje: number;
+  sn_activo: string;
+}
+
 interface ProductoCatalogo {
   produtoId: number;
   descripcion: string;
   descripcion_corta?: string;
   codbarra?: string;
   precioventa: number;
-  preciocosto: number;
+  cstounit: number;
   imagen: string | null;
   existencia: number;
   categoria?: string;
@@ -36,7 +43,8 @@ interface ComboItem {
   imagen: string | null;
   cantidad: number;
   precioventa: number;
-  preciocosto: number;
+  cstounit: number;
+  descuentoId: number | null;
 }
 
 @Component({
@@ -78,11 +86,53 @@ export class CombosForm implements OnInit {
   productos = signal<ProductoCatalogo[]>([]);
   busqueda = signal('');
   cargandoProductos = signal(false);
+  descuentos = signal<Descuento[]>([]);
 
   comboItems = signal<ComboItem[]>([]);
 
   private itemId = 0;
   private imagenCache = new Map<string, string>();
+
+  /** descuentoId seleccionado por productoId en el catálogo */
+  descuentoPorProducto = new Map<number, number | null>();
+
+  onDescuentoCatalogoChange(productoId: number, descuentoId: number | null) {
+    this.descuentoPorProducto.set(productoId, descuentoId);
+  }
+
+  onDescuentoResumenChange(item: ComboItem, descuentoId: number | null) {
+    const precioOriginal = this.getPrecioOriginal(item);
+    const precioConDescuento = this.calcularPrecioDescuento(precioOriginal, descuentoId);
+    this.comboItems.update(items =>
+      items.map(i => i.productoId === item.productoId
+        ? { ...i, descuentoId, precioventa: precioConDescuento }
+        : i
+      )
+    );
+  }
+
+  /** Busca el precio original del producto en el catálogo */
+  private getPrecioOriginal(item: ComboItem): number {
+    const prod = this.productos().find(p => p.produtoId === item.productoId);
+    return prod ? Number(prod.precioventa) : Number(item.precioventa);
+  }
+
+  /** Calcula precio con descuento: precio - (precio * (porcentaje/100)) */
+  calcularPrecioDescuento(precioOriginal: number, descuentoId: number | null): number {
+    if (!descuentoId) return precioOriginal;
+    const desc = this.descuentos().find(d => d.descuentoId === descuentoId);
+    if (!desc) return precioOriginal;
+    const porcentaje = Number(desc.porcentaje);
+    return precioOriginal - (precioOriginal * (porcentaje / 100));
+  }
+
+  readonly TIPO_COMBO_OPTIONS = [
+    { label: 'Oferta', value: 'O' },
+    { label: 'Combo', value: 'C' },
+    { label: 'Aniversario', value: 'A' },
+    { label: 'Navidad', value: 'N' },
+    { label: 'BlackFriday', value: 'B' },
+  ];
 
   productosFiltrados = computed(() => {
     const q = this.busqueda().toLowerCase();
@@ -107,6 +157,7 @@ export class CombosForm implements OnInit {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
     this.buildForm();
     this.cargarProductos();
+    this.cargarDescuentos();
 
     if (id && id !== 'nuevo') {
       this.esEdicion.set(true);
@@ -120,8 +171,10 @@ export class CombosForm implements OnInit {
   private buildForm() {
     this.form = this.fb.group({
       descripcion: ['', Validators.required],
+      tipocombo: ['' as string],
       fec_vig_desde: [new Date(), Validators.required],
       fec_vig_hasta: [new Date(), Validators.required],
+      descuentoId: [1 as number | null],
     });
   }
 
@@ -140,13 +193,22 @@ export class CombosForm implements OnInit {
     });
   }
 
+  private cargarDescuentos() {
+    this.api.get<any[]>('/facturacion/descuentos').subscribe({
+      next: (res) => this.descuentos.set((Array.isArray(res) ? res : []).filter((d: any) => d.sn_activo === 'S')),
+      error: () => {},
+    });
+  }
+
   private cargarCombo() {
     this.service.getMaeOne<any>('/facturacion/combos', this.itemId).subscribe({
       next: (mae) => {
         this.form.patchValue({
           descripcion: mae?.descripcion ?? '',
+          tipocombo: mae?.tipocombo ?? '',
           fec_vig_desde: mae?.fec_vig_desde ? new Date(mae.fec_vig_desde) : new Date(),
           fec_vig_hasta: mae?.fec_vig_hasta ? new Date(mae.fec_vig_hasta) : new Date(),
+          descuentoId: mae?.descuentoId ?? null,
         });
         this.cargarDets();
       },
@@ -160,8 +222,9 @@ export class CombosForm implements OnInit {
 
   private cargarDets() {
     this.service.getDet<any>('/facturacion/combos-det').subscribe({
-      next: (todos) => {
-        const mios = (todos ?? []).filter((d) => d.poscbomaeId === this.itemId);
+      next: (res: any) => {
+        const todos = res?.value ?? res ?? [];
+        const mios = (Array.isArray(todos) ? todos : []).filter((d) => d.poscbomaeId === this.itemId);
         const items: ComboItem[] = mios.map((d: any) => {
           const prod = this.productos().find(p => p.produtoId === Number(d.productoId));
           return {
@@ -171,7 +234,8 @@ export class CombosForm implements OnInit {
             imagen: prod?.imagen ?? null,
             cantidad: d.cantidad ?? 1,
             precioventa: d.precioventa ?? 0,
-            preciocosto: Number(prod?.preciocosto) || 0,
+            cstounit: Number(prod?.cstounit) || 0,
+            descuentoId: d.descuentoId ?? null,
           };
         });
         this.comboItems.set(items);
@@ -185,6 +249,9 @@ export class CombosForm implements OnInit {
   }
 
   agregarAlCombo(producto: ProductoCatalogo) {
+    const descuentoId = this.descuentoPorProducto.get(Number(producto.produtoId)) ?? null;
+    const precioOriginal = Number(producto.precioventa);
+    const precioConDescuento = this.calcularPrecioDescuento(precioOriginal, descuentoId);
     const existente = this.comboItems().find(i => i.productoId === Number(producto.produtoId));
     if (existente) {
       this.comboItems.update(items =>
@@ -200,8 +267,9 @@ export class CombosForm implements OnInit {
         descripcion: producto.descripcion,
         imagen: producto.imagen,
         cantidad: 1,
-        precioventa: Number(producto.precioventa),
-        preciocosto: Number(producto.preciocosto) || 0,
+        precioventa: precioConDescuento,
+        cstounit: Number(producto.cstounit) || 0,
+        descuentoId,
       }]);
     }
   }
@@ -233,7 +301,7 @@ export class CombosForm implements OnInit {
   }
 
   precioMinimo(item: ComboItem): number {
-    return Number(item.preciocosto) * 1.03;
+    return Number(item.cstounit) * 1.03;
   }
 
   precioValido(item: ComboItem): boolean {
@@ -292,13 +360,14 @@ export class CombosForm implements OnInit {
 
     const preciosInvalidos = this.comboItems().filter(i => !this.precioValido(i));
     if (preciosInvalidos.length > 0) {
-      const nombres = preciosInvalidos.map(i => i.descripcion).join(', ');
+      const nombres = preciosInvalidos.map(i =>
+        `${i.descripcion} (${this.formatearPrecio(i.precioventa)} < ${this.formatearPrecio(this.precioMinimo(i))})`
+      ).join(', ');
       this.msgs.add({
-        severity: 'error',
-        summary: 'Precios inválidos',
-        detail: `${nombres}: precio de venta menor al costo + 3%`,
+        severity: 'warn',
+        summary: 'Precios por debajo del mínimo',
+        detail: `${nombres} — costo + 3%`,
       });
-      return;
     }
 
     const maeBody = {
@@ -383,6 +452,7 @@ export class CombosForm implements OnInit {
         codbarra: item.codbarra,
         cantidad: item.cantidad,
         precioventa: item.precioventa,
+        descuentoId: item.descuentoId ?? 1,
         empresaId,
       };
       this.service.createDet<any>('/facturacion/combos-det', body).subscribe({ next: ok, error: fail });
@@ -396,7 +466,7 @@ export class CombosForm implements OnInit {
       summary: 'Guardado',
       detail: this.esEdicion() ? 'Combo actualizado' : 'Combo creado correctamente',
     });
-    this.form.reset({ descripcion: '', fec_vig_desde: new Date(), fec_vig_hasta: new Date() });
+    this.form.reset({ descripcion: '', tipocombo: '', fec_vig_desde: new Date(), fec_vig_hasta: new Date(), descuentoId: 1 });
     this.comboItems.set([]);
     this.esEdicion.set(false);
     this.itemId = 0;

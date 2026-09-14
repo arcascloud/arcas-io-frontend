@@ -163,7 +163,7 @@
 }
 
 .ml-campo {
-  margin-left: 0.5rem;
+  margin-left: 0rem;
 }
 
 .btn-add-cliente {
@@ -391,16 +391,27 @@
 
   .cod-barra {
     display: block;
-    font-weight: 600;
-    font-size: 0.8rem;
+    font-weight: 300;
+    font-size: 1rem;
     color: var(--text-muted-color);
     margin-bottom: -2px;
   }
 
   .desc-linea {
     display: block;
+    font-weight: 300;
+    font-size: 1.05rem;
+    color: var(--text-muted-color);
   }
 }
+
+  .alt9 {
+    display: block;
+    font-weight: 300;
+    margin-left: 5px;
+    font-size: 1.05rem;
+    color: var(--c-warning);
+  }
 
 .img-producto {
   mix-blend-mode: multiply;
@@ -437,7 +448,7 @@
 }
 
 .tag-sm {
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   padding: 0.15rem 0.45rem;
 }
 

@@ -6,8 +6,9 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo">
-        <img src="assets/images/logo.png" alt="Logo Arcas Software" class="sidebar-logo-img" />
-        <span class="sidebar-title">Tienda</span>
+
+        <img src="assets/images/toyota.png" alt="WebStore" class="sidebar-logo-img" />
+        <span class="sidebar-title">TOYOTA</span>
       </div>
       <button class="sidebar-pin" [class.visible]="!sidebarHidden()" [class.pinned]="pinned()" (click)="togglePin()"
         title="Fijar sidebar"></button>
@@ -16,7 +17,18 @@
       </button>
     </div>
     <div class="sidebar-menu" (click)="onMenuClick($event)">
+      <div class="sidebar-user">
+        <i class="pi pi-user" style="font-size: 2rem; margin-top: -5px;"></i>
+        <div class="sidebar-user-info">
+          <span class="sidebar-user-name">{{ user()?.nombre }}</span>
+          <span class="sidebar-user-role">{{ user()?.rol }}</span>
+        </div>
+      </div>
       <p-panelmenu [model]="menuItems()" class="w-full md:w-80" />
+      <div class="sidebar-footer">
+        <p-button label="Cuenta" icon="pi pi-user" class="w-full" size="small" [rounded]="true" severity="secondary" variant="outlined" (onClick)="visible = true" />
+        <p-button label="Salir" icon="pi pi-sign-out" class="w-full" size="small" [rounded]="true" severity="danger" variant="text" (onClick)="cerrarSesion()" />
+      </div>
     </div>
   </aside>
 
@@ -31,24 +43,12 @@
       </div>
       <div class="topbar-right">
 
-
-        <div class="user-chip hidden-mobile">
-          <div class="user-chip-info">
-            <span class="user-name">{{ user()?.nombre }}</span>
-          </div>
-          <span class="user-avatar">
-            <p-avatar [label]="initials" shape="circle" size="small" />
-          </span>
-        </div>
-
          <p-button type="button" (click)="visible = true"
          [rounded]="true" [text]="true"
          icon="pi pi-arrow-left" />
 
         <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-sign-out" (onClick)="cerrarSesion()"
           size="small" iconOnly pTooltip="Presione para salir de la app" tooltipPosition="bottom" />
-
-
 
       </div>
     </header>

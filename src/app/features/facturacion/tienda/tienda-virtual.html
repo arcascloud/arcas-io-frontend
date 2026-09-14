@@ -124,6 +124,18 @@ size="small"           [(ngModel)]="ordenarPor"
             <i class="pi pi-list"></i>
           </button>
         </div>
+        <p-button
+          size="small"
+          label="Ofertas"
+          [rounded]="true"
+          [raised]="true"
+          variant="text"
+          severity="success"
+          [class.active]="soloOfertas()"
+          (click)="soloOfertas.set(!soloOfertas())"
+          pTooltip="Solo ofertas"
+        >
+        </p-button>
       </div>
     </div>
 
@@ -146,21 +158,34 @@ size="small"           [(ngModel)]="ordenarPor"
                   <i class="pi pi-images"></i>
                 </div>
               }
-              @if (producto.existencia > 0) {
-                <p-tag [value]="producto.existencia + ' disp.'" [severity]="getSeverity(producto.existencia)"
-                styleClass="tag-stock" />
-              } @else {
-                <p-tag value="Sin stock" severity="danger" styleClass="tag-stock" />
+
+              @if (esOferta(producto)) {
+                <p-tag [value]="'Oferta: -' + getPorcentajeDescuento(producto) + '%'" severity="success" styleClass="tag-stock" />
               }
+
             </div>
             <div class="card-body">
               <div class="card-categoria">{{ producto.categoria || 'Sin categoría' }}</div>
-              <h3 class="card-titulo">{{ producto.descripcion }}</h3>
-              @if (producto.descripcion_corta) {
-                <p class="card-desc">{{ producto.descripcion_corta }}</p>
+              <h3 class="card-titulo">{{ producto.codbarra }}</h3>
+              @if (producto.descripcion) {
+                <p class="card-desc">{{ producto.descripcion }}</p>
               }
+              @if (producto.existencia > 0) {
+                <p-tag [value]="'Existencia: ' + producto.existencia "
+                 [severity]="getSeverity(producto.existencia)" style="padding:0;" />
+              } @else {
+                <p-tag value="Sin stock" severity="danger"  />
+              }
+
               <div class="card-footer">
-                <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
+                @if (esOferta(producto)) {
+                  <span class="card-precio card-precio-oferta">
+                    <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
+                    {{ formatearPrecio(getPrecioOferta(producto)!) }}
+                  </span>
+                } @else {
+                  <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
+                }
                 <p-button
                   icon="pi pi-cart-plus"
                   [rounded]="true"
@@ -204,7 +229,16 @@ size="small"           [(ngModel)]="ordenarPor"
             <div class="list-stock">
               <p-tag [value]="producto.existencia > 0 ? producto.existencia + ' disp.' : 'Sin stock'" [severity]="getSeverity(producto.existencia)" />
             </div>
-            <div class="list-precio">{{ formatearPrecio(producto.precioventa) }}</div>
+            <div class="list-precio">
+              @if (esOferta(producto)) {
+                <span class="card-precio-oferta">
+                  <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
+                  {{ formatearPrecio(getPrecioOferta(producto)!) }}
+                </span>
+              } @else {
+                {{ formatearPrecio(producto.precioventa) }}
+              }
+            </div>
             <div class="list-accion">
               <p-button
                 icon="pi pi-cart-plus"

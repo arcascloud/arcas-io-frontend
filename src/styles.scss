@@ -36,9 +36,26 @@
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'AstroSpace';
+  src: url('/assets/fonts/AstroSpace/AstroSpace.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+
+@font-face {
+  font-family: 'Angora';
+  src: url('/assets/fonts/Angora/Angora-1G3BB.otf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+
 :root {
   --font-family: 'Mukta', sans-serif;
 
+  --color-font-sidebar: #dbe7f0;
   --color-texto-label: rgba(255, 255, 255, 0.4);
   --color-texto-input: rgba(255, 255, 255, 0.808);
   --master-background: #213341;

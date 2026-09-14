@@ -187,7 +187,10 @@
       <div class="acciones-card">
         <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" text (onClick)="volver()" />
         @if (seleccionado()?.compraId === 0) {
-        <p-button size="small" label="Guardar Compra" icon="pi pi-check" (onClick)="guardarMae()" variant="text"
+        <p-button size="small" label="Guardar Compra"
+        icon="pi pi-check" (onClick)="guardarMae()" variant="text"
+         [rounded]="true"
+           severity="success"
           [disabled]="formMae.invalid" />
         }
         @if (seleccionado()?.compraId !== 0) {

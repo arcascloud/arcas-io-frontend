@@ -57,12 +57,18 @@ export class PedidosVirtual implements OnInit {
 
   private imagenCache = new Map<string, string>();
 
+  /** Mapa productoId → precio con descuento de promo/oferta */
+  private mapaOfertas = new Map<number, number>();
+  /** Mapa productoId → porcentaje de descuento */
+  private mapaDescuento = new Map<number, number>();
+
   categorias = computed(() => {
     const cats = new Set(this.productos().map(p => p.categoria).filter(Boolean));
     return [{ label: 'Todos', value: null }, ...Array.from(cats).map(c => ({ label: c!, value: c! }))];
   });
   categoriaFiltro = signal<string | null>(null);
   ordenarPor = signal<string>('default');
+  soloOfertas = signal(false);
 
   readonly opcionesOrden = [
     { label: 'Destacados', value: 'default' },
@@ -79,7 +85,9 @@ export class PedidosVirtual implements OnInit {
     const cat = this.categoriaFiltro();
     const busq = this.busqueda().toLowerCase();
     const orden = this.ordenarPor();
+    const soloOfertas = this.soloOfertas();
 
+    if (soloOfertas) lista = lista.filter(p => this.esOferta(p));
     if (cat) lista = lista.filter(p => p.categoria === cat);
     if (busq) lista = lista.filter(p =>
       p.descripcion?.toLowerCase().includes(busq) ||
@@ -130,6 +138,7 @@ export class PedidosVirtual implements OnInit {
 
   ngOnInit() {
     this.cargarProductos();
+    this.cargarOfertas();
     this.cargarFormasPago();
     this.cargarTarjetasCredito();
 
@@ -180,6 +189,38 @@ export class PedidosVirtual implements OnInit {
           this.cargando.set(false);
         },
       });
+  }
+
+  /** Carga productos en oferta/promoción desde un solo endpoint */
+  cargarOfertas() {
+    this.api.get<any>('/facturacion/combos-ofertas')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const ofertas = res?.value ?? res ?? [];
+          for (const o of (Array.isArray(ofertas) ? ofertas : [])) {
+            const pid = Number(o.productoId);
+            this.mapaOfertas.set(pid, Number(o.precioConDescuento));
+            this.mapaDescuento.set(pid, Number(o.porcentaje));
+          }
+        },
+        error: () => {},
+      });
+  }
+
+  /** Retorna el precio con descuento si el producto está en oferta, null si no */
+  getPrecioOferta(producto: ProductoTienda): number | null {
+    return this.mapaOfertas.get(Number(producto.produtoId)) ?? null;
+  }
+
+  /** Retorna el porcentaje de descuento si el producto está en oferta, 0 si no */
+  getPorcentajeDescuento(producto: ProductoTienda): number {
+    return this.mapaDescuento.get(Number(producto.produtoId)) ?? 0;
+  }
+
+  /** Verifica si el producto está en una oferta/promoción */
+  esOferta(producto: ProductoTienda): boolean {
+    return this.mapaOfertas.has(Number(producto.produtoId));
   }
 
   cargarFormasPago() {
@@ -505,9 +546,9 @@ export class PedidosVirtual implements OnInit {
     return suma % 10 === 0;
   }
 
-  getSeverity(stock: number): 'success' | 'warn' | 'danger' {
-    if (stock > 10) return 'success';
-    if (stock > 0) return 'warn';
+  getSeverity(stock: number): 'secondary' | 'warn' | 'danger' {
+    if (stock > 26) return 'secondary';
+    if (stock > 5 && stock <=25) return 'warn';
     return 'danger';
   }
 

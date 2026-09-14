@@ -1,5 +1,6 @@
 <section class="page">
 
+  <span>Facturación</span>
   <form [formGroup]="form">
     <div class="grid">
       <!-- Columna 1: Campos de header izquierdo-->
@@ -32,6 +33,7 @@
               <th style="color: var(--color-texto-label); width: 17rem">Producto</th>
               <th style="color: var(--color-texto-label); width: 3rem">Imagen</th>
               <th style="color: var(--color-texto-label); width: 12rem;">Cantidad</th>
+              <th style="color: var(--color-texto-label); width: 10rem;">Promo</th>
               <th style="color: var(--color-texto-label); width: 8rem;">PrecioVta</th>
               <th style="color: var(--color-texto-label); width: 8rem;">Subtotal</th>
               <th style="color: var(--color-texto-label); width: 5rem">Acción</th>
@@ -43,9 +45,11 @@
                 <span class="cod-barra">Cod. {{ row.codbarra }}</span>
                 <span class="desc-linea">{{ row.descripcion }}</span>
                 <span class="desc-linea">
-                  existencia: <p-badge [value]="getExistencia(row.productoId) + ''" badgeSize="small"
-                    severity="secondary" />
-                  disponibilidad: <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)"
+                  Stock.. <p-tag
+                  [value]="getExistencia(row.productoId) + ''"
+                    severity="secondary"
+                   styleClass="tag-sm" />
+                  disp.. <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)"
                     styleClass="tag-sm" />
                 </span>
               </td>
@@ -74,6 +78,20 @@
                 </p-inputnumber>
               </td>
 
+            <!-- ARFM20260913 REALIZAR AQUI LAS MEJORA POR EL CALCULA
+              DE DESCUENTO, CUYO ORIGEN SON PROMOCIONES, OFERTAS ETC, ETC -->
+              @if (esOferta(row.productoId)) {
+                <td>
+                  @if (row.descuento > getOferta(row.productoId)!.porcentaje) {
+                    <p-tag [value]="'Promo -' + getOferta(row.productoId)!.porcentaje + '% + Tercera -' + (row.descuento - getOferta(row.productoId)!.porcentaje) + '%'" severity="success" styleClass="tag-sm" />
+                  } @else {
+                    <p-tag [value]="'Descuento -' + getOferta(row.productoId)!.porcentaje + '%'" severity="success" styleClass="tag-sm" />
+                  }
+                </td>
+              } @else {
+                <td></td>
+              }
+
               <td>{{ moneda(row.precioventa) }}</td>
 
               <td>{{ moneda(row.subTotal) }}</td>
@@ -92,14 +110,8 @@
           </ng-template>
         </p-table>
 
-        <div class="campo col-12 md:col-fixed">
-          <label>Descuento</label>
-          <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
-            placeholder="Sin descuento" [showClear]="true" style="width: 100%;" [appendTo]="'body'"
-            [ngModel]="descuentoGlobalId()" [ngModelOptions]="{ standalone: true }"
-            (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()" />
-        </div>
-        <p-divider> </p-divider>
+
+
         <div class="mt-2 nf-totales">
           <div class="nf-totales-split">
             <div class="nf-totales-col-data">
@@ -123,6 +135,7 @@
           </div>
         </div>
 
+        <div class="alt9">Presione Alt+9 para ver ventana de atajos</div>
       </div> <!-- Fin campos de header izquierdo-->
 
       <!-- Columna 2: Campos de header derecho-->
@@ -177,6 +190,14 @@
               }
             </div>
 
+        <div class="field">
+          <label>Descuento</label>
+          <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
+            placeholder="Sin descuento" [showClear]="true" style="width: 100%;" [appendTo]="'body'"
+            [ngModel]="descuentoGlobalId()" [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()" />
+        </div>
+
             <div class="field">
               <div class="campo">
                 <label>Exenta de ISV</label>
@@ -184,16 +205,19 @@
                   optionValue="value" (onChange)="recalcularExenta()" />
               </div>
             </div>
+
+
+
             <div class="field">
-              @if (form.get('sn_excenta')?.value === 'S') {
               <div class="campo ml-campo">
-                <label for="nrocarnet">Nro. Carnet<span class="req">*</span></label>
-                <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet" />
-                @if (invalid('nrocarnet')) {
+                <label for="nrocarnet">Nro. Carnet</label>
+                <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet"
+                  [attr.readonly]="form.get('sn_excenta')?.value !== 'S' || null"
+                  [class.p-inputtext-disabled]="form.get('sn_excenta')?.value !== 'S'" />
+                @if (form.get('sn_excenta')?.value === 'S' && invalid('nrocarnet')) {
                 <small class="err">Ingrese el número de carnet</small>
                 }
               </div>
-              }
             </div>
 
             <div class="field">

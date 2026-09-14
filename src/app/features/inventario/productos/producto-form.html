@@ -171,15 +171,17 @@
 
                     <div class="campo">
                       <label for="impuestoId">Impuesto</label>
-                      <p-inputnumber
+                      <p-select
                         size="small"
                         id="impuestoId"
                         formControlName="impuestoId"
-                        [min]="0"
-                        [max]="100"
-                        [useGrouping]="false"
-                        [inputStyle]="{ 'width': '100%' }"
-                        placeholder="%"
+                        [options]="impuestos()"
+                        optionLabel="descripcion"
+                        optionValue="impuestoId"
+                        placeholder="Seleccionar impuesto"
+                        styleClass="w-full"
+                        [appendTo]="'body'"
+                        [showClear]="true"
                       />
                     </div>
 

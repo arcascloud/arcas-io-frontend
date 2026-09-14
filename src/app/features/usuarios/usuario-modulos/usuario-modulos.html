@@ -32,7 +32,7 @@
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="tusuariosmoduloId"
@@ -41,58 +41,37 @@
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (i of items; track i.tusuariosmoduloId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ i.usuario }} · {{ getModuloName(i.moduloId) }}</span>
-              <p-tag [value]="activoLbl(i.sn_activo)" [severity]="activoSev(i.sn_activo)" />
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Datos</span>
-                <span class="dv-value"><p-tag [value]="snLbl(i.submnudatos)" [severity]="snSev(i.submnudatos)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Procesos</span>
-                <span class="dv-value"><p-tag [value]="snLbl(i.submnurocesos)" [severity]="snSev(i.submnurocesos)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Reportes</span>
-                <span class="dv-value"><p-tag [value]="snLbl(i.submnueportes)" [severity]="snSev(i.submnueportes)" styleClass="dv-sn-tag" /></span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-pencil"
-                pTooltip="Editar"
-                (onClick)="editar(i.tusuariosmoduloId, $event)"
-                severity="warn"
-                text
-                size="small"
-                rounded
-              />
-              <p-button
-                icon="pi pi-trash"
-                pTooltip="Eliminar"
-                (onClick)="eliminar(i, $event)"
-                severity="danger"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Usuario</th>
+        <th>Modulo</th>
+        <th style="width:5rem">Datos</th>
+        <th style="width:6rem">Procesos</th>
+        <th style="width:6rem">Reportes</th>
+        <th style="width:5rem">Estado</th>
+        <th style="width:6rem"></th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay asignaciones que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-i>
+      <tr>
+        <td class="font-bold">{{ i.usuario }}</td>
+        <td>{{ getModuloName(i.moduloId) }}</td>
+        <td><p-tag [value]="snLbl(i.submnudatos)" [severity]="snSev(i.submnudatos)" /></td>
+        <td><p-tag [value]="snLbl(i.submnurocesos)" [severity]="snSev(i.submnurocesos)" /></td>
+        <td><p-tag [value]="snLbl(i.submnueportes)" [severity]="snSev(i.submnueportes)" /></td>
+        <td><p-tag [value]="activoLbl(i.sn_activo)" [severity]="activoSev(i.sn_activo)" /></td>
+        <td>
+          <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(i.tusuariosmoduloId, $event)"
+            severity="warn" text size="small" rounded class="mr-1" />
+          <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(i, $event)"
+            severity="danger" text size="small" rounded />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="7" class="text-center p-3">No hay asignaciones que coincidan con los filtros.</td></tr>
+    </ng-template>
+  </p-table>
 </section>

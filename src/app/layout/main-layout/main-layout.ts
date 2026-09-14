@@ -121,8 +121,8 @@ export class MainLayout {
       icon: 'pi pi-sign-out',
       acceptLabel: 'Sí, cerrar sesión',
       rejectLabel: 'Cancelar',
-      acceptButtonStyleClass: 'p-button-danger',
-      rejectButtonStyleClass: 'p-button-text',
+      acceptButtonStyleClass: 'p-button-text p-button-success p-button-rounded',
+      rejectButtonStyleClass: 'p-button-text p-button-secondary p-button-rounded',
       accept: () => this.auth.logout(),
     });
   }

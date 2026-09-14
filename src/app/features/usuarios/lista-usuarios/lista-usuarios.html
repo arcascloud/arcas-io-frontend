@@ -43,7 +43,7 @@ size="small"         [options]="estadoOptions"
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="usuario"
@@ -52,45 +52,31 @@ size="small"         [options]="estadoOptions"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (u of items; track u.usuario) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ u.nombre || u.usuario }}</span>
-              <p-tag [value]="activoLbl(u.sn_activo)" [severity]="activoSev(u.sn_activo)" />
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Usuario</span>
-                <span class="dv-value">{{ u.usuario }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Email</span>
-                <span class="dv-value">{{ u.email || '-' }}</span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-pencil"
-                pTooltip="Editar"
-                (onClick)="editar(u.usuario, $event)"
-                severity="warn"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width:6rem">Usuario</th>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th style="width:6rem">Estado</th>
+        <th style="width:4rem"></th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay usuarios que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-u>
+      <tr (click)="editar(u.usuario)">
+        <td class="font-bold">{{ u.usuario }}</td>
+        <td>{{ u.nombre || '-' }}</td>
+        <td>{{ u.email || '-' }}</td>
+        <td><p-tag [value]="activoLbl(u.sn_activo)" [severity]="activoSev(u.sn_activo)" /></td>
+        <td>
+          <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(u.usuario, $event)"
+            severity="warn" text size="small" rounded />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="5" class="text-center p-3">No hay usuarios que coincidan con los filtros.</td></tr>
+    </ng-template>
+  </p-table>
 </section>

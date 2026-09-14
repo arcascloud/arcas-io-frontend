@@ -32,7 +32,7 @@
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="tusuariomnuitemsId"
@@ -41,66 +41,39 @@
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (i of items; track i.tusuariomnuitemsId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ i.labelItem }}</span>
-              <p-tag [value]="activoLbl(i.sn_activo)" [severity]="activoSev(i.sn_activo)" />
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Usuario</span>
-                <span class="dv-value">{{ i.usuario }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Módulo</span>
-                <span class="dv-value">{{ getModuloName(i.moduloId) }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Nombre</span>
-                <span class="dv-value">{{ i.nameItem }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Ruta</span>
-                <span class="dv-value">{{ i.routerLink || '-' }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Nivel</span>
-                <span class="dv-value">{{ i.levelId }}</span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-pencil"
-                pTooltip="Editar"
-                (onClick)="editar(i.tusuariomnuitemsId, $event)"
-                severity="warn"
-                text
-                size="small"
-                rounded
-              />
-              <p-button
-                icon="pi pi-trash"
-                pTooltip="Eliminar"
-                (onClick)="eliminar(i, $event)"
-                severity="danger"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Usuario</th>
+        <th>Modulo</th>
+        <th>Label</th>
+        <th>Nombre</th>
+        <th>Ruta</th>
+        <th style="width:4rem">Nivel</th>
+        <th style="width:5rem">Estado</th>
+        <th style="width:6rem"></th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay items que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-i>
+      <tr>
+        <td class="font-bold">{{ i.usuario }}</td>
+        <td>{{ getModuloName(i.moduloId) }}</td>
+        <td>{{ i.labelItem }}</td>
+        <td>{{ i.nameItem }}</td>
+        <td>{{ i.routerLink || '-' }}</td>
+        <td class="text-center">{{ i.levelId }}</td>
+        <td><p-tag [value]="activoLbl(i.sn_activo)" [severity]="activoSev(i.sn_activo)" /></td>
+        <td>
+          <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(i.tusuariomnuitemsId, $event)"
+            severity="warn" text size="small" rounded class="mr-1" />
+          <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(i, $event)"
+            severity="danger" text size="small" rounded />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="8" class="text-center p-3">No hay items que coincidan con los filtros.</td></tr>
+    </ng-template>
+  </p-table>
 </section>
