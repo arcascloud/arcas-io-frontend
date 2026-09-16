@@ -58,7 +58,7 @@ export class TiendaVirtual implements OnInit {
   /** Mapa productoId → porcentaje de descuento */
   private mapaDescuento = new Map<number, number>();
 
-  private imagenCache = new Map<string, string>();
+  // Image cache removed — browser handles caching natively
 
   categorias = computed(() => {
     const cats = new Set(this.productos().map(p => p.categoria).filter(Boolean));
@@ -123,7 +123,7 @@ export class TiendaVirtual implements OnInit {
 
   cargarProductos() {
     this.cargando.set(true);
-    this.tiendaService.getProductos()
+    this.tiendaService.getProductos(true)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
@@ -395,11 +395,7 @@ export class TiendaVirtual implements OnInit {
 
   resolverImagen(imagen: string | null): string {
     if (!imagen) return '';
-    const cacheKey = imagen.substring(0, 100);
-    if (this.imagenCache.has(cacheKey)) return this.imagenCache.get(cacheKey)!;
-    const result = /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
-    this.imagenCache.set(cacheKey, result);
-    return result;
+    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
   }
 
   getItemImagen(item: CarritoItem): string {

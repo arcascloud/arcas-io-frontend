@@ -26,6 +26,8 @@ export class ApiService {
     '/contabilidad/ctacontables',
     '/cxc/caja-mae',
     '/cxc/caja-det',
+    '/facturacion/facturas',
+    '/facturacion/facturas-det',
     '/planilla/empleados',
   ];
 

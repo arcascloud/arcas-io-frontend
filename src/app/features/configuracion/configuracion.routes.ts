@@ -7,17 +7,7 @@ export const CONFIGURACION_ROUTES: Routes = [
   {
     path: 'empresas',
     loadComponent: () =>
-      import('../parametros/lista-empresas/lista-empresas').then((m) => m.ListaEmpresas),
-  },
-  {
-    path: 'empresas/nuevo',
-    loadComponent: () =>
-      import('../parametros/lista-empresas/empresa-form').then((m) => m.EmpresaForm),
-  },
-  {
-    path: 'empresas/editar/:id',
-    loadComponent: () =>
-      import('../parametros/lista-empresas/empresa-form').then((m) => m.EmpresaForm),
+      import('./empresas/empresas-manager').then((m) => m.EmpresasManager),
   },
 
   // Usuarios

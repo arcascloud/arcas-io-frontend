@@ -91,7 +91,6 @@ export class CombosForm implements OnInit {
   comboItems = signal<ComboItem[]>([]);
 
   private itemId = 0;
-  private imagenCache = new Map<string, string>();
 
   /** descuentoId seleccionado por productoId en el catálogo */
   descuentoPorProducto = new Map<number, number | null>();
@@ -327,11 +326,7 @@ export class CombosForm implements OnInit {
 
   resolverImagen(imagen: string | null): string {
     if (!imagen) return '';
-    const cacheKey = imagen.substring(0, 100);
-    if (this.imagenCache.has(cacheKey)) return this.imagenCache.get(cacheKey)!;
-    const result = /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
-    this.imagenCache.set(cacheKey, result);
-    return result;
+    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
   }
 
   formatearPrecio(precio: number | string): string {

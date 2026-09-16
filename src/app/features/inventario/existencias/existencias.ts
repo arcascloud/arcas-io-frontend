@@ -34,8 +34,6 @@ export class Existencias implements OnInit {
   private api = inject(ApiService);
   private msgs = inject(MessageService);
 
-  private imagenCache = new Map<string, string>();
-
   data = signal<ProductoExistencia[]>([]);
   filtered = signal<ProductoExistencia[]>([]);
   cargando = signal(false);
@@ -148,11 +146,7 @@ export class Existencias implements OnInit {
 
   resolverImagen(imagen: string | null): string {
     if (!imagen) return '';
-    const cacheKey = imagen.substring(0, 100);
-    if (this.imagenCache.has(cacheKey)) return this.imagenCache.get(cacheKey)!;
-    const result = /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
-    this.imagenCache.set(cacheKey, result);
-    return result;
+    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
   }
 
   getItemImagen(item: ProductoExistencia): string {

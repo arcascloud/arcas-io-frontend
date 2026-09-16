@@ -147,6 +147,7 @@ export class ConsultaFacturaDetalle implements OnInit {
       d.descripcion || d.codbarra || '',
       '' + Number(d.cantidad),
       'L ' + Number(d.precioventa).toFixed(2),
+      (Number(d.descuento) || 0) > 0 ? '-' + Number(d.descuento).toFixed(0) + '%' : '0%',
       'L ' + Number(d.subTotal).toFixed(2),
     ]);
 
@@ -189,13 +190,14 @@ export class ConsultaFacturaDetalle implements OnInit {
         {
           table: {
             headerRows: 1,
-            widths: [30, '*', 50, 70, 70],
+            widths: [30, '*', 50, 70, 50, 70],
             body: [
               [
                 { text: '#', style: 'tableHeader' },
                 { text: 'Producto', style: 'tableHeader' },
                 { text: 'Cant.', style: 'tableHeader', alignment: 'right' },
                 { text: 'Precio', style: 'tableHeader', alignment: 'right' },
+                { text: 'Desc.', style: 'tableHeader', alignment: 'right' },
                 { text: 'Subtotal', style: 'tableHeader', alignment: 'right' },
               ],
               ...detRows,

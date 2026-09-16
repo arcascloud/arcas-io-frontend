@@ -459,11 +459,15 @@ $sidebar-width: 380px;
     aspect-ratio: 1;
     overflow: hidden;
     background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      mix-blend-mode: multiply;
     }
 
     .sin-imagen {
@@ -956,6 +960,16 @@ $sidebar-width: 380px;
       height: 100px;
       aspect-ratio: unset;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        mix-blend-mode: multiply;
+      }
 
       .sin-imagen {
         font-size: 2rem;

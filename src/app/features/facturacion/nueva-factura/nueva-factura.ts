@@ -1173,7 +1173,9 @@ export class NuevaFactura implements OnInit {
       const cant = Number(d.cantidad);
       const precio = Number(d.precioventa);
       const tot = Number(d.subTotal) || (cant * precio);
-      return `<div class="linea-item"><div class="linea-desc">${desc}</div>${cod ? `<div class="linea-cod">Cod. ${cod}</div>` : ''}<div class="linea"><span>Cant. ${cant}</span><span>${this.formatNum(precio)}</span><span class="right">${this.formatNum(tot)}</span></div></div>`;
+      const descuento = Number(d.descuento) || 0;
+      const descLinea = descuento > 0 ? `<div class="linea-desc">Desc: -${Number(descuento.toFixed(0))}%</div>` : `<div class="linea-desc">Desc: 0%</div>`;
+      return `<div class="linea-item"><div class="linea-desc">${desc}</div>${cod ? `<div class="linea-cod">Cod. ${cod}</div>` : ''}${descLinea}<div class="linea"><span>Cant. ${cant}</span><span>${this.formatNum(precio)}</span><span class="right">${this.formatNum(tot)}</span></div></div>`;
     }).join('');
 
     const pagosHtml = (pagos || []).filter((p: any) => Number(p.importe_otros) > 0 || Number(p.importe_efectivo) > 0).map((p: any) => {

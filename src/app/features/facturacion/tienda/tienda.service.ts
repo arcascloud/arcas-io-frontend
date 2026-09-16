@@ -4,7 +4,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { ProductoTienda, Carrito, CarritoItem, CheckoutPago, CheckoutResponse } from '../../../core/models/tienda.models';
 
 const PRODUCTOS_CACHE_KEY = 'tienda_productos_v1';
-const PRODUCTOS_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+const PRODUCTOS_CACHE_TTL = 60 * 1000; // 1 minuto
 
 interface ProductosCache {
   data: ProductoTienda[];
@@ -16,7 +16,11 @@ export class TiendaService {
   private api = inject(ApiService);
   private productosCache$: Observable<ProductoTienda[]> | null = null;
 
-  getProductos(): Observable<ProductoTienda[]> {
+  getProductos(forceRefresh = false): Observable<ProductoTienda[]> {
+    if (forceRefresh) {
+      this.invalidateCache();
+    }
+
     if (this.productosCache$) return this.productosCache$;
 
     const cached = this.leerCache();

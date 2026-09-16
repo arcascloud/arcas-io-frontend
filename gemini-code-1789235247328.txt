@@ -1,0 +1,122 @@
+Id,parentId,levelId,nameParent,nameItem,labelItem,iconItem,routerLink
+1,1,1,menu,Menu,Menu,pi pi-arrow-circle-right,/dashboard
+2,1,2,menu_dashboard,Dashboard,Dashboard,pi pi-home,/dashboard
+3,1,2,menu_inventario,Inventario,Inventario,pi pi-box,/inventario
+4,3,3,menu_inventario_productos,Productos,Productos,pi pi-tag,/inventario/productos
+5,3,3,menu_inventario_existencias,Existencias,Existencias,pi pi-warehouse,/inventario/existencias
+6,3,3,menu_inventario_toma_de_inventarios,Toma de Inventarios,Toma de Inventarios,pi pi-clipboard,/inventario/toma-inventarios
+7,3,3,menu_inventario_ajuste_de_inventarios,Ajuste de Inventarios,Ajuste de Inventarios,pi pi-sliders-h,/inventario/ajustes
+8,3,3,menu_inventario_traslados_de_productos,Traslados de Productos,Traslados de Productos,pi pi-exchange-alt,/inventario/traslados
+9,3,3,menu_inventario_requisiciones,Requisiciones,Requisiciones,pi pi-file,/inventario/requisiciones
+10,3,3,menu_inventario_compras,Compras,Compras,pi pi-shopping-cart,/inventario/compras
+11,3,3,menu_inventario_consulta_de_compras,Consulta de Compras,Consulta de Compras,pi pi-search,/inventario/consulta-compras
+12,3,3,menu_inventario_kardex,Kardex,Kardex,pi pi-history,/inventario/kardex
+13,3,3,menu_inventario_catalogos,Catálogos,Catálogos,pi pi-book,
+14,13,4,menu_inventario_catalogos_categorias,Categorías,Categorías,pi pi-list,/inventario/categorias
+15,13,4,menu_inventario_catalogos_marcas,Marcas,Marcas,pi pi-bookmark,/inventario/marcas
+16,13,4,menu_inventario_catalogos_modelos,Modelos,Modelos,pi pi-th-large,/inventario/modelos
+17,13,4,menu_inventario_catalogos_colores,Colores,Colores,pi pi-palette,/inventario/colores
+18,13,4,menu_inventario_catalogos_unidades_de_medida,Unidades de Medida,Unidades de Medida,pi pi-arrows-h,/inventario/unidades-medida
+19,13,4,menu_inventario_catalogos_embalajes,Embalajes,Embalajes,pi pi-box,/inventario/embalajes
+20,13,4,menu_inventario_catalogos_bodegas,Bodegas,Bodegas,pi pi-building,/inventario/bodegas
+21,13,4,menu_inventario_catalogos_ubicaciones,Ubicaciones,Ubicaciones,pi pi-map-marker,/inventario/ubicaciones
+22,13,4,menu_inventario_catalogos_pasillos,Pasillos,Pasillos,pi pi-align-justify,/inventario/pasillos
+23,13,4,menu_inventario_catalogos_casas,Casas,Casas,pi pi-home,/inventario/casas
+24,13,4,menu_inventario_catalogos_tags,Tags,Tags,pi pi-tags,/inventario/tags
+25,1,2,menu_facturacion,Facturacion,Facturacion,pi pi-file-edit,/facturacion
+26,25,3,menu_facturacion_facturar,Facturar,Facturar,pi pi-plus,/facturacion/nueva-factura
+27,25,3,menu_facturacion_tienda_virtual,Tienda Virtual,Tienda Virtual,pi pi-shopping-bag,/facturacion/tienda
+28,25,3,menu_facturacion_pedidos_virtual,Pedidos Virtual,Pedidos Virtual,pi pi-shopping-cart,/facturacion/pedidos-virtual
+29,25,3,menu_facturacion_consulta_de_facturas,Consulta de Facturas,Consulta de Facturas,pi pi-file,/facturacion/consultas
+30,25,3,menu_facturacion_consultar_cotizaciones,Consultar Cotizaciones,Consultar Cotizaciones,pi pi-file,/facturacion/cotizaciones
+31,25,3,menu_facturacion_consultar_pedidos,Consultar Pedidos,Consultar Pedidos,pi pi-shopping-cart,/facturacion/pedidos
+32,25,3,menu_facturacion_anular_factura,Anular Factura,Anular Factura,pi pi-file-times,/facturacion/facturas-anul
+33,25,3,menu_facturacion_combos,Combos,Combos,pi pi-boxes,/facturacion/combos
+34,25,3,menu_facturacion_descuentos,Descuentos,Descuentos,pi pi-percent,/facturacion/descuentos
+35,1,2,menu_cuentas_por_cobrar,Cuentas por Cobrar,Cuentas por Cobrar,pi pi-wallet,/cxc
+36,35,3,menu_cuentas_por_cobrar_caja,Caja,Caja,pi pi-dollar,/cxc/caja
+37,35,3,menu_cuentas_por_cobrar_clientes,Clientes,Clientes,pi pi-users,/cxc/clientes
+38,35,3,menu_cuentas_por_cobrar_prestamos,Préstamos,Préstamos,pi pi-briefcase,/cxc/prestamos
+39,35,3,menu_cuentas_por_cobrar_movimientos,Movimientos,Movimientos,pi pi-history,/cxc/movimientos
+40,35,3,menu_cuentas_por_cobrar_historico,Histórico,Histórico,pi pi-book,/cxc/historico
+41,35,3,menu_cuentas_por_cobrar_antiguedad_de_saldos,Antigüedad de Saldos,Antigüedad de Saldos,pi pi-chart-bar,/cxc/antiguedad-saldos
+42,35,3,menu_cuentas_por_cobrar_cartas_de_recordatorio,Cartas de Recordatorio,Cartas de Recordatorio,pi pi-envelope,/cxc/cartas-recordatorio
+43,1,2,menu_cuentas_por_pagar,Cuentas por Pagar,Cuentas por Pagar,pi pi-credit-card,/cxp
+44,43,3,menu_cuentas_por_pagar_proveedores,Proveedores,Proveedores,pi pi-users,/cxp/proveedores
+45,43,3,menu_cuentas_por_pagar_compras,Compras,Compras,pi pi-shopping-bag,/cxp/compras
+46,43,3,menu_cuentas_por_pagar_movimientos,Movimientos,Movimientos,pi pi-history,/cxp/movimientos
+47,43,3,menu_cuentas_por_pagar_historicos,Históricos,Históricos,pi pi-book,/cxp/historicos
+48,1,2,menu_bancos,Bancos,Bancos,pi pi-building,/bancos
+49,48,3,menu_bancos_bancos,Bancos,Bancos,pi pi-building,/bancos/bancos
+50,48,3,menu_bancos_cuentas,Cuentas,Cuentas,pi pi-wallet,/bancos/cuentas
+51,48,3,menu_bancos_conciliaciones,Conciliaciones,Conciliaciones,pi pi-file-check,/bancos/conciliaciones
+52,48,3,menu_bancos_direcciones,Direcciones,Direcciones,pi pi-map-marker,/bancos/direcciones
+53,48,3,menu_bancos_telefonos,Teléfonos,Teléfonos,pi pi-phone,/bancos/telefonos
+54,1,2,menu_planilla,Planilla,Planilla,pi pi-id-card,/planilla
+55,54,3,menu_planilla_empleados,Empleados,Empleados,pi pi-user,/planilla/empleados
+56,54,3,menu_planilla_puestos,Puestos,Puestos,pi pi-briefcase,/planilla/puestos
+57,54,3,menu_planilla_profesiones,Profesiones,Profesiones,pi pi-graduation-cap,/planilla/profesiones
+58,54,3,menu_planilla_deducciones,Deducciones,Deducciones,pi pi-minus,/planilla/deducciones
+59,54,3,menu_planilla_ingresos,Ingresos,Ingresos,pi pi-plus,/planilla/ingresos
+60,54,3,menu_planilla_titulaciones,Titulaciones,Titulaciones,pi pi-award,/planilla/titulaciones
+61,54,3,menu_planilla_certificaciones,Certificaciones,Certificaciones,pi pi-id-card,/planilla/certificaciones
+62,54,3,menu_planilla_asistencia,Asistencia,Asistencia,pi pi-clock,/planilla/asistencia
+63,54,3,menu_planilla_comisiones,Comisiones,Comisiones,pi pi-money-bill-wave,/planilla/comisiones
+64,54,3,menu_planilla_deducciones_por_empleado,Deducciones por Empleado,Deducciones por Empleado,pi pi-minus-circle,/planilla/deducciones-emp
+65,54,3,menu_planilla_planillas,Planillas,Planillas,pi pi-money-check,/planilla/planillas
+66,1,2,menu_contabilidad,Contabilidad,Contabilidad,pi pi-chart-bar,/contabilidad
+67,66,3,menu_contabilidad_cuentas_contables,Cuentas Contables,Cuentas Contables,pi pi-list,/contabilidad/ctacontables
+68,66,3,menu_contabilidad_grupo_contable,Grupo Contable,Grupo Contable,pi pi-sitemap,/contabilidad/grupocontable
+69,66,3,menu_contabilidad_niveles,Niveles,Niveles,pi pi-layer-group,/contabilidad/nivelcta
+70,66,3,menu_contabilidad_naturaleza_de_cuenta,Naturaleza de Cuenta,Naturaleza de Cuenta,pi pi-balance-scale,/contabilidad/naturalezacta
+71,66,3,menu_contabilidad_saldos,Saldos,Saldos,pi pi-chart-line,/contabilidad/saldoscta
+72,66,3,menu_contabilidad_tipos_doc_fiscal,Tipos Doc Fiscal,Tipos Doc Fiscal,pi pi-file-signature,/contabilidad/tipos-doc-fiscal
+73,66,3,menu_contabilidad_impuesto_vecinal,Impuesto Vecinal,Impuesto Vecinal,pi pi-landmark,/contabilidad/impuestovecinal
+74,66,3,menu_contabilidad_factor_de_cambio,Factor de Cambio,Factor de Cambio,pi pi-dollar,/contabilidad/factordecambio
+75,66,3,menu_contabilidad_cierres,Cierres,Cierres,pi pi-lock,/contabilidad/cierrectable
+76,66,3,menu_contabilidad_periodos,Periodos,Periodos,pi pi-calendar-check,/contabilidad/periodoctable
+77,66,3,menu_contabilidad_plantillas_pda,Plantillas PDA,Plantillas PDA,pi pi-file-edit,/contabilidad/plantillapdamae
+78,66,3,menu_contabilidad_plantillas_balances,Plantillas Balances,Plantillas Balances,pi pi-chart-pie,/contabilidad/plantillabalancesmae
+79,66,3,menu_contabilidad_partidas_de_diario,Partidas de Diario,Partidas de Diario,pi pi-receipt,/contabilidad/copdamae
+80,66,3,menu_contabilidad_mov_de_cuentas,Mov. de Cuentas,Mov. de Cuentas,pi pi-arrows-spin,/contabilidad/movcta
+81,66,3,menu_contabilidad_rep_liquidez,Rep. Liquidez,Rep. Liquidez,pi pi-water,/contabilidad/repliquidez
+82,66,3,menu_contabilidad_rep_diarios,Rep. Diarios,Rep. Diarios,pi pi-newspaper,/contabilidad/repdiarios
+83,66,3,menu_contabilidad_rep_balances,Rep. Balances,Rep. Balances,pi pi-chart-bar,/contabilidad/repbalances
+84,1,2,menu_configuracion,Configuracion,Configuracion,pi pi-cog,/configuracion
+85,84,3,menu_configuracion_empresas,Empresas,Empresas,pi pi-building,/configuracion/empresas
+86,84,3,menu_configuracion_usuarios,Usuarios,Usuarios,pi pi-users,
+87,86,4,menu_configuracion_usuarios_usuarios,Usuarios,Usuarios,pi pi-user,/configuracion/usuarios
+88,86,4,menu_configuracion_usuarios_modulos_por_usuario,Modulos por Usuario,Modulos por Usuario,pi pi-user-plus,/configuracion/usuarios/usuario-modulos
+89,86,4,menu_configuracion_usuarios_menu_por_usuario,Menu por Usuario,Menu por Usuario,pi pi-bars,/configuracion/usuarios/usuario-mnuitem
+90,86,4,menu_configuracion_usuarios_scripts_por_usuario,Scripts por Usuario,Scripts por Usuario,pi pi-code,/configuracion/usuarios/usuario-scripts
+91,86,4,menu_configuracion_usuarios_permisos_especiales,Permisos Especiales,Permisos Especiales,pi pi-key,/configuracion/usuarios/usuario-modauth
+92,84,3,menu_configuracion_parametros,Parametros,Parametros,pi pi-cog,
+93,92,4,menu_configuracion_parametros_correlativos,Correlativos,Correlativos,pi pi-hashtag,/configuracion/parametros/correlativos
+94,92,4,menu_configuracion_parametros_estados,Estados,Estados,pi pi-flag,/configuracion/parametros/estados
+95,92,4,menu_configuracion_parametros_formas_de_pago,Formas de Pago,Formas de Pago,pi pi-credit-card,/configuracion/parametros/formas-pago
+96,92,4,menu_configuracion_parametros_monedas,Monedas,Monedas,pi pi-dollar,/configuracion/parametros/monedas
+97,92,4,menu_configuracion_parametros_impuestos,Impuestos,Impuestos,pi pi-percentage,/configuracion/parametros/impuestos
+98,92,4,menu_configuracion_parametros_paises,Países,Países,pi pi-globe,/configuracion/parametros/paises
+99,92,4,menu_configuracion_parametros_departamentos_pais,Departamentos (País),Departamentos (País),pi pi-map,/configuracion/parametros/departamentos-pais
+100,92,4,menu_configuracion_parametros_departamentos_empresa,Departamentos Empresa,Departamentos Empresa,pi pi-building,/configuracion/parametros/departamentos-empresa
+101,92,4,menu_configuracion_parametros_direcciones,Direcciones,Direcciones,pi pi-map-marker,/configuracion/parametros/direcciones
+102,92,4,menu_configuracion_parametros_telefonos,Teléfonos,Teléfonos,pi pi-phone,/configuracion/parametros/telefonos
+103,92,4,menu_configuracion_parametros_tarjetas_de_credito,Tarjetas de Crédito,Tarjetas de Crédito,pi pi-credit-card,/configuracion/parametros/tarjetas-credito
+104,92,4,menu_configuracion_parametros_pasatiempos,Pasatiempos,Pasatiempos,pi pi-heart,/configuracion/parametros/pasatiempos
+105,92,4,menu_configuracion_parametros_zonas,Zonas,Zonas,pi pi-map,/configuracion/parametros/zonas
+106,92,4,menu_configuracion_parametros_gestores,Gestores,Gestores,pi pi-user,/configuracion/parametros/gestores
+107,92,4,menu_configuracion_parametros_proformas,Proformas,Proformas,pi pi-file,/configuracion/parametros/proformas
+108,92,4,menu_configuracion_parametros_zonas_venta_cobro,Zonas Venta/Cobro,Zonas Venta/Cobro,pi pi-map,/configuracion/parametros/zonas-vta-cob
+109,92,4,menu_configuracion_parametros_cajeros,Cajeros,Cajeros,pi pi-user,/configuracion/parametros/cajeros
+110,92,4,menu_configuracion_parametros_dias_de_cobro,Días de Cobro,Días de Cobro,pi pi-calendar,/configuracion/parametros/dias-cobro
+111,84,3,menu_configuracion_settings_por_modulo,Settings por Módulo,Settings por Módulo,pi pi-sliders-h,
+112,111,4,menu_configuracion_settings_por_modulo_bancos,Bancos,Bancos,pi pi-building,/configuracion/settings/param-bco
+113,111,4,menu_configuracion_settings_por_modulo_contabilidad,Contabilidad,Contabilidad,pi pi-chart-bar,/configuracion/settings/param-con
+114,111,4,menu_configuracion_settings_por_modulo_cuentas_por_cobrar,Cuentas por Cobrar,Cuentas por Cobrar,pi pi-wallet,/configuracion/settings/param-cxc
+115,111,4,menu_configuracion_settings_por_modulo_cuentas_por_pagar,Cuentas por Pagar,Cuentas por Pagar,pi pi-handshake,/configuracion/settings/param-cxp
+116,111,4,menu_configuracion_settings_por_modulo_facturacion,Facturación,Facturación,pi pi-file-edit,/configuracion/settings/param-fac
+117,111,4,menu_configuracion_settings_por_modulo_inventario,Inventario,Inventario,pi pi-box,/configuracion/settings/param-inv
+118,111,4,menu_configuracion_settings_por_modulo_papeleria,Papelería,Papelería,pi pi-book,/configuracion/settings/param-pap
+119,111,4,menu_configuracion_settings_por_modulo_planilla,Planilla,Planilla,pi pi-id-card,/configuracion/settings/param-pla
+120,111,4,menu_configuracion_settings_por_modulo_prestamos,Préstamos,Préstamos,pi pi-hand-holding-usd,/configuracion/settings/param-pres
+121,111,4,menu_configuracion_settings_por_modulo_ia,IA,IA,pi pi-robot,/configuracion/settings/param-ia

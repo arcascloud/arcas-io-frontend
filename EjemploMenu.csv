@@ -1,0 +1,64 @@
+Id;parentId;levelId;nameParent;nameItem;labelItem;iconItem;routerLink
+1;1;1;menu;Menu;Menu;pi pi-arrow-circle-right;/gestion/facturacion
+2;1;2;menu_cobros;Cobros;Cobros;pi pi-arrow-circle-right;/gestion/facturacion
+5;2;3;menu_cobros_datos;Datos;Datos;pi pi-arrow-circle-right;/gestion/facturacion
+8;5;4;menu_cobros_datos_documentos;Documentos;Documentos;pi pi-arrow-circle-right;/gestion/facturacion
+6;2;3;menu_cobros_procesos;Procesos;Procesos;pi pi-arrow-circle-right;/gestion/facturacion
+10;6;4;menu_cobros_procesos_nota_credito;Nota Credito;Nota Credito;pi pi-arrow-circle-right;/gestion/facturacion
+9;6;4;menu_cobros_procesos_nota_debito;Nota Debito;Nota Debito;pi pi-arrow-circle-right;/gestion/facturacion
+11;6;4;menu_cobros_procesos_reversion;Reversion;Reversion;pi pi-arrow-circle-right;/gestion/facturacion
+7;2;3;menu_cobros_reportes;Reportes;Reportes;pi pi-arrow-circle-right;/gestion/facturacion
+13;7;4;menu_cobros_reportes_balance_de_saldo;Balance de saldo;Balance de saldo;pi pi-arrow-circle-right;/gestion/facturacion
+14;7;4;menu_cobros_reportes_notas_de_credito;Notas de creditos;Notas de creditos;pi pi-arrow-circle-right;/gestion/facturacion
+12;7;4;menu_cobros_reportes_reversion;Cartas de cobros;Cartas de cobros;pi pi-arrow-circle-right;/gestion/facturacion
+3;1;2;menu_compras;Compras;Compras;pi pi-arrow-circle-right;/gestion/facturacion
+15;3;3;menu_compras_datos;Datos;Datos;pi pi-arrow-circle-right;/gestion/facturacion
+18;15;4;menu_compras_datos_documentos;Documentos;Documentos;pi pi-arrow-circle-right;/gestion/facturacion
+16;3;3;menu_compras_procesos;Procesos;Procesos;pi pi-arrow-circle-right;/gestion/facturacion
+20;16;4;menu_compras_procesos_nota_credito;Nota Credito;Nota Credito;pi pi-arrow-circle-right;/gestion/facturacion
+19;16;4;menu_compras_procesos_nota_debito;Nota Debito;Nota Debito;pi pi-arrow-circle-right;/gestion/facturacion
+21;16;4;menu_compras_procesos_reversion;Reversion;Reversion;pi pi-arrow-circle-right;/gestion/facturacion
+17;3;3;menu_compras_reportes;Reportes;Reportes;pi pi-arrow-circle-right;/gestion/facturacion
+23;17;4;menu_compras_reportes_balance_de_saldo;Balance de saldo;Balance de saldo;pi pi-arrow-circle-right;/gestion/facturacion
+22;17;4;menu_compras_reportes_facturas_pendientes;Facturas pendientes;Facturas pendientes;pi pi-arrow-circle-right;/gestion/facturacion
+24;17;4;menu_compras_reportes_notas_de_creditos;Notas de creditos;Notas de creditos;pi pi-arrow-circle-right;/gestion/facturacion
+42;1;2;menu_facturacion;Facturacion;Facturacion;pi pi-arrow-circle-right;/gestion/facturacion
+43;42;3;menu_facturacion_datos;Datos;Datos;pi pi-arrow-circle-right;/gestion/facturacion
+47;43;4;menu_facturacion_datos_clientes;Clientes;Clientes;pi pi-arrow-circle-right;/gestion/facturacion
+53;43;4;menu_facturacion_datos_descuentos;Descuentos;Descuentos;pi pi-arrow-circle-right;/gestion/facturacion
+51;43;4;menu_facturacion_datos_formas_de_pago;Formas de pago;Formas de pago;pi pi-arrow-circle-right;/gestion/facturacion
+46;43;4;menu_facturacion_datos_impuestos;Impuestos;Impuestos;pi pi-arrow-circle-right;/gestion/facturacion
+54;43;4;menu_facturacion_datos_promotores_de_venta;Promoteres de venta;Promoteres de venta;pi pi-arrow-circle-right;/gestion/facturacion
+44;42;3;menu_facturacion_procesos;Procesos;Procesos;pi pi-arrow-circle-right;/gestion/facturacion
+50;44;4;menu_facturacion_procesos_anulacion_de_factura;Anulacion de factura;Anulacion de factura;pi pi-arrow-circle-right;/gestion/facturacion
+48;44;4;menu_facturacion_procesos_cotizacion;Cotizacion;Cotizacion;pi pi-arrow-circle-right;/gestion/facturacion
+52;44;4;menu_facturacion_procesos_garantias;garantias;garantias;pi pi-arrow-circle-right;/gestion/facturacion
+49;44;4;menu_facturacion_procesos_ventas;Ventas;Ventas;pi pi-arrow-circle-right;/gestion/facturacion
+45;42;3;menu_facturacion_reportes;Reportes;Reportes;pi pi-arrow-circle-right;/gestion/facturacion
+4;1;2;menu_finanzas;Finanzas;Finanzas;pi pi-arrow-circle-right;/gestion/facturacion
+25;4;3;menu_finanzas_datos;Datos;Datos;pi pi-arrow-circle-right;/gestion/facturacion
+30;25;4;menu_finanzas_datos_cuentas_contables;Cuentas contables;Cuentas contables;pi pi-arrow-circle-right;/gestion/facturacion
+28;25;4;menu_finanzas_datos_documentos;Documentos;Documentos;pi pi-arrow-circle-right;/gestion/facturacion
+29;25;4;menu_finanzas_datos_impuestos;Impuestos;Impuestos;pi pi-arrow-circle-right;/gestion/facturacion
+31;25;4;menu_finanzas_datos_periodos_fiscales;Periodos fiscales;Periodos fiscales;pi pi-arrow-circle-right;/gestion/facturacion
+26;4;3;menu_finanzas_procesos;Procesos;Procesos;pi pi-arrow-circle-right;/gestion/facturacion
+32;26;4;menu_finanzas_procesos_asiento_de_diario;Asiento de diario;Asiento de diario;pi pi-arrow-circle-right;/gestion/facturacion
+33;26;4;menu_finanzas_procesos_asiento_recurrente;Asiento recurrente;Asiento recurrente;pi pi-arrow-circle-right;/gestion/facturacion
+34;26;4;menu_finanzas_procesos_reversiones;Reversiones;Reversiones;pi pi-arrow-circle-right;/gestion/facturacion
+35;34;5;menu_finanzas_procesos_reversiones_asientos;Asientos;Asientos;pi pi-arrow-circle-right;/gestion/facturacion
+36;34;5;menu_finanzas_procesos_reversiones_nota_de_credito;Nota de credito;Nota de credito;pi pi-arrow-circle-right;/gestion/facturacion
+37;34;5;menu_finanzas_procesos_reversiones_nota_de_debito;Nota de debito;Nota de debito;pi pi-arrow-circle-right;/gestion/facturacion
+27;4;3;menu_finanzas_reportes;Reportes;Reportes;pi pi-arrow-circle-right;/gestion/facturacion
+38;27;4;menu_finanzas_reportes_balance comprobacion de saldos;Balance comprobacion de saldos;Balance comprobacion de saldos;pi pi-arrow-circle-right;/gestion/facturacion
+39;27;4;menu_finanzas_reportes_balance_general;Balance general;Balance general;pi pi-arrow-circle-right;/gestion/facturacion
+41;27;4;menu_finanzas_reportes_mayores contables;Mayores contables;Mayores contables;pi pi-arrow-circle-right;/gestion/facturacion
+40;27;4;menu_finanzas_reportes_perdidas_y_ganancias;Perdidas y ganancias;Perdidas y ganancias;pi pi-arrow-circle-right;/gestion/facturacion
+55;1;2;menu_usuarios;Usuarios;Usuarios;pi pi-arrow-circle-right;/gestion/facturacion
+56;55;3;menu_usuarios_datos;Datos;Datos;pi pi-arrow-circle-right;/gestion/facturacion
+59;56;4;menu_usuarios_datos_roles;Roles;Roles;pi pi-arrow-circle-right;/gestion/facturacion
+57;55;3;menu_usuarios_procesos;Procesos;Procesos;pi pi-arrow-circle-right;/gestion/facturacion
+61;57;4;menu_usuarios_procesos_asignar_permisos;Asignar permisos;Asignar permisos;pi pi-arrow-circle-right;/gestion/facturacion
+60;57;4;menu_usuarios_procesos_crear_usuarios;Crear usuario;Crear usuario;pi pi-arrow-circle-right;/gestion/facturacion
+63;58;4;menu_usuarios_reporte_perfil_de_usuarios;Perfil de usuario;Perfil de usuario;pi pi-arrow-circle-right;/gestion/facturacion
+58;55;3;menu_usuarios_reportes;Reportes;Reportes;pi pi-arrow-circle-right;/gestion/facturacion
+62;58;4;menu_usuarios_reportes_listado_de_usuarios;Listado de usuarios;Listado de usuarios;pi pi-arrow-circle-right;/gestion/facturacion

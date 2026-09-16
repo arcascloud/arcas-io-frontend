@@ -37,8 +37,6 @@ export class CombosList implements OnInit {
   comboSeleccionado = signal<any | null>(null);
   comboItems = signal<any[]>([]);
 
-  private imgCache = new Map<string, string>();
-
   ngOnInit() {
     this.load();
   }
@@ -124,11 +122,7 @@ export class CombosList implements OnInit {
 
   resolverImagen(img: string | null): string {
     if (!img) return '';
-    const key = img.substring(0, 100);
-    if (this.imgCache.has(key)) return this.imgCache.get(key)!;
-    const result = /^data:/i.test(img) ? img : `data:image/png;base64,${img}`;
-    this.imgCache.set(key, result);
-    return result;
+    return /^data:/i.test(img) ? img : `data:image/png;base64,${img}`;
   }
 
   formatearPrecio(precio: number | string): string {

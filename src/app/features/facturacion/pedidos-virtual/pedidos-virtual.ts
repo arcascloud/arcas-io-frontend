@@ -55,7 +55,7 @@ export class PedidosVirtual implements OnInit {
   tarjetaError = signal<string | null>(null);
   pedidoOpen = signal(false);
 
-  private imagenCache = new Map<string, string>();
+  // Image cache removed — browser handles caching natively
 
   /** Mapa productoId → precio con descuento de promo/oferta */
   private mapaOfertas = new Map<number, number>();
@@ -177,7 +177,7 @@ export class PedidosVirtual implements OnInit {
 
   cargarProductos() {
     this.cargando.set(true);
-    this.pedidosService.getProductos()
+    this.pedidosService.getProductos(true)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
@@ -512,11 +512,7 @@ export class PedidosVirtual implements OnInit {
 
   resolverImagen(imagen: string | null): string {
     if (!imagen) return '';
-    const cacheKey = imagen.substring(0, 100);
-    if (this.imagenCache.has(cacheKey)) return this.imagenCache.get(cacheKey)!;
-    const result = /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
-    this.imagenCache.set(cacheKey, result);
-    return result;
+    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
   }
 
   getItemImagen(item: PedidoItem): string {
