@@ -116,7 +116,6 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de pasatiempo',
     idKey: 'pasatiempoId',
     icono: 'heart',
-    incluyeEmpresaId: false,
     campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
   },
   zonas: {

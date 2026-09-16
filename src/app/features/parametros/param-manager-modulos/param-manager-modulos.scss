@@ -1,0 +1,45 @@
+.ctx-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ctx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+  }
+}
+
+.toolbar-det {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+::ng-deep .p-fieldset {
+  margin-bottom: 1rem;
+}
+
+::ng-deep .p-fieldset-legend {
+  font-weight: 600;
+  font-size: 0.95rem;
+}

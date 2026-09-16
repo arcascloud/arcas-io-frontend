@@ -116,11 +116,11 @@ export const CONFIGURACION_ROUTES: Routes = [
       import('./settings/settings').then((m) => m.Settings),
   },
 
-  // IA Settings
+  // Parámetros por módulo
   {
-    path: 'ia',
+    path: 'param-modulos',
     loadComponent: () =>
-      import('./settings/settings').then((m) => m.Settings),
+      import('../parametros/param-manager-modulos/param-manager-modulos').then((m) => m.ParamManagerModulos),
   },
 
   { path: '**', redirectTo: 'empresas' },

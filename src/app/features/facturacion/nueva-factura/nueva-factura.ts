@@ -192,7 +192,7 @@ export class NuevaFactura implements OnInit {
   }
 
   private cargarParamCxc() {
-    this.api.get<any>('/parametros/param-cxc').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.get<any>('/parametros/parametros/objeto?empresaId=2&moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (p) => {
         const dias = Number(p?.diasPlazo ?? 0);
         const v = new Date();
@@ -215,7 +215,7 @@ export class NuevaFactura implements OnInit {
   }
 
   private cargarParamFac() {
-    this.api.get<any>('/parametros/param-fac').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.get<any>('/parametros/parametros/objeto?moduloId=3').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (p) => {
         this.impuestoIncluido = p?.sn_impuestoincluido === 'S';
         this.impuestoId = Number(p?.impuestoId) || null;

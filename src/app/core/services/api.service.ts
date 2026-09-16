@@ -32,7 +32,7 @@ export class ApiService {
   ];
 
   // Rutas cuyas tablas NO poseen la columna empresaId.
-  private static SIN_EMPRESA: string[] = ['/parametros/pasatiempos'];
+  private static SIN_EMPRESA: string[] = [];
 
   /**
    * Construye HttpParams con empresaId del usuario actual
