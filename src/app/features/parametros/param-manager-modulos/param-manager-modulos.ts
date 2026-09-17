@@ -8,12 +8,11 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
-import { DialogModule } from 'primeng/dialog';
 import { FieldsetModule } from 'primeng/fieldset';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { EmpresasService } from '../../../core/services/empresas.service';
 import { ParametroUnificadoService } from '../../../core/services/parametro-unificado.service';
-import { AuthService } from '../../../core/services/auth.service';
 import { TipoParametro, MODULO_LABELS } from '../../../core/models/parametro-unificado.model';
 import { Empresa } from '../../../core/models/empresa.models';
 import { Sucursal } from '../../../core/models/sucursal.models';
@@ -31,8 +30,8 @@ import { Sucursal } from '../../../core/models/sucursal.models';
     InputNumberModule,
     SelectModule,
     TagModule,
-    DialogModule,
     FieldsetModule,
+    TooltipModule,
   ],
   templateUrl: './param-manager-modulos.html',
   styleUrl: './param-manager-modulos.scss',
@@ -41,9 +40,19 @@ export class ParamManagerModulos implements OnInit {
   private fb = inject(FormBuilder);
   private empresasService = inject(EmpresasService);
   private parametroService = inject(ParametroUnificadoService);
-  private auth = inject(AuthService);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+
+  // Opciones readonly
+  readonly tipoOptions = [
+    { label: 'Texto (STRING)', value: 'STRING' },
+    { label: 'Numérico (NUMBER)', value: 'NUMBER' },
+  ];
+
+  readonly estadoOptions = [
+    { label: 'Activo', value: 'S' },
+    { label: 'Inactivo', value: 'N' },
+  ];
 
   // Datos de selects
   empresas = signal<Empresa[]>([]);
@@ -60,10 +69,9 @@ export class ParamManagerModulos implements OnInit {
   sucursalId = signal<number | null>(null);
   moduloId = signal<number | null>(null);
 
-  // Dialog
-  dialogVisible = signal(false);
+  // Selección / edición inline
+  selectedParam = signal<TipoParametro | null>(null);
   editando = signal(false);
-  parametroId = signal<number | null>(null);
   form!: FormGroup;
 
   ngOnInit() {
@@ -80,7 +88,6 @@ export class ParamManagerModulos implements OnInit {
       .subscribe({
         next: (data) => {
           this.empresas.set(data);
-          // Auto-seleccionar primera empresa
           if (data.length > 0) {
             this.empresaId.set(data[0].empresaId);
             this.cargarSucursales(data[0].empresaId);
@@ -95,7 +102,6 @@ export class ParamManagerModulos implements OnInit {
     }));
     this.modulos.set(mods);
 
-    // Pre-cargar parámetros si ya hay empresa
     if (this.empresaId()) {
       this.cargarParametros();
     }
@@ -118,11 +124,13 @@ export class ParamManagerModulos implements OnInit {
     this.empresaId.set(empresaId);
     this.sucursalId.set(null);
     this.parametros.set([]);
+    this.limpiarSeleccion();
     this.cargarSucursales(empresaId);
   }
 
   onModuloChange(moduloId: number) {
     this.moduloId.set(moduloId);
+    this.limpiarSeleccion();
     this.cargarParametros();
   }
 
@@ -132,14 +140,10 @@ export class ParamManagerModulos implements OnInit {
     if (!eid) return;
 
     this.cargando.set(true);
-    const params: Record<string, string> = {};
-    if (mid) params['moduloId'] = String(mid);
-
     this.parametroService.getAll(mid || undefined)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
-          // Filtrar por empresaId del lado del cliente
           this.parametros.set(data.filter(p => p.empresaId === eid));
           this.cargando.set(false);
         },
@@ -150,23 +154,19 @@ export class ParamManagerModulos implements OnInit {
       });
   }
 
-  // ── Dialog ──────────────────────────────────────────────
+  // ── Selección / Edición inline ──────────────────────────
 
-  nuevo() {
-    this.editando.set(false);
-    this.parametroId.set(null);
-    this.form.reset({
-      field: '',
-      tipo: 'STRING',
-      valor: '',
-      sn_activo: 'S',
-    });
-    this.dialogVisible.set(true);
+  onRowClick(param: TipoParametro) {
+    if (this.selectedParam()?.ttipoparametrosId === param.ttipoparametrosId) {
+      this.limpiarSeleccion();
+    } else {
+      this.selectedParam.set(param);
+      this.cargarForm(param);
+    }
   }
 
-  editar(param: TipoParametro) {
+  private cargarForm(param: TipoParametro) {
     this.editando.set(true);
-    this.parametroId.set(param.ttipoparametrosId);
     this.form.reset({
       field: param.field,
       tipo: param.tipo,
@@ -174,8 +174,21 @@ export class ParamManagerModulos implements OnInit {
       sn_activo: param.sn_activo,
     });
     this.form.get('field')?.disable();
-    this.dialogVisible.set(true);
   }
+
+  limpiarSeleccion() {
+    this.selectedParam.set(null);
+    this.editando.set(false);
+    this.form.reset({
+      field: '',
+      tipo: 'STRING',
+      valor: '',
+      sn_activo: 'S',
+    });
+    this.form.get('field')?.enable();
+  }
+
+  // ── Guardar ─────────────────────────────────────────────
 
   guardar() {
     if (this.form.invalid) return;
@@ -195,8 +208,12 @@ export class ParamManagerModulos implements OnInit {
       .subscribe({
         next: () => {
           this.guardando.set(false);
-          this.dialogVisible.set(false);
-          this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Parámetro actualizado' });
+          this.msgs.add({
+            severity: 'success',
+            summary: this.editando() ? 'Actualizado' : 'Creado',
+            detail: this.editando() ? 'Parámetro actualizado' : 'Parámetro creado',
+          });
+          this.limpiarSeleccion();
           this.cargarParametros();
         },
         error: () => {
@@ -212,6 +229,9 @@ export class ParamManagerModulos implements OnInit {
       .subscribe({
         next: () => {
           this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Parámetro desactivado' });
+          if (this.selectedParam()?.ttipoparametrosId === param.ttipoparametrosId) {
+            this.limpiarSeleccion();
+          }
           this.cargarParametros();
         },
         error: () => {
@@ -221,10 +241,6 @@ export class ParamManagerModulos implements OnInit {
   }
 
   // ── Helpers ─────────────────────────────────────────────
-
-  usuarioActual(): string {
-    return this.auth.currentUser()?.usuario || '';
-  }
 
   moduloLabel(id: number): string {
     return MODULO_LABELS[id] || String(id);

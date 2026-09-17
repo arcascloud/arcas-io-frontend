@@ -43,7 +43,6 @@ export class HistoricoManager implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   // ===== FILTROS =====
-  dni = signal('');
   cliente = signal('');
   fechaDesde = signal<string | null>(null);
   fechaHasta = signal<string | null>(null);
@@ -74,7 +73,7 @@ export class HistoricoManager implements OnInit {
   private cargarHistorico() {
     this.cargando.set(true);
     this.service.getHistoricoConFiltros(
-      this.dni(),
+      '',
       this.cliente(),
       this.fechaDesde(),
       this.fechaHasta(),
@@ -102,7 +101,6 @@ export class HistoricoManager implements OnInit {
   }
 
   limpiarFiltros() {
-    this.dni.set('');
     this.cliente.set('');
     this.fechaDesde.set(null);
     this.fechaHasta.set(null);

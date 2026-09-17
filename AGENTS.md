@@ -1311,3 +1311,63 @@ this.confirmationService.confirm({
 ### Inicialización AGENTS.md
 - Archivo consolidado con contexto completo del proyecto, arquitectura, reglas, bitácoras y lecciones aprendidas
 - Actualizado a la fecha más reciente de trabajo (10/09/2026)
+
+---
+
+## Bitácora – 16/09/2026
+
+### Completado
+
+#### `new Date()` → `fechasistema` — Migración global
+- **Objetivo**: Todas las fechas transaccionales usan `tempresas.fechasistema` en vez de `new Date()` del servidor
+- **Infraestructura**:
+  - `shared/fecha-sistema.service.ts` — Servicio global, lee `tempresas.fechasistema` con fallback a `new Date()`
+  - `shared/fecha-sistema.module.ts` — `@Global()` module, registrado en `app.module.ts`
+- **14 services** actualizados, **~41 reemplazos** totales:
+  - `bancos.service.ts` (6), `cxc.service.ts` (17), `cxp.service.ts` (5), `facturacion.service.ts` (7)
+  - `inventario.service.ts` (2), `ajuste-inventario.service.ts` (4), `kardex.service.ts` (3), `requisicion-inventario.service.ts` (5), `toma-inventario.service.ts` (4), `traslado-inventario.service.ts` (3)
+  - `contabilidad.service.ts` (2), `parametros.service.ts` (4), `companies.service.ts` (7), `users.service.ts` (3), `modulos.service.ts` (1), `sucursales.service.ts` (1), `planilla.service.ts` (2)
+- **4 `new Date()` intencionalmente conservados**: fallback en servicio compartido, `fechasistema` al crear empresa, helpers `NoEmpresa` sin contexto, `generarNroReferencia()` de traslados
+
+#### Histórico CxC y CxP — Quitado DNI
+- **`cxc/historico/historico-manager.html`**: Eliminado filtro DNI, columna DNI (header + body), campo DNI en detalle
+- **`cxc/historico/historico-manager.ts`**: Eliminado signal `dni`, referencia en `cargarHistorico()`, reset en `limpiarFiltros()`
+- **`cxp/historico/historico-manager.html`**: Misma limpieza (filtro, columna, detalle)
+- **`cxp/historico/historico-manager.ts`**: Misma limpieza
+
+#### Bancos — Margin-top botón Historial
+- **`movimientos/movimientos.scss`**: Agregado `a { margin-top: -4.75rem }` al `.page-header` para alinear botón "Historial de Movimientos"
+
+#### Conciliación Bancaria — Módulo completo
+- **Backend — Entidades modificadas**:
+  - `bco-conciliacion.entity.ts` (+4 campos): `fechaDesde`, `fechaHasta`, `saldoInicial`, `saldoFinal`
+  - `bco-conciliacion-det.entity.ts` (+2 campos): `sn_conciliado` (S/N), `bcomovimientosId` (FK a bcosmovimientos)
+- **Backend — DTOs** (`dto/banco.dto.ts`): `CreateConciliacionDto`, `CreateConciliacionDetDto`, `UpdateConciliacionDetDto`
+- **Backend — Service** (`bancos.service.ts`): +5 métodos:
+  - `parsearCsvConciliacion()` — Parse CSV `Fecha,Concepto,Referencia,Debito,Credito`, auto-detecta dd/mm/yyyy
+  - `realizarMatching()` — Match por `nroreferencia` + `importe` + `dc_debitocredito` contra `bcosmovimientos` no anulados
+  - `guardarConciliacion()` — Crea `bcosccmae` + `bcosccdet` en secuencia
+  - `findConciliacionCompleta()` — Maestro + detalles enriquecidos con movimiento bancario
+  - `deleteConciliacion()` — Cascading delete
+- **Backend — Controller** (`bancos.controller.ts`): +5 endpoints:
+  - `POST /bancos/conciliaciones/parsear-csv` (FileInterceptor)
+  - `POST /bancos/conciliaciones/matching`
+  - `POST /bancos/conciliaciones`
+  - `GET /bancos/conciliaciones/:id/completa`
+  - `DELETE /bancos/conciliaciones/:id`
+- **Frontend — Componente** (`bancos/conciliacion/`):
+  - `conciliacion.ts` — 4 pasos: selección cuenta → upload CSV → preview → matching resultado
+  - `conciliacion.html` — Tabla cuentas, upload drag & drop, preview con checkbox, summary cards (total/conciliados/diferencias), tabla resultado con row highlights (verde=conciliado, amarillo=diferencia)
+  - `conciliacion.scss` — Summary cards, row highlights, upload zone
+- **Frontend — Ruta**: `/bancos/conciliacion` en `bancos.routes.ts`
+- **ALTER TABLE ejecutados**:
+  - `bcosccmae`: +`fechaDesde`, `fechaHasta`, `saldoInicial`, `saldoFinal`
+  - `bcosccdet`: +`sn_conciliado`, `bcomovimientosId`
+- **Matching**: Criterio `importe + referencia + naturaleza(D/C)` contra movimientos no anulados
+
+#### Respaldo base de datos
+- **Archivo**: `E:\desarrollo\proyectos angular\erp\respaldo_16sep2026.sql` (1.72 MB)
+
+### Pendiente
+- Verificar conciliación bancaria end-to-end en browser (upload CSV → matching → guardar)
+- Agregar menú de Conciliación en `tusuariomnuitem` para acceso desde sidebar

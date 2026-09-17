@@ -17,16 +17,39 @@ export const BANCOS_ROUTES: Routes = [
       import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
   },
   {
-    path: 'cuentas',
-    data: { nombre: 'cuentas' },
+    path: 'movimientos',
     loadComponent: () =>
-      import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+      import('./movimientos/movimientos').then((m) => m.MovimientosBancos),
   },
   {
-    path: 'cuentas/editar/:id',
-    data: { nombre: 'cuentas' },
+    path: 'cheques',
     loadComponent: () =>
-      import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+      import('./cheques/cheques').then((m) => m.ChequesBancos),
+  },
+  {
+    path: 'cheques/reimpresionchq',
+    loadComponent: () =>
+      import('./reimpresion-chq/reimpresion-chq').then((m) => m.ReimpresionChq),
+  },
+  {
+    path: 'cheques/particulares',
+    loadComponent: () =>
+      import('./cheques-particulares/cheques-particulares').then((m) => m.ChequesParticulares),
+  },
+  {
+    path: 'historial',
+    loadComponent: () =>
+      import('./historial/historial').then((m) => m.HistorialBancos),
+  },
+  {
+    path: 'anular-movimientos',
+    loadComponent: () =>
+      import('./anular-movimientos/anular-movimientos').then((m) => m.AnularMovimientos),
+  },
+  {
+    path: 'conciliacion',
+    loadComponent: () =>
+      import('./conciliacion/conciliacion').then((m) => m.ConciliacionBancaria),
   },
 
   // Consultas (solo lectura)

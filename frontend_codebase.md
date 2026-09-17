@@ -1,5 +1,5 @@
 # ERP Arcas - Código Fuente Completo
-> Generado automáticamente el 10/9/2026, 10:14:07 a. m.
+> Generado automáticamente el 17/9/2026, 6:30:42 a. m.
 
 ---
 
@@ -557,6 +557,91 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
 ---
 
+## 📄 src\app\core\models\bancos.models.ts
+
+```typescript
+export interface Banco {
+  bancoId: number;
+  descripcion: string;
+  sn_activo: 'S' | 'N';
+  Idsucursal: number;
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
+export interface BcoCta {
+  bcoctasId: number;
+  bancoId: number;
+  nrocuenta: string;
+  monedaId: number;
+  sn_activo: 'S' | 'N';
+  Idsucursal: number;
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
+export interface BcoMovimiento {
+  bcomovimientosId: number;
+  fecharegistro: string;
+  bancoId: number;
+  bcoctasId: number;
+  moduloId: number;
+  tipomov: 'DEPOSITO' | 'RETIRO' | 'TRANSFERENCIA' | 'PAGO';
+  dc_debitocredito: 'D' | 'C';
+  nroreferencia: string;
+  nrochq: string;
+  factordecambio: number;
+  importe: number;
+  concepto: string;
+  sn_cotabilizada: 'S' | 'N';
+  sn_doc_anulado: 'S' | 'N';
+  fec_anulacion: string;
+  partidaId: number;
+  Idsucursal: number;
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
+// ── Emisión de cheques ──────────────────────────────────────
+
+export interface CompraPendientePago {
+  compraId: number;
+  nroreferencia: string;
+  fecha: string;
+  total: number;
+  totalPagado?: number;
+  saldo?: number;
+  proveedorId: number;
+  codproveedor: string;
+  proveedorNombre: string;
+  _selected?: boolean;
+  _montoPago?: number;
+}
+
+export interface ChequeEmitido {
+  nrochq: string;
+  proveedor: string;
+  importe: number;
+  concepto?: string;
+  compraId?: number;
+  facturas?: { compraId: number; nroReferencia: string; saldo: number }[];
+}
+
+export interface EmitirChequeResponse {
+  mensaje: string;
+  cheques: ChequeEmitido[];
+}
+
+```
+
+---
+
 ## 📄 src\app\core\models\catalogo-parametros.models.ts
 
 ```typescript
@@ -678,7 +763,6 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de pasatiempo',
     idKey: 'pasatiempoId',
     icono: 'heart',
-    incluyeEmpresaId: false,
     campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
   },
   zonas: {
@@ -1454,6 +1538,7 @@ export interface CxcHistorico {
   cliente: string;
   modulo: string;
   abreviatura: string;
+  documentoId: number;
   nroreferencia: string;
   tipomov: string;
   importe: number;
@@ -1471,12 +1556,38 @@ export interface CxcSaldoFavor {
 
 ---
 
+## 📄 src\app\core\models\cxp.models.ts
+
+```typescript
+export interface CxPHistorico {
+  bcomovId: number;
+  proveedorId: number;
+  fecharegistro: string;
+  nroproveedor: string;
+  dni: string;
+  proveedor: string;
+  modulo: string;
+  abreviatura: string;
+  documentoId: number;
+  nroreferencia: string;
+  tipomov: string;
+  importe: number;
+  concepto: string;
+  sn_doc_anulado: string;
+  sn_contabilizado: string;
+}
+
+```
+
+---
+
 ## 📄 src\app\core\models\empresa.models.ts
 
 ```typescript
 export interface Empresa {
   empresaId: number;
   descripcion: string;
+  fechasistema?: string;
   msjfactura: string;
   msjdevfactura: string;
   sn_activo: string;
@@ -1487,10 +1598,62 @@ export interface Empresa {
 
 export interface EmpresaDet {
   empresasdetId: number;
-  tipo: 'TELEFONO' | 'DIRECCION' | 'CORREO' | 'RUC' | 'RTN' | 'WEBSITE' | 'REDESOCIAL';
+  tipo: 'TELEFONO' | 'DIRECCION' | 'CORREO' | 'RUC' | 'RTN' | 'WEBSITE' | 'REDESOCIAL' | 'CAI';
   descripcion: string;
   sn_activo: string;
   empresaId: number;
+}
+
+export interface Correlativo {
+  poscorrelativosId: number;
+  nrofactura: number;
+  TCPIP?: string;
+  Idsucursal: number;
+  rangoDesde: string;
+  rangoHasta: string;
+  fechaLimite: string;
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
+export interface EmpresaLogo {
+  tempresaslogoId: number;
+  img: string;
+  sn_activo: string;
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
+export interface Impresora {
+  timpresorasId: number;
+  descripcion: string;
+  formato: 'TICKET' | 'CARTA';
+  driver: string;
+  puerto: string;
+  modo_correlativo: 'A' | 'M';
+  Idsucursal: number;
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
+export interface EstadoCorrelativo {
+  poscorrelativosId: number;
+  Idsucursal: number;
+  rangoDesde: string;
+  rangoHasta: string;
+  nrofactura: number;
+  fechaLimite: string;
+  total: number;
+  usados: number;
+  disponible: number;
+  porcentaje: number;
+  estado: 'OK' | 'ALERTA' | 'CRITICO' | 'AGOTADO';
 }
 
 ```
@@ -2172,6 +2335,7 @@ export interface Producto {
   fecUltvta?: string;
   puntoretorno: number;
   categoriaId: number;
+  impuestoId?: number;
   sn_activo: 'S' | 'N';
   empresaId: number;
   usuarioCreated: string;
@@ -2484,6 +2648,29 @@ export interface CompraMae {
   detalles?: CompraDet[];
 }
 
+export interface ProductoDet {
+  productosdetsId: number;
+  produtoId: number;
+  tipo: string;
+  descripcion: string;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
+export interface ProductoImg {
+  productoimgId: number;
+  productoId: number;
+  img: string;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
 export interface CompraDet {
   cxpcomprasdetId: number;
   fecharegistro: string;
@@ -2503,6 +2690,62 @@ export interface CompraDet {
   usuarioUpdated?: string;
   fechaUpdated?: string;
 }
+
+export interface TipoImpuesto {
+  impuestoId: number;
+  moduloId: number;
+  descripcion: string;
+  porcentaje: number;
+  sn_activo: string;
+  empresaId: number;
+}
+```
+
+---
+
+## 📄 src\app\core\models\parametro-unificado.model.ts
+
+```typescript
+export interface TipoParametro {
+  ttipoparametrosId: number;
+  field: string;
+  tipo: 'NUMBER' | 'STRING';
+  valor: string;
+  sn_activo: 'S' | 'N';
+  moduloId: number;
+  Idsucursal: number;
+  empresaId: number;
+  usuarioCreated: string;
+  fechaCreated: Date;
+  usuarioUpdate: string;
+  fechaUpdate: Date;
+}
+
+/** IDs de módulos (tmodulos) */
+export const MODULO_IDS = {
+  CONFIGURACION: 1,
+  INVENTARIOS: 2,
+  FACTURACION: 3,
+  CXC: 4,
+  CXP: 5,
+  BANCOS: 6,
+  CONTABILIDAD: 7,
+  PLANILLA: 8,
+  MENU: 9,
+} as const;
+
+export const MODULO_LABELS: Record<number, string> = {
+  [MODULO_IDS.CONFIGURACION]: 'Configuración',
+  [MODULO_IDS.INVENTARIOS]: 'Inventarios',
+  [MODULO_IDS.FACTURACION]: 'Facturación',
+  [MODULO_IDS.CXC]: 'CxC',
+  [MODULO_IDS.CXP]: 'CxP',
+  [MODULO_IDS.BANCOS]: 'Bancos',
+  [MODULO_IDS.CONTABILIDAD]: 'Contabilidad',
+  [MODULO_IDS.PLANILLA]: 'Planilla',
+  [MODULO_IDS.MENU]: 'Papelería',
+};
+
 ```
 
 ---
@@ -2615,263 +2858,19 @@ export interface CampoSetting {
 }
 
 export interface SettingsConfig {
-  ruta: string;
   titulo: string;
   subtitulo: string;
   campos: CampoSetting[];
+  /** ID del módulo en tmodulos para la tabla unificada ttipoparametros */
+  moduloId?: number;
 }
 
+/**
+ * Configuración de parámetros por módulo.
+ * Usa la tabla unificada ttipoparametros.
+ */
 export const SETTINGS: Record<string, SettingsConfig> = {
-  'param-bco': {
-    ruta: '/parametros/param-bco',
-    titulo: 'Parámetros de Bancos',
-    subtitulo: 'Configuración general del módulo de bancos',
-    campos: [],
-  },
-  'param-con': {
-    ruta: '/parametros/param-con',
-    titulo: 'Parámetros de Contabilidad',
-    subtitulo: 'Configuración general del módulo de contabilidad',
-    campos: [
-      { key: 'nropartida', label: 'Nro. Partida', tipo: 'numero' },
-      { key: 'periodofiscal', label: 'Periodo Fiscal', tipo: 'numero' },
-      { key: 'aniofiscal', label: 'Año Fiscal', tipo: 'numero' },
-      { key: 'monedafiscalId', label: 'Moneda Fiscal', tipo: 'numero' },
-      { key: 'mascaracta', label: 'Máscara de Cuenta', tipo: 'texto' },
-      { key: 'nombrecontador', label: 'Contador', tipo: 'texto' },
-      { key: 'nombregerente', label: 'Gerente', tipo: 'texto' },
-      { key: 'nombreauditor', label: 'Auditor', tipo: 'texto' },
-    ],
-  },
-  'param-cxc': {
-    ruta: '/parametros/param-cxc',
-    titulo: 'Parámetros de CxC',
-    subtitulo: 'Configuración general de cuentas por cobrar',
-    campos: [
-      { key: 'nrocliente', label: 'Nro. Cliente', tipo: 'numero' },
-      { key: 'interes', label: 'Interés (%)', tipo: 'numero' },
-      { key: 'mora', label: 'Mora (%)', tipo: 'numero' },
-      { key: 'diasPlazo', label: 'Días Plazo', tipo: 'numero' },
-      { key: 'limitecredito', label: 'Límite Crédito', tipo: 'numero' },
-      { key: 'ctacontable', label: 'Cuenta Contable', tipo: 'texto' },
-    ],
-  },
-  'param-cxp': {
-    ruta: '/parametros/param-cxp',
-    titulo: 'Parámetros de CxP',
-    subtitulo: 'Configuración general de cuentas por pagar',
-    campos: [
-      { key: 'nroproveedor', label: 'Nro. Proveedor', tipo: 'numero' },
-      { key: 'interes', label: 'Interés (%)', tipo: 'numero' },
-      { key: 'mora', label: 'Mora (%)', tipo: 'numero' },
-      { key: 'diasPlazo', label: 'Días Plazo', tipo: 'numero' },
-      { key: 'limitecredito', label: 'Límite Crédito', tipo: 'numero' },
-      { key: 'ctacontable', label: 'Cuenta Contable', tipo: 'texto' },
-    ],
-  },
-  'param-fac': {
-    ruta: '/parametros/param-fac',
-    titulo: 'Parámetros de Facturación',
-    subtitulo: 'Configuración general de facturación',
-    campos: [
-      { key: 'bodegaId', label: 'Bodega', tipo: 'numero' },
-      { key: 'nrofactura', label: 'Nro. Factura', tipo: 'numero' },
-      { key: 'nrocotizacion', label: 'Nro. Cotización', tipo: 'numero' },
-      { key: 'nroanulacion', label: 'Nro. Anulación', tipo: 'numero' },
-      { key: 'impuestoId', label: 'Impuesto', tipo: 'numero' },
-      { key: 'lineasFactura', label: 'Líneas Factura', tipo: 'numero' },
-      { key: 'diasDevolucion', label: 'Días Devolución', tipo: 'numero' },
-      { key: 'porcentajeDevolucion', label: '% Devolución', tipo: 'numero' },
-      { key: 'nrodpdaventas', label: 'Nro. PDA Ventas', tipo: 'numero' },
-      { key: 'nropdadevolucion', label: 'Nro. PDA Devolución', tipo: 'numero' },
-      { key: 'nropdaanulacion', label: 'Nro. PDA Anulación', tipo: 'numero' },
-      {
-        key: 'sn_integrado_cxc',
-        label: 'Integrado CxC',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      {
-        key: 'sn_puntoventa',
-        label: 'Punto de Venta',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      {
-        key: 'sn_integrado_caja',
-        label: 'Integrado Caja',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      {
-        key: 'sn_anticipos',
-        label: 'Anticipos',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      { key: 'mensajeFactura', label: 'Mensaje Factura', tipo: 'texto' },
-      {
-        key: 'sn_correlativoUnico',
-        label: 'Correlativo Único',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      { key: 'mg_t', label: 'Margen T', tipo: 'numero' },
-      { key: 'mg_b', label: 'Margen B', tipo: 'numero' },
-      { key: 'mg_l', label: 'Margen L', tipo: 'numero' },
-      { key: 'mg_d', label: 'Margen D', tipo: 'numero' },
-      {
-        key: 'sn_multiplezcajeros',
-        label: 'Múltiples Cajeros',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      {
-        key: 'sn_imprimefactura',
-        label: 'Imprime Factura',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      { key: 'ImpresoraFactura', label: 'Impresora Factura', tipo: 'texto' },
-      { key: 'ImpresoraComprobante', label: 'Impresora Comprobante', tipo: 'texto' },
-      { key: 'ImpresoraMadera', label: 'Impresora Madera', tipo: 'texto' },
-      { key: 'ImpresoraRecibo', label: 'Impresora Recibo', tipo: 'texto' },
-      { key: 'DriverImpresora1', label: 'Driver Impresora 1', tipo: 'texto' },
-      { key: 'DriverImpresora2', label: 'Driver Impresora 2', tipo: 'texto' },
-      { key: 'DriverImpresora3', label: 'Driver Impresora 3', tipo: 'texto' },
-      { key: 'DriverImpresora4', label: 'Driver Impresora 4', tipo: 'texto' },
-      { key: 'Puerto1', label: 'Puerto 1', tipo: 'texto' },
-      { key: 'Puerto2', label: 'Puerto 2', tipo: 'texto' },
-      { key: 'Puerto3', label: 'Puerto 3', tipo: 'texto' },
-      { key: 'Puerto4', label: 'Puerto 4', tipo: 'texto' },
-      {
-        key: 'sn_multipleempresa',
-        label: 'Múltiple Empresa',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      {
-        key: 'sn_impuestoincluido',
-        label: 'Impuesto Incluido',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-    ],
-  },
-  'param-inv': {
-    ruta: '/parametros/param-inv',
-    titulo: 'Parámetros de Inventario',
-    subtitulo: 'Configuración general de inventario',
-    campos: [
-      { key: 'bodegaId', label: 'Bodega', tipo: 'numero' },
-      { key: 'nrocompra', label: 'Nro. Compra', tipo: 'numero' },
-      { key: 'nrotrasladoo', label: 'Nro. Traslado', tipo: 'numero' },
-      { key: 'nroajuste', label: 'Nro. Ajuste', tipo: 'numero' },
-      { key: 'nrofisico', label: 'Nro. Físico', tipo: 'numero' },
-      { key: 'nrorequisicion', label: 'Nro. Requisición', tipo: 'numero' },
-      { key: 'ImpuestoCompra', label: 'Impuesto Compra', tipo: 'numero' },
-      { key: 'ImpuestoVenta', label: 'Impuesto Venta', tipo: 'numero' },
-      { key: 'nropartida', label: 'Nro. Partida', tipo: 'numero' },
-      {
-        key: 'sn_requirelote',
-        label: 'Requiere Lote',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      {
-        key: 'sn_supermercado',
-        label: 'Supermercado',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      {
-        key: 'sn_multiplesprecios',
-        label: 'Múltiples Precios',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-    ],
-  },
-  'param-pap': {
-    ruta: '/parametros/param-pap',
-    titulo: 'Parámetros de Papelería',
-    subtitulo: 'Configuración general de papelería',
-    campos: [
-      { key: 'moduloId', label: 'Módulo', tipo: 'numero' },
-      { key: 'proforma', label: 'Proforma', tipo: 'texto' },
-      { key: 'reporte', label: 'Reporte', tipo: 'texto' },
-    ],
-  },
-  'param-pla': {
-    ruta: '/parametros/param-pla',
-    titulo: 'Parámetros de Planilla',
-    subtitulo: 'Configuración general de planilla',
-    campos: [
-      { key: 'nropartida', label: 'Nro. Partida', tipo: 'numero' },
-      { key: 'nroplanilla', label: 'Nro. Planilla', tipo: 'numero' },
-      { key: 'techo', label: 'Techo', tipo: 'numero' },
-      {
-        key: 'sn_validatecho',
-        label: 'Valida Techo',
-        tipo: 'select',
-        opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
-        ],
-      },
-      { key: 'diaslaborales', label: 'Días Laborales', tipo: 'numero' },
-    ],
-  },
-  'param-pres': {
-    ruta: '/parametros/param-pres',
-    titulo: 'Parámetros de Préstamos',
-    subtitulo: 'Configuración general de préstamos',
-    campos: [
-      { key: 'interes', label: 'Interés (%)', tipo: 'numero' },
-      { key: 'mora', label: 'Mora (%)', tipo: 'numero' },
-      { key: 'diasPlazo', label: 'Días Plazo', tipo: 'numero' },
-      { key: 'limitecredito', label: 'Límite Crédito', tipo: 'numero' },
-      { key: 'ctacontable', label: 'Cuenta Contable', tipo: 'texto' },
-    ],
-  },
   'param-ia': {
-    ruta: '/parametros/param-ia',
     titulo: 'Configuración de IA',
     subtitulo: 'Proveedores y modelos de inteligencia artificial',
     campos: [
@@ -3176,11 +3175,13 @@ export class ApiService {
     '/contabilidad/ctacontables',
     '/cxc/caja-mae',
     '/cxc/caja-det',
+    '/facturacion/facturas',
+    '/facturacion/facturas-det',
     '/planilla/empleados',
   ];
 
   // Rutas cuyas tablas NO poseen la columna empresaId.
-  private static SIN_EMPRESA: string[] = ['/parametros/pasatiempos'];
+  private static SIN_EMPRESA: string[] = [];
 
   /**
    * Construye HttpParams con empresaId del usuario actual
@@ -3720,6 +3721,36 @@ export class ColoresService {
 
 ---
 
+## 📄 src\app\core\services\correlativos.service.ts
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ApiService } from './api.service';
+import { Correlativo } from '../models/empresa.models';
+
+@Injectable({ providedIn: 'root' })
+export class CorrelativosService {
+  private api = inject(ApiService);
+  private path = '/facturacion/correlativos';
+
+  getAll(): Observable<Correlativo[]> {
+    return this.api.get<Correlativo[]>(this.path);
+  }
+
+  create(dto: Partial<Correlativo>): Observable<Correlativo> {
+    return this.api.post<Correlativo>(this.path, dto);
+  }
+
+  update(id: number, dto: Partial<Correlativo>): Observable<Correlativo> {
+    return this.api.put<Correlativo>(this.path, id, dto);
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\core\services\cxc.service.ts
 
 ```typescript
@@ -4106,6 +4137,20 @@ export class CxpService {
     return this.api.get<any[]>('/cxp/historicos');
   }
 
+  getHistoricoConFiltros(
+    dni?: string,
+    proveedor?: string,
+    fechaDesde?: string,
+    fechaHasta?: string,
+  ): Observable<any[]> {
+    const params: Record<string, string> = {};
+    if (dni && dni.trim()) params['dni'] = dni.trim();
+    if (proveedor && proveedor.trim()) params['proveedor'] = proveedor.trim();
+    if (fechaDesde && fechaDesde.trim()) params['fechaDesde'] = fechaDesde.trim();
+    if (fechaHasta && fechaHasta.trim()) params['fechaHasta'] = fechaHasta.trim();
+    return this.api.get<any[]>('/cxp/historicos/filtros', params);
+  }
+
   getSaldosAv(): Observable<any[]> {
     return this.api.get<any[]>('/cxp/saldos-av');
   }
@@ -4176,13 +4221,16 @@ export class EmbalajesService {
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Empresa, EmpresaDet } from '../models/empresa.models';
+import { Empresa, EmpresaDet, Correlativo, EmpresaLogo, Impresora, EstadoCorrelativo } from '../models/empresa.models';
+import { Sucursal } from '../models/sucursal.models';
 
 @Injectable({ providedIn: 'root' })
 export class EmpresasService {
   private api = inject(ApiService);
 
   private path = '/companies';
+
+  // ===== Empresas =====
 
   getAll(): Observable<Empresa[]> {
     return this.api.get<Empresa[]>(this.path);
@@ -4202,8 +4250,8 @@ export class EmpresasService {
 
   // ===== EmpresaDet =====
 
-  getAllDet(): Observable<EmpresaDet[]> {
-    return this.api.get<EmpresaDet[]>(`${this.path}/det`);
+  getAllDet(empresaId?: number): Observable<EmpresaDet[]> {
+    return this.api.get<EmpresaDet[]>(`${this.path}/det`, empresaId ? { empresaId } : undefined);
   }
 
   createDet(dto: Partial<EmpresaDet>): Observable<EmpresaDet> {
@@ -4216,6 +4264,82 @@ export class EmpresasService {
 
   removeDet(id: number): Observable<any> {
     return this.api.delete<any>(`${this.path}/det`, id);
+  }
+
+  // ===== Correlativos (CAI) =====
+
+  getAllCorr(empresaId: number): Observable<Correlativo[]> {
+    return this.api.get<Correlativo[]>(`${this.path}/correlativos`, { empresaId });
+  }
+
+  createCorr(dto: Partial<Correlativo>): Observable<Correlativo> {
+    return this.api.post<Correlativo>(`${this.path}/correlativos`, dto);
+  }
+
+  updateCorr(id: number, dto: Partial<Correlativo>): Observable<Correlativo> {
+    return this.api.put<Correlativo>(`${this.path}/correlativos`, id, dto);
+  }
+
+  removeCorr(id: number, empresaId: number): Observable<any> {
+    return this.api.delete<any>(`${this.path}/correlativos`, id);
+  }
+
+  getNextNroFactura(empresaId: number, idsucursal: number): Observable<{ nrofactura: number }> {
+    return this.api.get<{ nrofactura: number }>(`${this.path}/correlativos/siguiente-nro`, { empresaId, idsucursal });
+  }
+
+  getEstadoCorrelativo(empresaId: number): Observable<EstadoCorrelativo[]> {
+    return this.api.get<EstadoCorrelativo[]>(`${this.path}/correlativos/estado`, { empresaId });
+  }
+
+  // ===== Sucursales =====
+
+  getAllSucursales(empresaId: number): Observable<Sucursal[]> {
+    return this.api.get<Sucursal[]>(`${this.path}/sucursales`, { empresaId });
+  }
+
+  createSucursal(dto: Partial<Sucursal>): Observable<Sucursal> {
+    return this.api.post<Sucursal>(`${this.path}/sucursales`, dto);
+  }
+
+  updateSucursal(id: number, dto: Partial<Sucursal>): Observable<Sucursal> {
+    return this.api.put<Sucursal>(`${this.path}/sucursales`, id, dto);
+  }
+
+  // ===== Logo =====
+
+  getLogo(empresaId: number): Observable<EmpresaLogo | null> {
+    return this.api.get<EmpresaLogo | null>(`${this.path}/logo`, { empresaId });
+  }
+
+  createLogo(dto: Partial<EmpresaLogo>): Observable<EmpresaLogo> {
+    return this.api.post<EmpresaLogo>(`${this.path}/logo`, dto);
+  }
+
+  updateLogo(id: number, dto: Partial<EmpresaLogo>): Observable<EmpresaLogo> {
+    return this.api.put<EmpresaLogo>(`${this.path}/logo`, id, dto);
+  }
+
+  removeLogo(id: number): Observable<any> {
+    return this.api.delete<any>(`${this.path}/logo`, id);
+  }
+
+  // ===== Impresoras =====
+
+  getAllImpresoras(empresaId: number): Observable<Impresora[]> {
+    return this.api.get<Impresora[]>(`${this.path}/impresoras`, { empresaId });
+  }
+
+  createImpresora(dto: Partial<Impresora>): Observable<Impresora> {
+    return this.api.post<Impresora>(`${this.path}/impresoras`, dto);
+  }
+
+  updateImpresora(id: number, dto: Partial<Impresora>): Observable<Impresora> {
+    return this.api.put<Impresora>(`${this.path}/impresoras`, id, dto);
+  }
+
+  removeImpresora(id: number): Observable<any> {
+    return this.api.delete<any>(`${this.path}/impresoras`, id);
   }
 }
 
@@ -4441,8 +4565,32 @@ export class MarcasService {
 ## 📄 src\app\core\services\menu-config.service.ts
 
 ```typescript
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal, effect, DestroyRef } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
+
+/** Registro crudo que viene de tusuariomnuitem */
+interface RawMnuItem {
+  tusuariomnuitemsId: number;
+  empresaId: number;
+  moduloId: number;
+  usuario: string;
+  parent: number;
+  parentId: number;
+  levelId: number;
+  nameParent: string;
+  nameItem: string;
+  labelItem: string;
+  iconItem: string;
+  routerLink: string;
+  sn_activo: string;
+  /** Orden del item (desde tusuariomnuitem.zorden) */
+  zordenItem: number;
+  /** Orden del módulo padre (desde tmodulos.zorden) */
+  zordenMod: number;
+}
 
 /** Configuración de un elemento del menú lateral */
 export interface MenuItemConfig {
@@ -4461,207 +4609,91 @@ export interface MenuItemConfig {
 @Injectable({ providedIn: 'root' })
 export class MenuConfigService {
   private auth = inject(AuthService);
+  private http = inject(HttpClient);
+  private destroyRef = inject(DestroyRef);
 
-  /**
-   * Obtiene la estructura completa del menú lateral filtrada por el rol del usuario actual.
-   * Los elementos sin propiedad `roles` son visibles para todos los usuarios autenticados.
-   * @returns Arreglo de elementos del menú con sus hijos anidados
-   */
+  private items = signal<MenuItemConfig[]>([]);
+
+  constructor() {
+    // effect re-actúa cuando currentUser() cambia (login/logout)
+    effect(() => {
+      const user = this.auth.currentUser();
+      if (!user) {
+        this.items.set([]);
+        return;
+      }
+      this.cargarMenu(user.empresaId, user.usuario);
+    });
+  }
+
+  private cargarMenu(empresaId: number, usuario: string) {
+    const params = new HttpParams()
+      .set('empresaId', empresaId)
+      .set('usuario', usuario);
+
+    this.http.get<RawMnuItem[]>(`${environment.apiUrl}/users/menu-items`, { params })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (rows) => this.items.set(this.buildTree(rows)),
+        error: () => this.items.set([]),
+      });
+  }
+
+  /** Construye la estructura jerárquica del menú desde filas planas de la BD */
+  private buildTree(rows: RawMnuItem[]): MenuItemConfig[] {
+    // Filtrar solo activos
+    const activos = rows.filter((r) => r.sn_activo === 'S');
+
+    // Mapa id → fila
+    const byId = new Map<number, RawMnuItem>();
+    for (const row of activos) byId.set(row.tusuariomnuitemsId, row);
+
+    // Mapa parentId → hijos (usando parentId, NO parent que es self-reference)
+    const childrenMap = new Map<number, RawMnuItem[]>();
+    for (const row of activos) {
+      // Si parentId === tusuariomnuitemsId, es raíz (self-reference)
+      if (row.parentId === row.tusuariomnuitemsId) continue;
+      if (!childrenMap.has(row.parentId)) childrenMap.set(row.parentId, []);
+      childrenMap.get(row.parentId)!.push(row);
+    }
+
+    // Función recursiva para convertir una fila a MenuItemConfig
+    const toConfig = (row: RawMnuItem): MenuItemConfig => {
+      // El DB guarda "pi pi-xxx", mapItem agrega "pi pi-" → strip para no duplicar
+      const icon = row.iconItem?.replace(/^pi pi-/, '') ?? '';
+      const config: MenuItemConfig = {
+        label: row.labelItem,
+        icon,
+      };
+      if (row.routerLink) config.route = row.routerLink;
+
+      // Buscar hijos: parentId de los hijos = tusuariomnuitemsId de este item
+      const kids = childrenMap.get(row.tusuariomnuitemsId);
+      if (kids && kids.length > 0) {
+        kids.sort((a, b) => (a.zordenItem ?? 0) - (b.zordenItem ?? 0) || (a.zordenMod ?? 0) - (b.zordenMod ?? 0) || a.labelItem.localeCompare(b.labelItem));
+        config.children = kids.map(toConfig);
+      }
+
+      return config;
+    };
+
+    // Raíz: item levelId=1 cuyo parentId = a su propio tusuariomnuitemsId
+    const roots: MenuItemConfig[] = [];
+    const root = activos.find((r) => r.levelId === 1 && r.parentId === r.tusuariomnuitemsId);
+    if (root) {
+      const kids = childrenMap.get(root.tusuariomnuitemsId);
+      if (kids) {
+        kids.sort((a, b) => (a.zordenItem ?? 0) - (b.zordenItem ?? 0) || (a.zordenMod ?? 0) - (b.zordenMod ?? 0) || a.labelItem.localeCompare(b.labelItem));
+        for (const kid of kids) roots.push(toConfig(kid));
+      }
+    }
+
+    return roots;
+  }
+
+  /** Obtiene los elementos del menú */
   getMenuItems(): MenuItemConfig[] {
-    const rol = this.auth.currentUser()?.rol ?? '';
-
-    const all: MenuItemConfig[] = [
-      { label: 'Dashboard', icon: 'home', route: '/dashboard' },
-
-      {
-        label: 'Inventario', icon: 'box', route: '/inventario',
-        roles: ['admin', 'supervisor', 'contador', 'aux_contable', 'jefe_bodega', 'aux_bodega'],
-        children: [
-          { label: 'Productos', icon: 'tag', route: '/inventario/productos' },
-          { label: 'Existencias', icon: 'warehouse', route: '/inventario/existencias' },
-          { label: 'Kardex', icon: 'history', route: '/inventario/kardex' },
-          { label: 'Requisiciones', icon: 'file', route: '/inventario/requisiciones' },
-          {
-            label: 'Operaciones', icon: 'cogs', children: [
-              { label: 'Compras', icon: 'shopping-cart', route: '/inventario/compras' },
-              { label: 'Consulta de Compras', icon: 'search', route: '/inventario/consulta-compras' },
-              { label: 'Toma de Inventarios', icon: 'clipboard', route: '/inventario/toma-inventarios' },
-              { label: 'Ajuste de Inventarios', icon: 'sliders-h', route: '/inventario/ajustes' },
-              { label: 'Traslados de Productos', icon: 'exchange-alt', route: '/inventario/traslados' },
-            ],
-          },
-          {
-            label: 'Catálogos', icon: 'book', children: [
-              { label: 'Categorías', icon: 'list', route: '/inventario/categorias' },
-              { label: 'Marcas', icon: 'bookmark', route: '/inventario/marcas' },
-              { label: 'Modelos', icon: 'th-large', route: '/inventario/modelos' },
-              { label: 'Colores', icon: 'palette', route: '/inventario/colores' },
-              { label: 'Unidades de Medida', icon: 'arrows-h', route: '/inventario/unidades-medida' },
-              { label: 'Embalajes', icon: 'box', route: '/inventario/embalajes' },
-              { label: 'Bodegas', icon: 'building', route: '/inventario/bodegas' },
-              { label: 'Ubicaciones', icon: 'map-marker', route: '/inventario/ubicaciones' },
-              { label: 'Pasillos', icon: 'align-justify', route: '/inventario/pasillos' },
-              { label: 'Casas', icon: 'home', route: '/inventario/casas' },
-              { label: 'Tags', icon: 'tags', route: '/inventario/tags' },
-            ],
-          },
-        ],
-      },
-
-      {
-        label: 'Facturacion', icon: 'file-edit', route: '/facturacion',
-        roles: ['admin', 'supervisor', 'contador', 'aux_contable', 'gestor_venta'],
-        children: [
-          { label: 'Facturar', icon: 'plus', route: '/facturacion/nueva-factura' },
-          { label: 'Tienda Virtual', icon: 'shopping-bag', route: '/facturacion/tienda' },
-          { label: 'Pedidos Virtual', icon: 'shopping-cart', route: '/facturacion/pedidos-virtual' },
-          { label: 'Consulta de Facturas', icon: 'file', route: '/facturacion/consultas' },
-          { label: 'Consultar Cotizaciones', icon: 'file', route: '/facturacion/cotizaciones' },
-          { label: 'Consultar Pedidos', icon: 'shopping-cart', route: '/facturacion/pedidos' },
-          { label: 'Anular Factura', icon: 'file-times', route: '/facturacion/facturas-anul' },
-          { label: 'Combos', icon: 'boxes', route: '/facturacion/combos' },
-          { label: 'Descuentos', icon: 'percent', route: '/facturacion/descuentos' },
-        ],
-      },
-
-      {
-        label: 'Cuentas por Cobrar', icon: 'wallet', route: '/cxc',
-        roles: ['admin', 'supervisor', 'contador', 'aux_contable'],
-        children: [
-          { label: 'Caja', icon: 'dollar', route: '/cxc/caja' },
-          { label: 'Clientes', icon: 'users', route: '/cxc/clientes' },
-          { label: 'Préstamos', icon: 'pi pi-briefcase', route: '/cxc/prestamos' },
-          { label: 'Movimientos', icon: 'history', route: '/cxc/movimientos' },
-          { label: 'Histórico', icon: 'book', route: '/cxc/historico' },
-          { label: 'Antigüedad de Saldos', icon: 'chart-bar', route: '/cxc/antiguedad-saldos' },
-          { label: 'Cartas de Recordatorio', icon: 'envelope', route: '/cxc/cartas-recordatorio' },
-        ],
-      },
-
-      {
-        label: 'Cuentas por Pagar', icon: 'credit-card', route: '/cxp',
-        roles: ['admin', 'supervisor', 'contador', 'aux_contable'],
-        children: [
-          { label: 'Proveedores', icon: 'users', route: '/cxp/proveedores' },
-          { label: 'Compras', icon: 'shopping-bag', route: '/cxp/compras' },
-          { label: 'Movimientos', icon: 'history', route: '/cxp/movimientos' },
-          { label: 'Históricos', icon: 'book', route: '/cxp/historicos' },
-          { label: 'Saldos a favor', icon: 'heart', route: '/cxp/saldos-av' },
-        ],
-      },
-
-      {
-        label: 'Bancos', icon: 'building', route: '/bancos',
-        roles: ['admin', 'supervisor', 'contador', 'aux_contable'],
-        children: [
-          { label: 'Bancos', icon: 'building', route: '/bancos/bancos' },
-          { label: 'Cuentas', icon: 'wallet', route: '/bancos/cuentas' },
-          { label: 'Conciliaciones', icon: 'file-check', route: '/bancos/conciliaciones' },
-          { label: 'Direcciones', icon: 'map-marker', route: '/bancos/direcciones' },
-          { label: 'Teléfonos', icon: 'phone', route: '/bancos/telefonos' },
-        ],
-      },
-
-      {
-        label: 'Planilla', icon: 'id-card', route: '/planilla',
-        roles: ['admin', 'supervisor', 'contador', 'aux_contable', 'rrhh'],
-        children: [
-          { label: 'Empleados', icon: 'user', route: '/planilla/empleados' },
-          { label: 'Puestos', icon: 'briefcase', route: '/planilla/puestos' },
-          { label: 'Profesiones', icon: 'graduation-cap', route: '/planilla/profesiones' },
-          { label: 'Deducciones', icon: 'minus', route: '/planilla/deducciones' },
-          { label: 'Ingresos', icon: 'plus', route: '/planilla/ingresos' },
-          { label: 'Titulaciones', icon: 'award', route: '/planilla/titulaciones' },
-          { label: 'Certificaciones', icon: 'id-card', route: '/planilla/certificaciones' },
-          { label: 'Asistencia', icon: 'clock', route: '/planilla/asistencia' },
-          { label: 'Comisiones', icon: 'money-bill-wave', route: '/planilla/comisiones' },
-          { label: 'Deducciones por Empleado', icon: 'minus-circle', route: '/planilla/deducciones-emp' },
-          { label: 'Planillas', icon: 'money-check', route: '/planilla/planillas' },
-        ],
-      },
-
-      {
-        label: 'Contabilidad', icon: 'chart-bar', route: '/contabilidad',
-        roles: ['admin', 'supervisor', 'contador', 'aux_contable'],
-        children: [
-          { label: 'Cuentas Contables', icon: 'list', route: '/contabilidad/ctacontables' },
-          { label: 'Grupo Contable', icon: 'sitemap', route: '/contabilidad/grupocontable' },
-          { label: 'Niveles', icon: 'layer-group', route: '/contabilidad/nivelcta' },
-          { label: 'Naturaleza de Cuenta', icon: 'balance-scale', route: '/contabilidad/naturalezacta' },
-          { label: 'Saldos', icon: 'chart-line', route: '/contabilidad/saldoscta' },
-          { label: 'Tipos Doc Fiscal', icon: 'file-signature', route: '/contabilidad/tipos-doc-fiscal' },
-          { label: 'Impuesto Vecinal', icon: 'landmark', route: '/contabilidad/impuestovecinal' },
-          { label: 'Factor de Cambio', icon: 'dollar', route: '/contabilidad/factordecambio' },
-          { label: 'Cierres', icon: 'lock', route: '/contabilidad/cierrectable' },
-          { label: 'Periodos', icon: 'calendar-check', route: '/contabilidad/periodoctable' },
-          { label: 'Plantillas PDA', icon: 'file-edit', route: '/contabilidad/plantillapdamae' },
-          { label: 'Plantillas Balances', icon: 'chart-pie', route: '/contabilidad/plantillabalancesmae' },
-          { label: 'Partidas de Diario', icon: 'receipt', route: '/contabilidad/copdamae' },
-          { label: 'Mov. de Cuentas', icon: 'arrows-spin', route: '/contabilidad/movcta' },
-          { label: 'Rep. Liquidez', icon: 'water', route: '/contabilidad/repliquidez' },
-          { label: 'Rep. Diarios', icon: 'newspaper', route: '/contabilidad/repdiarios' },
-          { label: 'Rep. Balances', icon: 'chart-bar', route: '/contabilidad/repbalances' },
-        ],
-      },
-
-      {
-        label: 'Configuracion', icon: 'cog', route: '/configuracion',
-        children: [
-          { label: 'Empresas', icon: 'building', route: '/configuracion/empresas' },
-          {
-            label: 'Usuarios', icon: 'users',
-            children: [
-              { label: 'Usuarios', icon: 'user', route: '/configuracion/usuarios' },
-              { label: 'Modulos por Usuario', icon: 'user-plus', route: '/configuracion/usuarios/usuario-modulos' },
-              { label: 'Menu por Usuario', icon: 'bars', route: '/configuracion/usuarios/usuario-mnuitem' },
-              { label: 'Scripts por Usuario', icon: 'code', route: '/configuracion/usuarios/usuario-scripts' },
-              { label: 'Permisos Especiales', icon: 'key', route: '/configuracion/usuarios/usuario-modauth' },
-            ],
-          },
-          {
-            label: 'Parametros', icon: 'cog',
-            roles: ['admin', 'supervisor', 'contador', 'aux_contable'],
-            children: [
-              { label: 'Correlativos', icon: 'hashtag', route: '/configuracion/parametros/correlativos' },
-              { label: 'Estados', icon: 'flag', route: '/configuracion/parametros/estados' },
-              { label: 'Formas de Pago', icon: 'credit-card', route: '/configuracion/parametros/formas-pago' },
-              { label: 'Monedas', icon: 'dollar', route: '/configuracion/parametros/monedas' },
-              { label: 'Impuestos', icon: 'percentage', route: '/configuracion/parametros/impuestos' },
-              { label: 'Países', icon: 'globe', route: '/configuracion/parametros/paises' },
-              { label: 'Departamentos (País)', icon: 'map', route: '/configuracion/parametros/departamentos-pais' },
-              { label: 'Departamentos Empresa', icon: 'building', route: '/configuracion/parametros/departamentos-empresa' },
-              { label: 'Direcciones', icon: 'map-marker', route: '/configuracion/parametros/direcciones' },
-              { label: 'Teléfonos', icon: 'phone', route: '/configuracion/parametros/telefonos' },
-              { label: 'Tarjetas de Crédito', icon: 'credit-card', route: '/configuracion/parametros/tarjetas-credito' },
-              { label: 'Pasatiempos', icon: 'heart', route: '/configuracion/parametros/pasatiempos' },
-              { label: 'Zonas', icon: 'map', route: '/configuracion/parametros/zonas' },
-              { label: 'Gestores', icon: 'user', route: '/configuracion/parametros/gestores' },
-              { label: 'Proformas', icon: 'file', route: '/configuracion/parametros/proformas' },
-              { label: 'Zonas Venta/Cobro', icon: 'map', route: '/configuracion/parametros/zonas-vta-cob' },
-              { label: 'Cajeros', icon: 'user', route: '/configuracion/parametros/cajeros' },
-              { label: 'Días de Cobro', icon: 'calendar', route: '/configuracion/parametros/dias-cobro' },
-            ],
-          },
-          {
-            label: 'Settings por Módulo', icon: 'sliders-h',
-            children: [
-              { label: 'Bancos', icon: 'building', route: '/configuracion/settings/param-bco' },
-              { label: 'Contabilidad', icon: 'chart-bar', route: '/configuracion/settings/param-con' },
-              { label: 'Cuentas por Cobrar', icon: 'wallet', route: '/configuracion/settings/param-cxc' },
-              { label: 'Cuentas por Pagar', icon: 'handshake', route: '/configuracion/settings/param-cxp' },
-              { label: 'Facturación', icon: 'file-edit', route: '/configuracion/settings/param-fac' },
-              { label: 'Inventario', icon: 'box', route: '/configuracion/settings/param-inv' },
-              { label: 'Papelería', icon: 'book', route: '/configuracion/settings/param-pap' },
-              { label: 'Planilla', icon: 'id-card', route: '/configuracion/settings/param-pla' },
-              { label: 'Préstamos', icon: 'hand-holding-usd', route: '/configuracion/settings/param-pres' },
-              { label: 'IA', icon: 'robot', route: '/configuracion/settings/param-ia' },
-            ],
-          },
-        ],
-      },
-    ];
-
-    return all;
+    return this.items();
   }
 }
 
@@ -4894,6 +4926,60 @@ export class OcrService {
 
 ---
 
+## 📄 src\app\core\services\parametro-unificado.service.ts
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import { ApiService } from './api.service';
+import { TipoParametro } from '../models/parametro-unificado.model';
+
+@Injectable({ providedIn: 'root' })
+export class ParametroUnificadoService {
+  private api = inject(ApiService);
+  private readonly BASE = '/parametros/parametros';
+
+  /** Listar parámetros por empresa y módulo */
+  getAll(moduloId?: number): Observable<TipoParametro[]> {
+    const params: Record<string, string> = {};
+    if (moduloId) params['moduloId'] = String(moduloId);
+    return this.api.get(this.BASE, params);
+  }
+
+  /** Obtener como objeto { field: valor } */
+  getAsObject(moduloId: number): Observable<Record<string, string>> {
+    return this.api.get(`${this.BASE}/objeto`, { moduloId: String(moduloId) });
+  }
+
+  /** Obtener un valor específico */
+  getValor(moduloId: number, field: string, defaultValue?: string): Observable<string> {
+    return this.api.get(`${this.BASE}/valor`, {
+      moduloId: String(moduloId),
+      field,
+      ...(defaultValue ? { default: defaultValue } : {}),
+    }).pipe(map((r: any) => r.valor ?? defaultValue ?? '0'));
+  }
+
+  /** Upsert un parámetro (usa query params para moduloId) */
+  upsert(moduloId: number, field: string, valor: string, tipo: string = 'STRING'): Observable<any> {
+    return this.api.putBase(`${this.BASE}/upsert?moduloId=${moduloId}`, { field, valor, tipo });
+  }
+
+  /** Upsert lote de parámetros de un módulo */
+  upsertLote(moduloId: number, parametros: { field: string; valor: string; tipo?: string }[]): Observable<any> {
+    return this.api.putBase(`${this.BASE}/lote?moduloId=${moduloId}`, { parametros });
+  }
+
+  /** Eliminar (desactivar) un parámetro */
+  remove(id: number): Observable<any> {
+    return this.api.putBase(`${this.BASE}/${id}`, { sn_activo: 'N' });
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\core\services\pasillos.service.ts
 
 ```typescript
@@ -5010,7 +5096,7 @@ export class PlanillaService {
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Producto } from '../models/inventario.models';
+import { Producto, ProductoDet, ProductoImg } from '../models/inventario.models';
 
 @Injectable({ providedIn: 'root' })
 export class ProductosService {
@@ -5056,6 +5142,50 @@ export class ProductosService {
 
   search(termino: string): Observable<Producto[]> {
     return this.api.get<Producto[]>('/inventario/productos/buscar', { q: termino });
+  }
+
+  // ── ProductoDet (atributos específicos) ──────────────────────────
+
+  getDetAll(): Observable<ProductoDet[]> {
+    return this.api.get<ProductoDet[]>('/inventario/productos-det');
+  }
+
+  getDetByProducto(produtoId: number): Observable<ProductoDet[]> {
+    return this.api.get<ProductoDet[]>('/inventario/productos-det', { produtoId });
+  }
+
+  createDet(dto: Partial<ProductoDet>): Observable<ProductoDet> {
+    return this.api.post<ProductoDet>('/inventario/productos-det', dto);
+  }
+
+  updateDet(id: number, dto: Partial<ProductoDet>): Observable<ProductoDet> {
+    return this.api.put<ProductoDet>('/inventario/productos-det', id, dto);
+  }
+
+  deleteDet(id: number): Observable<void> {
+    return this.api.delete<void>('/inventario/productos-det', id);
+  }
+
+  // ── ProductoImg (imágenes del producto) ──────────────────────────
+
+  getImgAll(): Observable<ProductoImg[]> {
+    return this.api.get<ProductoImg[]>('/inventario/productos-img');
+  }
+
+  getImgByProducto(productoId: number): Observable<ProductoImg[]> {
+    return this.api.get<ProductoImg[]>('/inventario/productos-img', { productoId });
+  }
+
+  createImg(dto: Partial<ProductoImg>): Observable<ProductoImg> {
+    return this.api.post<ProductoImg>('/inventario/productos-img', dto);
+  }
+
+  updateImg(id: number, dto: Partial<ProductoImg>): Observable<ProductoImg> {
+    return this.api.put<ProductoImg>('/inventario/productos-img', id, dto);
+  }
+
+  deleteImg(id: number): Observable<void> {
+    return this.api.delete<void>('/inventario/productos-img', id);
   }
 }
 
@@ -5255,16 +5385,22 @@ import { Sucursal } from '../models/sucursal.models';
 @Injectable({ providedIn: 'root' })
 export class SucursalesService {
   private api = inject(ApiService);
-
   private path = '/sucursales';
 
-  /**
-   * Obtiene la lista de sucursales, opcionalmente filtradas por empresa.
-   * @param empresaId - ID de la empresa para filtrar las sucursales. Si no se proporciona, retorna todas las sucursales.
-   * @returns Observable con el arreglo de sucursales.
-   */
   getAll(empresaId?: number): Observable<Sucursal[]> {
     return this.api.get<Sucursal[]>(this.path, empresaId ? { empresaId } : undefined);
+  }
+
+  getOne(id: number): Observable<Sucursal> {
+    return this.api.getOne<Sucursal>(this.path, id);
+  }
+
+  create(dto: Partial<Sucursal>): Observable<Sucursal> {
+    return this.api.post<Sucursal>(this.path, dto);
+  }
+
+  update(id: number, dto: Partial<Sucursal>): Observable<Sucursal> {
+    return this.api.put<Sucursal>(this.path, id, dto);
   }
 }
 
@@ -5990,6 +6126,79 @@ export function parsearFactura(texto: string, confianza: number): FacturaData {
 
 ---
 
+## 📄 src\app\core\utils\numeros-a-letras.ts
+
+```typescript
+/**
+ * Convierte un número a letras en español hondureño.
+ * Ejemplo: 1250.50 → "MIL DOSCIENTOS CINCUENTA Y 50/100 LEMPIRAS"
+ */
+export function numeroALetras(num: number): string {
+  if (num === 0) return 'CERO LEMPIRAS';
+
+  const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+  const especiales = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+  const decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+  const centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+  function convertirBloque(n: number): string {
+    if (n === 0) return '';
+    if (n === 100) return 'CIEN';
+
+    let resultado = '';
+
+    const c = Math.floor(n / 100);
+    const d = Math.floor((n % 100) / 10);
+    const u = n % 10;
+
+    if (c > 0) resultado += centenas[c] + ' ';
+    if (d >= 2) {
+      resultado += decenas[d];
+      if (u > 0) resultado += ' Y ' + unidades[u];
+    } else if (d === 1) {
+      resultado += especiales[u];
+    } else if (u > 0) {
+      resultado += unidades[u];
+    }
+
+    return resultado.trim();
+  }
+
+  const parteEntera = Math.floor(num);
+  const parteDecimal = Math.round((num - parteEntera) * 100);
+
+  let enteroLetras = '';
+  const millones = Math.floor(parteEntera / 1000000);
+  const miles = Math.floor((parteEntera % 1000000) / 1000);
+  const resto = parteEntera % 1000;
+
+  if (millones === 1) {
+    enteroLetras += 'UN MILLÓN ';
+  } else if (millones > 1) {
+    enteroLetras += convertirBloque(millones) + ' MILLONES ';
+  }
+
+  if (miles === 1) {
+    enteroLetras += 'MIL ';
+  } else if (miles > 1) {
+    enteroLetras += convertirBloque(miles) + ' MIL ';
+  }
+
+  if (resto > 0) {
+    enteroLetras += convertirBloque(resto);
+  }
+
+  enteroLetras = enteroLetras.trim() || 'CERO';
+
+  const decimalStr = String(parteDecimal).padStart(2, '0');
+
+  return `${enteroLetras} ${decimalStr}/100 LEMPIRAS`;
+}
+
+```
+
+---
+
 ## 📄 src\app\features\auth\login\login.html
 
 ```typescript
@@ -6290,6 +6499,1093 @@ export class Login {
 
 ---
 
+## 📄 src\app\features\bancos\anular-movimientos\anular-movimientos.html
+
+```typescript
+<p-toast />
+<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Anulación de Movimientos</h1>
+      <p class="page-subtitle">Anular movimientos bancarios registrados</p>
+    </div>
+  </header>
+
+  <!-- ═══ Filtros ═══ -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Cuenta Bancaria</label>
+            <p-select [options]="cuentas()" [(ngModel)]="cuentaFiltro"
+              optionValue="bcoctasId" placeholder="Todas las cuentas"
+              pSize="small" styleClass="w-full" appendTo="body" [showClear]="true"
+              (onChange)="onFiltroChange()">
+              <ng-template let-cuenta pTemplate="selectedItem">
+                <span>{{ cuenta.nrocuenta }} — {{ bancoNombreCuenta(cuenta) }}</span>
+              </ng-template>
+              <ng-template let-cuenta pTemplate="item">
+                <span>{{ cuenta.nrocuenta }} — {{ bancoNombreCuenta(cuenta) }}</span>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Tabla de movimientos ═══ -->
+  <div class="card mb-3">
+    <p-table [value]="movimientos()" [loading]="cargando()" size="small"
+      [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 10rem">Fecha</th>
+          <th>Tipo</th>
+          <th>D/C</th>
+          <th>Referencia</th>
+          <th>Concepto</th>
+          <th style="width: 10rem" class="text-right">Importe</th>
+          <th style="width: 6rem" class="text-center">Estado</th>
+          <th style="width: 5rem" class="text-center">Acción</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-mov>
+        <tr [class.row-anulada]="mov.sn_doc_anulado === 'S'">
+          <td>{{ formatFecha(mov.fecharegistro) }}</td>
+          <td><p-tag [value]="tipoMovLabel(mov.tipomov)" [severity]="tipoMovSeverity(mov.tipomov)" styleClass="tag-sm" /></td>
+          <td><p-tag [value]="dcLabel(mov.dc_debitocredito)" [severity]="dcSeverity(mov.dc_debitocredito)" styleClass="tag-sm" /></td>
+          <td>{{ mov.nroreferencia || '-' }}</td>
+          <td>{{ mov.concepto || '-' }}</td>
+          <td class="text-right font-bold">{{ formatCurrency(mov.importe) }}</td>
+          <td class="text-center">
+            @if (mov.sn_doc_anulado === 'S') {
+              <p-tag value="Anulado" severity="danger" styleClass="tag-sm" />
+            } @else {
+              <p-tag value="Activo" severity="success" styleClass="tag-sm" />
+            }
+          </td>
+          <td class="text-center">
+            @if (mov.sn_doc_anulado !== 'S') {
+              <p-button icon="pi pi-ban" size="small" variant="text" [rounded]="true" severity="danger"
+                pTooltip="Anular" (click)="anular(mov)" />
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="text-center p-3">No hay movimientos para esta cuenta.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\bancos\anular-movimientos\anular-movimientos.scss
+
+```typescript
+/* ═══════════════ Layout general ═══════════════ */
+.page {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+.campo {
+  margin-bottom: 0.75rem;
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    margin-bottom: 0.25rem;
+  }
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.row-anulada {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+:host ::ng-deep .tag-sm {
+  font-size: 0.65rem !important;
+  padding: 0.125rem 0.4rem !important;
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\anular-movimientos\anular-movimientos.ts
+
+```typescript
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+import { BcoMovimiento, BcoCta } from '../../../core/models/bancos.models';
+
+@Component({
+  selector: 'app-anular-movimientos',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule,
+    SelectModule, TagModule, TooltipModule, ToastModule, ConfirmDialogModule,
+  ],
+  templateUrl: './anular-movimientos.html',
+  styleUrl: './anular-movimientos.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AnularMovimientos implements OnInit {
+  private api = inject(ApiService);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+
+  // Datos
+  bancos = signal<any[]>([]);
+  cuentas = signal<BcoCta[]>([]);
+  movimientos = signal<BcoMovimiento[]>([]);
+  cuentaFiltro = signal<number | null>(null);
+  cargando = signal(false);
+
+  readonly TIPO_MOV_OPTIONS = [
+    { label: 'Depósito', value: 'DEPOSITO' },
+    { label: 'Retiro', value: 'RETIRO' },
+    { label: 'Transferencia', value: 'TRANSFERENCIA' },
+    { label: 'Pago', value: 'PAGO' },
+  ];
+
+  ngOnInit() {
+    this.cargarBancos();
+    this.cargarCuentas();
+    this.cargarTodos();
+  }
+
+  cargarBancos() {
+    this.api.get<any[]>('/bancos/bancos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.bancos.set(data || []); },
+    });
+  }
+
+  cargarCuentas() {
+    this.api.get<any[]>('/bancos/cuentas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const ctas = (data || []).map((c: any) => ({ ...c, bancoId: Number(c.bancoId) }));
+        this.cuentas.set(ctas);
+      },
+    });
+  }
+
+  cargarTodos() {
+    this.cargando.set(true);
+    this.api.get<any[]>('/bancos/movimientos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.movimientos.set((data || []).map((m: any) => ({
+          ...m,
+          importe: Number(m.importe),
+        })));
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los movimientos' });
+      },
+    });
+  }
+
+  onFiltroChange() {
+    const bcoctasId = this.cuentaFiltro();
+    if (!bcoctasId) {
+      this.cargarTodos();
+      return;
+    }
+    this.cargando.set(true);
+    this.api.get<any[]>('/bancos/movimientos', { bcoctasId: String(bcoctasId) })
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (data) => {
+          this.movimientos.set((data || []).map((m: any) => ({
+            ...m,
+            importe: Number(m.importe),
+          })));
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.cargando.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los movimientos' });
+        },
+      });
+  }
+
+  // ── Anular ─────────────────────────────────────────────
+
+  anular(mov: BcoMovimiento) {
+    this.confirm.confirm({
+      message: `¿Anular el movimiento #${mov.bcomovimientosId}?`,
+      header: 'Confirmar anulación',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Anular', severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.api.putBase(`/bancos/movimientos/${mov.bcomovimientosId}/anular?empresaId=${mov.empresaId}`, {})
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (res: any) => {
+              this.msgs.add({ severity: 'success', summary: 'Anulado', detail: res.mensaje || 'Movimiento anulado correctamente' });
+              this.onFiltroChange();
+            },
+            error: () => {
+              this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo anular el movimiento' });
+            },
+          });
+      },
+    });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────
+
+  tipoMovLabel(tipo: string): string {
+    return this.TIPO_MOV_OPTIONS.find(o => o.value === tipo)?.label || tipo;
+  }
+
+  tipoMovSeverity(tipo: string): 'success' | 'warn' | 'info' | 'danger' {
+    switch (tipo) {
+      case 'DEPOSITO': return 'success';
+      case 'RETIRO': return 'warn';
+      case 'TRANSFERENCIA': return 'info';
+      case 'PAGO': return 'danger';
+      default: return 'info';
+    }
+  }
+
+  dcLabel(dc: string): string {
+    return dc === 'D' ? 'Débito' : 'Crédito';
+  }
+
+  dcSeverity(dc: string): 'danger' | 'success' {
+    return dc === 'D' ? 'danger' : 'success';
+  }
+
+  formatFecha(fecha: string): string {
+    if (!fecha) return '-';
+    return new Date(fecha).toLocaleString('es-HN', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  formatCurrency(valor: number): string {
+    return new Intl.NumberFormat('es-HN', { style: 'currency', currency: 'HNL' }).format(valor || 0);
+  }
+
+  bancoNombre(bancoId: number): string {
+    return this.bancos().find(b => b.bancoId === bancoId)?.descripcion || `Banco #${bancoId}`;
+  }
+
+  bancoNombreCuenta(cuenta: BcoCta): string {
+    return this.bancoNombre(cuenta.bancoId);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\bancos-manager\bancos-manager.html
+
+```typescript
+<p-toast />
+<p-confirmDialog />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Bancos</h1>
+      <p class="page-subtitle">Gestión de bancos y cuentas bancarias</p>
+    </div>
+  </header>
+
+  <div class="manager-layout">
+    <!-- ═══ COLUMNA IZQUIERDA: Bancos + Teléfonos + Direcciones ═══ -->
+    <div class="col-izq">
+
+      <div class="mt-3 mb-3">
+        <p-button label="Nueva entidad bancaria" icon="pi pi-plus"
+          size="small" [rounded]="true" variant="text" severity="success"
+          (click)="nuevoBanco()" />
+      </div>
+
+      <!-- Tabla bancos -->
+      <p-table [value]="bancos()" [loading]="cargando()" [paginator]="true" [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        size="small" dataKey="bancoId"
+        [globalFilterFields]="['descripcion']">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Banco</th>
+            <th style="width: 7rem" class="text-center">Estado</th>
+            <th style="width: 8rem" class="text-center">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-banco>
+          <tr (click)="seleccionar(banco)"
+            [class.row-seleccionada]="bancoSeleccionado()?.bancoId === banco.bancoId"
+            style="cursor: pointer">
+            <td class="font-bold">{{ banco.descripcion }}</td>
+            <td class="text-center">
+              <p-tag [value]="activoLbl(banco.sn_activo)" [severity]="activoSev(banco.sn_activo)" />
+            </td>
+            <td class="text-center">
+              <p-button icon="pi pi-pencil" size="small" variant="text" [rounded]="true" severity="secondary"
+                pTooltip="Editar banco" (click)="$event.stopPropagation(); editarBanco(banco)" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="3" class="text-center p-3">No hay bancos registrados.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+
+      <!-- ═══ Teléfonos + Direcciones (debajo de bancos) ═══ -->
+      @if (bancoSeleccionado()) {
+        <p-accordion [value]="0">
+          <!-- Teléfonos -->
+          <p-accordion-panel value="0">
+            <p-accordion-header>Teléfonos ({{ telefonos().length }})</p-accordion-header>
+            <p-accordion-content>
+              <div class="accordion-tab-content">
+                <!-- Formulario -->
+                <div class="card mb-3">
+                  <div class="p-fluid" [formGroup]="telForm">
+                    <div class="p-grid">
+                      <div class="p-col-12 p-col-6">
+                        <div class="campo">
+                          <label>Teléfono <span class="req">*</span></label>
+                          <input pInputText formControlName="telefono" pSize="small" placeholder="Ej: 2234-5678" />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-3">
+                        <div class="campo">
+                          <label>Estado</label>
+                          <p-select formControlName="sn_activo" [options]="[{label:'Activo',value:'S'},{label:'Inactivo',value:'N'}]"
+                            optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-3">
+                        <div class="campo">
+                          <label>&nbsp;</label>
+                          <div class="d-flex gap-2">
+                            @if (telEditando()) {
+                              <p-button size="small" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
+                                (click)="telForm.reset({telefono:'',sn_activo:'S'}); telEditando.set(false); telEditId.set(null)" />
+                            }
+                            <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text"
+                              [raised]="true" [rounded]="true" [disabled]="telForm.invalid" (click)="guardarTelefono()" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Lista -->
+                @if (telefonos().length > 0) {
+                  <p-table [value]="telefonos()" [loading]="cargandoTelefonos()" size="small">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th>Teléfono</th>
+                        <th style="width: 6rem" class="text-center">Estado</th>
+                        <th style="width: 8rem" class="text-center">Acciones</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-tel>
+                      <tr>
+                        <td>{{ tel.telefono }}</td>
+                        <td class="text-center">
+                          <p-tag [value]="activoLbl(tel.sn_activo)" [severity]="activoSev(tel.sn_activo)" styleClass="tag-sm" />
+                        </td>
+                        <td class="text-center">
+                          <p-button icon="pi pi-pencil" size="small" variant="text" [rounded]="true" severity="warn"
+                            pTooltip="Editar" (click)="editarTelefono(tel)" />
+                          <p-button icon="pi pi-trash" size="small" variant="text" [rounded]="true" severity="danger"
+                            pTooltip="Eliminar" (click)="eliminarTelefono(tel)" />
+                        </td>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                      <tr>
+                        <td colspan="3" class="text-center p-3">No hay teléfonos registrados.</td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+                }
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+
+          <!-- Direcciones -->
+          <p-accordion-panel value="1">
+            <p-accordion-header>Direcciones ({{ direcciones().length }})</p-accordion-header>
+            <p-accordion-content>
+              <div class="accordion-tab-content">
+                <!-- Formulario -->
+                <div class="card mb-3">
+                  <div class="p-fluid" [formGroup]="dirForm">
+                    <div class="p-grid">
+                      <div class="p-col-12 p-col-8">
+                        <div class="campo">
+                          <label>Dirección <span class="req">*</span></label>
+                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Dirección completa" />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-4">
+                        <div class="campo">
+                          <label>Estado</label>
+                          <p-select formControlName="sn_activo" [options]="[{label:'Activo',value:'S'},{label:'Inactivo',value:'N'}]"
+                            optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
+                        </div>
+                      </div>
+                      <div class="p-col-12">
+                        <div class="form-actions">
+                          @if (dirEditando()) {
+                            <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
+                              (click)="dirForm.reset({descripcion:'',sn_activo:'S'}); dirEditando.set(false); dirEditId.set(null)" />
+                          }
+                          <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text"
+                            [raised]="true" [rounded]="true" [disabled]="dirForm.invalid" (click)="guardarDireccion()" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Lista -->
+                @if (direcciones().length > 0) {
+                  <p-table [value]="direcciones()" [loading]="cargandoDirecciones()" size="small">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th>Dirección</th>
+                        <th style="width: 6rem" class="text-center">Estado</th>
+                        <th style="width: 8rem" class="text-center">Acciones</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-dir>
+                      <tr>
+                        <td>{{ dir.descripcion }}</td>
+                        <td class="text-center">
+                          <p-tag [value]="activoLbl(dir.sn_activo)" [severity]="activoSev(dir.sn_activo)" styleClass="tag-sm" />
+                        </td>
+                        <td class="text-center">
+                          <p-button icon="pi pi-pencil" size="small" variant="text" [rounded]="true" severity="warn"
+                            pTooltip="Editar" (click)="editarDireccion(dir)" />
+                          <p-button icon="pi pi-trash" size="small" variant="text" [rounded]="true" severity="danger"
+                            pTooltip="Eliminar" (click)="eliminarDireccion(dir)" />
+                        </td>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                      <tr>
+                        <td colspan="3" class="text-center p-3">No hay direcciones registradas.</td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+                }
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
+      }
+    </div>
+
+    <!-- ═══ COLUMNA DERECHA: Cuentas / Form Banco ═══ -->
+    <div class="col-der">
+      @if (formCatalogo() === 'bancos') {
+        <div class="col-der-header">
+          <div class="flex align-items-center gap-2">
+            <p-button icon="pi pi-arrow-left" text size="small" rounded (click)="formCatalogo.set(null)" />
+            <div>
+              <h3 class="page-title" style="font-size: 1rem; margin: 0">Banco</h3>
+              <p class="page-subtitle" style="margin: 0">{{ formItemId() === 'nuevo' ? 'Nuevo banco' : 'Editar banco' }}</p>
+            </div>
+          </div>
+        </div>
+        <app-catalogo-form
+          [catalogoNombre]="'bancos'"
+          [itemIdInput]="formItemId()"
+          [queryParamsInput]="formQueryParams()"
+          (finalized)="onFormFinalized()" />
+      } @else if (bancoSeleccionado()) {
+        <div class="col-der-header">
+          <div class="flex align-items-center gap-2">
+            <p-button icon="pi pi-arrow-left" text size="small" rounded (click)="volver()" />
+            <div>
+              <h3 class="page-title" style="font-size: 1rem; margin: 0">{{ bancoSeleccionado()!.descripcion }}</h3>
+              <p class="page-subtitle" style="margin: 0">Cuentas bancarias</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón nueva cuenta -->
+        <div class="mb-3">
+          <p-button label="Nueva cuenta" icon="pi pi-plus" size="small" [rounded]="true"
+            variant="text" severity="success" (click)="nuevaCuenta()" />
+        </div>
+
+        <!-- Lista de cuentas -->
+        @if (cuentas().length > 0) {
+          <p-table id="gridCuentasBancarias" [value]="cuentas()" [loading]="cargandoCuentas()" size="small"
+            [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10]"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Nro. Cuenta</th>
+                <th>Moneda</th>
+                <th style="width: 6rem" class="text-center">Estado</th>
+                <th style="width: 6rem" class="text-center">Acciones</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-cuenta>
+              <tr style="cursor: pointer" (click)="editarCuenta(cuenta)">
+                <td class="font-bold">{{ cuenta.nrocuenta }}</td>
+                <td>{{ monedaNombre(cuenta.monedaId) }}</td>
+                <td class="text-center">
+                  <p-tag [value]="activoLbl(cuenta.sn_activo)" [severity]="activoSev(cuenta.sn_activo)" styleClass="tag-sm" />
+                </td>
+                <td class="text-center">
+                  <p-button icon="pi pi-pencil" size="small" variant="text" [rounded]="true" severity="secondary"
+                    pTooltip="Editar cuenta" (click)="editarCuenta(cuenta)" />
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="4" class="text-center p-3">No hay cuentas registradas.</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        } @else {
+          <div class="empty-state-sm">
+            <i class="pi pi-wallet"></i>
+            <span>No hay cuentas para este banco</span>
+          </div>
+        }
+
+        <!-- Formulario editar cuenta (debajo de la tabla) -->
+        @if (formCatalogo() === 'cuentas') {
+          <div class="mt-3">
+            <app-catalogo-form
+              [catalogoNombre]="'cuentas'"
+              [itemIdInput]="formItemId()"
+              [queryParamsInput]="formQueryParams()"
+              (finalized)="onFormFinalized()" />
+          </div>
+        }
+      } @else {
+        <div class="empty-state">
+          <i class="pi pi-arrow-left"></i>
+          <span>Seleccioná un banco de la izquierda para ver sus cuentas</span>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\bancos\bancos-manager\bancos-manager.scss
+
+```typescript
+/* ═══════════════ Layout manager 2 columnas ═══════════════ */
+.manager-layout {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: 1.25rem;
+  align-items: start;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col-izq {
+  min-width: 0;
+  margin-top: 1.25rem;
+}
+
+.col-der {
+  min-width: 0;
+  margin-top: -3.25rem;
+
+  .col-der-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    margin-top: 5px;
+    padding: 0.75rem 1rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 0.5rem;
+  }
+}
+
+/* ═══════════════ Fila seleccionada ═══════════════ */
+.row-seleccionada {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* ═══════════════ Estado vacío ═══════════════ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  span {
+    font-size: 0.9rem;
+  }
+}
+
+/* ═══════════════ Utilities ═══════════════ */
+.font-bold {
+  font-weight: 700;
+}
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+.accordion-tab-content {
+  padding: 0.5rem 0;
+}
+
+.empty-state-sm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: var(--c-text-muted);
+  font-size: 0.85rem;
+
+  i {
+    font-size: 1.5rem;
+    opacity: 0.3;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\bancos-manager\bancos-manager.ts
+
+```typescript
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
+import { AccordionModule } from 'primeng/accordion';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+import { Router } from '@angular/router';
+import { CatalogoForm } from '../../parametros/catalogo-generico/catalogo-form';
+
+@Component({
+  selector: 'app-bancos-manager',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule, TableModule, ButtonModule, InputTextModule,
+    TagModule, TooltipModule, ToastModule, ConfirmDialogModule, DialogModule, SelectModule,
+    AccordionModule, CatalogoForm,
+  ],
+  templateUrl: './bancos-manager.html',
+  styleUrl: './bancos-manager.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class BancosManager implements OnInit {
+  private api = inject(ApiService);
+  private fb = inject(FormBuilder);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+  private router = inject(Router);
+
+  bancos = signal<any[]>([]);
+  cuentas = signal<any[]>([]);
+  telefonos = signal<any[]>([]);
+  direcciones = signal<any[]>([]);
+  monedas = signal<any[]>([]);
+  bancoSeleccionado = signal<any | null>(null);
+  cargando = signal(false);
+  cargandoCuentas = signal(false);
+  cargandoTelefonos = signal(false);
+  cargandoDirecciones = signal(false);
+
+  busqueda = signal('');
+
+  // Panel derecho: control del form genérico embebido
+  formCatalogo = signal<string | null>(null);  // 'bancos' | 'cuentas' | null
+  formItemId = signal<number | string>(0);
+  formQueryParams = signal<Record<string, any>>({});
+
+  // Formularios teléfonos / direcciones
+  telForm!: FormGroup;
+  dirForm!: FormGroup;
+  telEditando = signal(false);
+  dirEditando = signal(false);
+  telEditId = signal<number | null>(null);
+  dirEditId = signal<number | null>(null);
+
+  ngOnInit() {
+    this.telForm = this.fb.group({
+      telefono: ['', Validators.required],
+      sn_activo: ['S', Validators.required],
+    });
+    this.dirForm = this.fb.group({
+      descripcion: ['', Validators.required],
+      sn_activo: ['S', Validators.required],
+    });
+    this.cargarBancos();
+    this.cargarMonedas();
+  }
+
+  cargarMonedas() {
+    this.api.get<any[]>('/parametros/monedas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.monedas.set(data || []); },
+    });
+  }
+
+  cargarBancos() {
+    this.cargando.set(true);
+    this.api.get<any[]>('/bancos/bancos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.bancos.set(data || []); this.cargando.set(false); },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los bancos' });
+      },
+    });
+  }
+
+  seleccionar(banco: any) {
+    this.bancoSeleccionado.set(banco);
+    this.cargarCuentas(banco.bancoId);
+    this.cargarTelefonos(banco.bancoId);
+    this.cargarDirecciones(banco.bancoId);
+    this.limpiarForms();
+  }
+
+  cargarCuentas(bancoId: number) {
+    this.cargandoCuentas.set(true);
+    this.api.get<any[]>('/bancos/cuentas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.cuentas.set((data || []).filter(c => c.bancoId === bancoId));
+        this.cargandoCuentas.set(false);
+      },
+      error: () => {
+        this.cargandoCuentas.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las cuentas' });
+      },
+    });
+  }
+
+  cargarTelefonos(bancoId: number) {
+    this.cargandoTelefonos.set(true);
+    this.api.get<any[]>('/bancos/telefonos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.telefonos.set((data || []).filter(t => t.bancoId === bancoId));
+        this.cargandoTelefonos.set(false);
+      },
+      error: () => {
+        this.cargandoTelefonos.set(false);
+      },
+    });
+  }
+
+  cargarDirecciones(bancoId: number) {
+    this.cargandoDirecciones.set(true);
+    this.api.get<any[]>('/bancos/direcciones').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.direcciones.set((data || []).filter(d => d.bancoId === bancoId));
+        this.cargandoDirecciones.set(false);
+      },
+      error: () => {
+        this.cargandoDirecciones.set(false);
+      },
+    });
+  }
+
+  volver() {
+    this.bancoSeleccionado.set(null);
+    this.cuentas.set([]);
+    this.telefonos.set([]);
+    this.direcciones.set([]);
+    this.limpiarForms();
+  }
+
+  limpiarForms() {
+    this.telForm.reset({ telefono: '', sn_activo: 'S' });
+    this.dirForm.reset({ descripcion: '', sn_activo: 'S' });
+    this.telEditando.set(false);
+    this.dirEditando.set(false);
+    this.telEditId.set(null);
+    this.dirEditId.set(null);
+  }
+
+  // ── Bancos / Cuentas ──────────────────────────────────
+
+  nuevoBanco() {
+    this.formCatalogo.set('bancos');
+    this.formItemId.set('nuevo');
+    this.formQueryParams.set({});
+  }
+
+  editarBanco(banco: any) {
+    this.formCatalogo.set('bancos');
+    this.formItemId.set(banco.bancoId);
+    this.formQueryParams.set({});
+  }
+
+  editarCuenta(cuenta: any) {
+    this.formCatalogo.set('cuentas');
+    this.formItemId.set(cuenta.bcoctasId);
+    this.formQueryParams.set({});
+  }
+
+  nuevaCuenta() {
+    if (!this.bancoSeleccionado()) return;
+    this.formCatalogo.set('cuentas');
+    this.formItemId.set('nuevo');
+    this.formQueryParams.set({ bancoId: this.bancoSeleccionado()!.bancoId });
+  }
+
+  onFormFinalized() {
+    this.formCatalogo.set(null);
+    this.cargarBancos();
+    if (this.bancoSeleccionado()) {
+      this.cargarCuentas(this.bancoSeleccionado()!.bancoId);
+    }
+  }
+
+  // ── Teléfonos ─────────────────────────────────────────
+
+  guardarTelefono() {
+    if (this.telForm.invalid || !this.bancoSeleccionado()) return;
+    const raw = this.telForm.getRawValue();
+    const payload = {
+      bancoId: this.bancoSeleccionado()!.bancoId,
+      telefono: raw.telefono,
+      sn_activo: raw.sn_activo,
+    };
+
+    const req$ = this.telEditando() && this.telEditId()
+      ? this.api.putBase(`/bancos/telefonos/${this.telEditId()}`, payload)
+      : this.api.post('/bancos/telefonos', payload);
+
+    req$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Teléfono guardado' });
+        this.cargarTelefonos(this.bancoSeleccionado()!.bancoId);
+        this.telForm.reset({ telefono: '', sn_activo: 'S' });
+        this.telEditando.set(false);
+        this.telEditId.set(null);
+      },
+      error: () => {
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el teléfono' });
+      },
+    });
+  }
+
+  editarTelefono(tel: any) {
+    this.telEditando.set(true);
+    this.telEditId.set(tel.bancotelefonoId);
+    this.telForm.reset({ telefono: tel.telefono, sn_activo: tel.sn_activo });
+  }
+
+  eliminarTelefono(tel: any) {
+    this.confirm.confirm({
+      message: '¿Eliminar este teléfono?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      rejectButtonProps: { severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.api.putBase(`/bancos/telefonos/${tel.bancotelefonoId}`, { sn_activo: 'N' })
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Teléfono desactivado' });
+              this.cargarTelefonos(this.bancoSeleccionado()!.bancoId);
+            },
+            error: () => {
+              this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar' });
+            },
+          });
+      },
+    });
+  }
+
+  // ── Direcciones ───────────────────────────────────────
+
+  guardarDireccion() {
+    if (this.dirForm.invalid || !this.bancoSeleccionado()) return;
+    const raw = this.dirForm.getRawValue();
+    const payload = {
+      bancoId: this.bancoSeleccionado()!.bancoId,
+      descripcion: raw.descripcion,
+      sn_activo: raw.sn_activo,
+    };
+
+    const req$ = this.dirEditando() && this.dirEditId()
+      ? this.api.putBase(`/bancos/direcciones/${this.dirEditId()}`, payload)
+      : this.api.post('/bancos/direcciones', payload);
+
+    req$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Dirección guardada' });
+        this.cargarDirecciones(this.bancoSeleccionado()!.bancoId);
+        this.dirForm.reset({ descripcion: '', sn_activo: 'S' });
+        this.dirEditando.set(false);
+        this.dirEditId.set(null);
+      },
+      error: () => {
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la dirección' });
+      },
+    });
+  }
+
+  editarDireccion(dir: any) {
+    this.dirEditando.set(true);
+    this.dirEditId.set(dir.bcosdireccionid);
+    this.dirForm.reset({ descripcion: dir.descripcion, sn_activo: dir.sn_activo });
+  }
+
+  eliminarDireccion(dir: any) {
+    this.confirm.confirm({
+      message: '¿Eliminar esta dirección?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      rejectButtonProps: { severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.api.putBase(`/bancos/direcciones/${dir.bcosdireccionid}`, { sn_activo: 'N' })
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Dirección desactivada' });
+              this.cargarDirecciones(this.bancoSeleccionado()!.bancoId);
+            },
+            error: () => {
+              this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar' });
+            },
+          });
+      },
+    });
+  }
+
+  // ── Helpers ───────────────────────────────────────────
+
+  activoLbl(sn: string): string {
+    return sn === 'S' ? 'Activo' : 'Inactivo';
+  }
+
+  activoSev(sn: string): 'success' | 'danger' {
+    return sn === 'S' ? 'success' : 'danger';
+  }
+
+  monedaNombre(monedaId: number): string {
+    return this.monedas().find(m => m.monedaId === monedaId)?.descripcion || `#${monedaId}`;
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\features\bancos\bancos.routes.ts
 
 ```typescript
@@ -6299,12 +7595,11 @@ import { Consulta } from '../cxc/consulta/consulta';
 export const BANCOS_ROUTES: Routes = [
   { path: '', redirectTo: 'bancos', pathMatch: 'full' },
 
-  // Catálogos genéricos
+  // Bancos Manager
   {
     path: 'bancos',
-    data: { nombre: 'bancos' },
     loadComponent: () =>
-      import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+      import('./bancos-manager/bancos-manager').then((m) => m.BancosManager),
   },
   {
     path: 'bancos/editar/:id',
@@ -6313,16 +7608,39 @@ export const BANCOS_ROUTES: Routes = [
       import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
   },
   {
-    path: 'cuentas',
-    data: { nombre: 'cuentas' },
+    path: 'movimientos',
     loadComponent: () =>
-      import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+      import('./movimientos/movimientos').then((m) => m.MovimientosBancos),
   },
   {
-    path: 'cuentas/editar/:id',
-    data: { nombre: 'cuentas' },
+    path: 'cheques',
     loadComponent: () =>
-      import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+      import('./cheques/cheques').then((m) => m.ChequesBancos),
+  },
+  {
+    path: 'cheques/reimpresionchq',
+    loadComponent: () =>
+      import('./reimpresion-chq/reimpresion-chq').then((m) => m.ReimpresionChq),
+  },
+  {
+    path: 'cheques/particulares',
+    loadComponent: () =>
+      import('./cheques-particulares/cheques-particulares').then((m) => m.ChequesParticulares),
+  },
+  {
+    path: 'historial',
+    loadComponent: () =>
+      import('./historial/historial').then((m) => m.HistorialBancos),
+  },
+  {
+    path: 'anular-movimientos',
+    loadComponent: () =>
+      import('./anular-movimientos/anular-movimientos').then((m) => m.AnularMovimientos),
+  },
+  {
+    path: 'conciliacion',
+    loadComponent: () =>
+      import('./conciliacion/conciliacion').then((m) => m.ConciliacionBancaria),
   },
 
   // Consultas (solo lectura)
@@ -6354,6 +7672,4154 @@ export const BANCOS_ROUTES: Routes = [
 
 ---
 
+## 📄 src\app\features\bancos\cheques\cheques.html
+
+```typescript
+<p-toast />
+
+<!-- ═══ Dialog Confirmación ═══ -->
+<p-dialog [visible]="dialogConfirmVisible()" (visibleChange)="dialogConfirmVisible.set($event)"
+  header="Confirmar emisión de cheques" [modal]="true" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" styleClass="w-full max-w-30rem">
+  <div class="flex flex-column gap-3 pt-2">
+    <p><i class="pi pi-exclamation-triangle text-yellow-500 mr-2"></i>¿Confirmar emisión?</p>
+    <pre style="white-space: pre-wrap; font-size: 0.85rem; margin: 0;">{{ confirmMessage() }}</pre>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary"
+      (onClick)="cancelarConfirmacion()" />
+    <p-button size="small" label="Emitir" icon="pi pi-check" variant="text" [raised]="true" [rounded]="true"
+      severity="success" [loading]="emitando()" (onClick)="aceptarConfirmacion()" />
+  </ng-template>
+</p-dialog>
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Emisión de Cheques</h1>
+      <p class="page-subtitle">Pago consolidado a proveedores</p>
+    </div>
+    <div class="flex gap-2">
+      <a routerLink="/bancos/cheques/particulares">
+        <p-button label="Cheque a Particular" icon="pi pi-user" size="small" variant="text" severity="secondary" [rounded]="true" />
+      </a>
+      <a routerLink="/bancos/cheques/reimpresionchq">
+        <p-button label="Reimpresión de Cheques" icon="pi pi-print" size="small" variant="text" severity="secondary" [rounded]="true" />
+      </a>
+    </div>
+  </header>
+
+  <!-- ═══ PASO 1: Seleccionar cuenta ═══ -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Cuenta Bancaria Origen <span class="req">*</span></label>
+            <p-select [options]="cuentas()" formControlName="bcoctasId"
+              optionLabel="nrocuenta" optionValue="bcoctasId" placeholder="Seleccionar cuenta..."
+              pSize="small" styleClass="w-full" appendTo="body"
+              (onChange)="onCuentaChange($event)">
+              <ng-template let-cuenta pTemplate="selectedItem">
+                <div>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</div>
+              </ng-template>
+              <ng-template let-cuenta pTemplate="item">
+                <div>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</div>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-col-6">
+          @if (cuentaSeleccionada()) {
+            <div class="cuenta-info">
+              <div class="campo">
+                <label>Banco</label>
+                <div class="campo-valor">{{ bancoNombre(cuentaSeleccionada()!.bancoId) }}</div>
+              </div>
+              <div class="campo">
+                <label>Cuenta</label>
+                <div class="campo-valor">{{ cuentaSeleccionada()!.nrocuenta }}</div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PASO 2: Facturas pendientes ═══ -->
+  @if (cuentaSeleccionada()) {
+    <div class="card mb-3">
+      <div class="flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Facturas Pendientes de Pago</h5>
+        <div class="flex gap-2 align-items-center">
+          <input pInputText placeholder="Buscar proveedor..." [(ngModel)]="busqueda" pSize="small"
+            style="width: 250px" />
+        </div>
+      </div>
+
+      <p-table [value]="facturas()" [loading]="cargando()" size="small"
+        [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        [globalFilterFields]="['proveedorNombre', 'nroreferencia', 'codproveedor']">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 3rem" class="text-center">
+              <input type="checkbox" (change)="toggleTodas($event)" />
+            </th>
+            <th>Proveedor</th>
+            <th>Nro. Factura</th>
+            <th>Fecha</th>
+            <th style="width: 10rem" class="text-right">Total</th>
+            <th style="width: 8rem" class="text-right">Pagado</th>
+            <th style="width: 10rem" class="text-right">Saldo</th>
+            <th style="width: 10rem" class="text-right">Monto a Pagar</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-factura>
+          <tr [class.row-seleccionada]="factura._selected" style="cursor: pointer">
+            <td class="text-center" (click)="toggleFactura(factura)">
+              <input type="checkbox" [checked]="factura._selected" />
+            </td>
+            <td (click)="toggleFactura(factura)" class="font-bold">{{ factura.proveedorNombre }}</td>
+            <td (click)="toggleFactura(factura)">{{ factura.nroreferencia }}</td>
+            <td (click)="toggleFactura(factura)">{{ formatFecha(factura.fecha) }}</td>
+            <td (click)="toggleFactura(factura)" class="text-right">{{ formatCurrency(factura.total) }}</td>
+            <td (click)="toggleFactura(factura)" class="text-right text-muted">{{ formatCurrency(factura.totalPagado || 0) }}</td>
+            <td (click)="toggleFactura(factura)" class="text-right font-bold">{{ formatCurrency(factura.saldo || factura.total) }}</td>
+            <td class="text-right" (click)="$event.stopPropagation()">
+              <p-inputNumber [size]="10" [min]="0.01" [max]="factura.saldo || factura.total" mode="currency" currency="HNL"
+                [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
+                [ngModel]="factura._montoPago" (ngModelChange)="onMontoPagoChange(factura, $event)"
+                [disabled]="!factura._selected" [inputStyle]="{ width: '100%', textAlign: 'right' }" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="text-center p-3">No hay facturas pendientes de pago.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ═══ PASO 3: Resumen y emitir ═══ -->
+    @if (facturasSeleccionadas.length > 0) {
+      <div class="card mb-3">
+        <h5 class="mb-3">Resumen de Pago</h5>
+        <p-table [value]="proveedoresSeleccionados" size="small">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Proveedor</th>
+              <th style="width: 5rem" class="text-center">Facturas</th>
+              <th style="width: 10rem" class="text-right">Total a Pagar</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-grp>
+            <tr>
+              <td class="font-bold">{{ grp.proveedorNombre }}</td>
+              <td class="text-center">{{ grp.facturas.length }}</td>
+              <td class="text-right font-bold text-primary">{{ formatCurrency(grp.total) }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="summary">
+            <div class="flex justify-content-end align-items-center gap-3 p-2">
+              <span class="font-bold">Total General:</span>
+              <span class="text-xl font-bold text-primary">{{ formatCurrency(totalSeleccionado) }}</span>
+            </div>
+          </ng-template>
+        </p-table>
+
+        <div class="form-actions">
+          <p-button size="small" label="Emitir Cheques" icon="pi pi-check-circle" severity="success"
+            variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
+            (click)="confirmarEmision()" />
+        </div>
+      </div>
+    }
+
+    <!-- ═══ Cheques generados ═══ -->
+    @if (chequesGenerados().length > 0) {
+      <div class="card mb-3">
+        <h5 class="mb-3">Cheques Emitidos</h5>
+        <p-table [value]="chequesGenerados()" size="small">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Nro. Cheque</th>
+              <th>Beneficiario</th>
+              <th style="width: 10rem" class="text-right">Importe</th>
+              <th style="width: 6rem" class="text-center">Imprimir</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-cheque>
+            <tr>
+              <td class="font-bold">{{ cheque.nrochq }}</td>
+              <td>{{ cheque.proveedor }}</td>
+              <td class="text-right font-bold">{{ formatCurrency(cheque.importe) }}</td>
+              <td class="text-center">
+                <p-button icon="pi pi-print" size="small" variant="text" [rounded]="true" severity="secondary"
+                  pTooltip="Imprimir cheque" (click)="imprimirCheque(cheque)" />
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    }
+  } @else {
+    <div class="empty-state">
+      <i class="pi pi-wallet"></i>
+      <span>Seleccioná una cuenta bancaria para emitir cheques</span>
+    </div>
+  }
+</section>
+
+<!-- ═══ Dialog Impresión de Cheque ═══ -->
+@if (mostrarImpresion() && chequeAImprimir()) {
+  <div class="overlay-impresion" (click)="cerrarImpresion()">
+    <div class="cheque-container" (click)="$event.stopPropagation()">
+      <div class="cheque-actions no-print">
+        <p-button icon="pi pi-print" size="small" label="Imprimir" severity="success"
+          variant="text" [raised]="true" [rounded]="true" (click)="windowPrint()" />
+        <p-button icon="pi pi-times" size="small" severity="secondary"
+          variant="text" [rounded]="true" (click)="cerrarImpresion()" />
+      </div>
+
+      <!-- ═══ CHEQUE (sección superior) ═══ -->
+      <div class="cheque-seccion">
+        <div class="cheque-header">
+          <div class="cheque-banco">{{ bancoNombre(cuentaSeleccionada()!.bancoId) }}</div>
+          <div class="cheque-nro">Cheque N.° {{ chequeAImprimir()!.nrochq }}</div>
+        </div>
+
+        <div class="cheque-fecha">{{ fechaHoy }}</div>
+
+        <div class="cheque-pague-a">
+          <span class="cheque-label">PÁGUESE A LA ORDEN DE:</span>
+          <div class="cheque-beneficiario">{{ chequeAImprimir()!.proveedor }}</div>
+        </div>
+
+        <div class="cheque-importe-fila">
+          <div class="cheque-importe-letras">
+            <span class="cheque-label">LA CANTIDAD DE:</span>
+            <div class="cheque-texto">{{ numeroALetrasValor(chequeAImprimir()!.importe) }}</div>
+          </div>
+          <div class="cheque-importe-numero">
+            <span class="cheque-label">IMPORTE:</span>
+            <div class="cheque-monto">{{ formatCurrency(chequeAImprimir()!.importe) }}</div>
+          </div>
+        </div>
+
+        <div class="cheque-concepto">
+          <span class="cheque-label">CONCEPTO:</span>
+          <div>{{ chequeAImprimir()!.concepto || 'Pago a proveedor por facturas' }}</div>
+        </div>
+
+        <div class="cheque-firmas">
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Cédula / Identidad</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Microperforación ═══ -->
+      <div class="cheque-perforacion"></div>
+
+      <!-- ═══ VOUCHER (sección inferior) ═══ -->
+      <div class="voucher-seccion">
+        <div class="voucher-header">
+          <div class="voucher-titulo">COMPROBANTE DE PAGO</div>
+          <div class="voucher-nro">Chq N.° {{ chequeAImprimir()!.nrochq }}</div>
+        </div>
+
+        <div class="voucher-fecha">{{ fechaHoy }}</div>
+
+        <div class="voucher-campos">
+          <div class="voucher-campo">
+            <span class="voucher-label">Beneficiario:</span>
+            <span>{{ chequeAImprimir()!.proveedor }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Importe:</span>
+            <span class="font-bold">{{ formatCurrency(chequeAImprimir()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">En letras:</span>
+            <span class="voucher-texto-chico">{{ numeroALetrasValor(chequeAImprimir()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Concepto:</span>
+            <span>{{ chequeAImprimir()!.concepto || 'Pago a proveedor por facturas' }}</span>
+          </div>
+        </div>
+
+        <div class="voucher-firmas">
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Recibido Conforme</div>
+          </div>
+        </div>
+
+        <div class="voucher-footer">
+          <div>Empresa: ARCAS SOFTWARE S.A. de C.V.</div>
+          <div>Cuenta: {{ cuentaSeleccionada()!.nrocuenta }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\cheques\cheques.scss
+
+```typescript
+/* ═══════════════ Layout general ═══════════════ */
+.page {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+.campo {
+  margin-bottom: 0.75rem;
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .campo-valor {
+    font-weight: 600;
+    color: var(--c-text);
+    font-size: 0.9rem;
+  }
+}
+
+.cuenta-info {
+  display: flex;
+  gap: 2rem;
+}
+
+.req {
+  color: var(--c-error);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-primary {
+  color: var(--c-primary);
+}
+
+/* ═══════════════ Fila seleccionada ═══════════════ */
+.row-seleccionada {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* ═══════════════ Estado vacío ═══════════════ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  span {
+    font-size: 0.9rem;
+  }
+}
+
+/* ═══════════════ Overlay impresión ═══════════════ */
+.overlay-impresion {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.cheque-container {
+  background: white;
+  width: 21.59cm; /* Carta width */
+  max-width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border-radius: 0.25rem;
+  margin: 1rem 0;
+}
+
+.cheque-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+  background: #fafafa;
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+
+/* ═══════════════ CHEQUE (sección superior) ═══════════════ */
+.cheque-seccion {
+  padding: 1.5rem 2rem;
+  border-bottom: 2px dashed #ccc;
+}
+
+.cheque-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cheque-banco {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  text-transform: uppercase;
+}
+
+.cheque-nro {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.cheque-fecha {
+  text-align: right;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  color: #000;
+}
+
+.cheque-pague-a {
+  margin-bottom: 1.25rem;
+}
+
+.cheque-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: #000;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.cheque-beneficiario {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #000;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.cheque-importe-fila {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.cheque-importe-letras {
+  .cheque-texto {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #000;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.25rem;
+    margin-top: 0.25rem;
+    min-height: 1.5rem;
+  }
+}
+
+.cheque-importe-numero {
+  text-align: right;
+
+  .cheque-monto {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    border: 2px solid #1a1a1a;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    margin-top: 0.25rem;
+    min-width: 8rem;
+    text-align: center;
+  }
+}
+
+.cheque-concepto {
+  margin-bottom: 2rem;
+
+  div {
+    font-size: 0.8rem;
+    color: #000;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.25rem;
+    margin-top: 0.25rem;
+  }
+}
+
+.cheque-firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.cheque-firma {
+  text-align: center;
+
+  .cheque-firma-linea {
+    border-bottom: 1px solid #333;
+    margin-bottom: 0.5rem;
+    height: 2rem;
+  }
+
+  div:last-child {
+    font-size: 0.75rem;
+    color: #666;
+  }
+}
+
+/* ═══════════════ Microperforación ═══════════════ */
+.cheque-perforacion {
+  border-top: 2px dashed #ccc;
+  border-bottom: 2px dashed #ccc;
+  height: 0.5rem;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 4px,
+    #f0f0f0 4px,
+    #f0f0f0 8px
+  );
+}
+
+/* ═══════════════ VOUCHER (sección inferior) ═══════════════ */
+.voucher-seccion {
+  padding: 1.5rem 2rem;
+}
+
+.voucher-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.voucher-titulo {
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #000;
+}
+
+.voucher-nro {
+  font-size: 0.8rem;
+  color: #000;
+}
+
+.voucher-fecha {
+  text-align: right;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+.voucher-campos {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.voucher-campo {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #000;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.25rem;
+
+  .voucher-label {
+    font-weight: 600;
+    min-width: 100px;
+    color: #000;
+  }
+
+  .voucher-texto-chico {
+    font-size: 0.7rem;
+  }
+}
+
+.voucher-firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.voucher-firma {
+  text-align: center;
+
+  .voucher-firma-linea {
+    border-bottom: 1px solid #333;
+    margin-bottom: 0.5rem;
+    height: 1.5rem;
+  }
+
+  div:last-child {
+    font-size: 0.7rem;
+    color: #666;
+  }
+}
+
+.voucher-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+  font-size: 0.7rem;
+  color: #000;
+}
+
+/* ═══════════════ Print styles ═══════════════ */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .overlay-impresion {
+    position: static;
+    background: none;
+    padding: 0;
+  }
+
+  .cheque-container {
+    box-shadow: none;
+    margin: 0;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .cheque-container,
+  .cheque-container * {
+    visibility: visible;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\cheques\cheques.ts
+
+```typescript
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
+import { MessageService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+import { CompraPendientePago, ChequeEmitido, BcoCta } from '../../../core/models/bancos.models';
+import { numeroALetras } from '../../../core/utils/numeros-a-letras';
+
+@Component({
+  selector: 'app-bancos-cheques',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule, RouterLink, TableModule, ButtonModule,
+    InputTextModule, InputNumberModule, SelectModule, TagModule, TooltipModule,
+    ToastModule, DialogModule,
+  ],
+  templateUrl: './cheques.html',
+  styleUrl: './cheques.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ChequesBancos implements OnInit {
+  private api = inject(ApiService);
+  private fb = inject(FormBuilder);
+  private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+
+  // Datos
+  bancos = signal<any[]>([]);
+  cuentas = signal<BcoCta[]>([]);
+  facturas = signal<CompraPendientePago[]>([]);
+  chequesGenerados = signal<ChequeEmitido[]>([]);
+  cuentaSeleccionada = signal<BcoCta | null>(null);
+  cargando = signal(false);
+  emitando = signal(false);
+  busqueda = signal('');
+  mostrarImpresion = signal(false);
+  chequeAImprimir = signal<ChequeEmitido | null>(null);
+  dialogConfirmVisible = signal(false);
+  confirmMessage = signal('');
+
+  // Formulario
+  form!: FormGroup;
+
+  ngOnInit() {
+    this.form = this.fb.group({
+      bcoctasId: [null, Validators.required],
+    });
+    this.cargarBancos();
+    this.cargarCuentas();
+  }
+
+  cargarBancos() {
+    this.api.get<any[]>('/bancos/bancos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.bancos.set(data || []); },
+    });
+  }
+
+  cargarCuentas() {
+    this.cargando.set(true);
+    this.api.get<any[]>('/bancos/cuentas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const ctas = (data || [])
+          .filter((c: any) => c.sn_activo === 'S' && c.monedaId === 1) // Solo Lempiras
+          .map((c: any) => ({ ...c, bancoId: Number(c.bancoId) }));
+        this.cuentas.set(ctas);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las cuentas' });
+      },
+    });
+  }
+
+  onCuentaChange(event: any) {
+    const cuentaId = event.value;
+    if (cuentaId) {
+      const cuenta = this.cuentas().find(c => c.bcoctasId === cuentaId);
+      this.cuentaSeleccionada.set(cuenta || null);
+      this.cargarFacturasPendientes();
+    } else {
+      this.cuentaSeleccionada.set(null);
+      this.facturas.set([]);
+    }
+  }
+
+  cargarFacturasPendientes() {
+    this.cargando.set(true);
+    this.api.get<any[]>('/cxp/compras-pag').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.facturas.set((data || []).map((f: any) => {
+          const total = Number(f.total);
+          const saldo = f.saldo != null ? Number(f.saldo) : total;
+          return {
+            ...f,
+            total,
+            _selected: false,
+            _montoPago: saldo,
+          };
+        }));
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las facturas pendientes' });
+      },
+    });
+  }
+
+  // ── Selección ───────────────────────────────────────────
+
+  get facturasSeleccionadas(): CompraPendientePago[] {
+    return this.facturas().filter(f => f._selected);
+  }
+
+  get totalSeleccionado(): number {
+    return this.facturasSeleccionadas.reduce((sum, f) => sum + (f._montoPago || f.total), 0);
+  }
+
+  // Agrupar por proveedor
+  get proveedoresSeleccionados(): { proveedorId: number; codproveedor: string; proveedorNombre: string; facturas: CompraPendientePago[]; total: number }[] {
+    const mapa = new Map<number, { proveedorId: number; codproveedor: string; proveedorNombre: string; facturas: CompraPendientePago[]; total: number }>();
+    for (const f of this.facturasSeleccionadas) {
+      if (!mapa.has(f.proveedorId)) {
+        mapa.set(f.proveedorId, { proveedorId: f.proveedorId, codproveedor: f.codproveedor, proveedorNombre: f.proveedorNombre, facturas: [], total: 0 });
+      }
+      const grp = mapa.get(f.proveedorId)!;
+      grp.facturas.push(f);
+      grp.total += (f._montoPago || f.total);
+    }
+    return Array.from(mapa.values());
+  }
+
+  toggleFactura(factura: CompraPendientePago) {
+    factura._selected = !factura._selected;
+    if (factura._selected && !factura._montoPago) {
+      factura._montoPago = factura.saldo ?? factura.total;
+    }
+    this.facturas.update(facturas => [...facturas]);
+  }
+
+  onMontoPagoChange(factura: CompraPendientePago, valor: number) {
+    if (valor > 0 && valor <= factura.total) {
+      factura._montoPago = valor;
+    } else if (valor > factura.total) {
+      factura._montoPago = factura.total;
+    } else {
+      factura._montoPago = 0.01;
+    }
+    this.facturas.update(facturas => [...facturas]);
+  }
+
+  toggleTodas(event: any) {
+    const checked = event.target.checked;
+    this.facturas.update(facturas => facturas.map(f => ({
+      ...f,
+      _selected: checked,
+      _montoPago: checked ? (f.saldo ?? f.total) : f._montoPago,
+    })));
+  }
+
+  // ── Emisión ─────────────────────────────────────────────
+
+  confirmarEmision() {
+    const grupos = this.proveedoresSeleccionados;
+    if (grupos.length === 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Atención', detail: 'Seleccione al menos una factura para pagar' });
+      return;
+    }
+
+    const total = this.totalSeleccionado;
+    const texto = grupos.map(g => `${g.proveedorNombre}: L ${g.total.toFixed(2)}`).join('\n');
+
+    this.confirmMessage.set(`Se emitirán ${grupos.length} cheque(s) por un total de L ${total.toFixed(2)}:\n\n${texto}`);
+    this.dialogConfirmVisible.set(true);
+  }
+
+  aceptarConfirmacion() {
+    this.dialogConfirmVisible.set(false);
+    this.emitirCheques();
+  }
+
+  cancelarConfirmacion() {
+    this.dialogConfirmVisible.set(false);
+  }
+
+  emitirCheques() {
+    const cuenta = this.cuentaSeleccionada();
+    if (!cuenta) return;
+
+    this.emitando.set(true);
+    const grupos = this.proveedoresSeleccionados;
+
+    // 1 solo request con todos los proveedores
+    this.api.post<any>('/bancos/cheques/emitir', {
+      bcoctasId: cuenta.bcoctasId,
+      bancoId: cuenta.bancoId,
+      grupos: grupos.map(grupo => ({
+        proveedorId: grupo.proveedorId,
+        codproveedor: grupo.codproveedor,
+        beneficiario: grupo.proveedorNombre,
+        facturas: grupo.facturas.map(f => ({
+          compraId: f.compraId,
+          saldo: f._montoPago || f.total,
+          nroReferencia: f.nroreferencia,
+        })),
+      })),
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.emitando.set(false);
+        this.chequesGenerados.set(res.cheques || []);
+        this.msgs.add({ severity: 'success', summary: 'Éxito', detail: res.mensaje });
+        this.facturas.set([]);
+        this.cargarFacturasPendientes();
+      },
+      error: (err) => {
+        this.emitando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al emitir cheques' });
+      },
+    });
+  }
+
+  // ── Impresión ───────────────────────────────────────────
+
+  imprimirCheque(cheque: ChequeEmitido) {
+    this.chequeAImprimir.set(cheque);
+    this.mostrarImpresion.set(true);
+  }
+
+  cerrarImpresion() {
+    this.mostrarImpresion.set(false);
+    this.chequeAImprimir.set(null);
+  }
+
+  windowPrint() {
+    window.print();
+  }
+
+  numeroALetrasValor(num: number): string {
+    return numeroALetras(num);
+  }
+
+  formatCurrency(valor: number): string {
+    return new Intl.NumberFormat('es-HN', { style: 'currency', currency: 'HNL' }).format(valor || 0);
+  }
+
+  formatFecha(fecha: string): string {
+    if (!fecha) return '-';
+    return new Date(fecha).toLocaleDateString('es-HN');
+  }
+
+  bancoNombre(bancoId: number): string {
+    return this.bancos().find(b => b.bancoId === bancoId)?.descripcion || `Banco #${bancoId}`;
+  }
+
+  // ── Helpers ─────────────────────────────────────────────
+
+  get fechaHoy(): string {
+    return new Date().toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  get fechaHoyCorta(): string {
+    return new Date().toLocaleDateString('es-HN');
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\cheques-particulares\cheques-particulares.html
+
+```typescript
+<p-toast />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Cheque a Particular / Empleado</h1>
+      <p class="page-subtitle">Emisión de cheques para personas no proveedoras</p>
+    </div>
+    <a routerLink="/bancos/cheques">
+      <p-button label="Volver a Cheques Proveedores" icon="pi pi-arrow-left" size="small" variant="text" severity="secondary" [rounded]="true" />
+    </a>
+  </header>
+
+  <!-- ═══ Formulario ═══ -->
+  <div class="card" [formGroup]="form">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Cuenta Bancaria Origen <span class="req">*</span></label>
+            <p-select [options]="cuentas()" formControlName="bcoctasId"
+              optionLabel="nrocuenta" optionValue="bcoctasId" placeholder="Seleccionar cuenta..."
+              pSize="small" styleClass="w-full" appendTo="body">
+              <ng-template let-cuenta pTemplate="selectedItem">
+                <div>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</div>
+              </ng-template>
+              <ng-template let-cuenta pTemplate="item">
+                <div>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</div>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Beneficiario <span class="req">*</span></label>
+            <input pInputText formControlName="beneficiario" placeholder="Nombre de la persona" pSize="small" />
+          </div>
+        </div>
+        <div class="p-col-12">
+          <div class="campo">
+            <label>Concepto / Motivo <span class="req">*</span></label>
+            <textarea pInputText formControlName="concepto" rows="2" placeholder="Ej: Pago por despido, gastos varios, etc." pSize="small" style="width:100%;resize:none"></textarea>
+          </div>
+        </div>
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Importe <span class="req">*</span></label>
+            <p-inputNumber formControlName="importe" mode="currency" currency="HNL" [locale]="'es-HN'"
+              [minFractionDigits]="2" [maxFractionDigits]="2" [min]="0.01" pSize="small"
+              styleClass="w-full" [inputStyle]="{ width: '100%' }" />
+          </div>
+        </div>
+        <div class="p-col-12">
+          <div class="form-actions">
+            <p-button size="small" label="Emitir Cheque" icon="pi pi-check-circle" severity="success"
+              variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
+              [disabled]="form.invalid" (click)="emitir()" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Dialog Impresión de Cheque ═══ -->
+@if (mostrarImpresion() && chequeAImprimir()) {
+  <div class="overlay-impresion" (click)="cerrarImpresion()">
+    <div class="cheque-container" (click)="$event.stopPropagation()">
+      <div class="cheque-actions no-print">
+        <p-button icon="pi pi-print" size="small" label="Imprimir" severity="success"
+          variant="text" [raised]="true" [rounded]="true" (click)="windowPrint()" />
+        <p-button icon="pi pi-times" size="small" severity="secondary"
+          variant="text" [rounded]="true" (click)="cerrarImpresion()" />
+      </div>
+
+      <!-- ═══ CHEQUE ═══ -->
+      <div class="cheque-seccion">
+        <div class="cheque-header">
+          <div class="cheque-banco">{{ bancoNombre(cuentaSeleccionada()?.bancoId!) }}</div>
+          <div class="cheque-nro">Cheque N.° {{ chequeAImprimir()!.nrochq }}</div>
+        </div>
+
+        <div class="cheque-fecha">{{ fechaHoy }}</div>
+
+        <div class="cheque-pague-a">
+          <span class="cheque-label">PÁGUESE A LA ORDEN DE:</span>
+          <div class="cheque-beneficiario">{{ chequeAImprimir()!.proveedor }}</div>
+        </div>
+
+        <div class="cheque-importe-fila">
+          <div class="cheque-importe-letras">
+            <span class="cheque-label">LA CANTIDAD DE:</span>
+            <div class="cheque-texto">{{ numeroALetrasValor(chequeAImprimir()!.importe) }}</div>
+          </div>
+          <div class="cheque-importe-numero">
+            <span class="cheque-label">IMPORTE:</span>
+            <div class="cheque-monto">{{ formatCurrency(chequeAImprimir()!.importe) }}</div>
+          </div>
+        </div>
+
+        <div class="cheque-concepto">
+          <span class="cheque-label">CONCEPTO:</span>
+          <div>{{ chequeAImprimir()!.concepto }}</div>
+        </div>
+
+        <div class="cheque-firmas">
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Cédula / Identidad</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Microperforación ═══ -->
+      <div class="cheque-perforacion"></div>
+
+      <!-- ═══ VOUCHER ═══ -->
+      <div class="voucher-seccion">
+        <div class="voucher-header">
+          <div class="voucher-titulo">COMPROBANTE DE PAGO</div>
+          <div class="voucher-nro">Chq N.° {{ chequeAImprimir()!.nrochq }}</div>
+        </div>
+
+        <div class="voucher-fecha">{{ fechaHoy }}</div>
+
+        <div class="voucher-campos">
+          <div class="voucher-campo">
+            <span class="voucher-label">Beneficiario:</span>
+            <span>{{ chequeAImprimir()!.proveedor }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Importe:</span>
+            <span class="font-bold">{{ formatCurrency(chequeAImprimir()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">En letras:</span>
+            <span class="voucher-texto-chico">{{ numeroALetrasValor(chequeAImprimir()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Concepto:</span>
+            <span>{{ chequeAImprimir()!.concepto }}</span>
+          </div>
+        </div>
+
+        <div class="voucher-firmas">
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Recibido Conforme</div>
+          </div>
+        </div>
+
+        <div class="voucher-footer">
+          <div>Empresa: ARCAS SOFTWARE S.A. de C.V.</div>
+          <div>Cuenta: {{ cuentaSeleccionada()?.nrocuenta }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\cheques-particulares\cheques-particulares.scss
+
+```typescript
+/* ═══════════════ Layout general ═══════════════ */
+.page {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+.campo {
+  margin-bottom: 0.75rem;
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .campo-valor {
+    font-weight: 600;
+    color: var(--c-text);
+    font-size: 0.9rem;
+  }
+}
+
+.cuenta-info {
+  display: flex;
+  gap: 2rem;
+}
+
+.req {
+  color: var(--c-error);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-primary {
+  color: var(--c-primary);
+}
+
+/* ═══════════════ Fila seleccionada ═══════════════ */
+.row-seleccionada {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* ═══════════════ Estado vacío ═══════════════ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  span {
+    font-size: 0.9rem;
+  }
+}
+
+/* ═══════════════ Overlay impresión ═══════════════ */
+.overlay-impresion {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.cheque-container {
+  background: white;
+  width: 21.59cm; /* Carta width */
+  max-width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border-radius: 0.25rem;
+  margin: 1rem 0;
+}
+
+.cheque-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+  background: #fafafa;
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+
+/* ═══════════════ CHEQUE (sección superior) ═══════════════ */
+.cheque-seccion {
+  padding: 1.5rem 2rem;
+  border-bottom: 2px dashed #ccc;
+}
+
+.cheque-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cheque-banco {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  text-transform: uppercase;
+}
+
+.cheque-nro {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.cheque-fecha {
+  text-align: right;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  color: #000;
+}
+
+.cheque-pague-a {
+  margin-bottom: 1.25rem;
+}
+
+.cheque-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: #000;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.cheque-beneficiario {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #000;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.cheque-importe-fila {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.cheque-importe-letras {
+  .cheque-texto {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #000;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.25rem;
+    margin-top: 0.25rem;
+    min-height: 1.5rem;
+  }
+}
+
+.cheque-importe-numero {
+  text-align: right;
+
+  .cheque-monto {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    border: 2px solid #1a1a1a;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    margin-top: 0.25rem;
+    min-width: 8rem;
+    text-align: center;
+  }
+}
+
+.cheque-concepto {
+  margin-bottom: 2rem;
+
+  div {
+    font-size: 0.8rem;
+    color: #000;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.25rem;
+    margin-top: 0.25rem;
+  }
+}
+
+.cheque-firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.cheque-firma {
+  text-align: center;
+
+  .cheque-firma-linea {
+    border-bottom: 1px solid #333;
+    margin-bottom: 0.5rem;
+    height: 2rem;
+  }
+
+  div:last-child {
+    font-size: 0.75rem;
+    color: #666;
+  }
+}
+
+/* ═══════════════ Microperforación ═══════════════ */
+.cheque-perforacion {
+  border-top: 2px dashed #ccc;
+  border-bottom: 2px dashed #ccc;
+  height: 0.5rem;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 4px,
+    #f0f0f0 4px,
+    #f0f0f0 8px
+  );
+}
+
+/* ═══════════════ VOUCHER (sección inferior) ═══════════════ */
+.voucher-seccion {
+  padding: 1.5rem 2rem;
+}
+
+.voucher-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.voucher-titulo {
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #000;
+}
+
+.voucher-nro {
+  font-size: 0.8rem;
+  color: #000;
+}
+
+.voucher-fecha {
+  text-align: right;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+.voucher-campos {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.voucher-campo {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #000;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.25rem;
+
+  .voucher-label {
+    font-weight: 600;
+    min-width: 100px;
+    color: #000;
+  }
+
+  .voucher-texto-chico {
+    font-size: 0.7rem;
+  }
+}
+
+.voucher-firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.voucher-firma {
+  text-align: center;
+
+  .voucher-firma-linea {
+    border-bottom: 1px solid #333;
+    margin-bottom: 0.5rem;
+    height: 1.5rem;
+  }
+
+  div:last-child {
+    font-size: 0.7rem;
+    color: #666;
+  }
+}
+
+.voucher-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+  font-size: 0.7rem;
+  color: #000;
+}
+
+/* ═══════════════ Print styles ═══════════════ */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .overlay-impresion {
+    position: static;
+    background: none;
+    padding: 0;
+  }
+
+  .cheque-container {
+    box-shadow: none;
+    margin: 0;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .cheque-container,
+  .cheque-container * {
+    visibility: visible;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\cheques-particulares\cheques-particulares.ts
+
+```typescript
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { TextareaModule } from 'primeng/textarea';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+import { BcoCta } from '../../../core/models/bancos.models';
+import { numeroALetras } from '../../../core/utils/numeros-a-letras';
+
+@Component({
+  selector: 'app-cheques-particulares',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ButtonModule,
+    InputTextModule, InputNumberModule, SelectModule, TextareaModule, ToastModule,
+  ],
+  templateUrl: './cheques-particulares.html',
+  styleUrl: './cheques-particulares.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ChequesParticulares implements OnInit {
+  private api = inject(ApiService);
+  private fb = inject(FormBuilder);
+  private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+
+  // Datos
+  cuentas = signal<BcoCta[]>([]);
+  bancos = signal<any[]>([]);
+  emitando = signal(false);
+  mostrarImpresion = signal(false);
+  chequeAImprimir = signal<any>(null);
+
+  // Formulario
+  form!: FormGroup;
+
+  ngOnInit() {
+    this.form = this.fb.group({
+      bcoctasId: [null, Validators.required],
+      beneficiario: ['', Validators.required],
+      concepto: ['', Validators.required],
+      importe: [0, [Validators.required, Validators.min(0.01)]],
+    });
+    this.cargarCuentas();
+    this.cargarBancos();
+  }
+
+  cargarBancos() {
+    this.api.get<any[]>('/bancos/bancos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.bancos.set(data || []); },
+    });
+  }
+
+  cargarCuentas() {
+    this.api.get<any[]>('/bancos/cuentas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const ctas = (data || [])
+          .filter((c: any) => c.sn_activo === 'S' && c.monedaId === 1)
+          .map((c: any) => ({ ...c, bancoId: Number(c.bancoId) }));
+        this.cuentas.set(ctas);
+      },
+    });
+  }
+
+  bancoNombre(bancoId: number): string {
+    return this.bancos().find(b => b.bancoId === bancoId)?.descripcion || '';
+  }
+
+  cuentaSeleccionada(): BcoCta | null {
+    const id = this.form?.get('bcoctasId')?.value;
+    return this.cuentas().find(c => c.bcoctasId === id) || null;
+  }
+
+  emitir() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.msgs.add({ severity: 'warn', summary: 'Atención', detail: 'Complete todos los campos requeridos' });
+      return;
+    }
+
+    const cuenta = this.cuentaSeleccionada();
+    if (!cuenta) return;
+
+    this.emitando.set(true);
+
+    this.api.post<any>('/bancos/cheques/emitir-particular', {
+      bcoctasId: cuenta.bcoctasId,
+      bancoId: cuenta.bancoId,
+      beneficiario: this.form.value.beneficiario,
+      concepto: this.form.value.concepto,
+      importe: this.form.value.importe,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.emitando.set(false);
+        this.chequeAImprimir.set(res.cheque);
+        this.mostrarImpresion.set(true);
+        this.msgs.add({ severity: 'success', summary: 'Éxito', detail: res.mensaje });
+        this.form.reset({ bcoctasId: null, beneficiario: '', concepto: '', importe: 0 });
+      },
+      error: (err) => {
+        this.emitando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al emitir cheque' });
+      },
+    });
+  }
+
+  // ── Impresión ───────────────────────────────────────────
+
+  cerrarImpresion() {
+    this.mostrarImpresion.set(false);
+    this.chequeAImprimir.set(null);
+  }
+
+  windowPrint() {
+    window.print();
+  }
+
+  numeroALetrasValor(num: number): string {
+    return numeroALetras(num);
+  }
+
+  formatCurrency(valor: number): string {
+    return new Intl.NumberFormat('es-HN', { style: 'currency', currency: 'HNL' }).format(valor || 0);
+  }
+
+  get fechaHoy(): string {
+    return new Date().toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\conciliacion\conciliacion.html
+
+```typescript
+<p-toast />
+<p-confirmDialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Conciliación Bancaria</h1>
+      <p class="page-subtitle">Importar estado de cuenta del banco y conciliar con movimientos internos</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a routerLink="/bancos/movimientos">
+        <p-button label="Movimientos" icon="pi pi-arrow-left" size="small" variant="text" severity="secondary" [rounded]="true" />
+      </a>
+    </div>
+  </header>
+
+  <!-- ═══ PASO 1: SELECCIÓN DE CUENTA ═══ -->
+  @if (paso() === 'seleccion') {
+    <div class="card">
+      <h3 class="col-title">Seleccionar Cuenta Bancaria</h3>
+
+      <div class="grid">
+        <div class="col-12 col-md-4">
+          <div class="p-field">
+            <label>Filtrar por Banco</label>
+            <p-select [options]="cuentasUnicas" [(ngModel)]="filtroBanco" optionLabel="bancoNombre"
+              optionValue="bancoId" placeholder="Todos los bancos" [showClear]="true"
+              styleClass="w-full" size="small" [appendTo]="'body'" />
+          </div>
+        </div>
+      </div>
+
+      <p-table [value]="cuentasFiltradasPorBanco" [loading]="cargando()" [paginator]="true" [rows]="10"
+        [rowsPerPageOptions]="[10, 25]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small"
+        [globalFilterFields]="['nrocuenta', 'banco.descripcion']">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 4rem"></th>
+            <th>Banco</th>
+            <th>Nro. Cuenta</th>
+            <th>Moneda</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-cta>
+          <tr class="cursor-pointer" (click)="seleccionarCuenta(cta.bcoctasId)">
+            <td class="text-center">
+              <p-button icon="pi pi-arrow-right" size="small" variant="text" [rounded]="true" severity="success"
+                (onClick)="seleccionarCuenta(cta.bcoctasId)" />
+            </td>
+            <td>{{ bancoNombre(cta.bancoId) }}</td>
+            <td class="font-bold">{{ cta.nrocuenta }}</td>
+            <td>{{ monedaNombre(cta.monedaId) }}</td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="empty">
+          <tr>
+            <td colspan="4" class="text-center p-4">No hay cuentas bancarias registradas.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+  <!-- ═══ PASO 2: SUBIR ARCHIVO CSV ═══ -->
+  @if (paso() === 'archivo') {
+    <div class="card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="col-title m-0">Importar Estado de Cuenta</h3>
+        <p-button label="Cambiar cuenta" icon="pi pi-arrow-left" size="small" variant="text" severity="secondary"
+          [rounded]="true" (onClick)="nueva()" />
+      </div>
+
+      <div class="grid">
+        <div class="col-12 col-md-6">
+          <div class="p-field">
+            <label>Cuenta bancaria seleccionada</label>
+            <input pInputText [value]="getCuentaNumero(formEncabezado.value.ctabcoId)" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="col-12 col-md-4">
+          <div class="p-field">
+            <label>Fecha desde</label>
+            <p-datepicker size="small" [(ngModel)]="formEncabezado.value.fechaDesde" dateFormat="dd/mm/yy"
+              [showIcon]="true" styleClass="w-full" [appendTo]="'body'" />
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="p-field">
+            <label>Fecha hasta</label>
+            <p-datepicker size="small" [(ngModel)]="formEncabezado.value.fechaHasta" dateFormat="dd/mm/yy"
+              [showIcon]="true" styleClass="w-full" [appendTo]="'body'" />
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="col-12 col-md-4">
+          <div class="p-field">
+            <label>Saldo inicial</label>
+            <p-inputNumber size="small" [(ngModel)]="formEncabezado.value.saldoInicial"
+              mode="currency" currency="HNL" [locale]="'es-HN'"
+              [minFractionDigits]="2" [maxFractionDigits]="2"
+              [useGrouping]="true" styleClass="w-full" />
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="p-field">
+            <label>Saldo final</label>
+            <p-inputNumber size="small" [(ngModel)]="formEncabezado.value.saldoFinal"
+              mode="currency" currency="HNL" [locale]="'es-HN'"
+              [minFractionDigits]="2" [maxFractionDigits]="2"
+              [useGrouping]="true" styleClass="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <div class="upload-zone mt-3">
+        <p-fileUpload mode="basic" name="file" chooseLabel="Seleccionar CSV"
+          accept=".csv,.txt" [maxFileSize]="5242880"
+          (onSelect)="onArchivoSeleccionado($event)"
+          chooseIcon="pi pi-upload" styleClass="w-full" />
+        @if (archivoSeleccionado()) {
+          <div class="mt-2">
+            <p-tag [value]="archivoSeleccionado()!.name" severity="info" />
+            <p-button label="Parsear archivo" icon="pi pi-check" size="small" [rounded]="true" [raised]="true"
+              severity="success" [loading]="cargando()" class="ml-2" (onClick)="parsearArchivo()" />
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ═══ PASO 3: PREVIEW DEL CSV ═══ -->
+  @if (paso() === 'preview') {
+    <div class="card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h3 class="col-title m-0">Preview del Estado de Cuenta</h3>
+          <p class="text-muted text-sm">{{ totalRegistrosCsv() }} registros — {{ seleccionadasCount() }} seleccionados</p>
+        </div>
+        <div class="d-flex gap-2">
+          <p-button label="Volver" icon="pi pi-arrow-left" size="small" variant="text" severity="secondary"
+            [rounded]="true" (onClick)="paso.set('archivo')" />
+          <p-button label="Ejecutar Matching" icon="pi pi-search" size="small" [rounded]="true" [raised]="true"
+            severity="success" [loading]="cargando()" (onClick)="ejecutarMatching()" />
+        </div>
+      </div>
+
+      <p-table [value]="lineasCsv()" [paginator]="true" [rows]="20" [rowsPerPageOptions]="[10, 20, 50, 100]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small"
+        [tableStyle]="{ 'min-width': '40rem' }">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 3rem">
+              <p-tableHeaderCheckbox (onChange)="toggleSeleccionarTodas()" />
+            </th>
+            <th style="width: 8rem">Fecha</th>
+            <th>Nro. Referencia</th>
+            <th>Concepto</th>
+            <th style="width: 8rem">Débito</th>
+            <th style="width: 8rem">Crédito</th>
+            <th style="width: 6rem">Naturaleza</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-linea let-rowIndex="rowIndex">
+          <tr>
+            <td>
+              <p-tableCheckbox [value]="linea" (onChange)="toggleSeleccionLinea(linea)" />
+            </td>
+            <td>{{ getFecha(linea.fecmovbco) }}</td>
+            <td class="font-bold">{{ linea.nrorefencia }}</td>
+            <td>{{ linea.concepto }}</td>
+            <td class="text-right font-bold text-danger">
+              {{ linea.naturaleza === 'D' ? moneda(linea.importe) : '-' }}
+            </td>
+            <td class="text-right font-bold text-success">
+              {{ linea.naturaleza === 'C' ? moneda(linea.importe) : '-' }}
+            </td>
+            <td class="text-center">
+              <p-tag [value]="linea.naturaleza === 'D' ? 'Débito' : 'Crédito'"
+                [severity]="linea.naturaleza === 'D' ? 'danger' : 'success'" />
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+  <!-- ═══ PASO 4: RESULTADO DEL MATCHING ═══ -->
+  @if (paso() === 'resultado') {
+    <!-- RESUMEN -->
+    @if (resumen()) {
+      <div class="grid mb-3">
+        <div class="col-12 col-md-2">
+          <div class="summary-card">
+            <div class="summary-label">Total Registros</div>
+            <div class="summary-value">{{ resumen()!.totalRegistros }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="summary-card success">
+            <div class="summary-label">Conciliados</div>
+            <div class="summary-value">{{ resumen()!.conciliados }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="summary-card danger">
+            <div class="summary-label">Diferencias</div>
+            <div class="summary-value">{{ resumen()!.diferencias }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="summary-card">
+            <div class="summary-label">Total Estado Cuenta</div>
+            <div class="summary-value">L {{ moneda(resumen()!.totalEstadoCuenta) }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="summary-card success">
+            <div class="summary-label">Total Conciliado</div>
+            <div class="summary-value">L {{ moneda(resumen()!.totalConciliado) }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="summary-card danger">
+            <div class="summary-label">Total Diferencia</div>
+            <div class="summary-value">L {{ moneda(resumen()!.totalDiferencia) }}</div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- TABLA RESULTADO -->
+    <div class="card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="col-title m-0">Resultado del Matching</h3>
+        <div class="d-flex gap-2">
+          <p-button label="Nueva Conciliación" icon="pi pi-plus" size="small" variant="text" severity="secondary"
+            [rounded]="true" (onClick)="nueva()" />
+          <p-button label="Guardar Conciliación" icon="pi pi-save" size="small" [rounded]="true" [raised]="true"
+            severity="success" [loading]="cargando()" (onClick)="guardarConciliacion()" />
+        </div>
+      </div>
+
+      <p-table [value]="detalles()" [paginator]="true" [rows]="20" [rowsPerPageOptions]="[10, 20, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small"
+        [tableStyle]="{ 'min-width': '50rem' }"
+        [globalFilterFields]="['nrorefencia', 'concepto']">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 8rem">Fecha</th>
+            <th style="width: 8rem">Ref. Banco</th>
+            <th>Concepto</th>
+            <th style="width: 8rem">Importe</th>
+            <th style="width: 6rem">Naturaleza</th>
+            <th style="width: 8rem">Estado</th>
+            <th>Movimiento Interno</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-det>
+          <tr [class.row-conciliado]="det.sn_conciliado === 'S'" [class.row-diferencia]="det.sn_conciliado === 'N'">
+            <td>{{ getFecha(det.fecmovbco) }}</td>
+            <td class="font-bold">{{ det.nrorefencia }}</td>
+            <td>{{ det.concepto }}</td>
+            <td class="text-right font-bold">{{ moneda(det.importe) }}</td>
+            <td class="text-center">
+              <p-tag [value]="det.naturaleza === 'D' ? 'Débito' : 'Crédito'"
+                [severity]="det.naturaleza === 'D' ? 'danger' : 'success'" />
+            </td>
+            <td class="text-center">
+              <p-tag [value]="det.sn_conciliado === 'S' ? 'Conciliado' : 'Diferencia'"
+                [severity]="det.sn_conciliado === 'S' ? 'success' : 'warn'" />
+            </td>
+            <td class="text-sm">{{ getDetalleBanco(det) }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\bancos\conciliacion\conciliacion.scss
+
+```typescript
+.page {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+.col-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text);
+  margin-bottom: 1rem;
+}
+
+.cursor-pointer { cursor: pointer; }
+
+// ── Upload zone ──
+.upload-zone {
+  border: 2px dashed var(--c-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--c-surface-ground);
+
+  &:hover {
+    border-color: var(--c-primary);
+  }
+}
+
+// ── Summary cards ──
+.summary-card {
+  background: var(--c-surface);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  border-left: 4px solid var(--c-primary);
+
+  &.success { border-left-color: var(--c-success); }
+  &.danger { border-left-color: var(--c-error); }
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summary-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin-top: 0.25rem;
+}
+
+// ── Row highlight ──
+.row-conciliado {
+  background: rgba(16, 185, 129, 0.05) !important;
+}
+
+.row-diferencia {
+  background: rgba(245, 158, 11, 0.05) !important;
+}
+
+// ── Text helpers ──
+.text-muted { color: var(--c-text-muted); }
+.text-sm { font-size: 0.8rem; }
+.text-danger { color: var(--c-error) !important; }
+.text-success { color: var(--c-success) !important; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.font-bold { font-weight: 700; }
+.m-0 { margin: 0; }
+.mb-3 { margin-bottom: 1rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 1rem; }
+.ml-2 { margin-left: 0.5rem; }
+.p-4 { padding: 1rem; }
+.d-flex { display: flex; }
+.gap-2 { gap: 0.5rem; }
+.justify-content-between { justify-content: space-between; }
+.align-items-center { align-items: center; }
+
+// ── Grid helpers ──
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.col-12 { grid-column: span 12; }
+.col-md-2 { grid-column: span 2; }
+.col-md-4 { grid-column: span 4; }
+.col-md-6 { grid-column: span 6; }
+
+@media (max-width: 768px) {
+  .col-md-2, .col-md-4, .col-md-6 { grid-column: span 12; }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\conciliacion\conciliacion.ts
+
+```typescript
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { FileUploadModule } from 'primeng/fileupload';
+import { DatePickerModule } from 'primeng/datepicker';
+import { DialogModule } from 'primeng/dialog';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+import { BcoCta } from '../../../core/models/bancos.models';
+
+interface LineaCsv {
+  fecmovbco: Date | null;
+  concepto: string;
+  nrorefencia: string;
+  importe: number;
+  naturaleza: 'D' | 'C';
+  sn_conciliado?: string;
+  bcomovimientosId?: number;
+  _seleccionada?: boolean;
+}
+
+interface ResumenMatching {
+  totalRegistros: number;
+  conciliados: number;
+  diferencias: number;
+  totalConciliado: number;
+  totalDiferencia: number;
+  totalEstadoCuenta: number;
+}
+
+@Component({
+  selector: 'app-conciliacion-bancaria',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule, RouterLink,
+    TableModule, ButtonModule, InputTextModule, InputNumberModule,
+    SelectModule, TagModule, TooltipModule, ToastModule,
+    FileUploadModule, DatePickerModule, DialogModule, ToolbarModule,
+    ConfirmDialogModule,
+  ],
+  templateUrl: './conciliacion.html',
+  styleUrl: './conciliacion.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ConciliacionBancaria implements OnInit {
+  private api = inject(ApiService);
+  private fb = inject(FormBuilder);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+
+  // Datos
+  bancos = signal<any[]>([]);
+  monedas = signal<any[]>([]);
+  cuentas = signal<BcoCta[]>([]);
+  cuentasFiltradas = signal<BcoCta[]>([]);
+
+  // Estado
+  cargando = signal(false);
+  cuentasCargadas = signal(false);
+  paso = signal<'seleccion' | 'archivo' | 'preview' | 'resultado'>('seleccion');
+
+  // Filtros
+  filtroBanco = signal<number | null>(null);
+
+  // Archivo CSV
+  archivoSeleccionado = signal<File | null>(null);
+  lineasCsv = signal<LineaCsv[]>([]);
+  totalRegistrosCsv = signal(0);
+
+  // Matching
+  resumen = signal<ResumenMatching | null>(null);
+  detalles = signal<LineaCsv[]>([]);
+
+  // Formulario encabezado
+  formEncabezado!: FormGroup;
+
+  // Conciliaciones guardadas
+  historial = signal<any[]>([]);
+
+  ngOnInit() {
+    this.formEncabezado = this.fb.group({
+      ctabcoId: [null, Validators.required],
+      fechaDesde: [null],
+      fechaHasta: [null],
+      saldoInicial: [0],
+      saldoFinal: [0],
+    });
+    this.cargarBancos();
+    this.cargarMonedas();
+    this.cargarCuentas();
+  }
+
+  // ── Carga de datos ──
+
+  private cargarBancos() {
+    this.api.get<any[]>('/bancos/bancos').pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (res) => { this.bancos.set(res ?? []); },
+    });
+  }
+
+  private cargarMonedas() {
+    this.api.get<any[]>('/parametros/monedas').pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (res) => { this.monedas.set(res ?? []); },
+    });
+  }
+
+  private cargarCuentas() {
+    this.cargando.set(true);
+    this.api.get<BcoCta[]>('/bancos/cuentas').pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (res) => {
+        this.cuentas.set(res ?? []);
+        this.cuentasFiltradas.set(res ?? []);
+        this.cuentasCargadas.set(true);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las cuentas bancarias' });
+      },
+    });
+  }
+
+  // ── Selección de cuenta ──
+
+  get cuentasFiltradasPorBanco(): BcoCta[] {
+    const banId = this.filtroBanco();
+    if (!banId) return this.cuentas();
+    return this.cuentas().filter(c => c.bancoId === banId);
+  }
+
+  seleccionarCuenta(ctabcoId: number) {
+    this.formEncabezado.patchValue({ ctabcoId });
+    this.paso.set('archivo');
+  }
+
+  // ── Archivo CSV ──
+
+  onArchivoSeleccionado(event: any) {
+    const file = event.files?.[0];
+    if (!file) return;
+    this.archivoSeleccionado.set(file);
+  }
+
+  parsearArchivo() {
+    const file = this.archivoSeleccionado();
+    if (!file) return;
+
+    this.cargando.set(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.api.post<any[]>('/bancos/conciliaciones/parsear-csv', formData, { sinContexto: true }).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (res) => {
+        const lineas = (res ?? []).map((l: any) => ({
+          ...l,
+          fecmovbco: l.fecmovbco ? new Date(l.fecmovbco) : null,
+          _seleccionada: true,
+        }));
+        this.lineasCsv.set(lineas);
+        this.totalRegistrosCsv.set(lineas.length);
+        this.paso.set('preview');
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'success', summary: 'CSV parseado', detail: `${lineas.length} registros encontrados` });
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo parsear el archivo CSV' });
+      },
+    });
+  }
+
+  // ── Matching ──
+
+  ejecutarMatching() {
+    const ctabcoId = this.formEncabezado.value.ctabcoId;
+    const empresaId = this.api['auth']?.currentUser()?.empresaId;
+    if (!ctabcoId || !empresaId) return;
+
+    const lineasSeleccionadas = this.lineasCsv().filter(l => l._seleccionada);
+    if (lineasSeleccionadas.length === 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Sin datos', detail: 'Seleccione al menos una línea del CSV' });
+      return;
+    }
+
+    this.cargando.set(true);
+    this.api.post<any>('/bancos/conciliaciones/matching', {
+      bcoctasId: ctabcoId,
+      empresaId,
+      lineasCsv: lineasSeleccionadas,
+    }, { sinContexto: true }).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (res) => {
+        const detalles = (res?.detalles ?? []).map((d: any) => ({
+          ...d,
+          fecmovbco: d.fecmovbco ? new Date(d.fecmovbco) : null,
+          _seleccionada: true,
+        }));
+        this.detalles.set(detalles);
+        this.resumen.set(res?.resumen ?? null);
+        this.paso.set('resultado');
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo ejecutar el matching' });
+      },
+    });
+  }
+
+  // ── Guardar conciliación ──
+
+  guardarConciliacion() {
+    const ctabcoId = this.formEncabezado.value.ctabcoId;
+    if (!ctabcoId) return;
+
+    const detalles = this.detalles();
+    if (detalles.length === 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Sin datos', detail: 'No hay detalles para guardar' });
+      return;
+    }
+
+    this.confirm.confirm({
+      message: `¿Guardar conciliación con ${detalles.length} registros?`,
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Guardar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.cargando.set(true);
+        this.api.post<any>('/bancos/conciliaciones', {
+          ctabcoId,
+          fechaDesde: this.formEncabezado.value.fechaDesde,
+          fechaHasta: this.formEncabezado.value.fechaHasta,
+          saldoInicial: this.formEncabezado.value.saldoInicial || 0,
+          saldoFinal: this.formEncabezado.value.saldoFinal || 0,
+          detalles: detalles.map(d => ({
+            fecmovbco: d.fecmovbco,
+            nrorefencia: d.nrorefencia,
+            concepto: d.concepto,
+            importe: d.importe,
+            naturaleza: d.naturaleza,
+            sn_conciliado: d.sn_conciliado || 'N',
+            bcomovimientosId: d.bcomovimientosId || null,
+          })),
+        }).pipe(
+          takeUntilDestroyed(this.destroyRef),
+        ).subscribe({
+          next: (res) => {
+            this.cargando.set(false);
+            this.msgs.add({ severity: 'success', summary: 'Guardado', detail: `Conciliación #${res?.bcoconcilacionId} guardada` });
+            this.nueva();
+          },
+          error: () => {
+            this.cargando.set(false);
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la conciliación' });
+          },
+        });
+      },
+    });
+  }
+
+  // ── Nueva conciliación ──
+
+  nueva() {
+    this.paso.set('seleccion');
+    this.archivoSeleccionado.set(null);
+    this.lineasCsv.set([]);
+    this.detalles.set([]);
+    this.resumen.set(null);
+    this.totalRegistrosCsv.set(0);
+    this.formEncabezado.reset({ ctabcoId: null, fechaDesde: null, fechaHasta: null, saldoInicial: 0, saldoFinal: 0 });
+  }
+
+  // ── Utilidades ──
+
+  moneda(val: any): string {
+    const num = Number(val) || 0;
+    return num.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  getFecha(fecha: Date | string | null): string {
+    if (!fecha) return '-';
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return String(fecha);
+    return d.toLocaleDateString('es-HN');
+  }
+
+  toggleSeleccionLinea(linea: LineaCsv) {
+    linea._seleccionada = !linea._seleccionada;
+  }
+
+  toggleSeleccionarTodas() {
+    const todas = this.lineasCsv();
+    const todasSeleccionadas = todas.every(l => l._seleccionada);
+    todas.forEach(l => l._seleccionada = !todasSeleccionadas);
+  }
+
+  seleccionadasCount(): number {
+    return this.lineasCsv().filter(l => l._seleccionada).length;
+  }
+
+  // ── Helpers para tabla resultado ──
+
+  getDetalleBanco(det: any): string {
+    if (!det.movimiento) return '-';
+    const m = det.movimiento;
+    return `${m.tipomov || ''} - Ref: ${m.nroreferencia || '-'} - ${this.moneda(m.importe)}`;
+  }
+
+  // ── Helpers bancos/cuentas ──
+
+  bancoNombre(bancoId: number): string {
+    return this.bancos().find(b => b.bancoId === bancoId)?.descripcion || `Banco #${bancoId}`;
+  }
+
+  monedaNombre(monedaId: number): string {
+    return this.monedas().find(m => m.monedaId === monedaId)?.descripcion || `Moneda #${monedaId}`;
+  }
+
+  getCuentaNumero(ctabcoId: number): string {
+    const c = this.cuentas().find(ct => (ct as any).bcoctasId === ctabcoId);
+    return (c as any)?.nrocuenta || '-';
+  }
+
+  get cuentasUnicas(): { bancoId: number; bancoNombre: string }[] {
+    const map = new Map<number, string>();
+    this.cuentas().forEach(c => {
+      if (!map.has(c.bancoId)) {
+        map.set(c.bancoId, this.bancoNombre(c.bancoId));
+      }
+    });
+    return Array.from(map.entries()).map(([bancoId, bancoNombre]) => ({ bancoId, bancoNombre }));
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\historial\historial.html
+
+```typescript
+<p-toast />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Historial de Movimientos</h1>
+      <p class="page-subtitle">Consulta de movimientos bancarios</p>
+    </div>
+  </header>
+
+  <!-- ═══ Filtros ═══ -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Cuenta Bancaria</label>
+            <p-select [options]="cuentas()" [(ngModel)]="cuentaFiltro"
+              optionValue="bcoctasId" placeholder="Todas las cuentas"
+              pSize="small" styleClass="w-full" appendTo="body" [showClear]="true"
+              (onChange)="onFiltroChange()">
+              <ng-template let-cuenta pTemplate="selectedItem">
+                <span>{{ cuenta.nrocuenta }} — {{ bancoNombreCuenta(cuenta) }}</span>
+              </ng-template>
+              <ng-template let-cuenta pTemplate="item">
+                <span>{{ cuenta.nrocuenta }} — {{ bancoNombreCuenta(cuenta) }}</span>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Tabla de movimientos ═══ -->
+  <div class="card mb-3">
+    <p-table [value]="movimientos()" [loading]="cargando()" size="small"
+      [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 10rem">Fecha</th>
+          <th>Tipo</th>
+          <th>D/C</th>
+          <th>Referencia</th>
+          <th>Concepto</th>
+          <th style="width: 10rem" class="text-right">Importe</th>
+          <th style="width: 6rem" class="text-center">Estado</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-mov>
+        <tr [class.row-anulada]="mov.sn_doc_anulado === 'S'">
+          <td>{{ formatFecha(mov.fecharegistro) }}</td>
+          <td><p-tag [value]="tipoMovLabel(mov.tipomov)" [severity]="tipoMovSeverity(mov.tipomov)" styleClass="tag-sm" /></td>
+          <td><p-tag [value]="dcLabel(mov.dc_debitocredito)" [severity]="dcSeverity(mov.dc_debitocredito)" styleClass="tag-sm" /></td>
+          <td>{{ mov.nroreferencia || '-' }}</td>
+          <td>{{ mov.concepto || '-' }}</td>
+          <td class="text-right font-bold">{{ formatCurrency(mov.importe) }}</td>
+          <td class="text-center">
+            @if (mov.sn_doc_anulado === 'S') {
+              <p-tag value="Anulado" severity="danger" styleClass="tag-sm" />
+            } @else {
+              <p-tag value="Activo" severity="success" styleClass="tag-sm" />
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center p-3">No hay movimientos para esta cuenta.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\bancos\historial\historial.scss
+
+```typescript
+/* ═══════════════ Layout general ═══════════════ */
+.page {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+.campo {
+  margin-bottom: 0.75rem;
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    margin-bottom: 0.25rem;
+  }
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.row-anulada {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+:host ::ng-deep .tag-sm {
+  font-size: 0.65rem !important;
+  padding: 0.125rem 0.4rem !important;
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\historial\historial.ts
+
+```typescript
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+import { BcoMovimiento } from '../../../core/models/bancos.models';
+import { BcoCta } from '../../../core/models/bancos.models';
+
+@Component({
+  selector: 'app-historial-bancos',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule,
+    SelectModule, TagModule, TooltipModule, ToastModule,
+  ],
+  templateUrl: './historial.html',
+  styleUrl: './historial.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class HistorialBancos implements OnInit {
+  private api = inject(ApiService);
+  private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+
+  // Datos
+  bancos = signal<any[]>([]);
+  cuentas = signal<BcoCta[]>([]);
+  movimientos = signal<BcoMovimiento[]>([]);
+  cuentaFiltro = signal<number | null>(null);
+  cargando = signal(false);
+
+  readonly TIPO_MOV_OPTIONS = [
+    { label: 'Depósito', value: 'DEPOSITO' },
+    { label: 'Retiro', value: 'RETIRO' },
+    { label: 'Transferencia', value: 'TRANSFERENCIA' },
+    { label: 'Pago', value: 'PAGO' },
+  ];
+
+  ngOnInit() {
+    this.cargarBancos();
+    this.cargarCuentas();
+    this.cargarTodos();
+  }
+
+  cargarBancos() {
+    this.api.get<any[]>('/bancos/bancos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.bancos.set(data || []); },
+    });
+  }
+
+  cargarCuentas() {
+    this.api.get<any[]>('/bancos/cuentas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const ctas = (data || []).map((c: any) => ({ ...c, bancoId: Number(c.bancoId) }));
+        this.cuentas.set(ctas);
+      },
+    });
+  }
+
+  cargarTodos() {
+    this.cargando.set(true);
+    this.api.get<any[]>('/bancos/movimientos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.movimientos.set((data || []).map((m: any) => ({
+          ...m,
+          importe: Number(m.importe),
+        })));
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los movimientos' });
+      },
+    });
+  }
+
+  onFiltroChange() {
+    const bcoctasId = this.cuentaFiltro();
+    if (!bcoctasId) {
+      this.cargarTodos();
+      return;
+    }
+    this.cargando.set(true);
+    this.api.get<any[]>('/bancos/movimientos', { bcoctasId: String(bcoctasId) })
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (data) => {
+          this.movimientos.set((data || []).map((m: any) => ({
+            ...m,
+            importe: Number(m.importe),
+          })));
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.cargando.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los movimientos' });
+        },
+      });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────
+
+  tipoMovLabel(tipo: string): string {
+    return this.TIPO_MOV_OPTIONS.find(o => o.value === tipo)?.label || tipo;
+  }
+
+  tipoMovSeverity(tipo: string): 'success' | 'warn' | 'info' | 'danger' {
+    switch (tipo) {
+      case 'DEPOSITO': return 'success';
+      case 'RETIRO': return 'warn';
+      case 'TRANSFERENCIA': return 'info';
+      case 'PAGO': return 'danger';
+      default: return 'info';
+    }
+  }
+
+  dcLabel(dc: string): string {
+    return dc === 'D' ? 'Débito' : 'Crédito';
+  }
+
+  dcSeverity(dc: string): 'danger' | 'success' {
+    return dc === 'D' ? 'danger' : 'success';
+  }
+
+  formatFecha(fecha: string): string {
+    if (!fecha) return '-';
+    return new Date(fecha).toLocaleString('es-HN', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  formatCurrency(valor: number): string {
+    return new Intl.NumberFormat('es-HN', { style: 'currency', currency: 'HNL' }).format(valor || 0);
+  }
+
+  bancoNombre(bancoId: number): string {
+    return this.bancos().find(b => b.bancoId === bancoId)?.descripcion || `Banco #${bancoId}`;
+  }
+
+  bancoNombreCuenta(cuenta: BcoCta): string {
+    return this.bancoNombre(cuenta.bancoId);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\movimientos\movimientos.html
+
+```typescript
+<p-toast />
+<p-confirmDialog />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Movimientos Bancarios</h1>
+      <p class="page-subtitle">Registro de depósitos, retiros, transferencias y pagos</p>
+    </div>
+    <a routerLink="/bancos/historial">
+      <p-button label="Historial de Movimientos" icon="pi pi-clock" size="small" variant="text" severity="secondary" [rounded]="true" />
+    </a>
+  </header>
+
+  <div class="manager-layout">
+    <!-- ═══ COLUMNA IZQUIERDA: Cuentas ═══ -->
+    <div class="col-izq">
+      <h3 class="col-title">Cuentas Bancarias</h3>
+      <p-table [value]="cuentas()" [loading]="cargando()" 
+      [paginator]="true" [rows]="10"
+        [rowsPerPageOptions]="[10, 25]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        size="small" 
+        dataKey="bcoctasId"
+        rowGroupMode="subheader"
+        groupRowsBy="bancoId">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 40%">Cuenta</th>
+            <th style="width: 30%">Moneda</th>
+            <th style="width: 30%">Estado</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="groupheader" let-cuenta>
+          <tr>
+            <td colspan="3" class="font-bold group-header">
+              <i class="pi pi-building mr-2"></i>{{ bancoNombre(cuenta.bancoId) }}
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-cuenta>
+          <tr (click)="seleccionarCuenta(cuenta)"
+            [class.row-seleccionada]="cuentaSeleccionada()?.bcoctasId === cuenta.bcoctasId"
+            style="cursor: pointer">
+            <td>{{ cuenta.nrocuenta }}</td>
+            <td>{{ monedaNombre(cuenta.monedaId) }}</td>
+            <td class="text-center">
+              <p-tag [value]="cuenta.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+                [severity]="cuenta.sn_activo === 'S' ? 'success' : 'danger'" styleClass="tag-sm" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="3" class="text-center p-3">No hay cuentas registradas.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div> <!-- fin-->
+
+    <!-- ═══ COLUMNA DERECHA: Movimientos ═══ -->
+    <div class="col-der">
+      @if (cuentaSeleccionada()) {
+        <div class="col-der-header">
+          <div class="flex align-items-center gap-2">
+            <p-button icon="pi pi-arrow-left" text size="small" rounded (click)="volver()" />
+            <div>
+              <h3 class="page-title" style="font-size: 1rem; margin: 0">Cuenta: {{ cuentaSeleccionada()!.nrocuenta }} - {{ bancoNombre(cuentaSeleccionada()!.bancoId) }} - {{ monedaNombre(cuentaSeleccionada()!.monedaId) }}</h3>
+              <p class="page-subtitle" style="margin: 0">Movimientos registrados</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="card mb-1">
+          <h5 class="mb-3">{{ editando() ? 'Editar Movimiento' : 'Nuevo Movimiento' }}</h5>
+          <div class="p-fluid" [formGroup]="form">
+            <div class="p-grid">
+              <div class="p-col-12 p-col-4">
+                <div class="campo">
+                  <label>Tipo <span class="req">*</span></label>
+                  <p-select formControlName="tipomov" [options]="TIPO_MOV_OPTIONS"
+                    optionLabel="label" optionValue="value" size="small" styleClass="w-full" appendTo="body" />
+                </div>
+              </div>
+              <div class="p-col-12 p-col-4">
+                <div class="campo">
+                  <label>D/C <span class="req">*</span></label>
+                  <p-select formControlName="dc_debitocredito" [options]="DC_OPTIONS"
+                    optionLabel="label" optionValue="value" size="small" styleClass="w-full" appendTo="body" />
+                </div>
+              </div>
+              <div class="p-col-12">
+                <div class="campo">
+                  <label>Nro. Referencia</label>
+                  <input pInputText formControlName="nroreferencia" pSize="small" placeholder="Número de referencia" fluid />
+                </div>
+              </div>
+              <div class="p-col-12">
+                <div class="campo">
+                  <label>Concepto</label>
+                  <input pInputText formControlName="concepto" pSize="small" placeholder="Descripción del movimiento" fluid />
+                </div>
+              </div>
+              <div class="p-col-12 p-col-4">
+                <div class="campo">
+                  <label>Factor Cambio</label>
+                  <p-inputNumber formControlName="factordecambio" [min]="0" [minFractionDigits]="2"
+                    size="small" 
+                    [locale]="'es-HN'"
+                    styleClass="w-full" [inputStyle]="{ 'width': '100%' }" />
+                </div>
+              </div>
+               <div class="p-col-12 p-col-4">
+                <div class="campo">
+                  <label>Importe <span class="req">*</span></label>
+                  <p-inputNumber 
+                  
+                  formControlName="importe" [min]="0.01" mode="currency" currency="HNL"
+                    [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    size="small" styleClass="w-full" [inputStyle]="{ 'width': '100%' }" [useGrouping]="true" />
+                </div>
+              </div>
+            
+             
+              <div class="p-col-12">
+                <div class="form-actions">
+                  @if (editando()) {
+                    <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text"
+                      [rounded]="true" (click)="limpiarForm()" />
+                  }
+                  <p-button size="small" [label]="editando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check"
+                    severity="success" variant="text" [raised]="true" [rounded]="true"
+                    [loading]="guardando()" [disabled]="form.invalid" (click)="guardar()" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> <!-- fin card mb-1 -->
+      }
+    </div> <!-- fin columna derecha -->
+      
+  </div> <!-- fin manager-layout -->
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\bancos\movimientos\movimientos.scss
+
+```typescript
+/* ═══════════════ Layout manager 2 columnas ═══════════════ */
+.page {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+
+  a { margin-top: -1.75rem; }
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+.manager-layout {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: 1.25rem;
+  align-items: start;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col-izq {
+  min-width: 0;
+  margin-top: 1.25rem;
+}
+
+.col-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text);
+  margin-bottom: 0.75rem;
+}
+
+.col-der {
+  min-width: 0;
+  margin-top: -3.75rem;
+
+  .col-der-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    margin-top: 3px;
+    padding: 0.75rem 1rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 0.5rem;
+  }
+}
+
+.card {
+   margin-top: -2.25rem;
+
+}
+
+/* ═══════════════ Fila seleccionada ═══════════════ */
+.row-seleccionada {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+.row-anulada {
+  opacity: 0.5;
+}
+
+.group-header {
+  background: var(--c-surface-ground) !important;
+  font-weight: 700;
+  color: var(--c-text);
+  padding: 0.6rem 1rem !important;
+}
+
+/* ═══════════════ Estado vacío ═══════════════ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  span {
+    font-size: 0.9rem;
+  }
+}
+
+/* ═══════════════ Utilities ═══════════════ */
+.font-bold {
+  font-weight: 700;
+}
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\movimientos\movimientos.ts
+
+```typescript
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+import { BcoMovimiento } from '../../../core/models/bancos.models';
+
+@Component({
+  selector: 'app-bancos-movimientos',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule, RouterLink, TableModule, ButtonModule,
+    InputTextModule, InputNumberModule, SelectModule, TagModule, TooltipModule,
+    ToastModule, ConfirmDialogModule,
+  ],
+  templateUrl: './movimientos.html',
+  styleUrl: './movimientos.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class MovimientosBancos implements OnInit {
+  private api = inject(ApiService);
+  private fb = inject(FormBuilder);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+
+  // Datos
+  bancos = signal<any[]>([]);
+  monedas = signal<any[]>([]);
+  cuentas = signal<any[]>([]);
+  movimientos = signal<BcoMovimiento[]>([]);
+  factoresCambio = signal<any[]>([]);
+  cuentaSeleccionada = signal<any | null>(null);
+  cargando = signal(false);
+  cargandoMovimientos = signal(false);
+  guardando = signal(false);
+
+  // Formulario
+  form!: FormGroup;
+  editando = signal(false);
+  editId = signal<number | null>(null);
+
+  readonly TIPO_MOV_OPTIONS = [
+    { label: 'Depósito', value: 'DEPOSITO' },
+    { label: 'Retiro', value: 'RETIRO' },
+    { label: 'Transferencia', value: 'TRANSFERENCIA' },
+    { label: 'Pago', value: 'PAGO' },
+  ];
+
+  readonly DC_OPTIONS = [
+    { label: 'Débito', value: 'D' },
+    { label: 'Crédito', value: 'C' },
+  ];
+
+  ngOnInit() {
+    this.form = this.fb.group({
+      tipomov: ['DEPOSITO', Validators.required],
+      dc_debitocredito: ['D', Validators.required],
+      nroreferencia: [''],
+      importe: [0, [Validators.required, Validators.min(0.01)]],
+      concepto: [''],
+      factordecambio: [1],
+    });
+    this.cargarBancos();
+    this.cargarMonedas();
+    this.cargarFactoresCambio();
+    this.cargarCuentas();
+  }
+
+  cargarBancos() {
+    this.api.get<any[]>('/bancos/bancos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.bancos.set(data || []); },
+    });
+  }
+
+  cargarMonedas() {
+    this.api.get<any[]>('/parametros/monedas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.monedas.set(data || []); },
+    });
+  }
+
+  cargarFactoresCambio() {
+    this.api.get<any[]>('/contabilidad/factordecambio').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.factoresCambio.set(data || []); },
+    });
+  }
+
+  cargarCuentas() {
+    this.cargando.set(true);
+    this.api.get<any[]>('/bancos/cuentas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.cuentas.set((data || []).map((c: any) => ({ ...c, bancoId: Number(c.bancoId) })));
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las cuentas' });
+      },
+    });
+  }
+
+  seleccionarCuenta(cuenta: any) {
+    this.cuentaSeleccionada.set(cuenta);
+    this.cargarMovimientos(cuenta.bcoctasId);
+    this.limpiarForm();
+    this.aplicarFactorCambio(cuenta.monedaId);
+  }
+
+  aplicarFactorCambio(monedaId: number) {
+    // Lempira (monedaId=1) siempre es 1.00
+    if (monedaId === 1) {
+      this.form.patchValue({ factordecambio: 1 });
+      return;
+    }
+    // Para otras monedas, buscar en factores de cambio por tipomoneda
+    const mapa: Record<number, string> = { 2: 'D', 3: 'E' };
+    const tipomoneda = mapa[monedaId];
+    if (tipomoneda) {
+      const factor = this.factoresCambio().find(f => f.tipomoneda === tipomoneda);
+      if (factor) {
+        this.form.patchValue({ factordecambio: Number(factor.preciocompra) });
+      }
+    }
+  }
+
+  cargarMovimientos(bcoctasId: number) {
+    this.cargandoMovimientos.set(true);
+    this.api.get<any[]>('/bancos/movimientos', { bcoctasId: String(bcoctasId) })
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (data) => { this.movimientos.set(data || []); this.cargandoMovimientos.set(false); },
+        error: () => {
+          this.cargandoMovimientos.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los movimientos' });
+        },
+      });
+  }
+
+  volver() {
+    this.cuentaSeleccionada.set(null);
+    this.movimientos.set([]);
+    this.limpiarForm();
+  }
+
+  limpiarForm() {
+    this.form.reset({
+      tipomov: 'DEPOSITO',
+      dc_debitocredito: 'D',
+      nroreferencia: '',
+      importe: 0,
+      concepto: '',
+      factordecambio: 1,
+    });
+    this.editando.set(false);
+    this.editId.set(null);
+  }
+
+  nuevo() {
+    this.limpiarForm();
+  }
+
+  editar(mov: BcoMovimiento) {
+    this.editando.set(true);
+    this.editId.set(mov.bcomovimientosId);
+    this.form.reset({
+      tipomov: mov.tipomov,
+      dc_debitocredito: mov.dc_debitocredito,
+      nroreferencia: mov.nroreferencia || '',
+      importe: mov.importe,
+      concepto: mov.concepto || '',
+      factordecambio: mov.factordecambio || 1,
+    });
+  }
+
+  guardar() {
+    if (this.form.invalid || !this.cuentaSeleccionada()) return;
+    const raw = this.form.getRawValue();
+    const cuenta = this.cuentaSeleccionada()!;
+    this.guardando.set(true);
+
+    const payload = {
+      bancoId: cuenta.bancoId,
+      bcoctasId: cuenta.bcoctasId,
+      moduloId: 1,
+      tipomov: raw.tipomov,
+      dc_debitocredito: raw.dc_debitocredito,
+      nroreferencia: raw.nroreferencia || null,
+      factordecambio: raw.factordecambio || 1,
+      importe: raw.importe,
+      concepto: raw.concepto || null,
+      empresaId: cuenta.empresaId,
+    };
+
+    const req$ = this.editando() && this.editId()
+      ? this.api.putBase(`/bancos/movimientos/${this.editId()}?empresaId=${cuenta.empresaId}`, payload)
+      : this.api.post('/bancos/movimientos', payload);
+
+    req$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.msgs.add({
+          severity: 'success',
+          summary: this.editando() ? 'Actualizado' : 'Creado',
+          detail: this.editando() ? 'Movimiento actualizado' : 'Movimiento registrado',
+        });
+        this.limpiarForm();
+        this.cargarMovimientos(cuenta.bcoctasId);
+      },
+      error: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el movimiento' });
+      },
+    });
+  }
+
+  eliminar(mov: BcoMovimiento) {
+    this.confirm.confirm({
+      message: '¿Anular este movimiento?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Anular',
+      rejectLabel: 'Cancelar',
+      rejectButtonProps: { severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.api.putBase(`/bancos/movimientos/${mov.bcomovimientosId}?empresaId=${mov.empresaId}`, { sn_doc_anulado: 'S' })
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.msgs.add({ severity: 'success', summary: 'Anulado', detail: 'Movimiento anulado' });
+              this.cargarMovimientos(this.cuentaSeleccionada()!.bcoctasId);
+            },
+            error: () => {
+              this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo anular' });
+            },
+          });
+      },
+    });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────
+
+  tipoMovLabel(tipo: string): string {
+    return this.TIPO_MOV_OPTIONS.find(o => o.value === tipo)?.label || tipo;
+  }
+
+  tipoMovSeverity(tipo: string): 'success' | 'warn' | 'info' | 'danger' {
+    switch (tipo) {
+      case 'DEPOSITO': return 'success';
+      case 'RETIRO': return 'warn';
+      case 'TRANSFERENCIA': return 'info';
+      case 'PAGO': return 'danger';
+      default: return 'info';
+    }
+  }
+
+  dcLabel(dc: string): string {
+    return dc === 'D' ? 'Débito' : 'Crédito';
+  }
+
+  dcSeverity(dc: string): 'danger' | 'success' {
+    return dc === 'D' ? 'danger' : 'success';
+  }
+
+  formatFecha(fecha: string): string {
+    if (!fecha) return '-';
+    return new Date(fecha).toLocaleString('es-HN', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  formatCurrency(valor: number): string {
+    return new Intl.NumberFormat('es-HN', { style: 'currency', currency: 'HNL' }).format(valor || 0);
+  }
+
+  bancoNombre(bancoId: number): string {
+    return this.bancos().find(b => b.bancoId === bancoId)?.descripcion || `Banco #${bancoId}`;
+  }
+
+  monedaNombre(monedaId: number): string {
+    return this.monedas().find(m => m.monedaId === monedaId)?.descripcion || `#${monedaId}`;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\reimpresion-chq\reimpresion-chq.html
+
+```typescript
+<p-toast />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Reimpresión de Cheques</h1>
+      <p class="page-subtitle">Consultar e imprimir cheques emitidos</p>
+    </div>
+    <a routerLink="/bancos/cheques">
+      <p-button label="Volver a Emisión" icon="pi pi-arrow-left" size="small" variant="text" severity="secondary" [rounded]="true" />
+    </a>
+  </header>
+
+  <!-- ═══ Filtros ═══ -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Cuenta Bancaria</label>
+            <p-select [options]="cuentas()" [(ngModel)]="cuentaFiltro"
+              optionValue="bcoctasId" placeholder="Todas las cuentas"
+              pSize="small" styleClass="w-full" appendTo="body" [showClear]="true"
+              (onChange)="onFiltroChange()">
+              <ng-template let-cuenta pTemplate="selectedItem">
+                <span>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</span>
+              </ng-template>
+              <ng-template let-cuenta pTemplate="item">
+                <span>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</span>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Lista de cheques ═══ -->
+  <div class="card mb-3">
+    <p-table [value]="cheques()" [loading]="cargando()" size="small"
+      [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 8rem">Nro. Cheque</th>
+          <th>Fecha</th>
+          <th>Beneficiario</th>
+          <th style="width: 10rem" class="text-right">Importe</th>
+          <th style="width: 6rem" class="text-center">Estado</th>
+          <th style="width: 6rem" class="text-center">Acción</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-cheque>
+        <tr [class.row-anulada]="cheque.sn_doc_anulado === 'S'">
+          <td class="font-bold">{{ cheque.nrochq }}</td>
+          <td>{{ formatFecha(cheque.fecharegistro) }}</td>
+          <td>{{ beneficiarioDe(cheque) }}</td>
+          <td class="text-right font-bold">{{ formatCurrency(cheque.importe) }}</td>
+          <td class="text-center">
+            @if (cheque.sn_doc_anulado === 'S') {
+              <p-tag value="Anulado" severity="danger" styleClass="tag-sm" />
+            } @else {
+              <p-tag value="Activo" severity="success" styleClass="tag-sm" />
+            }
+          </td>
+          <td class="text-center">
+            @if (cheque.sn_doc_anulado !== 'S') {
+              <p-button icon="pi pi-print" size="small" variant="text" [rounded]="true" severity="secondary"
+                pTooltip="Reimprimir" (click)="imprimirCheque(cheque)" />
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+            <td colspan="6" class="text-center p-3">No hay cheques emitidos.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</section>
+
+<!-- ═══ Dialog Impresión de Cheque ═══ -->
+@if (mostrarImpresion() && chequeSeleccionado()) {
+  <div class="overlay-impresion" (click)="cerrarImpresion()">
+    <div class="cheque-container" (click)="$event.stopPropagation()">
+      <div class="cheque-actions no-print">
+        <p-button icon="pi pi-print" size="small" label="Imprimir" severity="success"
+          variant="text" [raised]="true" [rounded]="true" (click)="windowPrint()" />
+        <p-button icon="pi pi-times" size="small" severity="secondary"
+          variant="text" [rounded]="true" (click)="cerrarImpresion()" />
+      </div>
+
+      <!-- ═══ CHEQUE (sección superior) ═══ -->
+      <div class="cheque-seccion">
+        <div class="cheque-header">
+          <div class="cheque-banco">{{ chequeSeleccionado()!.bancoNombre }}</div>
+          <div class="cheque-nro">Cheque N.° {{ chequeSeleccionado()!.nrochq }}</div>
+        </div>
+
+        <div class="cheque-fecha">{{ fechaHoy }}</div>
+
+        <div class="cheque-pague-a">
+          <span class="cheque-label">PÁGUESE A LA ORDEN DE:</span>
+          <div class="cheque-beneficiario">{{ beneficiario }}</div>
+        </div>
+
+        <div class="cheque-importe-fila">
+          <div class="cheque-importe-letras">
+            <span class="cheque-label">LA CANTIDAD DE:</span>
+            <div class="cheque-texto">{{ numeroALetrasValor(chequeSeleccionado()!.importe) }}</div>
+          </div>
+          <div class="cheque-importe-numero">
+            <span class="cheque-label">IMPORTE:</span>
+            <div class="cheque-monto">{{ formatCurrency(chequeSeleccionado()!.importe) }}</div>
+          </div>
+        </div>
+
+        <div class="cheque-concepto">
+          <span class="cheque-label">CONCEPTO:</span>
+          <div>{{ chequeSeleccionado()!.concepto }}</div>
+        </div>
+
+        <div class="cheque-firmas">
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Cédula / Identidad</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Microperforación ═══ -->
+      <div class="cheque-perforacion"></div>
+
+      <!-- ═══ VOUCHER (sección inferior) ═══ -->
+      <div class="voucher-seccion">
+        <div class="voucher-header">
+          <div class="voucher-titulo">COMPROBANTE DE PAGO</div>
+          <div class="voucher-nro">Chq N.° {{ chequeSeleccionado()!.nrochq }}</div>
+        </div>
+
+        <div class="voucher-fecha">{{ fechaHoy }}</div>
+
+        <div class="voucher-campos">
+          <div class="voucher-campo">
+            <span class="voucher-label">Beneficiario:</span>
+            <span>{{ beneficiario }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Importe:</span>
+            <span class="font-bold">{{ formatCurrency(chequeSeleccionado()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">En letras:</span>
+            <span class="voucher-texto-chico">{{ numeroALetrasValor(chequeSeleccionado()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Concepto:</span>
+            <span>{{ chequeSeleccionado()!.concepto }}</span>
+          </div>
+        </div>
+
+        <div class="voucher-firmas">
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Recibido Conforme</div>
+          </div>
+        </div>
+
+        <div class="voucher-footer">
+          <div>Empresa: ARCAS SOFTWARE S.A. de C.V.</div>
+          <div>Cuenta: {{ chequeSeleccionado()!.nrocuenta }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\reimpresion-chq\reimpresion-chq.scss
+
+```typescript
+/* ═══════════════ Layout general ═══════════════ */
+.page {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+.campo {
+  margin-bottom: 0.75rem;
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .campo-valor {
+    font-weight: 600;
+    color: var(--c-text);
+    font-size: 0.9rem;
+  }
+}
+
+.cuenta-info {
+  display: flex;
+  gap: 2rem;
+}
+
+.req {
+  color: var(--c-error);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-primary {
+  color: var(--c-primary);
+}
+
+/* ═══════════════ Fila seleccionada ═══════════════ */
+.row-seleccionada {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+.row-anulada {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+:host ::ng-deep .tag-sm {
+  font-size: 0.65rem !important;
+  padding: 0.125rem 0.4rem !important;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* ═══════════════ Estado vacío ═══════════════ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  span {
+    font-size: 0.9rem;
+  }
+}
+
+/* ═══════════════ Overlay impresión ═══════════════ */
+.overlay-impresion {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.cheque-container {
+  background: white;
+  width: 21.59cm; /* Carta width */
+  max-width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border-radius: 0.25rem;
+  margin: 1rem 0;
+}
+
+.cheque-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+  background: #fafafa;
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+
+/* ═══════════════ CHEQUE (sección superior) ═══════════════ */
+.cheque-seccion {
+  padding: 1.5rem 2rem;
+  border-bottom: 2px dashed #ccc;
+}
+
+.cheque-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cheque-banco {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  text-transform: uppercase;
+}
+
+.cheque-nro {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.cheque-fecha {
+  text-align: right;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  color: #000;
+}
+
+.cheque-pague-a {
+  margin-bottom: 1.25rem;
+}
+
+.cheque-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: #000;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.cheque-beneficiario {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #000;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.cheque-importe-fila {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.cheque-importe-letras {
+  .cheque-texto {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #000;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.25rem;
+    margin-top: 0.25rem;
+    min-height: 1.5rem;
+  }
+}
+
+.cheque-importe-numero {
+  text-align: right;
+
+  .cheque-monto {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    border: 2px solid #1a1a1a;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    margin-top: 0.25rem;
+    min-width: 8rem;
+    text-align: center;
+  }
+}
+
+.cheque-concepto {
+  margin-bottom: 2rem;
+
+  div {
+    font-size: 0.8rem;
+    color: #000;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.25rem;
+    margin-top: 0.25rem;
+  }
+}
+
+.cheque-firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.cheque-firma {
+  text-align: center;
+
+  .cheque-firma-linea {
+    border-bottom: 1px solid #333;
+    margin-bottom: 0.5rem;
+    height: 2rem;
+  }
+
+  div:last-child {
+    font-size: 0.75rem;
+    color: #666;
+  }
+}
+
+/* ═══════════════ Microperforación ═══════════════ */
+.cheque-perforacion {
+  border-top: 2px dashed #ccc;
+  border-bottom: 2px dashed #ccc;
+  height: 0.5rem;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 4px,
+    #f0f0f0 4px,
+    #f0f0f0 8px
+  );
+}
+
+/* ═══════════════ VOUCHER (sección inferior) ═══════════════ */
+.voucher-seccion {
+  padding: 1.5rem 2rem;
+}
+
+.voucher-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.voucher-titulo {
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #000;
+}
+
+.voucher-nro {
+  font-size: 0.8rem;
+  color: #000;
+}
+
+.voucher-fecha {
+  text-align: right;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+.voucher-campos {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.voucher-campo {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #000;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.25rem;
+
+  .voucher-label {
+    font-weight: 600;
+    min-width: 100px;
+    color: #000;
+  }
+
+  .voucher-texto-chico {
+    font-size: 0.7rem;
+  }
+}
+
+.voucher-firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.voucher-firma {
+  text-align: center;
+
+  .voucher-firma-linea {
+    border-bottom: 1px solid #333;
+    margin-bottom: 0.5rem;
+    height: 1.5rem;
+  }
+
+  div:last-child {
+    font-size: 0.7rem;
+    color: #666;
+  }
+}
+
+.voucher-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+  font-size: 0.7rem;
+  color: #000;
+}
+
+/* ═══════════════ Print styles ═══════════════ */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .overlay-impresion {
+    position: static;
+    background: none;
+    padding: 0;
+  }
+
+  .cheque-container {
+    box-shadow: none;
+    margin: 0;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .cheque-container,
+  .cheque-container * {
+    visibility: visible;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\bancos\reimpresion-chq\reimpresion-chq.ts
+
+```typescript
+import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { DialogModule } from 'primeng/dialog';
+import { MessageService } from 'primeng/api';
+import { ApiService } from '../../../core/services/api.service';
+import { BcoCta } from '../../../core/models/bancos.models';
+import { numeroALetras } from '../../../core/utils/numeros-a-letras';
+
+interface ChequeRecord {
+  bcomovimientosId: number;
+  fecharegistro: string;
+  nrochq: string;
+  importe: number;
+  concepto: string;
+  sn_doc_anulado: string;
+  bcoctasId: number;
+  nrocuenta: string;
+  bancoNombre: string;
+}
+
+@Component({
+  selector: 'app-reimpresion-chq',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, RouterLink, TableModule, ButtonModule, InputTextModule,
+    SelectModule, TagModule, TooltipModule, ToastModule, DialogModule,
+  ],
+  templateUrl: './reimpresion-chq.html',
+  styleUrl: './reimpresion-chq.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ReimpresionChq implements OnInit {
+  private api = inject(ApiService);
+  private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+
+  // Datos
+  cuentas = signal<BcoCta[]>([]);
+  cheques = signal<ChequeRecord[]>([]);
+  bancos = signal<any[]>([]);
+  cuentaFiltro = signal<number | null>(null);
+  cargando = signal(false);
+
+  // Impresión
+  mostrarImpresion = signal(false);
+  chequeSeleccionado = signal<ChequeRecord | null>(null);
+
+  ngOnInit() {
+    this.cargarBancos();
+    this.cargarCuentas();
+    this.cargarCheques();
+  }
+
+  cargarBancos() {
+    this.api.get<any[]>('/bancos/bancos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.bancos.set(data || []); },
+    });
+  }
+
+  cargarCuentas() {
+    this.api.get<any[]>('/bancos/cuentas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => { this.cuentas.set(data || []); },
+    });
+  }
+
+  cargarCheques() {
+    this.cargando.set(true);
+    const params: any = {};
+    if (this.cuentaFiltro()) params.bcoctasId = String(this.cuentaFiltro());
+
+    this.api.get<any[]>('/bancos/cheques', params).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.cheques.set((data || []).map((c: any) => ({
+          ...c,
+          importe: Number(c.importe),
+        })));
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los cheques' });
+      },
+    });
+  }
+
+  onFiltroChange() {
+    this.cargarCheques();
+  }
+
+  bancoNombre(bancoId: number): string {
+    return this.bancos().find(b => b.bancoId === bancoId)?.descripcion || `Banco #${bancoId}`;
+  }
+
+  // ── Impresión ───────────────────────────────────────────
+
+  imprimirCheque(cheque: ChequeRecord) {
+    this.chequeSeleccionado.set(cheque);
+    this.mostrarImpresion.set(true);
+  }
+
+  cerrarImpresion() {
+    this.mostrarImpresion.set(false);
+    this.chequeSeleccionado.set(null);
+  }
+
+  windowPrint() {
+    window.print();
+  }
+
+  numeroALetrasValor(num: number): string {
+    return numeroALetras(num);
+  }
+
+  formatCurrency(valor: number): string {
+    return new Intl.NumberFormat('es-HN', { style: 'currency', currency: 'HNL' }).format(valor || 0);
+  }
+
+  formatFecha(fecha: string): string {
+    if (!fecha) return '-';
+    return new Date(fecha).toLocaleDateString('es-HN');
+  }
+
+  beneficiarioDe(cheque: ChequeRecord): string {
+    const match = cheque.concepto?.match(/^Pago a favor de (.+?), facturas:/);
+    return match ? match[1] : cheque.concepto || '';
+  }
+
+  get fechaHoy(): string {
+    return new Date().toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  // Beneficiario del cheque: extraer del concepto "Pago proveedor XXX - Chq YYY"
+  get beneficiario(): string {
+    const cheque = this.chequeSeleccionado();
+    if (!cheque) return '';
+    const match = cheque.concepto?.match(/^Pago proveedor (.+?) - Chq/);
+    return match ? match[1] : cheque.concepto || '';
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\features\configuracion\configuracion.routes.ts
 
 ```typescript
@@ -6366,17 +11832,7 @@ export const CONFIGURACION_ROUTES: Routes = [
   {
     path: 'empresas',
     loadComponent: () =>
-      import('../parametros/lista-empresas/lista-empresas').then((m) => m.ListaEmpresas),
-  },
-  {
-    path: 'empresas/nuevo',
-    loadComponent: () =>
-      import('../parametros/lista-empresas/empresa-form').then((m) => m.EmpresaForm),
-  },
-  {
-    path: 'empresas/editar/:id',
-    loadComponent: () =>
-      import('../parametros/lista-empresas/empresa-form').then((m) => m.EmpresaForm),
+      import('./empresas/empresas-manager').then((m) => m.EmpresasManager),
   },
 
   // Usuarios
@@ -6485,15 +11941,1895 @@ export const CONFIGURACION_ROUTES: Routes = [
       import('./settings/settings').then((m) => m.Settings),
   },
 
-  // IA Settings
+  // Parámetros por módulo
   {
-    path: 'ia',
+    path: 'param-modulos',
     loadComponent: () =>
-      import('./settings/settings').then((m) => m.Settings),
+      import('../parametros/param-manager-modulos/param-manager-modulos').then((m) => m.ParamManagerModulos),
   },
 
   { path: '**', redirectTo: 'empresas' },
 ];
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\empresas\empresas-manager.html
+
+```typescript
+<p-toast />
+<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+<div class="empresas-manager">
+  <div class="split-layout">
+
+    <!-- ========== COLUMNA IZQUIERDA: Detalle ========== -->
+    <div class="left-column">
+      <!-- Empty state -->
+      @if (!empresaSeleccionada()) {
+      <div class="empty-state">
+        <i class="pi pi-building empty-icon"></i>
+        <h3>Seleccione una empresa</h3>
+        <p>Haga clic en una empresa de la lista para ver su información</p>
+        <p-button label="Nueva Empresa" icon="pi pi-plus" (click)="nueva()" severity="success" variant="text" [rounded]="true" size="small" />
+      </div>
+      }
+
+      <!-- Tabs detalle -->
+      @if (empresaSeleccionada()) {
+      <div class="empresa-detail">
+        <p-tabs [value]="activeTabValue()" (valueChange)="activeTabValue.set($event)">
+          <p-tablist>
+            <p-tab value="0">
+              <i class="pi pi-building"></i>
+              <span>Empresa</span>
+            </p-tab>
+            <p-tab value="1">
+              <i class="pi pi-id-card"></i>
+              <span>Datos Específicos</span>
+            </p-tab>
+            <p-tab value="2">
+              <i class="pi pi-map-marker"></i>
+              <span>Sucursales</span>
+            </p-tab>
+            <p-tab value="3">
+              <i class="pi pi-file-edit"></i>
+              <span>CAI</span>
+            </p-tab>
+            <p-tab value="4">
+              <i class="pi pi-image"></i>
+              <span>Logo</span>
+            </p-tab>
+            <p-tab value="5">
+              <i class="pi pi-print"></i>
+              <span>Impresoras</span>
+            </p-tab>
+          </p-tablist>
+
+          <p-tabpanels>
+            <!-- TAB 0: Empresa - Formulario 2 columnas -->
+            <p-tabpanel value="0">
+              <div class="tab-content">
+                <div class="prestamo-form-columns">
+                  <!-- Columna 1 -->
+                  <div class="form-col">
+                    <h4 class="form-col-title">Información General</h4>
+                    <div class="p-fluid" [formGroup]="empresaForm">
+                      <div class="campo">
+                        <label for="descripcion">Descripción <span class="req">*</span></label>
+                        <input pInputText id="descripcion" formControlName="descripcion" pSize="small" placeholder="Nombre de la empresa" />
+                        @if (empresaForm.get('descripcion')?.invalid && empresaForm.get('descripcion')?.touched) {
+                        <small class="err">Ingrese la descripción</small>
+                        }
+                      </div>
+                      <div class="campo">
+                        <label for="sn_activo">Estado</label>
+                        <p-select id="sn_activo" formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Columna 2 -->
+                  <div class="form-col">
+                    <h4 class="form-col-title">Mensajes</h4>
+                    <div class="p-fluid" [formGroup]="empresaForm">
+                      <div class="campo">
+                        <label for="msjfactura">Mensaje Factura</label>
+                        <textarea pTextarea id="msjfactura" formControlName="msjfactura" [rows]="3" pSize="small" placeholder="Mensaje al pie de factura"></textarea>
+                      </div>
+                      <div class="campo">
+                        <label for="msjdevfactura">Mensaje Devolución</label>
+                        <textarea pTextarea id="msjdevfactura" formControlName="msjdevfactura" [rows]="3" pSize="small" placeholder="Mensaje de política de devolución"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="saving()" (onClick)="guardarEmpresa()" />
+                </div>
+              </div>
+            </p-tabpanel>
+
+            <!-- TAB 1: Datos Específicos -->
+            <p-tabpanel value="1">
+              <div class="tab-content">
+                <!-- Formulario agregar/editar -->
+                <div class="card mb-3">
+                  <div class="p-fluid" [formGroup]="detForm">
+                    <div class="p-grid">
+                      <div class="p-col-12 p-col-6">
+                        <div class="campo">
+                          <label>Tipo</label>
+                          <p-select formControlName="tipo" [options]="TIPO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-6">
+                        <div class="campo">
+                          <label>Valor <span class="req">*</span></label>
+                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Valor" />
+                        </div>
+                      </div>
+                      <div class="p-col-12">
+                        <div class="form-actions">
+                          @if (detEditando()) {
+                          <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarDet()" />
+                          }
+                          <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingDet()" (onClick)="guardarDet()" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Lista -->
+                @if (empresaDet().length > 0) {
+                <p-table [value]="empresaDet()" size="small" [tableStyle]="{ 'min-width': '40rem' }">
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th>Tipo</th>
+                      <th>Valor</th>
+                      <th style="width: 8rem;">Acciones</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-det>
+                    <tr>
+                      <td><p-tag [value]="det.tipo" severity="info" styleClass="tag-sm" /></td>
+                      <td>{{ det.descripcion }}</td>
+                      <td>
+                        <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarDet(det)" />
+                        <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarDet(det)" />
+                      </td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+                } @else {
+                <div class="text-center text-muted py-3">No hay datos registrados</div>
+                }
+              </div>
+            </p-tabpanel>
+
+            <!-- TAB 2: Sucursales -->
+            <p-tabpanel value="2">
+              <div class="tab-content">
+                <div class="card mb-3">
+                  <div class="p-fluid" [formGroup]="sucForm">
+                    <div class="p-grid">
+                      <div class="p-col-12 p-col-6">
+                        <div class="campo">
+                          <label>Descripción <span class="req">*</span></label>
+                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Nombre sucursal" />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-3">
+                        <div class="campo">
+                          <label>Estado</label>
+                          <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-3">
+                        <div class="campo">
+                          <label>&nbsp;</label>
+                          <div class="d-flex gap-2">
+                            @if (sucEditando()) {
+                            <p-button size="small" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarSuc()" />
+                            }
+                            <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingSuc()" (onClick)="guardarSucursal()" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                @if (sucursales().length > 0) {
+                <p-table [value]="sucursales()" size="small" [tableStyle]="{ 'min-width': '30rem' }">
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th>ID</th>
+                      <th>Descripción</th>
+                      <th>Estado</th>
+                      <th style="width: 5rem;">Acciones</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-suc>
+                    <tr>
+                      <td class="text-center">{{ suc.idsucursal }}</td>
+                      <td>{{ suc.descripcion }}</td>
+                      <td><p-tag [value]="getEstadoLabel(suc.sn_activo)" [severity]="getEstadoSeverity(suc.sn_activo)" styleClass="tag-sm" /></td>
+                      <td>
+                        <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarSuc(suc)" />
+                      </td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+                } @else {
+                <div class="text-center text-muted py-3">No hay sucursales registradas</div>
+                }
+              </div>
+            </p-tabpanel>
+
+            <!-- TAB 3: CAI - Maestro/Detalle -->
+            <p-tabpanel value="3">
+              <div class="tab-content">
+                <!-- Maestro: Lista de CAIs -->
+                <p-fieldset legend="CAI Registrados" [toggleable]="true">
+                  @if (caiRecords().length > 0) {
+                  <div class="cai-list">
+                    @for (cai of caiRecords(); track cai.empresasdetId) {
+                    <div class="cai-item" [class.selected]="caiSeleccionado()?.empresasdetId === cai.empresasdetId" (click)="seleccionarCai(cai)">
+                      <div class="cai-item-header">
+                        <p-tag [value]="getEstadoLabel(cai.sn_activo)" [severity]="getEstadoSeverity(cai.sn_activo)" styleClass="tag-sm" />
+                        <div class="cai-item-actions">
+                          <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (click)="editarCai(cai); $event.stopPropagation()" />
+                          <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (click)="eliminarCai(cai); $event.stopPropagation()" />
+                        </div>
+                      </div>
+                      <div class="cai-item-code">{{ getCaiDescripcion(cai) }}</div>
+                    </div>
+                    }
+                  </div>
+                  } @else {
+                  <div class="text-center text-muted py-3">No hay CAIs registrados</div>
+                  }
+
+                  <!-- Formulario nuevo/editar CAI -->
+                  <div class="card mt-3">
+                    <h5 class="mb-3">{{ caiEditando() ? 'Editar CAI' : 'Nuevo CAI' }}</h5>
+                    <div class="p-fluid" [formGroup]="caiForm">
+                      <div class="p-grid">
+                        <div class="p-col-12 p-col-8">
+                          <div class="campo">
+                            <label>Código CAI <span class="req">*</span> <small class="text-muted">(mínimo 35 caracteres, letras/números/guiones)</small></label>
+                            <input pInputText formControlName="descripcion" pSize="small" placeholder="Ejemplo: A1B2FF-C3D4FF-E5F6BB-G7H8GG-I9J0TT-K1" [style]="{ 'font-family': 'monospace' }" />
+                            @if (caiForm.get('descripcion')?.touched && caiForm.get('descripcion')?.invalid) {
+                            <small class="err">
+                              @if (caiForm.get('descripcion')?.errors?.['minlength']) {
+                              Mínimo 35 caracteres (actual: {{ caiForm.get('descripcion')?.value?.length || 0 }})
+                              } @else {
+                              Solo letras, números y guiones
+                              }
+                            </small>
+                            }
+                          </div>
+                        </div>
+                        <div class="p-col-12 p-col-4">
+                          <div class="campo">
+                            <label>Estado</label>
+                            <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
+                          </div>
+                        </div>
+                      </div>
+                      <div class="form-actions">
+                        @if (caiEditando()) {
+                        <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarCai()" />
+                        }
+                        <p-button size="small" [label]="caiEditando() ? 'Actualizar CAI' : 'Crear CAI'" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingCai()" (onClick)="guardarCai()" />
+                      </div>
+                    </div>
+                  </div>
+                </p-fieldset>
+
+                <!-- Detalle: Correlativos del CAI seleccionado -->
+                @if (caiSeleccionado()) {
+                <p-fieldset legend="Correlativos (Rangos de Factura)" [toggleable]="true" styleClass="mt-3">
+                  <!-- Formulario nuevo/editar correlativo -->
+                  <div class="card mb-3">
+                    <h5 class="mb-3">{{ corrEditando() ? 'Editar Correlativo' : 'Nuevo Correlativo' }}</h5>
+                    <div class="p-fluid" [formGroup]="corrForm">
+                      <div class="p-grid">
+                        <div class="p-col-12 p-col-6">
+                          <div class="campo">
+                            <label>Sucursal <span class="req">*</span></label>
+                            <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" pSize="small" styleClass="w-full" appendTo="body" placeholder="Seleccionar sucursal" (onChange)="onSucursalChange()" />
+                          </div>
+                        </div>
+                        <div class="p-col-12 p-col-6">
+                          <div class="campo">
+                            <label>Nro. Factura Actual <span class="req">*</span></label>
+                            <p-inputNumber formControlName="nrofactura" [min]="0" pSize="small" styleClass="w-full" [inputStyle]="{ 'width': '100%' }" />
+                          </div>
+                        </div>
+                        <div class="p-col-12 p-col-4">
+                          <div class="campo">
+                            <label>Rango Desde <span class="req">*</span></label>
+                            <input pInputText formControlName="rangoDesde" pSize="small" placeholder="001-001-01000001" />
+                          </div>
+                        </div>
+                        <div class="p-col-12 p-col-4">
+                          <div class="campo">
+                            <label>Rango Hasta <span class="req">*</span></label>
+                            <input pInputText formControlName="rangoHasta" pSize="small" placeholder="001-001-01000500" />
+                          </div>
+                        </div>
+                        <div class="p-col-12 p-col-4">
+                          <div class="campo">
+                            <label>Fecha Límite <span class="req">*</span></label>
+                            <p-datepicker formControlName="fechaLimite" pSize="small" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" placeholder="Fecha de vencimiento" />
+                          </div>
+                        </div>
+                        <div class="p-col-12">
+                          <div class="form-actions">
+                            @if (corrEditando()) {
+                            <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarCorr()" />
+                            }
+                            <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingCorr()" (onClick)="guardarCorrelativo()" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Lista de correlativos -->
+                  @if (correlativos().length > 0) {
+                  <p-table [value]="correlativos()" size="small" [tableStyle]="{ 'min-width': '55rem' }">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th>Sucursal</th>
+                        <th>Rango</th>
+                        <th>Nro. Factura</th>
+                        <th>Disponibles</th>
+                        <th>Estado</th>
+                        <th>Fecha Límite</th>
+                        <th style="width: 8rem;">Acciones</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-corr>
+                      <tr [class.row-agotado]="getRangoEstado(corr.Idsucursal) === 'AGOTADO'" [class.row-critico]="getRangoEstado(corr.Idsucursal) === 'CRITICO'" [class.row-alerta]="getRangoEstado(corr.Idsucursal) === 'ALERTA'">
+                        <td>{{ getSucursalNombre(corr.Idsucursal) }}</td>
+                        <td>
+                          <div class="rango-info">
+                            <span class="rango-text">{{ corr.rangoDesde }} → {{ corr.rangoHasta }}</span>
+                            <div class="rango-progress-container">
+                              <div class="rango-progress-bar" [style.width.%]="getRangoPorcentaje(corr.Idsucursal)" [class.progress-ok]="getRangoEstado(corr.Idsucursal) === 'OK'" [class.progress-alerta]="getRangoEstado(corr.Idsucursal) === 'ALERTA'" [class.progress-critico]="getRangoEstado(corr.Idsucursal) === 'CRITICO' || getRangoEstado(corr.Idsucursal) === 'AGOTADO'"></div>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="text-center">{{ corr.nrofactura }}</td>
+                        <td>
+                          <span class="disponibles-text">{{ getRangoDisponible(corr.Idsucursal) }}</span>
+                          <span class="porcentaje-text">({{ getRangoPorcentaje(corr.Idsucursal) }}%)</span>
+                        </td>
+                        <td><p-tag [value]="getRangoLabel(corr.Idsucursal)" [severity]="getRangoEstadoSeverity(corr.Idsucursal)" styleClass="tag-sm" /></td>
+                        <td>{{ formatFecha(corr.fechaLimite) }}</td>
+                        <td>
+                          <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarCorr(corr)" />
+                          <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarCorr(corr)" />
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+                  } @else {
+                  <div class="text-center text-muted py-3">No hay correlativos registrados para este CAI</div>
+                  }
+                </p-fieldset>
+                }
+              </div>
+            </p-tabpanel>
+
+            <!-- TAB 4: Logo -->
+            <p-tabpanel value="4">
+              <div class="tab-content">
+                <div class="card mb-3">
+                  <h5 class="mb-3">Logotipo de la Empresa</h5>
+                  <p class="text-muted mb-3">Se mostrará en facturas, reportes y tickets térmicos.</p>
+
+                  <!-- Preview del logo -->
+                  @if (logoPreview()) {
+                  <div class="logo-preview-container">
+                    <img [src]="logoPreview()" alt="Logo empresa" class="logo-preview-img" />
+                  </div>
+                  } @else {
+                  <div class="logo-empty">
+                    <i class="pi pi-image" style="font-size: 3rem; color: var(--c-text-muted);"></i>
+                    <p class="text-muted mt-2">No hay logo configurado</p>
+                  </div>
+                  }
+
+                  <!-- Upload -->
+                  <div class="d-flex gap-2 mt-3 align-items-center">
+                    <label class="p-button p-button-sm p-button-outlined p-button-secondary" style="cursor: pointer;">
+                      <i class="pi pi-upload mr-2"></i>
+                      <span>{{ logoPreview() ? 'Cambiar imagen' : 'Seleccionar imagen' }}</span>
+                      <input type="file" accept="image/png,image/jpeg,image/jpg" (change)="onLogoSelect($event)" style="display: none;" />
+                    </label>
+                    @if (logoPreview()) {
+                    <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingLogo()" (onClick)="guardarLogo()" />
+                    <p-button size="small" label="Eliminar" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" (onClick)="eliminarLogo()" />
+                    }
+                  </div>
+                </div>
+              </div>
+            </p-tabpanel>
+
+            <!-- TAB 5: Impresoras -->
+            <p-tabpanel value="5">
+              <div class="tab-content">
+                <!-- Formulario agregar/editar -->
+                <div class="card mb-3">
+                  <h5 class="mb-3">{{ impEditando() ? 'Editar Impresora' : 'Nueva Impresora' }}</h5>
+                  <div class="p-fluid" [formGroup]="impForm">
+                    <div class="p-grid">
+                      <div class="p-col-12 p-col-6">
+                        <div class="campo">
+                          <label>Descripción</label>
+                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Nombre de la impresora" />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-3">
+                        <div class="campo">
+                          <label>Formato</label>
+                          <p-select formControlName="formato" [options]="FORMATO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-3">
+                        <div class="campo">
+                          <label>Modo Correlativo</label>
+                          <p-select formControlName="modo_correlativo" [options]="MODO_CORRELATIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" pTooltip="Automático: usa rangos CAI. Manual: ingresa número manually." />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-3">
+                        <div class="campo">
+                          <label>Sucursal <span class="req">*</span></label>
+                          <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" pSize="small" styleClass="w-full" appendTo="body" placeholder="Seleccionar" />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-6">
+                        <div class="campo">
+                          <label>Driver</label>
+                          <input pInputText formControlName="driver" pSize="small" placeholder="Ej: EPSON, BIXOLON" />
+                        </div>
+                      </div>
+                      <div class="p-col-12 p-col-6">
+                        <div class="campo">
+                          <label>Puerto</label>
+                          <input pInputText formControlName="puerto" pSize="small" placeholder="Ej: USB, LPT1, COM1" />
+                        </div>
+                      </div>
+                      <div class="p-col-12">
+                        <div class="form-actions">
+                          @if (impEditando()) {
+                          <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarImp()" />
+                          }
+                          <p-button size="small" [label]="impEditando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingImp()" (onClick)="guardarImpresora()" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Lista -->
+                @if (impresoras().length > 0) {
+                <p-table [value]="impresoras()" size="small" [tableStyle]="{ 'min-width': '45rem' }">
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th>Descripción</th>
+                      <th>Formato</th>
+                      <th>Modo</th>
+                      <th>Sucursal</th>
+                      <th>Driver</th>
+                      <th>Puerto</th>
+                      <th style="width: 8rem;">Acciones</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-imp>
+                    <tr>
+                      <td>{{ imp.descripcion || '-' }}</td>
+                      <td><p-tag [value]="imp.formato" [severity]="imp.formato === 'TICKET' ? 'info' : 'warn'" styleClass="tag-sm" /></td>
+                      <td><p-tag [value]="imp.modo_correlativo === 'A' ? 'Automático' : 'Manual'" [severity]="imp.modo_correlativo === 'A' ? 'success' : 'secondary'" styleClass="tag-sm" /></td>
+                      <td>{{ getSucursalNombre(imp.Idsucursal) }}</td>
+                      <td>{{ imp.driver || '-' }}</td>
+                      <td>{{ imp.puerto || '-' }}</td>
+                      <td>
+                        <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarImp(imp)" />
+                        <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarImp(imp)" />
+                      </td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+                } @else {
+                <div class="text-center text-muted py-3">No hay impresoras configuradas</div>
+                }
+              </div>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+      </div>
+      }
+    </div>
+
+    <!-- ========== COLUMNA DERECHA: Lista ========== -->
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <p-iconField>
+            <p-inputIcon class="pi pi-search" />
+            <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event); filtrar()" placeholder="Buscar empresa..." class="search-input" />
+            @if (q()) {
+            <p-button icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text" [rounded]="true" size="small" />
+            }
+          </p-iconField>
+        </div>
+        <p-button size="small" icon="pi pi-plus" severity="success" variant="text" [rounded]="true" pTooltip="Nueva empresa" (onClick)="nueva()" />
+      </div>
+
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item"><p-skeleton styleClass="mb-2" /><p-skeleton width="60%" styleClass="mb-2" /><p-skeleton width="40%" /></div>
+        }
+      </div>
+      } @else if (empresasFiltradas().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-building empty-icon"></i>
+        <h3>No hay empresas</h3>
+        <p>Registre una empresa para comenzar</p>
+      </div>
+      } @else {
+      <div class="empresa-list">
+        @for (emp of empresasFiltradas(); track emp.empresaId) {
+        <div class="empresa-item-ficha" [class.selected]="empresaSeleccionada()?.empresaId === emp.empresaId" (click)="seleccionar(emp)">
+          <div class="ficha-header">
+            <span class="ficha-id">#{{ emp.empresaId }}</span>
+            <p-tag [value]="getEstadoLabel(emp.sn_activo)" [severity]="getEstadoSeverity(emp.sn_activo)" styleClass="tag-sm" />
+          </div>
+          <div class="ficha-name">{{ emp.descripcion }}</div>
+          <div class="ficha-meta-row">
+            <span class="ficha-meta-label">Creada:</span>
+            <span class="ficha-meta-value">{{ formatFecha(emp.fechasistema) }}</span>
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+
+  </div>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\empresas\empresas-manager.scss
+
+```typescript
+.empresas-manager {
+  height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.split-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg);
+  overflow: hidden;
+  order: 1;
+}
+
+.right-column {
+  width: 380px;
+  min-width: 350px;
+  max-width: 450px;
+  border-left: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+  order: 0;
+}
+
+// ===== Empty states =====
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--c-text-muted);
+  padding: 2rem;
+  text-align: center;
+
+  .empty-icon { font-size: 3rem; color: var(--c-primary); opacity: 0.5; }
+  h3 { margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--c-text); }
+  p { margin: 0; font-size: 0.85rem; color: var(--c-text-secondary, #6c757d); }
+}
+
+// ===== Skeleton =====
+
+.loading-skeleton { padding: 20px; }
+.skeleton-item { border: 1px solid var(--c-border); padding: 15px; margin: 10px; border-radius: 4px; background: var(--c-bg); }
+
+// ===== Empresa detail (left column) =====
+
+.empresa-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tab-content {
+  overflow-y: auto;
+  max-height: 70vh;
+  padding: 1.5rem;
+}
+
+// ===== Search bar =====
+
+.search-bar {
+  padding: 1rem;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .search-input-wrapper { flex: 1; position: relative; display: flex; align-items: center; }
+}
+
+.search-input { width: 100%; padding: 0.5rem 0.75rem 0.5rem 2.5rem; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-bg); color: var(--c-text); }
+
+// ===== Empresa list (right column) =====
+
+.empresa-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.empresa-item-ficha {
+  padding: 0.75rem 1rem;
+  margin: 0.25rem 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+
+  &:hover { background: color-mix(in srgb, var(--c-primary) 6%, transparent); }
+  &.selected { background: color-mix(in srgb, var(--c-primary) 10%, transparent); border-color: var(--c-primary); }
+}
+
+.ficha-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.ficha-id { font-size: 0.75rem; color: var(--c-text-muted); font-weight: 500; }
+.ficha-name { font-size: 0.95rem; font-weight: 600; color: var(--c-text); margin-bottom: 0.15rem; }
+
+.ficha-meta-row {
+  display: flex;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+}
+
+.ficha-meta-label { font-weight: 500; }
+.ficha-meta-value { color: var(--c-text-secondary, #6c757d); }
+
+// ===== Forms =====
+
+.campo {
+  margin-bottom: 1rem;
+
+  label { display: block; margin-bottom: 0.35rem; font-weight: 500; font-size: 0.85rem; color: var(--c-text); }
+  .req { color: var(--c-error); }
+  .err { color: var(--c-error); font-size: 0.75rem; margin-top: 0.25rem; display: block; }
+}
+
+.form-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+
+.card {
+  background: var(--c-surface);
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.tag-sm { font-size: 0.7rem; padding: 0.15rem 0.5rem; }
+
+::ng-deep .p-datatable-tbody > tr > td { padding: 0.35rem 0.75rem; }
+::ng-deep .p-datatable-thead > tr > th { padding: 0.5rem 0.75rem; font-size: 0.8rem; color: var(--c-text-muted); }
+
+.p-tabpanels {
+  background: var(--p-tabs-tabpanel-background);
+  color: var(--p-tabs-tabpanel-color);
+  padding: 0.875rem 1.125rem 1.125rem 0;
+  outline: 0 none;
+}
+
+// ===== Formulario 2 columnas =====
+
+.prestamo-form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-col-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.form-col .p-field,
+.form-col .campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-col label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+}
+
+.form-col input.p-inputtext,
+.form-col .p-select,
+.form-col .p-inputnumber,
+.form-col .p-datepicker,
+.form-col textarea {
+  width: 100%;
+}
+
+// ===== CAI List =====
+
+.cai-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cai-item {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    border-color: var(--c-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &.selected {
+    border-color: var(--for-border-color-alls);
+    background: var(--master-background);
+  }
+}
+
+.cai-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.375rem;
+}
+
+.cai-item-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.cai-item-code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  color: var(--c-text);
+  word-break: break-all;
+}
+
+// ===== Fieldset styling =====
+
+::ng-deep .p-fieldset {
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+
+  .p-fieldset-legend {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--c-text);
+    padding: 0.5rem 1rem;
+    background: var(--c-bg);
+    border-radius: 6px;
+    border: 1px solid var(--c-border);
+  }
+
+  .p-fieldset-content {
+    padding: 1rem;
+  }
+}
+
+// ===== Logo preview =====
+
+.logo-preview-container {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+  border: 2px dashed var(--c-border);
+  border-radius: 8px;
+  background: var(--c-bg);
+  margin-bottom: 0.5rem;
+}
+
+.logo-preview-img {
+  max-width: 280px;
+  max-height: 160px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.logo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  border: 2px dashed var(--c-border);
+  border-radius: 8px;
+  background: var(--c-bg);
+  margin-bottom: 0.5rem;
+}
+
+.mr-2 { margin-right: 0.5rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.text-center { text-align: center; }
+.text-muted { color: var(--c-text-muted); font-size: 0.85rem; }
+.d-flex { display: flex; }
+.gap-2 { gap: 0.5rem; }
+.align-items-center { align-items: center; }
+
+// ===== Rango / Barra de progreso correlativos =====
+
+.rango-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 180px;
+}
+
+.rango-text {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.75rem;
+  color: var(--c-text);
+}
+
+.rango-progress-container {
+  width: 100%;
+  height: 6px;
+  background: var(--c-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rango-progress-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+
+  &.progress-ok { background: var(--c-success, #10b981); }
+  &.progress-alerta { background: var(--c-warning, #f59e0b); }
+  &.progress-critico { background: var(--c-error, #ef4444); }
+}
+
+.disponibles-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text);
+}
+
+.porcentaje-text {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  margin-left: 0.25rem;
+}
+
+// Filas con estado de alerta
+.row-agotado { background: color-mix(in srgb, var(--c-error, #ef4444) 8%, transparent) !important; }
+.row-critico { background: color-mix(in srgb, var(--c-error, #ef4444) 5%, transparent) !important; }
+.row-alerta { background: color-mix(in srgb, var(--c-warning, #f59e0b) 5%, transparent) !important; }
+
+// ===== Responsive =====
+
+@media (max-width: 1024px) {
+  .right-column {
+    width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .split-layout {
+    flex-direction: column;
+  }
+
+  .left-column {
+    order: 2;
+  }
+
+  .right-column {
+    order: 1;
+    width: 100%;
+    max-width: none;
+    border-left: none;
+    border-bottom: 1px solid var(--c-border);
+    max-height: 40vh;
+  }
+
+  .prestamo-form-columns {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .empresa-detail {
+    .p-tablist-content {
+      overflow-x: visible;
+    }
+
+    .p-tablist-tab-list {
+      flex-wrap: wrap;
+      row-gap: 0.25rem;
+    }
+
+    .p-tab {
+      flex: 1 1 45%;
+      min-width: 45%;
+      justify-content: center;
+      font-size: 0.8rem;
+      padding: 0.5rem 0.35rem;
+
+      span {
+        white-space: nowrap;
+      }
+    }
+
+    .p-tablist-prev-button,
+    .p-tablist-next-button {
+      display: none;
+    }
+
+    .p-tablist-active-bar {
+      display: none;
+    }
+  }
+
+  .tab-content {
+    padding: 1rem;
+  }
+
+  .p-grid {
+    .p-col-4,
+    .p-col-6,
+    .p-col-3 {
+      flex: 0 0 100%;
+      max-width: 100%;
+    }
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\empresas\empresas-manager.ts
+
+```typescript
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { TabsModule } from 'primeng/tabs';
+import { TableModule } from 'primeng/table';
+import { ToastModule } from 'primeng/toast';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { ConfirmDialog } from 'primeng/confirmdialog';
+import { FieldsetModule } from 'primeng/fieldset';
+import { DatePickerModule } from 'primeng/datepicker';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { EmpresasService } from '../../../core/services/empresas.service';
+import { Empresa, EmpresaDet, Correlativo, EmpresaLogo, Impresora, EstadoCorrelativo } from '../../../core/models/empresa.models';
+import { Sucursal } from '../../../core/models/sucursal.models';
+
+@Component({
+  selector: 'app-empresas-manager',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule,
+    ButtonModule, InputTextModule, TextareaModule, SelectModule,
+    TagModule, TooltipModule, TabsModule, TableModule,
+    ToastModule, IconFieldModule, InputIconModule, ConfirmDialog,
+    FieldsetModule, DatePickerModule, InputNumberModule,
+  ],
+  templateUrl: './empresas-manager.html',
+  styleUrl: './empresas-manager.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class EmpresasManager implements OnInit {
+  private fb = inject(FormBuilder);
+  private empresasService = inject(EmpresasService);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+
+  // ===== Listado =====
+  empresas = signal<Empresa[]>([]);
+  empresaSeleccionada = signal<Empresa | null>(null);
+  cargando = signal(false);
+  q = signal('');
+
+  // ===== Tabs =====
+  activeTabValue = signal('0');
+
+  // ===== Empresa form =====
+  saving = signal(false);
+  empresaForm = this.fb.group({
+    descripcion: ['', Validators.required],
+    msjfactura: ['LA FACTURA ES BENEFICIO DE TODOS'],
+    msjdevfactura: ['NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS'],
+    sn_activo: ['S'],
+  });
+
+  SN_ACTIVO_OPTIONS = [
+    { label: 'Activo', value: 'S' },
+    { label: 'Inactivo', value: 'N' },
+  ];
+
+  // ===== Datos específicos (EmpresaDet) =====
+  empresaDet = signal<EmpresaDet[]>([]);
+  savingDet = signal(false);
+  detForm = this.fb.group({
+    tipo: ['RTN', Validators.required],
+    descripcion: ['', Validators.required],
+  });
+
+  TIPO_OPTIONS = [
+    { label: 'RTN', value: 'RTN' },
+    { label: 'Telefono', value: 'TELEFONO' },
+    { label: 'Direccion', value: 'DIRECCION' },
+    { label: 'Correo', value: 'CORREO' },
+    { label: 'RUC', value: 'RUC' },
+    { label: 'Website', value: 'WEBSITE' },
+    { label: 'Red Social', value: 'REDESOCIAL' },
+  ];
+
+  detEditando = signal<EmpresaDet | null>(null);
+
+  // ===== Sucursales =====
+  sucursales = signal<Sucursal[]>([]);
+  savingSuc = signal(false);
+  sucForm = this.fb.group({
+    descripcion: ['', Validators.required],
+    sn_activo: ['S'],
+  });
+  sucEditando = signal<Sucursal | null>(null);
+
+  // ===== Correlativos (CAI) - Maestro/Detalle =====
+  caiRecords = signal<EmpresaDet[]>([]);
+  correlativos = signal<Correlativo[]>([]);
+  savingCai = signal(false);
+  savingCorr = signal(false);
+
+  // Formulario maestro CAI (EmpresaDet tipo='CAI')
+  caiForm = this.fb.group({
+    descripcion: ['', [Validators.required, Validators.minLength(35)]],
+    sn_activo: ['N'],
+  });
+
+  // Formulario detalle correlativo
+  corrForm = this.fb.group({
+    Idsucursal: [null as number | null, Validators.required],
+    rangoDesde: ['', Validators.required],
+    rangoHasta: ['', Validators.required],
+    nrofactura: [0, Validators.required],
+    fechaLimite: [null as Date | null, Validators.required],
+  });
+
+  caiEditando = signal<EmpresaDet | null>(null);
+  corrEditando = signal<Correlativo | null>(null);
+  caiSeleccionado = signal<EmpresaDet | null>(null);
+
+  // ===== Logo =====
+  logo = signal<EmpresaLogo | null>(null);
+  savingLogo = signal(false);
+  logoPreview = signal<string | null>(null);
+  logoFile: File | null = null;
+
+  // ===== Impresoras =====
+  impresoras = signal<Impresora[]>([]);
+  savingImp = signal(false);
+  impEditando = signal<Impresora | null>(null);
+  impForm = this.fb.group({
+    descripcion: [''],
+    formato: ['TICKET'],
+    driver: [''],
+    puerto: [''],
+    modo_correlativo: ['A'],
+    Idsucursal: [null as number | null, Validators.required],
+  });
+
+  FORMATO_OPTIONS = [
+    { label: 'Ticket', value: 'TICKET' },
+    { label: 'Carta', value: 'CARTA' },
+  ];
+
+  MODO_CORRELATIVO_OPTIONS = [
+    { label: 'Automático', value: 'A' },
+    { label: 'Manual', value: 'M' },
+  ];
+
+  // ===== Estado correlativos (alertas) =====
+  estadoCorrelativos = signal<EstadoCorrelativo[]>([]);
+
+  // ===== Filtros =====
+  empresasFiltradas = signal<Empresa[]>([]);
+
+  // ===== Datos para selects =====
+  rtnTelefono = signal('');
+  rtnDireccion = signal('');
+  rtnCorreo = signal('');
+  rtnWeb = signal('');
+
+  ngOnInit() {
+    this.load();
+  }
+
+  // ==================================================
+  //  EMPRESAS
+  // ==================================================
+
+  load() {
+    this.cargando.set(true);
+    this.empresasService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.empresas.set(data ?? []);
+        this.empresasFiltradas.set(data ?? []);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las empresas' });
+      },
+    });
+  }
+
+  seleccionar(emp: Empresa) {
+    this.empresaSeleccionada.set(emp);
+    this.activeTabValue.set('0');
+    this.empresaForm.patchValue({
+      descripcion: emp.descripcion,
+      msjfactura: emp.msjfactura,
+      msjdevfactura: emp.msjdevfactura,
+      sn_activo: emp.sn_activo,
+    });
+    this.loadDet(emp.empresaId);
+    this.loadSucursales(emp.empresaId);
+    this.loadCaiRecords(emp.empresaId);
+    this.loadLogo(emp.empresaId);
+    this.loadImpresoras(emp.empresaId);
+    this.loadEstadoCorrelativos(emp.empresaId);
+  }
+
+  nueva() {
+    this.empresaSeleccionada.set(null);
+    this.activeTabValue.set('0');
+    this.empresaForm.reset({
+      descripcion: '',
+      msjfactura: 'LA FACTURA ES BENEFICIO DE TODOS',
+      msjdevfactura: 'NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS',
+      sn_activo: 'S',
+    });
+    this.empresaDet.set([]);
+    this.sucursales.set([]);
+    this.caiRecords.set([]);
+    this.correlativos.set([]);
+    this.caiSeleccionado.set(null);
+    this.limpiarDatosEmpresa();
+    this.logo.set(null);
+    this.logoPreview.set(null);
+    this.logoFile = null;
+    this.impresoras.set([]);
+  }
+
+  filtrar() {
+    const texto = this.q().toLowerCase();
+    if (!texto) {
+      this.empresasFiltradas.set(this.empresas());
+      return;
+    }
+    this.empresasFiltradas.set(
+      this.empresas().filter((e) =>
+        e.descripcion.toLowerCase().includes(texto) ||
+        String(e.empresaId).includes(texto)
+      )
+    );
+  }
+
+  limpiarFiltros() {
+    this.q.set('');
+    this.filtrar();
+  }
+
+  guardarEmpresa() {
+    if (this.empresaForm.invalid) {
+      this.empresaForm.markAllAsTouched();
+      return;
+    }
+    this.saving.set(true);
+    const dto = { ...this.empresaForm.value } as Partial<Empresa>;
+    const emp = this.empresaSeleccionada();
+
+    const obs = emp
+      ? this.empresasService.update(emp.empresaId, dto)
+      : this.empresasService.create(dto);
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res: any) => {
+        this.msgs.add({ severity: 'success', summary: emp ? 'Actualizada' : 'Creada', detail: 'Empresa guardada correctamente' });
+        this.saving.set(false);
+        this.load();
+        if (!emp && res?.empresaId) {
+          this.empresasService.getOne(res.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((nueva) => {
+            this.seleccionar(nueva);
+          });
+        }
+      },
+      error: (err: any) => {
+        this.saving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
+      },
+    });
+  }
+
+  // ==================================================
+  //  DATOS ESPECÍFICOS (EmpresaDet)
+  // ==================================================
+
+  loadDet(empresaId: number) {
+    this.empresasService.getAllDet(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const todos = data ?? [];
+        this.empresaDet.set(todos.filter(d => d.tipo !== 'CAI'));
+        this.extraerDatosEmpresa(todos);
+      },
+      error: () => {
+        this.empresaDet.set([]);
+        this.limpiarDatosEmpresa();
+      },
+    });
+  }
+
+  extraerDatosEmpresa(dets: EmpresaDet[]) {
+    const buscar = (tipo: string) => dets.find(d => d.tipo === tipo);
+    this.rtnTelefono.set(buscar('TELEFONO')?.descripcion || '');
+    this.rtnDireccion.set(buscar('DIRECCION')?.descripcion || '');
+    this.rtnCorreo.set(buscar('CORREO')?.descripcion || '');
+    this.rtnWeb.set(buscar('WEBSITE')?.descripcion || '');
+  }
+
+  limpiarDatosEmpresa() {
+    this.rtnTelefono.set('');
+    this.rtnDireccion.set('');
+    this.rtnCorreo.set('');
+    this.rtnWeb.set('');
+  }
+
+  guardarDet() {
+    if (this.detForm.invalid || !this.empresaSeleccionada()) return;
+    this.savingDet.set(true);
+    const dto = { ...this.detForm.value, empresaId: this.empresaSeleccionada()!.empresaId } as Partial<EmpresaDet>;
+    const editando = this.detEditando();
+
+    const obs = editando
+      ? this.empresasService.updateDet(editando.empresasdetId, dto)
+      : this.empresasService.createDet(dto);
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Dato guardado correctamente' });
+        this.savingDet.set(false);
+        this.detForm.reset({ tipo: 'RTN', descripcion: '' });
+        this.detEditando.set(null);
+        this.loadDet(this.empresaSeleccionada()!.empresaId);
+      },
+      error: (err: any) => {
+        this.savingDet.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
+      },
+    });
+  }
+
+  editarDet(det: EmpresaDet) {
+    this.detEditando.set(det);
+    this.detForm.patchValue({ tipo: det.tipo, descripcion: det.descripcion });
+  }
+
+  eliminarDet(det: EmpresaDet) {
+    this.confirm.confirm({
+      message: '¿Eliminar este registro?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.empresasService.removeDet(det.empresasdetId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Dato eliminado' });
+            this.loadDet(this.empresaSeleccionada()!.empresaId);
+          },
+          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
+        });
+      },
+    });
+  }
+
+  cancelarDet() {
+    this.detEditando.set(null);
+    this.detForm.reset({ tipo: 'RTN', descripcion: '' });
+  }
+
+  // ==================================================
+  //  SUCURSALES
+  // ==================================================
+
+  loadSucursales(empresaId: number) {
+    this.empresasService.getAllSucursales(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.sucursales.set(data ?? []),
+      error: () => this.sucursales.set([]),
+    });
+  }
+
+  guardarSucursal() {
+    if (this.sucForm.invalid || !this.empresaSeleccionada()) return;
+    this.savingSuc.set(true);
+    const dto = { ...this.sucForm.value, empresaId: this.empresaSeleccionada()!.empresaId } as Partial<Sucursal>;
+    const editando = this.sucEditando();
+
+    const obs = editando
+      ? this.empresasService.updateSucursal(editando.idsucursal, dto)
+      : this.empresasService.createSucursal(dto);
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Guardada', detail: 'Sucursal guardada correctamente' });
+        this.savingSuc.set(false);
+        this.sucForm.reset({ descripcion: '', sn_activo: 'S' });
+        this.sucEditando.set(null);
+        this.loadSucursales(this.empresaSeleccionada()!.empresaId);
+      },
+      error: (err: any) => {
+        this.savingSuc.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
+      },
+    });
+  }
+
+  editarSuc(suc: Sucursal) {
+    this.sucEditando.set(suc);
+    this.sucForm.patchValue({ descripcion: suc.descripcion, sn_activo: suc.sn_activo });
+  }
+
+  cancelarSuc() {
+    this.sucEditando.set(null);
+    this.sucForm.reset({ descripcion: '', sn_activo: 'S' });
+  }
+
+  // ==================================================
+  //  CAI - MAESTRO (EmpresaDet tipo='CAI')
+  // ==================================================
+
+  loadCaiRecords(empresaId: number) {
+    this.empresasService.getAllDet(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const caiList = (data ?? []).filter(d => d.tipo === 'CAI');
+        this.caiRecords.set(caiList);
+        if (caiList.length > 0 && !this.caiSeleccionado()) {
+          this.seleccionarCai(caiList[0]);
+        } else if (caiList.length === 0) {
+          this.caiSeleccionado.set(null);
+          this.correlativos.set([]);
+        }
+      },
+      error: () => {
+        this.caiRecords.set([]);
+        this.correlativos.set([]);
+      },
+    });
+  }
+
+  seleccionarCai(cai: EmpresaDet) {
+    this.caiSeleccionado.set(cai);
+    this.caiEditando.set(null);
+    this.caiForm.reset({ descripcion: cai.descripcion });
+    this.loadCorrelativos(cai.empresaId);
+  }
+
+  guardarCai() {
+    if (this.caiForm.invalid || !this.empresaSeleccionada()) return;
+
+    const desc = this.caiForm.value.descripcion || '';
+    if (desc.length < 35) {
+      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'El CAI debe tener al menos 35 caracteres' });
+      return;
+    }
+
+    this.savingCai.set(true);
+    const dto: Partial<EmpresaDet> = {
+      tipo: 'CAI',
+      descripcion: desc.toUpperCase(),
+      sn_activo: this.caiForm.value.sn_activo || 'N',
+      empresaId: this.empresaSeleccionada()!.empresaId,
+    };
+    const editando = this.caiEditando();
+
+    const obs = editando
+      ? this.empresasService.updateDet(editando.empresasdetId, dto)
+      : this.empresasService.createDet(dto);
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'CAI guardado correctamente' });
+        this.savingCai.set(false);
+        this.caiForm.reset({ descripcion: '', sn_activo: 'N' });
+        this.caiEditando.set(null);
+        this.loadCaiRecords(this.empresaSeleccionada()!.empresaId);
+      },
+      error: (err: any) => {
+        this.savingCai.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
+      },
+    });
+  }
+
+  editarCai(cai: EmpresaDet) {
+    this.caiEditando.set(cai);
+    this.caiForm.reset({ descripcion: cai.descripcion, sn_activo: cai.sn_activo });
+  }
+
+  eliminarCai(cai: EmpresaDet) {
+    this.confirm.confirm({
+      message: '¿Eliminar este CAI y todos sus correlativos?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.empresasService.removeDet(cai.empresasdetId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'CAI eliminado' });
+            this.caiSeleccionado.set(null);
+            this.correlativos.set([]);
+            this.loadCaiRecords(this.empresaSeleccionada()!.empresaId);
+          },
+          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
+        });
+      },
+    });
+  }
+
+  cancelarCai() {
+    this.caiEditando.set(null);
+    this.caiForm.reset({ descripcion: '', sn_activo: 'N' });
+  }
+
+  // ==================================================
+  //  CAI - DETALLE (Correlativos)
+  // ==================================================
+
+  loadCorrelativos(empresaId: number) {
+    this.empresasService.getAllCorr(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.correlativos.set(data ?? []),
+      error: () => this.correlativos.set([]),
+    });
+  }
+
+  guardarCorrelativo() {
+    if (this.corrForm.invalid || !this.empresaSeleccionada()) return;
+    this.savingCorr.set(true);
+
+    const formVal = this.corrForm.value;
+    const fechaLimite = formVal.fechaLimite instanceof Date
+      ? formVal.fechaLimite.toISOString()
+      : formVal.fechaLimite;
+
+    const dto: Partial<Correlativo> = {
+      Idsucursal: formVal.Idsucursal!,
+      rangoDesde: formVal.rangoDesde!,
+      rangoHasta: formVal.rangoHasta!,
+      nrofactura: formVal.nrofactura!,
+      fechaLimite: fechaLimite!,
+      empresaId: this.empresaSeleccionada()!.empresaId,
+    };
+
+    const editando = this.corrEditando();
+
+    const obs = editando
+      ? this.empresasService.updateCorr(editando.poscorrelativosId, dto)
+      : this.empresasService.createCorr(dto);
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Correlativo guardado correctamente' });
+        this.savingCorr.set(false);
+        this.resetCorrForm();
+        this.corrEditando.set(null);
+        this.loadCorrelativos(this.empresaSeleccionada()!.empresaId);
+      },
+      error: (err: any) => {
+        this.savingCorr.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
+      },
+    });
+  }
+
+  editarCorr(corr: Correlativo) {
+    this.corrEditando.set(corr);
+    const fechaCorr = corr.fechaLimite ? new Date(corr.fechaLimite) : null;
+    this.corrForm.patchValue({
+      Idsucursal: corr.Idsucursal,
+      rangoDesde: corr.rangoDesde,
+      rangoHasta: corr.rangoHasta,
+      nrofactura: corr.nrofactura,
+      fechaLimite: fechaCorr,
+    });
+  }
+
+  eliminarCorr(corr: Correlativo) {
+    this.confirm.confirm({
+      message: '¿Eliminar este correlativo?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.empresasService.removeCorr(corr.poscorrelativosId, corr.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Correlativo eliminado' });
+            this.loadCorrelativos(this.empresaSeleccionada()!.empresaId);
+          },
+          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
+        });
+      },
+    });
+  }
+
+  cancelarCorr() {
+    this.corrEditando.set(null);
+    this.resetCorrForm();
+  }
+
+  resetCorrForm() {
+    this.corrForm.reset({
+      Idsucursal: null,
+      rangoDesde: '',
+      rangoHasta: '',
+      nrofactura: 0,
+      fechaLimite: null,
+    });
+  }
+
+  cargarNroFacturaSiguiente() {
+    const idsucursal = this.corrForm.value.Idsucursal;
+    if (!idsucursal || !this.empresaSeleccionada()) return;
+
+    this.empresasService.getNextNroFactura(this.empresaSeleccionada()!.empresaId, idsucursal)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => this.corrForm.patchValue({ nrofactura: res.nrofactura }),
+        error: () => {},
+      });
+  }
+
+  onSucursalChange() {
+    if (!this.corrEditando()) {
+      this.cargarNroFacturaSiguiente();
+    }
+  }
+
+  // ==================================================
+  //  LOGO
+  // ==================================================
+
+  loadLogo(empresaId: number) {
+    this.empresasService.getLogo(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.logo.set(data);
+        this.logoPreview.set(data?.img || null);
+      },
+      error: () => {
+        this.logo.set(null);
+        this.logoPreview.set(null);
+      },
+    });
+  }
+
+  onLogoSelect(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    this.logoFile = file;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.logoPreview.set(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  guardarLogo() {
+    if (!this.empresaSeleccionada() || !this.logoPreview()) return;
+    this.savingLogo.set(true);
+
+    const dto: Partial<EmpresaLogo> = {
+      img: this.logoPreview()!,
+      empresaId: this.empresaSeleccionada()!.empresaId,
+    };
+
+    const obs = this.logo()
+      ? this.empresasService.updateLogo(this.logo()!.tempresaslogoId, { img: dto.img })
+      : this.empresasService.createLogo(dto);
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Logo guardado correctamente' });
+        this.savingLogo.set(false);
+        if (!this.logo() && res) this.logo.set(res);
+      },
+      error: (err: any) => {
+        this.savingLogo.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar el logo' });
+      },
+    });
+  }
+
+  eliminarLogo() {
+    if (!this.logo()) return;
+    this.confirm.confirm({
+      message: '¿Eliminar el logo de la empresa?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.empresasService.removeLogo(this.logo()!.tempresaslogoId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Logo eliminado' });
+            this.logo.set(null);
+            this.logoPreview.set(null);
+            this.logoFile = null;
+          },
+          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
+        });
+      },
+    });
+  }
+
+  // ==================================================
+  //  IMPRESORAS
+  // ==================================================
+
+  loadImpresoras(empresaId: number) {
+    this.empresasService.getAllImpresoras(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.impresoras.set(data ?? []),
+      error: () => this.impresoras.set([]),
+    });
+  }
+
+  guardarImpresora() {
+    if (this.impForm.invalid || !this.empresaSeleccionada()) return;
+    this.savingImp.set(true);
+    const dto = { ...this.impForm.value, empresaId: this.empresaSeleccionada()!.empresaId } as Partial<Impresora>;
+    const editando = this.impEditando();
+
+    const obs = editando
+      ? this.empresasService.updateImpresora(editando.timpresorasId, dto)
+      : this.empresasService.createImpresora(dto);
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Guardada', detail: 'Impresora guardada correctamente' });
+        this.savingImp.set(false);
+        this.impForm.reset({ descripcion: '', formato: 'TICKET', driver: '', puerto: '', modo_correlativo: 'A', Idsucursal: null });
+        this.impEditando.set(null);
+        this.loadImpresoras(this.empresaSeleccionada()!.empresaId);
+      },
+      error: (err: any) => {
+        this.savingImp.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
+      },
+    });
+  }
+
+  editarImp(imp: Impresora) {
+    this.impEditando.set(imp);
+    this.impForm.patchValue({
+      descripcion: imp.descripcion,
+      formato: imp.formato,
+      driver: imp.driver,
+      puerto: imp.puerto,
+      modo_correlativo: imp.modo_correlativo || 'A',
+      Idsucursal: imp.Idsucursal,
+    });
+  }
+
+  eliminarImp(imp: Impresora) {
+    this.confirm.confirm({
+      message: '¿Eliminar esta impresora?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.empresasService.removeImpresora(imp.timpresorasId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Eliminada', detail: 'Impresora eliminada' });
+            this.loadImpresoras(this.empresaSeleccionada()!.empresaId);
+          },
+          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
+        });
+      },
+    });
+  }
+
+  cancelarImp() {
+    this.impEditando.set(null);
+    this.impForm.reset({ descripcion: '', formato: 'TICKET', driver: '', puerto: '', modo_correlativo: 'A', Idsucursal: null });
+  }
+
+  // ==================================================
+  //  ESTADO CORRELATIVOS (alertas)
+  // ==================================================
+
+  loadEstadoCorrelativos(empresaId: number) {
+    this.empresasService.getEstadoCorrelativo(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.estadoCorrelativos.set(data ?? []),
+      error: () => this.estadoCorrelativos.set([]),
+    });
+  }
+
+  getEstadoCorr(idsucursal: number): EstadoCorrelativo | undefined {
+    return this.estadoCorrelativos().find(e => e.Idsucursal === idsucursal);
+  }
+
+  getRangoDisponible(idsucursal: number): string {
+    const e = this.getEstadoCorr(idsucursal);
+    if (!e) return '-';
+    return `${e.disponible} de ${e.total}`;
+  }
+
+  getRangoPorcentaje(idsucursal: number): number {
+    const e = this.getEstadoCorr(idsucursal);
+    return e?.porcentaje ?? 0;
+  }
+
+  getRangoEstado(idsucursal: number): string {
+    const e = this.getEstadoCorr(idsucursal);
+    return e?.estado ?? 'OK';
+  }
+
+  getRangoEstadoSeverity(idsucursal: number): string {
+    const estado = this.getRangoEstado(idsucursal);
+    switch (estado) {
+      case 'AGOTADO': return 'danger';
+      case 'CRITICO': return 'danger';
+      case 'ALERTA': return 'warn';
+      default: return 'success';
+    }
+  }
+
+  getRangoLabel(idsucursal: number): string {
+    const estado = this.getRangoEstado(idsucursal);
+    switch (estado) {
+      case 'AGOTADO': return 'Rango agotado';
+      case 'CRITICO': return 'Crítico (<10%)';
+      case 'ALERTA': return 'Alerta (<20%)';
+      default: return 'OK';
+    }
+  }
+
+  // ==================================================
+  //  HELPERS
+  // ==================================================
+
+  getEstadoLabel(activo: string): string {
+    return activo === 'S' ? 'Activo' : 'Inactivo';
+  }
+
+  getEstadoSeverity(activo: string): string {
+    return activo === 'S' ? 'success' : 'danger';
+  }
+
+  formatFecha(fecha: string | Date | undefined): string {
+    if (!fecha) return '-';
+    return new Date(fecha).toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  getRtn(): string {
+    return this.empresaDet().find(d => d.tipo === 'RTN')?.descripcion || '-';
+  }
+
+  getTelefono(): string {
+    return this.empresaDet().find(d => d.tipo === 'TELEFONO')?.descripcion || '-';
+  }
+
+  getCaiDescripcion(cai: EmpresaDet): string {
+    return cai.descripcion.length > 50
+      ? cai.descripcion.substring(0, 50) + '...'
+      : cai.descripcion;
+  }
+
+  getSucursalNombre(idsucursal: number): string {
+    return this.sucursales().find(s => s.idsucursal === idsucursal)?.descripcion || `Suc. ${idsucursal}`;
+  }
+
+  validarCai(control: AbstractControl): ValidationErrors | null {
+    const val = control.value;
+    if (!val) return null;
+    if (val.length < 40) return { minLength: true };
+    if (!/^[A-Z0-9\-]+$/.test(val.toUpperCase())) return { pattern: true };
+    return null;
+  }
+
+  // Validación de RTN hondureño (14 dígitos)
+  validarRtn(control: AbstractControl): ValidationErrors | null {
+    const val = control.value?.replace(/[\s\-]/g, '');
+    if (!val) return null;
+    if (!/^\d{14}$/.test(val)) return { rtnInvalido: true };
+    return null;
+  }
+}
 
 ```
 
@@ -6611,16 +13947,18 @@ export const CONFIGURACION_ROUTES: Routes = [
 ## 📄 src\app\features\configuracion\settings\settings.ts
 
 ```typescript
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
-import { SettingsService } from '../../../core/services/settings.service';
+import { ParametroUnificadoService } from '../../../core/services/parametro-unificado.service';
 import { SETTINGS, SettingsConfig, CampoSetting } from '../../../core/models/settings.models';
 
 @Component({
@@ -6633,6 +13971,7 @@ import { SETTINGS, SettingsConfig, CampoSetting } from '../../../core/models/set
     InputTextModule,
     InputNumberModule,
     SelectModule,
+    ProgressSpinnerModule,
   ],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
@@ -6640,8 +13979,9 @@ import { SETTINGS, SettingsConfig, CampoSetting } from '../../../core/models/set
 export class Settings implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
-  private service = inject(SettingsService);
+  private parametroService = inject(ParametroUnificadoService);
   private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
 
   config!: SettingsConfig;
   campos: CampoSetting[] = [];
@@ -6666,46 +14006,74 @@ export class Settings implements OnInit {
     }
     this.form = this.fb.group(controls);
 
+    this.cargarParametros();
+  }
+
+  private cargarParametros() {
     this.cargando.set(true);
-    this.service.get(this.config.ruta).subscribe({
-      next: (d) => {
-        const row = d ?? {};
-        for (const c of this.campos) {
-          const v = row[c.key];
-          if (v !== undefined && v !== null) {
-            this.form.get(c.key)?.setValue(v);
-          }
-        }
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.cargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar la configuración' });
-      },
-    });
+
+    if (this.config.moduloId) {
+      // Tabla unificada ttipoparametros
+      this.parametroService.getAsObject(this.config.moduloId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (obj) => {
+            for (const c of this.campos) {
+              const v = obj[c.key];
+              if (v !== undefined && v !== null) {
+                this.form.get(c.key)?.setValue(c.tipo === 'numero' ? Number(v) : v);
+              }
+            }
+            this.cargando.set(false);
+          },
+          error: () => {
+            this.cargando.set(false);
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar la configuración' });
+          },
+        });
+    } else {
+      this.cargando.set(false);
+    }
   }
 
   guardar() {
+    if (!this.config.moduloId) {
+      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'No hay módulo configurado para guardar' });
+      return;
+    }
+
     const payload = this.form.getRawValue();
+    const parametros: { field: string; valor: string; tipo: string }[] = [];
+
     for (const c of this.campos) {
-      if (payload[c.key] === '' || payload[c.key] === null) {
-        delete payload[c.key];
+      const v = payload[c.key];
+      if (v !== undefined && v !== null && v !== '') {
+        parametros.push({
+          field: c.key,
+          valor: String(v),
+          tipo: c.tipo === 'numero' ? 'NUMBER' : 'STRING',
+        });
       }
     }
 
+    if (parametros.length === 0) return;
+
     this.guardando.set(true);
-    this.service.upsert(this.config.ruta, payload).subscribe({
-      next: () => {
-        this.guardando.set(false);
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Configuración actualizada' });
-      },
-      error: () => {
-        this.guardando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la configuración' });
-      },
-    });
+    this.parametroService.upsertLote(this.config.moduloId, parametros)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.guardando.set(false);
+          this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Configuración actualizada' });
+        },
+        error: () => {
+          this.guardando.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la configuración' });
+        },
+      });
   }
 }
+
 ```
 
 ---
@@ -7218,10 +14586,6 @@ export class AntiguedadSaldos implements OnInit {
         }
       </div>
       <div class="campo">
-        <label>Nombre Cliente</label>
-        <input pInputText pSize="small" formControlName="nombrecliente" readonly />
-      </div>
-      <div class="campo">
         <label>Tipo Documento Fiscal</label>
         <p-select size="small" formControlName="documentoId" [options]="documentosFiltrados()" optionLabel="label"
           optionValue="value" placeholder="Tipo documento..." styleClass="w-full" [filter]="true" filterBy="label"
@@ -7237,23 +14601,26 @@ export class AntiguedadSaldos implements OnInit {
 
     </div>
 
-          <div class="ml-1 mb-3 grid">
-        <div class="col-fixed" style="width:95%"></div>
-        <label>Concepto</label>
-        <input pInputText pSize="small" formControlName="concepto" maxlength="120" placeholder="Concepto..."
+
+    <div class="ml-1 mb-3 mt-2 grid">
+      <div class="col-fixed" style="width:100%">
+        <label>Concepto de pago</label>
+        <input pInputText pSize="small"
+        formControlName="concepto" maxlength="120" placeholder="Ingrese el concepto de pago..."
           class="w-full" />
       </div>
+    </div>
 
     <div class="card">
       <div class="detalles-head">
-        <h4 class="detalles-title">Formas de Pago</h4>
-        <p-button type="button" label="Agregar fila" icon="pi pi-plus" variant="text" severity="success" size="small"
+        <h4 class="detalles-title">Detalle de pagos</h4>
+        <p-button type="button" label="Agregar forma de pago" icon="pi pi-plus" variant="text" severity="success" size="small"
           [rounded]="true" (onClick)="nuevaFila()" />
       </div>
 
-      <p-table [value]="dets()" [scrollable]="true" scrollHeight="400px" styleClass="det-table" [paginator]="true"
-        [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
-        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small">
+      <p-table [value]="dets()" [scrollable]="true" scrollHeight="280px" styleClass="det-table"
+        [rows]="10"  [showCurrentPageReport]="true"
+         size="small">
         <ng-template #header>
           <tr>
             <th style="width:50px">#</th>
@@ -7303,7 +14670,7 @@ export class AntiguedadSaldos implements OnInit {
         </ng-template>
         <ng-template #emptymessage>
           <tr>
-            <td colspan="7" class="text-center p-3">Sin detalles. Agregue filas.</td>
+            <td colspan="7" class="text-center p-3">Sin detalles de pagos,  agregue una forma de pago.</td>
           </tr>
         </ng-template>
       </p-table>
@@ -7318,8 +14685,6 @@ export class AntiguedadSaldos implements OnInit {
   </form>
   }
 </section>
-
-
 
 ```
 
@@ -8564,7 +15929,9 @@ export class CartasRecordatorio implements OnInit {
           </div>
           <div class="p-field">
             <label>Fecha de nacimiento</label>
-            <p-datepicker [formControl]="form.get('fechanacimiento')" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" />
+            <p-datepicker
+            [formControl]="form.get('fechanacimiento')" dateFormat="dd/mm/yy"
+            [showIcon]="true" size="small" styleClass="w-full" />
           </div>
         </div>
       </div>
@@ -10673,63 +18040,52 @@ export const CXC_ROUTES: Routes = [
   </header>
 
   <!-- FILTROS -->
-  <div class="filtros card mb-3">
-    <div class="p-grid">
-      <div class="p-col-12 p-md-3">
-        <div class="p-field">
-          <label>DNI</label>
-          <input pInputText pSize="small" [ngModel]="dni()" (ngModelChange)="dni.set($event)"
-            placeholder="Buscar por DNI" />
-        </div>
-      </div>
-      <div class="p-col-12 p-md-3">
-        <div class="p-field">
-          <label>Cliente</label>
-          <input pInputText pSize="small" [ngModel]="cliente()" (ngModelChange)="cliente.set($event)"
-            placeholder="Nombre o razón social" />
-        </div>
-      </div>
-      <div class="p-col-12 p-md-2">
-        <div class="p-field">
-          <label>Desde</label>
-          <p-datepicker pSize="small" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)"
-            dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
-        </div>
-      </div>
-      <div class="p-col-12 p-md-2">
-        <div class="p-field">
-          <label>Hasta</label>
-          <p-datepicker pSize="small" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)"
-            dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
-        </div>
-      </div>
-      <div class="p-col-12 p-md-2">
-        <div class="p-field" style="margin-top: 1.5rem">
-          <div class="d-flex gap-2">
-            <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true"
-              (onClick)="buscar()" [raised]="true" severity="success"></p-button>
-            <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text"
-              [rounded]="true" severity="secondary" (onClick)="limpiarFiltros()"></p-button>
-          </div>
-        </div>
-      </div>
+  <div class="grid">
+    <div class="col-fixed" style="width:50%">
+      <label>Cliente</label>
+      <input pInputText pSize="small" [ngModel]="cliente()" (ngModelChange)="cliente.set($event)"
+        placeholder="Nombre o razón social" fluid />
     </div>
+    <div class="col">
+      <label>Desde</label>
+      <p-datepicker size="small" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" dateFormat="dd/mm/yy"
+        [showIcon]="true" styleClass="w-full"></p-datepicker>
+      <label>Hasta</label>
+      <p-datepicker size="small" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" dateFormat="dd/mm/yy"
+        [showIcon]="true" styleClass="w-full"></p-datepicker>
+
+    </div>
+
+  </div>
+  <div class="grid">
+    <div class="col">
+      <div class="gap-2">
+        <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" [raised]="true"
+          severity="success"></p-button>
+        <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
+          (onClick)="limpiarFiltros()"></p-button>
+      </div>
+
+
+    </div>
+
+  </div>
+
+
+  <div class="filtros card mb-3">
   </div>
 
   <!-- TABLA DE RESULTADOS -->
   <div class="tabla card">
     <p-table id="gridhisto" [value]="filtered()" [loading]="cargando()" [paginator]="true" [rows]="limit()"
       [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
-      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-      size="small" [tableStyle]="{ 'min-width': '20rem' }"
-      selectionMode="single" [(selection)]="selectedRow"
-      dataKey="clienteMovId"
-      [globalFilterFields]="['dni', 'cliente', 'nrocliente', 'concepto']">
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small"
+      [tableStyle]="{ 'min-width': '20rem' }" selectionMode="single" [(selection)]="selectedRow" dataKey="clienteMovId"
+      [globalFilterFields]="['cliente', 'nrocliente', 'concepto']">
       <ng-template pTemplate="header">
         <tr>
           <th style="width: 8rem">Fecha</th>
           <th style="width: 6rem">Nro. Cliente</th>
-          <th style="width: 6rem">DNI</th>
           <th>Cliente</th>
           <th style="width: 8rem">Módulo</th>
           <th style="width: 6rem">Ref.</th>
@@ -10746,13 +18102,11 @@ export const CXC_ROUTES: Routes = [
         <tr [class.selected-row]="selectedRow?.clienteMovId === item.clienteMovId">
           <td>{{ getFecha(item.fecharegistro) }}</td>
           <td>{{ item.nrocliente }}</td>
-          <td>{{ item.dni }}</td>
           <td>{{ item.cliente }}</td>
           <td>{{ item.modulo }}</td>
           <td>{{ item.nroreferencia }}</td>
           <td>
-            <p-tag [value]="getTipoMovLabel(item.tipomov)"
-              [severity]="getTipoMovSeverity(item.tipomov)" />
+            <p-tag [value]="getTipoMovLabel(item.tipomov)" [severity]="getTipoMovSeverity(item.tipomov)" />
           </td>
           <td class="font-bold">{{ moneda(item.importe) }}</td>
           <td>{{ item.concepto || '-' }}</td>
@@ -10765,9 +18119,8 @@ export const CXC_ROUTES: Routes = [
               [severity]="item.sn_cotabilizada === 'S' ? 'info' : 'success'" />
           </td>
           <td class="text-center">
-            <p-button label="Ver" icon="pi pi-eye" size="small"
-              variant="text" [rounded]="true" severity="info"
-              (onClick)="irAmovimientos(item.clienteId)" />
+            <p-button label="Ver" icon="pi pi-eye" size="small" variant="text" [rounded]="true" severity="info"
+              (onClick)="irAmovimientos(item)" />
           </td>
         </tr>
       </ng-template>
@@ -10788,20 +18141,13 @@ export const CXC_ROUTES: Routes = [
         <div class="p-col-12 p-md-4">
           <div class="p-field">
             <label>Fecha</label>
-            <input pInputText [value]="getFecha(selectedRow.fecharegistro)" disabled readonly
-              styleClass="w-full" />
+            <input pInputText [value]="getFecha(selectedRow.fecharegistro)" disabled readonly styleClass="w-full" />
           </div>
         </div>
         <div class="p-col-12 p-md-4">
           <div class="p-field">
             <label>Cliente</label>
             <input pInputText [value]="selectedRow.cliente" disabled readonly styleClass="w-full" />
-          </div>
-        </div>
-        <div class="p-col-12 p-md-4">
-          <div class="p-field">
-            <label>DNI</label>
-            <input pInputText [value]="selectedRow.dni" disabled readonly styleClass="w-full" />
           </div>
         </div>
         <div class="p-col-12 p-md-4">
@@ -10831,16 +18177,15 @@ export const CXC_ROUTES: Routes = [
         <div class="p-col-12 p-md-4">
           <div class="p-field">
             <label>Tipo de Movimiento</label>
-            <p-select [value]="selectedRow.tipomov" [options]="tipoMovOptions" disabled
-              styleClass="w-full"></p-select>
+            <p-select [value]="selectedRow.tipomov" [options]="tipoMovOptions" disabled styleClass="w-full"></p-select>
           </div>
         </div>
         <div class="p-col-12 p-md-4">
           <div class="p-field">
             <label>Importe</label>
-            <p-inputNumber [value]="selectedRow.importe" mode="currency" currency="HNL"
-              [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
-              [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" disabled></p-inputNumber>
+            <p-inputNumber [value]="selectedRow.importe" mode="currency" currency="HNL" [locale]="'es-HN'"
+              [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
+              disabled></p-inputNumber>
           </div>
         </div>
         <div class="p-col-12 p-md-8">
@@ -10852,15 +18197,17 @@ export const CXC_ROUTES: Routes = [
         <div class="p-col-12 p-md-4">
           <div class="p-field">
             <label>Documento Anulado</label>
-            <p-select [value]="selectedRow.sn_doc_anulado" [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]"
-              disabled styleClass="w-full"></p-select>
+            <p-select [value]="selectedRow.sn_doc_anulado"
+              [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]" disabled
+              styleClass="w-full"></p-select>
           </div>
         </div>
         <div class="p-col-12 p-md-4">
           <div class="p-field">
             <label>Contabilizado</label>
-            <p-select [value]="selectedRow.sn_cotabilizada" [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]"
-              disabled styleClass="w-full"></p-select>
+            <p-select [value]="selectedRow.sn_cotabilizada"
+              [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]" disabled
+              styleClass="w-full"></p-select>
           </div>
         </div>
         <div class="p-col-12 p-md-4">
@@ -10979,7 +18326,6 @@ export class HistoricoManager implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   // ===== FILTROS =====
-  dni = signal('');
   cliente = signal('');
   fechaDesde = signal<string | null>(null);
   fechaHasta = signal<string | null>(null);
@@ -11010,7 +18356,7 @@ export class HistoricoManager implements OnInit {
   private cargarHistorico() {
     this.cargando.set(true);
     this.service.getHistoricoConFiltros(
-      this.dni(),
+      '',
       this.cliente(),
       this.fechaDesde(),
       this.fechaHasta(),
@@ -11038,7 +18384,6 @@ export class HistoricoManager implements OnInit {
   }
 
   limpiarFiltros() {
-    this.dni.set('');
     this.cliente.set('');
     this.fechaDesde.set(null);
     this.fechaHasta.set(null);
@@ -11075,9 +18420,15 @@ export class HistoricoManager implements OnInit {
     return d.toLocaleDateString('es-HN');
   }
 
-  irAmovimientos(clienteId: number) {
+  /**
+   * Navega a movimientos pasando el registro completo via router state.
+   * El objeto CxcHistorico queda disponible en history.state.movimiento
+   * sin serializarse en la URL.
+   */
+  irAmovimientos(item: CxcHistorico) {
     this.router.navigate(['/cxc/movimientos'], {
-      queryParams: { clienteId }
+      queryParams: { clienteId: item.clienteId },
+      state: { movimiento: item },
     });
   }
 }
@@ -11116,12 +18467,6 @@ export class HistoricoManager implements OnInit {
 
       @if (selectedCliente()) {
       <div class="cliente-detail">
-        <div class="cliente-header-inline">
-          <span class="cliente-inline-codigo">Codigo.: {{ selectedCliente()?.nrocliente }} -</span>
-          <span class="cliente-inline-nombre">{{ getClienteNombre(selectedCliente()) }}</span>
-        </div>
-         
-
         <div class="tab-content">
           <div class="tab-header">
             <h4>Movimientos</h4>
@@ -11140,7 +18485,7 @@ export class HistoricoManager implements OnInit {
                 </div>
                 <div class="p-field">
                   <label>Documento Fiscal</label>
-                  <p-select size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()"
+                  <p-select id="cbodocfiscal" size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()"
                     (ngModelChange)="documentoSelected.set($event)" placeholder="Seleccionar documento"
                     styleClass="w-full" [appendTo]="'body'"></p-select>
                 </div>
@@ -11172,7 +18517,7 @@ export class HistoricoManager implements OnInit {
                     [ngModel]="movimientoModel().nroreferencia"
                     (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
                     placeholder="Seleccione debito" styleClass="w-full" [appendTo]="'body'"></p-select>
-                  <input 
+                  <input
                     pSize="small"
                     *ngIf="movimientoModel().tipomov !== 'C'" pInputText
                     [ngModel]="movimientoModel().nroreferencia"
@@ -11237,6 +18582,8 @@ export class HistoricoManager implements OnInit {
         <p>No se encontraron clientes registrados.</p>
       </div>
       } @else {
+
+      <!-- ARFM:2026109 Estos datos se debe auto-instanciarm cuando su procedencian sea del componente historico -->
       <div class="clientes-lista">
         @for (cliente of data(); track cliente.clienteId) {
         <div class="cliente-item-ficha"
@@ -11482,6 +18829,17 @@ export class HistoricoManager implements OnInit {
   &.selected {
     border-color: var(--for-border-color-alls);
     background: var(--master-background);
+  }
+}
+
+// Ficha estatica en columna izquierda (desde historico) — sin cursor pointer ni hover
+.cliente-item-ficha--header {
+  cursor: default;
+  margin-bottom: 1rem;
+
+  &:hover {
+    border-color: var(--c-border);
+    box-shadow: none;
   }
 }
 
@@ -11873,11 +19231,19 @@ export class MovimientosManager implements OnInit {
   limit = signal(15);
   totalClientes = signal(0);
 
-  // Effect para resetear pagina y recargar cuando cambie el filtro (q)
+  /** Flag para saber si la ruta viene de historico (con cliente preseleccionado) */
+  private vieneDeHistorico = false;
+
+  // Effect: recargar SOLO cuando el usuario cambia el filtro de búsqueda (q)
+  // NO se dispara en la carga inicial (controlado por ngOnInit)
+  private _qAnterior = '';
   private _searchEffect = effect(() => {
-    this.q();
-    this.page.set(1);
-    untracked(() => this.loadClientes());
+    const q = this.q();
+    if (q !== this._qAnterior) {
+      this._qAnterior = q;
+      this.page.set(1);
+      untracked(() => this.loadClientes());
+    }
   });
 
   // ===== MOVIMIENTOS =====
@@ -11919,21 +19285,31 @@ export class MovimientosManager implements OnInit {
 
   ngOnInit() {
     this.loadDocumentos();
-    // Si viene clienteId por query param, auto-seleccionar ese cliente
+
+    // Leer clienteId de query params y movimiento completo de router state
     const clienteIdParam = this.route.snapshot.queryParamMap.get('clienteId');
+    const movimientoState = (history.state as any)?.movimiento ?? null;
+
     if (clienteIdParam) {
       const id = Number(clienteIdParam);
       if (!isNaN(id) && id > 0) {
-        this.autoSelectCliente(id);
+        // Viene de historico: auto-cargar SOLO este cliente
+        this.vieneDeHistorico = true;
+        this.autoSelectCliente(id, movimientoState);
+        return;
       }
     }
+
+    // Carga normal: cargar lista completa de clientes
+    this.loadClientes();
   }
 
   /**
    * Carga un cliente directamente por ID y lo selecciona.
-   * Se usa cuando se navega desde historico con ?clienteId=X
+   * Si viene de historico (vieneDeHistorico=true), solo pone este cliente en data()
+   * sin cargar la lista completa. Si no, agrega el cliente a la lista existente.
    */
-  private autoSelectCliente(clienteId: number) {
+  private autoSelectCliente(clienteId: number, movimiento?: any) {
     this.cargando.set(true);
     this.service.getCliente(clienteId).pipe(
       takeUntilDestroyed(this.destroyRef),
@@ -11947,16 +19323,43 @@ export class MovimientosManager implements OnInit {
       next: (cliente) => {
         this.cargando.set(false);
         if (cliente) {
-          // Agregar el cliente a la lista si no está
-          const lista = this.data();
-          const existe = lista.find(c => c.clienteId === cliente.clienteId);
-          if (!existe) {
-            this.data.set([cliente, ...lista]);
+          if (this.vieneDeHistorico) {
+            // Solo este cliente en la lista (columna derecha)
+            this.data.set([cliente]);
+            this.totalClientes.set(1);
+          } else {
+            // Agregar el cliente a la lista si no está
+            const lista = this.data();
+            const existe = lista.find(c => c.clienteId === cliente.clienteId);
+            if (!existe) {
+              this.data.set([cliente, ...lista]);
+            }
           }
           this.seleccionarCliente(cliente);
+
+          // Prellenar formulario de movimiento si viene desde historico
+          if (movimiento) {
+            this.precargarMovimiento(movimiento);
+          }
         }
       },
     });
+  }
+
+  /**
+   * Precarga "Datos del Movimiento" con el registro seleccionado
+   * en historico-manager (carga automatica, sin volver a seleccionar cliente).
+   */
+  private precargarMovimiento(movimiento: any) {
+    this.movimientoModel.set({
+      clienteId: movimiento.clienteId,
+      tipomov: movimiento.tipomov || 'D',
+      concepto: movimiento.concepto || '',
+      importe: Number(movimiento.importe) || 0,
+      nroreferencia: movimiento.nroreferencia || '',
+      fecharegistro: movimiento.fecharegistro || new Date().toISOString(),
+    });
+    this.documentoSelected.set(movimiento.documentoId ?? null);
   }
 
   // ===== CLIENTES =====
@@ -13459,7 +20862,10 @@ export class PrestamosManager implements OnInit {
       <div class="acciones-card">
         <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" text (onClick)="volver()" />
         @if (seleccionado()?.compraId === 0) {
-        <p-button size="small" label="Guardar Compra" icon="pi pi-check" (onClick)="guardarMae()" variant="text"
+        <p-button size="small" label="Guardar Compra"
+        icon="pi pi-check" (onClick)="guardarMae()" variant="text"
+         [rounded]="true"
+           severity="success"
           [disabled]="formMae.invalid" />
         }
         @if (seleccionado()?.compraId !== 0) {
@@ -15090,21 +22496,394 @@ export const CXP_ROUTES: Routes = [
   },
   {
     path: 'historicos',
-    component: Consulta,
-    data: {
-      consulta: { nombre: 'historicos', titulo: 'Históricos', ruta: '/cxp/historicos', idKey: 'cxphistoId' },
-    },
-  },
-  {
-    path: 'saldos-av',
-    component: Consulta,
-    data: {
-      consulta: { nombre: 'saldos-av', titulo: 'Saldos a favor', ruta: '/cxp/saldos-av', idKey: 'cxpsalfavId' },
-    },
+    loadComponent: () => import('./historico/historico-manager').then((m) => m.CxpHistoricoManager),
   },
 
   { path: '**', redirectTo: 'proveedores' },
 ];
+```
+
+---
+
+## 📄 src\app\features\cxp\historico\historico-manager.html
+
+```typescript
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Historico de Movimientos</h1>
+      <p class="page-subtitle">Consulta de movimientos de cuentas por pagar por proveedor</p>
+    </div>
+  </header>
+
+  <!-- FILTROS -->
+  <div class="grid">
+    <div class="col-fixed" style="width:50%">
+      <label>Proveedor</label>
+      <input pInputText pSize="small" [ngModel]="proveedor()" (ngModelChange)="proveedor.set($event)"
+        placeholder="Nombre o razon social" fluid />
+    </div>
+    <div class="col">
+      <label>Desde</label>
+      <p-datepicker size="small" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" dateFormat="dd/mm/yy"
+        [showIcon]="true" styleClass="w-full"></p-datepicker>
+      <label>Hasta</label>
+      <p-datepicker size="small" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" dateFormat="dd/mm/yy"
+        [showIcon]="true" styleClass="w-full"></p-datepicker>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="col">
+      <div class="gap-2">
+        <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" [raised]="true"
+          severity="success"></p-button>
+        <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
+          (onClick)="limpiarFiltros()"></p-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE RESULTADOS -->
+  <div class="tabla card">
+    <p-table id="gridhisto" [value]="filtered()" [loading]="cargando()" [paginator]="true" [rows]="limit()"
+      [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small"
+      [tableStyle]="{ 'min-width': '20rem' }" selectionMode="single" [(selection)]="selectedRow" dataKey="bcomovId"
+      [globalFilterFields]="['proveedor', 'nroproveedor', 'concepto']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 8rem">Fecha</th>
+          <th style="width: 6rem">Nro. Proveedor</th>
+          <th>Proveedor</th>
+          <th style="width: 8rem">Modulo</th>
+          <th style="width: 6rem">Ref.</th>
+          <th style="width: 6rem">Tipo</th>
+          <th style="width: 6rem">Importe</th>
+          <th>Concepto</th>
+          <th style="width: 6rem">Anulado</th>
+          <th style="width: 6rem">Contabil.</th>
+          <th style="width: 4rem"></th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-item>
+        <tr [class.selected-row]="selectedRow?.bcomovId === item.bcomovId">
+          <td>{{ getFecha(item.fecharegistro) }}</td>
+          <td>{{ item.nroproveedor }}</td>
+          <td>{{ item.proveedor }}</td>
+          <td>{{ item.modulo }}</td>
+          <td>{{ item.nroreferencia }}</td>
+          <td>
+            <p-tag [value]="getTipoMovLabel(item.tipomov)" [severity]="getTipoMovSeverity(item.tipomov)" />
+          </td>
+          <td class="font-bold">{{ moneda(item.importe) }}</td>
+          <td>{{ item.concepto || '-' }}</td>
+          <td class="text-center">
+            <p-tag [value]="item.sn_doc_anulado === 'S' ? 'Si' : 'No'"
+              [severity]="item.sn_doc_anulado === 'S' ? 'danger' : 'success'" />
+          </td>
+          <td class="text-center">
+            <p-tag [value]="item.sn_contabilizado === 'S' ? 'Si' : 'No'"
+              [severity]="item.sn_contabilizado === 'S' ? 'info' : 'success'" />
+          </td>
+          <td class="text-center">
+            <p-button label="Ver" icon="pi pi-eye" size="small" variant="text" [rounded]="true" severity="info"
+              (onClick)="irAMovimientos(item)" />
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="empty">
+        <tr>
+          <td colspan="12" class="text-center p-4">No hay registros.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- DETALLE DEL MOVIMIENTO SELECCIONADO (readonly) -->
+  @if (selectedRow) {
+  <div class="detalle card mt-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Fecha</label>
+            <input pInputText [value]="getFecha(selectedRow.fecharegistro)" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Proveedor</label>
+            <input pInputText [value]="selectedRow.proveedor" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Nro. Proveedor</label>
+            <input pInputText [value]="selectedRow.nroproveedor" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Modulo</label>
+            <input pInputText [value]="selectedRow.modulo" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Abreviatura</label>
+            <input pInputText [value]="selectedRow.abreviatura" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Referencia</label>
+            <input pInputText [value]="selectedRow.nroreferencia" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Tipo de Movimiento</label>
+            <p-select [value]="selectedRow.tipomov" [options]="tipoMovOptions" disabled styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Importe</label>
+            <p-inputNumber [value]="selectedRow.importe" mode="currency" currency="HNL" [locale]="'es-HN'"
+              [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
+              disabled></p-inputNumber>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-8">
+          <div class="p-field">
+            <label>Concepto</label>
+            <input pInputText [value]="selectedRow.concepto" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Documento Anulado</label>
+            <p-select [value]="selectedRow.sn_doc_anulado"
+              [options]="[{label: 'Si', value: 'S'}, {label: 'No', value: 'N'}]" disabled
+              styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Contabilizado</label>
+            <p-select [value]="selectedRow.sn_contabilizado"
+              [options]="[{label: 'Si', value: 'S'}, {label: 'No', value: 'N'}]" disabled
+              styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Movimiento ID</label>
+            <input pInputText [value]="selectedRow.bcomovId" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\cxp\historico\historico-manager.scss
+
+```typescript
+.tabla.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.detalle.card {
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.p-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.p-field input[disabled],
+.p-field p-select[disabled] {
+  background: var(--c-surface) !important;
+  opacity: 0.8;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.selected-row {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+```
+
+---
+
+## 📄 src\app\features\cxp\historico\historico-manager.ts
+
+```typescript
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timeout, catchError, of } from 'rxjs';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TableModule } from 'primeng/table';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { TagModule } from 'primeng/tag';
+import { MessageService } from 'primeng/api';
+import { CxpService } from '../../../core/services/cxp.service';
+import { CxPHistorico } from '../../../core/models/cxp.models';
+
+@Component({
+  selector: 'app-cxp-historico-manager',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    InputTextModule,
+    TableModule,
+    InputNumberModule,
+    SelectModule,
+    DatePickerModule,
+    TagModule,
+  ],
+  templateUrl: './historico-manager.html',
+  styleUrl: './historico-manager.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class CxpHistoricoManager implements OnInit {
+  private service = inject(CxpService);
+  private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+  private router = inject(Router);
+
+  // ===== FILTROS =====
+  proveedor = signal('');
+  fechaDesde = signal<string | null>(null);
+  fechaHasta = signal<string | null>(null);
+
+  // ===== DATOS =====
+  data = signal<CxPHistorico[]>([]);
+  filtered = signal<CxPHistorico[]>([]);
+  cargando = signal(false);
+  totalRecords = signal(0);
+
+  // ===== SELECCION =====
+  selectedRow: CxPHistorico | null = null;
+
+  // ===== PAGINACION =====
+  page = signal(1);
+  limit = signal(20);
+
+  // ===== TIPOS DE MOVIMIENTO =====
+  readonly tipoMovOptions = [
+    { label: 'Debito', value: 'D' },
+    { label: 'Credito', value: 'C' },
+  ];
+
+  ngOnInit() {
+    this.cargarHistorico();
+  }
+
+  private cargarHistorico() {
+    this.cargando.set(true);
+    this.service.getHistoricoConFiltros(
+      '',
+      this.proveedor(),
+      this.fechaDesde(),
+      this.fechaHasta(),
+    ).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(15000),
+      catchError(() => of([]))
+    ).subscribe({
+      next: (res) => {
+        const datos = res ?? [];
+        this.data.set(datos);
+        this.filtered.set(datos);
+        this.totalRecords.set(datos.length);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los registros historicos' });
+      },
+    });
+  }
+
+  buscar() {
+    this.cargarHistorico();
+  }
+
+  limpiarFiltros() {
+    this.proveedor.set('');
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.selectedRow = null;
+    this.cargarHistorico();
+  }
+
+  getTipoMovLabel(tipo: string): string {
+    const tipos: Record<string, string> = { 'C': 'Credito', 'D': 'Debito' };
+    return tipos[tipo] || tipo;
+  }
+
+  getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'info' {
+    if (tipo === 'C') return 'info';
+    return 'danger';
+  }
+
+  moneda(val: any): string {
+    const num = Number(val) || 0;
+    if (isNaN(num)) return '0.00';
+    const partes = num.toFixed(2).split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return partes.join('.');
+  }
+
+  getNombreProveedor(item: CxPHistorico): string {
+    return item.proveedor || item.nroproveedor || 'Sin nombre';
+  }
+
+  getFecha(fecha: string): string {
+    if (!fecha) return '';
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return fecha;
+    return d.toLocaleDateString('es-HN');
+  }
+
+  irAMovimientos(item: CxPHistorico) {
+    this.router.navigate(['/cxp/movimientos'], {
+      queryParams: { proveedorId: item.proveedorId },
+      state: { movimiento: item },
+    });
+  }
+}
+
 ```
 
 ---
@@ -15127,13 +22906,6 @@ export const CXP_ROUTES: Routes = [
 
       @if (selectedProveedor()) {
       <div class="cliente-detail">
-        <div class="cliente-header">
-          <div class="cliente-header-info">
-            <h2>{{ getProveedorNombre(selectedProveedor()) }}</h2>
-            <span class="cliente-nro-badge">{{ selectedProveedor()?.nroproveedor }}</span>
-          </div>
-        </div>
-
         <div class="tab-content">
           <div class="tab-header">
             <h4>Movimientos</h4>
@@ -15189,7 +22961,9 @@ export const CXP_ROUTES: Routes = [
                 </div>
                 <div class="p-field">
                   <label>Fecha</label>
-                  <p-datepicker [ngModel]="movimientoFecha" (ngModelChange)="movimientoFecha = $event"
+                  <p-datepicker [ngModel]="movimientoFecha()"
+                   size="small"
+                   (ngModelChange)="onMovimientoFechaChange($event)"
                     dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
                 </div>
               </div>
@@ -15755,10 +23529,11 @@ export const CXP_ROUTES: Routes = [
 ## 📄 src\app\features\cxp\movimientos\movimientos-manager.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { timeout, catchError, of } from 'rxjs';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
@@ -15807,6 +23582,7 @@ export class CxpMovimientosManager implements OnInit {
   private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
+  private route = inject(ActivatedRoute);
 
   // ===== PROVEEDORES =====
   data = signal<Proveedor[]>([]);
@@ -15818,10 +23594,14 @@ export class CxpMovimientosManager implements OnInit {
   totalProveedores = signal(0);
 
   // Effect para resetear pagina y recargar cuando cambie el filtro (q)
+  private _qAnterior = '';
   private _searchEffect = effect(() => {
-    this.q();
-    this.page.set(1);
-    this.loadProveedores();
+    const q = this.q();
+    if (q !== this._qAnterior) {
+      this._qAnterior = q;
+      this.page.set(1);
+      untracked(() => this.loadProveedores());
+    }
   });
 
   // ===== MOVIMIENTOS =====
@@ -15837,7 +23617,12 @@ export class CxpMovimientosManager implements OnInit {
     fecharegistro: new Date().toISOString(),
   });
 
-  movimientoFecha: Date | null = new Date();
+  movimientoFecha = computed(() => {
+    const f = this.movimientoModel().fecharegistro;
+    if (!f) return null;
+    const d = new Date(f);
+    return isNaN(d.getTime()) ? null : d;
+  });
 
   documentosOptions = signal<{ label: string; value: any }[]>([]);
   documentoSelected = signal<any>(null);
@@ -15846,6 +23631,8 @@ export class CxpMovimientosManager implements OnInit {
     { label: 'Debito', value: 'D' },
     { label: 'Credito', value: 'C' },
   ];
+
+  vieneDeHistorico = false;
 
   get debitoReferencias(): string[] {
     const refs = this.movimientosData()
@@ -15856,6 +23643,23 @@ export class CxpMovimientosManager implements OnInit {
 
   ngOnInit() {
     this.loadDocumentos();
+
+    // Leer proveedorId de query params y movimiento completo de router state
+    const proveedorIdParam = this.route.snapshot.queryParamMap.get('proveedorId');
+    const movimientoState = (history.state as any)?.movimiento ?? null;
+
+    if (proveedorIdParam) {
+      const id = Number(proveedorIdParam);
+      if (!isNaN(id) && id > 0) {
+        // Viene de historico: auto-cargar SOLO este proveedor
+        this.vieneDeHistorico = true;
+        this.autoSelectProveedor(id, movimientoState);
+        return;
+      }
+    }
+
+    // Carga normal: cargar lista completa de proveedores
+    this.loadProveedores();
   }
 
   // ===== PROVEEDORES =====
@@ -15890,6 +23694,64 @@ export class CxpMovimientosManager implements OnInit {
   seleccionarProveedor(proveedor: Proveedor) {
     this.selectedProveedor.set(proveedor);
     this.loadMovimientos(proveedor.proveedorId);
+  }
+
+  /**
+   * Carga un proveedor directamente por ID y lo selecciona.
+   * Si viene de historico (vieneDeHistorico=true), solo pone este proveedor en data()
+   * sin cargar la lista completa. Si no, agrega el proveedor a la lista existente.
+   */
+  private autoSelectProveedor(proveedorId: number, movimiento?: any) {
+    this.cargando.set(true);
+    this.service.getProveedor(proveedorId).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(10000),
+      catchError(() => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el proveedor' });
+        return of(null);
+      })
+    ).subscribe({
+      next: (proveedor) => {
+        this.cargando.set(false);
+        if (proveedor) {
+          if (this.vieneDeHistorico) {
+            // Solo este proveedor en la lista (columna derecha)
+            this.data.set([proveedor]);
+            this.totalProveedores.set(1);
+          } else {
+            // Agregar el proveedor a la lista si no esta
+            const lista = this.data();
+            const existe = lista.find(p => p.proveedorId === proveedor.proveedorId);
+            if (!existe) {
+              this.data.set([proveedor, ...lista]);
+            }
+          }
+          this.seleccionarProveedor(proveedor);
+
+          // Prellenar formulario de movimiento si viene desde historico
+          if (movimiento) {
+            this.precargarMovimiento(movimiento);
+          }
+        }
+      },
+    });
+  }
+
+  /**
+   * Precarga "Datos del Movimiento" con el registro seleccionado
+   * en historico-manager (carga automatica, sin volver a seleccionar proveedor).
+   */
+  private precargarMovimiento(movimiento: any) {
+    this.movimientoModel.set({
+      proveedorId: movimiento.proveedorId,
+      tipomov: movimiento.tipomov || 'D',
+      descripcion1: movimiento.concepto || '',
+      importe: Number(movimiento.importe) || 0,
+      nroreferencia: movimiento.nroreferencia || '',
+      fecharegistro: movimiento.fecharegistro || new Date().toISOString(),
+    });
+    this.documentoSelected.set(movimiento.documentoId ?? null);
   }
 
   getProveedorNombre(p: Proveedor): string {
@@ -15938,6 +23800,10 @@ export class CxpMovimientosManager implements OnInit {
     });
   }
 
+  onMovimientoFechaChange(d: Date | null) {
+    this.movimientoModel.set({ ...this.movimientoModel(), fecharegistro: d ? d.toISOString() : null });
+  }
+
   cancelarMovimiento() {
     this.movimientoModel.set({
       proveedorId: this.selectedProveedor()?.proveedorId ?? null,
@@ -15947,7 +23813,6 @@ export class CxpMovimientosManager implements OnInit {
       nroreferencia: '',
       fecharegistro: new Date().toISOString(),
     });
-    this.movimientoFecha = new Date();
     this.documentoSelected.set(null);
   }
 
@@ -15965,7 +23830,7 @@ export class CxpMovimientosManager implements OnInit {
       codproveedor: proveedor.nroproveedor,
       importe: Number(raw.importe) || 0,
       tipomov: raw.tipomov || 'D',
-      fecharegistro: this.movimientoFecha ? this.movimientoFecha.toISOString() : new Date().toISOString(),
+      fecharegistro: this.movimientoFecha() ? this.movimientoFecha()!.toISOString() : new Date().toISOString(),
     };
 
     if (!payload.descripcion1 || !payload.proveedorId) {
@@ -17353,6 +25218,22 @@ export class AnularFacturas implements OnInit {
         </div>
 
         <div class="campo">
+          <label for="tipocombo">Tipo Combo</label>
+          <p-select
+            id="tipocombo"
+            formControlName="tipocombo"
+            [options]="TIPO_COMBO_OPTIONS"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar tipo"
+            styleClass="w-full"
+            [appendTo]="'body'"
+            [showClear]="true"
+            size="small"
+          />
+        </div>
+
+        <div class="campo">
           <label for="fec_vig_desde">Vigente Desde <span class="req">*</span></label>
           <p-datepicker
             id="fec_vig_desde"
@@ -17371,6 +25252,22 @@ export class AnularFacturas implements OnInit {
             formControlName="fec_vig_hasta"
             dateFormat="dd/mm/yy"
             styleClass="w-full"
+          />
+        </div>
+
+        <div class="campo">
+          <label for="descuentoId">Descuento</label>
+          <p-select
+            id="descuentoId"
+            formControlName="descuentoId"
+            [options]="descuentos()"
+            optionLabel="descripcion"
+            optionValue="descuentoId"
+            placeholder="Sin descuento"
+            styleClass="w-full"
+            [appendTo]="'body'"
+            [showClear]="true"
+            size="small"
           />
         </div>
       </div>
@@ -17415,6 +25312,24 @@ export class AnularFacturas implements OnInit {
                       }
                     </div>
                   </div>
+
+                  <!-- ARFM20260912 AGREGA AQUI UN P-SELECT PARA ESCOGER POR CAMBIAR EL DESCUENTO-->
+                  <div class="campo">
+                    <p-select
+                      [options]="descuentos()"
+                      optionLabel="descripcion"
+                      optionValue="descuentoId"
+                      placeholder="Sin descuento"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                      [showClear]="true"
+                      size="small"
+                      [ngModel]="descuentoPorProducto.get(producto.produtoId) ?? null"
+                      [ngModelOptions]="{standalone: true}"
+                      (ngModelChange)="onDescuentoCatalogoChange(producto.produtoId, $event)"
+                    />
+                  </div>
+
                   <div class="producto-accion">
                     <p-button
                       icon="pi pi-plus"
@@ -17531,6 +25446,7 @@ export class AnularFacturas implements OnInit {
     </form>
   }
 </section>
+
 ```
 
 ---
@@ -18083,13 +25999,20 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
 import { NavegacionService } from '../../../core/services/navegacion.service';
 
+interface Descuento {
+  descuentoId: number;
+  descripcion: string;
+  porcentaje: number;
+  sn_activo: string;
+}
+
 interface ProductoCatalogo {
   produtoId: number;
   descripcion: string;
   descripcion_corta?: string;
   codbarra?: string;
   precioventa: number;
-  preciocosto: number;
+  cstounit: number;
   imagen: string | null;
   existencia: number;
   categoria?: string;
@@ -18103,7 +26026,8 @@ interface ComboItem {
   imagen: string | null;
   cantidad: number;
   precioventa: number;
-  preciocosto: number;
+  cstounit: number;
+  descuentoId: number | null;
 }
 
 @Component({
@@ -18145,11 +26069,52 @@ export class CombosForm implements OnInit {
   productos = signal<ProductoCatalogo[]>([]);
   busqueda = signal('');
   cargandoProductos = signal(false);
+  descuentos = signal<Descuento[]>([]);
 
   comboItems = signal<ComboItem[]>([]);
 
   private itemId = 0;
-  private imagenCache = new Map<string, string>();
+
+  /** descuentoId seleccionado por productoId en el catálogo */
+  descuentoPorProducto = new Map<number, number | null>();
+
+  onDescuentoCatalogoChange(productoId: number, descuentoId: number | null) {
+    this.descuentoPorProducto.set(productoId, descuentoId);
+  }
+
+  onDescuentoResumenChange(item: ComboItem, descuentoId: number | null) {
+    const precioOriginal = this.getPrecioOriginal(item);
+    const precioConDescuento = this.calcularPrecioDescuento(precioOriginal, descuentoId);
+    this.comboItems.update(items =>
+      items.map(i => i.productoId === item.productoId
+        ? { ...i, descuentoId, precioventa: precioConDescuento }
+        : i
+      )
+    );
+  }
+
+  /** Busca el precio original del producto en el catálogo */
+  private getPrecioOriginal(item: ComboItem): number {
+    const prod = this.productos().find(p => p.produtoId === item.productoId);
+    return prod ? Number(prod.precioventa) : Number(item.precioventa);
+  }
+
+  /** Calcula precio con descuento: precio - (precio * (porcentaje/100)) */
+  calcularPrecioDescuento(precioOriginal: number, descuentoId: number | null): number {
+    if (!descuentoId) return precioOriginal;
+    const desc = this.descuentos().find(d => d.descuentoId === descuentoId);
+    if (!desc) return precioOriginal;
+    const porcentaje = Number(desc.porcentaje);
+    return precioOriginal - (precioOriginal * (porcentaje / 100));
+  }
+
+  readonly TIPO_COMBO_OPTIONS = [
+    { label: 'Oferta', value: 'O' },
+    { label: 'Combo', value: 'C' },
+    { label: 'Aniversario', value: 'A' },
+    { label: 'Navidad', value: 'N' },
+    { label: 'BlackFriday', value: 'B' },
+  ];
 
   productosFiltrados = computed(() => {
     const q = this.busqueda().toLowerCase();
@@ -18174,6 +26139,7 @@ export class CombosForm implements OnInit {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
     this.buildForm();
     this.cargarProductos();
+    this.cargarDescuentos();
 
     if (id && id !== 'nuevo') {
       this.esEdicion.set(true);
@@ -18187,8 +26153,10 @@ export class CombosForm implements OnInit {
   private buildForm() {
     this.form = this.fb.group({
       descripcion: ['', Validators.required],
+      tipocombo: ['' as string],
       fec_vig_desde: [new Date(), Validators.required],
       fec_vig_hasta: [new Date(), Validators.required],
+      descuentoId: [1 as number | null],
     });
   }
 
@@ -18207,13 +26175,22 @@ export class CombosForm implements OnInit {
     });
   }
 
+  private cargarDescuentos() {
+    this.api.get<any[]>('/facturacion/descuentos').subscribe({
+      next: (res) => this.descuentos.set((Array.isArray(res) ? res : []).filter((d: any) => d.sn_activo === 'S')),
+      error: () => {},
+    });
+  }
+
   private cargarCombo() {
     this.service.getMaeOne<any>('/facturacion/combos', this.itemId).subscribe({
       next: (mae) => {
         this.form.patchValue({
           descripcion: mae?.descripcion ?? '',
+          tipocombo: mae?.tipocombo ?? '',
           fec_vig_desde: mae?.fec_vig_desde ? new Date(mae.fec_vig_desde) : new Date(),
           fec_vig_hasta: mae?.fec_vig_hasta ? new Date(mae.fec_vig_hasta) : new Date(),
+          descuentoId: mae?.descuentoId ?? null,
         });
         this.cargarDets();
       },
@@ -18227,8 +26204,9 @@ export class CombosForm implements OnInit {
 
   private cargarDets() {
     this.service.getDet<any>('/facturacion/combos-det').subscribe({
-      next: (todos) => {
-        const mios = (todos ?? []).filter((d) => d.poscbomaeId === this.itemId);
+      next: (res: any) => {
+        const todos = res?.value ?? res ?? [];
+        const mios = (Array.isArray(todos) ? todos : []).filter((d) => d.poscbomaeId === this.itemId);
         const items: ComboItem[] = mios.map((d: any) => {
           const prod = this.productos().find(p => p.produtoId === Number(d.productoId));
           return {
@@ -18238,7 +26216,8 @@ export class CombosForm implements OnInit {
             imagen: prod?.imagen ?? null,
             cantidad: d.cantidad ?? 1,
             precioventa: d.precioventa ?? 0,
-            preciocosto: Number(prod?.preciocosto) || 0,
+            cstounit: Number(prod?.cstounit) || 0,
+            descuentoId: d.descuentoId ?? null,
           };
         });
         this.comboItems.set(items);
@@ -18252,6 +26231,9 @@ export class CombosForm implements OnInit {
   }
 
   agregarAlCombo(producto: ProductoCatalogo) {
+    const descuentoId = this.descuentoPorProducto.get(Number(producto.produtoId)) ?? null;
+    const precioOriginal = Number(producto.precioventa);
+    const precioConDescuento = this.calcularPrecioDescuento(precioOriginal, descuentoId);
     const existente = this.comboItems().find(i => i.productoId === Number(producto.produtoId));
     if (existente) {
       this.comboItems.update(items =>
@@ -18267,8 +26249,9 @@ export class CombosForm implements OnInit {
         descripcion: producto.descripcion,
         imagen: producto.imagen,
         cantidad: 1,
-        precioventa: Number(producto.precioventa),
-        preciocosto: Number(producto.preciocosto) || 0,
+        precioventa: precioConDescuento,
+        cstounit: Number(producto.cstounit) || 0,
+        descuentoId,
       }]);
     }
   }
@@ -18300,7 +26283,7 @@ export class CombosForm implements OnInit {
   }
 
   precioMinimo(item: ComboItem): number {
-    return Number(item.preciocosto) * 1.03;
+    return Number(item.cstounit) * 1.03;
   }
 
   precioValido(item: ComboItem): boolean {
@@ -18326,11 +26309,7 @@ export class CombosForm implements OnInit {
 
   resolverImagen(imagen: string | null): string {
     if (!imagen) return '';
-    const cacheKey = imagen.substring(0, 100);
-    if (this.imagenCache.has(cacheKey)) return this.imagenCache.get(cacheKey)!;
-    const result = /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
-    this.imagenCache.set(cacheKey, result);
-    return result;
+    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
   }
 
   formatearPrecio(precio: number | string): string {
@@ -18359,13 +26338,14 @@ export class CombosForm implements OnInit {
 
     const preciosInvalidos = this.comboItems().filter(i => !this.precioValido(i));
     if (preciosInvalidos.length > 0) {
-      const nombres = preciosInvalidos.map(i => i.descripcion).join(', ');
+      const nombres = preciosInvalidos.map(i =>
+        `${i.descripcion} (${this.formatearPrecio(i.precioventa)} < ${this.formatearPrecio(this.precioMinimo(i))})`
+      ).join(', ');
       this.msgs.add({
-        severity: 'error',
-        summary: 'Precios inválidos',
-        detail: `${nombres}: precio de venta menor al costo + 3%`,
+        severity: 'warn',
+        summary: 'Precios por debajo del mínimo',
+        detail: `${nombres} — costo + 3%`,
       });
-      return;
     }
 
     const maeBody = {
@@ -18450,6 +26430,7 @@ export class CombosForm implements OnInit {
         codbarra: item.codbarra,
         cantidad: item.cantidad,
         precioventa: item.precioventa,
+        descuentoId: item.descuentoId ?? 1,
         empresaId,
       };
       this.service.createDet<any>('/facturacion/combos-det', body).subscribe({ next: ok, error: fail });
@@ -18463,7 +26444,7 @@ export class CombosForm implements OnInit {
       summary: 'Guardado',
       detail: this.esEdicion() ? 'Combo actualizado' : 'Combo creado correctamente',
     });
-    this.form.reset({ descripcion: '', fec_vig_desde: new Date(), fec_vig_hasta: new Date() });
+    this.form.reset({ descripcion: '', tipocombo: '', fec_vig_desde: new Date(), fec_vig_hasta: new Date(), descuentoId: 1 });
     this.comboItems.set([]);
     this.esEdicion.set(false);
     this.itemId = 0;
@@ -18959,8 +26940,6 @@ export class CombosList implements OnInit {
   comboSeleccionado = signal<any | null>(null);
   comboItems = signal<any[]>([]);
 
-  private imgCache = new Map<string, string>();
-
   ngOnInit() {
     this.load();
   }
@@ -19046,11 +27025,7 @@ export class CombosList implements OnInit {
 
   resolverImagen(img: string | null): string {
     if (!img) return '';
-    const key = img.substring(0, 100);
-    if (this.imgCache.has(key)) return this.imgCache.get(key)!;
-    const result = /^data:/i.test(img) ? img : `data:image/png;base64,${img}`;
-    this.imgCache.set(key, result);
-    return result;
+    return /^data:/i.test(img) ? img : `data:image/png;base64,${img}`;
   }
 
   formatearPrecio(precio: number | string): string {
@@ -19841,6 +27816,7 @@ export class ConsultaFacturaDetalle implements OnInit {
       d.descripcion || d.codbarra || '',
       '' + Number(d.cantidad),
       'L ' + Number(d.precioventa).toFixed(2),
+      (Number(d.descuento) || 0) > 0 ? '-' + Number(d.descuento).toFixed(0) + '%' : '0%',
       'L ' + Number(d.subTotal).toFixed(2),
     ]);
 
@@ -19883,13 +27859,14 @@ export class ConsultaFacturaDetalle implements OnInit {
         {
           table: {
             headerRows: 1,
-            widths: [30, '*', 50, 70, 70],
+            widths: [30, '*', 50, 70, 50, 70],
             body: [
               [
                 { text: '#', style: 'tableHeader' },
                 { text: 'Producto', style: 'tableHeader' },
                 { text: 'Cant.', style: 'tableHeader', alignment: 'right' },
                 { text: 'Precio', style: 'tableHeader', alignment: 'right' },
+                { text: 'Desc.', style: 'tableHeader', alignment: 'right' },
                 { text: 'Subtotal', style: 'tableHeader', alignment: 'right' },
               ],
               ...detRows,
@@ -20476,6 +28453,7 @@ export class ConsultaFacturas implements OnInit {
       d.descripcion || d.codbarra || '',
       '' + Number(d.cantidad),
       'L ' + Number(d.precioventa).toFixed(2),
+      (Number(d.descuento) || 0) > 0 ? '-' + Number(d.descuento).toFixed(0) + '%' : '0%',
       'L ' + Number(d.subTotal).toFixed(2),
     ]);
 
@@ -20518,13 +28496,14 @@ export class ConsultaFacturas implements OnInit {
         {
           table: {
             headerRows: 1,
-            widths: [30, '*', 50, 70, 70],
+            widths: [30, '*', 50, 70, 50, 70],
             body: [
               [
                 { text: '#', style: 'tableHeader' },
                 { text: 'Producto', style: 'tableHeader' },
                 { text: 'Cant.', style: 'tableHeader', alignment: 'right' },
                 { text: 'Precio', style: 'tableHeader', alignment: 'right' },
+                { text: 'Desc.', style: 'tableHeader', alignment: 'right' },
                 { text: 'Subtotal', style: 'tableHeader', alignment: 'right' },
               ],
               ...detRows,
@@ -23180,6 +31159,7 @@ export class MaestroDetalle implements OnInit {
 ```typescript
 <section class="page">
 
+  <span>Facturación</span>
   <form [formGroup]="form">
     <div class="grid">
       <!-- Columna 1: Campos de header izquierdo-->
@@ -23187,10 +31167,20 @@ export class MaestroDetalle implements OnInit {
         <div class="formgrid grid">
           <div class="field col col-12 md:col">
             <div class="nf-busqueda">
-              <input pInputText type="text" pSize="small" style="width: 96%;" [value]="qProducto()"
-                (input)="onBuscarProducto($event)" placeholder="Buscar producto o escanear código de barras..." />
-              <p-button size="small" icon="pi pi-search" pTooltip="ALT + 1 Buscar producto" showDelay="1000"
-                hideDelay="300" severity="info" [rounded]="true" (onClick)="showHelperProductos()" />
+              <p-iconfield styleClass="w-full">
+                <input pInputText type="text" pSize="small" style="width: 100%;" [value]="qProducto()"
+                  (input)="onBuscarProducto($event)" fluid
+                  placeholder="Buscar producto o escanear código de barras..." />
+                <p-inputicon class="ml-10">
+                  <p-button id="btnbuscar" size="small"
+                   icon="pi pi-search" pTooltip="ALT + 1 Buscar producto" showDelay="1000"
+                    hideDelay="300" severity="info"
+                    [rounded]="true"
+                    variant="text" (onClick)="showHelperProductos()" />
+                </p-inputicon>
+
+              </p-iconfield>
+
             </div>
           </div>
         </div>
@@ -23202,6 +31192,7 @@ export class MaestroDetalle implements OnInit {
               <th style="color: var(--color-texto-label); width: 17rem">Producto</th>
               <th style="color: var(--color-texto-label); width: 3rem">Imagen</th>
               <th style="color: var(--color-texto-label); width: 12rem;">Cantidad</th>
+              <th style="color: var(--color-texto-label); width: 10rem;">Promo</th>
               <th style="color: var(--color-texto-label); width: 8rem;">PrecioVta</th>
               <th style="color: var(--color-texto-label); width: 8rem;">Subtotal</th>
               <th style="color: var(--color-texto-label); width: 5rem">Acción</th>
@@ -23213,9 +31204,11 @@ export class MaestroDetalle implements OnInit {
                 <span class="cod-barra">Cod. {{ row.codbarra }}</span>
                 <span class="desc-linea">{{ row.descripcion }}</span>
                 <span class="desc-linea">
-                  existencia: <p-badge [value]="getExistencia(row.productoId) + ''" badgeSize="small"
-                    severity="secondary" />
-                  disponibilidad: <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)"
+                  Stock.. <p-tag
+                  [value]="getExistencia(row.productoId) + ''"
+                    severity="secondary"
+                   styleClass="tag-sm" />
+                  disp.. <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)"
                     styleClass="tag-sm" />
                 </span>
               </td>
@@ -23244,6 +31237,20 @@ export class MaestroDetalle implements OnInit {
                 </p-inputnumber>
               </td>
 
+            <!-- ARFM20260913 REALIZAR AQUI LAS MEJORA POR EL CALCULA
+              DE DESCUENTO, CUYO ORIGEN SON PROMOCIONES, OFERTAS ETC, ETC -->
+              @if (esOferta(row.productoId)) {
+                <td>
+                  @if (row.descuento > getOferta(row.productoId)!.porcentaje) {
+                    <p-tag [value]="'Promo -' + getOferta(row.productoId)!.porcentaje + '% + Tercera -' + (row.descuento - getOferta(row.productoId)!.porcentaje) + '%'" severity="success" styleClass="tag-sm" />
+                  } @else {
+                    <p-tag [value]="'Descuento -' + getOferta(row.productoId)!.porcentaje + '%'" severity="success" styleClass="tag-sm" />
+                  }
+                </td>
+              } @else {
+                <td></td>
+              }
+
               <td>{{ moneda(row.precioventa) }}</td>
 
               <td>{{ moneda(row.subTotal) }}</td>
@@ -23262,14 +31269,8 @@ export class MaestroDetalle implements OnInit {
           </ng-template>
         </p-table>
 
-        <div class="campo col-12 md:col-fixed">
-          <label>Descuento</label>
-          <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
-            placeholder="Sin descuento" [showClear]="true" style="width: 96%;" [appendTo]="'body'"
-            [ngModel]="descuentoGlobalId()" [ngModelOptions]="{ standalone: true }"
-            (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()" />
-        </div>
-        <p-divider> </p-divider>
+
+
         <div class="mt-2 nf-totales">
           <div class="nf-totales-split">
             <div class="nf-totales-col-data">
@@ -23293,6 +31294,7 @@ export class MaestroDetalle implements OnInit {
           </div>
         </div>
 
+        <div class="alt9">Presione Alt+9 para ver ventana de atajos</div>
       </div> <!-- Fin campos de header izquierdo-->
 
       <!-- Columna 2: Campos de header derecho-->
@@ -23347,6 +31349,14 @@ export class MaestroDetalle implements OnInit {
               }
             </div>
 
+        <div class="field">
+          <label>Descuento</label>
+          <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
+            placeholder="Sin descuento" [showClear]="true" style="width: 100%;" [appendTo]="'body'"
+            [ngModel]="descuentoGlobalId()" [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()" />
+        </div>
+
             <div class="field">
               <div class="campo">
                 <label>Exenta de ISV</label>
@@ -23354,16 +31364,19 @@ export class MaestroDetalle implements OnInit {
                   optionValue="value" (onChange)="recalcularExenta()" />
               </div>
             </div>
+
+
+
             <div class="field">
-              @if (form.get('sn_excenta')?.value === 'S') {
               <div class="campo ml-campo">
-                <label for="nrocarnet">Nro. Carnet<span class="req">*</span></label>
-                <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet" />
-                @if (invalid('nrocarnet')) {
+                <label for="nrocarnet">Nro. Carnet</label>
+                <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet"
+                  [attr.readonly]="form.get('sn_excenta')?.value !== 'S' || null"
+                  [class.p-inputtext-disabled]="form.get('sn_excenta')?.value !== 'S'" />
+                @if (form.get('sn_excenta')?.value === 'S' && invalid('nrocarnet')) {
                 <small class="err">Ingrese el número de carnet</small>
                 }
               </div>
-              }
             </div>
 
             <div class="field">
@@ -23668,11 +31681,17 @@ export class MaestroDetalle implements OnInit {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  margin-top: 18px;
+  margin-top: 0px;
 
   input[pinputtext] {
     flex: 1;
     min-width: 0;
+  }
+
+  ::ng-deep .p-inputicon {
+    top: 50%;
+    left:97%;
+    transform: translateY(calc(-50% + 7px));
   }
 }
 
@@ -23755,7 +31774,7 @@ export class MaestroDetalle implements OnInit {
 }
 
 .ml-campo {
-  margin-left: 0.5rem;
+  margin-left: 0rem;
 }
 
 .btn-add-cliente {
@@ -23983,23 +32002,37 @@ export class MaestroDetalle implements OnInit {
 
   .cod-barra {
     display: block;
-    font-weight: 600;
-    font-size: 0.8rem;
+    font-weight: 300;
+    font-size: 1rem;
     color: var(--text-muted-color);
     margin-bottom: -2px;
   }
 
   .desc-linea {
     display: block;
+    font-weight: 300;
+    font-size: 1.05rem;
+    color: var(--text-muted-color);
   }
 }
+
+  .alt9 {
+    display: block;
+    font-weight: 300;
+    margin-left: 5px;
+    font-size: 1.05rem;
+    color: var(--c-warning);
+  }
 
 .img-producto {
   mix-blend-mode: multiply;
   background: transparent;
   border-radius: 8px;
+  object-fit: contain; /* Asegura que la imagen no se deforme */
+  width: 50px; /* Ajusta según el tamaño en tu tabla */
+  height: 50px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Separa la imagen del fondo oscuro */
 }
-
 .campo-full {
   grid-column: 1 / -1;
 }
@@ -24026,7 +32059,7 @@ export class MaestroDetalle implements OnInit {
 }
 
 .tag-sm {
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   padding: 0.15rem 0.45rem;
 }
 
@@ -24131,6 +32164,9 @@ import { AuthService } from '../../../core/services/auth.service';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { DividerModule } from 'primeng/divider';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+
 
 interface Opcion {
   label: string;
@@ -24179,6 +32215,8 @@ interface PagoFactura {
     TagModule,
      TooltipModule,
      DividerModule,
+     InputIconModule,
+     IconFieldModule,
   ],
   providers: [DialogService],
   templateUrl: './nueva-factura.html',
@@ -24238,6 +32276,12 @@ export class NuevaFactura implements OnInit {
   private snImprimeFactura = false;
   private descuentosMap = new Map<number, number>();
 
+  /** Mapa productoId → { porcentaje, precioConDescuento } para ofertas/promos vigentes */
+  private ofertasMap = new Map<number, { porcentaje: number; precioConDescuento: number; desc: string }>();
+
+  /** IDs de descuentos que SÍ se acumulan con promos (ej: Tercera Edad) */
+  private descAcumulables = new Set<number>();
+
   nombreClienteManual = signal('');
   dialogAtajos = signal(false);
   dialogSuspendidas = signal(false);
@@ -24288,7 +32332,7 @@ export class NuevaFactura implements OnInit {
   }
 
   private cargarParamCxc() {
-    this.api.get<any>('/parametros/param-cxc').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.get<any>('/parametros/parametros/objeto?empresaId=2&moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (p) => {
         const dias = Number(p?.diasPlazo ?? 0);
         const v = new Date();
@@ -24311,7 +32355,7 @@ export class NuevaFactura implements OnInit {
   }
 
   private cargarParamFac() {
-    this.api.get<any>('/parametros/param-fac').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.get<any>('/parametros/parametros/objeto?moduloId=3').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (p) => {
         this.impuestoIncluido = p?.sn_impuestoincluido === 'S';
         this.impuestoId = Number(p?.impuestoId) || null;
@@ -24457,17 +32501,52 @@ export class NuevaFactura implements OnInit {
     this.api.get<any>('/facturacion/descuentos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
       const items = res?.value ?? res ?? [];
       this.descuentosMap.clear();
+      this.descAcumulables.clear();
       for (const d of items) {
         this.descuentosMap.set(d.descuentoId, Number(d.porcentaje) || 0);
+        // Detectar descuentos acumulables (tercera edad, vejez, etc.)
+        const desc = (d.descripcion ?? '').toLowerCase();
+        if (desc.includes('tercera') || desc.includes('vejez') || desc.includes('adulto mayor')) {
+          this.descAcumulables.add(d.descuentoId);
+        }
       }
       this.descuentos.set(items
         .filter((d: any) => d.sn_activo === 'S')
         .map((d: any) => ({ label: d.descripcion, value: d.descuentoId })));
     });
+
+    // Cargar ofertas/promociones vigentes
+    this.api.get<any>('/facturacion/combos-ofertas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
+      const ofertas = res?.value ?? res ?? [];
+      this.ofertasMap.clear();
+      for (const o of (Array.isArray(ofertas) ? ofertas : [])) {
+        this.ofertasMap.set(Number(o.productoId), {
+          porcentaje: Number(o.porcentaje),
+          precioConDescuento: Number(o.precioConDescuento),
+          desc: o.descuentoDesc ?? `${o.porcentaje}%`,
+        });
+      }
+    });
   }
 
   private resolverImagen(img: string): string {
     return /^data:/i.test(img) ? img : `data:image/png;base64,${img}`;
+  }
+
+  /** Retorna info de oferta/promo del producto, null si no tiene */
+  getOferta(productoId: number | null): { porcentaje: number; precioConDescuento: number; desc: string } | null {
+    return productoId ? this.ofertasMap.get(productoId) ?? null : null;
+  }
+
+  /** Verifica si el producto tiene oferta/promo vigente */
+  esOferta(productoId: number | null): boolean {
+    return productoId ? this.ofertasMap.has(productoId) : false;
+  }
+
+  /** Verifica si el descuento global es acumulable con promos (ej: tercera edad) */
+  esDescuentoAcumulable(): boolean {
+    const id = this.descuentoGlobalId();
+    return id != null && this.descAcumulables.has(id);
   }
 
   filtrarProductos() {
@@ -24724,8 +32803,19 @@ export class NuevaFactura implements OnInit {
     }
 
     const estado = !tieneRegistro ? 'SIN_STOCK' : existencia <= 0 ? 'AGOTADO' : 'ALTA';
-    const descuentoId = this.descuentoGlobalId();
-    const descuento = descuentoId ? (this.descuentosMap.get(descuentoId) ?? 0) : 0;
+    // Descuento: promo tiene prioridad, EXCEPTO tercera edad que se acumula
+    const oferta = this.getOferta(productoId);
+    const descuentoGlobal = this.descuentoGlobalId();
+    let descuento = 0;
+    if (oferta) {
+      descuento = oferta.porcentaje;
+      // Si el descuento global es acumulable (tercera edad), sumar ambos
+      if (descuentoGlobal && this.esDescuentoAcumulable()) {
+        descuento += this.descuentosMap.get(descuentoGlobal) ?? 0;
+      }
+    } else if (descuentoGlobal) {
+      descuento = this.descuentosMap.get(descuentoGlobal) ?? 0;
+    }
 
     this.varCodBarra.set(p.codbarra ?? '');
     this.varProducto.set(p.descripcion ?? '');
@@ -24779,8 +32869,18 @@ export class NuevaFactura implements OnInit {
     this.varPrecioVenta.set(Number(p.precioventa) || 0);
     this.dialogProductos.set(false);
 
-    const descuentoId = this.descuentoGlobalId();
-    const descuento = descuentoId ? (this.descuentosMap.get(descuentoId) ?? 0) : 0;
+    // Descuento: promo tiene prioridad, EXCEPTO tercera edad que se acumula
+    const oferta = this.getOferta(productoId);
+    const descuentoGlobal = this.descuentoGlobalId();
+    let descuento = 0;
+    if (oferta) {
+      descuento = oferta.porcentaje;
+      if (descuentoGlobal && this.esDescuentoAcumulable()) {
+        descuento += this.descuentosMap.get(descuentoGlobal) ?? 0;
+      }
+    } else if (descuentoGlobal) {
+      descuento = this.descuentosMap.get(descuentoGlobal) ?? 0;
+    }
 
     const row: FilaDet = {
       fila: ++this.contadorFila,
@@ -24898,6 +32998,7 @@ export class NuevaFactura implements OnInit {
       ctrl.setValidators([Validators.required]);
     } else {
       ctrl.clearValidators();
+      ctrl.setValue('');
     }
     ctrl.updateValueAndValidity();
     for (const r of this.filas()) {
@@ -24908,9 +33009,20 @@ export class NuevaFactura implements OnInit {
   onDescuentoGlobalChange() {
     const id = this.descuentoGlobalId();
     const porcentaje = id ? (this.descuentosMap.get(id) ?? 0) : 0;
+    const acumulable = this.esDescuentoAcumulable();
     for (const r of this.filas()) {
-      r.descuento = porcentaje;
-      this.recalcularFila(r);
+      if (this.esOferta(r.productoId)) {
+        if (acumulable) {
+          // Recalcular: promo + tercera edad
+          const promo = this.getOferta(r.productoId)!.porcentaje;
+          r.descuento = promo + porcentaje;
+          this.recalcularFila(r);
+        }
+        // Si NO es acumulable, no tocar la fila (mantiene promo)
+      } else {
+        r.descuento = porcentaje;
+        this.recalcularFila(r);
+      }
     }
   }
 
@@ -25201,7 +33313,9 @@ export class NuevaFactura implements OnInit {
       const cant = Number(d.cantidad);
       const precio = Number(d.precioventa);
       const tot = Number(d.subTotal) || (cant * precio);
-      return `<div class="linea-item"><div class="linea-desc">${desc}</div>${cod ? `<div class="linea-cod">Cod. ${cod}</div>` : ''}<div class="linea"><span>Cant. ${cant}</span><span>${this.formatNum(precio)}</span><span class="right">${this.formatNum(tot)}</span></div></div>`;
+      const descuento = Number(d.descuento) || 0;
+      const descLinea = descuento > 0 ? `<div class="linea-desc">Desc: -${Number(descuento.toFixed(0))}%</div>` : `<div class="linea-desc">Desc: 0%</div>`;
+      return `<div class="linea-item"><div class="linea-desc">${desc}</div>${cod ? `<div class="linea-cod">Cod. ${cod}</div>` : ''}${descLinea}<div class="linea"><span>Cant. ${cant}</span><span>${this.formatNum(precio)}</span><span class="right">${this.formatNum(tot)}</span></div></div>`;
     }).join('');
 
     const pagosHtml = (pagos || []).filter((p: any) => Number(p.importe_otros) > 0 || Number(p.importe_efectivo) > 0).map((p: any) => {
@@ -26142,326 +34256,282 @@ export class PedidosList implements OnInit {
 <p-toast />
 <div class="tienda-layout" [class.con-carrito]="totalItems() > 0 && !isMobile()">
   @if (pedidoOpen()) {
-    <div class="cart-overlay" (click)="pedidoOpen.set(false)"></div>
+  <div class="cart-overlay" (click)="pedidoOpen.set(false)"></div>
   }
 
   @if (totalItems() > 0) {
-    <aside class="cart-sidebar" [class.open]="pedidoOpen()">
-      <div class="cart-header">
-        <div class="cart-header-left">
-          <i class="pi pi-shopping-cart"></i>
-          <span>Mi Pedido</span>
+  <aside class="cart-sidebar" [class.open]="pedidoOpen()">
+    <div class="cart-header">
+      <div class="cart-header-left">
+        <i class="pi pi-shopping-cart"></i>
+        <span>Mi Pedido</span>
+      </div>
+      <div class="cart-header-right">
+        <span class="cart-count">{{ totalItems() }} item{{ totalItems() > 1 ? 's' : '' }}</span>
+        <button class="cart-close-mobile" (click)="pedidoOpen.set(false)">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="cart-items">
+      @for (item of pedidoItems(); track trackByItemId($index, item)) {
+      <div class="cart-item">
+        <div class="cart-item-img">
+          @if (getItemImagen(item)) {
+          <img [src]="getItemImagen(item)" [alt]="item.descripcion" loading="lazy" />
+          } @else {
+          <div class="cart-item-placeholder"><i class="pi pi-image"></i></div>
+          }
         </div>
-        <div class="cart-header-right">
-          <span class="cart-count">{{ totalItems() }} item{{ totalItems() > 1 ? 's' : '' }}</span>
-          <button class="cart-close-mobile" (click)="pedidoOpen.set(false)">
+        <div class="cart-item-details">
+          <span class="cart-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
+          <span class="cart-item-price">{{ formatearPrecio(item.precioventa) }}</span>
+          <div class="cart-item-qty">
+            <button class="qty-btn" (click)="decrementar(item)" [disabled]="cargandoPedido()">
+              <i class="pi pi-minus"></i>
+            </button>
+            <span class="qty-value">{{ item.cantidad }}</span>
+            <button class="qty-btn" (click)="incrementar(item)" [disabled]="cargandoPedido()">
+              <i class="pi pi-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="cart-item-right">
+          <span class="cart-item-subtotal">{{ formatearPrecio(item.subtotal) }}</span>
+          <button class="cart-item-remove" (click)="eliminarDelPedido(item)" pTooltip="Eliminar">
             <i class="pi pi-times"></i>
           </button>
         </div>
       </div>
+      }
+    </div>
 
-      <div class="cart-items">
-        @for (item of pedidoItems(); track trackByItemId($index, item)) {
-          <div class="cart-item">
-            <div class="cart-item-img">
-              @if (getItemImagen(item)) {
-                <img [src]="getItemImagen(item)" [alt]="item.descripcion" loading="lazy" />
-              } @else {
-                <div class="cart-item-placeholder"><i class="pi pi-image"></i></div>
-              }
-            </div>
-            <div class="cart-item-details">
-              <span class="cart-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
-              <span class="cart-item-price">{{ formatearPrecio(item.precioventa) }}</span>
-              <div class="cart-item-qty">
-                <button class="qty-btn" (click)="decrementar(item)" [disabled]="cargandoPedido()">
-                  <i class="pi pi-minus"></i>
-                </button>
-                <span class="qty-value">{{ item.cantidad }}</span>
-                <button class="qty-btn" (click)="incrementar(item)" [disabled]="cargandoPedido()">
-                  <i class="pi pi-plus"></i>
-                </button>
-              </div>
-            </div>
-            <div class="cart-item-right">
-              <span class="cart-item-subtotal">{{ formatearPrecio(item.subtotal) }}</span>
-              <button class="cart-item-remove" (click)="eliminarDelPedido(item)" pTooltip="Eliminar">
-                <i class="pi pi-times"></i>
-              </button>
-            </div>
-          </div>
-        }
+    <div class="cart-summary">
+      <div class="summary-line">
+        <span>Subtotal</span>
+        <span>{{ formatearPrecio(totalPedido()) }}</span>
       </div>
-
-      <div class="cart-summary">
-        <div class="summary-line">
-          <span>Subtotal</span>
-          <span>{{ formatearPrecio(totalPedido()) }}</span>
-        </div>
-        <div class="summary-line summary-total">
-          <span>Total</span>
-          <strong>{{ formatearPrecio(totalPedido()) }}</strong>
-        </div>
-        <p-button
-          label="Facturar"
-          icon="pi pi-check"
-          severity="success"
-          [fluid]="true"
-          [disabled]="cargandoPedido()"
-          (click)="abrirCheckout(); pedidoOpen.set(false)"
-        />
+      <div class="summary-line summary-total">
+        <span>Total</span>
+        <strong>{{ formatearPrecio(totalPedido()) }}</strong>
       </div>
-    </aside>
+      <p-button label="Facturar" icon="pi pi-check" severity="success" [fluid]="true" [disabled]="cargandoPedido()"
+        (click)="abrirCheckout(); pedidoOpen.set(false)" />
+    </div>
+  </aside>
   }
 
   <main class="tienda-main">
     <div class="tienda-toolbar">
       <div class="toolbar-left">
         <h2 class="toolbar-title"><i class="pi pi-shopping-cart"></i> Pedidos</h2>
-        <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's' : '' }}</span>
+        <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's'
+          : '' }}</span>
       </div>
       <div class="toolbar-right">
         <div class="search-box">
           <i class="pi pi-search search-icon"></i>
-          <input
-            pInputText
-            [(ngModel)]="busqueda"
-            placeholder="Buscar..."
-            class="search-input"
-          />
+          <input pInputText [(ngModel)]="busqueda" placeholder="Buscar..." class="search-input" />
         </div>
-        <p-select
-          size="small"
-          [(ngModel)]="categoriaFiltro"
-          [options]="categorias()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Categoría"
-          styleClass="cat-select"
-        />
-        <p-select
-          size="small"
-          [(ngModel)]="ordenarPor"
-          [options]="opcionesOrden"
-          optionLabel="label"
-          optionValue="value"
-          styleClass="sort-select"
-        />
+        <p-select size="small" [(ngModel)]="categoriaFiltro" [options]="categorias()" optionLabel="label"
+          optionValue="value" placeholder="Categoría" styleClass="cat-select" />
+        <p-select size="small" [(ngModel)]="ordenarPor" [options]="opcionesOrden" optionLabel="label"
+          optionValue="value" styleClass="sort-select" />
         <div class="view-toggles desktop-only">
-          <button
-            class="view-btn"
-            [class.active]="layout() === 'grid'"
-            (click)="layout.set('grid')"
-            pTooltip="Cuadrícula"
-          >
+          <button class="view-btn" [class.active]="layout() === 'grid'" (click)="layout.set('grid')"
+            pTooltip="Cuadrícula">
             <i class="pi pi-th-large"></i>
           </button>
-          <button
-            class="view-btn"
-            [class.active]="layout() === 'list'"
-            (click)="layout.set('list')"
-            pTooltip="Lista"
-          >
+          <button class="view-btn" [class.active]="layout() === 'list'" (click)="layout.set('list')" pTooltip="Lista">
             <i class="pi pi-list"></i>
           </button>
         </div>
+        <p-button size="small" label="Ofertas" [rounded]="true" [raised]="true" variant="text" severity="success"
+          [class.active]="soloOfertas()" (click)="soloOfertas.set(!soloOfertas())" pTooltip="Solo ofertas">
+        </p-button>
+
       </div>
     </div>
 
     @if (cargando()) {
-      <div class="loading-container">
-        <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: var(--c-primary)"></i>
-        <p>Cargando productos...</p>
-      </div>
+    <div class="loading-container">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: var(--c-primary)"></i>
+      <p>Cargando productos...</p>
+    </div>
     }
 
     @if (!cargando() && layout() === 'grid') {
-      <div class="productos-grid">
-        @for (producto of productosFiltrados(); track trackByProductoId($index, producto)) {
-          <div class="producto-card">
-            <div class="card-imagen">
-              @if (producto.imagen) {
-                <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
-              } @else {
-                <div class="sin-imagen">
-                  <i class="pi pi-images"></i>
-                </div>
-              }
-              @if (producto.existencia > 0) {
-                <p-tag [value]="producto.existencia + ' disp.'" [severity]="getSeverity(producto.existencia)" styleClass="tag-stock" />
-              } @else {
-                <p-tag value="Sin stock" severity="danger" styleClass="tag-stock" />
-              }
-            </div>
-            <div class="card-body">
-              <div class="card-categoria">{{ producto.categoria || 'Sin categoría' }}</div>
-              <h3 class="card-titulo">{{ producto.descripcion }}</h3>
-              @if (producto.descripcion_corta) {
-                <p class="card-desc">{{ producto.descripcion_corta }}</p>
-              }
-              <div class="card-footer">
-                <span class="card-precio">{{ formatearPrecio(producto.precioventa) }}</span>
-                <p-button
-                  icon="pi pi-cart-plus"
-                  [rounded]="true"
-                  [disabled]="producto.existencia <= 0"
-                  (click)="agregarAlPedido(producto)"
-                  pTooltip="Agregar al pedido"
-                />
-              </div>
-            </div>
+    <div class="productos-grid">
+      @for (producto of productosFiltrados(); track trackByProductoId($index, producto)) {
+      <div class="producto-card">
+        <div class="card-imagen">
+          @if (producto.imagen) {
+          <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
+          } @else {
+          <div class="sin-imagen">
+            <i class="pi pi-images"></i>
           </div>
-        } @empty {
-          <div class="sin-productos">
-            <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
-            <p>No se encontraron productos</p>
+          }
+
+          @if (esOferta(producto)) {
+          <p-tag [value]="'Oferta: -' + getPorcentajeDescuento(producto) + '%'" severity="success"
+            styleClass="tag-stock" />
+          }
+
+        </div>
+        <div class="card-body">
+          <div class="card-categoria">{{ producto.categoria || 'Sin categoría' }}</div>
+          <h3 class="card-titulo">{{ producto.codbarra }}</h3>
+          @if (producto.descripcion) {
+          <p class="card-desc">{{ producto.descripcion }}</p>
+          }
+          @if (producto.existencia > 0) {
+          <p-tag [value]="'Existencia: '+ producto.existencia " [severity]="getSeverity(producto.existencia)"
+            style="padding:0;" />
+          } @else {
+          <p-tag value="Sin stock" severity="danger" />
+          }
+
+          <div class="card-footer">
+            @if (esOferta(producto)) {
+            <span class="card-precio card-precio-oferta">
+              <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
+              {{ formatearPrecio(getPrecioOferta(producto)!) }}
+            </span>
+            } @else {
+            <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
+            }
+            <p-button icon="pi pi-cart-plus" [rounded]="true" [raised]="true" variant="text"
+              [disabled]="producto.existencia <= 0" (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
           </div>
-        }
+        </div>
       </div>
+      } @empty {
+      <div class="sin-productos">
+        <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
+        <p>No se encontraron productos</p>
+      </div>
+      }
+    </div>
     }
 
     @if (!cargando() && layout() === 'list') {
-      <div class="productos-list">
-        @for (producto of productosFiltrados(); track trackByProductoId($index, producto)) {
-          <div class="producto-list-row">
-            <div class="list-imagen">
-              @if (producto.imagen) {
-                <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
-              } @else {
-                <div class="sin-imagen-sm"><i class="pi pi-images"></i></div>
-              }
-            </div>
-            <div class="list-info">
-              <span class="list-categoria">{{ producto.categoria || 'Sin categoría' }}</span>
-              <h4>{{ producto.descripcion }}</h4>
-              @if (producto.descripcion_corta) {
-                <span class="list-desc">{{ producto.descripcion_corta }}</span>
-              }
-            </div>
-            <div class="list-stock">
-              <p-tag [value]="producto.existencia > 0 ? producto.existencia + ' disp.' : 'Sin stock'" [severity]="getSeverity(producto.existencia)" />
-            </div>
-            <div class="list-precio">{{ formatearPrecio(producto.precioventa) }}</div>
-            <div class="list-accion">
-              <p-button
-                icon="pi pi-cart-plus"
-                [rounded]="true"
-                [disabled]="producto.existencia <= 0"
-                (click)="agregarAlPedido(producto)"
-                pTooltip="Agregar al pedido"
-              />
-            </div>
-          </div>
-        } @empty {
-          <div class="sin-productos">
-            <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
-            <p>No se encontraron productos</p>
-          </div>
-        }
+    <div class="productos-list">
+      @for (producto of productosFiltrados(); track trackByProductoId($index, producto)) {
+      <div class="producto-list-row">
+        <div class="list-imagen">
+          @if (producto.imagen) {
+          <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
+          } @else {
+          <div class="sin-imagen-sm"><i class="pi pi-images"></i></div>
+          }
+        </div>
+        <div class="list-info">
+          <span class="list-categoria">{{ producto.categoria || 'Sin categoría' }}</span>
+          <h4>{{ producto.descripcion }}</h4>
+          @if (producto.descripcion_corta) {
+          <span class="list-desc">{{ producto.descripcion_corta }}</span>
+          }
+        </div>
+        <div class="list-stock">
+          <p-tag [value]="producto.existencia > 0 ? producto.existencia + ' disp.' : 'Sin stock'"
+            [severity]="getSeverity(producto.existencia)" />
+        </div>
+        <div class="list-precio">
+          @if (esOferta(producto)) {
+          <span class="card-precio-oferta">
+            <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
+            {{ formatearPrecio(getPrecioOferta(producto)!) }}
+          </span>
+          } @else {
+          {{ formatearPrecio(producto.precioventa) }}
+          }
+        </div>
+        <div class="list-accion">
+          <p-button icon="pi pi-cart-plus" [rounded]="true" [disabled]="producto.existencia <= 0"
+            (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
+        </div>
       </div>
+      } @empty {
+      <div class="sin-productos">
+        <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
+        <p>No se encontraron productos</p>
+      </div>
+      }
+    </div>
     }
   </main>
 </div>
 
 @if (totalItems() > 0 && !pedidoOpen()) {
-  <button class="cart-fab" (click)="pedidoOpen.set(true)">
-    <i class="pi pi-shopping-cart"></i>
-    <span class="cart-fab-badge">{{ totalItems() }}</span>
-  </button>
+<button class="cart-fab" (click)="pedidoOpen.set(true)">
+  <i class="pi pi-shopping-cart"></i>
+  <span class="cart-fab-badge">{{ totalItems() }}</span>
+</button>
 }
 
-<p-dialog
-  header="Facturar Pedido"
-  [(visible)]="dialogCheckout"
-  [modal]="true"
+<p-dialog header="Facturar Pedido" [(visible)]="dialogCheckout" [modal]="true"
   [style]="{ width: isMobile() ? '100vw' : '70vw', marginTop: '0', maxHeight: isMobile() ? '100dvh' : '100vh' }"
-  [styleClass]="'checkout-dialog' + (isMobile() ? ' checkout-mobile' : '')"
-  [closable]="!procesando()"
->
+  [styleClass]="'checkout-dialog' + (isMobile() ? ' checkout-mobile' : '')" [closable]="!procesando()">
   <div class="checkout-layout">
     <div class="checkout-form">
       <div class="checkout-fields">
         <h3 class="section-title"><i class="pi pi-user"></i> Información del Cliente</h3>
         <div class="campo">
           <label>Nombre completo *</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.nombrecliente" placeholder="Nombre del cliente" class="w-full" />
+          <input pInputText pSize="small" [(ngModel)]="checkout.nombrecliente" placeholder="Nombre del cliente"
+            class="w-full" />
         </div>
         <div class="campo">
           <label>Teléfono</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.nrotelefono" placeholder="Teléfono del cliente" class="w-full" />
+          <input pInputText pSize="small" [(ngModel)]="checkout.nrotelefono" placeholder="Teléfono del cliente"
+            class="w-full" />
         </div>
 
         <h3 class="section-title"><i class="pi pi-wallet"></i> Forma de Pago</h3>
         <div class="campo">
           <label>Forma de pago *</label>
-          <p-select
-            size="small"
-            [(ngModel)]="checkout.formapagoId"
-            [options]="formaspago()"
-            placeholder="Seleccionar forma de pago"
-            optionLabel="label"
-            optionValue="value"
-            styleClass="w-full"
-            (onChange)="onFormaPagoChange()"
-          />
+          <p-select size="small" [(ngModel)]="checkout.formapagoId" [options]="formaspago()"
+            placeholder="Seleccionar forma de pago" optionLabel="label" optionValue="value" styleClass="w-full"
+            (onChange)="onFormaPagoChange()" />
         </div>
 
         @if (esTarjeta()) {
-          <h3 class="section-title"><i class="pi pi-credit-card"></i> Tarjeta de Crédito</h3>
+        <h3 class="section-title"><i class="pi pi-credit-card"></i> Tarjeta de Crédito</h3>
+        <div class="campo">
+          <label>Tipo de tarjeta *</label>
+          <p-select size="small" [(ngModel)]="checkout.tarjetacreditoId" [options]="tarjetasCredito()"
+            placeholder="Seleccionar tipo" optionLabel="label" optionValue="value" styleClass="w-full" />
+        </div>
+        <div class="campo campo-numero-tarjeta">
+          <label>Número de tarjeta *</label>
+          <p-inputmask mask="9999 9999 9999 9999" [(ngModel)]="checkout.nrotarjeta" placeholder="0000 0000 0000 0000"
+            (onBlur)="validarTarjetaBlur()" [styleClass]="'w-full' + (tarjetaError() ? ' ng-dirty ng-invalid' : '')" />
+          @if (tarjetaError()) {
+          <p-message severity="error" variant="simple" size="small">{{ tarjetaError() }}</p-message>
+          }
+        </div>
+        <div class="campo-row">
           <div class="campo">
-            <label>Tipo de tarjeta *</label>
-            <p-select
-              size="small"
-              [(ngModel)]="checkout.tarjetacreditoId"
-              [options]="tarjetasCredito()"
-              placeholder="Seleccionar tipo"
-              optionLabel="label"
-              optionValue="value"
-              styleClass="w-full"
-            />
+            <label>Vencimiento *</label>
+            <p-inputmask mask="99/99" [(ngModel)]="checkout.fechaexpiracion" placeholder="MM/YY" slotChar="mm/yy"
+              styleClass="w-full" />
           </div>
-          <div class="campo campo-numero-tarjeta">
-            <label>Número de tarjeta *</label>
-            <p-inputmask
-              mask="9999 9999 9999 9999"
-              [(ngModel)]="checkout.nrotarjeta"
-              placeholder="0000 0000 0000 0000"
-              (onBlur)="validarTarjetaBlur()"
-              [styleClass]="'w-full' + (tarjetaError() ? ' ng-dirty ng-invalid' : '')"
-            />
-            @if (tarjetaError()) {
-              <p-message severity="error" variant="simple" size="small">{{ tarjetaError() }}</p-message>
-            }
+          <div class="campo">
+            <label>CVV *</label>
+            <p-inputmask mask="999" [(ngModel)]="checkout.cvv" placeholder="000" styleClass="w-full" />
           </div>
-          <div class="campo-row">
-            <div class="campo">
-              <label>Vencimiento *</label>
-              <p-inputmask
-                mask="99/99"
-                [(ngModel)]="checkout.fechaexpiracion"
-                placeholder="MM/YY"
-                slotChar="mm/yy"
-                styleClass="w-full"
-              />
-            </div>
-            <div class="campo">
-              <label>CVV *</label>
-              <p-inputmask
-                mask="999"
-                [(ngModel)]="checkout.cvv"
-                placeholder="000"
-                styleClass="w-full"
-              />
-            </div>
-          </div>
+        </div>
         }
 
         @if (esTransferencia()) {
-          <h3 class="section-title"><i class="pi pi-arrow-right-arrow-left"></i> Transferencia</h3>
-          <div class="campo">
-            <label>Número de autorización *</label>
-            <input pInputText pSize="small" [(ngModel)]="checkout.nroautorizacion" placeholder="Autorización de la transferencia" class="w-full" />
-          </div>
+        <h3 class="section-title"><i class="pi pi-arrow-right-arrow-left"></i> Transferencia</h3>
+        <div class="campo">
+          <label>Número de autorización *</label>
+          <input pInputText pSize="small" [(ngModel)]="checkout.nroautorizacion"
+            placeholder="Autorización de la transferencia" class="w-full" />
+        </div>
         }
       </div>
     </div>
@@ -26470,20 +34540,20 @@ export class PedidosList implements OnInit {
       <h3 class="section-title"><i class="pi pi-shopping-cart"></i> Resumen del Pedido</h3>
       <div class="summary-items">
         @for (item of pedidoItems(); track trackByItemId($index, item)) {
-          <div class="summary-item">
-            <div class="summary-item-img">
-              @if (getItemImagen(item)) {
-                <img [src]="getItemImagen(item)" [alt]="item.descripcion" loading="lazy" />
-              } @else {
-                <div class="summary-item-placeholder"><i class="pi pi-image"></i></div>
-              }
-            </div>
-            <div class="summary-item-info">
-              <span class="summary-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
-              <span class="summary-item-qty">Cant: {{ item.cantidad }} × {{ formatearPrecio(item.precioventa) }}</span>
-            </div>
-            <span class="summary-item-total">{{ formatearPrecio(item.subtotal) }}</span>
+        <div class="summary-item">
+          <div class="summary-item-img">
+            @if (getItemImagen(item)) {
+            <img [src]="getItemImagen(item)" [alt]="item.descripcion" loading="lazy" />
+            } @else {
+            <div class="summary-item-placeholder"><i class="pi pi-image"></i></div>
+            }
           </div>
+          <div class="summary-item-info">
+            <span class="summary-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
+            <span class="summary-item-qty">Cant: {{ item.cantidad }} × {{ formatearPrecio(item.precioventa) }}</span>
+          </div>
+          <span class="summary-item-total">{{ formatearPrecio(item.subtotal) }}</span>
+        </div>
         }
       </div>
 
@@ -26498,20 +34568,14 @@ export class PedidosList implements OnInit {
         </div>
       </div>
 
-      <p-button
-        label="Confirmar Factura"
-        icon="pi pi-check"
-        severity="success"
-        [fluid]="true"
-        [loading]="procesando()"
-        [disabled]="procesando()"
-        (click)="procesarPago()"
-      />
+      <p-button label="Confirmar Factura" icon="pi pi-check" severity="success" [fluid]="true" [loading]="procesando()"
+        [disabled]="procesando() || !formularioPagoValido()" (click)="procesarPago()" />
     </div>
   </div>
 
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" [text]="true" icon="pi pi-arrow-left" [disabled]="procesando()" (click)="dialogCheckout.set(false)" />
+    <p-button label="Cancelar" [text]="true" icon="pi pi-arrow-left" [disabled]="procesando()"
+      (click)="dialogCheckout.set(false)" />
   </ng-template>
 </p-dialog>
 
@@ -26917,6 +34981,32 @@ $sidebar-width: 380px;
   }
 }
 
+.btn-ofertas {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--c-surface-ground);
+    color: var(--c-text);
+  }
+
+  &.active {
+    background: var(--c-success);
+    color: white;
+    border-color: var(--c-success);
+  }
+}
+
 /* Loading */
 .loading-container {
   display: flex;
@@ -26937,7 +35027,7 @@ $sidebar-width: 380px;
 }
 
 .producto-card {
-  background: var(--c-surface);
+  background: var(--c-card-background);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -26957,11 +35047,15 @@ $sidebar-width: 380px;
     aspect-ratio: 1;
     overflow: hidden;
     background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      mix-blend-mode: multiply;
     }
 
     .sin-imagen {
@@ -26975,6 +35069,7 @@ $sidebar-width: 380px;
     }
 
     ::ng-deep .tag-stock {
+        background-color: var(--c-card-background);
       position: absolute;
       top: 0.5rem;
       right: 0.5rem;
@@ -26990,7 +35085,7 @@ $sidebar-width: 380px;
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--c-primary);
+    color: var(--c-card-color-text);
     font-weight: 600;
     margin-bottom: 0.25rem;
   }
@@ -26999,7 +35094,7 @@ $sidebar-width: 380px;
     margin: 0 0 0.25rem;
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--c-text);
+    color: var(--c-card-color-text);
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -27026,7 +35121,19 @@ $sidebar-width: 380px;
   .card-precio {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--c-primary);
+    color: var(--c-card-color-text);
+  }
+
+  .card-precio-oferta {
+    color: var(--c-success);
+
+    .precio-original {
+      text-decoration: line-through;
+      color: var(--c-text-muted);
+      font-weight: 400;
+      font-size: 0.8rem;
+      margin-right: 0.4rem;
+    }
   }
 }
 
@@ -27448,6 +35555,7 @@ $sidebar-width: 380px;
 
       ::ng-deep .tag-stock {
         font-size: 0.6rem !important;
+        background-color: var(--c-card-background);
         top: 0.25rem;
         right: 0.25rem;
       }
@@ -27608,7 +35716,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { ProductoTienda, Pedido, PedidoItem, CheckoutPedido, CheckoutPedidoResponse } from '../../../core/models/pedido.models';
 
 const PRODUCTOS_CACHE_KEY = 'pedidos_productos_v1';
-const PRODUCTOS_CACHE_TTL = 5 * 60 * 1000;
+const PRODUCTOS_CACHE_TTL = 60 * 1000; // 1 minuto
 
 interface ProductosCache {
   data: ProductoTienda[];
@@ -27620,7 +35728,11 @@ export class PedidosVirtualService {
   private api = inject(ApiService);
   private productosCache$: Observable<ProductoTienda[]> | null = null;
 
-  getProductos(): Observable<ProductoTienda[]> {
+  getProductos(forceRefresh = false): Observable<ProductoTienda[]> {
+    if (forceRefresh) {
+      this.invalidateCache();
+    }
+
     if (this.productosCache$) return this.productosCache$;
 
     const cached = this.leerCache();
@@ -27775,7 +35887,12 @@ export class PedidosVirtual implements OnInit {
   tarjetaError = signal<string | null>(null);
   pedidoOpen = signal(false);
 
-  private imagenCache = new Map<string, string>();
+  // Image cache removed — browser handles caching natively
+
+  /** Mapa productoId → precio con descuento de promo/oferta */
+  private mapaOfertas = new Map<number, number>();
+  /** Mapa productoId → porcentaje de descuento */
+  private mapaDescuento = new Map<number, number>();
 
   categorias = computed(() => {
     const cats = new Set(this.productos().map(p => p.categoria).filter(Boolean));
@@ -27783,6 +35900,7 @@ export class PedidosVirtual implements OnInit {
   });
   categoriaFiltro = signal<string | null>(null);
   ordenarPor = signal<string>('default');
+  soloOfertas = signal(false);
 
   readonly opcionesOrden = [
     { label: 'Destacados', value: 'default' },
@@ -27799,7 +35917,9 @@ export class PedidosVirtual implements OnInit {
     const cat = this.categoriaFiltro();
     const busq = this.busqueda().toLowerCase();
     const orden = this.ordenarPor();
+    const soloOfertas = this.soloOfertas();
 
+    if (soloOfertas) lista = lista.filter(p => this.esOferta(p));
     if (cat) lista = lista.filter(p => p.categoria === cat);
     if (busq) lista = lista.filter(p =>
       p.descripcion?.toLowerCase().includes(busq) ||
@@ -27819,7 +35939,23 @@ export class PedidosVirtual implements OnInit {
   totalItems = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.cantidad), 0));
   totalPedido = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.subtotal), 0));
 
-  checkout: CheckoutPedido & { nrotarjeta?: string; tarjetacreditoId?: number; fechaexpiracion?: string; cvv?: string } = {
+  formularioPagoValido = computed(() => {
+    if (!this.checkout.nombrecliente) return false;
+    if (this.esTarjeta()) {
+      const num = this.checkout.nrotarjeta?.replace(/\s/g, '') || '';
+      return num.length >= 13
+        && this.validarLuhn(num)
+        && !!this.checkout.fechaexpiracion && /^\d{2}\/\d{2}$/.test(this.checkout.fechaexpiracion)
+        && !!this.checkout.cvv && this.checkout.cvv.length >= 3
+        && !!this.checkout.tarjetacreditoId;
+    }
+    if (this.esTransferencia()) {
+      return !!this.checkout.nroautorizacion && this.checkout.nroautorizacion.trim().length > 0;
+    }
+    return true;
+  });
+
+  checkout: CheckoutPedido & { nrotarjeta?: string; tarjetacreditoId?: number; fechaexpiracion?: string; cvv?: string; nroautorizacion?: string } = {
     pospedmaeId: 0,
     nombrecliente: '',
     nrotelefono: '',
@@ -27834,6 +35970,7 @@ export class PedidosVirtual implements OnInit {
 
   ngOnInit() {
     this.cargarProductos();
+    this.cargarOfertas();
     this.cargarFormasPago();
     this.cargarTarjetasCredito();
 
@@ -27872,7 +36009,7 @@ export class PedidosVirtual implements OnInit {
 
   cargarProductos() {
     this.cargando.set(true);
-    this.pedidosService.getProductos()
+    this.pedidosService.getProductos(true)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
@@ -27884,6 +36021,38 @@ export class PedidosVirtual implements OnInit {
           this.cargando.set(false);
         },
       });
+  }
+
+  /** Carga productos en oferta/promoción desde un solo endpoint */
+  cargarOfertas() {
+    this.api.get<any>('/facturacion/combos-ofertas')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const ofertas = res?.value ?? res ?? [];
+          for (const o of (Array.isArray(ofertas) ? ofertas : [])) {
+            const pid = Number(o.productoId);
+            this.mapaOfertas.set(pid, Number(o.precioConDescuento));
+            this.mapaDescuento.set(pid, Number(o.porcentaje));
+          }
+        },
+        error: () => {},
+      });
+  }
+
+  /** Retorna el precio con descuento si el producto está en oferta, null si no */
+  getPrecioOferta(producto: ProductoTienda): number | null {
+    return this.mapaOfertas.get(Number(producto.produtoId)) ?? null;
+  }
+
+  /** Retorna el porcentaje de descuento si el producto está en oferta, 0 si no */
+  getPorcentajeDescuento(producto: ProductoTienda): number {
+    return this.mapaDescuento.get(Number(producto.produtoId)) ?? 0;
+  }
+
+  /** Verifica si el producto está en una oferta/promoción */
+  esOferta(producto: ProductoTienda): boolean {
+    return this.mapaOfertas.has(Number(producto.produtoId));
   }
 
   cargarFormasPago() {
@@ -28072,8 +36241,11 @@ export class PedidosVirtual implements OnInit {
       tarjetacreditoId: this.tarjetasCredito().length > 0 ? this.tarjetasCredito()[0].value : undefined,
       fechaexpiracion: '',
       cvv: '',
+      nroautorizacion: '',
       tipopago: '',
     };
+    this.onFormaPagoChange();
+    this.tarjetaError.set(null);
     this.dialogCheckout.set(true);
   }
 
@@ -28172,11 +36344,7 @@ export class PedidosVirtual implements OnInit {
 
   resolverImagen(imagen: string | null): string {
     if (!imagen) return '';
-    const cacheKey = imagen.substring(0, 100);
-    if (this.imagenCache.has(cacheKey)) return this.imagenCache.get(cacheKey)!;
-    const result = /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
-    this.imagenCache.set(cacheKey, result);
-    return result;
+    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
   }
 
   getItemImagen(item: PedidoItem): string {
@@ -28206,9 +36374,9 @@ export class PedidosVirtual implements OnInit {
     return suma % 10 === 0;
   }
 
-  getSeverity(stock: number): 'success' | 'warn' | 'danger' {
-    if (stock > 10) return 'success';
-    if (stock > 0) return 'warn';
+  getSeverity(stock: number): 'secondary' | 'warn' | 'danger' {
+    if (stock > 26) return 'secondary';
+    if (stock > 5 && stock <=25) return 'warn';
     return 'danger';
   }
 
@@ -28370,6 +36538,18 @@ size="small"           [(ngModel)]="ordenarPor"
             <i class="pi pi-list"></i>
           </button>
         </div>
+        <p-button
+          size="small"
+          label="Ofertas"
+          [rounded]="true"
+          [raised]="true"
+          variant="text"
+          severity="success"
+          [class.active]="soloOfertas()"
+          (click)="soloOfertas.set(!soloOfertas())"
+          pTooltip="Solo ofertas"
+        >
+        </p-button>
       </div>
     </div>
 
@@ -28392,23 +36572,40 @@ size="small"           [(ngModel)]="ordenarPor"
                   <i class="pi pi-images"></i>
                 </div>
               }
-              @if (producto.existencia > 0) {
-                <p-tag [value]="producto.existencia + ' disp.'" [severity]="getSeverity(producto.existencia)" styleClass="tag-stock" />
-              } @else {
-                <p-tag value="Sin stock" severity="danger" styleClass="tag-stock" />
+
+              @if (esOferta(producto)) {
+                <p-tag [value]="'Oferta: -' + getPorcentajeDescuento(producto) + '%'" severity="success" styleClass="tag-stock" />
               }
+
             </div>
             <div class="card-body">
               <div class="card-categoria">{{ producto.categoria || 'Sin categoría' }}</div>
-              <h3 class="card-titulo">{{ producto.descripcion }}</h3>
-              @if (producto.descripcion_corta) {
-                <p class="card-desc">{{ producto.descripcion_corta }}</p>
+              <h3 class="card-titulo">{{ producto.codbarra }}</h3>
+              @if (producto.descripcion) {
+                <p class="card-desc">{{ producto.descripcion }}</p>
               }
+              @if (producto.existencia > 0) {
+                <p-tag [value]="'Existencia: ' + producto.existencia "
+                 [severity]="getSeverity(producto.existencia)" style="padding:0;" />
+              } @else {
+                <p-tag value="Sin stock" severity="danger"  />
+              }
+
               <div class="card-footer">
-                <span class="card-precio">{{ formatearPrecio(producto.precioventa) }}</span>
+                @if (esOferta(producto)) {
+                  <span class="card-precio card-precio-oferta">
+                    <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
+                    {{ formatearPrecio(getPrecioOferta(producto)!) }}
+                  </span>
+                } @else {
+                  <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
+                }
                 <p-button
                   icon="pi pi-cart-plus"
                   [rounded]="true"
+                  [raised]="true"
+                  variant="text"
+                  severity="secondary"
                   [disabled]="producto.existencia <= 0"
                   (click)="agregarAlCarrito(producto)"
                   pTooltip="Agregar al carrito"
@@ -28446,7 +36643,16 @@ size="small"           [(ngModel)]="ordenarPor"
             <div class="list-stock">
               <p-tag [value]="producto.existencia > 0 ? producto.existencia + ' disp.' : 'Sin stock'" [severity]="getSeverity(producto.existencia)" />
             </div>
-            <div class="list-precio">{{ formatearPrecio(producto.precioventa) }}</div>
+            <div class="list-precio">
+              @if (esOferta(producto)) {
+                <span class="card-precio-oferta">
+                  <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
+                  {{ formatearPrecio(getPrecioOferta(producto)!) }}
+                </span>
+              } @else {
+                {{ formatearPrecio(producto.precioventa) }}
+              }
+            </div>
             <div class="list-accion">
               <p-button
                 icon="pi pi-cart-plus"
@@ -28996,6 +37202,32 @@ $sidebar-width: 380px;
   }
 }
 
+.btn-ofertas {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--c-surface-ground);
+    color: var(--c-text);
+  }
+
+  &.active {
+    background: var(--c-success);
+    color: white;
+    border-color: var(--c-success);
+  }
+}
+
 /* Loading */
 .loading-container {
   display: flex;
@@ -29016,7 +37248,7 @@ $sidebar-width: 380px;
 }
 
 .producto-card {
-  background: var(--c-surface);
+  background: var(--c-card-background);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -29036,11 +37268,15 @@ $sidebar-width: 380px;
     aspect-ratio: 1;
     overflow: hidden;
     background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      mix-blend-mode: multiply;
     }
 
     .sin-imagen {
@@ -29055,6 +37291,7 @@ $sidebar-width: 380px;
 
     ::ng-deep .tag-stock {
       position: absolute;
+      background-color: var(--c-card-background);
       top: 0.5rem;
       right: 0.5rem;
       font-size: 0.7rem !important;
@@ -29069,7 +37306,7 @@ $sidebar-width: 380px;
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--c-primary);
+    color: var(--c-card-color-text);
     font-weight: 600;
     margin-bottom: 0.25rem;
   }
@@ -29105,7 +37342,19 @@ $sidebar-width: 380px;
   .card-precio {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--c-primary);
+    color: var(--c-card-color-text);
+  }
+
+  .card-precio-oferta {
+    color: var(--c-success);
+
+    .precio-original {
+      text-decoration: line-through;
+      color: var(--c-text-muted);
+      font-weight: 400;
+      font-size: 0.8rem;
+      margin-right: 0.4rem;
+    }
   }
 }
 
@@ -29520,6 +37769,16 @@ $sidebar-width: 380px;
       height: 100px;
       aspect-ratio: unset;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        mix-blend-mode: multiply;
+      }
 
       .sin-imagen {
         font-size: 2rem;
@@ -29736,7 +37995,12 @@ export class TiendaVirtual implements OnInit {
   tarjetaError = signal<string | null>(null);
   carritoOpen = signal(false);
 
-  private imagenCache = new Map<string, string>();
+  /** Mapa productoId → precio con descuento de promo/oferta */
+  private mapaOfertas = new Map<number, number>();
+  /** Mapa productoId → porcentaje de descuento */
+  private mapaDescuento = new Map<number, number>();
+
+  // Image cache removed — browser handles caching natively
 
   categorias = computed(() => {
     const cats = new Set(this.productos().map(p => p.categoria).filter(Boolean));
@@ -29744,6 +38008,7 @@ export class TiendaVirtual implements OnInit {
   });
   categoriaFiltro = signal<string | null>(null);
   ordenarPor = signal<string>('default');
+  soloOfertas = signal(false);
 
   readonly opcionesOrden = [
     { label: 'Destacados', value: 'default' },
@@ -29758,7 +38023,9 @@ export class TiendaVirtual implements OnInit {
     const cat = this.categoriaFiltro();
     const busq = this.busqueda().toLowerCase();
     const orden = this.ordenarPor();
+    const soloOfertas = this.soloOfertas();
 
+    if (soloOfertas) lista = lista.filter(p => this.esOferta(p));
     if (cat) lista = lista.filter(p => p.categoria === cat);
     if (busq) lista = lista.filter(p =>
       p.descripcion?.toLowerCase().includes(busq) ||
@@ -29793,11 +38060,12 @@ export class TiendaVirtual implements OnInit {
   ngOnInit() {
     this.cargarProductos();
     this.cargarTarjetasCredito();
+    this.cargarOfertas();
   }
 
   cargarProductos() {
     this.cargando.set(true);
-    this.tiendaService.getProductos()
+    this.tiendaService.getProductos(true)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
@@ -29820,6 +38088,38 @@ export class TiendaVirtual implements OnInit {
         },
         error: () => {},
       });
+  }
+
+  /** Carga productos en oferta/promoción desde un solo endpoint */
+  cargarOfertas() {
+    this.api.get<any>('/facturacion/combos-ofertas')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const ofertas = res?.value ?? res ?? [];
+          for (const o of (Array.isArray(ofertas) ? ofertas : [])) {
+            const pid = Number(o.productoId);
+            this.mapaOfertas.set(pid, Number(o.precioConDescuento));
+            this.mapaDescuento.set(pid, Number(o.porcentaje));
+          }
+        },
+        error: () => {},
+      });
+  }
+
+  /** Retorna el precio con descuento si el producto está en oferta, null si no */
+  getPrecioOferta(producto: ProductoTienda): number | null {
+    return this.mapaOfertas.get(Number(producto.produtoId)) ?? null;
+  }
+
+  /** Retorna el porcentaje de descuento si el producto está en oferta, 0 si no */
+  getPorcentajeDescuento(producto: ProductoTienda): number {
+    return this.mapaDescuento.get(Number(producto.produtoId)) ?? 0;
+  }
+
+  /** Verifica si el producto está en una oferta/promoción */
+  esOferta(producto: ProductoTienda): boolean {
+    return this.mapaOfertas.has(Number(producto.produtoId));
   }
 
   async agregarAlCarrito(producto: ProductoTienda) {
@@ -30037,11 +38337,7 @@ export class TiendaVirtual implements OnInit {
 
   resolverImagen(imagen: string | null): string {
     if (!imagen) return '';
-    const cacheKey = imagen.substring(0, 100);
-    if (this.imagenCache.has(cacheKey)) return this.imagenCache.get(cacheKey)!;
-    const result = /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
-    this.imagenCache.set(cacheKey, result);
-    return result;
+    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
   }
 
   getItemImagen(item: CarritoItem): string {
@@ -30071,9 +38367,9 @@ export class TiendaVirtual implements OnInit {
     return suma % 10 === 0;
   }
 
-  getSeverity(stock: number): 'success' | 'warn' | 'danger' {
-    if (stock > 10) return 'success';
-    if (stock > 0) return 'warn';
+  getSeverity(stock: number): 'secondary' | 'warn' | 'danger' {
+    if (stock > 26) return 'secondary';
+    if (stock > 5 && stock <=25) return 'warn';
     return 'danger';
   }
 
@@ -30115,7 +38411,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { ProductoTienda, Carrito, CarritoItem, CheckoutPago, CheckoutResponse } from '../../../core/models/tienda.models';
 
 const PRODUCTOS_CACHE_KEY = 'tienda_productos_v1';
-const PRODUCTOS_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+const PRODUCTOS_CACHE_TTL = 60 * 1000; // 1 minuto
 
 interface ProductosCache {
   data: ProductoTienda[];
@@ -30127,7 +38423,11 @@ export class TiendaService {
   private api = inject(ApiService);
   private productosCache$: Observable<ProductoTienda[]> | null = null;
 
-  getProductos(): Observable<ProductoTienda[]> {
+  getProductos(forceRefresh = false): Observable<ProductoTienda[]> {
+    if (forceRefresh) {
+      this.invalidateCache();
+    }
+
     if (this.productosCache$) return this.productosCache$;
 
     const cached = this.leerCache();
@@ -30168,1920 +38468,6 @@ export class TiendaService {
       const cache: ProductosCache = { data, timestamp: Date.now() };
       localStorage.setItem(PRODUCTOS_CACHE_KEY, JSON.stringify(cache));
     } catch {}
-  }
-
-  crearCarrito(nombre: string, direccion: string, atendio: string, gestorId: number): Observable<Carrito> {
-    return this.api.post<Carrito>('/facturacion/cotizaciones', {
-      Nombrecliente: nombre,
-      direccion: direccion || 'N/A',
-      atendio,
-      gestorId,
-    });
-  }
-
-  agregarItem(payload: {
-    poscotmaeId: number;
-    productoId: string;
-    codbarra: string;
-    cantidad: number;
-    precio: number;
-    subTotal: number;
-  }): Observable<CarritoItem> {
-    return this.api.post<CarritoItem>('/facturacion/cotizaciones-det', payload);
-  }
-
-  getCarritoItems(maeId: number): Observable<CarritoItem[]> {
-    return this.api.get<CarritoItem[]>(`/facturacion/cotizaciones-det/mae/${maeId}`);
-  }
-
-  eliminarItem(detId: number): Observable<any> {
-    return this.api.delete<any>('/facturacion/cotizaciones-det', detId);
-  }
-
-  eliminarCarrito(maeId: number): Observable<any> {
-    return this.api.delete<any>('/facturacion/cotizaciones', maeId);
-  }
-
-  checkout(pago: CheckoutPago): Observable<CheckoutResponse> {
-    return this.api.post<CheckoutResponse>('/facturacion/tienda/checkout', pago, { sinContexto: true });
-  }
-}
-
-```
-
----
-
-## 📄 src\app\features\facturacion\tienda.bak\tienda-virtual.html
-
-```typescript
-<p-toast />
-<div class="tienda-layout" [class.con-carrito]="totalItems() > 0 && !isMobile()">
-  <!-- Overlay para sidebar mobile -->
-  @if (carritoOpen()) {
-    <div class="cart-overlay" (click)="carritoOpen.set(false)"></div>
-  }
-
-  <!-- Sidebar Carrito -->
-  @if (totalItems() > 0) {
-    <aside class="cart-sidebar" [class.open]="carritoOpen()">
-      <div class="cart-header">
-        <div class="cart-header-left">
-          <i class="pi pi-shopping-cart"></i>
-          <span>Mi Carrito</span>
-        </div>
-        <div class="cart-header-right">
-          <span class="cart-count">{{ totalItems() }} item{{ totalItems() > 1 ? 's' : '' }}</span>
-          <button class="cart-close-mobile" (click)="carritoOpen.set(false)">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="cart-items">
-        @for (item of carritoItems(); track $index) {
-          <div class="cart-item">
-            <div class="cart-item-img">
-              @if (getItemImagen(item)) {
-                <img [src]="getItemImagen(item)" [alt]="item.descripcion" />
-              } @else {
-                <div class="cart-item-placeholder"><i class="pi pi-image"></i></div>
-              }
-            </div>
-            <div class="cart-item-details">
-              <span class="cart-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
-              <span class="cart-item-price">{{ formatearPrecio(item.precio) }}</span>
-              <div class="cart-item-qty">
-                <button class="qty-btn" (click)="decrementar(item)" [disabled]="cargandoCarrito()">
-                  <i class="pi pi-minus"></i>
-                </button>
-                <span class="qty-value">{{ item.cantidad }}</span>
-                <button class="qty-btn" (click)="incrementar(item)" [disabled]="cargandoCarrito()">
-                  <i class="pi pi-plus"></i>
-                </button>
-              </div>
-            </div>
-            <div class="cart-item-right">
-              <span class="cart-item-subtotal">{{ formatearPrecio(item.subTotal) }}</span>
-              <button class="cart-item-remove" (click)="eliminarDelCarrito(item)" pTooltip="Eliminar">
-                <i class="pi pi-times"></i>
-              </button>
-            </div>
-          </div>
-        }
-      </div>
-
-      <div class="cart-summary">
-        <div class="summary-line">
-          <span>Subtotal</span>
-          <span>{{ formatearPrecio(totalCarrito()) }}</span>
-        </div>
-        <div class="summary-line summary-total">
-          <span>Total</span>
-          <strong>{{ formatearPrecio(totalCarrito()) }}</strong>
-        </div>
-        <p-button
-          label="Pagar ahora"
-          icon="pi pi-check"
-          severity="success"
-          [fluid]="true"
-          [disabled]="cargandoCarrito()"
-          (click)="abrirCheckout(); carritoOpen.set(false)"
-        />
-      </div>
-    </aside>
-  }
-
-  <!-- Contenido principal -->
-  <main class="tienda-main">
-    <!-- Toolbar -->
-    <div class="tienda-toolbar">
-      <div class="toolbar-left">
-        <h2 class="toolbar-title"><i class="pi pi-shopping-bag"></i> Tienda Virtual</h2>
-        <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's' : '' }}</span>
-      </div>
-      <div class="toolbar-right">
-        <div class="search-box">
-          <i class="pi pi-search search-icon"></i>
-          <input
-            pInputText
-            [(ngModel)]="busqueda"
-            placeholder="Buscar..."
-            class="search-input"
-          />
-        </div>
-        <p-select
-size="small"           [(ngModel)]="categoriaFiltro"
-          [options]="categorias()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Categoría"
-          styleClass="cat-select"
-          [size]="'small'"
-        />
-        <p-select
-size="small"           [(ngModel)]="ordenarPor"
-          [options]="opcionesOrden"
-          optionLabel="label"
-          optionValue="value"
-          styleClass="sort-select"
-          [size]="'small'"
-        />
-        <div class="view-toggles desktop-only">
-          <button
-            class="view-btn"
-            [class.active]="layout() === 'grid'"
-            (click)="layout.set('grid')"
-            pTooltip="Cuadrícula"
-          >
-            <i class="pi pi-th-large"></i>
-          </button>
-          <button
-            class="view-btn"
-            [class.active]="layout() === 'list'"
-            (click)="layout.set('list')"
-            pTooltip="Lista"
-          >
-            <i class="pi pi-list"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Loading -->
-    @if (cargando()) {
-      <div class="loading-container">
-        <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: var(--c-primary)"></i>
-        <p>Cargando productos...</p>
-      </div>
-    }
-
-    <!-- Grid layout -->
-    @if (!cargando() && layout() === 'grid') {
-      <div class="productos-grid">
-        @for (producto of productosFiltrados(); track produtoId) {
-          <div class="producto-card">
-            <div class="card-imagen">
-              @if (producto.imagen) {
-                <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" />
-              } @else {
-                <div class="sin-imagen">
-                  <i class="pi pi-images"></i>
-                </div>
-              }
-              @if (producto.existencia > 0) {
-                <p-tag [value]="producto.existencia + ' disp.'" [severity]="getSeverity(producto.existencia)" styleClass="tag-stock" />
-              } @else {
-                <p-tag value="Sin stock" severity="danger" styleClass="tag-stock" />
-              }
-            </div>
-            <div class="card-body">
-              <div class="card-categoria">{{ producto.categoria || 'Sin categoría' }}</div>
-              <h3 class="card-titulo">{{ producto.descripcion }}</h3>
-              @if (producto.descripcion_corta) {
-                <p class="card-desc">{{ producto.descripcion_corta }}</p>
-              }
-              <div class="card-footer">
-                <span class="card-precio">{{ formatearPrecio(producto.precioventa) }}</span>
-                <p-button
-                  icon="pi pi-cart-plus"
-                  [rounded]="true"
-                  [disabled]="producto.existencia <= 0"
-                  (click)="agregarAlCarrito(producto)"
-                  pTooltip="Agregar al carrito"
-                />
-              </div>
-            </div>
-          </div>
-        } @empty {
-          <div class="sin-productos">
-            <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
-            <p>No se encontraron productos</p>
-          </div>
-        }
-      </div>
-    }
-
-    <!-- List layout -->
-    @if (!cargando() && layout() === 'list') {
-      <div class="productos-list">
-        @for (producto of productosFiltrados(); track produtoId) {
-          <div class="producto-list-row">
-            <div class="list-imagen">
-              @if (producto.imagen) {
-                <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" />
-              } @else {
-                <div class="sin-imagen-sm"><i class="pi pi-images"></i></div>
-              }
-            </div>
-            <div class="list-info">
-              <span class="list-categoria">{{ producto.categoria || 'Sin categoría' }}</span>
-              <h4>{{ producto.descripcion }}</h4>
-              @if (producto.descripcion_corta) {
-                <span class="list-desc">{{ producto.descripcion_corta }}</span>
-              }
-            </div>
-            <div class="list-stock">
-              <p-tag [value]="producto.existencia > 0 ? producto.existencia + ' disp.' : 'Sin stock'" [severity]="getSeverity(producto.existencia)" />
-            </div>
-            <div class="list-precio">{{ formatearPrecio(producto.precioventa) }}</div>
-            <div class="list-accion">
-              <p-button
-                icon="pi pi-cart-plus"
-                [rounded]="true"
-                [disabled]="producto.existencia <= 0"
-                (click)="agregarAlCarrito(producto)"
-                pTooltip="Agregar al carrito"
-              />
-            </div>
-          </div>
-        } @empty {
-          <div class="sin-productos">
-            <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
-            <p>No se encontraron productos</p>
-          </div>
-        }
-      </div>
-    }
-  </main>
-</div>
-
-<!-- Botón flotante carrito (mobile) — se oculta cuando el sidebar está abierto -->
-@if (totalItems() > 0 && !carritoOpen()) {
-  <button class="cart-fab" (click)="carritoOpen.set(true)">
-    <i class="pi pi-shopping-cart"></i>
-    <span class="cart-fab-badge">{{ totalItems() }}</span>
-  </button>
-}
-
-<!-- Dialog Checkout -->
-<p-dialog
-  header="Finalizar Compra"
-  [(visible)]="dialogCheckout"
-  [modal]="true"
-  [style]="{ width: isMobile() ? '100vw' : '70vw', marginTop: '0', maxHeight: isMobile() ? '100vh' : '90vh' }"
-  [styleClass]="'checkout-dialog' + (isMobile() ? ' checkout-mobile' : '')"
-  [closable]="!procesando()"
->
-  <div class="checkout-layout">
-    <!-- Formulario: todos los campos en un solo contenedor -->
-    <div class="checkout-form">
-      <div class="checkout-fields">
-        <h3 class="section-title"><i class="pi pi-user"></i> Información del Cliente</h3>
-        <div class="campo">
-          <label>Nombre completo *</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.nombrecliente" placeholder="Nombre del cliente" class="w-full" />
-        </div>
-        <div class="campo">
-          <label>Dirección</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.direccion" placeholder="Dirección de entrega (opcional)" class="w-full" />
-        </div>
-
-        <h3 class="section-title"><i class="pi pi-credit-card"></i> Tarjeta de Crédito</h3>
-        <div class="campo">
-          <label>Tipo de tarjeta *</label>
-          <p-select
-size="small"             [(ngModel)]="checkout.tarjetacreditoId"
-            [options]="tarjetasCredito()"
-            placeholder="Seleccionar tipo"
-            optionLabel="label"
-            optionValue="value"
-            styleClass="w-full"
-          />
-        </div>
-        <div class="campo">
-          <label>Número de tarjeta *</label>
-          <p-inputmask
-            mask="9999 9999 9999 9999"
-            [(ngModel)]="checkout.nrotarjeta"
-            placeholder="0000 0000 0000 0000"
-            (onBlur)="validarTarjetaBlur()"
-            [styleClass]="'w-full' + (tarjetaError() ? ' ng-dirty ng-invalid' : '')"
-          />
-          @if (tarjetaError()) {
-            <p-message severity="error" variant="simple" size="small">{{ tarjetaError() }}</p-message>
-          }
-        </div>
-        <div class="campo-row">
-          <div class="campo">
-            <label>Vencimiento *</label>
-            <p-inputmask
-              mask="99/99"
-              [(ngModel)]="checkout.fechaexpiracion"
-              placeholder="MM/YY"
-              slotChar="mm/yy"
-              styleClass="w-full"
-            />
-          </div>
-          <div class="campo">
-            <label>CVV *</label>
-            <p-inputmask
-              mask="999"
-              [(ngModel)]="checkout.cvv"
-              placeholder="000"
-              styleClass="w-full"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Columna derecha: Resumen -->
-    <div class="checkout-summary">
-      <h3 class="section-title"><i class="pi pi-shopping-cart"></i> Resumen del Pedido</h3>
-      <div class="summary-items">
-        @for (item of carritoItems(); track $index) {
-          <div class="summary-item">
-            <div class="summary-item-img">
-              @if (getItemImagen(item)) {
-                <img [src]="getItemImagen(item)" [alt]="item.descripcion" />
-              } @else {
-                <div class="summary-item-placeholder"><i class="pi pi-image"></i></div>
-              }
-            </div>
-            <div class="summary-item-info">
-              <span class="summary-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
-              <span class="summary-item-qty">Cant: {{ item.cantidad }} × {{ formatearPrecio(item.precio) }}</span>
-            </div>
-            <span class="summary-item-total">{{ formatearPrecio(item.subTotal) }}</span>
-          </div>
-        }
-      </div>
-
-      <div class="summary-totals">
-        <div class="summary-line">
-          <span>Subtotal ({{ totalItems() }} items)</span>
-          <span>{{ formatearPrecio(totalCarrito()) }}</span>
-        </div>
-        <div class="summary-line summary-total">
-          <span>Total a pagar</span>
-          <strong>{{ formatearPrecio(totalCarrito()) }}</strong>
-        </div>
-      </div>
-
-      <p-button
-        label="Confirmar Pago"
-        icon="pi pi-check"
-        severity="success"
-        [fluid]="true"
-        [loading]="procesando()"
-        [disabled]="procesando()"
-        (click)="procesarPago()"
-      />
-    </div>
-  </div>
-
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" [text]="true" icon="pi pi-arrow-left" [disabled]="procesando()" (click)="dialogCheckout.set(false)" />
-  </ng-template>
-</p-dialog>
-
-```
-
----
-
-## 📄 src\app\features\facturacion\tienda.bak\tienda-virtual.scss
-
-```typescript
-$sidebar-width: 380px;
-
-/* Layout principal */
-.tienda-layout {
-  display: flex;
-  min-height: 100vh;
-  background: var(--c-surface-ground);
-  transition: padding-right 0.3s;
-
-  &.con-carrito {
-    padding-right: $sidebar-width;
-  }
-}
-
-/* Overlay para sidebar mobile */
-.cart-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 299;
-  transition: opacity 0.3s;
-
-  @media (max-width: 768px) {
-    display: block;
-  }
-}
-
-/* Sidebar Carrito */
-.cart-sidebar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: $sidebar-width;
-  height: 100vh;
-  background: var(--c-surface);
-  border-left: 1px solid var(--c-border);
-  display: flex;
-  flex-direction: column;
-  z-index: 300;
-  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.06);
-
-  @media (max-width: 768px) {
-    transform: translateX(100%);
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
-    width: min(380px, 85vw);
-    z-index: 310;
-
-    &.open {
-      transform: translateX(0);
-    }
-  }
-}
-
-.cart-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--c-border);
-
-  .cart-header-left {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--c-text);
-  }
-
-  .cart-header-right {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .cart-count {
-    font-size: 0.75rem;
-    color: var(--c-text-muted);
-    background: var(--c-surface-ground);
-    padding: 0.2rem 0.6rem;
-    border-radius: 1rem;
-    font-weight: 500;
-  }
-
-  .cart-close-mobile {
-    display: none;
-    width: 2rem;
-    height: 2rem;
-    border-radius: 50%;
-    border: none;
-    background: var(--c-surface-ground);
-    color: var(--c-text-muted);
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-
-    &:hover {
-      background: #fee2e2;
-      color: var(--c-error);
-    }
-
-    @media (max-width: 768px) {
-      display: flex;
-    }
-  }
-}
-
-.cart-items {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.cart-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem;
-  background: var(--c-surface-ground);
-  border-radius: 10px;
-  transition: background 0.15s;
-
-  &:hover {
-    background: color-mix(in srgb, var(--c-primary) 4%, var(--c-surface-ground));
-  }
-
-  .cart-item-img {
-    width: 56px;
-    height: 56px;
-    border-radius: 8px;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: #f1f5f9;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .cart-item-placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      font-size: 1.25rem;
-      color: #cbd5e1;
-    }
-  }
-
-  .cart-item-details {
-    flex: 1;
-    min-width: 0;
-
-    .cart-item-name {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--c-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.2;
-    }
-
-    .cart-item-price {
-      font-size: 0.7rem;
-      color: var(--c-text-muted);
-    }
-  }
-
-  .cart-item-right {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.25rem;
-    flex-shrink: 0;
-
-    .cart-item-subtotal {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--c-primary);
-      white-space: nowrap;
-    }
-
-    .cart-item-remove {
-      background: none;
-      border: none;
-      color: var(--c-text-muted);
-      cursor: pointer;
-      padding: 0.15rem;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      transition: color 0.15s, background 0.15s;
-
-      &:hover {
-        color: var(--c-error);
-        background: #fef2f2;
-      }
-    }
-  }
-}
-
-.cart-item-qty {
-  display: flex;
-  align-items: center;
-  gap: 0.15rem;
-  margin-top: 0.2rem;
-
-  .qty-btn {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    border: 1px solid var(--c-border);
-    background: var(--c-surface);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 0.6rem;
-    color: var(--c-text);
-    transition: all 0.15s;
-
-    &:hover:not(:disabled) {
-      background: var(--c-primary);
-      color: white;
-      border-color: var(--c-primary);
-    }
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-  }
-
-  .qty-value {
-    min-width: 1.5rem;
-    text-align: center;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--c-text);
-  }
-}
-
-.cart-summary {
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--c-border);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background: var(--c-surface);
-
-  .summary-line {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    color: var(--c-text-muted);
-
-    &.summary-total {
-      font-size: 1rem;
-      color: var(--c-text);
-      padding-top: 0.25rem;
-    }
-  }
-}
-
-/* Main */
-.tienda-main {
-  flex: 1;
-  min-width: 0;
-}
-
-/* Toolbar Poseidon-style */
-.tienda-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.875rem 1.5rem;
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-
-  .toolbar-left {
-    display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
-    flex-shrink: 0;
-
-    .toolbar-title {
-      margin: 0;
-      font-size: 1.15rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--c-text);
-
-      i { color: var(--c-primary); }
-    }
-
-    .toolbar-count {
-      font-size: 0.75rem;
-      color: var(--c-text-muted);
-    }
-  }
-
-  .toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-}
-
-.search-box {
-  position: relative;
-
-  .search-icon {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--c-text-muted);
-    font-size: 0.85rem;
-    pointer-events: none;
-  }
-
-  .search-input {
-    padding-left: 0.75rem;
-    padding-right: 2.25rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    height: 36px;
-    width: 200px;
-    transition: width 0.2s;
-
-    &:focus {
-      width: 260px;
-    }
-  }
-}
-
-::ng-deep .sort-select,
-::ng-deep .cat-select {
-  .p-select {
-    font-size: 0.8rem;
-    border-radius: 8px;
-    min-width: 140px;
-  }
-}
-
-.view-toggles {
-  display: flex;
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  overflow: hidden;
-
-  .view-btn {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: var(--c-surface);
-    color: var(--c-text-muted);
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: all 0.15s;
-
-    &:hover {
-      background: var(--c-surface-ground);
-      color: var(--c-text);
-    }
-
-    &.active {
-      background: var(--c-primary);
-      color: white;
-    }
-
-    &:first-child {
-      border-right: 1px solid var(--c-border);
-    }
-  }
-}
-
-/* Loading */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 0;
-  gap: 1rem;
-  color: var(--c-text-muted);
-}
-
-/* Grid layout */
-.productos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
-  padding: 1.5rem;
-}
-
-.producto-card {
-  background: var(--c-surface);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s, transform 0.2s;
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    transform: translateY(-2px);
-  }
-
-  .card-imagen {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1;
-    overflow: hidden;
-    background: #f1f5f9;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .sin-imagen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      font-size: 3rem;
-      color: #cbd5e1;
-    }
-
-    ::ng-deep .tag-stock {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      font-size: 0.7rem !important;
-    }
-  }
-
-  .card-body {
-    padding: 0.75rem;
-  }
-
-  .card-categoria {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--c-primary);
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-  }
-
-  .card-titulo {
-    margin: 0 0 0.25rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--c-text);
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .card-desc {
-    font-size: 0.75rem;
-    color: var(--c-text-muted);
-    margin: 0 0 0.5rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .card-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .card-precio {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--c-primary);
-  }
-}
-
-/* List layout */
-.productos-list {
-  padding: 1rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.producto-list-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: var(--c-surface);
-  border-radius: 8px;
-  border: 1px solid var(--c-border);
-
-  .list-imagen {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: #f1f5f9;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .sin-imagen-sm {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      font-size: 1.5rem;
-      color: #cbd5e1;
-    }
-  }
-
-  .list-info {
-    flex: 1;
-    min-width: 0;
-
-    .list-categoria {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      color: var(--c-primary);
-      font-weight: 600;
-    }
-
-    h4 {
-      margin: 0.1rem 0;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--c-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .list-desc {
-      font-size: 0.75rem;
-      color: var(--c-text-muted);
-    }
-  }
-
-  .list-stock {
-    flex-shrink: 0;
-  }
-
-  .list-precio {
-    font-weight: 700;
-    color: var(--c-primary);
-    white-space: nowrap;
-    min-width: 80px;
-    text-align: right;
-  }
-
-  .list-accion {
-    flex-shrink: 0;
-  }
-}
-
-/* Sin productos */
-.sin-productos {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 4rem 0;
-  gap: 0.5rem;
-  color: var(--c-text-muted);
-}
-
-/* Botón flotante carrito (FAB) — oculto en desktop */
-.cart-fab {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .cart-fab {
-    position: fixed;
-    bottom: 1.25rem;
-    right: 1.25rem;
-    width: 3.5rem;
-    height: 3.5rem;
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
-    background: linear-gradient(135deg, var(--c-primary) 0%, #059669 100%);
-    color: #fff;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 300;
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
-    transition: transform 0.2s, box-shadow 0.2s;
-
-    &:hover {
-      transform: scale(1.08);
-      box-shadow: 0 12px 32px rgba(16, 185, 129, 0.55);
-    }
-
-    &:active {
-      transform: scale(0.95);
-    }
-
-    .cart-fab-badge {
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      min-width: 1.25rem;
-      height: 1.25rem;
-      border-radius: 1rem;
-      background: var(--c-error);
-      color: white;
-      font-size: 0.65rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 0.3rem;
-      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
-      animation: fab-pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes fab-pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-    }
-  }
-}
-
-/* Dialog Checkout - Poseidon style */
-.checkout-dialog {
-  ::ng-deep .p-dialog-content {
-    padding: 0;
-    overflow: hidden;
-  }
-}
-
-.checkout-layout {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  min-height: 420px;
-}
-
-.checkout-form {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  border-right: 1px solid var(--c-border);
-}
-
-.checkout-section {
-  .section-title {
-    margin: 0 0 1rem;
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--c-text);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    i {
-      color: var(--c-primary);
-    }
-  }
-
-  .campo {
-    margin-bottom: 0.75rem;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-
-    label {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--c-text);
-      margin-bottom: 0.25rem;
-    }
-  }
-}
-
-.campo-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.checkout-summary {
-  padding: 1.5rem;
-  background: var(--c-surface-ground);
-  display: flex;
-  flex-direction: column;
-
-  .section-title {
-    margin: 0 0 1rem;
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--c-text);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    i {
-      color: var(--c-primary);
-    }
-  }
-}
-
-.summary-items {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.summary-item {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem;
-  background: var(--c-surface);
-  border-radius: 8px;
-
-  .summary-item-img {
-    width: 40px;
-    height: 40px;
-    border-radius: 6px;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: #f1f5f9;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .summary-item-placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      font-size: 1rem;
-      color: #cbd5e1;
-    }
-  }
-
-  .summary-item-info {
-    flex: 1;
-    min-width: 0;
-
-    .summary-item-name {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--c-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .summary-item-qty {
-      font-size: 0.65rem;
-      color: var(--c-text-muted);
-    }
-  }
-
-  .summary-item-total {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--c-primary);
-    white-space: nowrap;
-  }
-}
-
-.summary-totals {
-  border-top: 1px solid var(--c-border);
-  padding-top: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
-
-  .summary-line {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: var(--c-text-muted);
-
-    &.summary-total {
-      font-size: 1rem;
-      color: var(--c-text);
-      padding-top: 0.35rem;
-      margin-top: 0.25rem;
-      border-top: 1px solid var(--c-border);
-    }
-  }
-}
-
-.w-full {
-  width: 100%;
-}
-
-/* ===========================
-   MOBILE RESPONSIVE (≤768px)
-   =========================== */
-
-.desktop-only {
-  @media (max-width: 768px) {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
-  /* Layout: quitar padding del sidebar */
-  .tienda-layout.con-carrito {
-    padding-right: 0;
-  }
-
-  /* Toolbar: apilado */
-  .tienda-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.6rem;
-    padding: 0.75rem;
-
-    .toolbar-left {
-      justify-content: space-between;
-    }
-
-    .toolbar-right {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-  }
-
-  .search-box {
-    width: 100%;
-
-    .search-input {
-      width: 100%;
-      height: 40px;
-
-      &:focus {
-        width: 100%;
-      }
-    }
-  }
-
-  ::ng-deep .sort-select,
-  ::ng-deep .cat-select {
-    width: 100%;
-
-    .p-select {
-      width: 100%;
-    }
-  }
-
-  /* Grid: 1 columna */
-  .productos-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-    padding: 0.75rem;
-  }
-
-  .producto-card {
-    display: flex;
-    flex-direction: row;
-    border-radius: 10px;
-
-    .card-imagen {
-      width: 100px;
-      height: 100px;
-      aspect-ratio: unset;
-      flex-shrink: 0;
-
-      .sin-imagen {
-        font-size: 2rem;
-      }
-
-      ::ng-deep .tag-stock {
-        font-size: 0.6rem !important;
-        top: 0.25rem;
-        right: 0.25rem;
-      }
-    }
-
-    .card-body {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 0.6rem;
-    }
-
-    .card-titulo {
-      font-size: 0.8rem;
-    }
-
-    .card-precio {
-      font-size: 0.9rem;
-    }
-  }
-
-  /* Lista: compacta */
-  .productos-list {
-    padding: 0.75rem;
-    gap: 0.4rem;
-  }
-
-  .producto-list-row {
-    padding: 0.5rem;
-    gap: 0.5rem;
-
-    .list-imagen {
-      width: 48px;
-      height: 48px;
-    }
-
-    .list-info h4 {
-      font-size: 0.8rem;
-    }
-
-    .list-stock {
-      display: none;
-    }
-
-    .list-precio {
-      font-size: 0.8rem;
-      min-width: 60px;
-    }
-  }
-
-  /* Checkout dialog mobile */
-  .checkout-dialog {
-    ::ng-deep .p-dialog {
-      width: 100vw !important;
-      height: 100vh !important;
-      max-height: 100vh !important;
-      margin: 0 !important;
-      border-radius: 0 !important;
-    }
-
-    ::ng-deep .p-dialog-content {
-      overflow-y: auto !important;
-      padding: 0 !important;
-      max-height: 100vh !important;
-    }
-
-    ::ng-deep .p-dialog-header {
-      padding: 0.75rem 1rem !important;
-      border-bottom: 1px solid var(--c-border);
-      flex-shrink: 0;
-    }
-  }
-
-  .checkout-layout {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-
-  .checkout-form {
-    padding: 1rem;
-    border-right: none;
-    border-bottom: 1px solid var(--c-border);
-    gap: 1rem;
-
-    .checkout-fields {
-      width: 95%;
-      margin: 0 auto;
-    }
-
-    .section-title {
-      font-size: 0.85rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .campo {
-      margin-bottom: 0.6rem;
-    }
-  }
-
-  .checkout-summary {
-    padding: 1rem;
-
-    .section-title {
-      font-size: 0.85rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .summary-items {
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .summary-item {
-      padding: 0.4rem;
-      gap: 0.5rem;
-
-      .summary-item-img {
-        width: 36px;
-        height: 36px;
-      }
-
-      .summary-item-name {
-        font-size: 0.7rem;
-      }
-    }
-  }
-
-  .campo-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Touch targets para tablets */
-@media (pointer: coarse) {
-  .p-button,
-  .p-inputtext,
-  .p-select,
-  .p-datepicker {
-    min-height: 44px;
-  }
-}
-
-```
-
----
-
-## 📄 src\app\features\facturacion\tienda.bak\tienda-virtual.ts
-
-```typescript
-import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DataViewModule } from 'primeng/dataview';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputMaskModule } from 'primeng/inputmask';
-import { SelectModule } from 'primeng/select';
-import { TagModule } from 'primeng/tag';
-import { MessageModule } from 'primeng/message';
-import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
-import { BadgeModule } from 'primeng/badge';
-import { TooltipModule } from 'primeng/tooltip';
-import { TiendaService } from './tienda.service';
-import { ProductoTienda, CarritoItem, CheckoutPago } from '../../../core/models/tienda.models';
-import { AuthService } from '../../../core/services/auth.service';
-import { ApiService } from '../../../core/services/api.service';
-
-@Component({
-  selector: 'app-tienda-virtual',
-  standalone: true,
-  imports: [
-    CommonModule, FormsModule, DataViewModule, ButtonModule, DialogModule,
-    InputNumberModule, InputTextModule, InputMaskModule, SelectModule, TagModule, ToastModule,
-    BadgeModule, TooltipModule, MessageModule,
-  ],
-  providers: [],
-  templateUrl: './tienda-virtual.html',
-  styleUrl: './tienda-virtual.scss',
-})
-export class TiendaVirtual implements OnInit {
-  private tiendaService = inject(TiendaService);
-  private auth = inject(AuthService);
-  private messageService = inject(MessageService);
-  private destroyRef = inject(DestroyRef);
-  private api = inject(ApiService);
-
-  productos = signal<ProductoTienda[]>([]);
-  carritoItems = signal<CarritoItem[]>([]);
-  carritoId = signal<number | null>(null);
-  busqueda = signal<string>('');
-  layout = signal<'grid' | 'list'>('grid');
-  cargando = signal(false);
-  cargandoCarrito = signal(false);
-
-  dialogCheckout = signal(false);
-  procesando = signal(false);
-  tarjetasCredito = signal<{ label: string; value: number }[]>([]);
-  tarjetaError = signal<string | null>(null);
-  carritoOpen = signal(false);
-
-  categorias = computed(() => {
-    const cats = new Set(this.productos().map(p => p.categoria).filter(Boolean));
-    return [{ label: 'Todos', value: null }, ...Array.from(cats).map(c => ({ label: c!, value: c! }))];
-  });
-  categoriaFiltro = signal<string | null>(null);
-  ordenarPor = signal<string>('default');
-
-  readonly opcionesOrden = [
-    { label: 'Destacados', value: 'default' },
-    { label: 'Menor precio', value: 'precio-asc' },
-    { label: 'Mayor precio', value: 'precio-desc' },
-    { label: 'Nombre A-Z', value: 'nombre-asc' },
-    { label: 'Nombre Z-A', value: 'nombre-desc' },
-  ];
-
-  productosFiltrados = computed(() => {
-    let lista = this.productos();
-    const cat = this.categoriaFiltro();
-    const busq = this.busqueda().toLowerCase();
-    const orden = this.ordenarPor();
-
-    if (cat) lista = lista.filter(p => p.categoria === cat);
-    if (busq) lista = lista.filter(p =>
-      p.descripcion?.toLowerCase().includes(busq) ||
-      p.codbarra?.toLowerCase().includes(busq)
-    );
-
-    const copia = [...lista];
-    switch (orden) {
-      case 'precio-asc': copia.sort((a, b) => Number(a.precioventa) - Number(b.precioventa)); break;
-      case 'precio-desc': copia.sort((a, b) => Number(b.precioventa) - Number(a.precioventa)); break;
-      case 'nombre-asc': copia.sort((a, b) => (a.descripcion || '').localeCompare(b.descripcion || '')); break;
-      case 'nombre-desc': copia.sort((a, b) => (b.descripcion || '').localeCompare(a.descripcion || '')); break;
-    }
-    return copia;
-  });
-
-  totalItems = computed(() => this.carritoItems().reduce((sum, i) => sum + Number(i.cantidad), 0));
-  totalCarrito = computed(() => this.carritoItems().reduce((sum, i) => sum + Number(i.subTotal), 0));
-
-  checkout: CheckoutPago & { nrotarjeta?: string; tarjetacreditoId?: number; fechaexpiracion?: string; cvv?: string } = {
-    poscotmaeId: 0,
-    nombrecliente: '',
-    direccion: '',
-    formapagoId: 2,
-    efectivo_recibido: 0,
-    nrotarjeta: '',
-    tarjetacreditoId: undefined,
-    fechaexpiracion: '',
-    cvv: '',
-  };
-
-  ngOnInit() {
-    this.cargarProductos();
-    this.cargarTarjetasCredito();
-  }
-
-  cargarProductos() {
-    this.cargando.set(true);
-    this.tiendaService.getProductos()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (data) => {
-          this.productos.set(data);
-          this.cargando.set(false);
-        },
-        error: () => {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los productos' });
-          this.cargando.set(false);
-        },
-      });
-  }
-
-  cargarTarjetasCredito() {
-    this.api.get<{ tarjetacreditoId: number; descripcion: string }[]>('/parametros/tarjetas-credito')
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (data) => {
-          this.tarjetasCredito.set(data.map(t => ({ label: t.descripcion, value: t.tarjetacreditoId })));
-        },
-        error: () => {},
-      });
-  }
-
-  async agregarAlCarrito(producto: ProductoTienda) {
-    if (producto.existencia <= 0) {
-      this.messageService.add({ severity: 'warn', summary: 'Sin stock', detail: 'Producto sin existencia' });
-      return;
-    }
-
-    if (!this.carritoId()) {
-      await this.crearCarrito();
-    }
-
-    const existing = this.carritoItems().find(i => i.productoId === String(producto.produtoId));
-    const nuevaCant = existing ? existing.cantidad + 1 : 1;
-    if (nuevaCant > producto.existencia) {
-      this.messageService.add({ severity: 'warn', summary: 'Stock insuficiente', detail: `Solo quedan ${producto.existencia} unidades` });
-      return;
-    }
-
-    this.cargandoCarrito.set(true);
-    const payload = {
-      poscotmaeId: this.carritoId()!,
-      productoId: String(producto.produtoId),
-      codbarra: producto.codbarra || '',
-      cantidad: nuevaCant,
-      precio: Number(producto.precioventa),
-      subTotal: Number(producto.precioventa) * nuevaCant,
-    };
-
-    if (existing) {
-      this.tiendaService.eliminarItem(existing.poscotdetId)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => {
-          this.tiendaService.agregarItem(payload)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: () => this.recargarItems(),
-              error: () => this.cargandoCarrito.set(false),
-            });
-        });
-    } else {
-      this.tiendaService.agregarItem(payload)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => {
-            this.recargarItems();
-            this.messageService.add({ severity: 'success', summary: 'Agregado', detail: `${producto.descripcion} agregado al carrito` });
-          },
-          error: () => {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo agregar al carrito' });
-            this.cargandoCarrito.set(false);
-          },
-        });
-    }
-  }
-
-  async crearCarrito() {
-    return new Promise<void>((resolve) => {
-      this.tiendaService.crearCarrito('Cliente Tienda', '', 'Tienda Virtual', 1)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (carrito) => {
-            this.carritoId.set(carrito.poscotmaeId);
-            resolve();
-          },
-          error: () => {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el carrito' });
-            resolve();
-          },
-        });
-    });
-  }
-
-  recargarItems() {
-    if (!this.carritoId()) return;
-    this.tiendaService.getCarritoItems(this.carritoId()!)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (items) => {
-          this.carritoItems.set(items);
-          this.cargandoCarrito.set(false);
-        },
-        error: () => this.cargandoCarrito.set(false),
-      });
-  }
-
-  incrementar(item: CarritoItem) {
-    const prod = this.productos().find(p => p.produtoId === Number(item.productoId));
-    if (prod && Number(item.cantidad) >= prod.existencia) {
-      this.messageService.add({ severity: 'warn', summary: 'Stock insuficiente', detail: `Solo quedan ${prod.existencia} unidades` });
-      return;
-    }
-    const precio = Number(item.precio);
-    const nuevaCant = Number(item.cantidad) + 1;
-    this.tiendaService.eliminarItem(item.poscotdetId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.tiendaService.agregarItem({
-          poscotmaeId: this.carritoId()!,
-          productoId: item.productoId,
-          codbarra: item.codbarra,
-          cantidad: nuevaCant,
-          precio,
-          subTotal: precio * nuevaCant,
-        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.recargarItems());
-      });
-  }
-
-  decrementar(item: CarritoItem) {
-    if (Number(item.cantidad) <= 1) {
-      this.eliminarDelCarrito(item);
-      return;
-    }
-    const precio = Number(item.precio);
-    const nuevaCant = Number(item.cantidad) - 1;
-    this.tiendaService.eliminarItem(item.poscotdetId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.tiendaService.agregarItem({
-          poscotmaeId: this.carritoId()!,
-          productoId: item.productoId,
-          codbarra: item.codbarra,
-          cantidad: nuevaCant,
-          precio,
-          subTotal: precio * nuevaCant,
-        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.recargarItems());
-      });
-  }
-
-  eliminarDelCarrito(item: CarritoItem) {
-    this.tiendaService.eliminarItem(item.poscotdetId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.recargarItems());
-  }
-
-  abrirCheckout() {
-    if (this.carritoItems().length === 0) {
-      this.messageService.add({ severity: 'warn', summary: 'Carrito vacío', detail: 'Agrega productos antes de pagar' });
-      return;
-    }
-    this.checkout = {
-      poscotmaeId: this.carritoId()!,
-      nombrecliente: 'Cliente Tienda',
-      direccion: '',
-      formapagoId: 2,
-      efectivo_recibido: this.totalCarrito(),
-      nrotarjeta: '',
-      tarjetacreditoId: this.tarjetasCredito().length > 0 ? this.tarjetasCredito()[0].value : undefined,
-      fechaexpiracion: '',
-      cvv: '',
-    };
-    this.dialogCheckout.set(true);
-  }
-
-  procesarPago() {
-    if (!this.checkout.nombrecliente) {
-      this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa el nombre del cliente' });
-      return;
-    }
-    if (!this.checkout.nrotarjeta || this.checkout.nrotarjeta.replace(/\s/g, '').length < 13) {
-      this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa el número de tarjeta completo' });
-      return;
-    }
-    if (!this.validarLuhn(this.checkout.nrotarjeta)) {
-      this.messageService.add({ severity: 'warn', summary: 'Tarjeta inválida', detail: 'El número de tarjeta no es válido' });
-      return;
-    }
-    if (!this.checkout.fechaexpiracion || !/^\d{2}\/\d{2}$/.test(this.checkout.fechaexpiracion)) {
-      this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa la fecha de expiración (MM/YY)' });
-      return;
-    }
-    if (!this.checkout.cvv || this.checkout.cvv.length < 3) {
-      this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa el CVV (mínimo 3 dígitos)' });
-      return;
-    }
-    if (!this.checkout.tarjetacreditoId) {
-      this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Selecciona el tipo de tarjeta' });
-      return;
-    }
-
-    this.procesando.set(true);
-    this.tiendaService.checkout({
-      poscotmaeId: this.checkout.poscotmaeId,
-      nombrecliente: this.checkout.nombrecliente,
-      direccion: this.checkout.direccion,
-      formapagoId: 2,
-      efectivo_recibido: this.totalCarrito(),
-      tarjetacreditoId: this.checkout.tarjetacreditoId,
-      nrotarjeta: this.checkout.nrotarjeta,
-    })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (resp) => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Venta procesada',
-            detail: `Factura #${resp.nrofactura} — Total: L ${resp.total.toFixed(2)}`,
-          });
-          this.limpiarTodo();
-          this.procesando.set(false);
-        },
-        error: () => {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo procesar el pago' });
-          this.procesando.set(false);
-        },
-      });
-  }
-
-  limpiarTodo() {
-    this.carritoItems.set([]);
-    this.carritoId.set(null);
-    this.dialogCheckout.set(false);
-  }
-
-  resolverImagen(imagen: string | null): string {
-    if (!imagen) return '';
-    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
-  }
-
-  getItemImagen(item: CarritoItem): string {
-    if (item.imagen) return this.resolverImagen(item.imagen);
-    const prod = this.productos().find(p => p.produtoId === Number(item.productoId));
-    return prod?.imagen ? this.resolverImagen(prod.imagen) : '';
-  }
-
-  formatearPrecio(precio: number | string): string {
-    return `L ${Number(precio).toFixed(2)}`;
-  }
-
-  validarLuhn(numero: string): boolean {
-    const digits = numero.replace(/\D/g, '');
-    if (digits.length < 13 || digits.length > 19) return false;
-    let suma = 0;
-    let alternar = false;
-    for (let i = digits.length - 1; i >= 0; i--) {
-      let digito = parseInt(digits[i], 10);
-      if (alternar) {
-        digito *= 2;
-        if (digito > 9) digito = Math.floor(digito / 10) + (digito % 10);
-      }
-      suma += digito;
-      alternar = !alternar;
-    }
-    return suma % 10 === 0;
-  }
-
-  getSeverity(stock: number): 'success' | 'warn' | 'danger' {
-    if (stock > 10) return 'success';
-    if (stock > 0) return 'warn';
-    return 'danger';
-  }
-
-  isMobile(): boolean {
-    return typeof window !== 'undefined' && window.innerWidth <= 768;
-  }
-
-  validarTarjetaBlur() {
-    const valor = this.checkout.nrotarjeta?.replace(/\s/g, '');
-    if (!valor) {
-      this.tarjetaError.set(null);
-      return;
-    }
-    if (valor.length < 13) {
-      this.tarjetaError.set('El número de tarjeta debe tener al menos 13 dígitos');
-      return;
-    }
-    if (!this.validarLuhn(valor)) {
-      this.tarjetaError.set('El número de tarjeta no es válido');
-      return;
-    }
-    this.tarjetaError.set(null);
-  }
-}
-
-```
-
----
-
-## 📄 src\app\features\facturacion\tienda.bak\tienda.service.ts
-
-```typescript
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
-import { ApiService } from '../../../core/services/api.service';
-import { ProductoTienda, Carrito, CarritoItem, CheckoutPago, CheckoutResponse } from '../../../core/models/tienda.models';
-
-@Injectable({ providedIn: 'root' })
-export class TiendaService {
-  private api = inject(ApiService);
-
-  getProductos(): Observable<ProductoTienda[]> {
-    return this.api.get<ProductoTienda[]>('/inventario/tienda/productos');
   }
 
   crearCarrito(nombre: string, direccion: string, atendio: string, gestorId: number): Observable<Carrito> {
@@ -32381,7 +38767,11 @@ import { ButtonModule } from 'primeng/button';
     imports: [ButtonModule],
     template:  `
         <div class="flex w-full justify-content-end mt-3">
-            <p-button type="button" label="Cancelar" icon="pi pi-times" (onClick)="closeDialog({ buttonType: 'Cancel', summary: 'No hay producto seleccionado' })" />
+            <p-button type="button"
+            size="small"
+            [rounded]="true"
+            severity="secondary"
+            label="Cancelar" icon="pi pi-times" (onClick)="closeDialog({ buttonType: 'Cancel', summary: 'No hay producto seleccionado' })" />
         </div> `
 })
 export class FooterHelper {
@@ -32532,7 +38922,8 @@ import { Producto } from '../../core/models/inventario.models';
               type="button"
               [text]="true"
               [rounded]="true"
-              icon="pi pi-plus"
+              severity="success"
+              icon="pi pi-chevron-circle-right"
               (click)="selectProduct(product); $event.stopPropagation()"
             />
           </td>
@@ -32598,6 +38989,7 @@ export class ProductosHelperList implements OnInit {
     this.ref.close(data);
   }
 }
+
 ```
 
 ---
@@ -33266,6 +39658,7 @@ export class Ajustes implements OnInit {
         <label for="descripcion">Descripción <span class="req">*</span></label>
         <input
           pInputText
+          pSize="small"
           id="descripcion"
           formControlName="descripcion"
           maxlength="50"
@@ -33307,6 +39700,7 @@ export class Ajustes implements OnInit {
     </form>
   }
 </section>
+
 ```
 
 ---
@@ -34184,19 +40578,35 @@ export class Casas implements OnInit {
       <p class="page-subtitle">{{ config().subtitulo }}</p>
     </div>
     <div>
-      <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()" />
+      <p-button label="Nuevo"
+      [rounded]="true"
+      [raised]="true"
+      variant="text"
+      severity="success"
+      icon="pi pi-plus" size="small" (onClick)="nuevo()" />
     </div>
   </header>
 
   <div class="filtros card">
     <div class="campo">
       <label>Buscar</label>
-      <input pInputText type="text" placeholder="Buscar..." [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
+      <input
+
+        pInputText type="text"
+        pSize="small"
+        placeholder="Buscar..." [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
         (keyup.enter)="buscar()" />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
-      <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small"
+      <p-button label="Buscar"
+       [rounded]="true"
+       icon="pi pi-search" size="small"
+        severity="info"
+       (onClick)="buscar()" />
+      <p-button label="Limpiar"
+       [rounded]="true"
+        icon="pi pi-times"
+        severity="secondary" text size="small"
         (onClick)="limpiarFiltros()" />
     </div>
   </div>
@@ -36488,52 +42898,89 @@ export class Embalajes implements OnInit {
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
-    dataKey="invexistenciaId"
+    dataKey="productoId"
+    [expandedRowKeys]="expandedRows()"
     [paginator]="true"
     [rows]="10"
-    layout="list"
     size="small"
+    [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-    [rowsPerPageOptions]="[10, 20, 50]"
+    [tableStyle]="{ 'min-width': '60rem' }"
   >
-    <ng-template #list let-items>
-      <div class="grid grid-nogutter">
-        @for (e of items; track e.invexistenciaId) {
-        <div class="col-12 p-2">
-          <div class="flex flex-column sm:flex-row align-items-center p-3 gap-3 border-1 surface-border border-round">
-            <div class="existencia-img-container">
-              @if (getItemImagen(e)) {
-                <img [src]="getItemImagen(e)" [alt]="e.producto?.descripcion" loading="lazy" />
-              } @else {
-                <i class="pi pi-image"></i>
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 3rem"></th>
+        <th>Imagen</th>
+        <th>Código</th>
+        <th>Descripción</th>
+        <th class="text-right">Precio Vta.</th>
+        <th>Disponibilidad</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-rowData let-expanded="expanded">
+      <tr>
+        <td>
+          <button
+            type="button"
+            pButton
+            [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+            class="p-button-text p-button-sm p-button-rounded"
+            (click)="toggleRow(rowData)"
+          ></button>
+        </td>
+        <td>
+          @if (getItemImagen(rowData)) {
+            <img [src]="getItemImagen(rowData)" [alt]="rowData.descripcion" class="img-thumb" loading="lazy"
+              (mouseenter)="onImgHover(getItemImagen(rowData), $event)" (mousemove)="onImgMove($event)" (mouseleave)="onImgLeave()" />
+          } @else {
+            <div class="img-placeholder"><i class="pi pi-image"></i></div>
+          }
+        </td>
+        <td><span class="font-semibold">{{ rowData.codbarra }}</span></td>
+        <td>{{ rowData.descripcion }}</td>
+        <td class="text-right">{{ moneda(rowData.precioventa) }}</td>
+        <td>
+          <p-tag
+            [value]="rowData.disponibilidad"
+            [severity]="rowData.disponibilidad === 'Alta' ? 'success' : 'danger'"
+            styleClass="tag-sm"
+          />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="expandedrow" let-rowData>
+      <tr class="expanded-detail">
+        <td colspan="6">
+          <div class="expansion-content">
+            <p class="expansion-title">Existencias por bodega</p>
+            <div class="bodegas-grid">
+              @for (b of rowData.bodegas; track b.bodegaId) {
+                <div class="bodega-card">
+                  <span class="bodega-nombre">{{ b.descripcion }}</span>
+                  <span class="bodega-existencia" [class.agotado]="b.existencia === 0"> existencia {{ b.existencia }}</span>
+                </div>
               }
             </div>
-            <div class="flex flex-column sm:align-items-start gap-2 flex-1">
-              <div class="text-xl font-bold text-900">{{ e.producto?.descripcion }}</div>
-              <div class="text-sm text-600">Cod: {{ e.producto?.codbarra }}</div>
-              <div class="text-sm font-semibold">Bodega: {{ e.bodega?.descripcion }}</div>
-              <div class="flex gap-3 align-items-center">
-                <span class="text-sm">Existencia: <b>{{ e.existencia }}</b></span>
-                <span class="text-sm">C.U: <b>{{ moneda(e.costounitario) }}</b></span>
-                <span class="text-sm">PrVta: <b>{{ moneda(e.precioventa) }}</b></span>
-              </div>
-            </div>
-            <p-tag [value]="e.existencia > 0 ? 'Disponible' : 'Agotado'" [severity]="e.existencia > 0 ? 'success' : 'danger'" />
           </div>
-        </div>
-        }
-      </div>
+        </td>
+      </tr>
     </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6" class="text-center p-3">No hay existencias registradas.</td>
+      </tr>
+    </ng-template>
+  </p-table>
 
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay existencias registradas.</div>
-    </ng-template>
-  </p-dataview>
+  @if (zoomVisible()) {
+    <img [src]="zoomUrl()" class="img-zoom-overlay" [style.left.px]="zoomX()" [style.top.px]="zoomY()" />
+  }
 </section>
+
 ```
 
 ---
@@ -36541,52 +42988,104 @@ export class Embalajes implements OnInit {
 ## 📄 src\app\features\inventario\existencias\existencias.scss
 
 ```typescript
-.dv-cards {
-  padding: 0.75rem;
+.text-right {
+  text-align: right;
 }
 
-.dv-card {
-  .dv-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.15rem 0;
-  }
-
-  .dv-label {
-    color: #64748b;
-    font-size: 0.78rem;
-  }
-
-  .dv-value {
-    font-weight: 600;
-    color: #334155;
-    text-align: right;
-  }
+.text-center {
+  text-align: center;
 }
 
-.existencia-img-container {
-  width: 8rem;
-  height: 8rem;
-  flex-shrink: 0;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  background: var(--surface-100);
+.font-semibold {
+  font-weight: 600;
+}
+
+// ===== Imagen thumbnail =====
+
+.img-thumb {
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.img-placeholder {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 6px;
+  background: var(--c-surface-ground, #f8fafc);
   display: flex;
   align-items: center;
   justify-content: center;
 
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
   .pi {
-    font-size: 1.5rem;
-    color: var(--surface-400);
+    font-size: 1.2rem;
+    color: var(--c-text-muted, #64748b);
   }
 }
+
+// ===== Row expansion =====
+
+.expanded-detail td {
+  padding: 0 !important;
+  background: var(--c-surface-ground, --c-surface-muted);
+}
+
+.expansion-content {
+  padding: 1rem 1.5rem;
+}
+
+.expansion-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--c-text-muted, #64748b);
+}
+
+.bodegas-grid {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.bodega-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--c-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--c-surface, #ffffff);
+}
+
+.bodega-nombre {
+  font-size: 0.85rem;
+  color: var(--c-text, #1e293b);
+}
+
+.bodega-existencia {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--c-success, #10b981);
+
+  &.agotado {
+    color: var(--c-error, #ef4444);
+  }
+}
+
+.img-zoom-overlay {
+  position: fixed;
+  width: 250px;
+  height: 250px;
+  object-fit: contain;
+  background: var(--c-surface, #ffffff);
+  border: 2px solid var(--c-border, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  pointer-events: none;
+}
+
 ```
 
 ---
@@ -36597,7 +43096,7 @@ export class Embalajes implements OnInit {
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
@@ -36607,10 +43106,20 @@ import { BodegasService } from '../../../core/services/bodegas.service';
 import { ApiService } from '../../../core/services/api.service';
 import { forkJoin } from 'rxjs';
 
+export interface ProductoExistencia {
+  productoId: number;
+  codbarra: string;
+  descripcion: string;
+  precioventa: number;
+  imagen: string | null;
+  disponibilidad: 'Alta' | 'Baja';
+  bodegas: { bodegaId: number; descripcion: string; existencia: number }[];
+}
+
 @Component({
   selector: 'app-existencias',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataViewModule, ButtonModule, InputTextModule, TagModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule],
   templateUrl: './existencias.html',
   styleUrl: './existencias.scss',
 })
@@ -36620,13 +43129,17 @@ export class Existencias implements OnInit {
   private api = inject(ApiService);
   private msgs = inject(MessageService);
 
-  private imagenCache = new Map<string, string>();
-
-  data = signal<any[]>([]);
-  filtered = signal<any[]>([]);
+  data = signal<ProductoExistencia[]>([]);
+  filtered = signal<ProductoExistencia[]>([]);
   cargando = signal(false);
-
   q = signal('');
+  expandedRows = signal<Record<number, boolean>>({});
+
+  // Zoom imagen
+  zoomVisible = signal(false);
+  zoomUrl = signal('');
+  zoomX = signal(0);
+  zoomY = signal(0);
 
   ngOnInit() {
     this.load();
@@ -36637,14 +43150,43 @@ export class Existencias implements OnInit {
     forkJoin([
       this.service.getAll(),
       this.api.get<any[]>('/inventario/tienda/productos'),
-      this.bodegasService.getAll()
+      this.bodegasService.getAll(),
     ]).subscribe({
       next: ([existencias, productos, bodegas]) => {
-        this.data.set(existencias.map(e => ({
-          ...e,
-          producto: productos.find(p => p.produtoId === e.productoId),
-          bodega: bodegas.find(b => b.bodegaId === e.bodegaId)
-        })));
+        const mapa = new Map<number, ProductoExistencia>();
+
+        for (const e of existencias) {
+          if (!mapa.has(e.productoId)) {
+            const prod = productos.find((p: any) => p.produtoId === e.productoId);
+            mapa.set(e.productoId, {
+              productoId: e.productoId,
+              codbarra: prod?.codbarra || '',
+              descripcion: prod?.descripcion || '',
+              precioventa: Number(prod?.precioventa) || 0,
+              imagen: prod?.imagen || null,
+              disponibilidad: 'Baja',
+              bodegas: [],
+            });
+          }
+
+          const bodega = bodegas.find((b: any) => b.bodegaId === e.bodegaId);
+          const entry = mapa.get(e.productoId)!;
+          entry.bodegas.push({
+            bodegaId: e.bodegaId,
+            descripcion: bodega?.descripcion || `Bodega ${e.bodegaId}`,
+            existencia: Number(e.existencia) || 0,
+          });
+        }
+
+        const totalExistencia = (p: ProductoExistencia) =>
+          p.bodegas.reduce((sum, b) => sum + b.existencia, 0);
+
+        for (const entry of mapa.values()) {
+          entry.disponibilidad = totalExistencia(entry) >= 50 ? 'Alta' : 'Baja';
+        }
+
+        const resultado = Array.from(mapa.values());
+        this.data.set(resultado);
         this.filtrar();
         this.cargando.set(false);
       },
@@ -36664,9 +43206,11 @@ export class Existencias implements OnInit {
     this.filtered.set(
       this.data().filter((e) => {
         if (!q) return true;
-        return (e.producto?.codbarra?.toLowerCase().includes(q) ||
-                e.producto?.descripcion?.toLowerCase().includes(q) ||
-                e.bodega?.descripcion?.toLowerCase().includes(q));
+        return (
+          e.codbarra?.toLowerCase().includes(q) ||
+          e.descripcion?.toLowerCase().includes(q) ||
+          e.bodegas.some((b) => b.descripcion?.toLowerCase().includes(q))
+        );
       }),
     );
   }
@@ -36680,18 +43224,45 @@ export class Existencias implements OnInit {
     this.filtrar();
   }
 
-  resolverImagen(imagen: string | null): string {
-    if (!imagen) return '';
-    const cacheKey = imagen.substring(0, 100);
-    if (this.imagenCache.has(cacheKey)) return this.imagenCache.get(cacheKey)!;
-    const result = /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
-    this.imagenCache.set(cacheKey, result);
-    return result;
+  toggleRow(rowData: ProductoExistencia) {
+    const key = rowData.productoId;
+    const current = { ...this.expandedRows() };
+    if (current[key]) {
+      delete current[key];
+    } else {
+      current[key] = true;
+    }
+    this.expandedRows.set(current);
   }
 
-  getItemImagen(item: any): string {
-    if (item.producto?.imagen) return this.resolverImagen(item.producto.imagen);
+  totalExistencia(p: ProductoExistencia): number {
+    return p.bodegas.reduce((sum, b) => sum + b.existencia, 0);
+  }
+
+  resolverImagen(imagen: string | null): string {
+    if (!imagen) return '';
+    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
+  }
+
+  getItemImagen(item: ProductoExistencia): string {
+    if (item.imagen) return this.resolverImagen(item.imagen);
     return '';
+  }
+
+  onImgHover(url: string, event: MouseEvent) {
+    this.zoomUrl.set(url);
+    this.zoomX.set(event.clientX + 12);
+    this.zoomY.set(event.clientY - 100);
+    this.zoomVisible.set(true);
+  }
+
+  onImgMove(event: MouseEvent) {
+    this.zoomX.set(event.clientX + 12);
+    this.zoomY.set(event.clientY - 100);
+  }
+
+  onImgLeave() {
+    this.zoomVisible.set(false);
   }
 
   moneda(n: number | undefined): string {
@@ -36701,6 +43272,7 @@ export class Existencias implements OnInit {
     });
   }
 }
+
 ```
 
 ---
@@ -36844,58 +43416,53 @@ export const INVENTARIO_ROUTES: Routes = [
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="invkardexId"
     [paginator]="true"
     [rows]="20"
-    layout="list"
     size="small"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (k of items; track k.invkardexId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ k.codbarra }}</span>
-              <p-tag [value]="k.tipomov === 'E' ? 'Entrada' : 'Salida'" [severity]="k.tipomov === 'E' ? 'success' : 'danger'" />
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Fecha</span>
-                <span class="dv-value">{{ k.fecharegistro ? (k.fecharegistro | date: 'short') : '-' }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Referencia</span>
-                <span class="dv-value">{{ k.nroreferencia }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Cantidad</span>
-                <span class="dv-value">{{ k.cantidad }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Saldo actual</span>
-                <span class="dv-value">{{ k.saldoActual }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Costo total</span>
-                <span class="dv-value">{{ moneda(k.costoTotal) }}</span>
-              </div>
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Fecha</th>
+        <th>Cód. Barra</th>
+        <th>Tipo</th>
+        <th>Referencia</th>
+        <th class="text-right">Cantidad</th>
+        <th class="text-right">Saldo Anterior</th>
+        <th class="text-right">Saldo Actual</th>
+        <th class="text-right">Costo Unit.</th>
+        <th class="text-right">Subtotal</th>
+        <th class="text-right">Costo Total</th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay movimientos registrados.</div>
+    <ng-template pTemplate="body" let-k>
+      <tr>
+        <td>{{ k.fecharegistro ? (k.fecharegistro | date: 'dd/MM/yyyy HH:mm') : '-' }}</td>
+        <td>{{ k.codbarra }}</td>
+        <td>
+          <p-tag [value]="k.tipomov === 'E' ? 'Entrada' : 'Salida'" [severity]="k.tipomov === 'E' ? 'success' : 'danger'" styleClass="tag-sm" />
+        </td>
+        <td>{{ k.nroreferencia }}</td>
+        <td class="text-right">{{ k.cantidad }}</td>
+        <td class="text-right">{{ k.saldoAnterior }}</td>
+        <td class="text-right">{{ k.saldoActual }}</td>
+        <td class="text-right">{{ moneda(k.costoUnitario) }}</td>
+        <td class="text-right">{{ moneda(k.subTotal) }}</td>
+        <td class="text-right">{{ moneda(k.costoTotal) }}</td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="10" class="text-center p-3">No hay movimientos registrados.</td>
+      </tr>
+    </ng-template>
+  </p-table>
 </section>
 ```
 
@@ -36904,29 +43471,14 @@ export const INVENTARIO_ROUTES: Routes = [
 ## 📄 src\app\features\inventario\kardex\kardex.scss
 
 ```typescript
-.dv-cards {
-  padding: 0.75rem;
+.text-right {
+  text-align: right;
 }
 
-.dv-card {
-  .dv-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.15rem 0;
-  }
-
-  .dv-label {
-    color: #64748b;
-    font-size: 0.78rem;
-  }
-
-  .dv-value {
-    font-weight: 600;
-    color: #334155;
-    text-align: right;
-  }
+.text-center {
+  text-align: center;
 }
+
 ```
 
 ---
@@ -36937,7 +43489,7 @@ export const INVENTARIO_ROUTES: Routes = [
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
@@ -36948,7 +43500,7 @@ import { Kardex as KardexMov } from '../../../core/models/inventario.models';
 @Component({
   selector: 'app-kardex',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataViewModule, ButtonModule, InputTextModule, TagModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule],
   templateUrl: './kardex.html',
   styleUrl: './kardex.scss',
 })
@@ -38413,157 +44965,418 @@ export class Pasillos implements OnInit {
   @if (cargando()) {
     <div class="card">Cargando datos...</div>
   } @else {
-    <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
-      <div class="campo">
-        <label for="descripcion">Descripción <span class="req">*</span></label>
-        <input
-          pInputText
-          pSize="small"
-          id="descripcion"
-          formControlName="descripcion"
-          maxlength="250"
-          placeholder="Descripción del producto"
-          [ngClass]="{ 'ng-invalid': invalid('descripcion') }"
-        />
-        @if (invalid('descripcion')) {
-          <small class="err">La descripción es obligatoria</small>
-        }
+    <div class="producto-layout">
+      <!-- ═══════════════ COLUMNA IZQUIERDA ═══════════════ -->
+      <div class="producto-col-izq">
+        <form [formGroup]="form" (ngSubmit)="guardar()">
+
+          <!-- Datos basicos -->
+          <div class="card mb-3">
+            <div class="p-fluid">
+              <div class="campo">
+                <label for="descripcion">Descripción <span class="req">*</span></label>
+                <input
+                  pInputText
+                  pSize="small"
+                  id="descripcion"
+                  formControlName="descripcion"
+                  maxlength="250"
+                  placeholder="Descripción del producto"
+                  [ngClass]="{ 'ng-invalid': invalid('descripcion') }"
+                />
+                @if (invalid('descripcion')) {
+                  <small class="err">La descripción es obligatoria</small>
+                }
+              </div>
+
+              <div class="campo">
+                <label for="descripcion_corta">Descripción corta</label>
+                <input
+                  pInputText
+                  pSize="small"
+                  id="descripcion_corta"
+                  formControlName="descripcion_corta"
+                  maxlength="50"
+                  placeholder="Nombre corto"
+                />
+              </div>
+
+              <div class="campo">
+                <label for="codbarra">Código de barras</label>
+                <input
+                  pInputText
+                  pSize="small"
+                  id="codbarra"
+                  formControlName="codbarra"
+                  maxlength="20"
+                  placeholder="Código de barras"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Accordion: Costos y Precio de Venta -->
+          <p-accordion class="mb-3" [value]="['0']">
+            <p-accordion-panel value="0">
+              <p-accordion-header>Costos y Precio de Venta</p-accordion-header>
+              <p-accordion-content>
+                <div class="p-fluid">
+                  <div class="form-grid-2">
+                    <div class="campo">
+                      <label for="cstounit">Costo unitario</label>
+                      <p-inputnumber size="small"
+                        id="cstounit"
+                        formControlName="cstounit"
+                        mode="currency"
+                        currency="HNL"
+                        [locale]="'es-HN'"
+                        [minFractionDigits]="2"
+                        [maxFractionDigits]="2"
+                        [useGrouping]="true"
+                        [inputStyle]="{ 'width': '100%' }"
+                      />
+                    </div>
+
+                    <div class="campo">
+                      <label for="cstoprom">Costo promedio</label>
+                      <p-inputnumber size="small"
+                        id="cstoprom"
+                        formControlName="cstoprom"
+                        mode="currency"
+                        currency="HNL"
+                        [locale]="'es-HN'"
+                        [minFractionDigits]="2"
+                        [maxFractionDigits]="2"
+                        [useGrouping]="true"
+                        [inputStyle]="{ 'width': '100%' }"
+                      />
+                    </div>
+
+                    <div class="campo">
+                      <label for="puntoretorno">Punto de retorno</label>
+                      <p-inputnumber size="small"
+                        id="puntoretorno"
+                        formControlName="puntoretorno"
+                        mode="currency"
+                        currency="HNL"
+                        [locale]="'es-HN'"
+                        [minFractionDigits]="2"
+                        [maxFractionDigits]="2"
+                        [useGrouping]="true"
+                        [inputStyle]="{ 'width': '100%' }"
+                      />
+                    </div>
+
+                    <div class="campo">
+                      <label for="precioventa">Precio de venta</label>
+                      <p-inputnumber size="small"
+                        id="precioventa"
+                        formControlName="precioventa"
+                        mode="currency"
+                        currency="HNL"
+                        [locale]="'es-HN'"
+                        [minFractionDigits]="2"
+                        [maxFractionDigits]="2"
+                        [useGrouping]="true"
+                        [inputStyle]="{ 'width': '100%' }"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </p-accordion-content>
+            </p-accordion-panel>
+          </p-accordion>
+
+          <!-- Accordion: Categoria, Impuesto, Estado -->
+          <p-accordion class="mb-3" [value]="['0']">
+            <p-accordion-panel value="0">
+              <p-accordion-header>Categoría, Impuesto y Estado</p-accordion-header>
+              <p-accordion-content>
+                <div class="p-fluid">
+                  <div class="form-grid-2">
+                    <div class="campo">
+                      <label for="categoriaId">Categoría <span class="req">*</span></label>
+                      <p-select
+                        size="small"
+                        id="categoriaId"
+                        formControlName="categoriaId"
+                        [options]="categorias()"
+                        optionLabel="descripcion"
+                        optionValue="categoriaId"
+                        placeholder="Seleccione categoría"
+                        styleClass="w-full"
+                        [fluid]="true"
+                        [showClear]="true"
+                        [loading]="categoriasCargando()"
+                        [ngClass]="{ 'ng-invalid': invalid('categoriaId') }"
+                        [appendTo]="'body'"
+                      />
+                      @if (invalid('categoriaId')) {
+                        <small class="err">Seleccione una categoría</small>
+                      }
+                    </div>
+
+                    <div class="campo">
+                      <label for="impuestoId">Impuesto</label>
+                      <p-select
+                        size="small"
+                        id="impuestoId"
+                        formControlName="impuestoId"
+                        [options]="impuestos()"
+                        optionLabel="descripcion"
+                        optionValue="impuestoId"
+                        placeholder="Seleccionar impuesto"
+                        styleClass="w-full"
+                        [appendTo]="'body'"
+                        [showClear]="true"
+                      />
+                    </div>
+
+                    @if (esEdicion()) {
+                      <div class="campo">
+                        <label>Estado <span class="req">*</span></label>
+                        <p-select size="small"
+                          [options]="snOptions"
+                          formControlName="sn_activo"
+                          optionLabel="label"
+                          optionValue="value"
+                          placeholder="Estado"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        />
+                      </div>
+                    }
+                  </div>
+                </div>
+              </p-accordion-content>
+            </p-accordion-panel>
+          </p-accordion>
+
+          <!-- Acciones -->
+          <div class="acciones-form">
+            <p-button
+              type="button"
+              label="Cancelar"
+              icon="pi pi-times"
+              severity="secondary"
+              size="small"
+              rounded
+              (onClick)="volver()"
+            />
+            <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+          </div>
+        </form>
       </div>
 
-      <div class="campo">
-        <label for="descripcion_corta">Descripción corta</label>
-        <input
-          pInputText
-          pSize="small"
-          id="descripcion_corta"
-          formControlName="descripcion_corta"
-          maxlength="50"
-          placeholder="Nombre corto"
-        />
-      </div>
-
-      <div class="campo">
-        <label for="codbarra">Código de barras</label>
-        <input
-          pInputText
-          pSize="small"
-          id="codbarra"
-          formControlName="codbarra"
-          maxlength="20"
-          placeholder="Código de barras"
-        />
-      </div>
-
-      <div class="campo">
-        <label for="categoriaId">Categoría <span class="req">*</span></label>
-        <p-select
-          size="small"
-          id="categoriaId"
-          formControlName="categoriaId"
-          [options]="categorias()"
-          optionLabel="descripcion"
-          optionValue="categoriaId"
-          placeholder="Seleccione categoría"
-          styleClass="w-full"
-          [fluid]="true"
-          [showClear]="true"
-          [loading]="categoriasCargando()"
-          [ngClass]="{ 'ng-invalid': invalid('categoriaId') }"
-          [appendTo]="'body'"
-        />
-        @if (invalid('categoriaId')) {
-          <small class="err">Seleccione una categoría</small>
-        }
-      </div>
-
-      <div class="campo">
-        <label for="cstounit">Costo unitario</label>
-        <p-inputnumber size="small"
-          id="cstounit"
-          formControlName="cstounit"
-          mode="currency"
-          currency="HNL"
-          [locale]="'es-HN'"
-          [minFractionDigits]="2"
-          [maxFractionDigits]="2"
-          [useGrouping]="true"
-          [inputStyle]="{ 'width': '100%' }"
-        />
-      </div>
-
-      <div class="campo">
-        <label for="cstoprom">Costo promedio</label>
-        <p-inputnumber size="small"
-          id="cstoprom"
-          formControlName="cstoprom"
-          mode="currency"
-          currency="HNL"
-          [locale]="'es-HN'"
-          [minFractionDigits]="2"
-          [maxFractionDigits]="2"
-          [useGrouping]="true"
-          [inputStyle]="{ 'width': '100%' }"
-        />
-      </div>
-
-      <div class="campo">
-        <label for="precioventa">Precio de venta</label>
-        <p-inputnumber size="small"
-          id="precioventa"
-          formControlName="precioventa"
-          mode="currency"
-          currency="HNL"
-          [locale]="'es-HN'"
-          [minFractionDigits]="2"
-          [maxFractionDigits]="2"
-          [useGrouping]="true"
-          [inputStyle]="{ 'width': '100%' }"
-        />
-      </div>
-
-      <div class="campo">
-        <label for="puntoretorno">Punto de retorno</label>
-        <p-inputnumber size="small"
-          id="puntoretorno"
-          formControlName="puntoretorno"
-          mode="currency"
-          currency="HNL"
-          [locale]="'es-HN'"
-          [minFractionDigits]="2"
-          [maxFractionDigits]="2"
-          [useGrouping]="true"
-          [inputStyle]="{ 'width': '100%' }"
-        />
-      </div>
-
-      @if (esEdicion()) {
-        <div class="campo">
-          <label>Estado <span class="req">*</span></label>
-          <p-select size="small"
-            [options]="snOptions"
-            formControlName="sn_activo"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Estado"
-            styleClass="w-full"
-            [appendTo]="'body'"
+      <!-- ═══════════════ COLUMNA DERECHA ═══════════════ -->
+      <div class="producto-col-der">
+        <!-- Imágenes -->
+        <div class="card mb-3">
+          <div class="img-header">
+            <div>
+              <h3 class="card-title">Imágenes del Producto</h3>
+              <p class="card-hint">Máximo {{ MAX_IMAGENES }} imágenes. Formato JPG/PNG.</p>
+            </div>
+            @if (puedeAgregarImagen) {
+              <p-button
+                size="small"
+                icon="pi pi-plus"
+                label="Agregar"
+                severity="success"
+                variant="text"
+                [rounded]="true"
+                (click)="fileInput.click()"
+              />
+            }
+          </div>
+          <input
+            #fileInput
+            type="file"
+            accept="image/*"
+            hidden
+            (change)="onSeleccionarImagen($event, imagenesCount)"
           />
-        </div>
-      }
 
-      <div class="acciones-form">
-        <p-button
-          type="button"
-          label="Cancelar"
-          icon="pi pi-times"
-          severity="secondary"
-          size="small"
-          rounded
-          (onClick)="volver()"
-        />
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+          @if (imagenes().length > 0) {
+            <p-galleria
+              [(value)]="imagenes"
+              [activeIndex]="activeIndex()"
+              (onActiveIndexChange)="activeIndex.set($event)"
+              [showThumbnails]="true"
+              [showItemNavigators]="true"
+              [circular]="true"
+              [numVisible]="5"
+              [thumbnailsPosition]="'left'"
+              [containerStyle]="{ 'max-width': '98%' }"
+              styleClass="producto-galleria"
+            >
+              <ng-template #item let-item>
+                <div class="galleria-item">
+                  <img [src]="getImagenUrl(item)" style="width: 100%; display: block" />
+                </div>
+              </ng-template>
+              <ng-template #thumbnail let-item>
+                <div class="galleria-thumb">
+                  <img [src]="getImagenUrl(item)" />
+                  <button
+                    type="button"
+                    class="galleria-thumb-remove"
+                    (click)="eliminarImagen(item); $event.stopPropagation()"
+                    pTooltip="Eliminar"
+                  >
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </ng-template>
+            </p-galleria>
+          } @else {
+            <div class="img-empty-state" (click)="fileInput.click()">
+              <i class="pi pi-images"></i>
+              <span>Sin imágenes — clic para agregar</span>
+            </div>
+          }
+        </div>
+
+        <!-- Fieldset: Información Específica -->
+        <div class="fieldset-wrapper">
+        <p-fieldset legend="Información Específica" styleClass="mb-3"   [toggleable]="true">
+          <!-- Formulario de atributo -->
+          <div class="atributo-form" [formGroup]="atributoForm">
+            <div class="p-fluid">
+              <div class="form-grid-3">
+                <div class="campo">
+                  <label>Tipo <span class="req">*</span></label>
+                  <p-select
+                    size="small"
+                    formControlName="tipo"
+                    [options]="TIPOS_OPTIONS"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Seleccione tipo"
+                    styleClass="w-full"
+                    [appendTo]="'body'"
+                    [ngClass]="{ 'ng-invalid': invalidAtributo('tipo') }"
+                  />
+                </div>
+
+                <div class="campo">
+                  <label>Descripción <span class="req">*</span></label>
+                  <input
+                    pInputText
+                    pSize="small"
+                    formControlName="descripcion"
+                    maxlength="30"
+                    placeholder="Descripción"
+                    [ngClass]="{ 'ng-invalid': invalidAtributo('descripcion') }"
+                  />
+                </div>
+
+                <div class="campo">
+                  <label>Estado</label>
+                  <p-select
+                    size="small"
+                    formControlName="sn_activo"
+                    [options]="snOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Estado"
+                    styleClass="w-full"
+                    [appendTo]="'body'"
+                  />
+                </div>
+              </div>
+
+              <div class="atributo-acciones">
+                <p-button
+                  size="small"
+                  label="Limpiar"
+                  icon="pi pi-times"
+                  severity="secondary"
+                  variant="text"
+                  [rounded]="true"
+                  (onClick)="cancelarAtributo()"
+                />
+                <p-button
+                  size="small"
+                  [label]="atributoEditando() ? 'Actualizar' : 'Agregar'"
+                  [icon]="atributoEditando() ? 'pi pi-check' : 'pi pi-plus'"
+                  severity="success"
+                  variant="text"
+                  [raised]="true"
+                  [rounded]="true"
+                  [loading]="guardandoAtributo()"
+                  (onClick)="guardarAtributo()"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla de atributos -->
+          @if (atributos().length > 0) {
+            <p-table
+              id="gridinfoadd"
+              [value]="atributos()"
+              size="small"
+              [paginator]="true"
+              [rows]="5"
+              [rowsPerPageOptions]="[5, 10, 25]"
+              [showCurrentPageReport]="true"
+              currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 30%">Tipo</th>
+                  <th>Descripción</th>
+                  <th style="width: 15%">Estado</th>
+                  <th style="width: 15%">Acciones</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-attr>
+                <tr>
+                  <td>
+                    <span>{{ getTipoLabel(attr.tipo) }}</span>
+                  </td>
+                  <td>{{ attr.descripcion }}</td>
+                  <td>
+                    @if (attr.sn_activo === 'S') {
+
+                      <p-badge value="Activo" severity="success" badgeSize="small" />
+                    } @else {
+                      <p-badge value="Inactivo"  severity="warn" badgeSize="small" />
+                    }
+                  </td>
+                  <td>
+                    <div class="d-flex gap-1">
+                      <p-button
+                        size="small"
+                        icon="pi pi-pencil"
+                        severity="warn"
+                        variant="text"
+                        [rounded]="true"
+                        pTooltip="Editar"
+                        (onClick)="editarAtributo(attr)"
+                      />
+                      <p-button
+                        size="small"
+                        icon="pi pi-trash"
+                        severity="danger"
+                        variant="text"
+                        [rounded]="true"
+                        pTooltip="Eliminar"
+                        (onClick)="eliminarAtributo(attr)"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          } @else {
+            <p class="text-muted text-center">Sin atributos registrados</p>
+          }
+        </p-fieldset>
+        </div>
       </div>
-    </form>
+    </div>
   }
 </section>
 
@@ -38574,43 +45387,77 @@ export class Pasillos implements OnInit {
 ## 📄 src\app\features\inventario\productos\producto-form.scss
 
 ```typescript
-.form-grid {
+/* ═══════════════ Layout principal ═══════════════ */
+.producto-layout {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem 1.25rem;
+  grid-template-columns: 45% 55%;
+  gap: 1.25rem;
+  align-items: start;
 
-  @media (max-width: 640px) {
+  @media (max-width: 960px) {
     grid-template-columns: 1fr;
   }
 }
 
+.producto-col-izq {
+  min-width: 0;
+}
+
+.producto-col-der {
+  position: sticky;
+  top: 5rem;
+
+  @media (max-width: 960px) {
+    position: static;
+  }
+}
+
+/* ═══════════════ Cards ═══════════════ */
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text);
+  margin: 0 0 0.25rem;
+}
+
+.card-hint {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  margin: 0 0 1rem;
+}
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+/* ═══════════════ Campos ═══════════════ */
 .campo {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  margin-bottom: 0.75rem;
+  width: 90%;
 
   label {
     font-size: 0.85rem;
     font-weight: 600;
-    color:var(--color-texto-label);
+    color: var(--color-texto-label);
   }
 
   .req {
     color: #ef4444;
   }
 
-  &.campo-wide {
-    grid-column: 1 / -1;
-  }
-
   .err {
     color: #ef4444;
     font-size: 0.75rem;
-  }
-
-  .hint {
-    color: #64748b;
-    font-size: 0.78rem;
   }
 
   ::ng-deep {
@@ -38624,14 +45471,262 @@ export class Pasillos implements OnInit {
   }
 }
 
+/* ═══════════════ Grid 2 columnas dentro de accordion ═══════════════ */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1.25rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════ Acciones ═══════════════ */
 .acciones-form {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  margin-top: 0.5rem;
+  margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--c-border);
+}
+
+/* ═══════════════ Grid 3 columnas para form atributo ═══════════════ */
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem 1rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════ Atributos Fieldset ═══════════════ */
+.atributo-form {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--c-border);
+  width: 78%;
+}
+
+.atributo-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.tag-tipo {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--c-primary);
+  color: white;
+}
+
+.badge-activo {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-inactivo {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.gap-1 {
+  gap: 0.25rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-muted {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  font-style: italic;
+}
+
+/* ═══════════════ Fieldset wrapper ═══════════════ */
+.fieldset-wrapper {
+  width: 98%;
+}
+
+/* ═══════════════ PrimeNG Fieldset override ═══════════════ */
+::ng-deep .p-fieldset {
+  .p-fieldset-legend {
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .p-fieldset-content {
+    padding: 0.75rem;
+  }
+}
+
+/* ═══════════════ PrimeNG Table en fieldset ═══════════════ */
+::ng-deep .p-fieldset .p-datatable {
+  .p-datatable-thead > tr > th {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .p-datatable-tbody > tr > td {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+/* ═══════════════ Imágenes ═══════════════ */
+.img-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+
+  .card-title, .card-hint {
+    margin: 0;
+  }
+}
+
+.img-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  border: 2px dashed var(--c-border);
+  border-radius: 0.5rem;
+  background: var(--c-surface-ground);
+  color: var(--c-text-muted);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+
+  i {
+    font-size: 2rem;
+  }
+
+  span {
+    font-size: 0.85rem;
+  }
+
+  &:hover {
+    border-color: var(--c-primary);
+    background: rgba(16, 185, 129, 0.05);
+  }
+}
+
+/* ═══════════════ PrimeNG Accordion override ═══════════════ */
+::ng-deep .p-accordion {
+  .p-accordion-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .p-accordion-content {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* ═══════════════ Galleria ═══════════════ */
+::ng-deep .producto-galleria {
+  .p-galleria-content {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .p-galleria-thumbnail-wrapper {
+    flex: 0 0 auto;
+  }
+
+  .p-galleria-indicator-list {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.galleria-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-surface-ground);
+  border-radius: 0.5rem;
+  overflow: hidden;
+
+  img {
+    max-height: 400px;
+    object-fit: contain;
+  }
+}
+
+.galleria-thumb {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &:hover {
+    border-color: var(--c-primary);
+  }
+}
+
+.galleria-thumb-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+
+  &:hover {
+    background: #dc2626;
+  }
+}
+
+.galleria-thumb:hover .galleria-thumb-remove {
+  opacity: 1;
 }
 
 ```
@@ -38641,19 +45736,45 @@ export class Pasillos implements OnInit {
 ## 📄 src\app\features\inventario\productos\producto-form.ts
 
 ```typescript
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { AccordionModule } from 'primeng/accordion';
+import { FieldsetModule } from 'primeng/fieldset';
+import { TableModule } from 'primeng/table';
+import { TooltipModule } from 'primeng/tooltip';
+import { GalleriaModule } from 'primeng/galleria';
 import { MessageService } from 'primeng/api';
 import { ProductosService } from '../../../core/services/productos.service';
 import { CategoriasService } from '../../../core/services/categorias.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Categoria } from '../../../core/models/inventario.models';
+import { Categoria, ProductoDet, ProductoImg, TipoImpuesto } from '../../../core/models/inventario.models';
+import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
+import { BadgeModule } from 'primeng/badge';
+
+/** Labels legibles para los tipos de atributo del producto */
+const TIPO_LABELS: Record<string, string> = {
+  MARCA: 'Marca',
+  MODELO: 'Modelo',
+  EMBALAJE: 'Embalaje',
+  PASILLO: 'Pasillo',
+  DEPARTAMENTO: 'Departamento',
+  UBICACION: 'Ubicación',
+  COLOR: 'Color',
+  PESO: 'Peso',
+  EQUIVALENCIA: 'Equivalencia',
+  CODIGOBARRA: 'Código de barras',
+  TAMANO: 'Tamaño',
+};
+
+/** Tipos de atributo disponibles */
+const TIPOS_DISPONIBLES = Object.keys(TIPO_LABELS);
 
 @Component({
   selector: 'app-producto-form',
@@ -38665,6 +45786,12 @@ import { Categoria } from '../../../core/models/inventario.models';
     InputTextModule,
     InputNumberModule,
     SelectModule,
+    AccordionModule,
+    FieldsetModule,
+    TableModule,
+    TooltipModule,
+    BadgeModule,
+    GalleriaModule,
   ],
   templateUrl: './producto-form.html',
   styleUrl: './producto-form.scss',
@@ -38675,23 +45802,45 @@ export class ProductoForm implements OnInit {
   private router = inject(Router);
   private service = inject(ProductosService);
   private categoriasSvc = inject(CategoriasService);
+  private catalogoSvc = inject(CatalogoParametrosService);
   private auth = inject(AuthService);
   private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
 
+  // ── Estado ──────────────────────────────────────────────────────
   esEdicion = signal(false);
   cargando = signal(false);
   guardando = signal(false);
   titulo = signal('Nuevo producto');
   categorias = signal<Categoria[]>([]);
   categoriasCargando = signal(false);
+  impuestos = signal<TipoImpuesto[]>([]);
+
+  // ── Atributos dinámicos (productosdet) ──────────────────────────
+  atributos = signal<ProductoDet[]>([]);
+  atributoForm!: FormGroup;
+  atributoEditando = signal<ProductoDet | null>(null);
+  guardandoAtributo = signal(false);
+
+  readonly TIPOS_OPTIONS = Object.entries(TIPO_LABELS).map(([value, label]) => ({ label, value }));
+
+  // ── Imágenes (productoimg) ──────────────────────────────────────
+  imagenes = signal<ProductoImg[]>([]);
+  readonly MAX_IMAGENES = 5;
+  activeIndex = signal(0);
+
+  readonly galleriaResponsiveOptions = [
+    { breakpoint: '768px', numVisible: 3 },
+    { breakpoint: '480px', numVisible: 2 },
+  ];
 
   readonly snOptions = [
     { label: 'Activo', value: 'S' },
     { label: 'Inactivo', value: 'N' },
   ];
 
-  layout: 'grid' | 'list' = 'grid';
-  options: any[] = ['grid','list'];
+  readonly TIPO_LABELS = TIPO_LABELS;
+
   private produtoId = 0;
 
   form!: FormGroup;
@@ -38706,10 +45855,18 @@ export class ProductoForm implements OnInit {
       precioventa: [0],
       puntoretorno: [0],
       categoriaId: [null as number | null, Validators.required],
+      impuestoId: [null as number | null],
+      sn_activo: ['S' as 'S' | 'N'],
+    });
+
+    this.atributoForm = this.fb.group({
+      tipo: [null as string | null, Validators.required],
+      descripcion: ['', Validators.required],
       sn_activo: ['S' as 'S' | 'N'],
     });
 
     this.cargarCategorias();
+    this.cargarImpuestos();
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -38717,6 +45874,7 @@ export class ProductoForm implements OnInit {
       this.titulo.set('Editar producto');
       this.produtoId = Number(id);
       this.cargando.set(true);
+
       this.service.getOne(this.produtoId).subscribe({
         next: (p) => {
           this.form.patchValue({
@@ -38728,8 +45886,11 @@ export class ProductoForm implements OnInit {
             precioventa: Number(p.precioventa),
             puntoretorno: Number(p.puntoretorno),
             categoriaId: p.categoriaId,
+            impuestoId: p.impuestoId,
             sn_activo: p.sn_activo === 'S' ? 'S' : 'N',
           });
+          this.cargarAtributos();
+          this.cargarImagenes();
           this.cargando.set(false);
         },
         error: () => {
@@ -38740,6 +45901,8 @@ export class ProductoForm implements OnInit {
       });
     }
   }
+
+  // ── Carga de datos ──────────────────────────────────────────────
 
   private cargarCategorias() {
     this.categoriasCargando.set(true);
@@ -38755,6 +45918,220 @@ export class ProductoForm implements OnInit {
     });
   }
 
+  private cargarImpuestos() {
+    this.catalogoSvc.getAll<TipoImpuesto>('/parametros/impuestos').subscribe({
+      next: (list) => this.impuestos.set(list.filter((i) => i.sn_activo === 'S')),
+      error: () => this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'No se pudieron cargar los impuestos' }),
+    });
+  }
+
+  private cargarAtributos() {
+    this.service.getDetByProducto(this.produtoId).subscribe({
+      next: (list) => {
+        this.atributos.set(list);
+      },
+      error: () => {
+        this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'No se pudieron cargar los atributos' });
+      },
+    });
+  }
+
+  // ── CRUD Atributos ──────────────────────────────────────────────
+
+  invalidAtributo(ctrl: string): boolean {
+    const c = this.atributoForm.get(ctrl);
+    return !!c && c.invalid && (c.dirty || c.touched);
+  }
+
+  agregarAtributo() {
+    this.atributoForm.reset({ tipo: null, descripcion: '', sn_activo: 'S' });
+    this.atributoEditando.set(null);
+  }
+
+  editarAtributo(attr: ProductoDet) {
+    this.atributoEditando.set(attr);
+    this.atributoForm.patchValue({
+      tipo: attr.tipo,
+      descripcion: attr.descripcion,
+      sn_activo: attr.sn_activo,
+    });
+  }
+
+  cancelarAtributo() {
+    this.atributoEditando.set(null);
+    this.atributoForm.reset({ tipo: null, descripcion: '', sn_activo: 'S' });
+  }
+
+  guardarAtributo() {
+    if (this.atributoForm.invalid) {
+      this.atributoForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.atributoForm.getRawValue();
+    const editando = this.atributoEditando();
+
+    this.guardandoAtributo.set(true);
+
+    if (editando) {
+      // Actualizar existente
+      this.service.updateDet(editando.productosdetsId, {
+        tipo: raw.tipo,
+        descripcion: raw.descripcion,
+        sn_activo: raw.sn_activo,
+      }).subscribe({
+        next: (updated) => {
+          this.atributos.update((list) =>
+            list.map((a) => a.productosdetsId === updated.productosdetsId ? updated : a)
+          );
+          this.cancelarAtributo();
+          this.guardandoAtributo.set(false);
+          this.msgs.add({ severity: 'success', summary: 'Atributo', detail: 'Atributo actualizado' });
+        },
+        error: () => {
+          this.guardandoAtributo.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el atributo' });
+        },
+      });
+    } else {
+      // Crear nuevo
+      this.service.createDet({
+        produtoId: this.produtoId,
+        tipo: raw.tipo,
+        descripcion: raw.descripcion,
+        sn_activo: raw.sn_activo,
+        empresaId: this.auth.currentUser()?.empresaId,
+      }).subscribe({
+        next: (created) => {
+          this.atributos.update((list) => [...list, created]);
+          this.cancelarAtributo();
+          this.guardandoAtributo.set(false);
+          this.msgs.add({ severity: 'success', summary: 'Atributo', detail: 'Atributo agregado' });
+        },
+        error: () => {
+          this.guardandoAtributo.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el atributo' });
+        },
+      });
+    }
+  }
+
+  eliminarAtributo(attr: ProductoDet) {
+    this.service.deleteDet(attr.productosdetsId).subscribe({
+      next: () => {
+        this.atributos.update((list) => list.filter((a) => a.productosdetsId !== attr.productosdetsId));
+        this.msgs.add({ severity: 'success', summary: 'Atributo', detail: 'Atributo eliminado' });
+      },
+      error: () => {
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el atributo' });
+      },
+    });
+  }
+
+  getTipoLabel(tipo: string): string {
+    return TIPO_LABELS[tipo] ?? tipo;
+  }
+
+  private cargarImagenes() {
+    this.service.getImgByProducto(this.produtoId).subscribe({
+      next: (list) => {
+        this.imagenes.set(list.filter((img) => img.sn_activo === 'S'));
+      },
+      error: () => {
+        this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'No se pudieron cargar las imágenes' });
+      },
+    });
+  }
+
+  // ── Imágenes ────────────────────────────────────────────────────
+
+  get imagenesCount(): number {
+    return this.imagenes().length;
+  }
+
+  get puedeAgregarImagen(): boolean {
+    return this.imagenesCount < this.MAX_IMAGENES;
+  }
+
+  onSeleccionarImagen(event: Event, slotIndex: number) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Solo se permiten archivos de imagen' });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'La imagen no puede superar 5 MB' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+
+      if (this.esEdicion()) {
+        // Guardar imagen directamente en el backend
+        this.service.createImg({
+          productoId: this.produtoId,
+          img: base64,
+          sn_activo: 'S',
+          empresaId: this.auth.currentUser()?.empresaId,
+        }).subscribe({
+          next: (img) => {
+            this.imagenes.update((imgs) => [...imgs, img]);
+            this.msgs.add({ severity: 'success', summary: 'Imagen', detail: 'Imagen cargada correctamente' });
+          },
+          error: () => {
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la imagen' });
+          },
+        });
+      } else {
+        // Modo creación: guardar en memoria (se sube al guardar el producto)
+        const tmpImg: ProductoImg = {
+          productoimgId: -Date.now() - slotIndex,
+          productoId: 0,
+          img: base64,
+          sn_activo: 'S',
+          empresaId: this.auth.currentUser()?.empresaId ?? 0,
+          usuarioCreated: this.auth.currentUser()?.usuario ?? '',
+        };
+        this.imagenes.update((imgs) => [...imgs, tmpImg]);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // Limpiar el input para poder re-seleccionar el mismo archivo
+    input.value = '';
+  }
+
+  eliminarImagen(img: ProductoImg) {
+    if (this.esEdicion() && img.productoimgId > 0) {
+      this.service.deleteImg(img.productoimgId).subscribe({
+        next: () => {
+          this.imagenes.update((imgs) => imgs.filter((i) => i.productoimgId !== img.productoimgId));
+          this.msgs.add({ severity: 'success', summary: 'Imagen', detail: 'Imagen eliminada' });
+        },
+        error: () => {
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la imagen' });
+        },
+      });
+    } else {
+      this.imagenes.update((imgs) => imgs.filter((i) => i.productoimgId !== img.productoimgId));
+    }
+  }
+
+  getImagenUrl(img: ProductoImg): string {
+    if (img.img && !img.img.startsWith('data:')) {
+      return `data:image/png;base64,${img.img}`;
+    }
+    return img.img;
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────
+
   invalid(ctrl: string): boolean {
     const c = this.form.get(ctrl);
     return !!c && c.invalid && (c.dirty || c.touched);
@@ -38763,6 +46140,8 @@ export class ProductoForm implements OnInit {
   volver() {
     this.router.navigate(['../'], { relativeTo: this.route });
   }
+
+  // ── Guardar ─────────────────────────────────────────────────────
 
   guardar() {
     if (this.form.invalid) {
@@ -38782,6 +46161,7 @@ export class ProductoForm implements OnInit {
           precioventa: raw.precioventa,
           puntoretorno: raw.puntoretorno,
           categoriaId: raw.categoriaId,
+          impuestoId: raw.impuestoId,
           sn_activo: raw.sn_activo || 'S',
         }
       : {
@@ -38793,6 +46173,7 @@ export class ProductoForm implements OnInit {
           precioventa: raw.precioventa,
           puntoretorno: raw.puntoretorno,
           categoriaId: raw.categoriaId,
+          impuestoId: raw.impuestoId,
           empresaId: this.auth.currentUser()?.empresaId,
           sn_activo: 'S',
         };
@@ -38803,7 +46184,12 @@ export class ProductoForm implements OnInit {
       : this.service.create(payload as any);
 
     op.subscribe({
-      next: () => {
+      next: (producto) => {
+        // Si es creación y hay imágenes pendientes, subirlas
+        if (!this.esEdicion()) {
+          const nuevoId = (producto as any).produtoId ?? (producto as any).productoId;
+          this.subirImagenesPendientes(nuevoId);
+        }
         this.guardando.set(false);
         this.msgs.add({
           severity: 'success',
@@ -38821,6 +46207,18 @@ export class ProductoForm implements OnInit {
         });
       },
     });
+  }
+
+  private subirImagenesPendientes(productoId: number) {
+    const imgsTmp = this.imagenes().filter((img) => img.productoimgId < 0);
+    for (const img of imgsTmp) {
+      this.service.createImg({
+        productoId,
+        img: img.img,
+        sn_activo: 'S',
+        empresaId: this.auth.currentUser()?.empresaId,
+      }).subscribe({ error: () => {} });
+    }
   }
 }
 
@@ -42012,10 +49410,7 @@ export class TomaInventarios implements OnInit {
         <p-button icon="pi pi-arrow-left" text size="small" rounded (onClick)="volver()" />
         <div>
           <h3 class="page-title">Traslado #{{ seleccionado()!.invtrasladomaeId || 'Nuevo' }}</h3>
-          <p class="page-subtitle">
-            {{ nombreBodega(formMae.value.bodegaOrigenId || 0) || 'Origen' }}
-            - {{ nombreBodega(formMae.value.bodegaDestinoId || 0) || 'Destino' }}
-          </p>
+          <p class="page-subtitle">Movimiento de productos entre bodegas</p>
         </div>
       </div>
       <div class="flex gap-2">
@@ -42147,17 +49542,6 @@ export class TomaInventarios implements OnInit {
           </tr>
         </ng-template>
       </p-table>
-
-      <div class="card totales-card">
-        <div class="total-line">
-          <span>Total Traslado:</span>
-          <span class="font-bold">{{ moneda(totalTraslado()) }}</span>
-        </div>
-        <div class="total-line">
-          <span>Items:</span>
-          <span class="font-bold">{{ detalles().length }}</span>
-        </div>
-      </div>
     }
   }
 </section>
@@ -43717,7 +51101,7 @@ export class UnidadesMedida implements OnInit {
 ## 📄 src\app\features\parametros\catalogo-generico\catalogo-form.ts
 
 ```typescript
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -43746,13 +51130,22 @@ import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo } from '../../../co
   templateUrl: './catalogo-form.html',
   styleUrl: './catalogo-form.scss',
 })
-export class CatalogoForm implements OnInit {
+export class CatalogoForm implements OnInit, OnChanges {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private service = inject(CatalogoParametrosService);
   private api = inject(ApiService);
   private msgs = inject(MessageService);
+
+  /** Modo embebido: nombre del catálogo (ej: 'bancos', 'cuentas') */
+  @Input() catalogoNombre = '';
+  /** Modo embebido: ID del registro (0 = nuevo) */
+  @Input() itemIdInput: number | string = '';
+  /** Modo embebido: query params para pre-llenar campos */
+  @Input() queryParamsInput: Record<string, any> = {};
+  /** Se emite al guardar o cancelar (para que el padre cierre el form) */
+  @Output() finalized = new EventEmitter<void>();
 
   config!: CatalogoConfig;
   campos: CampoCatalogo[] = [];
@@ -43774,9 +51167,21 @@ export class CatalogoForm implements OnInit {
   form!: FormGroup;
 
   ngOnInit() {
-    const nombre =
-      this.route.snapshot.data['nombre'] ?? this.route.snapshot.paramMap.get('nombre') ?? '';
-    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    this.initForm();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['catalogoNombre'] || changes['itemIdInput']) {
+      this.initForm();
+    }
+  }
+
+  private initForm() {
+    // Modo embebido: usar @Inputs
+    const nombre = this.catalogoNombre || (this.route.snapshot.data['nombre'] ?? this.route.snapshot.paramMap.get('nombre') ?? '');
+    const id = this.itemIdInput !== null && this.itemIdInput !== undefined && this.itemIdInput !== ''
+      ? String(this.itemIdInput)
+      : this.route.snapshot.paramMap.get('id') ?? '';
 
     this.config = CATALOGOS_PARAMETROS[nombre];
     if (!this.config) {
@@ -43806,6 +51211,18 @@ export class CatalogoForm implements OnInit {
           this.volver();
         },
       });
+    } else {
+      // Pre-llenar campos desde queryParams (embebido) o route.queryParams (ruta)
+      const qp = Object.keys(this.queryParamsInput).length
+        ? this.queryParamsInput
+        : this.route.snapshot.queryParams;
+      const patch: Record<string, any> = {};
+      for (const c of this.campos) {
+        if (qp[c.key] != null) {
+          patch[c.key] = Number(qp[c.key]);
+        }
+      }
+      if (Object.keys(patch).length) this.form.patchValue(patch);
     }
   }
 
@@ -43852,7 +51269,12 @@ export class CatalogoForm implements OnInit {
   }
 
   volver() {
-    this.router.navigate(['../'], { relativeTo: this.route });
+    if (this.catalogoNombre) {
+      // Modo embebido: emitir evento para que el padre cierre
+      this.finalized.emit();
+    } else {
+      this.router.navigate(['../'], { relativeTo: this.route });
+    }
   }
 
   guardar() {
@@ -43914,12 +51336,13 @@ export class CatalogoForm implements OnInit {
     <div class="campo">
       <label>Buscar</label>
       <input pInputText type="text"
-      pSize="small"
+       pSize="small"
        placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()" />
     </div>
     <div class="campo acciones">
       <p-button label="Buscar"
+      size="small"
       severity="info"
       variant="text"
       icon="pi pi-search" size="small" (onClick)="buscar()"
@@ -43956,7 +51379,7 @@ export class CatalogoForm implements OnInit {
     </ng-template>
 
     <ng-template pTemplate="body" let-item>
-      <tr (click)="editar(item[config?.idKey])" style="cursor: pointer">
+      <tr (click)="config() && editar(item[config()!.idKey])" style="cursor: pointer">
         @for (col of campos(); track col.key) {
           <td>{{ item[col.key] || '-' }}</td>
         }
@@ -43972,7 +51395,7 @@ export class CatalogoForm implements OnInit {
             variant="text"
             [rounded]="true"
             severity="secondary"
-            (click)="$event.stopPropagation(); editar(item[config?.idKey])" />
+            (click)="$event.stopPropagation(); config() && editar(item[config()!.idKey])" />
         </td>
       </tr>
     </ng-template>
@@ -44186,7 +51609,8 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
     this.router.navigate(['editar', 'nuevo'], { relativeTo: this.route });
   }
 
-  editar(id: number) {
+  editar(id: any) {
+    if (id == null) return;
     this.router.navigate(['editar', id], { relativeTo: this.route });
   }
 
@@ -44203,733 +51627,655 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
 
 ---
 
-## 📄 src\app\features\parametros\configuracion.routes.ts
-
-```typescript
-import { Routes } from '@angular/router';
-
-export const CONFIGURACION_ROUTES: Routes = [
-  { path: '', redirectTo: 'empresas', pathMatch: 'full' },
-  {
-    path: 'empresas',
-    loadComponent: () =>
-      import('./lista-empresas/lista-empresas').then((m) => m.ListaEmpresas),
-  },
-  {
-    path: 'empresas/nuevo',
-    loadComponent: () =>
-      import('./lista-empresas/empresa-form').then((m) => m.EmpresaForm),
-  },
-  {
-    path: 'empresas/editar/:id',
-    loadComponent: () =>
-      import('./lista-empresas/empresa-form').then((m) => m.EmpresaForm),
-  },
-  { path: '**', redirectTo: 'empresas' },
-];
-
-```
-
----
-
-## 📄 src\app\features\parametros\lista-empresas\empresa-form.html
+## 📄 src\app\features\parametros\param-manager-modulos\param-manager-modulos.html
 
 ```typescript
 <section class="page">
   <header class="page-header">
     <div>
-      <h1 class="page-title">{{ titulo() }}</h1>
-      <p class="page-subtitle">Registro de empresa del sistema</p>
+      <h1 class="page-title">Parámetros por Módulo</h1>
+      <p class="page-subtitle">Configuración de parámetros del sistema por empresa, sucursal y módulo</p>
     </div>
-    <p-button
-      label="Volver"
-      icon="pi pi-arrow-left"
-      severity="secondary"
-      text
-      size="small"
-      rounded
-      (onClick)="volver()"
-    />
   </header>
 
-  @if (cargando()) {
-    <div class="card">Cargando datos...</div>
-  } @else {
-    <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
-      <div class="campo">
-        <label for="descripcion">Descripción <span class="req">*</span></label>
-        <input
-          pInputText
-          id="descripcion"
-          formControlName="descripcion"
-          placeholder="Nombre de la empresa"
-        />
-        @if (invalid('descripcion')) {
-          <small class="err">La descripción es obligatoria</small>
-        }
-      </div>
-
-      <div class="campo">
-        <label for="msjfactura">Mensaje factura</label>
-        <textarea
-          pTextarea
-          id="msjfactura"
-          formControlName="msjfactura"
-          rows="3"
-          placeholder="Texto que aparece en las facturas"
-        ></textarea>
-      </div>
-
-      <div class="campo">
-        <label for="msjdevfactura">Mensaje devolución</label>
-        <textarea
-          pTextarea
-          id="msjdevfactura"
-          formControlName="msjdevfactura"
-          rows="3"
-          placeholder="Texto que aparece en las devoluciones"
-        ></textarea>
-      </div>
-
-      @if (esEdicion()) {
-        <div class="campo">
-          <label>Estado <span class="req">*</span></label>
-          <p-selectbutton size="small"
-            [options]="snOptions"
-            formControlName="sn_activo"
-            optionLabel="label"
-            optionValue="value"
-          />
-        </div>
-      }
-
-      <div class="acciones-form">
-        <p-button
-          type="button"
-          label="Cancelar"
-          icon="pi pi-times"
-          severity="secondary"
-          size="small"
-          rounded
-          (onClick)="volver()"
-        />
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
-      </div>
-    </form>
-
-    @if (esEdicion()) {
-      <div class="card" style="margin-top: 1rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h2 style="margin: 0; font-size: 1.1rem;">Datos fiscales y contacto</h2>
-          <p-button label="Agregar" icon="pi pi-plus" size="small" rounded (onClick)="abrirDet()" />
-        </div>
-
-        @if (detalles().length === 0) {
-          <p style="color: #64748b; text-align: center; padding: 1rem;">No hay datos registrados</p>
-        } @else {
-          <p-table [value]="detalles()" styleClass="p-datatable-sm">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Tipo</th>
-                <th>Valor</th>
-                <th style="width: 100px; text-align: center;">Acciones</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-det>
-              <tr>
-                <td>{{ tipoLabel(det.tipo) }}</td>
-                <td>{{ det.descripcion }}</td>
-                <td style="text-align: center;">
-                  <p-button icon="pi pi-pencil" size="small" text rounded (onClick)="abrirDet(det)" />
-                  <p-button icon="pi pi-trash" size="small" text rounded severity="danger" (onClick)="eliminarDet(det)" />
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
-        }
-      </div>
-    }
-  }
-
-  <p-dialog
-    [header]="detEditando() ? 'Editar dato' : 'Nuevo dato'"
-    [modal]="true"
-    [draggable]="false"
-    [resizable]="false"
-    [(visible)]="dialogDet"
-    [style]="{ width: '400px' }"
-  >
-    <form [formGroup]="detForm" class="det-form">
-      <div class="campo">
-        <label>Tipo <span class="req">*</span></label>
+  <!-- ── Encabezado ──────────────────────────────────── -->
+  <p-fieldset legend="Seleccionar Contexto" [toggleable]="true">
+    <div class="ctx-grid">
+      <!-- Empresa -->
+      <div class="ctx-field">
+        <label>Empresa</label>
         <p-select
-size="small"           formControlName="tipo"
-          [options]="tipoOptions"
+          [options]="empresas()"
+          optionLabel="descripcion"
+          optionValue="empresaId"
+          placeholder="Seleccionar..."
+          styleClass="w-full"
+          [ngModel]="empresaId()"
+          (ngModelChange)="onEmpresaChange($event)"
+          size="small"
+          [appendTo]="'body'"
+        />
+      </div>
+
+      <!-- Sucursal -->
+      <div class="ctx-field">
+        <label>Sucursal</label>
+        <p-select
+          [options]="sucursales()"
+          optionLabel="descripcion"
+          optionValue="idsucursal"
+          placeholder="Seleccionar..."
+          styleClass="w-full"
+          [ngModel]="sucursalId()"
+          (ngModelChange)="sucursalId.set($event)"
+          size="small"
+          [appendTo]="'body'"
+        />
+      </div>
+
+      <!-- Módulo -->
+      <div class="ctx-field">
+        <label>Módulo</label>
+        <p-select
+          [options]="modulos()"
           optionLabel="label"
           optionValue="value"
+          placeholder="Todos los módulos"
           styleClass="w-full"
+          [ngModel]="moduloId()"
+          (ngModelChange)="onModuloChange($event)"
+          size="small"
+          [appendTo]="'body'"
         />
       </div>
-      <div class="campo">
-        <label>Valor <span class="req">*</span></label>
-        <input pInputText pSize="small" formControlName="descripcion" placeholder="Dato" style="width: 100%;" />
-        @if (invalidDet('descripcion')) {
-          <small class="err">El valor es obligatorio</small>
-        }
+    </div>
+  </p-fieldset>
+
+  <!-- ── Contenido: 2 columnas ──────────────────────── -->
+  <div class="content-2col">
+    <!-- Columna izquierda: Tabla -->
+    <div class="col-left">
+      <p-table
+        [value]="parametros()"
+        [loading]="cargando()"
+        [paginator]="true"
+        [rows]="15"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        size="small"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Campo</th>
+            <th style="width: 6rem">Tipo</th>
+            <th>Valor</th>
+            <th style="width: 5rem" class="text-center">Estado</th>
+            <th style="width: 3rem" class="text-center"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-param>
+          <tr
+            (click)="onRowClick(param)"
+            [class.row-selected]="selectedParam()?.ttipoparametrosId === param.ttipoparametrosId"
+          >
+            <td class="font-bold">{{ param.field }}</td>
+            <td>
+              <p-tag [value]="tipoLabel(param.tipo)" [severity]="tipoSeverity(param.tipo)" styleClass="tag-sm" />
+            </td>
+            <td>{{ param.valor }}</td>
+            <td class="text-center">
+              <p-tag [value]="estadoLabel(param.sn_activo)" [severity]="estadoSeverity(param.sn_activo)" styleClass="tag-sm" />
+            </td>
+            <td class="text-center">
+              <p-button
+                icon="pi pi-trash"
+                size="small"
+                variant="text"
+                [rounded]="true"
+                severity="danger"
+                (onClick)="eliminar(param); $event.stopPropagation()"
+              />
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="empty">
+          <tr>
+            <td colspan="5" class="text-center p-4">
+              @if (!empresaId() || !moduloId()) {
+                Seleccione empresa y módulo para ver los parámetros.
+              } @else {
+                No hay parámetros para este módulo.
+              }
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- Columna derecha: Formulario -->
+    <div class="col-right">
+      <div class="form-panel">
+        <div class="form-panel-header">
+          <h3>{{ selectedParam() ? 'Editar Parámetro' : 'Nuevo Parámetro' }}</h3>
+          @if (selectedParam()) {
+            <p-button
+              icon="pi pi-times"
+              size="small"
+              variant="text"
+              [rounded]="true"
+              severity="secondary"
+              (onClick)="limpiarSeleccion()"
+              pTooltip="Deseleccionar"
+            />
+          }
+        </div>
+
+        <div class="form-panel-body">
+          <div class="p-fluid" [formGroup]="form">
+            <!-- Campo -->
+            <div class="p-field">
+              <label>Campo</label>
+              <input
+                pInputText
+                class="w-full"
+                formControlName="field"
+                placeholder="Ej: nrocliente, bodegaId..."
+                [disabled]="editando()"
+              />
+            </div>
+
+            <!-- Tipo -->
+            <div class="p-field">
+              <label>Tipo</label>
+              <p-select
+                [options]="tipoOptions"
+                optionLabel="label"
+                optionValue="value"
+                formControlName="tipo"
+                styleClass="w-full"
+                [appendTo]="'body'"
+                size="small"
+              />
+            </div>
+
+            <!-- Valor -->
+            <div class="p-field">
+              <label>Valor</label>
+              @if (form.get('tipo')?.value === 'NUMBER') {
+                <p-inputNumber
+                  formControlName="valor"
+                  [useGrouping]="false"
+                  styleClass="w-full"
+                  [inputStyle]="{ 'width': '100%' }"
+                />
+              } @else {
+                <input pInputText class="w-full" formControlName="valor" placeholder="Valor del parámetro" />
+              }
+            </div>
+
+            <!-- Estado -->
+            <div class="p-field">
+              <label>Estado</label>
+              <p-select
+                [options]="estadoOptions"
+                optionLabel="label"
+                optionValue="value"
+                formControlName="sn_activo"
+                styleClass="w-full"
+                [appendTo]="'body'"
+                size="small"
+              />
+            </div>
+
+            <!-- Acciones -->
+            <div class="form-actions">
+              <p-button
+                size="small"
+                label="Cancelar"
+                rounded
+                variant="text"
+                severity="secondary"
+                (onClick)="limpiarSeleccion()"
+              />
+              <p-button
+                size="small"
+                [label]="editando() ? 'Actualizar' : 'Guardar'"
+                icon="pi pi-check"
+                variant="text"
+                [raised]="true"
+                [rounded]="true"
+                severity="success"
+                [loading]="guardando()"
+                [disabled]="form.invalid || !empresaId() || !moduloId()"
+                (onClick)="guardar()"
+              />
+            </div>
+          </div>
+        </div>
       </div>
-    </form>
-    <ng-template pTemplate="footer">
-      <p-button label="Cancelar" severity="secondary" text size="small" (onClick)="dialogDet.set(false)" />
-      <p-button label="Guardar" icon="pi pi-check" size="small" [loading]="guardandoDet()" (onClick)="guardarDet()" />
-    </ng-template>
-  </p-dialog>
+    </div>
+  </div>
 </section>
 
 ```
 
 ---
 
-## 📄 src\app\features\parametros\lista-empresas\empresa-form.scss
+## 📄 src\app\features\parametros\param-manager-modulos\param-manager-modulos.scss
 
 ```typescript
-.form-grid {
+// ── Contexto ──────────────────────────────────────────
+.ctx-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem 1.25rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
 
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 480px) {
     grid-template-columns: 1fr;
   }
 }
 
-.campo {
+.ctx-field {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.4rem;
 
   label {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: #334155;
-  }
-
-  .req {
-    color: #ef4444;
-  }
-
-  &.campo-wide {
-    grid-column: 1 / -1;
-  }
-
-  .err {
-    color: #ef4444;
-    font-size: 0.75rem;
-  }
-
-  .hint {
-    color: #64748b;
-    font-size: 0.78rem;
+    color: var(--c-text-muted);
   }
 }
 
-.acciones-form {
-  grid-column: 1 / -1;
+// ── Layout 2 columnas ─────────────────────────────────
+.content-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col-left {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.col-right {
+  min-width: 0;
+}
+
+// ── Panel formulario derecha ──────────────────────────
+.form-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  position: sticky;
+  top: 1rem;
+}
+
+.form-panel-header {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--c-border);
+
+  h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+}
+
+.form-panel-body {
+  padding: 1rem;
+
+  .p-field {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--c-text-muted);
+      margin-bottom: 0.3rem;
+    }
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
   justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  margin-top: 1.25rem;
   padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--c-border);
 }
+
+// ── Tags ──────────────────────────────────────────────
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+// ── Fieldsets ─────────────────────────────────────────
+::ng-deep .p-fieldset {
+  margin-bottom: 1rem;
+}
+
+::ng-deep .p-fieldset-legend {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+// ── Tabla: fila seleccionada ──────────────────────────
+::ng-deep .p-datatable .p-datatable-tbody > tr {
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--c-surface-ground);
+  }
+
+  &.row-selected {
+    background: var(--c-primary) !important;
+    color: #fff !important;
+
+    td {
+      color: #fff !important;
+    }
+
+    .p-tag {
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: #fff !important;
+    }
+  }
+}
+
 ```
 
 ---
 
-## 📄 src\app\features\parametros\lista-empresas\empresa-form.ts
+## 📄 src\app\features\parametros\param-manager-modulos\param-manager-modulos.ts
 
 ```typescript
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { TextareaModule } from 'primeng/textarea';
-import { SelectButtonModule } from 'primeng/selectbutton';
-import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
-import { DialogModule } from 'primeng/dialog';
-import { MessageService } from 'primeng/api';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DestroyRef } from '@angular/core';
-import { EmpresasService } from '../../../core/services/empresas.service';
-import { EmpresaDet } from '../../../core/models/empresa.models';
-
-@Component({
-  selector: 'app-empresa-form',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    ButtonModule,
-    InputTextModule,
-    TextareaModule,
-    SelectButtonModule,
-    SelectModule,
-    TableModule,
-    DialogModule,
-  ],
-  templateUrl: './empresa-form.html',
-  styleUrl: './empresa-form.scss',
-})
-export class EmpresaForm implements OnInit {
-  private fb = inject(FormBuilder);
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private service = inject(EmpresasService);
-  private msgs = inject(MessageService);
-  private destroyRef = inject(DestroyRef);
-
-  esEdicion = signal(false);
-  cargando = signal(false);
-  guardando = signal(false);
-  titulo = signal('Nueva empresa');
-
-  private empresaId = 0;
-
-  detalles = signal<EmpresaDet[]>([]);
-  dialogDet = signal(false);
-  detEditando = signal<EmpresaDet | null>(null);
-  detForm!: FormGroup;
-  guardandoDet = signal(false);
-
-  readonly snOptions = [
-    { label: 'Activo', value: 'S' },
-    { label: 'Inactivo', value: 'N' },
-  ];
-
-  readonly tipoOptions = [
-    { label: 'RTN', value: 'RTN' },
-    { label: 'Dirección', value: 'DIRECCION' },
-    { label: 'Teléfono', value: 'TELEFONO' },
-    { label: 'Correo', value: 'CORREO' },
-    { label: 'RUC', value: 'RUC' },
-    { label: 'Website', value: 'WEBSITE' },
-    { label: 'Red Social', value: 'REDESOCIAL' },
-  ];
-
-  form!: FormGroup;
-
-  ngOnInit() {
-    this.form = this.fb.group({
-      descripcion: ['', Validators.required],
-      msjfactura: [''],
-      msjdevfactura: [''],
-      sn_activo: ['S', Validators.required],
-    });
-
-    this.detForm = this.fb.group({
-      tipo: ['RTN', Validators.required],
-      descripcion: ['', Validators.required],
-    });
-
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.esEdicion.set(true);
-      this.titulo.set('Editar empresa');
-      this.empresaId = Number(id);
-      this.cargando.set(true);
-      this.service.getOne(this.empresaId).subscribe({
-        next: (e) => {
-          this.form.patchValue({
-            descripcion: e.descripcion,
-            msjfactura: e.msjfactura,
-            msjdevfactura: e.msjdevfactura,
-            sn_activo: e.sn_activo === 'S' ? 'S' : 'N',
-          });
-          this.cargando.set(false);
-          this.cargarDetalles();
-        },
-        error: () => {
-          this.cargando.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'Empresa no encontrada' });
-          this.volver();
-        },
-      });
-    }
-  }
-
-  private cargarDetalles() {
-    this.service.getAllDet().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (items) => this.detalles.set(items),
-    });
-  }
-
-  invalid(ctrl: string): boolean {
-    const c = this.form.get(ctrl);
-    return !!c && c.invalid && (c.dirty || c.touched);
-  }
-
-  invalidDet(ctrl: string): boolean {
-    const c = this.detForm.get(ctrl);
-    return !!c && c.invalid && (c.dirty || c.touched);
-  }
-
-  volver() {
-    this.router.navigate(['../'], { relativeTo: this.route });
-  }
-
-  guardar() {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    const raw = this.form.getRawValue();
-    const payload = this.esEdicion()
-      ? {
-          descripcion: raw.descripcion,
-          msjfactura: raw.msjfactura,
-          msjdevfactura: raw.msjdevfactura,
-          sn_activo: raw.sn_activo,
-        }
-      : {
-          descripcion: raw.descripcion,
-          msjfactura: raw.msjfactura,
-          msjdevfactura: raw.msjdevfactura,
-        };
-
-    this.guardando.set(true);
-    const op = this.esEdicion()
-      ? this.service.update(this.empresaId, payload)
-      : this.service.create(payload);
-
-    op.subscribe({
-      next: (res) => {
-        if (!this.esEdicion() && res.empresaId) {
-          this.empresaId = res.empresaId;
-          this.esEdicion.set(true);
-          this.titulo.set('Editar empresa');
-        }
-        this.guardando.set(false);
-        this.msgs.add({
-          severity: 'success',
-          summary: 'Guardado',
-          detail: this.esEdicion() ? 'Empresa actualizada' : 'Empresa creada correctamente',
-        });
-        if (!this.esEdicion()) this.volver();
-      },
-      error: () => {
-        this.guardando.set(false);
-        this.msgs.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo guardar la empresa',
-        });
-      },
-    });
-  }
-
-  abrirDet(det?: EmpresaDet) {
-    this.detEditando.set(det || null);
-    if (det) {
-      this.detForm.patchValue({ tipo: det.tipo, descripcion: det.descripcion });
-    } else {
-      this.detForm.reset({ tipo: 'RTN', descripcion: '' });
-    }
-    this.dialogDet.set(true);
-  }
-
-  guardarDet() {
-    if (this.detForm.invalid) {
-      this.detForm.markAllAsTouched();
-      return;
-    }
-    const raw = this.detForm.getRawValue();
-    this.guardandoDet.set(true);
-
-    const edit = this.detEditando();
-    const op = edit
-      ? this.service.updateDet(edit.empresasdetId, raw)
-      : this.service.createDet(raw);
-
-    op.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.guardandoDet.set(false);
-        this.dialogDet.set(false);
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: edit ? 'Dato actualizado' : 'Dato agregado' });
-        this.cargarDetalles();
-      },
-      error: () => {
-        this.guardandoDet.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar' });
-      },
-    });
-  }
-
-  eliminarDet(det: EmpresaDet) {
-    this.service.removeDet(det.empresasdetId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: `${det.tipo} eliminado` });
-        this.cargarDetalles();
-      },
-      error: () => {
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar' });
-      },
-    });
-  }
-
-  tipoLabel(tipo: string): string {
-    return this.tipoOptions.find((o) => o.value === tipo)?.label || tipo;
-  }
-}
-```
-
----
-
-## 📄 src\app\features\parametros\lista-empresas\lista-empresas.html
-
-```typescript
-<section class="page">
-  <header class="page-header">
-    <div>
-      <h1 class="page-title">Empresas</h1>
-      <p class="page-subtitle">Administración de empresas del sistema</p>
-    </div>
-    <p-button label="Nueva empresa" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
-  </header>
-
-  <div class="filtros card">
-    <div class="campo">
-      <label>Buscar</label>
-      <input
-        pInputText
-        type="text"
-        placeholder="Descripción o mensajes..."
-        [ngModel]="q()"
-        (ngModelChange)="q.set($event)"
-        (keyup.enter)="buscar()"
-      />
-    </div>
-    <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
-      <p-button
-        label="Limpiar"
-        icon="pi pi-times"
-        severity="secondary"
-        text
-        size="small"
-        (onClick)="limpiarFiltros()"
-      />
-    </div>
-  </div>
-
-  <p-dataview
-    [value]="filtered()"
-    [loading]="cargando()"
-    dataKey="empresaId"
-    [layout]="list"
-    [paginator]="true"
-    [rows]="20"
-    [rowsPerPageOptions]="[10, 20, 50]"
-    [showCurrentPageReport]="true"
-    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-  >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (e of items; track e.empresaId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ e.descripcion }}</span>
-              <p-tag [value]="activoLbl(e.sn_activo)" [severity]="activoSev(e.sn_activo)" />
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">ID</span>
-                <span class="dv-value">{{ e.empresaId }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Mensaje factura</span>
-                <span class="dv-value">{{ e.msjfactura || '-' }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Mensaje devolución</span>
-                <span class="dv-value">{{ e.msjdevfactura || '-' }}</span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-pencil"
-                pTooltip="Editar"
-                (onClick)="editar(e.empresaId, $event)"
-                severity="warn"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
-    </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay empresas que coincidan con los filtros.</div>
-    </ng-template>
-  </p-dataview>
-</section>
-
-```
-
----
-
-## 📄 src\app\features\parametros\lista-empresas\lista-empresas.scss
-
-```typescript
-.dv-cards {
-  padding: 0.75rem;
-}
-```
-
----
-
-## 📄 src\app\features\parametros\lista-empresas\lista-empresas.ts
-
-```typescript
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
-import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
+import { FieldsetModule } from 'primeng/fieldset';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { EmpresasService } from '../../../core/services/empresas.service';
+import { ParametroUnificadoService } from '../../../core/services/parametro-unificado.service';
+import { TipoParametro, MODULO_LABELS } from '../../../core/models/parametro-unificado.model';
 import { Empresa } from '../../../core/models/empresa.models';
+import { Sucursal } from '../../../core/models/sucursal.models';
 
 @Component({
-  selector: 'app-lista-empresas',
+  selector: 'app-param-manager-modulos',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
-    DataViewModule,
+    ReactiveFormsModule,
+    TableModule,
     ButtonModule,
     InputTextModule,
+    InputNumberModule,
+    SelectModule,
     TagModule,
+    FieldsetModule,
     TooltipModule,
   ],
-  templateUrl: './lista-empresas.html',
-  styleUrl: './lista-empresas.scss',
+  templateUrl: './param-manager-modulos.html',
+  styleUrl: './param-manager-modulos.scss',
 })
-export class ListaEmpresas implements OnInit {
-  private service = inject(EmpresasService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
+export class ParamManagerModulos implements OnInit {
+  private fb = inject(FormBuilder);
+  private empresasService = inject(EmpresasService);
+  private parametroService = inject(ParametroUnificadoService);
   private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
 
-  data = signal<Empresa[]>([]);
-  filtered = signal<Empresa[]>([]);
+  // Opciones readonly
+  readonly tipoOptions = [
+    { label: 'Texto (STRING)', value: 'STRING' },
+    { label: 'Numérico (NUMBER)', value: 'NUMBER' },
+  ];
+
+  readonly estadoOptions = [
+    { label: 'Activo', value: 'S' },
+    { label: 'Inactivo', value: 'N' },
+  ];
+
+  // Datos de selects
+  empresas = signal<Empresa[]>([]);
+  sucursales = signal<Sucursal[]>([]);
+  modulos = signal<{ label: string; value: number }[]>([]);
+
+  // Estado
+  parametros = signal<TipoParametro[]>([]);
   cargando = signal(false);
+  guardando = signal(false);
 
-  q = signal('');
+  // Filtros
+  empresaId = signal<number | null>(null);
+  sucursalId = signal<number | null>(null);
+  moduloId = signal<number | null>(null);
+
+  // Selección / edición inline
+  selectedParam = signal<TipoParametro | null>(null);
+  editando = signal(false);
+  form!: FormGroup;
 
   ngOnInit() {
-    this.load();
-  }
-
-  load() {
-    this.cargando.set(true);
-    this.service.getAll().subscribe({
-      next: (res) => {
-        this.data.set(res);
-        this.filtrar();
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.cargando.set(false);
-        this.msgs.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudieron cargar las empresas',
-        });
-      },
+    this.form = this.fb.group({
+      field: ['', Validators.required],
+      tipo: ['STRING', Validators.required],
+      valor: ['', Validators.required],
+      sn_activo: ['S', Validators.required],
     });
+
+    // Cargar empresas
+    this.empresasService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.empresas.set(data);
+          if (data.length > 0) {
+            this.empresaId.set(data[0].empresaId);
+            this.cargarSucursales(data[0].empresaId);
+          }
+        },
+      });
+
+    // Cargar módulos
+    const mods = Object.entries(MODULO_LABELS).map(([id, label]) => ({
+      label,
+      value: Number(id),
+    }));
+    this.modulos.set(mods);
+
+    if (this.empresaId()) {
+      this.cargarParametros();
+    }
   }
 
-  filtrar() {
-    const q = this.q().toLowerCase();
-    this.filtered.set(
-      this.data().filter((e) => {
-        const matchQ =
-          !q ||
-          e.descripcion.toLowerCase().includes(q) ||
-          (e.msjfactura?.toLowerCase().includes(q) ?? false) ||
-          (e.msjdevfactura?.toLowerCase().includes(q) ?? false);
-        return matchQ;
-      }),
-    );
+  cargarSucursales(empresaId: number) {
+    this.empresasService.getAllSucursales(empresaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.sucursales.set(data);
+          if (data.length > 0) {
+            this.sucursalId.set(data[0].idsucursal);
+          }
+        },
+      });
   }
 
-  buscar() {
-    this.filtrar();
+  onEmpresaChange(empresaId: number) {
+    this.empresaId.set(empresaId);
+    this.sucursalId.set(null);
+    this.parametros.set([]);
+    this.limpiarSeleccion();
+    this.cargarSucursales(empresaId);
   }
 
-  limpiarFiltros() {
-    this.q.set('');
-    this.filtrar();
+  onModuloChange(moduloId: number) {
+    this.moduloId.set(moduloId);
+    this.limpiarSeleccion();
+    this.cargarParametros();
   }
 
-  nuevo() {
-    this.router.navigate(['nuevo'], { relativeTo: this.route });
+  cargarParametros() {
+    const eid = this.empresaId();
+    const mid = this.moduloId();
+    if (!eid) return;
+
+    this.cargando.set(true);
+    this.parametroService.getAll(mid || undefined)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.parametros.set(data.filter(p => p.empresaId === eid));
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.cargando.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los parámetros' });
+        },
+      });
   }
 
-  editar(id?: number, e?: Event) {
-    e?.stopPropagation();
-    if (!id) return;
-    this.router.navigate(['editar', id], { relativeTo: this.route });
+  // ── Selección / Edición inline ──────────────────────────
+
+  onRowClick(param: TipoParametro) {
+    if (this.selectedParam()?.ttipoparametrosId === param.ttipoparametrosId) {
+      this.limpiarSeleccion();
+    } else {
+      this.selectedParam.set(param);
+      this.cargarForm(param);
+    }
   }
 
-  activoLbl(sn: string): string {
+  private cargarForm(param: TipoParametro) {
+    this.editando.set(true);
+    this.form.reset({
+      field: param.field,
+      tipo: param.tipo,
+      valor: param.valor,
+      sn_activo: param.sn_activo,
+    });
+    this.form.get('field')?.disable();
+  }
+
+  limpiarSeleccion() {
+    this.selectedParam.set(null);
+    this.editando.set(false);
+    this.form.reset({
+      field: '',
+      tipo: 'STRING',
+      valor: '',
+      sn_activo: 'S',
+    });
+    this.form.get('field')?.enable();
+  }
+
+  // ── Guardar ─────────────────────────────────────────────
+
+  guardar() {
+    if (this.form.invalid) return;
+
+    const eid = this.empresaId();
+    const mid = this.moduloId();
+    if (!eid || !mid) {
+      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Seleccione empresa y módulo' });
+      return;
+    }
+
+    const raw = this.form.getRawValue();
+    this.guardando.set(true);
+
+    this.parametroService.upsert(mid, raw.field, raw.valor, raw.tipo)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.guardando.set(false);
+          this.msgs.add({
+            severity: 'success',
+            summary: this.editando() ? 'Actualizado' : 'Creado',
+            detail: this.editando() ? 'Parámetro actualizado' : 'Parámetro creado',
+          });
+          this.limpiarSeleccion();
+          this.cargarParametros();
+        },
+        error: () => {
+          this.guardando.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el parámetro' });
+        },
+      });
+  }
+
+  eliminar(param: TipoParametro) {
+    this.parametroService.remove(param.ttipoparametrosId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Parámetro desactivado' });
+          if (this.selectedParam()?.ttipoparametrosId === param.ttipoparametrosId) {
+            this.limpiarSeleccion();
+          }
+          this.cargarParametros();
+        },
+        error: () => {
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el parámetro' });
+        },
+      });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────
+
+  moduloLabel(id: number): string {
+    return MODULO_LABELS[id] || String(id);
+  }
+
+  tipoLabel(tipo: string): string {
+    return tipo === 'NUMBER' ? 'Numérico' : 'Texto';
+  }
+
+  tipoSeverity(tipo: string): 'success' | 'info' {
+    return tipo === 'NUMBER' ? 'success' : 'info';
+  }
+
+  estadoLabel(sn: string): string {
     return sn === 'S' ? 'Activo' : 'Inactivo';
   }
 
-  activoSev(sn: string): 'success' | 'danger' {
+  estadoSeverity(sn: string): 'success' | 'danger' {
     return sn === 'S' ? 'success' : 'danger';
   }
 }
-```
-
----
-
-## 📄 src\app\features\parametros\parametros.routes.ts
-
-```typescript
-import { Routes } from '@angular/router';
-
-export const PARAMETROS_ROUTES: Routes = [
-  { path: '', redirectTo: 'empresas', pathMatch: 'full' },
-  {
-    path: 'empresas',
-    loadComponent: () =>
-      import('./lista-empresas/lista-empresas').then((m) => m.ListaEmpresas),
-  },
-  {
-    path: 'empresas/nuevo',
-    loadComponent: () =>
-      import('./lista-empresas/empresa-form').then((m) => m.EmpresaForm),
-  },
-  {
-    path: 'empresas/editar/:id',
-    loadComponent: () =>
-      import('./lista-empresas/empresa-form').then((m) => m.EmpresaForm),
-  },
-  { path: '**', redirectTo: 'empresas' },
-];
 
 ```
 
@@ -45884,7 +53230,7 @@ size="small"         [options]="estadoOptions"
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="usuario"
@@ -45893,47 +53239,33 @@ size="small"         [options]="estadoOptions"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (u of items; track u.usuario) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ u.nombre || u.usuario }}</span>
-              <p-tag [value]="activoLbl(u.sn_activo)" [severity]="activoSev(u.sn_activo)" />
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Usuario</span>
-                <span class="dv-value">{{ u.usuario }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Email</span>
-                <span class="dv-value">{{ u.email || '-' }}</span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-pencil"
-                pTooltip="Editar"
-                (onClick)="editar(u.usuario, $event)"
-                severity="warn"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width:6rem">Usuario</th>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th style="width:6rem">Estado</th>
+        <th style="width:4rem"></th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay usuarios que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-u>
+      <tr (click)="editar(u.usuario)">
+        <td class="font-bold">{{ u.usuario }}</td>
+        <td>{{ u.nombre || '-' }}</td>
+        <td>{{ u.email || '-' }}</td>
+        <td><p-tag [value]="activoLbl(u.sn_activo)" [severity]="activoSev(u.sn_activo)" /></td>
+        <td>
+          <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(u.usuario, $event)"
+            severity="warn" text size="small" rounded />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="5" class="text-center p-3">No hay usuarios que coincidan con los filtros.</td></tr>
+    </ng-template>
+  </p-table>
 </section>
 ```
 
@@ -45957,6 +53289,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -45973,6 +53306,7 @@ import { Usuario } from '../../../core/models/usuario.models';
     CommonModule,
     FormsModule,
     DataViewModule,
+    TableModule,
     ButtonModule,
     InputTextModule,
     SelectModule,
@@ -47461,7 +54795,7 @@ export class UsuarioMnuItemForm implements OnInit {
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="tusuariomnuitemsId"
@@ -47470,68 +54804,41 @@ export class UsuarioMnuItemForm implements OnInit {
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (i of items; track i.tusuariomnuitemsId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ i.labelItem }}</span>
-              <p-tag [value]="activoLbl(i.sn_activo)" [severity]="activoSev(i.sn_activo)" />
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Usuario</span>
-                <span class="dv-value">{{ i.usuario }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Módulo</span>
-                <span class="dv-value">{{ getModuloName(i.moduloId) }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Nombre</span>
-                <span class="dv-value">{{ i.nameItem }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Ruta</span>
-                <span class="dv-value">{{ i.routerLink || '-' }}</span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Nivel</span>
-                <span class="dv-value">{{ i.levelId }}</span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-pencil"
-                pTooltip="Editar"
-                (onClick)="editar(i.tusuariomnuitemsId, $event)"
-                severity="warn"
-                text
-                size="small"
-                rounded
-              />
-              <p-button
-                icon="pi pi-trash"
-                pTooltip="Eliminar"
-                (onClick)="eliminar(i, $event)"
-                severity="danger"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Usuario</th>
+        <th>Modulo</th>
+        <th>Label</th>
+        <th>Nombre</th>
+        <th>Ruta</th>
+        <th style="width:4rem">Nivel</th>
+        <th style="width:5rem">Estado</th>
+        <th style="width:6rem"></th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay items que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-i>
+      <tr>
+        <td class="font-bold">{{ i.usuario }}</td>
+        <td>{{ getModuloName(i.moduloId) }}</td>
+        <td>{{ i.labelItem }}</td>
+        <td>{{ i.nameItem }}</td>
+        <td>{{ i.routerLink || '-' }}</td>
+        <td class="text-center">{{ i.levelId }}</td>
+        <td><p-tag [value]="activoLbl(i.sn_activo)" [severity]="activoSev(i.sn_activo)" /></td>
+        <td>
+          <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(i.tusuariomnuitemsId, $event)"
+            severity="warn" text size="small" rounded class="mr-1" />
+          <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(i, $event)"
+            severity="danger" text size="small" rounded />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="8" class="text-center p-3">No hay items que coincidan con los filtros.</td></tr>
+    </ng-template>
+  </p-table>
 </section>
 ```
 
@@ -47555,6 +54862,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
@@ -47571,6 +54879,7 @@ import { UsuariosMnuItem } from '../../../core/models/usuario.models';
     CommonModule,
     FormsModule,
     DataViewModule,
+    TableModule,
     ButtonModule,
     InputTextModule,
     TagModule,
@@ -48050,7 +55359,7 @@ export class UsuarioModAuthForm implements OnInit {
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="usuariomodauthId"
@@ -48059,67 +55368,39 @@ export class UsuarioModAuthForm implements OnInit {
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (p of items; track p.usuariomodauthId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ p.usuario }}</span>
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Anulaciones</span>
-                <span class="dv-value"><p-tag [value]="snLbl(p.sn_auth_anulaciones)" [severity]="snSev(p.sn_auth_anulaciones)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Facturación</span>
-                <span class="dv-value"><p-tag [value]="snLbl(p.sn_auth_facturacion)" [severity]="snSev(p.sn_auth_facturacion)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Contabilizar</span>
-                <span class="dv-value"><p-tag [value]="snLbl(p.sn_auth_contabilizar)" [severity]="snSev(p.sn_auth_contabilizar)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Devoluciones</span>
-                <span class="dv-value"><p-tag [value]="snLbl(p.sn_auth_devoluciones)" [severity]="snSev(p.sn_auth_devoluciones)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Reversión</span>
-                <span class="dv-value"><p-tag [value]="snLbl(p.sn_auth_reversion)" [severity]="snSev(p.sn_auth_reversion)" styleClass="dv-sn-tag" /></span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-pencil"
-                pTooltip="Editar"
-                (onClick)="editar(p.usuariomodauthId, $event)"
-                severity="warn"
-                text
-                size="small"
-                rounded
-              />
-              <p-button
-                icon="pi pi-trash"
-                pTooltip="Eliminar"
-                (onClick)="eliminar(p, $event)"
-                severity="danger"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Usuario</th>
+        <th style="width:6rem">Anulaciones</th>
+        <th style="width:6rem">Facturacion</th>
+        <th style="width:6rem">Contabilizar</th>
+        <th style="width:6rem">Devoluciones</th>
+        <th style="width:6rem">Reversion</th>
+        <th style="width:6rem"></th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay permisos que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-p>
+      <tr>
+        <td class="font-bold">{{ p.usuario }}</td>
+        <td><p-tag [value]="snLbl(p.sn_auth_anulaciones)" [severity]="snSev(p.sn_auth_anulaciones)" /></td>
+        <td><p-tag [value]="snLbl(p.sn_auth_facturacion)" [severity]="snSev(p.sn_auth_facturacion)" /></td>
+        <td><p-tag [value]="snLbl(p.sn_auth_contabilizar)" [severity]="snSev(p.sn_auth_contabilizar)" /></td>
+        <td><p-tag [value]="snLbl(p.sn_auth_devoluciones)" [severity]="snSev(p.sn_auth_devoluciones)" /></td>
+        <td><p-tag [value]="snLbl(p.sn_auth_reversion)" [severity]="snSev(p.sn_auth_reversion)" /></td>
+        <td>
+          <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(p.usuariomodauthId, $event)"
+            severity="warn" text size="small" rounded class="mr-1" />
+          <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(p, $event)"
+            severity="danger" text size="small" rounded />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="7" class="text-center p-3">No hay permisos que coincidan con los filtros.</td></tr>
+    </ng-template>
+  </p-table>
 </section>
 ```
 
@@ -48147,6 +55428,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
@@ -48162,6 +55444,7 @@ import { UsuarioModAuth } from '../../../core/models/usuario.models';
     CommonModule,
     FormsModule,
     DataViewModule,
+    TableModule,
     ButtonModule,
     InputTextModule,
     TagModule,
@@ -48626,7 +55909,7 @@ export class UsuarioModulosForm implements OnInit {
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="tusuariosmoduloId"
@@ -48635,60 +55918,39 @@ export class UsuarioModulosForm implements OnInit {
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (i of items; track i.tusuariosmoduloId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ i.usuario }} · {{ getModuloName(i.moduloId) }}</span>
-              <p-tag [value]="activoLbl(i.sn_activo)" [severity]="activoSev(i.sn_activo)" />
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Datos</span>
-                <span class="dv-value"><p-tag [value]="snLbl(i.submnudatos)" [severity]="snSev(i.submnudatos)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Procesos</span>
-                <span class="dv-value"><p-tag [value]="snLbl(i.submnurocesos)" [severity]="snSev(i.submnurocesos)" styleClass="dv-sn-tag" /></span>
-              </div>
-              <div class="dv-row">
-                <span class="dv-label">Reportes</span>
-                <span class="dv-value"><p-tag [value]="snLbl(i.submnueportes)" [severity]="snSev(i.submnueportes)" styleClass="dv-sn-tag" /></span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-pencil"
-                pTooltip="Editar"
-                (onClick)="editar(i.tusuariosmoduloId, $event)"
-                severity="warn"
-                text
-                size="small"
-                rounded
-              />
-              <p-button
-                icon="pi pi-trash"
-                pTooltip="Eliminar"
-                (onClick)="eliminar(i, $event)"
-                severity="danger"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Usuario</th>
+        <th>Modulo</th>
+        <th style="width:5rem">Datos</th>
+        <th style="width:6rem">Procesos</th>
+        <th style="width:6rem">Reportes</th>
+        <th style="width:5rem">Estado</th>
+        <th style="width:6rem"></th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay asignaciones que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-i>
+      <tr>
+        <td class="font-bold">{{ i.usuario }}</td>
+        <td>{{ getModuloName(i.moduloId) }}</td>
+        <td><p-tag [value]="snLbl(i.submnudatos)" [severity]="snSev(i.submnudatos)" /></td>
+        <td><p-tag [value]="snLbl(i.submnurocesos)" [severity]="snSev(i.submnurocesos)" /></td>
+        <td><p-tag [value]="snLbl(i.submnueportes)" [severity]="snSev(i.submnueportes)" /></td>
+        <td><p-tag [value]="activoLbl(i.sn_activo)" [severity]="activoSev(i.sn_activo)" /></td>
+        <td>
+          <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(i.tusuariosmoduloId, $event)"
+            severity="warn" text size="small" rounded class="mr-1" />
+          <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(i, $event)"
+            severity="danger" text size="small" rounded />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="7" class="text-center p-3">No hay asignaciones que coincidan con los filtros.</td></tr>
+    </ng-template>
+  </p-table>
 </section>
 ```
 
@@ -48716,6 +55978,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
@@ -48732,6 +55995,7 @@ import { UsuariosModule } from '../../../core/models/usuario.models';
     CommonModule,
     FormsModule,
     DataViewModule,
+    TableModule,
     ButtonModule,
     InputTextModule,
     TagModule,
@@ -49126,7 +56390,7 @@ export class UsuarioScriptsForm implements OnInit {
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
     dataKey="tusuarioscriptsId"
@@ -49135,42 +56399,29 @@ export class UsuarioScriptsForm implements OnInit {
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (s of items; track s.tusuarioscriptsId) {
-          <div class="dv-card">
-            <div class="dv-top">
-              <span class="dv-title">{{ s.script }}</span>
-            </div>
-
-            <div class="dv-body">
-              <div class="dv-row">
-                <span class="dv-label">Usuario</span>
-                <span class="dv-value">{{ s.usuario }}</span>
-              </div>
-            </div>
-
-            <div class="dv-actions" (click)="$event.stopPropagation()">
-              <p-button
-                icon="pi pi-trash"
-                pTooltip="Eliminar"
-                (onClick)="eliminar(s, $event)"
-                severity="danger"
-                text
-                size="small"
-                rounded
-              />
-            </div>
-          </div>
-        }
-      </div>
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Usuario</th>
+        <th>Script</th>
+        <th style="width:6rem"></th>
+      </tr>
     </ng-template>
-
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay scripts que coincidan con los filtros.</div>
+    <ng-template pTemplate="body" let-s>
+      <tr>
+        <td class="font-bold">{{ s.usuario }}</td>
+        <td>{{ s.script }}</td>
+        <td>
+          <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(s, $event)"
+            severity="danger" text size="small" rounded />
+        </td>
+      </tr>
     </ng-template>
-  </p-dataview>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="3" class="text-center p-3">No hay scripts que coincidan con los filtros.</td></tr>
+    </ng-template>
+  </p-table>
 </section>
 ```
 
@@ -49194,6 +56445,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
@@ -49208,6 +56460,7 @@ import { UsuariosScripts } from '../../../core/models/usuario.models';
     CommonModule,
     FormsModule,
     DataViewModule,
+    TableModule,
     ButtonModule,
     InputTextModule,
     TooltipModule,
@@ -49425,8 +56678,9 @@ export const USUARIOS_ROUTES: Routes = [
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo">
-        <img src="assets/images/arcas-logo.svg" alt="Logo Arcas Software" class="sidebar-logo-img" />
-        <span class="sidebar-title">Tienda</span>
+
+        <img src="assets/images/toyota.png" alt="WebStore" class="sidebar-logo-img" />
+        <span class="sidebar-title">TOYOTA</span>
       </div>
       <button class="sidebar-pin" [class.visible]="!sidebarHidden()" [class.pinned]="pinned()" (click)="togglePin()"
         title="Fijar sidebar"></button>
@@ -49435,7 +56689,18 @@ export const USUARIOS_ROUTES: Routes = [
       </button>
     </div>
     <div class="sidebar-menu" (click)="onMenuClick($event)">
+      <div class="sidebar-user">
+        <i class="pi pi-user" style="font-size: 2rem; margin-top: -5px;"></i>
+        <div class="sidebar-user-info">
+          <span class="sidebar-user-name">{{ user()?.nombre }}</span>
+          <span class="sidebar-user-role">{{ user()?.rol }}</span>
+        </div>
+      </div>
       <p-panelmenu [model]="menuItems()" class="w-full md:w-80" />
+      <div class="sidebar-footer">
+        <p-button label="Cuenta" icon="pi pi-user" class="w-full" size="small" [rounded]="true" severity="secondary" variant="outlined" (onClick)="visible = true" />
+        <p-button label="Salir" icon="pi pi-sign-out" class="w-full" size="small" [rounded]="true" severity="danger" variant="text" (onClick)="cerrarSesion()" />
+      </div>
     </div>
   </aside>
 
@@ -49450,24 +56715,12 @@ export const USUARIOS_ROUTES: Routes = [
       </div>
       <div class="topbar-right">
 
-
-        <div class="user-chip hidden-mobile">
-          <div class="user-chip-info">
-            <span class="user-name">{{ user()?.nombre }}</span>
-          </div>
-          <span class="user-avatar">
-            <p-avatar [label]="initials" shape="circle" size="small" />
-          </span>
-        </div>
-
          <p-button type="button" (click)="visible = true"
          [rounded]="true" [text]="true"
          icon="pi pi-arrow-left" />
 
         <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-sign-out" (onClick)="cerrarSesion()"
           size="small" iconOnly pTooltip="Presione para salir de la app" tooltipPosition="bottom" />
-
-
 
       </div>
     </header>
@@ -49619,21 +56872,24 @@ $topbar-height: 60px;
   min-width: 0;
 
   .sidebar-logo-img {
-    width: 2.25rem;
-    height: 2.25rem;
+    margin-top:5px;
+    width: 2.75rem;
+    height: 2.75rem;
     min-width: 2.25rem;
     object-fit: contain;
   }
 }
 
 .sidebar-title {
-  font-weight: 700;
+   font-family: 'AstroSpace';
+  font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  color: var(--color-font-sidebar);
   flex: 1;
-  font-size: 1rem;
+  font-size: 1.5rem;
   letter-spacing: 0.2px;
 }
 
@@ -49643,6 +56899,54 @@ $topbar-height: 60px;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0.75rem;
+
+  // ===== User info en sidebar =====
+  .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.5rem;
+    border-bottom: var(--d-menu-separator-border);
+
+    :deep(.p-avatar) {
+      background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+      color: #fff;
+      font-weight: 700;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  .sidebar-user-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .sidebar-user-name {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-user-role {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 0 0;
+    margin-top: 0.5rem;
+    border-top: var(--d-menu-separator-border);
+  }
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -50214,12 +57518,13 @@ export class MainLayout {
       icon: 'pi pi-sign-out',
       acceptLabel: 'Sí, cerrar sesión',
       rejectLabel: 'Cancelar',
-      acceptButtonStyleClass: 'p-button-danger',
-      rejectButtonStyleClass: 'p-button-text',
+      acceptButtonStyleClass: 'p-button-text p-button-success p-button-rounded',
+      rejectButtonStyleClass: 'p-button-text p-button-secondary p-button-rounded',
       accept: () => this.auth.logout(),
     });
   }
 }
+
 ```
 
 ---
@@ -50886,9 +58191,26 @@ body {
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'AstroSpace';
+  src: url('/assets/fonts/AstroSpace/AstroSpace.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+
+@font-face {
+  font-family: 'Angora';
+  src: url('/assets/fonts/Angora/Angora-1G3BB.otf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+
 :root {
   --font-family: 'Mukta', sans-serif;
 
+  --color-font-sidebar: #dbe7f0;
   --color-texto-label: rgba(255, 255, 255, 0.4);
   --color-texto-input: rgba(255, 255, 255, 0.808);
   --master-background: #213341;
@@ -50901,6 +58223,8 @@ body {
   --c-bg-muted: #1e2e3b00;
   --c-surface: #1e2e3b;
   --c-surface-muted: #2d3d50b4;
+  --c-card-background:#08131c;
+  --c-card-color-text: var(--color-texto-label);
   --c-border: #1e2e3b;
   --c-border-strong: #2c4d6f;
   --c-text: var(--color-texto-label);
@@ -50953,7 +58277,7 @@ body {
 
   --p-form-field-background: #213341;
   --p-form-field-border-color: #39495b;
-  
+
 
   --p-navigation-item-color: #7f8790;
   --p-navigation-item-icon-color: #558dc6;

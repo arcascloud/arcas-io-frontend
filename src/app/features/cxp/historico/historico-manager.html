@@ -9,9 +9,6 @@
   <!-- FILTROS -->
   <div class="grid">
     <div class="col-fixed" style="width:50%">
-      <label>DNI</label>
-      <input pInputText pSize="small" [ngModel]="dni()" (ngModelChange)="dni.set($event)" placeholder="Buscar por DNI"
-        fluid />
       <label>Proveedor</label>
       <input pInputText pSize="small" [ngModel]="proveedor()" (ngModelChange)="proveedor.set($event)"
         placeholder="Nombre o razon social" fluid />
@@ -42,12 +39,11 @@
       [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small"
       [tableStyle]="{ 'min-width': '20rem' }" selectionMode="single" [(selection)]="selectedRow" dataKey="bcomovId"
-      [globalFilterFields]="['dni', 'proveedor', 'nroproveedor', 'concepto']">
+      [globalFilterFields]="['proveedor', 'nroproveedor', 'concepto']">
       <ng-template pTemplate="header">
         <tr>
           <th style="width: 8rem">Fecha</th>
           <th style="width: 6rem">Nro. Proveedor</th>
-          <th style="width: 6rem">DNI</th>
           <th>Proveedor</th>
           <th style="width: 8rem">Modulo</th>
           <th style="width: 6rem">Ref.</th>
@@ -64,7 +60,6 @@
         <tr [class.selected-row]="selectedRow?.bcomovId === item.bcomovId">
           <td>{{ getFecha(item.fecharegistro) }}</td>
           <td>{{ item.nroproveedor }}</td>
-          <td>{{ item.dni }}</td>
           <td>{{ item.proveedor }}</td>
           <td>{{ item.modulo }}</td>
           <td>{{ item.nroreferencia }}</td>
@@ -111,12 +106,6 @@
           <div class="p-field">
             <label>Proveedor</label>
             <input pInputText [value]="selectedRow.proveedor" disabled readonly styleClass="w-full" />
-          </div>
-        </div>
-        <div class="p-col-12 p-md-4">
-          <div class="p-field">
-            <label>DNI</label>
-            <input pInputText [value]="selectedRow.dni" disabled readonly styleClass="w-full" />
           </div>
         </div>
         <div class="p-col-12 p-md-4">

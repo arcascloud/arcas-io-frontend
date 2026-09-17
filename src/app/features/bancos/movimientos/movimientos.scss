@@ -1,0 +1,129 @@
+/* ═══════════════ Layout manager 2 columnas ═══════════════ */
+.page {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+
+  a { margin-top: -1.75rem; }
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+.manager-layout {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: 1.25rem;
+  align-items: start;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col-izq {
+  min-width: 0;
+  margin-top: 1.25rem;
+}
+
+.col-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text);
+  margin-bottom: 0.75rem;
+}
+
+.col-der {
+  min-width: 0;
+  margin-top: -3.75rem;
+
+  .col-der-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    margin-top: 3px;
+    padding: 0.75rem 1rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 0.5rem;
+  }
+}
+
+.card {
+   margin-top: -2.25rem;
+
+}
+
+/* ═══════════════ Fila seleccionada ═══════════════ */
+.row-seleccionada {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+.row-anulada {
+  opacity: 0.5;
+}
+
+.group-header {
+  background: var(--c-surface-ground) !important;
+  font-weight: 700;
+  color: var(--c-text);
+  padding: 0.6rem 1rem !important;
+}
+
+/* ═══════════════ Estado vacío ═══════════════ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  span {
+    font-size: 0.9rem;
+  }
+}
+
+/* ═══════════════ Utilities ═══════════════ */
+.font-bold {
+  font-weight: 700;
+}
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+}

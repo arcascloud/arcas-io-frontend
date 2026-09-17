@@ -1,0 +1,302 @@
+<p-toast />
+
+<!-- ═══ Dialog Confirmación ═══ -->
+<p-dialog [visible]="dialogConfirmVisible()" (visibleChange)="dialogConfirmVisible.set($event)"
+  header="Confirmar emisión de cheques" [modal]="true" [draggable]="false" [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" styleClass="w-full max-w-30rem">
+  <div class="flex flex-column gap-3 pt-2">
+    <p><i class="pi pi-exclamation-triangle text-yellow-500 mr-2"></i>¿Confirmar emisión?</p>
+    <pre style="white-space: pre-wrap; font-size: 0.85rem; margin: 0;">{{ confirmMessage() }}</pre>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary"
+      (onClick)="cancelarConfirmacion()" />
+    <p-button size="small" label="Emitir" icon="pi pi-check" variant="text" [raised]="true" [rounded]="true"
+      severity="success" [loading]="emitando()" (onClick)="aceptarConfirmacion()" />
+  </ng-template>
+</p-dialog>
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Emisión de Cheques</h1>
+      <p class="page-subtitle">Pago consolidado a proveedores</p>
+    </div>
+    <div class="flex gap-2">
+      <a routerLink="/bancos/cheques/particulares">
+        <p-button label="Cheque a Particular" icon="pi pi-user" size="small" variant="text" severity="secondary" [rounded]="true" />
+      </a>
+      <a routerLink="/bancos/cheques/reimpresionchq">
+        <p-button label="Reimpresión de Cheques" icon="pi pi-print" size="small" variant="text" severity="secondary" [rounded]="true" />
+      </a>
+    </div>
+  </header>
+
+  <!-- ═══ PASO 1: Seleccionar cuenta ═══ -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Cuenta Bancaria Origen <span class="req">*</span></label>
+            <p-select [options]="cuentas()" formControlName="bcoctasId"
+              optionLabel="nrocuenta" optionValue="bcoctasId" placeholder="Seleccionar cuenta..."
+              pSize="small" styleClass="w-full" appendTo="body"
+              (onChange)="onCuentaChange($event)">
+              <ng-template let-cuenta pTemplate="selectedItem">
+                <div>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</div>
+              </ng-template>
+              <ng-template let-cuenta pTemplate="item">
+                <div>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</div>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-col-6">
+          @if (cuentaSeleccionada()) {
+            <div class="cuenta-info">
+              <div class="campo">
+                <label>Banco</label>
+                <div class="campo-valor">{{ bancoNombre(cuentaSeleccionada()!.bancoId) }}</div>
+              </div>
+              <div class="campo">
+                <label>Cuenta</label>
+                <div class="campo-valor">{{ cuentaSeleccionada()!.nrocuenta }}</div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PASO 2: Facturas pendientes ═══ -->
+  @if (cuentaSeleccionada()) {
+    <div class="card mb-3">
+      <div class="flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Facturas Pendientes de Pago</h5>
+        <div class="flex gap-2 align-items-center">
+          <input pInputText placeholder="Buscar proveedor..." [(ngModel)]="busqueda" pSize="small"
+            style="width: 250px" />
+        </div>
+      </div>
+
+      <p-table [value]="facturas()" [loading]="cargando()" size="small"
+        [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        [globalFilterFields]="['proveedorNombre', 'nroreferencia', 'codproveedor']">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 3rem" class="text-center">
+              <input type="checkbox" (change)="toggleTodas($event)" />
+            </th>
+            <th>Proveedor</th>
+            <th>Nro. Factura</th>
+            <th>Fecha</th>
+            <th style="width: 10rem" class="text-right">Total</th>
+            <th style="width: 8rem" class="text-right">Pagado</th>
+            <th style="width: 10rem" class="text-right">Saldo</th>
+            <th style="width: 10rem" class="text-right">Monto a Pagar</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-factura>
+          <tr [class.row-seleccionada]="factura._selected" style="cursor: pointer">
+            <td class="text-center" (click)="toggleFactura(factura)">
+              <input type="checkbox" [checked]="factura._selected" />
+            </td>
+            <td (click)="toggleFactura(factura)" class="font-bold">{{ factura.proveedorNombre }}</td>
+            <td (click)="toggleFactura(factura)">{{ factura.nroreferencia }}</td>
+            <td (click)="toggleFactura(factura)">{{ formatFecha(factura.fecha) }}</td>
+            <td (click)="toggleFactura(factura)" class="text-right">{{ formatCurrency(factura.total) }}</td>
+            <td (click)="toggleFactura(factura)" class="text-right text-muted">{{ formatCurrency(factura.totalPagado || 0) }}</td>
+            <td (click)="toggleFactura(factura)" class="text-right font-bold">{{ formatCurrency(factura.saldo || factura.total) }}</td>
+            <td class="text-right" (click)="$event.stopPropagation()">
+              <p-inputNumber [size]="10" [min]="0.01" [max]="factura.saldo || factura.total" mode="currency" currency="HNL"
+                [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
+                [ngModel]="factura._montoPago" (ngModelChange)="onMontoPagoChange(factura, $event)"
+                [disabled]="!factura._selected" [inputStyle]="{ width: '100%', textAlign: 'right' }" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="text-center p-3">No hay facturas pendientes de pago.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ═══ PASO 3: Resumen y emitir ═══ -->
+    @if (facturasSeleccionadas.length > 0) {
+      <div class="card mb-3">
+        <h5 class="mb-3">Resumen de Pago</h5>
+        <p-table [value]="proveedoresSeleccionados" size="small">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Proveedor</th>
+              <th style="width: 5rem" class="text-center">Facturas</th>
+              <th style="width: 10rem" class="text-right">Total a Pagar</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-grp>
+            <tr>
+              <td class="font-bold">{{ grp.proveedorNombre }}</td>
+              <td class="text-center">{{ grp.facturas.length }}</td>
+              <td class="text-right font-bold text-primary">{{ formatCurrency(grp.total) }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="summary">
+            <div class="flex justify-content-end align-items-center gap-3 p-2">
+              <span class="font-bold">Total General:</span>
+              <span class="text-xl font-bold text-primary">{{ formatCurrency(totalSeleccionado) }}</span>
+            </div>
+          </ng-template>
+        </p-table>
+
+        <div class="form-actions">
+          <p-button size="small" label="Emitir Cheques" icon="pi pi-check-circle" severity="success"
+            variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
+            (click)="confirmarEmision()" />
+        </div>
+      </div>
+    }
+
+    <!-- ═══ Cheques generados ═══ -->
+    @if (chequesGenerados().length > 0) {
+      <div class="card mb-3">
+        <h5 class="mb-3">Cheques Emitidos</h5>
+        <p-table [value]="chequesGenerados()" size="small">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Nro. Cheque</th>
+              <th>Beneficiario</th>
+              <th style="width: 10rem" class="text-right">Importe</th>
+              <th style="width: 6rem" class="text-center">Imprimir</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-cheque>
+            <tr>
+              <td class="font-bold">{{ cheque.nrochq }}</td>
+              <td>{{ cheque.proveedor }}</td>
+              <td class="text-right font-bold">{{ formatCurrency(cheque.importe) }}</td>
+              <td class="text-center">
+                <p-button icon="pi pi-print" size="small" variant="text" [rounded]="true" severity="secondary"
+                  pTooltip="Imprimir cheque" (click)="imprimirCheque(cheque)" />
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    }
+  } @else {
+    <div class="empty-state">
+      <i class="pi pi-wallet"></i>
+      <span>Seleccioná una cuenta bancaria para emitir cheques</span>
+    </div>
+  }
+</section>
+
+<!-- ═══ Dialog Impresión de Cheque ═══ -->
+@if (mostrarImpresion() && chequeAImprimir()) {
+  <div class="overlay-impresion" (click)="cerrarImpresion()">
+    <div class="cheque-container" (click)="$event.stopPropagation()">
+      <div class="cheque-actions no-print">
+        <p-button icon="pi pi-print" size="small" label="Imprimir" severity="success"
+          variant="text" [raised]="true" [rounded]="true" (click)="windowPrint()" />
+        <p-button icon="pi pi-times" size="small" severity="secondary"
+          variant="text" [rounded]="true" (click)="cerrarImpresion()" />
+      </div>
+
+      <!-- ═══ CHEQUE (sección superior) ═══ -->
+      <div class="cheque-seccion">
+        <div class="cheque-header">
+          <div class="cheque-banco">{{ bancoNombre(cuentaSeleccionada()!.bancoId) }}</div>
+          <div class="cheque-nro">Cheque N.° {{ chequeAImprimir()!.nrochq }}</div>
+        </div>
+
+        <div class="cheque-fecha">{{ fechaHoy }}</div>
+
+        <div class="cheque-pague-a">
+          <span class="cheque-label">PÁGUESE A LA ORDEN DE:</span>
+          <div class="cheque-beneficiario">{{ chequeAImprimir()!.proveedor }}</div>
+        </div>
+
+        <div class="cheque-importe-fila">
+          <div class="cheque-importe-letras">
+            <span class="cheque-label">LA CANTIDAD DE:</span>
+            <div class="cheque-texto">{{ numeroALetrasValor(chequeAImprimir()!.importe) }}</div>
+          </div>
+          <div class="cheque-importe-numero">
+            <span class="cheque-label">IMPORTE:</span>
+            <div class="cheque-monto">{{ formatCurrency(chequeAImprimir()!.importe) }}</div>
+          </div>
+        </div>
+
+        <div class="cheque-concepto">
+          <span class="cheque-label">CONCEPTO:</span>
+          <div>{{ chequeAImprimir()!.concepto || 'Pago a proveedor por facturas' }}</div>
+        </div>
+
+        <div class="cheque-firmas">
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Cédula / Identidad</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Microperforación ═══ -->
+      <div class="cheque-perforacion"></div>
+
+      <!-- ═══ VOUCHER (sección inferior) ═══ -->
+      <div class="voucher-seccion">
+        <div class="voucher-header">
+          <div class="voucher-titulo">COMPROBANTE DE PAGO</div>
+          <div class="voucher-nro">Chq N.° {{ chequeAImprimir()!.nrochq }}</div>
+        </div>
+
+        <div class="voucher-fecha">{{ fechaHoy }}</div>
+
+        <div class="voucher-campos">
+          <div class="voucher-campo">
+            <span class="voucher-label">Beneficiario:</span>
+            <span>{{ chequeAImprimir()!.proveedor }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Importe:</span>
+            <span class="font-bold">{{ formatCurrency(chequeAImprimir()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">En letras:</span>
+            <span class="voucher-texto-chico">{{ numeroALetrasValor(chequeAImprimir()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Concepto:</span>
+            <span>{{ chequeAImprimir()!.concepto || 'Pago a proveedor por facturas' }}</span>
+          </div>
+        </div>
+
+        <div class="voucher-firmas">
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Recibido Conforme</div>
+          </div>
+        </div>
+
+        <div class="voucher-footer">
+          <div>Empresa: ARCAS SOFTWARE S.A. de C.V.</div>
+          <div>Cuenta: {{ cuentaSeleccionada()!.nrocuenta }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

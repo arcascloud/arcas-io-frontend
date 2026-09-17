@@ -1,0 +1,186 @@
+<p-toast />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Reimpresión de Cheques</h1>
+      <p class="page-subtitle">Consultar e imprimir cheques emitidos</p>
+    </div>
+    <a routerLink="/bancos/cheques">
+      <p-button label="Volver a Emisión" icon="pi pi-arrow-left" size="small" variant="text" severity="secondary" [rounded]="true" />
+    </a>
+  </header>
+
+  <!-- ═══ Filtros ═══ -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Cuenta Bancaria</label>
+            <p-select [options]="cuentas()" [(ngModel)]="cuentaFiltro"
+              optionValue="bcoctasId" placeholder="Todas las cuentas"
+              pSize="small" styleClass="w-full" appendTo="body" [showClear]="true"
+              (onChange)="onFiltroChange()">
+              <ng-template let-cuenta pTemplate="selectedItem">
+                <span>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</span>
+              </ng-template>
+              <ng-template let-cuenta pTemplate="item">
+                <span>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</span>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Lista de cheques ═══ -->
+  <div class="card mb-3">
+    <p-table [value]="cheques()" [loading]="cargando()" size="small"
+      [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 8rem">Nro. Cheque</th>
+          <th>Fecha</th>
+          <th>Beneficiario</th>
+          <th style="width: 10rem" class="text-right">Importe</th>
+          <th style="width: 6rem" class="text-center">Estado</th>
+          <th style="width: 6rem" class="text-center">Acción</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-cheque>
+        <tr [class.row-anulada]="cheque.sn_doc_anulado === 'S'">
+          <td class="font-bold">{{ cheque.nrochq }}</td>
+          <td>{{ formatFecha(cheque.fecharegistro) }}</td>
+          <td>{{ beneficiarioDe(cheque) }}</td>
+          <td class="text-right font-bold">{{ formatCurrency(cheque.importe) }}</td>
+          <td class="text-center">
+            @if (cheque.sn_doc_anulado === 'S') {
+              <p-tag value="Anulado" severity="danger" styleClass="tag-sm" />
+            } @else {
+              <p-tag value="Activo" severity="success" styleClass="tag-sm" />
+            }
+          </td>
+          <td class="text-center">
+            @if (cheque.sn_doc_anulado !== 'S') {
+              <p-button icon="pi pi-print" size="small" variant="text" [rounded]="true" severity="secondary"
+                pTooltip="Reimprimir" (click)="imprimirCheque(cheque)" />
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+            <td colspan="6" class="text-center p-3">No hay cheques emitidos.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</section>
+
+<!-- ═══ Dialog Impresión de Cheque ═══ -->
+@if (mostrarImpresion() && chequeSeleccionado()) {
+  <div class="overlay-impresion" (click)="cerrarImpresion()">
+    <div class="cheque-container" (click)="$event.stopPropagation()">
+      <div class="cheque-actions no-print">
+        <p-button icon="pi pi-print" size="small" label="Imprimir" severity="success"
+          variant="text" [raised]="true" [rounded]="true" (click)="windowPrint()" />
+        <p-button icon="pi pi-times" size="small" severity="secondary"
+          variant="text" [rounded]="true" (click)="cerrarImpresion()" />
+      </div>
+
+      <!-- ═══ CHEQUE (sección superior) ═══ -->
+      <div class="cheque-seccion">
+        <div class="cheque-header">
+          <div class="cheque-banco">{{ chequeSeleccionado()!.bancoNombre }}</div>
+          <div class="cheque-nro">Cheque N.° {{ chequeSeleccionado()!.nrochq }}</div>
+        </div>
+
+        <div class="cheque-fecha">{{ fechaHoy }}</div>
+
+        <div class="cheque-pague-a">
+          <span class="cheque-label">PÁGUESE A LA ORDEN DE:</span>
+          <div class="cheque-beneficiario">{{ beneficiario }}</div>
+        </div>
+
+        <div class="cheque-importe-fila">
+          <div class="cheque-importe-letras">
+            <span class="cheque-label">LA CANTIDAD DE:</span>
+            <div class="cheque-texto">{{ numeroALetrasValor(chequeSeleccionado()!.importe) }}</div>
+          </div>
+          <div class="cheque-importe-numero">
+            <span class="cheque-label">IMPORTE:</span>
+            <div class="cheque-monto">{{ formatCurrency(chequeSeleccionado()!.importe) }}</div>
+          </div>
+        </div>
+
+        <div class="cheque-concepto">
+          <span class="cheque-label">CONCEPTO:</span>
+          <div>{{ chequeSeleccionado()!.concepto }}</div>
+        </div>
+
+        <div class="cheque-firmas">
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Cédula / Identidad</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Microperforación ═══ -->
+      <div class="cheque-perforacion"></div>
+
+      <!-- ═══ VOUCHER (sección inferior) ═══ -->
+      <div class="voucher-seccion">
+        <div class="voucher-header">
+          <div class="voucher-titulo">COMPROBANTE DE PAGO</div>
+          <div class="voucher-nro">Chq N.° {{ chequeSeleccionado()!.nrochq }}</div>
+        </div>
+
+        <div class="voucher-fecha">{{ fechaHoy }}</div>
+
+        <div class="voucher-campos">
+          <div class="voucher-campo">
+            <span class="voucher-label">Beneficiario:</span>
+            <span>{{ beneficiario }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Importe:</span>
+            <span class="font-bold">{{ formatCurrency(chequeSeleccionado()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">En letras:</span>
+            <span class="voucher-texto-chico">{{ numeroALetrasValor(chequeSeleccionado()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Concepto:</span>
+            <span>{{ chequeSeleccionado()!.concepto }}</span>
+          </div>
+        </div>
+
+        <div class="voucher-firmas">
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Recibido Conforme</div>
+          </div>
+        </div>
+
+        <div class="voucher-footer">
+          <div>Empresa: ARCAS SOFTWARE S.A. de C.V.</div>
+          <div>Cuenta: {{ chequeSeleccionado()!.nrocuenta }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

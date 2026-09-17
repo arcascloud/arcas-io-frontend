@@ -1,0 +1,144 @@
+<p-toast />
+<p-confirmDialog />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Movimientos Bancarios</h1>
+      <p class="page-subtitle">Registro de depósitos, retiros, transferencias y pagos</p>
+    </div>
+    <a routerLink="/bancos/historial">
+      <p-button label="Historial de Movimientos" icon="pi pi-clock" size="small" variant="text" severity="secondary" [rounded]="true" />
+    </a>
+  </header>
+
+  <div class="manager-layout">
+    <!-- ═══ COLUMNA IZQUIERDA: Cuentas ═══ -->
+    <div class="col-izq">
+      <h3 class="col-title">Cuentas Bancarias</h3>
+      <p-table [value]="cuentas()" [loading]="cargando()" 
+      [paginator]="true" [rows]="10"
+        [rowsPerPageOptions]="[10, 25]" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        size="small" 
+        dataKey="bcoctasId"
+        rowGroupMode="subheader"
+        groupRowsBy="bancoId">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 40%">Cuenta</th>
+            <th style="width: 30%">Moneda</th>
+            <th style="width: 30%">Estado</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="groupheader" let-cuenta>
+          <tr>
+            <td colspan="3" class="font-bold group-header">
+              <i class="pi pi-building mr-2"></i>{{ bancoNombre(cuenta.bancoId) }}
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-cuenta>
+          <tr (click)="seleccionarCuenta(cuenta)"
+            [class.row-seleccionada]="cuentaSeleccionada()?.bcoctasId === cuenta.bcoctasId"
+            style="cursor: pointer">
+            <td>{{ cuenta.nrocuenta }}</td>
+            <td>{{ monedaNombre(cuenta.monedaId) }}</td>
+            <td class="text-center">
+              <p-tag [value]="cuenta.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+                [severity]="cuenta.sn_activo === 'S' ? 'success' : 'danger'" styleClass="tag-sm" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="3" class="text-center p-3">No hay cuentas registradas.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div> <!-- fin-->
+
+    <!-- ═══ COLUMNA DERECHA: Movimientos ═══ -->
+    <div class="col-der">
+      @if (cuentaSeleccionada()) {
+        <div class="col-der-header">
+          <div class="flex align-items-center gap-2">
+            <p-button icon="pi pi-arrow-left" text size="small" rounded (click)="volver()" />
+            <div>
+              <h3 class="page-title" style="font-size: 1rem; margin: 0">Cuenta: {{ cuentaSeleccionada()!.nrocuenta }} - {{ bancoNombre(cuentaSeleccionada()!.bancoId) }} - {{ monedaNombre(cuentaSeleccionada()!.monedaId) }}</h3>
+              <p class="page-subtitle" style="margin: 0">Movimientos registrados</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="card mb-1">
+          <h5 class="mb-3">{{ editando() ? 'Editar Movimiento' : 'Nuevo Movimiento' }}</h5>
+          <div class="p-fluid" [formGroup]="form">
+            <div class="p-grid">
+              <div class="p-col-12 p-col-4">
+                <div class="campo">
+                  <label>Tipo <span class="req">*</span></label>
+                  <p-select formControlName="tipomov" [options]="TIPO_MOV_OPTIONS"
+                    optionLabel="label" optionValue="value" size="small" styleClass="w-full" appendTo="body" />
+                </div>
+              </div>
+              <div class="p-col-12 p-col-4">
+                <div class="campo">
+                  <label>D/C <span class="req">*</span></label>
+                  <p-select formControlName="dc_debitocredito" [options]="DC_OPTIONS"
+                    optionLabel="label" optionValue="value" size="small" styleClass="w-full" appendTo="body" />
+                </div>
+              </div>
+              <div class="p-col-12">
+                <div class="campo">
+                  <label>Nro. Referencia</label>
+                  <input pInputText formControlName="nroreferencia" pSize="small" placeholder="Número de referencia" fluid />
+                </div>
+              </div>
+              <div class="p-col-12">
+                <div class="campo">
+                  <label>Concepto</label>
+                  <input pInputText formControlName="concepto" pSize="small" placeholder="Descripción del movimiento" fluid />
+                </div>
+              </div>
+              <div class="p-col-12 p-col-4">
+                <div class="campo">
+                  <label>Factor Cambio</label>
+                  <p-inputNumber formControlName="factordecambio" [min]="0" [minFractionDigits]="2"
+                    size="small" 
+                    [locale]="'es-HN'"
+                    styleClass="w-full" [inputStyle]="{ 'width': '100%' }" />
+                </div>
+              </div>
+               <div class="p-col-12 p-col-4">
+                <div class="campo">
+                  <label>Importe <span class="req">*</span></label>
+                  <p-inputNumber 
+                  
+                  formControlName="importe" [min]="0.01" mode="currency" currency="HNL"
+                    [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    size="small" styleClass="w-full" [inputStyle]="{ 'width': '100%' }" [useGrouping]="true" />
+                </div>
+              </div>
+            
+             
+              <div class="p-col-12">
+                <div class="form-actions">
+                  @if (editando()) {
+                    <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text"
+                      [rounded]="true" (click)="limpiarForm()" />
+                  }
+                  <p-button size="small" [label]="editando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check"
+                    severity="success" variant="text" [raised]="true" [rounded]="true"
+                    [loading]="guardando()" [disabled]="form.invalid" (click)="guardar()" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> <!-- fin card mb-1 -->
+      }
+    </div> <!-- fin columna derecha -->
+      
+  </div> <!-- fin manager-layout -->
+</section>

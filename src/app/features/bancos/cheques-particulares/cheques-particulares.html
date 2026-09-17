@@ -1,0 +1,167 @@
+<p-toast />
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Cheque a Particular / Empleado</h1>
+      <p class="page-subtitle">Emisión de cheques para personas no proveedoras</p>
+    </div>
+    <a routerLink="/bancos/cheques">
+      <p-button label="Volver a Cheques Proveedores" icon="pi pi-arrow-left" size="small" variant="text" severity="secondary" [rounded]="true" />
+    </a>
+  </header>
+
+  <!-- ═══ Formulario ═══ -->
+  <div class="card" [formGroup]="form">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Cuenta Bancaria Origen <span class="req">*</span></label>
+            <p-select [options]="cuentas()" formControlName="bcoctasId"
+              optionLabel="nrocuenta" optionValue="bcoctasId" placeholder="Seleccionar cuenta..."
+              pSize="small" styleClass="w-full" appendTo="body">
+              <ng-template let-cuenta pTemplate="selectedItem">
+                <div>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</div>
+              </ng-template>
+              <ng-template let-cuenta pTemplate="item">
+                <div>{{ cuenta.nrocuenta }} — {{ bancoNombre(cuenta.bancoId) }}</div>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Beneficiario <span class="req">*</span></label>
+            <input pInputText formControlName="beneficiario" placeholder="Nombre de la persona" pSize="small" />
+          </div>
+        </div>
+        <div class="p-col-12">
+          <div class="campo">
+            <label>Concepto / Motivo <span class="req">*</span></label>
+            <textarea pInputText formControlName="concepto" rows="2" placeholder="Ej: Pago por despido, gastos varios, etc." pSize="small" style="width:100%;resize:none"></textarea>
+          </div>
+        </div>
+        <div class="p-col-12 p-col-6">
+          <div class="campo">
+            <label>Importe <span class="req">*</span></label>
+            <p-inputNumber formControlName="importe" mode="currency" currency="HNL" [locale]="'es-HN'"
+              [minFractionDigits]="2" [maxFractionDigits]="2" [min]="0.01" pSize="small"
+              styleClass="w-full" [inputStyle]="{ width: '100%' }" />
+          </div>
+        </div>
+        <div class="p-col-12">
+          <div class="form-actions">
+            <p-button size="small" label="Emitir Cheque" icon="pi pi-check-circle" severity="success"
+              variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
+              [disabled]="form.invalid" (click)="emitir()" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Dialog Impresión de Cheque ═══ -->
+@if (mostrarImpresion() && chequeAImprimir()) {
+  <div class="overlay-impresion" (click)="cerrarImpresion()">
+    <div class="cheque-container" (click)="$event.stopPropagation()">
+      <div class="cheque-actions no-print">
+        <p-button icon="pi pi-print" size="small" label="Imprimir" severity="success"
+          variant="text" [raised]="true" [rounded]="true" (click)="windowPrint()" />
+        <p-button icon="pi pi-times" size="small" severity="secondary"
+          variant="text" [rounded]="true" (click)="cerrarImpresion()" />
+      </div>
+
+      <!-- ═══ CHEQUE ═══ -->
+      <div class="cheque-seccion">
+        <div class="cheque-header">
+          <div class="cheque-banco">{{ bancoNombre(cuentaSeleccionada()?.bancoId!) }}</div>
+          <div class="cheque-nro">Cheque N.° {{ chequeAImprimir()!.nrochq }}</div>
+        </div>
+
+        <div class="cheque-fecha">{{ fechaHoy }}</div>
+
+        <div class="cheque-pague-a">
+          <span class="cheque-label">PÁGUESE A LA ORDEN DE:</span>
+          <div class="cheque-beneficiario">{{ chequeAImprimir()!.proveedor }}</div>
+        </div>
+
+        <div class="cheque-importe-fila">
+          <div class="cheque-importe-letras">
+            <span class="cheque-label">LA CANTIDAD DE:</span>
+            <div class="cheque-texto">{{ numeroALetrasValor(chequeAImprimir()!.importe) }}</div>
+          </div>
+          <div class="cheque-importe-numero">
+            <span class="cheque-label">IMPORTE:</span>
+            <div class="cheque-monto">{{ formatCurrency(chequeAImprimir()!.importe) }}</div>
+          </div>
+        </div>
+
+        <div class="cheque-concepto">
+          <span class="cheque-label">CONCEPTO:</span>
+          <div>{{ chequeAImprimir()!.concepto }}</div>
+        </div>
+
+        <div class="cheque-firmas">
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="cheque-firma">
+            <div class="cheque-firma-linea"></div>
+            <div>Cédula / Identidad</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Microperforación ═══ -->
+      <div class="cheque-perforacion"></div>
+
+      <!-- ═══ VOUCHER ═══ -->
+      <div class="voucher-seccion">
+        <div class="voucher-header">
+          <div class="voucher-titulo">COMPROBANTE DE PAGO</div>
+          <div class="voucher-nro">Chq N.° {{ chequeAImprimir()!.nrochq }}</div>
+        </div>
+
+        <div class="voucher-fecha">{{ fechaHoy }}</div>
+
+        <div class="voucher-campos">
+          <div class="voucher-campo">
+            <span class="voucher-label">Beneficiario:</span>
+            <span>{{ chequeAImprimir()!.proveedor }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Importe:</span>
+            <span class="font-bold">{{ formatCurrency(chequeAImprimir()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">En letras:</span>
+            <span class="voucher-texto-chico">{{ numeroALetrasValor(chequeAImprimir()!.importe) }}</span>
+          </div>
+          <div class="voucher-campo">
+            <span class="voucher-label">Concepto:</span>
+            <span>{{ chequeAImprimir()!.concepto }}</span>
+          </div>
+        </div>
+
+        <div class="voucher-firmas">
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Firma Autorizada</div>
+          </div>
+          <div class="voucher-firma">
+            <div class="voucher-firma-linea"></div>
+            <div>Recibido Conforme</div>
+          </div>
+        </div>
+
+        <div class="voucher-footer">
+          <div>Empresa: ARCAS SOFTWARE S.A. de C.V.</div>
+          <div>Cuenta: {{ cuentaSeleccionada()?.nrocuenta }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

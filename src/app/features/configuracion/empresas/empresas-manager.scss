@@ -16,6 +16,7 @@
   flex-direction: column;
   background: var(--c-bg);
   overflow: hidden;
+  order: 1;
 }
 
 .right-column {
@@ -26,6 +27,7 @@
   display: flex;
   flex-direction: column;
   background: var(--c-surface);
+  order: 0;
 }
 
 // ===== Empty states =====

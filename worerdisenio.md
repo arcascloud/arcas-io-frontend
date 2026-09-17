@@ -1,3 +1,15 @@
+# Instructions for PrimeNG Component Standards
+
+Whenever you create or modify Angular components using **PrimeNG v18+**, strictly adhere to the following template guidelines and attributes for each UI control:
+
+## 1. Select / Dropdown Controls (`p-select`)
+* Always use `styleClass="w-full"` for full-width layout.
+* Always append to the document body using `[appendTo]="'body'"`.
+* Include a descriptive `placeholder`.
+
+```html
+<p-select placeholder="Seleccionar..." styleClass="w-full" [appendTo]="'body'" />
+
 # Eliminar espacios entre código y descripción en td
 
 **Session ID:** ses_fba835378ffeOh0zahmgqIadgr
@@ -3434,4 +3446,5 @@ hola
 ## Assistant (Build · MiMo V2.5 Free)
 
 ---
+
 

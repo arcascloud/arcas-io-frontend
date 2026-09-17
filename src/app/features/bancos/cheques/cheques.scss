@@ -1,0 +1,387 @@
+/* ═══════════════ Layout general ═══════════════ */
+.page {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+.campo {
+  margin-bottom: 0.75rem;
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .campo-valor {
+    font-weight: 600;
+    color: var(--c-text);
+    font-size: 0.9rem;
+  }
+}
+
+.cuenta-info {
+  display: flex;
+  gap: 2rem;
+}
+
+.req {
+  color: var(--c-error);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-primary {
+  color: var(--c-primary);
+}
+
+/* ═══════════════ Fila seleccionada ═══════════════ */
+.row-seleccionada {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* ═══════════════ Estado vacío ═══════════════ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  span {
+    font-size: 0.9rem;
+  }
+}
+
+/* ═══════════════ Overlay impresión ═══════════════ */
+.overlay-impresion {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.cheque-container {
+  background: white;
+  width: 21.59cm; /* Carta width */
+  max-width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border-radius: 0.25rem;
+  margin: 1rem 0;
+}
+
+.cheque-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+  background: #fafafa;
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+
+/* ═══════════════ CHEQUE (sección superior) ═══════════════ */
+.cheque-seccion {
+  padding: 1.5rem 2rem;
+  border-bottom: 2px dashed #ccc;
+}
+
+.cheque-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cheque-banco {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  text-transform: uppercase;
+}
+
+.cheque-nro {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.cheque-fecha {
+  text-align: right;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  color: #000;
+}
+
+.cheque-pague-a {
+  margin-bottom: 1.25rem;
+}
+
+.cheque-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: #000;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.cheque-beneficiario {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #000;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.cheque-importe-fila {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.cheque-importe-letras {
+  .cheque-texto {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #000;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.25rem;
+    margin-top: 0.25rem;
+    min-height: 1.5rem;
+  }
+}
+
+.cheque-importe-numero {
+  text-align: right;
+
+  .cheque-monto {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    border: 2px solid #1a1a1a;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    margin-top: 0.25rem;
+    min-width: 8rem;
+    text-align: center;
+  }
+}
+
+.cheque-concepto {
+  margin-bottom: 2rem;
+
+  div {
+    font-size: 0.8rem;
+    color: #000;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.25rem;
+    margin-top: 0.25rem;
+  }
+}
+
+.cheque-firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.cheque-firma {
+  text-align: center;
+
+  .cheque-firma-linea {
+    border-bottom: 1px solid #333;
+    margin-bottom: 0.5rem;
+    height: 2rem;
+  }
+
+  div:last-child {
+    font-size: 0.75rem;
+    color: #666;
+  }
+}
+
+/* ═══════════════ Microperforación ═══════════════ */
+.cheque-perforacion {
+  border-top: 2px dashed #ccc;
+  border-bottom: 2px dashed #ccc;
+  height: 0.5rem;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 4px,
+    #f0f0f0 4px,
+    #f0f0f0 8px
+  );
+}
+
+/* ═══════════════ VOUCHER (sección inferior) ═══════════════ */
+.voucher-seccion {
+  padding: 1.5rem 2rem;
+}
+
+.voucher-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.voucher-titulo {
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #000;
+}
+
+.voucher-nro {
+  font-size: 0.8rem;
+  color: #000;
+}
+
+.voucher-fecha {
+  text-align: right;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+.voucher-campos {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.voucher-campo {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #000;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.25rem;
+
+  .voucher-label {
+    font-weight: 600;
+    min-width: 100px;
+    color: #000;
+  }
+
+  .voucher-texto-chico {
+    font-size: 0.7rem;
+  }
+}
+
+.voucher-firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.voucher-firma {
+  text-align: center;
+
+  .voucher-firma-linea {
+    border-bottom: 1px solid #333;
+    margin-bottom: 0.5rem;
+    height: 1.5rem;
+  }
+
+  div:last-child {
+    font-size: 0.7rem;
+    color: #666;
+  }
+}
+
+.voucher-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+  font-size: 0.7rem;
+  color: #000;
+}
+
+/* ═══════════════ Print styles ═══════════════ */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .overlay-impresion {
+    position: static;
+    background: none;
+    padding: 0;
+  }
+
+  .cheque-container {
+    box-shadow: none;
+    margin: 0;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .cheque-container,
+  .cheque-container * {
+    visibility: visible;
+  }
+}

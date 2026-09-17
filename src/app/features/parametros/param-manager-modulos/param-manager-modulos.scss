@@ -1,3 +1,4 @@
+// ── Contexto ──────────────────────────────────────────
 .ctx-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -24,17 +25,83 @@
   }
 }
 
-.toolbar-det {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.75rem;
+// ── Layout 2 columnas ─────────────────────────────────
+.content-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
 }
 
+.col-left {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.col-right {
+  min-width: 0;
+}
+
+// ── Panel formulario derecha ──────────────────────────
+.form-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  position: sticky;
+  top: 1rem;
+}
+
+.form-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--c-border);
+
+  h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+}
+
+.form-panel-body {
+  padding: 1rem;
+
+  .p-field {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--c-text-muted);
+      margin-bottom: 0.3rem;
+    }
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--c-border);
+}
+
+// ── Tags ──────────────────────────────────────────────
 .tag-sm {
   font-size: 0.7rem;
   padding: 0.15rem 0.5rem;
 }
 
+// ── Fieldsets ─────────────────────────────────────────
 ::ng-deep .p-fieldset {
   margin-bottom: 1rem;
 }
@@ -42,4 +109,28 @@
 ::ng-deep .p-fieldset-legend {
   font-weight: 600;
   font-size: 0.95rem;
+}
+
+// ── Tabla: fila seleccionada ──────────────────────────
+::ng-deep .p-datatable .p-datatable-tbody > tr {
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--c-surface-ground);
+  }
+
+  &.row-selected {
+    background: var(--c-primary) !important;
+    color: #fff !important;
+
+    td {
+      color: #fff !important;
+    }
+
+    .p-tag {
+      background: rgba(255, 255, 255, 0.2) !important;
+      color: #fff !important;
+    }
+  }
 }

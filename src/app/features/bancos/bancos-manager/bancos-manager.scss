@@ -17,13 +17,14 @@
 
 .col-der {
   min-width: 0;
-  margin-top: -0.5rem;
+  margin-top: -3.25rem;
 
   .col-der-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.75rem;
+    margin-top: 5px;
     padding: 0.75rem 1rem;
     background: var(--c-surface);
     border: 1px solid var(--c-border);
@@ -62,4 +63,29 @@
 /* ═══════════════ Utilities ═══════════════ */
 .font-bold {
   font-weight: 700;
+}
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+.accordion-tab-content {
+  padding: 0.5rem 0;
+}
+
+.empty-state-sm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: var(--c-text-muted);
+  font-size: 0.85rem;
+
+  i {
+    font-size: 1.5rem;
+    opacity: 0.3;
+  }
 }

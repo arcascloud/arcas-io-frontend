@@ -40,7 +40,6 @@ export class CxpHistoricoManager implements OnInit {
   private router = inject(Router);
 
   // ===== FILTROS =====
-  dni = signal('');
   proveedor = signal('');
   fechaDesde = signal<string | null>(null);
   fechaHasta = signal<string | null>(null);
@@ -71,7 +70,7 @@ export class CxpHistoricoManager implements OnInit {
   private cargarHistorico() {
     this.cargando.set(true);
     this.service.getHistoricoConFiltros(
-      this.dni(),
+      '',
       this.proveedor(),
       this.fechaDesde(),
       this.fechaHasta(),
@@ -99,7 +98,6 @@ export class CxpHistoricoManager implements OnInit {
   }
 
   limpiarFiltros() {
-    this.dni.set('');
     this.proveedor.set('');
     this.fechaDesde.set(null);
     this.fechaHasta.set(null);

@@ -56,194 +56,175 @@
           [appendTo]="'body'"
         />
       </div>
-
-      <!-- Usuario -->
-      <div class="ctx-field">
-        <label>Usuario</label>
-        <input pInputText [value]="usuarioActual()" readonly size="small" class="w-full" />
-      </div>
     </div>
   </p-fieldset>
 
-  <!-- ── Detalle ─────────────────────────────────────── -->
-  <p-fieldset legend="Parámetros" [toggleable]="true">
-    <div class="toolbar-det">
-      <p-button
-        label="Nuevo"
-        icon="pi pi-plus"
+  <!-- ── Contenido: 2 columnas ──────────────────────── -->
+  <div class="content-2col">
+    <!-- Columna izquierda: Tabla -->
+    <div class="col-left">
+      <p-table
+        [value]="parametros()"
+        [loading]="cargando()"
+        [paginator]="true"
+        [rows]="15"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
         size="small"
-        [raised]="true"
-        [rounded]="true"
-        severity="success"
-        variant="text"
-        (onClick)="nuevo()"
-        [disabled]="!empresaId() || !moduloId()"
-      />
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Campo</th>
+            <th style="width: 6rem">Tipo</th>
+            <th>Valor</th>
+            <th style="width: 5rem" class="text-center">Estado</th>
+            <th style="width: 3rem" class="text-center"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-param>
+          <tr
+            (click)="onRowClick(param)"
+            [class.row-selected]="selectedParam()?.ttipoparametrosId === param.ttipoparametrosId"
+          >
+            <td class="font-bold">{{ param.field }}</td>
+            <td>
+              <p-tag [value]="tipoLabel(param.tipo)" [severity]="tipoSeverity(param.tipo)" styleClass="tag-sm" />
+            </td>
+            <td>{{ param.valor }}</td>
+            <td class="text-center">
+              <p-tag [value]="estadoLabel(param.sn_activo)" [severity]="estadoSeverity(param.sn_activo)" styleClass="tag-sm" />
+            </td>
+            <td class="text-center">
+              <p-button
+                icon="pi pi-trash"
+                size="small"
+                variant="text"
+                [rounded]="true"
+                severity="danger"
+                (onClick)="eliminar(param); $event.stopPropagation()"
+              />
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="empty">
+          <tr>
+            <td colspan="5" class="text-center p-4">
+              @if (!empresaId() || !moduloId()) {
+                Seleccione empresa y módulo para ver los parámetros.
+              } @else {
+                No hay parámetros para este módulo.
+              }
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
     </div>
 
-    <p-table
-      [value]="parametros()"
-      [loading]="cargando()"
-      [paginator]="true"
-      [rows]="15"
-      [rowsPerPageOptions]="[10, 25, 50]"
-      [showCurrentPageReport]="true"
-      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-      size="small"
-      [tableStyle]="{ 'min-width': '40rem' }"
-    >
-      <ng-template pTemplate="header">
-        <tr>
-          <th style="width: 10rem">Campo</th>
-          <th style="width: 8rem">Tipo</th>
-          <th>Valor</th>
-          <th style="width: 6rem" class="text-center">Estado</th>
-          <th style="width: 4rem" class="text-center"></th>
-          <th style="width: 4rem" class="text-center"></th>
-        </tr>
-      </ng-template>
-
-      <ng-template pTemplate="body" let-param>
-        <tr>
-          <td class="font-bold">{{ param.field }}</td>
-          <td>
-            <p-tag [value]="tipoLabel(param.tipo)" [severity]="tipoSeverity(param.tipo)" styleClass="tag-sm" />
-          </td>
-          <td>{{ param.valor }}</td>
-          <td class="text-center">
-            <p-tag [value]="estadoLabel(param.sn_activo)" [severity]="estadoSeverity(param.sn_activo)" styleClass="tag-sm" />
-          </td>
-          <td class="text-center">
+    <!-- Columna derecha: Formulario -->
+    <div class="col-right">
+      <div class="form-panel">
+        <div class="form-panel-header">
+          <h3>{{ selectedParam() ? 'Editar Parámetro' : 'Nuevo Parámetro' }}</h3>
+          @if (selectedParam()) {
             <p-button
-              icon="pi pi-pencil"
+              icon="pi pi-times"
               size="small"
               variant="text"
               [rounded]="true"
               severity="secondary"
-              (onClick)="editar(param)"
+              (onClick)="limpiarSeleccion()"
+              pTooltip="Deseleccionar"
             />
-          </td>
-          <td class="text-center">
-            <p-button
-              icon="pi pi-trash"
-              size="small"
-              variant="text"
-              [rounded]="true"
-              severity="danger"
-              (onClick)="eliminar(param)"
-            />
-          </td>
-        </tr>
-      </ng-template>
+          }
+        </div>
 
-      <ng-template pTemplate="empty">
-        <tr>
-          <td colspan="6" class="text-center p-4">
-            @if (!empresaId() || !moduloId()) {
-              Seleccione empresa y módulo para ver los parámetros.
-            } @else {
-              No hay parámetros para este módulo.
-            }
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
-  </p-fieldset>
+        <div class="form-panel-body">
+          <div class="p-fluid" [formGroup]="form">
+            <!-- Campo -->
+            <div class="p-field">
+              <label>Campo</label>
+              <input
+                pInputText
+                class="w-full"
+                formControlName="field"
+                placeholder="Ej: nrocliente, bodegaId..."
+                [disabled]="editando()"
+              />
+            </div>
 
-  <!-- ── Dialog Editar/Nuevo ────────────────────────── -->
-  <p-dialog
-    [header]="editando() ? 'Editar Parámetro' : 'Nuevo Parámetro'"
-    [visible]="dialogVisible()"
-    (visibleChange)="dialogVisible.set($event)"
-    [modal]="true"
-    [draggable]="false"
-    [resizable]="false"
-    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
-    styleClass="w-full max-w-30rem"
-  >
-    <div class="flex flex-column gap-3 pt-2">
-      <!-- Campo -->
-      <div class="p-field">
-        <label>Campo</label>
-        <input
-          pInputText
-          class="w-full"
-          formControlName="field"
-          placeholder="Ej: nrocliente, bodegaId..."
-          [disabled]="editando()"
-        />
-      </div>
+            <!-- Tipo -->
+            <div class="p-field">
+              <label>Tipo</label>
+              <p-select
+                [options]="tipoOptions"
+                optionLabel="label"
+                optionValue="value"
+                formControlName="tipo"
+                styleClass="w-full"
+                [appendTo]="'body'"
+                size="small"
+              />
+            </div>
 
-      <!-- Tipo -->
-      <div class="p-field">
-        <label>Tipo</label>
-        <p-select
-          [options]="[
-            { label: 'Texto (STRING)', value: 'STRING' },
-            { label: 'Numérico (NUMBER)', value: 'NUMBER' }
-          ]"
-          optionLabel="label"
-          optionValue="value"
-          formControlName="tipo"
-          styleClass="w-full"
-          [appendTo]="'body'"
-          size="small"
-        />
-      </div>
+            <!-- Valor -->
+            <div class="p-field">
+              <label>Valor</label>
+              @if (form.get('tipo')?.value === 'NUMBER') {
+                <p-inputNumber
+                  formControlName="valor"
+                  [useGrouping]="false"
+                  styleClass="w-full"
+                  [inputStyle]="{ 'width': '100%' }"
+                />
+              } @else {
+                <input pInputText class="w-full" formControlName="valor" placeholder="Valor del parámetro" />
+              }
+            </div>
 
-      <!-- Valor -->
-      <div class="p-field">
-        <label>Valor</label>
-        @if (form.get('tipo')?.value === 'NUMBER') {
-          <p-inputNumber
-            formControlName="valor"
-            [useGrouping]="false"
-            styleClass="w-full"
-            [inputStyle]="{ 'width': '100%' }"
-          />
-        } @else {
-          <input pInputText class="w-full" formControlName="valor" placeholder="Valor del parámetro" />
-        }
-      </div>
+            <!-- Estado -->
+            <div class="p-field">
+              <label>Estado</label>
+              <p-select
+                [options]="estadoOptions"
+                optionLabel="label"
+                optionValue="value"
+                formControlName="sn_activo"
+                styleClass="w-full"
+                [appendTo]="'body'"
+                size="small"
+              />
+            </div>
 
-      <!-- Estado -->
-      <div class="p-field">
-        <label>Estado</label>
-        <p-select
-          [options]="[
-            { label: 'Activo', value: 'S' },
-            { label: 'Inactivo', value: 'N' }
-          ]"
-          optionLabel="label"
-          optionValue="value"
-          formControlName="sn_activo"
-          styleClass="w-full"
-          [appendTo]="'body'"
-          size="small"
-        />
+            <!-- Acciones -->
+            <div class="form-actions">
+              <p-button
+                size="small"
+                label="Cancelar"
+                rounded
+                variant="text"
+                severity="secondary"
+                (onClick)="limpiarSeleccion()"
+              />
+              <p-button
+                size="small"
+                [label]="editando() ? 'Actualizar' : 'Guardar'"
+                icon="pi pi-check"
+                variant="text"
+                [raised]="true"
+                [rounded]="true"
+                severity="success"
+                [loading]="guardando()"
+                [disabled]="form.invalid || !empresaId() || !moduloId()"
+                (onClick)="guardar()"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-  <ng-template pTemplate="footer">
-    <p-button
-      size="small"
-      label="Cancelar"
-      rounded
-      variant="text"
-      severity="secondary"
-      (onClick)="dialogVisible.set(false)"
-    />
-    <p-button
-      size="small"
-      label="Guardar"
-      icon="pi pi-check"
-      variant="text"
-      [raised]="true"
-      [rounded]="true"
-      severity="success"
-      [loading]="guardando()"
-      (onClick)="guardar()"
-    />
-  </ng-template>
-  </p-dialog>
+  </div>
 </section>
