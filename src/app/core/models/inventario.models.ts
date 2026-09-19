@@ -323,7 +323,8 @@ export interface CompraMae {
   impuesto: number;
   total: number;
   sn_pagada: 'S' | 'N';
-  sn_cotabilizada: 'S' | 'N';
+  sn_contabilizada: 'S' | 'N';
+  partidaId?: number;
   sn_anulada: 'S' | 'N';
   sn_procesada: 'S' | 'N';
   empresaId: number;

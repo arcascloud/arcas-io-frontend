@@ -293,7 +293,7 @@ export class ComprasManager implements OnInit {
       impuesto: 0,
       total: 0,
       sn_pagada: 'N',
-      sn_cotabilizada: 'N',
+      sn_contabilizada: 'N',
       sn_anulada: 'N',
       usuarioCreated: this.auth.currentUser()?.usuario || 'SYSTEM'
     } as CompraMae);

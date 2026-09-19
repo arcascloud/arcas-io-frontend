@@ -82,7 +82,7 @@
   <p-dialog [(visible)]="dialogVisible" [header]="esEdicion() ? 'Editar Partida' : 'Nueva Partida de Diario'"
             [modal]="true" [draggable]="false" [resizable]="false"
             [breakpoints]="{ '960px': '85vw', '640px': '95vw' }" styleClass="w-full max-w-50rem">
-    <div class="partida-form">
+    <div class="partida-form" [formGroup]="form">
       <!-- Datos de la Partida -->
       <div class="card mb-3">
         <h4 class="mb-2">Datos de la Partida</h4>

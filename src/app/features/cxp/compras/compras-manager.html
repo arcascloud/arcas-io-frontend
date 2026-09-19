@@ -43,6 +43,7 @@
         <th style="width: 6rem">Tipo</th>
         <th style="width: 6rem">Pagada</th>
         <th style="width: 6.5rem">Procesada</th>
+        <th style="width: 7rem">Contabilizada</th>
         <th style="width: 6rem">Estado</th>
         <th style="width: 8rem">Acciones</th>
       </tr>
@@ -73,6 +74,13 @@
           <p-tag
             [value]="row.sn_procesada === 'S' ? 'Sí' : 'No'"
             [severity]="row.sn_procesada === 'S' ? 'success' : 'warn'"
+            [style]="{'font-size':'0.75rem'}"
+          />
+        </td>
+        <td>
+          <p-tag
+            [value]="row.sn_contabilizada === 'S' ? 'Sí' : 'No'"
+            [severity]="row.sn_contabilizada === 'S' ? 'success' : 'warn'"
             [style]="{'font-size':'0.75rem'}"
           />
         </td>
