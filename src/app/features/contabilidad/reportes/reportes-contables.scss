@@ -1,0 +1,136 @@
+.page-container {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i { color: var(--c-primary); }
+  }
+}
+
+.resumen-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.resumen-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+}
+
+.resumen-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: white;
+
+  &.bg-primary { background: var(--c-primary); }
+  &.bg-info { background: #3b82f6; }
+  &.bg-success { background: var(--c-success); }
+  &.bg-warning { background: var(--c-warning); }
+}
+
+.resumen-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumen-label {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  font-weight: 500;
+}
+
+.resumen-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+// Partidas en Libro Diario
+.partida-card {
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.partida-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface-ground);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.partida-num {
+  font-weight: 700;
+  color: var(--c-primary);
+  font-size: 0.9rem;
+}
+
+.partida-ref {
+  background: var(--c-primary);
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.partida-fecha {
+  color: var(--c-text-muted);
+  font-size: 0.8rem;
+}
+
+.partida-desc {
+  color: var(--c-text);
+  font-size: 0.85rem;
+}
+
+.totales-row {
+  background: var(--c-surface-ground);
+  font-weight: 700;
+}
+
+// Tabs
+.reportes-tabs {
+  :host ::ng-deep .p-tabpanels {
+    padding: 0.5rem;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .resumen-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .partida-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}

@@ -1,0 +1,93 @@
+RESUMEN COMPLETO - Integración Contabilización de Pagos en Caja (CxC)
+1. OBJETIVO
+Cuando se registra un pago (abono) de un cliente vía el módulo de Caja CxC, automáticamente se genere:
+- Una partida contable (copdamae + copdadet) usando Plantilla PDA 3 (Abono de clientes)
+- La bitácora en posfacmov vinculando la partida a la factura
+- El vinculo en cxcmovimientos (partidaId + sn_cotabilizada='S')
+2. ARCHIVOS MODIFICADOS
+Archivo	Cambio
+Backend/src/modules/contabilidad/entities/posfacmov.entity.ts	NUEVO - Entity para tabla posfacmov
+Backend/src/modules/contabilidad/contabilidad.module.ts	+Entity Posfacmov, +EventEmitterModule.forRoot(), +imports CxcModule (forwardRef), +Tcotipodocumentofiscal, +CxcCliente
+Backend/src/modules/contabilidad/contabilidad-logica.service.ts	Reescrito contabilizarCxC() + handleCxcMovimientoCreado()
+Backend/src/modules/contabilidad/dto/contabilidad.dto.ts	DTO ContabilizarCxC con campos: cxcmovimientoId, nroreferencia, importe, nrocliente, cliente, concepto
+Backend/src/modules/contabilidad/contabilidad.controller.ts	Endpoint POST /contabilidad/integracion/cxc
+Backend/src/modules/cxc/cxc.service.ts	Fix: generarMovimientoDesdeCajaDet ahora incluye Idsucursal
+Backend/src/modules/cxc/entities/cxccajamae.entity.ts	Fix defaults: sn_cotabilizada='N', sn_anulado='N'
+3. FLUJO DE EJECUCIÓN
+Frontend: Crear CajaDet (pago con forma de pago)
+  │
+  ▼
+cxc.service.ts → createCajaDet()
+  ├── Guarda caja-det en DB
+  ├── Busca caja-mae padre
+  └── Si tipomov='C':
+       └── generarMovimientoDesdeCajaDet()
+            ├── Crea cxcmovimientos (tipomov='C', importe=real, ref=nrofactura)
+            └── eventEmitter.emit('cxc.movimiento.creado', {movimiento, origen, cajaMae, cajaDet})
+                 │
+                 ▼
+contabilidad-logica.service.ts → @OnEvent('cxc.movimiento.creado')
+  ├── Filtra: solo tipomov='C' con importe > 0
+  ├── Busca facturaId en posfacmae (por nroreferencia)
+  └── contabilizarCxC():
+       ├── 1. Busca plantilla PDA 3 (sn_tipoparam='A' AND moduloId=4)
+       ├── 2. Lee parámetros: consecutivo, continuar, modo correlativo
+       ├── 3. Crea copdamae (partida maestro)
+       ├── 4. Genera DETALLE desde plantilla:
+       │     ├── Línea D: 1110-001 CAJA GENERAL → importe
+       │     └── Línea C: 1120-001 CUENTAS POR COBRAR → importe
+       │     (Descripciones incluyen "Factura #XXXXX" para vinculación)
+       ├── 5. Actualiza correlativo en ttipoparametros
+       ├── 6. Registra en posfacmov (facturaId, moduloId=4, partidaId)
+       └── 7. Actualiza cxcmovimientos → partidaId + sn_cotabilizada='S'
+4. PLANTILLA PDA 3 (Base de datos)
+-- Plantilla: Abono de clientes (moduloId=4)
+-- En ttipoparametros: sn_tipoparam='A', ttipoparametrosId=100
+-- sn_contabilizado=1, consecutivo, mcp (modo correlativo)
+
+-- copdadet (plantilla):
+fila=1: ctacontable='1110-001', descri='CAJA GENERAL',         dc='D',importe=0
+fila=2: ctacontable='1120-001', descri='CUENTAS POR COBRAR',   dc='C',importe=0
+5. TABLA posfacmov (NUEVA)
+Campo	Tipo
+id	INT AUTO_INCREMENT
+facturaId	INT
+moduloId	INT
+partidaId	INT
+empresaId	INT
+fechaRegistro	DATETIME
+usuarioCreated	VARCHAR
+6. DATOS ACTUALES VERIFICADOS
+Partida 17 (la más reciente, mi test PowerShell):
+copdamae:  partidaId=17, nropartida=16, Idsucursal=1, desc="Abono CxC - Factura #120007 - Cliente CLI-0005"
+copdadet:  fila=1: 1110-001 CAJA GENERAL     → Debe: 100.00
+           fila=2: 1120-001 CUENTAS POR COBRAR → Haber: 100.00
+Movimiento 31 (el que sí funciona):
+clienteMovId=31, ref=120007, importe=100.00, partidaId=17, sn_cotabilizada=S  ✓
+7. LO QUE FUNCIONA ✅
+Componente
+Entity Posfacmov
+contabilizarCxC() reescrito con PDA 3
+Endpoint manual POST /contabilidad/integracion/cxc
+Auto-trigger @OnEvent('cxc.movimiento.creado')
+copdamae.Idsucursal
+cxcmovimientos.partidaId
+cxcmovimientos.sn_cotabilizada
+8. LO QUE NO FUNCIONA / PENDIENTE ❌
+Problema	Estado	Notas
+posfacmov no registra	❌	El facturaId lookup falla porque nroreferencia='120007' no coincide con nrofactura en posfacmae (facturas crédito usan 120005-120008 pero el nroreferencia del movimiento es el string '120007')
+Movimientos anteriores sin vincular	❌	MovId 29 (1000), 28 (0), 30 (0) no tienen partidaId porque fueron creados antes del fix
+posfacfactura() necesita verificar posfacmov	⚠️	El método facturaConPartida() de antes puede no encontrar la bitácora aún
+9. BUG ENCONTRADO (posfacmov)
+El @OnEvent busca factura así:
+const factura = await this.facMaeRepo.findOne({
+  where: { nrofactura: Number(movimiento.nroreferencia), empresaId }
+});
+El nroreferencia en cxcmovimientos es '120007' (string), y nrofactura en posfacmae es 120007 (number). El Number('120007') = 120007. Pero NO existe factura con nrofactura=120007 — las facturas crédito reales tienen nrofactura diferente. El usuario paga una factura con nrodocuemnto=120007, pero la factura real en posfacmae tiene facturaId=51, nrofactura=120007.
+Verificar: ¿La factura 51 tiene nrofactura=120007?
+10. PARA LA PRÓXIMA SESIÓN
+1. Verificar si posfacmae.facturaId=51 tiene nrofactura=120007 — si no, hay que cambiar la lógica de lookup
+2. Crear endpoint/consulta GET /contabilidad/posfacmov?facturaId=X para verificar la bitácora
+3. Probar desde el frontend con un pago nuevo y verificar todos los pasos en DB
+4. Decidir: ¿Las plantillas PDA 1/2 (facturas contado/crédito) también usan esta lógica, o solo PDA 3 para abonos?
+5. Cuadrar movimientos antiguos sin vincular (29, etc.)

@@ -192,7 +192,7 @@ export class NuevaFactura implements OnInit {
   }
 
   private cargarParamCxc() {
-    this.api.get<any>('/parametros/parametros/objeto?empresaId=2&moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.get<any>('/parametros/parametros/objeto?moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (p) => {
         const dias = Number(p?.diasPlazo ?? 0);
         const v = new Date();
@@ -1052,25 +1052,35 @@ export class NuevaFactura implements OnInit {
     this.guardando.set(true);
     this.service.createMae<any>('/facturacion/facturas', mae).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (fac) => {
-        const detOps = filas.map((r, i) =>
-          this.service.createDet<any>('/facturacion/facturas-det', {
-            facturaId: fac.facturaId,
-            bodegaId: raw.bodegaId,
-            nrofila: i + 1,
-            productoId: r.productoId,
-            codbarra: r.codbarra || '',
-            cantidad: r.cantidad ?? 0,
-            precioventa: r.precioventa ?? 0,
-            impuesto: r.impuesto ?? 0,
-            subTotal: r.subTotal,
-            descuento: r.descuento ?? 0,
-            sn_anulada: 'N',
-          }),
-        );
+        // Alerta si el rango CAI está por agotarse
+        if (fac.alerta) {
+          this.msgs.add({ severity: 'warn', summary: 'CAI — Autorización próxima a caducar', detail: fac.alerta, life: 10000 });
+        }
+
+        const detOps = filas.map((r, i) => {
+            const pDescuento = r.descuento ?? 0;  // Porcentaje de descuento
+            const cant = r.cantidad ?? 0;
+            const precio = r.precioventa ?? 0;
+            const descuentoMonto = Math.round(cant * precio * (pDescuento / 100) * 100) / 100;  // Monto calculado
+            return this.service.createDet<any>('/facturacion/facturas-det', {
+              facturaId: fac.facturaId,
+              bodegaId: raw.bodegaId,
+              nrofila: i + 1,
+              productoId: r.productoId,
+              codbarra: r.codbarra || '',
+              cantidad: cant,
+              precioventa: precio,
+              impuesto: r.impuesto ?? 0,
+              subTotal: r.subTotal,
+              descuento: descuentoMonto,
+              p_descuento: pDescuento,
+              sn_anulada: 'N',
+            });
+        });
         forkJoin(detOps).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             if (esCredito) {
-              this.procesarKardexYFinalizar(fac, `Factura de crédito #${fac.facturaId} creada`);
+              this.procesarKardexYFinalizar(fac, `Factura de crédito #${fac.nrofactura} creada`);
             } else {
               this.guardarPagosYFinalizar(fac, raw);
             }
@@ -1109,17 +1119,17 @@ export class NuevaFactura implements OnInit {
       );
       forkJoin(pagoOps).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
-          this.procesarKardexYFinalizar(fac, `Factura #${fac.facturaId} creada con ${pagosList.length} pago(s)`);
+          this.procesarKardexYFinalizar(fac, `Factura #${fac.nrofactura} creada con ${pagosList.length} pago(s)`);
         },
         error: (err) => {
           this.guardando.set(false);
           console.error('Error al guardar formas de pago', err);
-          this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.facturaId} creada, pero falló el registro de pagos` });
+          this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.nrofactura} creada, pero falló el registro de pagos` });
           this.nueva();
         },
       });
     } else {
-      this.procesarKardexYFinalizar(fac, `Factura #${fac.facturaId} creada`);
+      this.procesarKardexYFinalizar(fac, `Factura #${fac.nrofactura} creada`);
     }
   }
 
@@ -1135,7 +1145,7 @@ export class NuevaFactura implements OnInit {
       },
       error: () => {
         this.guardando.set(false);
-        this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.facturaId} creada, pero falló el registro de kardex` });
+        this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.nrofactura} creada, pero falló el registro de kardex` });
         this.nueva();
       },
     });
@@ -1161,11 +1171,20 @@ export class NuevaFactura implements OnInit {
   }
 
   private abrirTicket(data: any) {
-    const { factura: fac, detalles, pagos, empresa } = data;
+    const { factura: fac, detalles, pagos, empresa, correlativo } = data;
     const fecha = new Date(fac.fecharegistro).toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const hora = new Date(fac.fecharegistro).toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
     const condicion = fac.tipofactura === 'C' ? 'CRÉDITO' : 'CONTADO';
     const nroFactura = String(fac.nrofactura).padStart(8, '0');
+    // Formatear número con prefijo del rango: 000-001-01-00120004
+    let nroFacturaFmt = nroFactura;
+    if (correlativo?.rangoDesde) {
+      const partes = correlativo.rangoDesde.split('-');
+      if (partes.length > 1) {
+        const prefijo = partes.slice(0, -1).join('-') + '-';
+        nroFacturaFmt = prefijo + nroFactura;
+      }
+    }
 
     const lineasHtml = (detalles || []).map((d: any) => {
       const desc = d.descripcion || `#${d.productoId}`;
@@ -1174,7 +1193,8 @@ export class NuevaFactura implements OnInit {
       const precio = Number(d.precioventa);
       const tot = Number(d.subTotal) || (cant * precio);
       const descuento = Number(d.descuento) || 0;
-      const descLinea = descuento > 0 ? `<div class="linea-desc">Desc: -${Number(descuento.toFixed(0))}%</div>` : `<div class="linea-desc">Desc: 0%</div>`;
+      const pDescuento = Number(d.p_descuento) || 0;
+      const descLinea = pDescuento > 0 ? `<div class="linea-desc">Desc: -${Number(pDescuento.toFixed(0))}%</div>` : `<div class="linea-desc">Desc: 0%</div>`;
       return `<div class="linea-item"><div class="linea-desc">${desc}</div>${cod ? `<div class="linea-cod">Cod. ${cod}</div>` : ''}${descLinea}<div class="linea"><span>Cant. ${cant}</span><span>${this.formatNum(precio)}</span><span class="right">${this.formatNum(tot)}</span></div></div>`;
     }).join('');
 
@@ -1206,7 +1226,7 @@ export class NuevaFactura implements OnInit {
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Factura ${nroFactura}</title>
+<title>Factura ${nroFacturaFmt}</title>
 <style>
   @page { size: 80mm auto; margin: 2mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1240,12 +1260,23 @@ export class NuevaFactura implements OnInit {
   <div class="sep"></div>
 
   <div class="factura-info">
-    <div class="row bold"><span>FACTURA # ${nroFactura}</span></div>
+    <div class="row bold"><span>FACTURA # ${nroFacturaFmt}</span></div>
     <div class="row"><span>Fecha:</span><span>${fecha} ${hora}</span></div>
     <div class="row"><span>Cliente:</span><span>${(fac.nombrecliente || 'N/A').substring(0, 25)}</span></div>
     <div class="row"><span>Condición:</span><span>${condicion}</span></div>
     ${fac.direccion ? `<div class="row"><span>Dir:</span><span>${fac.direccion.substring(0, 25)}</span></div>` : ''}
   </div>
+
+  ${correlativo ? `
+  <div class="sep"></div>
+  <div class="cai-info">
+    <div class="center bold" style="font-size: 8px;">RANGO AUTORIZADO</div>
+    <div style="font-size: 8px; text-align: center;">del ${correlativo.rangoDesde}</div>
+    <div style="font-size: 8px; text-align: center;">al ${correlativo.rangoHasta}</div>
+    <div class="center bold" style="font-size: 8px; margin-top: 2px;">CODIGO CAI</div>
+    <div class="center" style="font-size: 7px; letter-spacing: 0.5px;">${correlativo.cai}</div>
+  </div>
+  ` : ''}
 
   <div class="sep"></div>
 

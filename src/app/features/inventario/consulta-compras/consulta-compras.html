@@ -37,8 +37,8 @@
         <td>{{ row.nroreferencia || '-' }}</td>
         <td class="text-right font-bold">{{ moneda(row.total) }}</td>
         <td>
-          <p-tag [value]="row.TipoCompra === 'F' ? 'Fiscal' : 'Otra'"
-            [severity]="row.TipoCompra === 'F' ? 'info' : 'warn'" [style]="{'font-size':'0.75rem'}" />
+          <p-tag [value]="row.TipoCompra === 'FCO' ? 'Contado' : row.TipoCompra === 'FCC' ? 'Crédito' : 'Orden'"
+            [severity]="row.TipoCompra === 'FCO' ? 'success' : row.TipoCompra === 'FCC' ? 'info' : 'warn'" [style]="{'font-size':'0.75rem'}" />
         </td>
         <td>
           <p-tag [value]="row.sn_pagada === 'S' ? 'Sí' : 'No'" [severity]="row.sn_pagada === 'S' ? 'success' : 'warn'"
@@ -69,7 +69,7 @@
         <p class="page-subtitle">
           {{ nombreProveedor(seleccionado()!.proveedorId) }}
           — {{ nombreBodega(seleccionado()!.bodegaId) }}
-          — {{ seleccionado()!.TipoCompra === 'F' ? 'Fiscal' : 'Otra' }}
+          — {{ seleccionado()!.TipoCompra === 'FCO' ? 'Contado' : seleccionado()!.TipoCompra === 'FCC' ? 'Crédito' : 'Orden' }}
         </p>
       </div>
     </div>
@@ -156,7 +156,7 @@
       <div>
         <label class="block mb-1 text-sm font-medium">Tipo de Compra *</label>
         <p-select formControlName="TipoCompra"
-          [options]="[{label:'Factura Fiscal', value:'F'},{label:'Otro Documento', value:'O'}]" optionLabel="label"
+          [options]="[{label:'Factura de contado', value:'FCO'},{label:'Factura al crédito', value:'FCC'},{label:'Orden de compra', value:'ORC'}]" optionLabel="label"
           optionValue="value" styleClass="w-full" [appendTo]="'body'" />
       </div>
       <div>

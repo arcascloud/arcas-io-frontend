@@ -68,7 +68,7 @@ export class ConsultaCompras implements OnInit {
   formMae = this.fb.group({
     proveedorId: [null as number | null, Validators.required],
     bodegaId: [null as number | null, Validators.required],
-    TipoCompra: ['F' as 'F' | 'O', Validators.required],
+    TipoCompra: ['FCO' as 'FCO' | 'FCC' | 'ORC', Validators.required],
     documentoId: [null as number | null],
     monedaId: [null as number | null, Validators.required],
     nroreferencia: [''],

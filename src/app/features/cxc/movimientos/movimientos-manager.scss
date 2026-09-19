@@ -286,6 +286,16 @@
   font-weight: 600;
 }
 
+.tab-header--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+
+  span {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+  }
+}
+
 // ===== Formulario dos columnas =====
 
 .prestamo-form-columns {

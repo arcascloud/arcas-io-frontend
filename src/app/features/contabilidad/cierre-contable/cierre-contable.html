@@ -1,0 +1,119 @@
+<p-toast />
+<p-confirm-dialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-lock"></i> Cierre Contable</h2>
+  </div>
+
+  <div class="cierre-layout">
+    <!-- Panel izquierdo: Formulario de cierre -->
+    <div class="cierre-form-panel">
+      <div class="card">
+        <h4><i class="pi pi-calendar"></i> Realizar Cierre de Período</h4>
+        <p class="text-muted mb-3">El cierre de período bloquea todos los movimientos contables del mes seleccionado.</p>
+
+        <div class="p-fluid">
+          <div class="p-field mb-3">
+            <label>Período (Mes)</label>
+            <p-select [options]="meses" [(ngModel)]="periodoSeleccionado" optionLabel="label" optionValue="value"
+                      placeholder="Seleccionar mes" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+
+          <div class="p-field mb-3">
+            <label>Año</label>
+            <p-inputNumber [(ngModel)]="anioSeleccionado" [min]="2020" [max]="2030" styleClass="w-full" size="small" />
+          </div>
+
+          <div class="p-field mb-3">
+            <label>Observación (opcional)</label>
+            <input pInputText [(ngModel)]="observacion" class="w-full" pSize="small" placeholder="Motivo del cierre" />
+          </div>
+
+          <p-button size="small" label="Realizar Cierre" icon="pi pi-lock" severity="danger" variant="text" [raised]="true" [rounded]="true"
+                    [loading]="cargando()" (onClick)="realizarCierre()" styleClass="w-full" />
+        </div>
+      </div>
+
+      <!-- Info card -->
+      <div class="card info-card mt-3">
+        <h5><i class="pi pi-info-circle"></i> ¿Qué hace el cierre?</h5>
+        <ul>
+          <li>Marca el período como <strong>"Cerrado"</strong></li>
+          <li>Bloquea la creación de nuevas partidas contables</li>
+          <li>Registra la fecha y usuario del cierre</li>
+          <li>Los períodos anteriores permanecen abiertos</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Panel derecho: Estados de períodos -->
+    <div class="cierre-status-panel">
+      <!-- Períodos -->
+      <div class="card mb-3">
+        <h4><i class="pi pi-calendar"></i> Estado de Períodos</h4>
+        <p-table [value]="periodos()" [paginator]="true" [rows]="12" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[6, 12, 24]" sortField="nroanio" [sortOrder]="-1">
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 60px">Año</th>
+              <th>Mes</th>
+              <th style="width: 100px">Estado</th>
+              <th style="width: 80px">Acción</th>
+            </tr>
+          </ng-template>
+            <ng-template pTemplate="body" let-periodo>
+            <tr [class.fila-cerrada]="periodo.sn_abierto === 'N'" [class.fila-actual]="isPeriodoActual(periodo.nromes, periodo.nroanio)">
+              <td class="text-center"><strong>{{ periodo.nroanio }}</strong></td>
+              <td>{{ getMesLabel(periodo.nromes) }}</td>
+              <td class="text-center">
+                <p-tag [value]="getEstadoPeriodo(periodo)" [severity]="getSeverityPeriodo(periodo)" styleClass="tag-sm" />
+              </td>
+              <td class="text-center">
+                @if (periodo.sn_abierto === 'S') {
+                  <p-button size="small" icon="pi pi-lock" severity="danger" variant="text" [rounded]="true"
+                            pTooltip="Cerrar período" (onClick)="periodoSeleccionado.set(periodo.nromes); anioSeleccionado.set(periodo.nroanio)" />
+                } @else {
+                  <i class="pi pi-check-circle text-success"></i>
+                }
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-muted">No hay períodos configurados</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Historial de cierres -->
+      <div class="card">
+        <h4><i class="pi pi-history"></i> Historial de Cierres</h4>
+        <p-table [value]="cierres()" [paginator]="true" [rows]="10" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[5, 10, 25]">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Período</th>
+              <th>Fecha Cierre</th>
+              <th>Observación</th>
+              <th>Usuario</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-cierre>
+            <tr>
+              <td><strong>{{ cierre.periodo }}/{{ cierre.anio }}</strong></td>
+              <td>{{ cierre.fechacierre | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ cierre.observacion }}</td>
+              <td>{{ cierre.usuarioCreated }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-muted">No hay cierres registrados</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+</div>

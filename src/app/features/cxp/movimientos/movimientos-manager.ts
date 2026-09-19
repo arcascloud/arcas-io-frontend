@@ -80,7 +80,7 @@ export class CxpMovimientosManager implements OnInit {
   movimientoModel = signal<any>({
     proveedorId: null,
     tipomov: 'D',
-    descripcion1: '',
+    concepto: '',
     importe: 0,
     nroreferencia: '',
     fecharegistro: new Date().toISOString(),
@@ -103,12 +103,33 @@ export class CxpMovimientosManager implements OnInit {
 
   vieneDeHistorico = false;
 
-  get debitoReferencias(): string[] {
-    const refs = this.movimientosData()
-      .filter((m: any) => m.tipomov === 'D' && m.nroreferencia)
-      .map((m: any) => String(m.nroreferencia));
-    return [...new Set(refs)];
-  }
+  // Referencias de debitos existentes con saldo
+  debitoReferencias = computed(() => {
+    const movs = this.movimientosData();
+    const mapa = new Map<string, { nroreferencia: string; saldo: number }>();
+
+    for (const m of movs) {
+      if (m.tipomov !== 'D' || !m.nroreferencia) continue;
+      const ref = String(m.nroreferencia);
+      const existente = mapa.get(ref);
+      if (existente) {
+        existente.saldo += Number(m.importe) || 0;
+      } else {
+        mapa.set(ref, { nroreferencia: ref, saldo: Number(m.importe) || 0 });
+      }
+    }
+
+    for (const m of movs) {
+      if (m.tipomov !== 'C' || !m.nroreferencia) continue;
+      const ref = String(m.nroreferencia);
+      const existente = mapa.get(ref);
+      if (existente) {
+        existente.saldo -= Number(m.importe) || 0;
+      }
+    }
+
+    return Array.from(mapa.values()).filter(d => d.saldo > 0);
+  });
 
   ngOnInit() {
     this.loadDocumentos();
@@ -215,7 +236,7 @@ export class CxpMovimientosManager implements OnInit {
     this.movimientoModel.set({
       proveedorId: movimiento.proveedorId,
       tipomov: movimiento.tipomov || 'D',
-      descripcion1: movimiento.concepto || '',
+      concepto: movimiento.concepto || '',
       importe: Number(movimiento.importe) || 0,
       nroreferencia: movimiento.nroreferencia || '',
       fecharegistro: movimiento.fecharegistro || new Date().toISOString(),
@@ -277,7 +298,7 @@ export class CxpMovimientosManager implements OnInit {
     this.movimientoModel.set({
       proveedorId: this.selectedProveedor()?.proveedorId ?? null,
       tipomov: 'D',
-      descripcion1: '',
+      concepto: '',
       importe: 0,
       nroreferencia: '',
       fecharegistro: new Date().toISOString(),
@@ -302,7 +323,7 @@ export class CxpMovimientosManager implements OnInit {
       fecharegistro: this.movimientoFecha() ? this.movimientoFecha()!.toISOString() : new Date().toISOString(),
     };
 
-    if (!payload.descripcion1 || !payload.proveedorId) {
+    if (!payload.concepto || !payload.proveedorId) {
       this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Complete concepto y proveedor' });
       return;
     }
@@ -312,15 +333,10 @@ export class CxpMovimientosManager implements OnInit {
       return;
     }
 
-    // Validar debito: referencia obligatoria y no duplicada
+    // Validar debito: referencia obligatoria
     if (payload.tipomov === 'D') {
       if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
         this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el numero de factura o prestamo de referencia' });
-        return;
-      }
-      const refStr = String(payload.nroreferencia).trim();
-      if (this.debitoReferencias.includes(refStr)) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un debito con referencia "${refStr}". No se pueden crear debitos duplicados.` });
         return;
       }
     }
@@ -331,7 +347,7 @@ export class CxpMovimientosManager implements OnInit {
         this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de debito al que aplica el abono' });
         return;
       }
-      if (!this.debitoReferencias.includes(String(payload.nroreferencia))) {
+      if (!this.debitoReferencias().map(r => r.nroreferencia).includes(String(payload.nroreferencia))) {
         this.msgs.add({ severity: 'warn', summary: 'Referencia invalida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningun debito existente` });
         return;
       }
@@ -385,5 +401,13 @@ export class CxpMovimientosManager implements OnInit {
     if (tipo === 'A') return 'success';
     if (tipo === 'C') return 'info';
     return 'danger';
+  }
+
+  onRefSelect(nroReferencia: string) {
+    this.movimientoModel.set({
+      ...this.movimientoModel(),
+      nroreferencia: nroReferencia,
+      importe: 0,
+    });
   }
 }

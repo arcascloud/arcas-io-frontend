@@ -26,8 +26,9 @@
       @if (selectedCliente()) {
       <div class="cliente-detail">
         <div class="tab-content">
-          <div class="tab-header">
+          <div class="tab-header tab-header--stacked">
             <h4>Movimientos</h4>
+            <span>Cod. {{ selectedCliente()?.clienteId }} - {{ selectedCliente()?.nombres }} {{ selectedCliente()?.apellidos }}</span>
           </div>
 
           <!-- Formulario dos columnas -->
@@ -71,16 +72,15 @@
                 <div class="p-field">
                   <label>Nro. Referencia</label>
                   <p-select size="small" *ngIf="movimientoModel().tipomov === 'C'"
-                    [options]="debitoReferencias().map(r => ({label: r, value: r}))"
+                    [options]="debitoReferencias().map(r => ({label: r.nroreferencia + ' - Saldo: ' + moneda(r.saldo), value: r.nroreferencia}))"
                     [ngModel]="movimientoModel().nroreferencia"
-                    (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
+                    (ngModelChange)="onRefSelect($event)"
                     placeholder="Seleccione debito" styleClass="w-full" [appendTo]="'body'"></p-select>
-                  <input
-                    pSize="small"
-                    *ngIf="movimientoModel().tipomov !== 'C'" pInputText
+                  <p-select size="small" *ngIf="movimientoModel().tipomov === 'D'"
+                    [options]="debitoReferencias().map(r => ({label: r.nroreferencia + ' - Saldo: ' + moneda(r.saldo), value: r.nroreferencia}))"
                     [ngModel]="movimientoModel().nroreferencia"
-                    (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
-                    placeholder="Nro. de factura o documento" />
+                    (ngModelChange)="onRefSelect($event)"
+                    placeholder="Seleccione documento pendiente" styleClass="w-full" [appendTo]="'body'"></p-select>
                 </div>
 
                  <div class="p-field">

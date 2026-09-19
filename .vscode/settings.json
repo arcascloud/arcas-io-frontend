@@ -1,3 +1,12 @@
 {
-    "opencode-for-copilot.agentRoles": {}
+    "opencode-for-copilot.agentRoles": {},
+ "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+
 }

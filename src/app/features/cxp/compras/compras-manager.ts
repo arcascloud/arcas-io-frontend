@@ -90,7 +90,7 @@ export class ComprasManager implements OnInit {
   formMae = this.fb.group({
     proveedorId: [null as number | null, Validators.required],
     bodegaId: [null as number | null, Validators.required],
-    TipoCompra: ['F' as 'F' | 'O', Validators.required],
+    TipoCompra: ['FCO' as 'FCO' | 'FCC' | 'ORC', Validators.required],
     documentoId: [null as number | null],
     monedaId: [null as number | null, Validators.required],
     nroreferencia: [''],
@@ -266,7 +266,7 @@ export class ComprasManager implements OnInit {
   nuevoMae() {
     this.esEdicion.set(false);
     this.formMae.reset({
-      TipoCompra: 'F',
+      TipoCompra: 'FCO',
       proveedorId: null,
       bodegaId: null,
       documentoId: null,
@@ -284,7 +284,7 @@ export class ComprasManager implements OnInit {
       compraId: 0,
       empresaId: this.auth.currentUser()?.empresaId || 0,
       fecharegistro: new Date().toISOString(),
-      TipoCompra: 'F',
+      TipoCompra: 'FCO',
       bodegaId: 0,
       proveedorId: 0,
       documentoId: 0,
@@ -658,7 +658,8 @@ export class ComprasManager implements OnInit {
     const dets = this.detalles();
     const prov = this.nombreProveedor(mae.proveedorId);
     const bodega = this.nombreBodega(mae.bodegaId);
-    const tipo = mae.TipoCompra === 'F' ? 'Factura' : 'Orden de Compra';
+    const tipoMap: Record<string, string> = { FCO: 'Factura Contado', FCC: 'Factura Crédito', ORC: 'Orden de Compra' };
+    const tipo = tipoMap[mae.TipoCompra] || mae.TipoCompra;
     const fecha = mae.fecharegistro ? new Date(mae.fecharegistro).toLocaleDateString('es-HN') : '-';
     const estado = mae.sn_anulada === 'S' ? 'ANULADA' : mae.sn_pagada === 'S' ? 'PAGADA' : 'PENDIENTE';
 

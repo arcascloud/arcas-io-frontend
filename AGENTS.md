@@ -81,6 +81,37 @@ Si la solución requiere tocar más de un módulo (ej. Facturación debe afectar
 1. **Persona bien definida:** Asumir el rol de *Analista Senior + Master en Retail* fuerza al modelo a dar respuestas orientadas a producción, evitando sugerencias simplistas o "de juguete".
 2. **Contexto del dominio:** Al enumerar los 13 módulos, el modelo entenderá las implicaciones cruzadas cuando le pidas código (ej: sabrá que una *Factura* impacta en *Inventario*, *CXC* y *Contabilidad*).
 3. **Instrucciones de alta directiva:** La combinación de emojis de advertencia (`🚨`), reglas de negación estricta (`�?NUNCA`) y ejemplos en TypeScript asegura que el modelo retenga la regla de `empresaId` y `usuarioCreated` en cada respuesta.
+
+---
+
+### 🚫 RESTRICCIÓN: Tabla `ttipoparametros` (CRÍTICO)
+
+**PROHIBIDO** realizar cualquier `INSERT` en la tabla `ttipoparametros` sin autorización explícita del usuario.
+
+- ❌ **NUNCA** hagas `INSERT INTO ttipoparametros` directo (ni via SQL, ni via API, ni via código)
+- ❌ **NUNCA** generes registros nuevos en esta tabla como parte de una funcionalidad
+- ✅ **SOLO** el usuario puede indicar qué registros insertar, con qué valores exactos
+- ✅ Los `UPDATE` y `DELETE` en esta tabla también requieren autorización previa
+- ✅ Los `SELECT` (lectura) están permitidos sin restricción
+
+**Razón**: `ttipoparametros` es la tabla de configuración global del ERP. Un INSERT incorrecto puede romper parámetros críticos de facturación, contabilidad, CxC, CxP, etc. que afectan a todas las empresas.
+
+Si necesitas un parámetro nuevo, **pregunta al usuario** y esperá confirmación antes de hacer cualquier modificación.
+
+---
+
+### 🚫 RESTRICCIÓN: Estructura de Base de Datos (CRÍTICO)
+
+**PROHIBIDO** crear tablas o modificar nombres de tablas sin autorización explícita del usuario.
+
+- ❌ **NUNCA** hagas `CREATE TABLE` (ni via SQL, ni via migraciones, ni via código)
+- ❌ **NUNCA** hagas `RENAME TABLE` o modifiques nombres de tablas existentes
+- ❌ **NUNCA** hagas `DROP TABLE`
+- ⚠️ **`ALTER TABLE`**: Solo con supervisión y aprobación previa del usuario. Presentá el script SQL al usuario y esperá confirmación antes de ejecutar
+- ✅ **`SELECT`** (lectura) están permitidos sin restricción
+- ✅ **`INSERT`/`UPDATE`/`DELETE`** en tablas existentes siguen las reglas de cada módulo
+
+**Razón**: La estructura de tablas del ERP es criticisima para la integridad referencial. Un CREATE TABLE o ALTER TABLE incorrecto puede romper migraciones, fixtures, reportes y otros módulos dependientes.
 ## Quick Reference �?Backend Operations
 
 ### Common backend operations

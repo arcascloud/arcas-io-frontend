@@ -1,0 +1,198 @@
+<p-toast />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-chart-bar"></i> Reportes Contables</h2>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-3">
+          <div class="p-field">
+            <label>Período</label>
+            <p-select [options]="meses" [(ngModel)]="periodo" optionLabel="label" optionValue="value"
+                      placeholder="Seleccionar mes" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Año</label>
+            <p-inputNumber [(ngModel)]="anio" [min]="2020" [max]="2030" styleClass="w-full" size="small" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-7 d-flex align-items-end gap-2">
+          <p-button size="small" label="Generar Todos" icon="pi pi-refresh" severity="success" variant="text" [raised]="true" [rounded]="true"
+                    [loading]="cargando()" (onClick)="generarTodos()" />
+          <p-button size="small" label="Balance" icon="pi pi-chart-line" severity="info" variant="text" [rounded]="true"
+                    [loading]="cargando()" (onClick)="generarBalanceComprobacion()" />
+          <p-button size="small" label="Diario" icon="pi pi-book" severity="info" variant="text" [rounded]="true"
+                    [loading]="cargando()" (onClick)="generarLibroDiario()" />
+          <p-button size="small" label="Mayor" icon="pi pi-list" severity="info" variant="text" [rounded]="true"
+                    [loading]="cargando()" (onClick)="generarLibroMayor()" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen -->
+  <div class="resumen-cards mb-3">
+    <div class="resumen-card">
+      <div class="resumen-icon bg-primary"><i class="pi pi-chart-line"></i></div>
+      <div class="resumen-info">
+        <span class="resumen-label">Cuentas con Movimiento</span>
+        <span class="resumen-value">{{ balanceComprobacion().length }}</span>
+      </div>
+    </div>
+    <div class="resumen-card">
+      <div class="resumen-icon bg-info"><i class="pi pi-book"></i></div>
+      <div class="resumen-info">
+        <span class="resumen-label">Partidas Contables</span>
+        <span class="resumen-value">{{ totalPartidas() }}</span>
+      </div>
+    </div>
+    <div class="resumen-card">
+      <div class="resumen-icon bg-success"><i class="pi pi-arrow-down"></i></div>
+      <div class="resumen-info">
+        <span class="resumen-label">Total Débitos</span>
+        <span class="resumen-value">L {{ totalDebe() | number:'1.2-2' }}</span>
+      </div>
+    </div>
+    <div class="resumen-card">
+      <div class="resumen-icon bg-warning"><i class="pi pi-arrow-up"></i></div>
+      <div class="resumen-info">
+        <span class="resumen-label">Total Créditos</span>
+        <span class="resumen-value">L {{ totalHaber() | number:'1.2-2' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reportes -->
+  <p-tabs [value]="0" styleClass="reportes-tabs">
+    <p-tablist>
+      <p-tab value="0">Balance de Comprobación</p-tab>
+      <p-tab value="1">Libro Diario</p-tab>
+      <p-tab value="2">Libro Mayor</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <!-- Balance de Comprobación -->
+      <p-tabpanel value="0">
+      <div class="card">
+        <h4 class="mb-2">Balance de Comprobación - {{ getMesLabel() }} {{ anio() }}</h4>
+        <p-table [value]="balanceComprobacion()" [paginator]="true" [rows]="20" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[10, 20, 50]">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Cuenta</th>
+              <th>Descripción</th>
+              <th class="text-right">Debe</th>
+              <th class="text-right">Haber</th>
+              <th class="text-right">Saldo Deudor</th>
+              <th class="text-right">Saldo Acreedor</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td><strong>{{ row.ctacontable }}</strong></td>
+              <td>{{ row.descripcion }}</td>
+              <td class="text-right">{{ row.debeMes | number:'1.2-2' }}</td>
+              <td class="text-right">{{ row.haberMes | number:'1.2-2' }}</td>
+              <td class="text-right text-danger">{{ row.saldoDeudor ? (row.saldoDeudor | number:'1.2-2') : '-' }}</td>
+              <td class="text-right text-success">{{ row.saldoAcreedor ? (row.saldoAcreedor | number:'1.2-2') : '-' }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="footer">
+            <tr class="totales-row">
+              <td colspan="2"><strong>TOTALES</strong></td>
+              <td class="text-right"><strong>L {{ totalDebe() | number:'1.2-2' }}</strong></td>
+              <td class="text-right"><strong>L {{ totalHaber() | number:'1.2-2' }}</strong></td>
+              <td class="text-right"><strong>L {{ totalSaldoDeudor() | number:'1.2-2' }}</strong></td>
+              <td class="text-right"><strong>L {{ totalSaldoAcreedor() | number:'1.2-2' }}</strong></td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="6" class="text-center text-muted">No hay datos. Haga clic en "Generar Todos" para generar los reportes.</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+      </p-tabpanel>
+
+      <!-- Libro Diario -->
+      <p-tabpanel value="1">
+      <div class="card">
+        <h4 class="mb-2">Libro Diario - {{ getMesLabel() }} {{ anio() }}</h4>
+        @for (partida of libroDiario(); track partida.nropartida) {
+          <div class="partida-card mb-2">
+            <div class="partida-header">
+              <span class="partida-num">Partida #{{ partida.nropartida }}</span>
+              <span class="partida-ref">{{ partida.referencia }}</span>
+              <span class="partida-fecha">{{ partida.fecha | date:'dd/MM/yyyy' }}</span>
+              <span class="partida-desc">{{ partida.descripcion }}</span>
+            </div>
+            <p-table [value]="partida.lineas" size="small">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Cuenta</th>
+                  <th>Descripción</th>
+                  <th class="text-right">Débito</th>
+                  <th class="text-right">Crédito</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-linea>
+                <tr>
+                  <td>{{ linea.ctacontable }}</td>
+                  <td>{{ linea.descripcion }}</td>
+                  <td class="text-right">{{ linea.debito | number:'1.2-2' }}</td>
+                  <td class="text-right">{{ linea.credito | number:'1.2-2' }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        }
+        @empty {
+          <div class="text-center text-muted p-4">No hay partidas. Haga clic en "Generar Todos" para generar los reportes.</div>
+        }
+      </div>
+      </p-tabpanel>
+
+      <!-- Libro Mayor -->
+      <p-tabpanel value="2">
+      <div class="card">
+        <h4 class="mb-2">Libro Mayor - {{ getMesLabel() }} {{ anio() }}</h4>
+        <p-table [value]="libroMayor()" [paginator]="true" [rows]="20" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[10, 20, 50]">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Cuenta</th>
+              <th>Descripción</th>
+              <th class="text-right">Debe</th>
+              <th class="text-right">Haber</th>
+              <th class="text-right">Saldo</th>
+              <th>Último Mov.</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-mov>
+            <tr>
+              <td><strong>{{ mov.ctacontable }}</strong></td>
+              <td>{{ mov.descripcionCta }}</td>
+              <td class="text-right">{{ mov.debe | number:'1.2-2' }}</td>
+              <td class="text-right">{{ mov.haber | number:'1.2-2' }}</td>
+              <td class="text-right" [class.text-danger]="mov.saldo > 0" [class.text-success]="mov.saldo < 0">
+                {{ mov.saldo | number:'1.2-2' }}
+              </td>
+              <td>{{ mov.fecultmov | date:'dd/MM/yyyy HH:mm' }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="6" class="text-center text-muted">No hay datos. Haga clic en "Generar Todos" para generar los reportes.</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+</div>

@@ -1,0 +1,234 @@
+<p-toast />
+<p-confirm-dialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-book"></i> Partidas de Diario</h2>
+    <p-button size="small" label="Nueva Partida" icon="pi pi-plus" severity="success" variant="text" [raised]="true" [rounded]="true" (onClick)="nuevaPartida()" />
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3 filtros-bar">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Periodo</label>
+            <p-select [options]="periodos() | slice:0:0" placeholder="Todos" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Año</label>
+            <p-inputNumber [min]="2020" [max]="2030" placeholder="Año" styleClass="w-full" size="small" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-4">
+          <div class="p-field">
+            <label>Referencia</label>
+            <input pInputText placeholder="Buscar referencia..." class="w-full" pSize="small" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Partidas -->
+  <div class="card">
+    <p-table [value]="partidasFiltradas()" [paginator]="true" [rows]="15" [showCurrentPageReport]="true"
+             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+             [rowsPerPageOptions]="[10, 15, 25, 50]" size="small"
+             [globalFilterFields]="['nropartida', 'nroreferencia', 'descripcion']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 80px">Partida</th>
+          <th style="width: 90px">Período</th>
+          <th style="width: 80px">Mód.</th>
+          <th>Referencia</th>
+          <th>Descripción</th>
+          <th style="width: 100px">Fecha</th>
+          <th style="width: 120px">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-partida>
+        <tr>
+          <td class="text-center"><strong>{{ partida.nropartida }}</strong></td>
+          <td class="text-center">
+            <p-tag [value]="getPeriodoLabel(partida.periodo) + ' ' + partida.anio" severity="info" styleClass="tag-sm" />
+          </td>
+          <td class="text-center">
+            <p-tag [value]="getModuloLabel(partida.moduloId)" severity="secondary" styleClass="tag-sm" />
+          </td>
+          <td>{{ partida.nroreferencia }}</td>
+          <td>{{ partida.descripcion }}</td>
+          <td>{{ partida.fechadocumento | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <p-button size="small" icon="pi pi-eye" severity="info" variant="text" [rounded]="true" pTooltip="Ver detalles" (onClick)="verDetalles(partida)" />
+              <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarPartida(partida)" />
+              <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarPartida(partida)" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="7" class="text-center text-muted">No se encontraron partidas de diario</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Dialog Nueva/Editar Partida -->
+  <p-dialog [(visible)]="dialogVisible" [header]="esEdicion() ? 'Editar Partida' : 'Nueva Partida de Diario'"
+            [modal]="true" [draggable]="false" [resizable]="false"
+            [breakpoints]="{ '960px': '85vw', '640px': '95vw' }" styleClass="w-full max-w-50rem">
+    <div class="partida-form">
+      <!-- Datos de la Partida -->
+      <div class="card mb-3">
+        <h4 class="mb-2">Datos de la Partida</h4>
+        <div class="p-fluid">
+          <div class="p-grid">
+            <div class="p-col-12 p-col-3">
+              <div class="p-field">
+                <label>Período</label>
+                <p-inputNumber formControlName="periodo" [min]="1" [max]="12" styleClass="w-full" size="small" />
+              </div>
+            </div>
+            <div class="p-col-12 p-col-3">
+              <div class="p-field">
+                <label>Año</label>
+                <p-inputNumber formControlName="anio" [min]="2020" [max]="2030" styleClass="w-full" size="small" />
+              </div>
+            </div>
+            <div class="p-col-12 p-col-6">
+              <div class="p-field">
+                <label>Referencia</label>
+                <input pInputText formControlName="nroreferencia" class="w-full" pSize="small" placeholder="Ej: FAC-001-001-00001" />
+              </div>
+            </div>
+            <div class="p-col-12 p-col-6">
+              <div class="p-field">
+                <label>Descripción</label>
+                <input pInputText formControlName="descripcion" class="w-full" pSize="small" placeholder="Descripción de la partida" />
+              </div>
+            </div>
+            <div class="p-col-12 p-col-3">
+              <div class="p-field">
+                <label>Módulo</label>
+                <p-inputNumber formControlName="moduloId" [min]="1" [max]="99" styleClass="w-full" size="small" />
+              </div>
+            </div>
+            <div class="p-col-12 p-col-3">
+              <div class="p-field">
+                <label>Documento</label>
+                <p-inputNumber formControlName="documentoId" [min]="0" styleClass="w-full" size="small" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Líneas de Detalle -->
+      <div class="card mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h4 class="mb-0">Líneas de la Partida</h4>
+          <p-button size="small" label="Agregar Línea" icon="pi pi-plus" severity="success" variant="text" [rounded]="true" (onClick)="agregarLinea()" />
+        </div>
+
+        <div class="lineas-container">
+          @for (linea of formDetalles.controls; track $index) {
+            <div class="linea-row" [class.linea-error]="linea.get('ctacontable')?.invalid && linea.get('ctacontable')?.touched">
+              <span class="linea-numero">{{ $index + 1 }}</span>
+
+              <div class="linea-campo campo-cta">
+                <label>Cuenta</label>
+                <input pInputText [formControl]="$any(linea).get('ctacontable')" placeholder="Código" class="w-full" pSize="small" />
+              </div>
+
+              <div class="linea-campo campo-desc">
+                <label>Descripción</label>
+                <input pInputText [formControl]="$any(linea).get('descripcion')" placeholder="Concepto" class="w-full" pSize="small" />
+              </div>
+
+              <div class="linea-campo campo-monto">
+                <label>Débito</label>
+                <p-inputNumber [formControl]="$any(linea).get('debito')" [min]="0" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2"
+                               [useGrouping]="true" [inputStyle]="{ width: '100%' }" styleClass="w-full" size="small" />
+              </div>
+
+              <div class="linea-campo campo-monto">
+                <label>Crédito</label>
+                <p-inputNumber [formControl]="$any(linea).get('credito')" [min]="0" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2"
+                               [useGrouping]="true" [inputStyle]="{ width: '100%' }" styleClass="w-full" size="small" />
+              </div>
+
+              <p-button size="small" icon="pi pi-times" severity="danger" variant="text" [rounded]="true" (onClick)="eliminarLinea($index)" [disabled]="formDetalles.length <= 2" />
+            </div>
+          }
+        </div>
+
+        <!-- Totales -->
+        <div class="totales-bar mt-2">
+          <div class="total-item">
+            <span class="total-label">Total Débito:</span>
+            <span class="total-value">L {{ totalDebito() | number:'1.2-2' }}</span>
+          </div>
+          <div class="total-item">
+            <span class="total-label">Total Crédito:</span>
+            <span class="total-value">L {{ totalCredito() | number:'1.2-2' }}</span>
+          </div>
+          <div class="total-item" [class.diferencia-ok]="partidaCuadrada()" [class.diferencia-error]="!partidaCuadrada() && diferencia() !== 0">
+            <span class="total-label">Diferencia:</span>
+            <span class="total-value">L {{ diferencia() | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="d-flex gap-2 justify-content-end">
+        <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" (onClick)="dialogVisible.set(false)" />
+        <p-button size="small" label="Contabilizar" icon="pi pi-check-circle" severity="success" variant="text" [raised]="true" [rounded]="true"
+                  [loading]="cargando()" [disabled]="!partidaCuadrada() || form.invalid" (onClick)="contabilizar()" />
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog Detalles (solo lectura) -->
+  <p-dialog [(visible)]="dialogDetallesVisible" [header]="'Partida #' + (partidaSeleccionada()?.nropartida ?? '')"
+            [modal]="true" [draggable]="false" [resizable]="false"
+            [breakpoints]="{ '960px': '85vw', '640px': '95vw' }" styleClass="w-full max-w-40rem"
+            (onHide)="partidaSeleccionada.set(null)">
+    @if (partidaSeleccionada(); as partida) {
+      <div class="partida-info mb-3">
+        <div class="info-grid">
+          <div><strong>Fecha:</strong> {{ partida.fechadocumento | date:'dd/MM/yyyy' }}</div>
+          <div><strong>Referencia:</strong> {{ partida.nroreferencia }}</div>
+          <div><strong>Módulo:</strong> {{ getModuloLabel(partida.moduloId) }}</div>
+          <div><strong>Descripción:</strong> {{ partida.descripcion }}</div>
+        </div>
+      </div>
+
+      <p-table [value]="detallesPartida()" size="small">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Fila</th>
+            <th>Cuenta</th>
+            <th>Descripción</th>
+            <th class="text-right">Débito</th>
+            <th class="text-right">Crédito</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-det>
+          <tr>
+            <td class="text-center">{{ det.nrofila }}</td>
+            <td>{{ det.ctacontable }}</td>
+            <td>{{ det.descripcion }}</td>
+            <td class="text-right">{{ det.debito | number:'1.2-2' }}</td>
+            <td class="text-right">{{ det.credito | number:'1.2-2' }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </p-dialog>
+</div>

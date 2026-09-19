@@ -124,3 +124,99 @@ Para garantizar la escalabilidad, seguridad y una integración perfecta con nues
 | Archivo | Cambio |
 |---------|--------|
 | `src/app/features/cxc/cartas-recordatorio/cartas-recordatorio.ts` | Agregado `TooltipModule` a imports, campo `corriente` en interfaz e inicialización |
+
+---
+
+## 📅 Miércoles, 17 de Septiembre de 2026
+
+### Integración Contable Automática (Facturación → Contabilidad → CxC)
+
+**Objetivo**: Las facturas se contabilizan automáticamente al facturar (asientos en `copdamae`/`copdadet`), usando plantillas PDA, flags de `ttipoparametros` y correlativo CAI.
+
+### Backend — Contabilidad Lógica (`contabilidad-logica.service.ts`)
+
+1. **`identificarConcepto()` reordenado**: COBRO → DESCUENTO → ISV → COSTO → VENTA → MERCANCIA. El orden importa porque "COSTO DE VENTA" contiene "VENTA" — si VENTA iba primero, clasificaba mal la cuenta de costo.
+
+2. **Cuentas contables corregidas**:
+   | Concepto | Cuenta Debe | Cuenta Haber |
+   |----------|-------------|--------------|
+   | VENTA | 4110-001 (Ventas al contado) | 1110-001 (Caja General) |
+   | VENTA CRÉDITO | 4110-002 (Ventas al crédito) | 1120-001 (Clientes Nacionales) |
+   | MERCANCIA | 5120-004 (Costo de venta) | 1130-001 (Mercadería) |
+   | ISV | 2120-001 (ISV por Pagar) | 4110-001 (Ventas al contado) |
+   | DESCUENTO | 4210-001 (Descuento sobre ventas) | 4110-001 (Ventas) |
+   | COBRO CxC | 1110-001 (Caja) | 1120-001 (Clientes Nacionales) |
+
+3. **`contabilizarPartida()`**: Pasa `currentUser` a `actualizarMovimientosContables()` y `actualizarSaldosCuentas()`.
+
+4. **`contabilizarFactura()`**: `ventaNeta` se calcula desde componentes (ventaBruta, descuento, impuesto, costoVenta), NO desde `factura.total`.
+
+### Backend — Facturación (`facturacion.service.ts`)
+
+5. **`createFactura()`**: Retorna `{ ...factura, rangoDesde, rangoHasta, disponible, alerta }` con info CAI.
+
+6. **`asignarCorrelativo()`**: Retorna objeto con disponibilidad. Bloquea si `siguiente > hasta`. Alerta si `disponible <= 30`.
+
+7. **`procesarKardexFactura()`**: Después de contabilizar, vincula movimientos CxC con la partida:
+   ```
+   contabilizarFactura → crea copdamae/copdadet → guarda partidaId en posfacmae
+   → actualizarPartidaMovimientos → vincula CxC movimiento con la partida
+   ```
+
+8. **`generarMovimientoDesdeFactura()`**: Ya NO llama `contabilizarCxC()`. Solo crea el movimiento CxC. La contabilización se hace después desde `procesarKardexFactura`.
+
+### Backend — CxC (`cxc.service.ts`)
+
+9. **Nuevo método `actualizarPartidaMovimientos()`**: Busca movimientos por `nroreferencia` + `moduloId=3` y les asigna `partidaId` + `sn_cotabilizada='S'`.
+
+### Backend — Entidades
+
+10. **`copdamae.entity.ts`**: PK es `partidaId` (NO `tcopdamae` — tabla se llama `copdamae`).
+11. **`copdadet.entity.ts`**: FK es `partidaId` (misma corrección).
+12. **`posfacdet.entity.ts`**: Campo `p_descuento` agregado (decimal 20,2) para auditar % de descuento.
+13. **`poscorrelativos.entity.ts`**: Campo `cai` eliminado (CAI vive en `tempresasdet` con `tipo='CAI'`).
+
+### Frontend — Facturación (`nueva-factura.ts/html`)
+
+14. **Ticket térmico**: Usa `d.p_descuento` para mostrar % de descuento, incluye RANGO AUTORIZADO y CODIGO CAI desde `tempresasdet`.
+
+15. **Payload de detalle**: Envía `p_descuento` (%) y `descuento` (monto = cantidad × precio × pct / 100).
+
+16. **Toasts**: Muestran `nrofactura` (no `facturaId`) para que el usuario entienda el número de factura.
+
+17. **CAI alert**: Toast de warning cuando `fac.alerta` indica disponibilidad baja.
+
+### Prueba de fuego
+
+- **Factura 52** (nrofactura=120008): `partidaId=13`, `sn_contabilizada=S` ✓
+- **CxC movimiento** (ref 120008): `partidaId=13`, `sn_cotabilizada=S` ✓
+- **Ambos vinculados a la misma partida** ✓
+- **Partida balanceada**: Debe = Haber ✓
+
+### Lecciones aprendidas
+
+| Lección | Detalle |
+|---------|---------|
+| **DB table names** | `copdamae`/`copdadet` (NO `tcopdamae`/`tcopdadet`) |
+| **PK/FK** | `partidaId` (no `nropartida`) |
+| **CAI location** | `tempresasdet` con `tipo='CAI'`, NO en `poscorrelativos` |
+| **`identificarConcepto` order** | COSTO antes de VENTA (porque "COSTO DE VENTA" contiene "VENTA") |
+| **`modo_correlativo`** | Se lee de `ttipoparametros` (moduloId=3), NO de `timpresoras` |
+| **`posfacdet.descuento`** | Almacena MONTO calculado, NO porcentaje. `p_descuento` almacena el % |
+| **TypeORM decimals** | Se leen como strings. Usar `createQueryBuilder().update().set()` para bypass |
+| **CxC `partidaId`** | Se asigna DESPUÉS de `contabilizarFactura`, no antes |
+| **FK constraints** | `clienteId: 0` en posfacmae falla silenciosamente si el cliente no existe |
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `Backend/src/modules/contabilidad/contabilidad-logica.service.ts` | `identificarConcepto` reordenado, cuentas corregidas, `currentUser` en updates |
+| `Backend/src/modules/facturacion/facturacion.service.ts` | CxC linking post-contabilización, CAI en respuesta |
+| `Backend/src/modules/cxc/cxc.service.ts` | Nuevo `actualizarPartidaMovimientos()`, sin `contabilizarCxC` en factura |
+| `Backend/src/modules/facturacion/entities/posfacdet.entity.ts` | Campo `p_descuento` agregado |
+| `Backend/src/modules/facturacion/entities/poscorrelativos.entity.ts` | Campo `cai` eliminado |
+| `Backend/src/modules/contabilidad/entities/copdamae.entity.ts` | PK `partidaId` |
+| `Backend/src/modules/contabilidad/entities/copdadet.entity.ts` | FK `partidaId` |
+| `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.ts` | Ticket con `p_descuento`, payload con `%` + monto, `nrofactura` en toasts |
+| `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.html` | CAI en ticket, alert toast |

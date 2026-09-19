@@ -14,8 +14,9 @@
       @if (selectedProveedor()) {
       <div class="cliente-detail">
         <div class="tab-content">
-          <div class="tab-header">
+          <div class="tab-header tab-header--stacked">
             <h4>Movimientos</h4>
+            <span>Cod. {{ selectedProveedor()?.proveedorId }} - {{ selectedProveedor()?.nombres }} {{ selectedProveedor()?.apellidos }}</span>
           </div>
 
           <!-- Formulario dos columnas -->
@@ -37,16 +38,9 @@
                 </div>
                 <div class="p-field">
                   <label>Concepto</label>
-                  <input pInputText pSize="small" [ngModel]="movimientoModel().descripcion1"
-                    (ngModelChange)="movimientoModel.set({...movimientoModel(), descripcion1: $event})"
+                  <input pInputText pSize="small" [ngModel]="movimientoModel().concepto"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), concepto: $event})"
                     placeholder="Descripcion del movimiento" />
-                </div>
-                <div class="p-field">
-                  <label>Importe</label>
-                  <p-inputNumber size="small" [ngModel]="movimientoModel().importe"
-                    (ngModelChange)="movimientoModel.set({...movimientoModel(), importe: $event})"
-                    [mode]="'decimal'" [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2"
-                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
                 </div>
               </div>
             </div>
@@ -54,18 +48,7 @@
             <div class="prestamo-col">
               <h5 class="prestamo-col-title">Referencia y Fecha</h5>
               <div class="p-fluid">
-                <div class="p-field">
-                  <label>Nro. Referencia</label>
-                  <p-select size="small" *ngIf="movimientoModel().tipomov === 'C'"
-                    [options]="debitoReferencias.map(r => ({label: r, value: r}))"
-                    [ngModel]="movimientoModel().nroreferencia"
-                    (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
-                    placeholder="Seleccione debito" styleClass="w-full" [appendTo]="'body'"></p-select>
-                  <input *ngIf="movimientoModel().tipomov !== 'C'" pInputText
-                    [ngModel]="movimientoModel().nroreferencia"
-                    (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
-                    placeholder="Nro. de factura o documento" />
-                </div>
+
                 <div class="p-field">
                   <label>Fecha</label>
                   <p-datepicker [ngModel]="movimientoFecha()"
@@ -73,6 +56,31 @@
                    (ngModelChange)="onMovimientoFechaChange($event)"
                     dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
                 </div>
+
+                <div class="p-field">
+                  <label>Nro. Referencia</label>
+                  <p-select size="small" *ngIf="movimientoModel().tipomov === 'C'"
+                    [options]="debitoReferencias().map(r => ({label: r.nroreferencia + ' - Saldo: ' + moneda(r.saldo), value: r.nroreferencia}))"
+                    [ngModel]="movimientoModel().nroreferencia"
+                    (ngModelChange)="onRefSelect($event)"
+                    placeholder="Seleccione debito" styleClass="w-full" [appendTo]="'body'"></p-select>
+                  <p-select size="small" *ngIf="movimientoModel().tipomov === 'D'"
+                    [options]="debitoReferencias().map(r => ({label: r.nroreferencia + ' - Saldo: ' + moneda(r.saldo), value: r.nroreferencia}))"
+                    [ngModel]="movimientoModel().nroreferencia"
+                    (ngModelChange)="onRefSelect($event)"
+                    placeholder="Seleccione documento pendiente" styleClass="w-full" [appendTo]="'body'"></p-select>
+                </div>
+
+                <div class="p-field">
+                  <label>Importe</label>
+                  <p-inputNumber size="small" [ngModel]="movimientoModel().importe"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), importe: $event})"
+                    [locale]="'es-HN'"
+                    [mode]="'decimal'" [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                </div>
+
+
               </div>
             </div>
           </div>
@@ -86,24 +94,7 @@
               size="small"></p-button>
           </div>
 
-          <!-- Lista de movimientos -->
-          <p-dataView [value]="movimientosData()" [loading]="movimientosLoading()" size="small" layout="list"
-            class="movimientos-dataview">
-            <ng-template #list let-mov>
-              <div class="movimiento-item">
-                <div class="mov-fecha">{{ mov.fecharegistro | date:'dd/MM/yyyy' }}</div>
-                <div class="mov-tipo" [ngClass]="mov.tipomov === 'D' ? 'debito' : 'credito'">
-                  {{ getTipoMovLabel(mov.tipomov) }}
-                </div>
-                <div class="mov-concepto">{{ mov.descripcion1 }}</div>
-                <div class="mov-ref">{{ mov.nroreferencia || '---' }}</div>
-                <div class="mov-importe"
-                  [ngClass]="mov.tipomov === 'D' ? 'text-danger' : 'text-success'">
-                  {{ mov.tipomov === 'D' ? '+' : '-' }}{{ moneda(mov.importe) }}
-                </div>
-              </div>
-            </ng-template>
-          </p-dataView>
+
         </div>
       </div>
       }

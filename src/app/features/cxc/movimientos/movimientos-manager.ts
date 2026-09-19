@@ -110,13 +110,37 @@ export class MovimientosManager implements OnInit {
     { label: 'Credito', value: 'C' },
   ];
 
-  // Referencias de debitos existentes (nroreferencia unicos de movimientos tipo D)
+  // Referencias de debitos existentes con saldo (para credito)
   debitoReferencias = computed(() => {
-    const refs = this.movimientosData()
-      .filter(m => m.tipomov === 'D' && m.nroreferencia)
-      .map(m => String(m.nroreferencia));
-    return [...new Set(refs)];
+    const movs = this.movimientosData();
+    const mapa = new Map<string, { nroreferencia: string; saldo: number }>();
+
+    // 1ra pasada: acumular debitos
+    for (const m of movs) {
+      if (m.tipomov !== 'D' || !m.nroreferencia) continue;
+      const ref = String(m.nroreferencia);
+      const existente = mapa.get(ref);
+      if (existente) {
+        existente.saldo += Number(m.importe) || 0;
+      } else {
+        mapa.set(ref, { nroreferencia: ref, saldo: Number(m.importe) || 0 });
+      }
+    }
+
+    // 2da pasada: restar creditos
+    for (const m of movs) {
+      if (m.tipomov !== 'C' || !m.nroreferencia) continue;
+      const ref = String(m.nroreferencia);
+      const existente = mapa.get(ref);
+      if (existente) {
+        existente.saldo -= Number(m.importe) || 0;
+      }
+    }
+
+    return Array.from(mapa.values()).filter(d => d.saldo > 0);
   });
+
+  // Documentos pendientes de pago del cliente (para débito) - ELIMINADO: se usa debitoReferencias para ambos
 
   ngOnInit() {
     this.loadDocumentos();
@@ -282,6 +306,14 @@ export class MovimientosManager implements OnInit {
     this.movimientoModel.set({ ...this.movimientoModel(), fecharegistro: d ? d.toISOString() : null });
   }
 
+  onRefSelect(nroReferencia: string) {
+    this.movimientoModel.set({
+      ...this.movimientoModel(),
+      nroreferencia: nroReferencia,
+      importe: 0,
+    });
+  }
+
   cancelarMovimiento() {
     this.movimientoModel.set({
       clienteId: this.selectedCliente()?.clienteId ?? null,
@@ -328,16 +360,10 @@ export class MovimientosManager implements OnInit {
       return;
     }
 
-    // Validar debito: referencia obligatoria y no duplicada
+    // Validar debito: referencia obligatoria
     if (payload.tipomov === 'D') {
       if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
         this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el numero de factura o prestamo de referencia' });
-        return;
-      }
-      const refStr = String(payload.nroreferencia).trim();
-      const refsUsadas = this.debitoReferencias();
-      if (refsUsadas.includes(refStr)) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia duplicada', detail: `Ya existe un debito con referencia "${refStr}". No se pueden crear debitos duplicados.` });
         return;
       }
     }
@@ -348,7 +374,7 @@ export class MovimientosManager implements OnInit {
         this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de debito al que aplica el abono' });
         return;
       }
-      const refsDisponibles = this.debitoReferencias();
+      const refsDisponibles = this.debitoReferencias().map(r => r.nroreferencia);
       if (!refsDisponibles.includes(String(payload.nroreferencia))) {
         this.msgs.add({ severity: 'warn', summary: 'Referencia invalida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningun debito existente` });
         return;

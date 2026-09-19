@@ -311,7 +311,7 @@ export interface RequisicionDet {
 export interface CompraMae {
   compraId: number;
   fecharegistro: string;
-  TipoCompra: 'F' | 'O';
+  TipoCompra: 'FCO' | 'FCC' | 'ORC';
   bodegaId: number;
   proveedorId: number;
   documentoId: number;

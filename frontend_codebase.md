@@ -1,5 +1,5 @@
 # ERP Arcas - Código Fuente Completo
-> Generado automáticamente el 17/9/2026, 6:30:42 a. m.
+> Generado automáticamente el 17/9/2026, 11:20:25 p. m.
 
 ---
 
@@ -1493,6 +1493,400 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
   },
 };
+```
+
+---
+
+## 📄 src\app\core\models\contabilidad.models.ts
+
+```typescript
+/**
+ * Interfaces TypeScript para el módulo de Contabilidad
+ * ERP Retail - Honduras
+ */
+
+// ========== Plan de Cuentas ==========
+
+export interface CtaContable {
+  cuentacontablesId: number;
+  ctacontable: string;
+  descripcion: string;
+  naturaleza: 'D' | 'C';
+  nivel: number;
+  padre?: string;
+  sn_operable: 'S' | 'N';
+  tcogrupocontableId: number;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  Idsucursal?: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+export interface GrupoContable {
+  tcogrupocontableId: number;
+  descripcion: string;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+export interface NivelCta {
+  nivelcontableId: number;
+  nivel: string;
+  sn_diario: 'S' | 'N';
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+export interface NaturalezaCta {
+  naturalezaCtaId: number;
+  descripcion: 'D' | 'C';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Partidas de Diario (Comprobantes) ==========
+
+export interface CopdaMae {
+  copdamaeId: number;
+  fecharegistro: Date;
+  periodo: number;
+  anio: number;
+  moduloId: number;
+  documentoId: number;
+  fechadocumento: Date;
+  factordecambio: number;
+  nroreferencia: string;
+  descripcion: string;
+  sn_activo: 'S' | 'N';
+  nropartida: number;
+  Idsucursal: number;
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+  // Transient (calculated)
+  totalDebito?: number;
+  totalCredito?: number;
+  cuadrada?: boolean;
+  detalles?: CopdaDet[];
+}
+
+export interface CopdaDet {
+  copdadetId: number;
+  copdamaeId: number;
+  fecharegistro: Date;
+  periodo?: number;
+  anio?: number;
+  nropartida?: number;
+  moduloId: number;
+  nrofila?: number;
+  ctacontable?: string;
+  descripcion?: string;
+  debito: number;
+  credito: number;
+  factordecambio: number;
+  sn_activo: 'S' | 'N';
+  Idsucursal: number;
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Movimientos Contables ==========
+
+export interface MovCta {
+  movctascontablesId: number;
+  monedaId: number;
+  ctacontable: string;
+  anio: number;
+  periodo: number;
+  sacum: number;
+  debe: number;
+  haber: number;
+  saldo: number;
+  fecultmov?: Date;
+  ultnropda?: number;
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Saldos de Cuentas ==========
+
+export interface SaldoCta {
+  cosaldosctaId: number;
+  anio?: number;
+  ctacontable: string;
+  saldoanterior: number;
+  enero: number;
+  febrero: number;
+  marzo: number;
+  abril: number;
+  mayo: number;
+  junio: number;
+  julio: number;
+  agosto: number;
+  septiembre: number;
+  octubre: number;
+  noviembre: number;
+  diciembre: number;
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Períodos Contables ==========
+
+export interface PeriodoContable {
+  periodoscontableId: number;
+  nroanio: number;
+  nromes: number;
+  sn_abierto: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Cierre Contable ==========
+
+export interface CierreContable {
+  cierrectableId: number;
+  periodo?: number;
+  anio?: number;
+  fechacierre: Date;
+  observacion?: string;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Plantillas ==========
+
+export interface PlantillaPdaMae {
+  tcoplantillapdamaeId: number;
+  descripcion: string;
+  moduloId: number;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+export interface PlantillaPdaDet {
+  tcoplantillapdadetId: number;
+  tcoplantillapdamaeId: number;
+  nrofila: number;
+  ctacontable: string;
+  descripcion?: string;
+  moduloId?: number;
+  ctamayorId?: string;
+  naturaleza: 'D' | 'C';
+  sn_activo: 'S' | 'N';
+  empresaId?: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+export interface PlantillaBalancesMae {
+  cocdefbalmaId: number;
+  descripcion: string;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+export interface PlantillaBalancesDet {
+  tcoplantillabalancesdetid: number;
+  cocdefbalmaId: number;
+  tipo?: string;
+  ctacontable?: string;
+  descripcion?: string;
+  columna?: number;
+  renglon?: number;
+  sn_activo: 'S' | 'N';
+  empresaId?: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Tipos de Documento Fiscal ==========
+
+export interface TipoDocFiscal {
+  tipodocumentofiscalId: number;
+  descripcion: string;
+  abreviatura: string;
+  naturaleza: 'D' | 'C';
+  moduloId: number;
+  cuentacontableId: number;
+  nrocorrelativo: number;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Factores de Cambio ==========
+
+export interface FactorCambio {
+  factordecambioId: number;
+  fecharegistro: Date;
+  preciocompra: number;
+  precioventa: number;
+  tipomoneda: 'D' | 'E' | 'Y';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Reportes ==========
+
+export interface ReporteLiquidez {
+  tcorepliquidezId: number;
+  descripcion?: string;
+  objetivo?: string;
+  sn_activo: 'S' | 'N';
+  empresaId?: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+export interface ReporteDiario {
+  tcorepdiariosId: number;
+  descripcion: string;
+  reporte: string;
+  sn_activo: 'S' | 'N';
+  empresaId?: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+export interface ReporteBalance {
+  balcomId: number;
+  ctacontable?: string;
+  periodoA: number;
+  anioA: number;
+  saldoA: number;
+  periodoB: number;
+  anioB: number;
+  saldoB: number;
+  empresaId?: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Impuesto Vecinal ==========
+
+export interface ImpuestoVecinal {
+  impvecinalId: number;
+  descripcion?: string;
+  del: number;
+  al: number;
+  importe: number;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+// ========== Interfaces para Reportes Generados ==========
+
+export interface PartidaDiario {
+  nropartida: number;
+  fecha: Date;
+  descripcion: string;
+  referencia: string;
+  lineas: LineaPartida[];
+}
+
+export interface LineaPartida {
+  ctacontable: string;
+  descripcionCta: string;
+  debito: number;
+  credito: number;
+}
+
+export interface BalanceComprobacion {
+  ctacontable: string;
+  descripcion: string;
+  saldoAnterior: number;
+  debeMes: number;
+  haberMes: number;
+  saldoDeudor: number;
+  saldoAcreedor: number;
+}
+
+export interface EstadoResultado {
+  renglon: number;
+  descripcion: string;
+  montoActual: number;
+  montoAnterior?: number;
+}
+
+// ========== Request/Response DTOs ==========
+
+export interface ContabilizarPartidaDto {
+  empresaId: number;
+  Idsucursal: number;
+  periodo: number;
+  anio: number;
+  moduloId: number;
+  documentoId: number;
+  fechadocumento?: Date;
+  nroreferencia: string;
+  descripcion: string;
+  factordecambio?: number;
+  lineas: LineaPartidaDto[];
+}
+
+export interface LineaPartidaDto {
+  ctacontable: string;
+  descripcion?: string;
+  debito: number;
+  credito: number;
+}
+
+export interface CierreContableRequest {
+  empresaId: number;
+  periodo: number;
+  anio: number;
+  observacion?: string;
+}
+
+export interface ReporteRequest {
+  empresaId: number;
+  periodo: number;
+  anio: number;
+  fechaDesde?: Date;
+  fechaHasta?: Date;
+}
+
 ```
 
 ---
@@ -3714,6 +4108,311 @@ export class ColoresService {
    */
   update(id: number, dto: Partial<Color>): Observable<Color> {
     return this.api.put<Color>(this.path, id, dto);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\core\services\contabilidad.service.ts
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ApiService } from './api.service';
+import {
+  CtaContable, GrupoContable, CopdaMae, CopdaDet, MovCta,
+  SaldoCta, PeriodoContable, CierreContable, PlantillaPdaMae,
+  PlantillaPdaDet, PlantillaBalancesMae, PlantillaBalancesDet,
+  TipoDocFiscal, FactorCambio, ReporteLiquidez, ReporteDiario,
+  ReporteBalance, ImpuestoVecinal, NivelCta, NaturalezaCta,
+  ContabilizarPartidaDto, CierreContableRequest, ReporteRequest,
+  BalanceComprobacion, PartidaDiario,
+} from '../models/contabilidad.models';
+
+@Injectable({ providedIn: 'root' })
+export class ContabilidadService {
+  private api = inject(ApiService);
+
+  private readonly R = '/contabilidad';
+
+  // ========== Plan de Cuentas ==========
+
+  getCuentas(): Observable<CtaContable[]> {
+    return this.api.get<CtaContable[]>(`${this.R}/ctacontables`);
+  }
+
+  getCuenta(id: number): Observable<CtaContable> {
+    return this.api.getOne<CtaContable>(`${this.R}/ctacontables`, id);
+  }
+
+  crearCuenta(dto: Partial<CtaContable>): Observable<CtaContable> {
+    return this.api.post<CtaContable>(`${this.R}/ctacontables`, dto);
+  }
+
+  actualizarCuenta(id: number, dto: Partial<CtaContable>): Observable<CtaContable> {
+    return this.api.put<CtaContable>(`${this.R}/ctacontables`, id, dto);
+  }
+
+  eliminarCuenta(id: number): Observable<any> {
+    return this.api.put<any>(`${this.R}/ctacontables`, `${id}/remove`, {});
+  }
+
+  // ========== Grupos Contables ==========
+
+  getGrupos(): Observable<GrupoContable[]> {
+    return this.api.get<GrupoContable[]>(`${this.R}/grupocontable`);
+  }
+
+  getGrupo(id: number): Observable<GrupoContable> {
+    return this.api.getOne<GrupoContable>(`${this.R}/grupocontable`, id);
+  }
+
+  crearGrupo(dto: Partial<GrupoContable>): Observable<GrupoContable> {
+    return this.api.post<GrupoContable>(`${this.R}/grupocontable`, dto);
+  }
+
+  actualizarGrupo(id: number, dto: Partial<GrupoContable>): Observable<GrupoContable> {
+    return this.api.put<GrupoContable>(`${this.R}/grupocontable`, id, dto);
+  }
+
+  eliminarGrupo(id: number): Observable<any> {
+    return this.api.put<any>(`${this.R}/grupocontable`, `${id}/remove`, {});
+  }
+
+  // ========== Niveles de Cuenta ==========
+
+  getNiveles(): Observable<NivelCta[]> {
+    return this.api.get<NivelCta[]>(`${this.R}/nivelcta`);
+  }
+
+  getNivel(id: number): Observable<NivelCta> {
+    return this.api.getOne<NivelCta>(`${this.R}/nivelcta`, id);
+  }
+
+  crearNivel(dto: Partial<NivelCta>): Observable<NivelCta> {
+    return this.api.post<NivelCta>(`${this.R}/nivelcta`, dto);
+  }
+
+  actualizarNivel(id: number, dto: Partial<NivelCta>): Observable<NivelCta> {
+    return this.api.put<NivelCta>(`${this.R}/nivelcta`, id, dto);
+  }
+
+  eliminarNivel(id: number): Observable<any> {
+    return this.api.put<any>(`${this.R}/nivelcta`, `${id}/remove`, {});
+  }
+
+  // ========== Naturaleza de Cuenta ==========
+
+  getNaturalezas(): Observable<NaturalezaCta[]> {
+    return this.api.get<NaturalezaCta[]>(`${this.R}/naturalezacta`);
+  }
+
+  // ========== Partidas de Diario (Comprobantes) ==========
+
+  getPartidas(): Observable<CopdaMae[]> {
+    return this.api.get<CopdaMae[]>(`${this.R}/copdamae`);
+  }
+
+  getPartida(id: number): Observable<CopdaMae> {
+    return this.api.getOne<CopdaMae>(`${this.R}/copdamae`, id);
+  }
+
+  crearPartida(dto: Partial<CopdaMae>): Observable<CopdaMae> {
+    return this.api.post<CopdaMae>(`${this.R}/copdamae`, dto);
+  }
+
+  actualizarPartida(id: number, dto: Partial<CopdaMae>): Observable<CopdaMae> {
+    return this.api.put<CopdaMae>(`${this.R}/copdamae`, id, dto);
+  }
+
+  eliminarPartida(id: number): Observable<any> {
+    return this.api.put<any>(`${this.R}/copdamae`, `${id}/remove`, {});
+  }
+
+  // ========== Detalle de Partidas ==========
+
+  getDetallesPartida(partidaId: number): Observable<CopdaDet[]> {
+    return this.api.get<CopdaDet[]>(`${this.R}/copdadet`, { copdamaeId: partidaId });
+  }
+
+  crearDetallePartida(dto: Partial<CopdaDet>): Observable<CopdaDet> {
+    return this.api.post<CopdaDet>(`${this.R}/copdadet`, dto);
+  }
+
+  actualizarDetallePartida(id: number, dto: Partial<CopdaDet>): Observable<CopdaDet> {
+    return this.api.put<CopdaDet>(`${this.R}/copdadet`, id, dto);
+  }
+
+  eliminarDetallePartida(id: number): Observable<any> {
+    return this.api.put<any>(`${this.R}/copdadet`, `${id}/remove`, {});
+  }
+
+  // ========== Contabilización (lógica de negocio) ==========
+
+  contabilizarPartida(dto: ContabilizarPartidaDto): Observable<CopdaMae> {
+    return this.api.post<CopdaMae>(`${this.R}/copdamae/contabilizar`, dto);
+  }
+
+  // ========== Movimientos Contables ==========
+
+  getMovimientos(): Observable<MovCta[]> {
+    return this.api.get<MovCta[]>(`${this.R}/movcta`);
+  }
+
+  getMovimiento(id: number): Observable<MovCta> {
+    return this.api.getOne<MovCta>(`${this.R}/movcta`, id);
+  }
+
+  // ========== Saldos de Cuentas ==========
+
+  getSaldos(): Observable<SaldoCta[]> {
+    return this.api.get<SaldoCta[]>(`${this.R}/saldoscta`);
+  }
+
+  getSaldo(id: number): Observable<SaldoCta> {
+    return this.api.getOne<SaldoCta>(`${this.R}/saldoscta`, id);
+  }
+
+  crearSaldo(dto: Partial<SaldoCta>): Observable<SaldoCta> {
+    return this.api.post<SaldoCta>(`${this.R}/saldoscta`, dto);
+  }
+
+  actualizarSaldo(id: number, dto: Partial<SaldoCta>): Observable<SaldoCta> {
+    return this.api.put<SaldoCta>(`${this.R}/saldoscta`, id, dto);
+  }
+
+  // ========== Períodos Contables ==========
+
+  getPeriodos(): Observable<PeriodoContable[]> {
+    return this.api.get<PeriodoContable[]>(`${this.R}/periodoctable`);
+  }
+
+  getPeriodo(id: number): Observable<PeriodoContable> {
+    return this.api.getOne<PeriodoContable>(`${this.R}/periodoctable`, id);
+  }
+
+  crearPeriodo(dto: Partial<PeriodoContable>): Observable<PeriodoContable> {
+    return this.api.post<PeriodoContable>(`${this.R}/periodoctable`, dto);
+  }
+
+  actualizarPeriodo(id: number, dto: Partial<PeriodoContable>): Observable<PeriodoContable> {
+    return this.api.put<PeriodoContable>(`${this.R}/periodoctable`, id, dto);
+  }
+
+  eliminarPeriodo(id: number): Observable<any> {
+    return this.api.put<any>(`${this.R}/periodoctable`, `${id}/remove`, {});
+  }
+
+  // ========== Cierre Contable ==========
+
+  getCierres(): Observable<CierreContable[]> {
+    return this.api.get<CierreContable[]>(`${this.R}/cierrectable`);
+  }
+
+  getCierre(id: number): Observable<CierreContable> {
+    return this.api.getOne<CierreContable>(`${this.R}/cierrectable`, id);
+  }
+
+  crearCierre(dto: Partial<CierreContable>): Observable<CierreContable> {
+    return this.api.post<CierreContable>(`${this.R}/cierrectable`, dto);
+  }
+
+  realizarCierre(request: CierreContableRequest): Observable<any> {
+    return this.api.post<any>(`${this.R}/cierrectable/realizar`, request);
+  }
+
+  // ========== Plantillas PDA ==========
+
+  getPlantillasPda(): Observable<PlantillaPdaMae[]> {
+    return this.api.get<PlantillaPdaMae[]>(`${this.R}/plantillapdamae`);
+  }
+
+  getPlantillaPda(id: number): Observable<PlantillaPdaMae> {
+    return this.api.getOne<PlantillaPdaMae>(`${this.R}/plantillapdamae`, id);
+  }
+
+  getDetallesPlantillaPda(plantillaId: number): Observable<PlantillaPdaDet[]> {
+    return this.api.get<PlantillaPdaDet[]>(`${this.R}/plantillapdadet`, { tcoplantillapdamaeId: plantillaId });
+  }
+
+  // ========== Plantillas Balances ==========
+
+  getPlantillasBalances(): Observable<PlantillaBalancesMae[]> {
+    return this.api.get<PlantillaBalancesMae[]>(`${this.R}/plantillabalancesmae`);
+  }
+
+  getPlantillaBalances(id: number): Observable<PlantillaBalancesMae> {
+    return this.api.getOne<PlantillaBalancesMae>(`${this.R}/plantillabalancesmae`, id);
+  }
+
+  getDetallesPlantillaBalances(plantillaId: number): Observable<PlantillaBalancesDet[]> {
+    return this.api.get<PlantillaBalancesDet[]>(`${this.R}/plantillabalancesdet`, { cocdefbalmaId: plantillaId });
+  }
+
+  // ========== Tipos de Documento Fiscal ==========
+
+  getTiposDocFiscal(): Observable<TipoDocFiscal[]> {
+    return this.api.get<TipoDocFiscal[]>(`${this.R}/tipos-doc-fiscal`);
+  }
+
+  // ========== Factores de Cambio ==========
+
+  getFactoresCambio(): Observable<FactorCambio[]> {
+    return this.api.get<FactorCambio[]>(`${this.R}/factordecambio`);
+  }
+
+  // ========== Reportes ==========
+
+  getReportesLiquidez(): Observable<ReporteLiquidez[]> {
+    return this.api.get<ReporteLiquidez[]>(`${this.R}/repliquidez`);
+  }
+
+  getReportesDiarios(): Observable<ReporteDiario[]> {
+    return this.api.get<ReporteDiario[]>(`${this.R}/repdiarios`);
+  }
+
+  getReportesBalances(): Observable<ReporteBalance[]> {
+    return this.api.get<ReporteBalance[]>(`${this.R}/repbalances`);
+  }
+
+  // ========== Reportes Generados ==========
+
+  generarBalanceComprobacion(request: ReporteRequest): Observable<BalanceComprobacion[]> {
+    return this.api.post<BalanceComprobacion[]>(`${this.R}/reportes/balance-comprobacion`, request);
+  }
+
+  generarLibroDiario(request: ReporteRequest): Observable<PartidaDiario[]> {
+    return this.api.post<PartidaDiario[]>(`${this.R}/reportes/libro-diario`, request);
+  }
+
+  generarLibroMayor(request: ReporteRequest): Observable<MovCta[]> {
+    return this.api.post<MovCta[]>(`${this.R}/reportes/libro-mayor`, request);
+  }
+
+  // ========== Impuesto Vecinal ==========
+
+  getImpuestosVecinales(): Observable<ImpuestoVecinal[]> {
+    return this.api.get<ImpuestoVecinal[]>(`${this.R}/impuestovecinal`);
+  }
+
+  // ========== Integración con otros módulos ==========
+
+  contabilizarFactura(facturaId: number): Observable<any> {
+    return this.api.post<any>(`${this.R}/integracion/factura`, { documentoId: facturaId });
+  }
+
+  contabilizarCxC(movimientoId: number): Observable<any> {
+    return this.api.post<any>(`${this.R}/integracion/cxc`, { documentoId: movimientoId });
+  }
+
+  contabilizarCxP(movimientoId: number): Observable<any> {
+    return this.api.post<any>(`${this.R}/integracion/cxp`, { documentoId: movimientoId });
+  }
+
+  contabilizarBanco(movimientoId: number): Observable<any> {
+    return this.api.post<any>(`${this.R}/integracion/bancos`, { documentoId: movimientoId });
   }
 }
 
@@ -14078,6 +14777,392 @@ export class Settings implements OnInit {
 
 ---
 
+## 📄 src\app\features\contabilidad\cierre-contable\cierre-contable.html
+
+```typescript
+<p-toast />
+<p-confirm-dialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-lock"></i> Cierre Contable</h2>
+  </div>
+
+  <div class="cierre-layout">
+    <!-- Panel izquierdo: Formulario de cierre -->
+    <div class="cierre-form-panel">
+      <div class="card">
+        <h4><i class="pi pi-calendar"></i> Realizar Cierre de Período</h4>
+        <p class="text-muted mb-3">El cierre de período bloquea todos los movimientos contables del mes seleccionado.</p>
+
+        <div class="p-fluid">
+          <div class="p-field mb-3">
+            <label>Período (Mes)</label>
+            <p-select [options]="meses" [(ngModel)]="periodoSeleccionado" optionLabel="label" optionValue="value"
+                      placeholder="Seleccionar mes" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+
+          <div class="p-field mb-3">
+            <label>Año</label>
+            <p-inputNumber [(ngModel)]="anioSeleccionado" [min]="2020" [max]="2030" styleClass="w-full" size="small" />
+          </div>
+
+          <div class="p-field mb-3">
+            <label>Observación (opcional)</label>
+            <input pInputText [(ngModel)]="observacion" class="w-full" pSize="small" placeholder="Motivo del cierre" />
+          </div>
+
+          <p-button size="small" label="Realizar Cierre" icon="pi pi-lock" severity="danger" variant="text" [raised]="true" [rounded]="true"
+                    [loading]="cargando()" (onClick)="realizarCierre()" styleClass="w-full" />
+        </div>
+      </div>
+
+      <!-- Info card -->
+      <div class="card info-card mt-3">
+        <h5><i class="pi pi-info-circle"></i> ¿Qué hace el cierre?</h5>
+        <ul>
+          <li>Marca el período como <strong>"Cerrado"</strong></li>
+          <li>Bloquea la creación de nuevas partidas contables</li>
+          <li>Registra la fecha y usuario del cierre</li>
+          <li>Los períodos anteriores permanecen abiertos</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Panel derecho: Estados de períodos -->
+    <div class="cierre-status-panel">
+      <!-- Períodos -->
+      <div class="card mb-3">
+        <h4><i class="pi pi-calendar"></i> Estado de Períodos</h4>
+        <p-table [value]="periodos()" [paginator]="true" [rows]="12" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[6, 12, 24]" sortField="nroanio" [sortOrder]="-1">
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 60px">Año</th>
+              <th>Mes</th>
+              <th style="width: 100px">Estado</th>
+              <th style="width: 80px">Acción</th>
+            </tr>
+          </ng-template>
+            <ng-template pTemplate="body" let-periodo>
+            <tr [class.fila-cerrada]="periodo.sn_abierto === 'N'" [class.fila-actual]="isPeriodoActual(periodo.nromes, periodo.nroanio)">
+              <td class="text-center"><strong>{{ periodo.nroanio }}</strong></td>
+              <td>{{ getMesLabel(periodo.nromes) }}</td>
+              <td class="text-center">
+                <p-tag [value]="getEstadoPeriodo(periodo)" [severity]="getSeverityPeriodo(periodo)" styleClass="tag-sm" />
+              </td>
+              <td class="text-center">
+                @if (periodo.sn_abierto === 'S') {
+                  <p-button size="small" icon="pi pi-lock" severity="danger" variant="text" [rounded]="true"
+                            pTooltip="Cerrar período" (onClick)="periodoSeleccionado.set(periodo.nromes); anioSeleccionado.set(periodo.nroanio)" />
+                } @else {
+                  <i class="pi pi-check-circle text-success"></i>
+                }
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-muted">No hay períodos configurados</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Historial de cierres -->
+      <div class="card">
+        <h4><i class="pi pi-history"></i> Historial de Cierres</h4>
+        <p-table [value]="cierres()" [paginator]="true" [rows]="10" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[5, 10, 25]">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Período</th>
+              <th>Fecha Cierre</th>
+              <th>Observación</th>
+              <th>Usuario</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-cierre>
+            <tr>
+              <td><strong>{{ cierre.periodo }}/{{ cierre.anio }}</strong></td>
+              <td>{{ cierre.fechacierre | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ cierre.observacion }}</td>
+              <td>{{ cierre.usuarioCreated }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-muted">No hay cierres registrados</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\cierre-contable\cierre-contable.scss
+
+```typescript
+.page-container {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i { color: var(--c-primary); }
+  }
+}
+
+.cierre-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 1rem;
+}
+
+.cierre-form-panel {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i { color: var(--c-primary); }
+  }
+}
+
+.cierre-status-panel {
+  h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.1rem;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i { color: var(--c-primary); }
+  }
+}
+
+.info-card {
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-primary);
+
+  h5 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.95rem;
+    color: var(--c-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    line-height: 1.8;
+  }
+}
+
+.fila-cerrada {
+  opacity: 0.7;
+  background: #fef2f2;
+}
+
+.fila-actual {
+  background: #f0fdf4;
+}
+
+.text-muted {
+  color: var(--c-text-muted);
+}
+
+.text-success {
+  color: var(--c-success);
+}
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+// Responsive
+@media (max-width: 960px) {
+  .cierre-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cierre-form-panel {
+    position: static;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\cierre-contable\cierre-contable.ts
+
+```typescript
+import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import { PeriodoContable, CierreContable } from '../../../core/models/contabilidad.models';
+
+@Component({
+  selector: 'app-cierre-contable',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, TableModule, ButtonModule,
+    InputNumberModule, InputTextModule, SelectModule, ToastModule,
+    ConfirmDialogModule, TagModule, TooltipModule,
+  ],
+  providers: [MessageService, ConfirmationService],
+  templateUrl: './cierre-contable.html',
+  styleUrl: './cierre-contable.scss',
+})
+export class CierreContableComponent implements OnInit {
+  private contabilidad = inject(ContabilidadService);
+  private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+
+  // Estado
+  periodos = signal<PeriodoContable[]>([]);
+  cierres = signal<CierreContable[]>([]);
+  cargando = signal(false);
+
+  // Filtros / Formulario
+  periodoSeleccionado = signal<number>(new Date().getMonth() + 1);
+  anioSeleccionado = signal<number>(new Date().getFullYear());
+  observacion = signal('');
+
+  // Meses
+  readonly meses = [
+    { label: 'Enero', value: 1 }, { label: 'Febrero', value: 2 }, { label: 'Marzo', value: 3 },
+    { label: 'Abril', value: 4 }, { label: 'Mayo', value: 5 }, { label: 'Junio', value: 6 },
+    { label: 'Julio', value: 7 }, { label: 'Agosto', value: 8 }, { label: 'Septiembre', value: 9 },
+    { label: 'Octubre', value: 10 }, { label: 'Noviembre', value: 11 }, { label: 'Diciembre', value: 12 },
+  ];
+
+  ngOnInit(): void {
+    this.cargarDatos();
+  }
+
+  private cargarDatos(): void {
+    this.cargando.set(true);
+
+    this.contabilidad.getPeriodos()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.periodos.set(data); this.cargando.set(false); },
+        error: () => { this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error cargando períodos' }); this.cargando.set(false); },
+      });
+
+    this.contabilidad.getCierres()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (data) => this.cierres.set(data) });
+  }
+
+  realizarCierre(): void {
+    const periodo = this.periodoSeleccionado();
+    const anio = this.anioSeleccionado();
+
+    // Verificar si ya existe un cierre para este período
+    const yaCerrado = this.periodos().find(p => p.nroanio === anio && p.nromes === periodo && p.sn_abierto === 'N');
+    if (yaCerrado) {
+      this.messageService.add({ severity: 'warn', summary: 'Ya cerrado', detail: `El período ${periodo}/${anio} ya está cerrado` });
+      return;
+    }
+
+    this.confirmationService.confirm({
+      message: `¿Está seguro de cerrar el período ${this.meses.find(m => m.value === periodo)?.label} ${anio}? Esta acción bloqueará todos los movimientos contables de este período.`,
+      header: 'Confirmar cierre contable',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Cerrar período',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.cargando.set(true);
+        this.contabilidad.realizarCierre({
+          empresaId: 0,
+          periodo,
+          anio,
+          observacion: this.observacion() || `Cierre ${periodo}/${anio}`,
+        }).pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Cierre realizado', detail: `Período ${periodo}/${anio} cerrado exitosamente` });
+            this.observacion.set('');
+            this.cargarDatos();
+            this.cargando.set(false);
+          },
+          error: (err) => {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al realizar cierre' });
+            this.cargando.set(false);
+          },
+        });
+      },
+    });
+  }
+
+  getEstadoPeriodo(periodo: PeriodoContable): string {
+    return periodo.sn_abierto === 'S' ? 'Abierto' : 'Cerrado';
+  }
+
+  getSeverityPeriodo(periodo: PeriodoContable): string {
+    return periodo.sn_abierto === 'S' ? 'success' : 'danger';
+  }
+
+  getMesLabel(mes: number): string {
+    return this.meses.find(m => m.value === mes)?.label ?? '';
+  }
+
+  isPeriodoActual(periodo: number, anio: number): boolean {
+    const now = new Date();
+    return periodo === now.getMonth() + 1 && anio === now.getFullYear();
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\features\contabilidad\contabilidad.routes.ts
 
 ```typescript
@@ -14086,7 +15171,12 @@ import { Routes } from '@angular/router';
 export const CONTABILIDAD_ROUTES: Routes = [
   { path: '', redirectTo: 'ctacontables', pathMatch: 'full' },
 
-  // Catálogos genéricos
+  // ===== Componentes especializados =====
+  { path: 'partida-diario', loadComponent: () => import('./partida-diario/partida-diario').then((m) => m.PartidaDiarioComponent) },
+  { path: 'reportes', loadComponent: () => import('./reportes/reportes-contables').then((m) => m.ReportesContablesComponent) },
+  { path: 'cierre-contable', loadComponent: () => import('./cierre-contable/cierre-contable').then((m) => m.CierreContableComponent) },
+
+  // ===== Catálogos genéricos =====
   { path: 'ctacontables', data: { nombre: 'ctacontables' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'ctacontables/editar/:id', data: { nombre: 'ctacontables' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'grupocontable', data: { nombre: 'grupocontable' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
@@ -14116,7 +15206,7 @@ export const CONTABILIDAD_ROUTES: Routes = [
   { path: 'movcta', data: { nombre: 'movcta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'movcta/editar/:id', data: { nombre: 'movcta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
 
-  // Maestro-detalle
+  // ===== Maestro-detalle =====
   { path: 'plantillapdamae', data: { nombre: 'plantillapda' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle').then((m) => m.MaestroDetalle) },
   { path: 'plantillapdamae/nuevo', data: { nombre: 'plantillapda' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm) },
   { path: 'plantillapdamae/editar/:id', data: { nombre: 'plantillapda' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm) },
@@ -14129,6 +15219,1182 @@ export const CONTABILIDAD_ROUTES: Routes = [
 
   { path: '**', redirectTo: 'ctacontables' },
 ];
+```
+
+---
+
+## 📄 src\app\features\contabilidad\partida-diario\partida-diario.html
+
+```typescript
+<p-toast />
+<p-confirm-dialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-book"></i> Partidas de Diario</h2>
+    <p-button size="small" label="Nueva Partida" icon="pi pi-plus" severity="success" variant="text" [raised]="true" [rounded]="true" (onClick)="nuevaPartida()" />
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3 filtros-bar">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Periodo</label>
+            <p-select [options]="periodos() | slice:0:0" placeholder="Todos" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Año</label>
+            <p-inputNumber [min]="2020" [max]="2030" placeholder="Año" styleClass="w-full" size="small" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-4">
+          <div class="p-field">
+            <label>Referencia</label>
+            <input pInputText placeholder="Buscar referencia..." class="w-full" pSize="small" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Partidas -->
+  <div class="card">
+    <p-table [value]="partidasFiltradas()" [paginator]="true" [rows]="15" [showCurrentPageReport]="true"
+             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+             [rowsPerPageOptions]="[10, 15, 25, 50]" size="small"
+             [globalFilterFields]="['nropartida', 'nroreferencia', 'descripcion']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 80px">Partida</th>
+          <th style="width: 90px">Período</th>
+          <th style="width: 80px">Mód.</th>
+          <th>Referencia</th>
+          <th>Descripción</th>
+          <th style="width: 100px">Fecha</th>
+          <th style="width: 120px">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-partida>
+        <tr>
+          <td class="text-center"><strong>{{ partida.nropartida }}</strong></td>
+          <td class="text-center">
+            <p-tag [value]="getPeriodoLabel(partida.periodo) + ' ' + partida.anio" severity="info" styleClass="tag-sm" />
+          </td>
+          <td class="text-center">
+            <p-tag [value]="getModuloLabel(partida.moduloId)" severity="secondary" styleClass="tag-sm" />
+          </td>
+          <td>{{ partida.nroreferencia }}</td>
+          <td>{{ partida.descripcion }}</td>
+          <td>{{ partida.fechadocumento | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <p-button size="small" icon="pi pi-eye" severity="info" variant="text" [rounded]="true" pTooltip="Ver detalles" (onClick)="verDetalles(partida)" />
+              <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarPartida(partida)" />
+              <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarPartida(partida)" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="7" class="text-center text-muted">No se encontraron partidas de diario</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Dialog Nueva/Editar Partida -->
+  <p-dialog [(visible)]="dialogVisible" [header]="esEdicion() ? 'Editar Partida' : 'Nueva Partida de Diario'"
+            [modal]="true" [draggable]="false" [resizable]="false"
+            [breakpoints]="{ '960px': '85vw', '640px': '95vw' }" styleClass="w-full max-w-50rem">
+    <div class="partida-form">
+      <!-- Datos de la Partida -->
+      <div class="card mb-3">
+        <h4 class="mb-2">Datos de la Partida</h4>
+        <div class="p-fluid">
+          <div class="p-grid">
+            <div class="p-col-12 p-col-3">
+              <div class="p-field">
+                <label>Período</label>
+                <p-inputNumber formControlName="periodo" [min]="1" [max]="12" styleClass="w-full" size="small" />
+              </div>
+            </div>
+            <div class="p-col-12 p-col-3">
+              <div class="p-field">
+                <label>Año</label>
+                <p-inputNumber formControlName="anio" [min]="2020" [max]="2030" styleClass="w-full" size="small" />
+              </div>
+            </div>
+            <div class="p-col-12 p-col-6">
+              <div class="p-field">
+                <label>Referencia</label>
+                <input pInputText formControlName="nroreferencia" class="w-full" pSize="small" placeholder="Ej: FAC-001-001-00001" />
+              </div>
+            </div>
+            <div class="p-col-12 p-col-6">
+              <div class="p-field">
+                <label>Descripción</label>
+                <input pInputText formControlName="descripcion" class="w-full" pSize="small" placeholder="Descripción de la partida" />
+              </div>
+            </div>
+            <div class="p-col-12 p-col-3">
+              <div class="p-field">
+                <label>Módulo</label>
+                <p-inputNumber formControlName="moduloId" [min]="1" [max]="99" styleClass="w-full" size="small" />
+              </div>
+            </div>
+            <div class="p-col-12 p-col-3">
+              <div class="p-field">
+                <label>Documento</label>
+                <p-inputNumber formControlName="documentoId" [min]="0" styleClass="w-full" size="small" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Líneas de Detalle -->
+      <div class="card mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h4 class="mb-0">Líneas de la Partida</h4>
+          <p-button size="small" label="Agregar Línea" icon="pi pi-plus" severity="success" variant="text" [rounded]="true" (onClick)="agregarLinea()" />
+        </div>
+
+        <div class="lineas-container">
+          @for (linea of formDetalles.controls; track $index) {
+            <div class="linea-row" [class.linea-error]="linea.get('ctacontable')?.invalid && linea.get('ctacontable')?.touched">
+              <span class="linea-numero">{{ $index + 1 }}</span>
+
+              <div class="linea-campo campo-cta">
+                <label>Cuenta</label>
+                <input pInputText [formControl]="$any(linea).get('ctacontable')" placeholder="Código" class="w-full" pSize="small" />
+              </div>
+
+              <div class="linea-campo campo-desc">
+                <label>Descripción</label>
+                <input pInputText [formControl]="$any(linea).get('descripcion')" placeholder="Concepto" class="w-full" pSize="small" />
+              </div>
+
+              <div class="linea-campo campo-monto">
+                <label>Débito</label>
+                <p-inputNumber [formControl]="$any(linea).get('debito')" [min]="0" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2"
+                               [useGrouping]="true" [inputStyle]="{ width: '100%' }" styleClass="w-full" size="small" />
+              </div>
+
+              <div class="linea-campo campo-monto">
+                <label>Crédito</label>
+                <p-inputNumber [formControl]="$any(linea).get('credito')" [min]="0" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2"
+                               [useGrouping]="true" [inputStyle]="{ width: '100%' }" styleClass="w-full" size="small" />
+              </div>
+
+              <p-button size="small" icon="pi pi-times" severity="danger" variant="text" [rounded]="true" (onClick)="eliminarLinea($index)" [disabled]="formDetalles.length <= 2" />
+            </div>
+          }
+        </div>
+
+        <!-- Totales -->
+        <div class="totales-bar mt-2">
+          <div class="total-item">
+            <span class="total-label">Total Débito:</span>
+            <span class="total-value">L {{ totalDebito() | number:'1.2-2' }}</span>
+          </div>
+          <div class="total-item">
+            <span class="total-label">Total Crédito:</span>
+            <span class="total-value">L {{ totalCredito() | number:'1.2-2' }}</span>
+          </div>
+          <div class="total-item" [class.diferencia-ok]="partidaCuadrada()" [class.diferencia-error]="!partidaCuadrada() && diferencia() !== 0">
+            <span class="total-label">Diferencia:</span>
+            <span class="total-value">L {{ diferencia() | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="d-flex gap-2 justify-content-end">
+        <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" (onClick)="dialogVisible.set(false)" />
+        <p-button size="small" label="Contabilizar" icon="pi pi-check-circle" severity="success" variant="text" [raised]="true" [rounded]="true"
+                  [loading]="cargando()" [disabled]="!partidaCuadrada() || form.invalid" (onClick)="contabilizar()" />
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog Detalles (solo lectura) -->
+  <p-dialog [(visible)]="dialogDetallesVisible" [header]="'Partida #' + (partidaSeleccionada()?.nropartida ?? '')"
+            [modal]="true" [draggable]="false" [resizable]="false"
+            [breakpoints]="{ '960px': '85vw', '640px': '95vw' }" styleClass="w-full max-w-40rem"
+            (onHide)="partidaSeleccionada.set(null)">
+    @if (partidaSeleccionada(); as partida) {
+      <div class="partida-info mb-3">
+        <div class="info-grid">
+          <div><strong>Fecha:</strong> {{ partida.fechadocumento | date:'dd/MM/yyyy' }}</div>
+          <div><strong>Referencia:</strong> {{ partida.nroreferencia }}</div>
+          <div><strong>Módulo:</strong> {{ getModuloLabel(partida.moduloId) }}</div>
+          <div><strong>Descripción:</strong> {{ partida.descripcion }}</div>
+        </div>
+      </div>
+
+      <p-table [value]="detallesPartida()" size="small">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Fila</th>
+            <th>Cuenta</th>
+            <th>Descripción</th>
+            <th class="text-right">Débito</th>
+            <th class="text-right">Crédito</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-det>
+          <tr>
+            <td class="text-center">{{ det.nrofila }}</td>
+            <td>{{ det.ctacontable }}</td>
+            <td>{{ det.descripcion }}</td>
+            <td class="text-right">{{ det.debito | number:'1.2-2' }}</td>
+            <td class="text-right">{{ det.credito | number:'1.2-2' }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </p-dialog>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\partida-diario\partida-diario.scss
+
+```typescript
+.page-container {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i { color: var(--c-primary); }
+  }
+}
+
+.filtros-bar {
+  padding: 0.75rem 1rem;
+
+  .p-field {
+    margin-bottom: 0;
+  }
+}
+
+.lineas-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.linea-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  background: var(--c-surface-ground);
+
+  &.linea-error {
+    border-color: var(--c-error);
+    background: #fef2f2;
+  }
+}
+
+.linea-numero {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-primary);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.linea-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  label {
+    font-size: 0.7rem;
+    color: var(--c-text-muted);
+    font-weight: 500;
+  }
+}
+
+.campo-cta { flex: 0 0 120px; }
+.campo-desc { flex: 1; min-width: 150px; }
+.campo-monto { flex: 0 0 140px; }
+
+.totales-bar {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface-ground);
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+}
+
+.total-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.total-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+}
+
+.total-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.diferencia-ok {
+  .total-value { color: var(--c-success); }
+}
+
+.diferencia-error {
+  .total-value { color: var(--c-error); font-weight: 800; }
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+
+  div {
+    font-size: 0.9rem;
+  }
+}
+
+.partida-form {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .linea-row {
+    flex-wrap: wrap;
+  }
+
+  .campo-cta, .campo-desc, .campo-monto {
+    flex: 1 1 100%;
+  }
+
+  .totales-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\partida-diario\partida-diario.ts
+
+```typescript
+import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import { CopdaMae, CopdaDet, CtaContable, PeriodoContable } from '../../../core/models/contabilidad.models';
+
+@Component({
+  selector: 'app-partida-diario',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule,
+    TableModule, ButtonModule, InputTextModule, InputNumberModule,
+    SelectModule, ToastModule, ConfirmDialogModule,
+    DialogModule, TagModule, TooltipModule,
+  ],
+  providers: [MessageService, ConfirmationService],
+  templateUrl: './partida-diario.html',
+  styleUrl: './partida-diario.scss',
+})
+export class PartidaDiarioComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private contabilidad = inject(ContabilidadService);
+  private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+
+  // Estado
+  partidas = signal<CopdaMae[]>([]);
+  cuentas = signal<CtaContable[]>([]);
+  periodos = signal<PeriodoContable[]>([]);
+  partidaSeleccionada = signal<CopdaMae | null>(null);
+  detallesPartida = signal<CopdaDet[]>([]);
+  cargando = signal(false);
+  dialogVisible = signal(false);
+  dialogDetallesVisible = signal(false);
+  esEdicion = signal(false);
+
+  // Filtros
+  filtroPeriodo = signal<number | null>(null);
+  filtroAnio = signal<number | null>(null);
+  filtroReferencia = signal('');
+
+  // Formulario
+  form!: FormGroup;
+  formDetalles!: FormArray;
+
+  // Computed
+  partidasFiltradas = computed(() => {
+    let resultado = this.partidas();
+    const periodo = this.filtroPeriodo();
+    const anio = this.filtroAnio();
+    const ref = this.filtroReferencia();
+
+    if (periodo != null) resultado = resultado.filter(p => p.periodo === periodo);
+    if (anio != null) resultado = resultado.filter(p => p.anio === anio);
+    if (ref) resultado = resultado.filter(p => p.nroreferencia?.toLowerCase().includes(ref.toLowerCase()));
+    return resultado;
+  });
+
+  totalDebito = computed(() => {
+    return this.formDetalles?.controls.reduce((sum, ctrl) => sum + (ctrl.get('debito')?.value || 0), 0) ?? 0;
+  });
+
+  totalCredito = computed(() => {
+    return this.formDetalles?.controls.reduce((sum, ctrl) => sum + (ctrl.get('credito')?.value || 0), 0) ?? 0;
+  });
+
+  diferencia = computed(() => Math.round((this.totalDebito() - this.totalCredito()) * 100) / 100);
+
+  partidaCuadrada = computed(() => this.diferencia() === 0 && this.totalDebito() > 0);
+
+  ngOnInit(): void {
+    this.initForm();
+    this.cargarDatos();
+  }
+
+  private initForm(): void {
+    this.formDetalles = this.fb.array([]);
+    this.form = this.fb.group({
+      periodo: [new Date().getMonth() + 1, Validators.required],
+      anio: [new Date().getFullYear(), Validators.required],
+      nroreferencia: ['', Validators.required],
+      descripcion: ['', Validators.required],
+      moduloId: [1, Validators.required],
+      documentoId: [0],
+      fechadocumento: [new Date()],
+      factordecambio: [1],
+    });
+  }
+
+  private cargarDatos(): void {
+    this.contabilidad.getPartidas()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (data) => this.partidas.set(data), error: () => this.mostrarError('Error cargando partidas') });
+
+    this.contabilidad.getCuentas()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (data) => this.cuentas.set(data), error: () => this.mostrarError('Error cargando cuentas') });
+
+    this.contabilidad.getPeriodos()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (data) => this.periodos.set(data), error: () => {} });
+  }
+
+  // ========== CRUD Partidas ==========
+
+  nuevaPartida(): void {
+    this.esEdicion.set(false);
+    this.form.reset({
+      periodo: new Date().getMonth() + 1,
+      anio: new Date().getFullYear(),
+      nroreferencia: '',
+      descripcion: '',
+      moduloId: 1,
+      documentoId: 0,
+      fechadocumento: new Date(),
+      factordecambio: 1,
+    });
+    this.formDetalles.clear();
+    this.agregarLinea();
+    this.agregarLinea();
+    this.dialogVisible.set(true);
+  }
+
+  editarPartida(partida: CopdaMae): void {
+    this.esEdicion.set(true);
+    this.partidaSeleccionada.set(partida);
+    this.form.patchValue({
+      periodo: partida.periodo,
+      anio: partida.anio,
+      nroreferencia: partida.nroreferencia,
+      descripcion: partida.descripcion,
+      moduloId: partida.moduloId,
+      documentoId: partida.documentoId,
+      fechadocumento: partida.fechadocumento,
+      factordecambio: partida.factordecambio,
+    });
+
+    // Cargar detalles
+    this.contabilidad.getDetallesPartida(partida.copdamaeId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (detalles) => {
+          this.formDetalles.clear();
+          detalles.forEach(det => {
+            this.formDetalles.push(this.fb.group({
+              ctacontable: [det.ctacontable, Validators.required],
+              descripcion: [det.descripcion],
+              debito: [det.debito || 0],
+              credito: [det.credito || 0],
+            }));
+          });
+          this.detallesPartida.set(detalles);
+        },
+      });
+    this.dialogVisible.set(true);
+  }
+
+  verDetalles(partida: CopdaMae): void {
+    this.partidaSeleccionada.set(partida);
+    this.contabilidad.getDetallesPartida(partida.copdamaeId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (det) => { this.detallesPartida.set(det); this.dialogDetallesVisible.set(true); } });
+  }
+
+  // ========== Líneas de detalle ==========
+
+  agregarLinea(): void {
+    this.formDetalles.push(this.fb.group({
+      ctacontable: ['', Validators.required],
+      descripcion: [''],
+      debito: [0],
+      credito: [0],
+    }));
+  }
+
+  eliminarLinea(index: number): void {
+    if (this.formDetalles.length > 2) {
+      this.formDetalles.removeAt(index);
+    } else {
+      this.messageService.add({ severity: 'warn', summary: 'Mínimo', detail: 'Una partida debe tener al menos 2 líneas' });
+    }
+  }
+
+  // ========== Contabilizar ==========
+
+  contabilizar(): void {
+    if (!this.form.valid || !this.partidaCuadrada()) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Verifique el formulario y que la partida esté cuadrada' });
+      return;
+    }
+
+    const formValue = this.form.value;
+    const lineas = this.formDetalles.controls.map(ctrl => ({
+      ctacontable: ctrl.get('ctacontable')?.value,
+      descripcion: ctrl.get('descripcion')?.value || formValue.descripcion,
+      debito: ctrl.get('debito')?.value || 0,
+      credito: ctrl.get('credito')?.value || 0,
+    }));
+
+    this.cargando.set(true);
+    this.contabilidad.contabilizarPartida({
+      empresaId: 0, // Se inyecta automáticamente
+      Idsucursal: 0,
+      periodo: formValue.periodo,
+      anio: formValue.anio,
+      moduloId: formValue.moduloId,
+      documentoId: formValue.documentoId || 0,
+      fechadocumento: formValue.fechadocumento,
+      nroreferencia: formValue.nroreferencia,
+      descripcion: formValue.descripcion,
+      factordecambio: formValue.factordecambio,
+      lineas,
+    }).pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe({
+      next: (result) => {
+        this.messageService.add({ severity: 'success', summary: 'Contabilizado', detail: `Partida #${result.nropartida} creada exitosamente` });
+        this.dialogVisible.set(false);
+        this.cargarDatos();
+        this.cargando.set(false);
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al contabilizar' });
+        this.cargando.set(false);
+      },
+    });
+  }
+
+  eliminarPartida(partida: CopdaMae): void {
+    this.confirmationService.confirm({
+      message: `¿Está seguro de eliminar la Partida #${partida.nropartida}?`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.contabilidad.eliminarPartida(partida.copdamaeId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.messageService.add({ severity: 'success', summary: 'Eliminada', detail: 'Partida eliminada' });
+              this.cargarDatos();
+            },
+            error: () => this.mostrarError('Error al eliminar'),
+          });
+      },
+    });
+  }
+
+  // ========== Helpers ==========
+
+  getCuentaDescripcion(ctacontable: string): string {
+    return this.cuentas().find(c => c.ctacontable === ctacontable)?.descripcion ?? '';
+  }
+
+  getPeriodoLabel(periodo: number): string {
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return meses[periodo - 1] ?? '';
+  }
+
+  getModuloLabel(moduloId: number): string {
+    const modulos: Record<number, string> = { 1: 'Gen', 2: 'Fac', 3: 'Inv', 4: 'CxC', 5: 'CxP', 6: 'Bco', 7: 'Pla', 8: 'Con' };
+    return modulos[moduloId] ?? `M${moduloId}`;
+  }
+
+  private mostrarError(msg: string): void {
+    this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\reportes\reportes-contables.html
+
+```typescript
+<p-toast />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-chart-bar"></i> Reportes Contables</h2>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-3">
+          <div class="p-field">
+            <label>Período</label>
+            <p-select [options]="meses" [(ngModel)]="periodo" optionLabel="label" optionValue="value"
+                      placeholder="Seleccionar mes" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Año</label>
+            <p-inputNumber [(ngModel)]="anio" [min]="2020" [max]="2030" styleClass="w-full" size="small" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-7 d-flex align-items-end gap-2">
+          <p-button size="small" label="Generar Todos" icon="pi pi-refresh" severity="success" variant="text" [raised]="true" [rounded]="true"
+                    [loading]="cargando()" (onClick)="generarTodos()" />
+          <p-button size="small" label="Balance" icon="pi pi-chart-line" severity="info" variant="text" [rounded]="true"
+                    [loading]="cargando()" (onClick)="generarBalanceComprobacion()" />
+          <p-button size="small" label="Diario" icon="pi pi-book" severity="info" variant="text" [rounded]="true"
+                    [loading]="cargando()" (onClick)="generarLibroDiario()" />
+          <p-button size="small" label="Mayor" icon="pi pi-list" severity="info" variant="text" [rounded]="true"
+                    [loading]="cargando()" (onClick)="generarLibroMayor()" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen -->
+  <div class="resumen-cards mb-3">
+    <div class="resumen-card">
+      <div class="resumen-icon bg-primary"><i class="pi pi-chart-line"></i></div>
+      <div class="resumen-info">
+        <span class="resumen-label">Cuentas con Movimiento</span>
+        <span class="resumen-value">{{ balanceComprobacion().length }}</span>
+      </div>
+    </div>
+    <div class="resumen-card">
+      <div class="resumen-icon bg-info"><i class="pi pi-book"></i></div>
+      <div class="resumen-info">
+        <span class="resumen-label">Partidas Contables</span>
+        <span class="resumen-value">{{ totalPartidas() }}</span>
+      </div>
+    </div>
+    <div class="resumen-card">
+      <div class="resumen-icon bg-success"><i class="pi pi-arrow-down"></i></div>
+      <div class="resumen-info">
+        <span class="resumen-label">Total Débitos</span>
+        <span class="resumen-value">L {{ totalDebe() | number:'1.2-2' }}</span>
+      </div>
+    </div>
+    <div class="resumen-card">
+      <div class="resumen-icon bg-warning"><i class="pi pi-arrow-up"></i></div>
+      <div class="resumen-info">
+        <span class="resumen-label">Total Créditos</span>
+        <span class="resumen-value">L {{ totalHaber() | number:'1.2-2' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reportes -->
+  <p-tabs [value]="0" styleClass="reportes-tabs">
+    <p-tablist>
+      <p-tab value="0">Balance de Comprobación</p-tab>
+      <p-tab value="1">Libro Diario</p-tab>
+      <p-tab value="2">Libro Mayor</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <!-- Balance de Comprobación -->
+      <p-tabpanel value="0">
+      <div class="card">
+        <h4 class="mb-2">Balance de Comprobación - {{ getMesLabel() }} {{ anio() }}</h4>
+        <p-table [value]="balanceComprobacion()" [paginator]="true" [rows]="20" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[10, 20, 50]">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Cuenta</th>
+              <th>Descripción</th>
+              <th class="text-right">Debe</th>
+              <th class="text-right">Haber</th>
+              <th class="text-right">Saldo Deudor</th>
+              <th class="text-right">Saldo Acreedor</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td><strong>{{ row.ctacontable }}</strong></td>
+              <td>{{ row.descripcion }}</td>
+              <td class="text-right">{{ row.debeMes | number:'1.2-2' }}</td>
+              <td class="text-right">{{ row.haberMes | number:'1.2-2' }}</td>
+              <td class="text-right text-danger">{{ row.saldoDeudor ? (row.saldoDeudor | number:'1.2-2') : '-' }}</td>
+              <td class="text-right text-success">{{ row.saldoAcreedor ? (row.saldoAcreedor | number:'1.2-2') : '-' }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="footer">
+            <tr class="totales-row">
+              <td colspan="2"><strong>TOTALES</strong></td>
+              <td class="text-right"><strong>L {{ totalDebe() | number:'1.2-2' }}</strong></td>
+              <td class="text-right"><strong>L {{ totalHaber() | number:'1.2-2' }}</strong></td>
+              <td class="text-right"><strong>L {{ totalSaldoDeudor() | number:'1.2-2' }}</strong></td>
+              <td class="text-right"><strong>L {{ totalSaldoAcreedor() | number:'1.2-2' }}</strong></td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="6" class="text-center text-muted">No hay datos. Haga clic en "Generar Todos" para generar los reportes.</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+      </p-tabpanel>
+
+      <!-- Libro Diario -->
+      <p-tabpanel value="1">
+      <div class="card">
+        <h4 class="mb-2">Libro Diario - {{ getMesLabel() }} {{ anio() }}</h4>
+        @for (partida of libroDiario(); track partida.nropartida) {
+          <div class="partida-card mb-2">
+            <div class="partida-header">
+              <span class="partida-num">Partida #{{ partida.nropartida }}</span>
+              <span class="partida-ref">{{ partida.referencia }}</span>
+              <span class="partida-fecha">{{ partida.fecha | date:'dd/MM/yyyy' }}</span>
+              <span class="partida-desc">{{ partida.descripcion }}</span>
+            </div>
+            <p-table [value]="partida.lineas" size="small">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Cuenta</th>
+                  <th>Descripción</th>
+                  <th class="text-right">Débito</th>
+                  <th class="text-right">Crédito</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-linea>
+                <tr>
+                  <td>{{ linea.ctacontable }}</td>
+                  <td>{{ linea.descripcion }}</td>
+                  <td class="text-right">{{ linea.debito | number:'1.2-2' }}</td>
+                  <td class="text-right">{{ linea.credito | number:'1.2-2' }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        }
+        @empty {
+          <div class="text-center text-muted p-4">No hay partidas. Haga clic en "Generar Todos" para generar los reportes.</div>
+        }
+      </div>
+      </p-tabpanel>
+
+      <!-- Libro Mayor -->
+      <p-tabpanel value="2">
+      <div class="card">
+        <h4 class="mb-2">Libro Mayor - {{ getMesLabel() }} {{ anio() }}</h4>
+        <p-table [value]="libroMayor()" [paginator]="true" [rows]="20" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[10, 20, 50]">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Cuenta</th>
+              <th>Descripción</th>
+              <th class="text-right">Debe</th>
+              <th class="text-right">Haber</th>
+              <th class="text-right">Saldo</th>
+              <th>Último Mov.</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-mov>
+            <tr>
+              <td><strong>{{ mov.ctacontable }}</strong></td>
+              <td>{{ mov.descripcionCta }}</td>
+              <td class="text-right">{{ mov.debe | number:'1.2-2' }}</td>
+              <td class="text-right">{{ mov.haber | number:'1.2-2' }}</td>
+              <td class="text-right" [class.text-danger]="mov.saldo > 0" [class.text-success]="mov.saldo < 0">
+                {{ mov.saldo | number:'1.2-2' }}
+              </td>
+              <td>{{ mov.fecultmov | date:'dd/MM/yyyy HH:mm' }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="6" class="text-center text-muted">No hay datos. Haga clic en "Generar Todos" para generar los reportes.</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\reportes\reportes-contables.scss
+
+```typescript
+.page-container {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i { color: var(--c-primary); }
+  }
+}
+
+.resumen-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.resumen-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+}
+
+.resumen-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: white;
+
+  &.bg-primary { background: var(--c-primary); }
+  &.bg-info { background: #3b82f6; }
+  &.bg-success { background: var(--c-success); }
+  &.bg-warning { background: var(--c-warning); }
+}
+
+.resumen-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumen-label {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  font-weight: 500;
+}
+
+.resumen-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+// Partidas en Libro Diario
+.partida-card {
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.partida-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface-ground);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.partida-num {
+  font-weight: 700;
+  color: var(--c-primary);
+  font-size: 0.9rem;
+}
+
+.partida-ref {
+  background: var(--c-primary);
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.partida-fecha {
+  color: var(--c-text-muted);
+  font-size: 0.8rem;
+}
+
+.partida-desc {
+  color: var(--c-text);
+  font-size: 0.85rem;
+}
+
+.totales-row {
+  background: var(--c-surface-ground);
+  font-weight: 700;
+}
+
+// Tabs
+.reportes-tabs {
+  :host ::ng-deep .p-tabpanels {
+    padding: 0.5rem;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .resumen-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .partida-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\reportes\reportes-contables.ts
+
+```typescript
+import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { ToastModule } from 'primeng/toast';
+import { TabsModule } from 'primeng/tabs';
+import { CardModule } from 'primeng/card';
+import { MessageService } from 'primeng/api';
+import { ContabilidadService } from '../../../core/services/contabilidad.service';
+
+@Component({
+  selector: 'app-reportes-contables',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, TableModule, ButtonModule,
+    InputNumberModule, SelectModule, ToastModule, TabsModule, CardModule,
+  ],
+  providers: [MessageService],
+  templateUrl: './reportes-contables.html',
+  styleUrl: './reportes-contables.scss',
+})
+export class ReportesContablesComponent implements OnInit {
+  private contabilidad = inject(ContabilidadService);
+  private messageService = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+
+  // Filtros
+  periodo = signal(new Date().getMonth() + 1);
+  anio = signal(new Date().getFullYear());
+  cargando = signal(false);
+
+  // Datos de reportes
+  balanceComprobacion = signal<any[]>([]);
+  libroDiario = signal<any[]>([]);
+  libroMayor = signal<any[]>([]);
+
+  // Tab activa
+  tabActiva = signal(0);
+
+  // Meses
+  readonly meses = [
+    { label: 'Enero', value: 1 }, { label: 'Febrero', value: 2 }, { label: 'Marzo', value: 3 },
+    { label: 'Abril', value: 4 }, { label: 'Mayo', value: 5 }, { label: 'Junio', value: 6 },
+    { label: 'Julio', value: 7 }, { label: 'Agosto', value: 8 }, { label: 'Septiembre', value: 9 },
+    { label: 'Octubre', value: 10 }, { label: 'Noviembre', value: 11 }, { label: 'Diciembre', value: 12 },
+  ];
+
+  // Totales computed
+  totalDebe = computed(() => this.balanceComprobacion().reduce((sum, r) => sum + (r.debeMes || 0), 0));
+  totalHaber = computed(() => this.balanceComprobacion().reduce((sum, r) => sum + (r.haberMes || 0), 0));
+  totalSaldoDeudor = computed(() => this.balanceComprobacion().reduce((sum, r) => sum + (r.saldoDeudor || 0), 0));
+  totalSaldoAcreedor = computed(() => this.balanceComprobacion().reduce((sum, r) => sum + (r.saldoAcreedor || 0), 0));
+
+  totalPartidas = computed(() => this.libroDiario().length);
+  totalLineasDiario = computed(() => this.libroDiario().reduce((sum, p) => sum + (p.lineas?.length || 0), 0));
+
+  ngOnInit(): void {}
+
+  generarBalanceComprobacion(): void {
+    this.cargando.set(true);
+    this.contabilidad.generarBalanceComprobacion({
+      empresaId: 0,
+      periodo: this.periodo(),
+      anio: this.anio(),
+    }).pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe({
+      next: (data) => {
+        this.balanceComprobacion.set(data);
+        this.messageService.add({ severity: 'success', summary: 'Generado', detail: `Balance de comprobación: ${data.length} cuentas` });
+        this.cargando.set(false);
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al generar balance' });
+        this.cargando.set(false);
+      },
+    });
+  }
+
+  generarLibroDiario(): void {
+    this.cargando.set(true);
+    this.contabilidad.generarLibroDiario({
+      empresaId: 0,
+      periodo: this.periodo(),
+      anio: this.anio(),
+    }).pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe({
+      next: (data) => {
+        this.libroDiario.set(data);
+        this.messageService.add({ severity: 'success', summary: 'Generado', detail: `Libro diario: ${data.length} partidas` });
+        this.cargando.set(false);
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al generar libro diario' });
+        this.cargando.set(false);
+      },
+    });
+  }
+
+  generarLibroMayor(): void {
+    this.cargando.set(true);
+    this.contabilidad.generarLibroMayor({
+      empresaId: 0,
+      periodo: this.periodo(),
+      anio: this.anio(),
+    }).pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe({
+      next: (data) => {
+        this.libroMayor.set(data);
+        this.messageService.add({ severity: 'success', summary: 'Generado', detail: `Libro mayor: ${data.length} cuentas` });
+        this.cargando.set(false);
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al generar libro mayor' });
+        this.cargando.set(false);
+      },
+    });
+  }
+
+  generarTodos(): void {
+    this.generarBalanceComprobacion();
+    this.generarLibroDiario();
+    this.generarLibroMayor();
+  }
+
+  getMesLabel(): string {
+    return this.meses.find(m => m.value === this.periodo())?.label ?? '';
+  }
+}
+
 ```
 
 ---
@@ -32332,7 +34598,7 @@ export class NuevaFactura implements OnInit {
   }
 
   private cargarParamCxc() {
-    this.api.get<any>('/parametros/parametros/objeto?empresaId=2&moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.get<any>('/parametros/parametros/objeto?moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (p) => {
         const dias = Number(p?.diasPlazo ?? 0);
         const v = new Date();
@@ -33192,25 +35458,35 @@ export class NuevaFactura implements OnInit {
     this.guardando.set(true);
     this.service.createMae<any>('/facturacion/facturas', mae).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (fac) => {
-        const detOps = filas.map((r, i) =>
-          this.service.createDet<any>('/facturacion/facturas-det', {
-            facturaId: fac.facturaId,
-            bodegaId: raw.bodegaId,
-            nrofila: i + 1,
-            productoId: r.productoId,
-            codbarra: r.codbarra || '',
-            cantidad: r.cantidad ?? 0,
-            precioventa: r.precioventa ?? 0,
-            impuesto: r.impuesto ?? 0,
-            subTotal: r.subTotal,
-            descuento: r.descuento ?? 0,
-            sn_anulada: 'N',
-          }),
-        );
+        // Alerta si el rango CAI está por agotarse
+        if (fac.alerta) {
+          this.msgs.add({ severity: 'warn', summary: 'CAI — Autorización próxima a caducar', detail: fac.alerta, life: 10000 });
+        }
+
+        const detOps = filas.map((r, i) => {
+            const pDescuento = r.descuento ?? 0;  // Porcentaje de descuento
+            const cant = r.cantidad ?? 0;
+            const precio = r.precioventa ?? 0;
+            const descuentoMonto = Math.round(cant * precio * (pDescuento / 100) * 100) / 100;  // Monto calculado
+            return this.service.createDet<any>('/facturacion/facturas-det', {
+              facturaId: fac.facturaId,
+              bodegaId: raw.bodegaId,
+              nrofila: i + 1,
+              productoId: r.productoId,
+              codbarra: r.codbarra || '',
+              cantidad: cant,
+              precioventa: precio,
+              impuesto: r.impuesto ?? 0,
+              subTotal: r.subTotal,
+              descuento: descuentoMonto,
+              p_descuento: pDescuento,
+              sn_anulada: 'N',
+            });
+        });
         forkJoin(detOps).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             if (esCredito) {
-              this.procesarKardexYFinalizar(fac, `Factura de crédito #${fac.facturaId} creada`);
+              this.procesarKardexYFinalizar(fac, `Factura de crédito #${fac.nrofactura} creada`);
             } else {
               this.guardarPagosYFinalizar(fac, raw);
             }
@@ -33249,17 +35525,17 @@ export class NuevaFactura implements OnInit {
       );
       forkJoin(pagoOps).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
-          this.procesarKardexYFinalizar(fac, `Factura #${fac.facturaId} creada con ${pagosList.length} pago(s)`);
+          this.procesarKardexYFinalizar(fac, `Factura #${fac.nrofactura} creada con ${pagosList.length} pago(s)`);
         },
         error: (err) => {
           this.guardando.set(false);
           console.error('Error al guardar formas de pago', err);
-          this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.facturaId} creada, pero falló el registro de pagos` });
+          this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.nrofactura} creada, pero falló el registro de pagos` });
           this.nueva();
         },
       });
     } else {
-      this.procesarKardexYFinalizar(fac, `Factura #${fac.facturaId} creada`);
+      this.procesarKardexYFinalizar(fac, `Factura #${fac.nrofactura} creada`);
     }
   }
 
@@ -33275,7 +35551,7 @@ export class NuevaFactura implements OnInit {
       },
       error: () => {
         this.guardando.set(false);
-        this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.facturaId} creada, pero falló el registro de kardex` });
+        this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.nrofactura} creada, pero falló el registro de kardex` });
         this.nueva();
       },
     });
@@ -33301,11 +35577,20 @@ export class NuevaFactura implements OnInit {
   }
 
   private abrirTicket(data: any) {
-    const { factura: fac, detalles, pagos, empresa } = data;
+    const { factura: fac, detalles, pagos, empresa, correlativo } = data;
     const fecha = new Date(fac.fecharegistro).toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const hora = new Date(fac.fecharegistro).toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
     const condicion = fac.tipofactura === 'C' ? 'CRÉDITO' : 'CONTADO';
     const nroFactura = String(fac.nrofactura).padStart(8, '0');
+    // Formatear número con prefijo del rango: 000-001-01-00120004
+    let nroFacturaFmt = nroFactura;
+    if (correlativo?.rangoDesde) {
+      const partes = correlativo.rangoDesde.split('-');
+      if (partes.length > 1) {
+        const prefijo = partes.slice(0, -1).join('-') + '-';
+        nroFacturaFmt = prefijo + nroFactura;
+      }
+    }
 
     const lineasHtml = (detalles || []).map((d: any) => {
       const desc = d.descripcion || `#${d.productoId}`;
@@ -33314,7 +35599,8 @@ export class NuevaFactura implements OnInit {
       const precio = Number(d.precioventa);
       const tot = Number(d.subTotal) || (cant * precio);
       const descuento = Number(d.descuento) || 0;
-      const descLinea = descuento > 0 ? `<div class="linea-desc">Desc: -${Number(descuento.toFixed(0))}%</div>` : `<div class="linea-desc">Desc: 0%</div>`;
+      const pDescuento = Number(d.p_descuento) || 0;
+      const descLinea = pDescuento > 0 ? `<div class="linea-desc">Desc: -${Number(pDescuento.toFixed(0))}%</div>` : `<div class="linea-desc">Desc: 0%</div>`;
       return `<div class="linea-item"><div class="linea-desc">${desc}</div>${cod ? `<div class="linea-cod">Cod. ${cod}</div>` : ''}${descLinea}<div class="linea"><span>Cant. ${cant}</span><span>${this.formatNum(precio)}</span><span class="right">${this.formatNum(tot)}</span></div></div>`;
     }).join('');
 
@@ -33346,7 +35632,7 @@ export class NuevaFactura implements OnInit {
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Factura ${nroFactura}</title>
+<title>Factura ${nroFacturaFmt}</title>
 <style>
   @page { size: 80mm auto; margin: 2mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -33380,12 +35666,23 @@ export class NuevaFactura implements OnInit {
   <div class="sep"></div>
 
   <div class="factura-info">
-    <div class="row bold"><span>FACTURA # ${nroFactura}</span></div>
+    <div class="row bold"><span>FACTURA # ${nroFacturaFmt}</span></div>
     <div class="row"><span>Fecha:</span><span>${fecha} ${hora}</span></div>
     <div class="row"><span>Cliente:</span><span>${(fac.nombrecliente || 'N/A').substring(0, 25)}</span></div>
     <div class="row"><span>Condición:</span><span>${condicion}</span></div>
     ${fac.direccion ? `<div class="row"><span>Dir:</span><span>${fac.direccion.substring(0, 25)}</span></div>` : ''}
   </div>
+
+  ${correlativo ? `
+  <div class="sep"></div>
+  <div class="cai-info">
+    <div class="center bold" style="font-size: 8px;">RANGO AUTORIZADO</div>
+    <div style="font-size: 8px; text-align: center;">del ${correlativo.rangoDesde}</div>
+    <div style="font-size: 8px; text-align: center;">al ${correlativo.rangoHasta}</div>
+    <div class="center bold" style="font-size: 8px; margin-top: 2px;">CODIGO CAI</div>
+    <div class="center" style="font-size: 7px; letter-spacing: 0.5px;">${correlativo.cai}</div>
+  </div>
+  ` : ''}
 
   <div class="sep"></div>
 
