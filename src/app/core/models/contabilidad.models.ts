@@ -15,6 +15,7 @@ export interface CtaContable {
   sn_operable: 'S' | 'N';
   tcogrupocontableId: number;
   sn_activo: 'S' | 'N';
+  zorden: number;
   empresaId: number;
   Idsucursal?: number;
   usuarioCreated: string;

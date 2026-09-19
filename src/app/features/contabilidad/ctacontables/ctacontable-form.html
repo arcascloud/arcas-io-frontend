@@ -1,0 +1,100 @@
+<p-toast />
+<div class="ctacontable-form" [formGroup]="form">
+  <div class="form-grid">
+    <!-- Fila 1: Cuenta | Nivel -->
+    <div class="campo">
+      <label>Cuenta <span class="req">*</span></label>
+      <input pInputText pSize="small" formControlName="ctacontable" class="w-full" maxlength="20"
+             placeholder="Ej: 1-110-001" [ngClass]="{ 'ng-invalid': invalid('ctacontable') }" />
+      @if (invalid('ctacontable')) {
+        <small class="err">{{ getErrorMensaje('ctacontable') }}</small>
+      }
+    </div>
+
+    <div class="campo">
+      <label>Nivel <span class="req">*</span></label>
+      <p-select formControlName="nivel" [options]="nivelesSelect" optionLabel="label"
+                optionValue="value" placeholder="Seleccionar nivel" styleClass="w-full"
+                size="small" [ngClass]="{ 'ng-invalid': invalid('nivel') }" />
+      @if (invalid('nivel')) {
+        <small class="err">{{ getErrorMensaje('nivel') }}</small>
+      }
+    </div>
+
+    <!-- Fila 2: Descripción | Padre -->
+    <div class="campo">
+      <label>Descripción <span class="req">*</span></label>
+      <input pInputText pSize="small" formControlName="descripcion" class="w-full" maxlength="50"
+             placeholder="Nombre de la cuenta" [ngClass]="{ 'ng-invalid': invalid('descripcion') }" />
+      @if (invalid('descripcion')) {
+        <small class="err">{{ getErrorMensaje('descripcion') }}</small>
+      }
+    </div>
+
+    <div class="campo">
+      <label>Cuenta Mayor</label>
+      @if (esNivelRaiz()) {
+        <input pInputText pSize="small" class="w-full" disabled placeholder="Nivel 1 — No aplica" />
+        <small class="field-hint">Las cuentas de nivel 1 no tienen cuenta mayor</small>
+      } @else {
+        <p-select formControlName="padre" [options]="cuentasMayor()" optionLabel="label"
+                  optionValue="value" placeholder="Seleccionar cuenta mayor" styleClass="w-full"
+                  size="small" [filter]="true" filterBy="label"
+                  [ngClass]="{ 'ng-invalid': invalid('padre') }" />
+        @if (invalid('padre')) {
+          <small class="err">{{ getErrorMensaje('padre') }}</small>
+        }
+        <small class="field-hint">Cuenta de nivel inferior dentro del mismo grupo</small>
+      }
+    </div>
+
+    <!-- Fila 3: Grupo Contable | Operable -->
+    <div class="campo">
+      <label>Grupo Contable <span class="req">*</span></label>
+      <p-select formControlName="tcogrupocontableId" [options]="grupos()" optionLabel="descripcion"
+                optionValue="tcogrupocontableId" placeholder="Seleccionar grupo" styleClass="w-full"
+                size="small" [ngClass]="{ 'ng-invalid': invalid('tcogrupocontableId') }" />
+      @if (invalid('tcogrupocontableId')) {
+        <small class="err">{{ getErrorMensaje('tcogrupocontableId') }}</small>
+      }
+    </div>
+
+    <div class="campo">
+      <label>Tipo de Cuenta <span class="req">*</span></label>
+      <p-select formControlName="sn_operable" [options]="snOptions" optionLabel="label"
+                optionValue="value" styleClass="w-full" size="small" />
+      <small class="field-hint">Solo las cuentas de Diario permiten movimientos</small>
+    </div>
+
+    <!-- Fila 4: Naturaleza | Estado -->
+    <div class="campo">
+      <label>Naturaleza <span class="req">*</span></label>
+      <p-select formControlName="naturaleza" [options]="naturalezaOptions" optionLabel="label"
+                optionValue="value" placeholder="Seleccionar" styleClass="w-full"
+                size="small" [disabled]="form.get('tcogrupocontableId')?.value != null" />
+      <small class="field-hint">Se asigna según grupo contable</small>
+    </div>
+
+    <div class="campo">
+      <label>Estado <span class="req">*</span></label>
+      <p-select formControlName="sn_activo" [options]="estadoOptions" optionLabel="label"
+                optionValue="value" styleClass="w-full" size="small" />
+    </div>
+
+    <!-- Fila 5: Orden -->
+    <div class="campo">
+      <label>Orden de visualización</label>
+      <p-inputNumber formControlName="zorden" [min]="0" [max]="9999"
+                     styleClass="w-full" size="small" [useGrouping]="false" />
+      <small class="field-hint">Posición en la lista de cuentas (menor = primero)</small>
+    </div>
+  </div>
+</div>
+
+<!-- Acciones -->
+<div class="acciones-form">
+  <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
+            (onClick)="onCancelar()" />
+  <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true"
+            [loading]="guardando()" [disabled]="form.invalid" (onClick)="onGuardar()" />
+</div>

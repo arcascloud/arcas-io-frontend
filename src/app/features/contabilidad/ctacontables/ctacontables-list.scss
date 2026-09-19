@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.filtros-bar {
+  .p-grid {
+    gap: 0.5rem;
+  }
+}
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+::ng-deep .p-datatable-tbody > tr > td {
+  padding: 0.35rem 0.75rem;
+}
+
+::ng-deep .p-datatable-thead > tr > th {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+}

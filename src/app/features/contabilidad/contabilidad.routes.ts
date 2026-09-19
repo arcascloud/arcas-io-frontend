@@ -8,9 +8,10 @@ export const CONTABILIDAD_ROUTES: Routes = [
   { path: 'reportes', loadComponent: () => import('./reportes/reportes-contables').then((m) => m.ReportesContablesComponent) },
   { path: 'cierre-contable', loadComponent: () => import('./cierre-contable/cierre-contable').then((m) => m.CierreContableComponent) },
 
+  // ===== Cuentas Contables (componente dedicado) =====
+  { path: 'ctacontables', loadComponent: () => import('./ctacontables/ctacontables-list').then((m) => m.CtacontablesListComponent) },
+
   // ===== Catálogos genéricos =====
-  { path: 'ctacontables', data: { nombre: 'ctacontables' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
-  { path: 'ctacontables/editar/:id', data: { nombre: 'ctacontables' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'grupocontable', data: { nombre: 'grupocontable' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'grupocontable/editar/:id', data: { nombre: 'grupocontable' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'nivelcta', data: { nombre: 'nivelcta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },

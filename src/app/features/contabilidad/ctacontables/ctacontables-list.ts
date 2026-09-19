@@ -1,0 +1,170 @@
+import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { DrawerModule } from 'primeng/drawer';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { SelectModule } from 'primeng/select';
+import { ToastModule } from 'primeng/toast';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import { CtaContable, GrupoContable } from '../../../core/models/contabilidad.models';
+import { CtacontableFormComponent } from './ctacontable-form';
+
+@Component({
+  selector: 'app-ctacontables-list',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule,
+    TableModule, ButtonModule, InputTextModule, SelectModule, TagModule, TooltipModule,
+    DrawerModule, ConfirmDialogModule, ToastModule,
+    CtacontableFormComponent,
+  ],
+  providers: [MessageService, ConfirmationService],
+  templateUrl: './ctacontables-list.html',
+  styleUrl: './ctacontables-list.scss',
+})
+export class CtacontablesListComponent implements OnInit {
+  private contabilidad = inject(ContabilidadService);
+  private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+
+  // Datos
+  cuentas = signal<CtaContable[]>([]);
+  grupos = signal<GrupoContable[]>([]);
+  cargando = signal(false);
+
+  // Filtros
+  filtroBuscar = signal('');
+  filtroGrupo = signal<number | null>(null);
+  filtroNaturaleza = signal<string | null>(null);
+
+  // Dialog
+  dialogFormVisible = signal(false);
+  cuentaSeleccionada = signal<CtaContable | null>(null);
+  esEdicion = signal(false);
+
+  readonly naturalezasOpts = [
+    { label: 'Débito', value: 'D' },
+    { label: 'Crédito', value: 'C' },
+  ];
+
+  // Computed
+  cuentasFiltradas = computed(() => {
+    let resultado = this.cuentas();
+    const buscar = this.filtroBuscar().toLowerCase();
+    const grupo = this.filtroGrupo();
+    const nat = this.filtroNaturaleza();
+
+    if (buscar) {
+      resultado = resultado.filter(c =>
+        c.ctacontable.toLowerCase().includes(buscar) ||
+        c.descripcion.toLowerCase().includes(buscar)
+      );
+    }
+    if (grupo != null) resultado = resultado.filter(c => c.tcogrupocontableId === grupo);
+    if (nat) resultado = resultado.filter(c => c.naturaleza === nat);
+
+    // Ordenar por zorden (asc) y luego por ctacontable (asc)
+    resultado = [...resultado].sort((a, b) => {
+      const za = a.zorden ?? 0;
+      const zb = b.zorden ?? 0;
+      if (za !== zb) return za - zb;
+      return a.ctacontable.localeCompare(b.ctacontable);
+    });
+
+    return resultado;
+  });
+
+  ngOnInit(): void {
+    this.cargarDatos();
+  }
+
+  cargarDatos(): void {
+    this.cargando.set(true);
+    this.contabilidad.getCuentas()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.cuentas.set(data); this.cargando.set(false); },
+        error: () => { this.cargando.set(false); this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las cuentas contables' }); },
+      });
+
+    this.contabilidad.getGrupos()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => this.grupos.set(data),
+        error: () => {},
+      });
+  }
+
+  // ========== Acciones ==========
+
+  nuevaCuenta(): void {
+    this.cuentaSeleccionada.set(null);
+    this.esEdicion.set(false);
+    this.dialogFormVisible.set(true);
+  }
+
+  editarCuenta(cuenta: CtaContable): void {
+    this.cuentaSeleccionada.set(cuenta);
+    this.esEdicion.set(true);
+    this.dialogFormVisible.set(true);
+  }
+
+  eliminarCuenta(cuenta: CtaContable): void {
+    this.confirmationService.confirm({
+      message: `¿Está seguro de eliminar la cuenta "${cuenta.ctacontable} - ${cuenta.descripcion}"?`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.contabilidad.eliminarCuenta(cuenta.cuentacontablesId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.messageService.add({ severity: 'success', summary: 'Eliminada', detail: 'Cuenta contable eliminada' });
+              this.cargarDatos();
+            },
+            error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la cuenta' }),
+          });
+      },
+    });
+  }
+
+  onGuardado(): void {
+    this.dialogFormVisible.set(false);
+    this.cargarDatos();
+  }
+
+  onCancelar(): void {
+    this.dialogFormVisible.set(false);
+  }
+
+  // ========== Helpers ==========
+
+  getGrupoDescripcion(grupoId: number): string {
+    return this.grupos().find(g => g.tcogrupocontableId === grupoId)?.descripcion ?? '-';
+  }
+
+  naturalezaLabel(nat: string): string {
+    return nat === 'D' ? 'Débito' : 'Crédito';
+  }
+
+  naturalezaSeverity(nat: string): 'info' | 'warn' {
+    return nat === 'D' ? 'info' : 'warn';
+  }
+
+  limpiarFiltros(): void {
+    this.filtroBuscar.set('');
+    this.filtroGrupo.set(null);
+    this.filtroNaturaleza.set(null);
+  }
+}

@@ -629,19 +629,20 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     idKey: 'cuentacontablesId',
     icono: 'list',
     campos: [
+      // Fila 1: Cuenta | Nivel
       { key: 'ctacontable', label: 'Cuenta', tipo: 'texto', requerido: true, principal: true },
+      { key: 'nivel', label: 'Nivel', tipo: 'numero', requerido: true },
+      // Fila 2: Descripción | Padre
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true },
-      {
-        key: 'naturaleza',
-        label: 'Naturaleza',
-        tipo: 'select',
-        opciones: [
-          { label: 'Débito', value: 'D' },
-          { label: 'Crédito', value: 'C' },
-        ],
-      },
-      { key: 'nivel', label: 'Nivel', tipo: 'numero' },
       { key: 'padre', label: 'Padre', tipo: 'texto' },
+      // Fila 3: Grupo Contable | Operable
+      {
+        key: 'tcogrupocontableId',
+        label: 'Grupo Contable',
+        tipo: 'select',
+        cargaOpciones: { url: '/contabilidad/grupocontable', labelCampo: 'descripcion', valueCampo: 'tcogrupocontableId' },
+        requerido: true,
+      },
       {
         key: 'sn_operable',
         label: 'Operable',
@@ -650,12 +651,17 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
           { label: 'Sí', value: 'S' },
           { label: 'No', value: 'N' },
         ],
+        requerido: true,
       },
+      // Fila 4: Naturaleza | Estado (sn_activo se agrega automático)
       {
-        key: 'tcogrupocontableId',
-        label: 'Grupo Contable',
+        key: 'naturaleza',
+        label: 'Naturaleza',
         tipo: 'select',
-        cargaOpciones: { url: '/contabilidad/grupocontable', labelCampo: 'descripcion', valueCampo: 'tcogrupocontableId' },
+        opciones: [
+          { label: 'Débito', value: 'D' },
+          { label: 'Crédito', value: 'C' },
+        ],
         requerido: true,
       },
     ],

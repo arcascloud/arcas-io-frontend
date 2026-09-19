@@ -110,7 +110,7 @@ export class CatalogoForm implements OnInit, OnChanges {
       });
     } else {
       // Pre-llenar campos desde queryParams (embebido) o route.queryParams (ruta)
-      const qp = Object.keys(this.queryParamsInput).length
+      const qp = Object.keys(this.queryParamsInput ?? {}).length
         ? this.queryParamsInput
         : this.route.snapshot.queryParams;
       const patch: Record<string, any> = {};
