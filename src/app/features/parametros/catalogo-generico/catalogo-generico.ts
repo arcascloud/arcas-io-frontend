@@ -134,4 +134,20 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
   activoSev(sn: string): 'success' | 'danger' {
     return sn === 'S' ? 'success' : 'danger';
   }
+
+  formatValor(item: any, col: any): string {
+    const val = item[col.key];
+    if (val == null || val === '') return '-';
+    if (col.tipo === 'fecha' && col.formato) {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+      }
+      return '-';
+    }
+    return val;
+  }
 }

@@ -14,7 +14,7 @@ import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
-import { CtaContable, GrupoContable } from '../../../core/models/contabilidad.models';
+import { CtaContable, GrupoContable, NivelCta } from '../../../core/models/contabilidad.models';
 import { CtacontableFormComponent } from './ctacontable-form';
 
 @Component({
@@ -39,12 +39,13 @@ export class CtacontablesListComponent implements OnInit {
   // Datos
   cuentas = signal<CtaContable[]>([]);
   grupos = signal<GrupoContable[]>([]);
+  niveles = signal<NivelCta[]>([]);
   cargando = signal(false);
 
   // Filtros
   filtroBuscar = signal('');
   filtroGrupo = signal<number | null>(null);
-  filtroNaturaleza = signal<string | null>(null);
+  filtroNivel = signal<number | null>(null);
 
   // Dialog
   dialogFormVisible = signal(false);
@@ -56,12 +57,26 @@ export class CtacontablesListComponent implements OnInit {
     { label: 'Crédito', value: 'C' },
   ];
 
+  // Computed: opciones para filtros
+  gruposOpts = computed(() => [
+    { label: 'Todos', value: null },
+    ...this.grupos().map(g => ({ label: g.descripcion, value: g.tcogrupocontableId })),
+  ]);
+
+  nivelesOpts = computed(() => {
+    const nivelesUnicos = [...new Set(this.cuentas().map(c => c.nivel))].sort((a, b) => a - b);
+    return [
+      { label: 'Todos', value: null },
+      ...nivelesUnicos.map(n => ({ label: `Nivel ${n}`, value: n })),
+    ];
+  });
+
   // Computed
   cuentasFiltradas = computed(() => {
     let resultado = this.cuentas();
     const buscar = this.filtroBuscar().toLowerCase();
     const grupo = this.filtroGrupo();
-    const nat = this.filtroNaturaleza();
+    const nivel = this.filtroNivel();
 
     if (buscar) {
       resultado = resultado.filter(c =>
@@ -70,7 +85,7 @@ export class CtacontablesListComponent implements OnInit {
       );
     }
     if (grupo != null) resultado = resultado.filter(c => c.tcogrupocontableId === grupo);
-    if (nat) resultado = resultado.filter(c => c.naturaleza === nat);
+    if (nivel != null) resultado = resultado.filter(c => c.nivel === nivel);
 
     // Ordenar por zorden (asc) y luego por ctacontable (asc)
     resultado = [...resultado].sort((a, b) => {
@@ -100,6 +115,13 @@ export class CtacontablesListComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => this.grupos.set(data),
+        error: () => {},
+      });
+
+    this.contabilidad.getNiveles()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => this.niveles.set(data),
         error: () => {},
       });
   }
@@ -165,6 +187,6 @@ export class CtacontablesListComponent implements OnInit {
   limpiarFiltros(): void {
     this.filtroBuscar.set('');
     this.filtroGrupo.set(null);
-    this.filtroNaturaleza.set(null);
+    this.filtroNivel.set(null);
   }
 }

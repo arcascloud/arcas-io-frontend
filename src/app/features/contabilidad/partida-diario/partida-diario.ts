@@ -149,7 +149,7 @@ export class PartidaDiarioComponent implements OnInit {
     });
 
     // Cargar detalles
-    this.contabilidad.getDetallesPartida(partida.copdamaeId)
+    this.contabilidad.getDetallesPartida(partida.partidaId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (detalles) => {
@@ -170,7 +170,7 @@ export class PartidaDiarioComponent implements OnInit {
 
   verDetalles(partida: CopdaMae): void {
     this.partidaSeleccionada.set(partida);
-    this.contabilidad.getDetallesPartida(partida.copdamaeId)
+    this.contabilidad.getDetallesPartida(partida.partidaId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({ next: (det) => { this.detallesPartida.set(det); this.dialogDetallesVisible.set(true); } });
   }
@@ -246,7 +246,7 @@ export class PartidaDiarioComponent implements OnInit {
       acceptLabel: 'Eliminar',
       rejectLabel: 'Cancelar',
       accept: () => {
-        this.contabilidad.eliminarPartida(partida.copdamaeId)
+        this.contabilidad.eliminarPartida(partida.partidaId)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: () => {

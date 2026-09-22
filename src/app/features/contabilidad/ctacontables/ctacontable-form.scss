@@ -58,6 +58,19 @@
   font-style: italic;
 }
 
+.field-warn {
+  font-size: 0.75rem;
+  color: var(--c-warning, #f59e0b);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+
+  i {
+    font-size: 0.8rem;
+  }
+}
+
 :host ::ng-deep .p-inputnumber {
   width: 100%;
 

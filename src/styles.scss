@@ -68,7 +68,7 @@
   --c-bg-muted: #1e2e3b00;
   --c-surface: #1e2e3b;
   --c-surface-muted: #2d3d50b4;
-  --c-card-background:#08131c;
+  --c-card-background: #08131c;
   --c-card-color-text: var(--color-texto-label);
   --c-border: #1e2e3b;
   --c-border-strong: #2c4d6f;
@@ -81,7 +81,7 @@
   --c-primary-strong: #0070f2;
   --c-success: #2fd48a;
   --c-warning: #f5a623;
-  --c-danger: #ff5c5c;
+  --c-danger: #d84b4b;
   --c-info: #38bdf8;
   --c-uva: #604ec7ef;
   --c-amarillo: #f5e949ef;
@@ -140,6 +140,7 @@
   --p-inputtext-disabled-color: var(--c-text-muted);
   --p-inputtext-disabled-background: var(--c-bg);
   --p-inputtext-disabled-border-color: #2a3a4a;
+  --p-inputtext-invalid-border-color: var(--c-danger);
 
   --p-togglebutton-color: var(--color-texto-input);
   ---p-togglebutton-background: var(--color-texto-input);
@@ -183,7 +184,8 @@
 
   --p-tag-rounded-border-radius: 5px 5px 5px 5px;
 
- --surface-border:var(--for-border-color-alls);
+  --surface-border: var(--for-border-color-alls);
+
 
 }
 
@@ -209,12 +211,12 @@ tr {
 
 
 ul {
-    display: block;
-    list-style-type: none;
-    margin-block-start: 1em;
-    margin-block-end: 1em;
-    padding-inline-start: 12px;
-    unicode-bidi: isolate;
+  display: block;
+  list-style-type: none;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+  padding-inline-start: 12px;
+  unicode-bidi: isolate;
 }
 
 
@@ -232,6 +234,7 @@ ul {
   --p-card-body-padding: 0.75rem;
   /* O el valor que prefieras, ej: 10px, 0.5rem */
 }
+
 
 
 /* =====================================================
@@ -353,7 +356,7 @@ ul {
 .card {
   background: var(--c-bg);
   padding: 1rem 1.25rem;
-   border-bottom: 1px solid var(--for-border-color-alls);
+  border-bottom: 1px solid var(--for-border-color-alls);
 
 }
 

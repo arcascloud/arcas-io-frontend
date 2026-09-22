@@ -6,6 +6,7 @@ export interface CampoCatalogo {
   cargaOpciones?: { url: string; labelCampo: string; valueCampo: string };
   requerido?: boolean;
   principal?: boolean;
+  formato?: string;
 }
 
 export interface CatalogoConfig {
@@ -17,6 +18,7 @@ export interface CatalogoConfig {
   campos: CampoCatalogo[];
   incluyeEmpresaId?: boolean;
   sinEstado?: boolean;
+  soloLectura?: boolean;
 }
 
 export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
@@ -27,6 +29,16 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     idKey: 'estadoId',
     icono: 'flag',
     campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+  },
+  meses: {
+    ruta: '/parametros/meses',
+    titulo: 'Meses',
+    subtitulo: 'Meses del año',
+    idKey: 'ttipomesId',
+    icono: 'calendar',
+    incluyeEmpresaId: false,
+    sinEstado: true,
+    campos: [{ key: 'mes', label: 'Mes', tipo: 'texto', requerido: true, principal: true }],
   },
   'formas-pago': {
     ruta: '/parametros/formas-pago',
@@ -672,6 +684,8 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Saldos por cuenta y mes',
     idKey: 'cosaldosctaId',
     icono: 'chart-line',
+    sinEstado: true,
+    soloLectura: true,
     campos: [
       { key: 'anio', label: 'Año', tipo: 'numero' },
       { key: 'ctacontable', label: 'Cuenta', tipo: 'texto', requerido: true, principal: true },
@@ -735,6 +749,8 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Movimientos por cuenta contable',
     idKey: 'movctascontablesId',
     icono: 'arrows-spin',
+    soloLectura: true,
+    sinEstado: true,
     campos: [
       {
         key: 'monedaId',
@@ -749,7 +765,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
       { key: 'debe', label: 'Debe', tipo: 'numero' },
       { key: 'haber', label: 'Haber', tipo: 'numero' },
       { key: 'saldo', label: 'Saldo', tipo: 'numero' },
-      { key: 'fecultmov', label: 'Últ. Mov.', tipo: 'fecha' },
+      { key: 'fecultmov', label: 'Últ. Mov.', tipo: 'fecha', formato: 'dd/MM/yyyy' },
       { key: 'ultnropda', label: 'Últ. PDA', tipo: 'numero' },
     ],
   },

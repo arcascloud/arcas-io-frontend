@@ -499,7 +499,6 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
       { key: 'ctacontable', label: 'Cuenta', tipo: 'texto' },
       { key: 'descripcion', label: 'Descripción', tipo: 'texto' },
       { key: 'moduloId', label: 'Módulo', tipo: 'numero' },
-      { key: 'ctamayorId', label: 'Cta. Mayor', tipo: 'texto' },
       { key: 'naturaleza', label: 'Naturaleza', tipo: 'texto' },
     ],
     tituloLista: (i) => i.descripcion || `Plantilla #${i.tcoplantillapdamaeId}`,
@@ -540,9 +539,9 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
     icono: 'receipt',
     rutaMae: '/contabilidad/copdamae',
     rutaDet: '/contabilidad/copdadet',
-    idKeyMae: 'copdamaeId',
+    idKeyMae: 'partidaId',
     idKeyDet: 'copdadetId',
-    fkDet: 'copdamaeId',
+    fkDet: 'partidaId',
     camposMae: [
       { key: 'periodo', label: 'Periodo', tipo: 'numero', requerido: true },
       { key: 'anio', label: 'Año', tipo: 'numero', requerido: true },
@@ -566,7 +565,7 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
       { key: 'credito', label: 'Crédito', tipo: 'numero' },
       { key: 'factordecambio', label: 'Factor', tipo: 'numero' },
     ],
-    tituloLista: (i) => `Partida #${i.nropartida ?? i.copdamaeId}`,
+    tituloLista: (i) => `Partida #${i.nropartida ?? i.partidaId}`,
     filasLista: (i) => [
       { label: 'Fecha', value: i.fechadocumento ? new Date(i.fechadocumento).toLocaleDateString() : '-' },
       { label: 'Descripción', value: i.descripcion || '-' },

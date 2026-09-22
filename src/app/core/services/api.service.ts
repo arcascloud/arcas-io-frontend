@@ -24,6 +24,7 @@ export class ApiService {
     '/contabilidad/copdamae',
     '/contabilidad/copdadet',
     '/contabilidad/ctacontables',
+    '/contabilidad/cierrectable/realizar',
     '/cxc/caja-mae',
     '/cxc/caja-det',
     '/facturacion/facturas',

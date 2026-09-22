@@ -217,6 +217,30 @@ export class ContabilidadService {
     return this.api.get<PlantillaPdaDet[]>(`${this.R}/plantillapdadet`, { tcoplantillapdamaeId: plantillaId });
   }
 
+  createPlantillaPdaMae(dto: Partial<PlantillaPdaMae>): Observable<PlantillaPdaMae> {
+    return this.api.post<PlantillaPdaMae>(`${this.R}/plantillapdamae`, dto);
+  }
+
+  updatePlantillaPdaMae(id: number, dto: Partial<PlantillaPdaMae>): Observable<PlantillaPdaMae> {
+    return this.api.put<PlantillaPdaMae>(`${this.R}/plantillapdamae`, id, dto);
+  }
+
+  deletePlantillaPdaMae(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.R}/plantillapdamae`, id);
+  }
+
+  createPlantillaPdaDet(dto: Partial<PlantillaPdaDet>): Observable<PlantillaPdaDet> {
+    return this.api.post<PlantillaPdaDet>(`${this.R}/plantillapdadet`, dto);
+  }
+
+  updatePlantillaPdaDet(id: number, dto: Partial<PlantillaPdaDet>): Observable<PlantillaPdaDet> {
+    return this.api.put<PlantillaPdaDet>(`${this.R}/plantillapdadet`, id, dto);
+  }
+
+  deletePlantillaPdaDet(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.R}/plantillapdadet`, id);
+  }
+
   // ========== Plantillas Balances ==========
 
   getPlantillasBalances(): Observable<PlantillaBalancesMae[]> {
@@ -229,6 +253,30 @@ export class ContabilidadService {
 
   getDetallesPlantillaBalances(plantillaId: number): Observable<PlantillaBalancesDet[]> {
     return this.api.get<PlantillaBalancesDet[]>(`${this.R}/plantillabalancesdet`, { cocdefbalmaId: plantillaId });
+  }
+
+  createPlantillaBalancesMae(dto: Partial<PlantillaBalancesMae>): Observable<PlantillaBalancesMae> {
+    return this.api.post<PlantillaBalancesMae>(`${this.R}/plantillabalancesmae`, dto);
+  }
+
+  updatePlantillaBalancesMae(id: number, dto: Partial<PlantillaBalancesMae>): Observable<PlantillaBalancesMae> {
+    return this.api.put<PlantillaBalancesMae>(`${this.R}/plantillabalancesmae`, id, dto);
+  }
+
+  deletePlantillaBalancesMae(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.R}/plantillabalancesmae`, id);
+  }
+
+  createPlantillaBalancesDet(dto: Partial<PlantillaBalancesDet>): Observable<PlantillaBalancesDet> {
+    return this.api.post<PlantillaBalancesDet>(`${this.R}/plantillabalancesdet`, dto);
+  }
+
+  updatePlantillaBalancesDet(id: number, dto: Partial<PlantillaBalancesDet>): Observable<PlantillaBalancesDet> {
+    return this.api.put<PlantillaBalancesDet>(`${this.R}/plantillabalancesdet`, id, dto);
+  }
+
+  deletePlantillaBalancesDet(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.R}/plantillabalancesdet`, id);
   }
 
   // ========== Tipos de Documento Fiscal ==========

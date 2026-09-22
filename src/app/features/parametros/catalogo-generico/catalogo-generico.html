@@ -5,10 +5,11 @@
       <p class="page-subtitle">{{ config()?.subtitulo || '' }}</p>
     </div>
     <div>
+      @if (config() && !config()!.soloLectura) {
       <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()"
       variant="text"
       [raised]="true" severity="success" [rounded]="true" />
-
+      }
     </div>
   </header>
 
@@ -54,20 +55,24 @@
         @if (config() && config()!.sinEstado !== true) {
           <th style="width: 8rem" class="text-center">Estado</th>
         }
+        @if (config() && !config()!.soloLectura) {
         <th style="width: 4rem" class="text-center"></th>
+        }
       </tr>
     </ng-template>
 
     <ng-template pTemplate="body" let-item>
-      <tr (click)="config() && editar(item[config()!.idKey])" style="cursor: pointer">
+      <tr [style.cursor]="config() && !config()!.soloLectura ? 'pointer' : 'default'"
+          (click)="config() && !config()!.soloLectura && editar(item[config()!.idKey])">
         @for (col of campos(); track col.key) {
-          <td>{{ item[col.key] || '-' }}</td>
+          <td>{{ formatValor(item, col) }}</td>
         }
         @if (config() && config()!.sinEstado !== true) {
           <td class="text-center">
             <p-tag [value]="activoLbl(item.sn_activo)" [severity]="activoSev(item.sn_activo)" />
           </td>
         }
+        @if (config() && !config()!.soloLectura) {
         <td class="text-center">
           <p-button
             icon="pi pi-pencil"
@@ -77,6 +82,7 @@
             severity="secondary"
             (click)="$event.stopPropagation(); config() && editar(item[config()!.idKey])" />
         </td>
+        }
       </tr>
     </ng-template>
 

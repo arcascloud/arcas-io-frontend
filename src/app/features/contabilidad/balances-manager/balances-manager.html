@@ -1,0 +1,430 @@
+<p-toast />
+<p-confirm-dialog
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: '420px' }"
+/>
+
+<div class="page-container">
+  <div class="split-layout">
+    <!-- ===== COLUMNA DERECHA: Detalle / Formulario ===== -->
+    <div class="right-column">
+      <!-- Estado vacío -->
+      @if (vista() === 'lista') {
+      <div class="vista-empty">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Pulse una plantilla</h3>
+        <p>Haga clic en una plantilla de la lista o cree una nueva</p>
+      </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- FORMULARIO: Crear / Editar                 -->
+      <!-- ========================================== -->
+      @if (vista() === 'crear' || vista() === 'editar') {
+      <div class="detail-card">
+        <div class="detail-header">
+          <h3>
+            {{ vista() === 'crear' ? 'Nueva Plantilla de Balance' : 'Editar Plantilla: ' +
+            (plantillaSeleccionada()?.descripcion ?? '') }}
+          </h3>
+          <p-button
+            size="small"
+            icon="pi pi-arrow-right"
+            severity="secondary"
+            variant="text"
+            [rounded]="true"
+            pTooltip="Volver"
+            (onClick)="volver()"
+          />
+        </div>
+
+        <div class="detail-body">
+          <!-- ===== MAESTRO ===== -->
+          <div class="section-card" [formGroup]="form">
+            <h4 class="section-title">Datos de la Plantilla</h4>
+            <div class="form-grid-2">
+              <div class="form-field">
+                <label>Descripción *</label>
+                <input
+                  pInputText
+                  pSize="small"
+                  formControlName="descripcion"
+                  maxlength="50"
+                  class="w-full"
+                  placeholder="Ej: Balance General"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== DETALLE: Líneas de la plantilla ===== -->
+          <div class="section-card">
+            <p-table
+              id="grid2"
+              [value]="lineas()"
+              dataKey="id"
+              [rowTrackBy]="trackById"
+              size="small"
+              showGridlines
+              styleClass="tabla-card"
+              [tableStyle]="{ 'min-width': '15rem' }"
+            >
+              <ng-template #caption>
+                <div class="flex items-center justify-between">
+                  <span style="color: var(--color-texto-label)" class="section-title">Líneas de la Plantilla</span>
+                </div>
+              </ng-template>
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 40px">#</th>
+                  <th style="width: 20%">Cuenta Contable</th>
+                  <th>Descripción</th>
+                  <th style="width: 80px">Tipo</th>
+                  <th style="width: 90px">Columna</th>
+                  <th style="width: 90px">Renglón</th>
+                  <th style="width: 50px"></th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-l>
+                <tr [attr.data-linea]="l.id">
+                  <td class="t-center">{{ l.id }}</td>
+                  <td>
+                    <span class="cta-code mr-2">{{ l.ctacontable }}</span>
+                    <span class="cta-nombre">{{ l.ctaNombre }}</span>
+                  </td>
+                  <td>
+                    <input
+                      pInputText
+                      class="w-full"
+                      pSize="small"
+                      maxlength="50"
+                      [ngModel]="l.descripcion"
+                      (ngModelChange)="editar(l.id, { descripcion: $event })"
+                    />
+                  </td>
+                  <td>
+                    <p-select
+                      [options]="tipoOptions"
+                      [ngModel]="l.tipo"
+                      (ngModelChange)="editar(l.id, { tipo: $event })"
+                      optionLabel="label"
+                      optionValue="value"
+                      styleClass="w-full"
+                      size="small"
+                      [appendTo]="'body'"
+                    />
+                  </td>
+                  <td>
+                    <p-inputNumber
+                      size="small"
+                      [ngModel]="l.columna"
+                      (ngModelChange)="editar(l.id, { columna: $event })"
+                      [min]="0"
+                      [useGrouping]="false"
+                      [fluid]="true"
+                      [inputStyle]="{ 'text-align': 'right' }"
+                    />
+                  </td>
+                  <td>
+                    <p-inputNumber
+                      size="small"
+                      [ngModel]="l.renglon"
+                      (ngModelChange)="editar(l.id, { renglon: $event })"
+                      [min]="0"
+                      [useGrouping]="false"
+                      [fluid]="true"
+                      [inputStyle]="{ 'text-align': 'right' }"
+                    />
+                  </td>
+                  <td class="t-center">
+                    <p-button
+                      icon="pi pi-trash"
+                      severity="danger"
+                      [text]="true"
+                      [rounded]="true"
+                      size="small"
+                      [tabindex]="-1"
+                      aria-label="Quitar línea"
+                      (onClick)="quitar(l.id)"
+                    />
+                  </td>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="footer">
+                <!-- Fila fantasma: autocomplete para agregar cuentas -->
+                <tr>
+                  <td colspan="7">
+                    <p-autocomplete
+                      #buscador
+                      size="small"
+                      [(ngModel)]="seleccionada"
+                      [suggestions]="sugerencias()"
+                      (completeMethod)="buscar($event)"
+                      (onSelect)="agregar($event)"
+                      optionLabel="descripcion"
+                      [minLength]="1"
+                      [delay]="250"
+                      [fluid]="true"
+                      [appendTo]="'body'"
+                      placeholder="Escribe la cuenta contable o nombre para agregar una línea…"
+                    >
+                      <ng-template #item let-c>
+                        <span class="cta-code mr-2">{{ c.ctacontable }}</span>{{ c.descripcion }}
+                      </ng-template>
+                      <ng-template #empty>
+                        <div class="text-muted px-3 py-2">
+                          No hay cuentas de movimiento con ese criterio
+                        </div>
+                      </ng-template>
+                    </p-autocomplete>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="detail-footer">
+          <p-button
+            size="small"
+            label="Cancelar"
+            rounded
+            variant="text"
+            severity="secondary"
+            (onClick)="volver()"
+          />
+          <p-button
+            size="small"
+            label="Guardar"
+            icon="pi pi-check-circle"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            [rounded]="true"
+            [loading]="cargando()"
+            [disabled]="!puedeGuardar()"
+            (onClick)="guardar()"
+          />
+        </div>
+      </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- VISTA DE SOLO LECTURA                      -->
+      <!-- ========================================== -->
+      @if (vista() === 'ver' && plantillaSeleccionada(); as plantilla) {
+      <div class="detail-card">
+        <div class="detail-header">
+          <h3>{{ plantilla.descripcion }}</h3>
+          <div class="detail-header-actions">
+            <p-button
+              size="small"
+              icon="pi pi-pencil"
+              severity="warn"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Editar"
+              (onClick)="editarPlantilla(plantilla)"
+            />
+            <p-button
+              size="small"
+              icon="pi pi-trash"
+              severity="danger"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Eliminar"
+              (onClick)="eliminarPlantilla(plantilla)"
+            />
+            <p-button
+              size="small"
+              icon="pi pi-arrow-left"
+              severity="secondary"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Volver"
+              (onClick)="volver()"
+            />
+          </div>
+        </div>
+
+        <div class="detail-body">
+          <div class="section-card">
+            <h4 class="section-title">Datos de la Plantilla</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Descripción:</span>
+                <span class="info-value">{{ plantilla.descripcion }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Estado:</span>
+                <p-tag
+                  [value]="plantilla.sn_activo === 'S' ? 'Activa' : 'Inactiva'"
+                  [severity]="plantilla.sn_activo === 'S' ? 'success' : 'danger'"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <p-table
+              id="grid1"
+              [value]="lineas()"
+              size="small"
+              [paginator]="true"
+              [rows]="10"
+              showGridlines
+              styleClass="tabla-card"
+              [tableStyle]="{ 'min-width': '15rem' }"
+              [showCurrentPageReport]="true"
+              currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+              [rowsPerPageOptions]="[5, 10, 25]"
+            >
+              <ng-template #caption>
+                <div class="flex items-center justify-between">
+                  <span class="section-title">Líneas de la Plantilla</span>
+                </div>
+              </ng-template>
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 3rem">Fila</th>
+                  <th style="width: 12rem">Cuenta</th>
+                  <th>Descripción</th>
+                  <th style="width: 8rem">Tipo</th>
+                  <th style="width: 8rem">Columna</th>
+                  <th style="width: 8rem">Renglón</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-l>
+                <tr>
+                  <td class="t-center">{{ l.id }}</td>
+                  <td>
+                    <span class="cta-code">{{ l.ctacontable }}</span>
+                  </td>
+                  <td>
+                    <span class="cta-nombre">{{ l.ctaNombre }}</span>
+                  </td>
+                  <td class="t-center">
+                    <p-tag
+                      [value]="l.tipo === 'D' ? 'Débito' : 'Crédito'"
+                      [severity]="l.tipo === 'D' ? 'warn' : 'info'"
+                      styleClass="tag-sm"
+                    />
+                  </td>
+                  <td class="t-center">{{ l.columna }}</td>
+                  <td class="t-center">{{ l.renglon }}</td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6" class="t-center text-muted">No hay líneas registradas</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- ===== COLUMNA IZQUIERDA: Lista de plantillas ===== -->
+    <div class="left-column">
+      <div class="left-header">
+        <h3><i class="pi pi-book"></i> Plantillas de Balances</h3>
+        <p-button
+          size="small"
+          label="Nueva"
+          icon="pi pi-plus"
+          severity="success"
+          variant="text"
+          [raised]="true"
+          [rounded]="true"
+          (onClick)="nuevaPlantilla()"
+        />
+      </div>
+
+      <!-- Filtros -->
+      <div class="filtros-bar">
+        <div class="filtro-item filtro-ref">
+          <label>Descripción</label>
+          <input
+            pInputText
+            pSize="small"
+            placeholder="Buscar..."
+            [ngModel]="filtroDescripcion()"
+            (ngModelChange)="filtroDescripcion.set($event)"
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <!-- Tabla plantillas -->
+      @if (cargando() && vista() === 'lista') {
+      <div class="empty-state">
+        <i class="pi pi-spin pi-spinner empty-icon"></i>
+        <p>Cargando...</p>
+      </div>
+      } @else if (plantillasFiltradas().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-inbox empty-icon"></i>
+        <h3>Sin plantillas</h3>
+        <p>No se encontraron plantillas de balances</p>
+        <p-button
+          label="Crear plantilla"
+          icon="pi pi-plus"
+          severity="success"
+          variant="text"
+          [rounded]="true"
+          size="small"
+          (onClick)="nuevaPlantilla()"
+        />
+      </div>
+      } @else {
+      <div class="partidas-lista">
+        @for (plantilla of plantillasFiltradas(); track plantilla.cocdefbalmaId) {
+        <div
+          class="partida-item"
+          [class.selected]="plantillaSeleccionada()?.cocdefbalmaId === plantilla.cocdefbalmaId"
+          (click)="verPlantilla(plantilla)"
+        >
+          <div class="partida-item-header">
+            <span class="partida-num">{{ plantilla.descripcion }}</span>
+          </div>
+          <div class="partida-item-actions">
+            <p-button
+              size="small"
+              icon="pi pi-eye"
+              severity="info"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Ver"
+              (onClick)="verPlantilla(plantilla); $event.stopPropagation()"
+            />
+            <p-button
+              size="small"
+              icon="pi pi-pencil"
+              severity="warn"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Editar"
+              (onClick)="editarPlantilla(plantilla); $event.stopPropagation()"
+            />
+            <p-button
+              size="small"
+              icon="pi pi-trash"
+              severity="danger"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Eliminar"
+              (onClick)="eliminarPlantilla(plantilla); $event.stopPropagation()"
+            />
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+</div>

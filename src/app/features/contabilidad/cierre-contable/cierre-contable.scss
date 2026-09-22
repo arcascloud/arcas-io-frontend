@@ -17,7 +17,9 @@
     align-items: center;
     gap: 0.5rem;
 
-    i { color: var(--c-primary); }
+    i {
+      color: var(--c-primary);
+    }
   }
 }
 
@@ -40,7 +42,9 @@
     align-items: center;
     gap: 0.5rem;
 
-    i { color: var(--c-primary); }
+    i {
+      color: var(--c-primary);
+    }
   }
 }
 
@@ -53,7 +57,9 @@
     align-items: center;
     gap: 0.5rem;
 
-    i { color: var(--c-primary); }
+    i {
+      color: var(--c-primary);
+    }
   }
 }
 
@@ -81,11 +87,11 @@
 
 .fila-cerrada {
   opacity: 0.7;
-  background: #fef2f2;
+  background: var(--c-bg);
 }
 
 .fila-actual {
-  background: #f0fdf4;
+  background: var(--c-card-background);
 }
 
 .text-muted {

@@ -56,7 +56,7 @@ export interface NaturalezaCta {
 // ========== Partidas de Diario (Comprobantes) ==========
 
 export interface CopdaMae {
-  copdamaeId: number;
+  partidaId: number;
   fecharegistro: Date;
   periodo: number;
   anio: number;
@@ -82,7 +82,7 @@ export interface CopdaMae {
 
 export interface CopdaDet {
   copdadetId: number;
-  copdamaeId: number;
+  partidaId: number;
   fecharegistro: Date;
   periodo?: number;
   anio?: number;
@@ -195,7 +195,6 @@ export interface PlantillaPdaDet {
   ctacontable: string;
   descripcion?: string;
   moduloId?: number;
-  ctamayorId?: string;
   naturaleza: 'D' | 'C';
   sn_activo: 'S' | 'N';
   empresaId?: number;
@@ -322,10 +321,13 @@ export interface PartidaDiario {
   descripcion: string;
   referencia: string;
   lineas: LineaPartida[];
+  totalDebito: number;
+  totalCredito: number;
 }
 
 export interface LineaPartida {
   ctacontable: string;
+  descripcion: string;
   descripcionCta: string;
   debito: number;
   credito: number;
@@ -372,7 +374,7 @@ export interface LineaPartidaDto {
 }
 
 export interface CierreContableRequest {
-  empresaId: number;
+  empresaId?: number;
   periodo: number;
   anio: number;
   observacion?: string;
@@ -380,8 +382,9 @@ export interface CierreContableRequest {
 
 export interface ReporteRequest {
   empresaId: number;
-  periodo: number;
-  anio: number;
+  periodo?: number;
+  anio?: number;
+  ctacontable?: string;
   fechaDesde?: Date;
   fechaHasta?: Date;
 }

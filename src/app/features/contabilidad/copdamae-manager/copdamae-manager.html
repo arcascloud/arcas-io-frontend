@@ -1,0 +1,600 @@
+<p-toast />
+<p-confirm-dialog
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: '420px' }"
+/>
+
+<div class="page-container">
+  <div class="split-layout">
+    <!-- ===== COLUMNA DERECHA: Detalle / Formulario ===== -->
+    <div class="right-column">
+      <!-- Estado vacío -->
+      @if (vista() === 'lista') {
+      <div class="vista-empty">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Pulse una partida</h3>
+        <p>Haga clic en una partida de la lista o cree una nueva</p>
+      </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- FORMULARIO: Crear / Editar                 -->
+      <!-- ========================================== -->
+      @if (vista() === 'crear' || vista() === 'editar') {
+      <div class="detail-card">
+        <div class="detail-header">
+          <h3>
+            {{ vista() === 'crear' ? 'Nueva Partida' : 'Editar Partida #' +
+            (partidaSeleccionada()?.nropartida ?? '') }}
+          </h3>
+          <p-button
+            size="small"
+            icon="pi pi-arrow-right"
+            severity="secondary"
+            variant="text"
+            [rounded]="true"
+            pTooltip="Volver"
+            (onClick)="volver()"
+          />
+        </div>
+
+        <div class="detail-body">
+          <!-- ===== MAESTRO (reactive form tipado) ===== -->
+          <div class="section-card" [formGroup]="form">
+            <h4 class="section-title">Datos de la Partida</h4>
+            <div class="form-grid-2">
+              <div class="form-field">
+                <label>Módulo *</label>
+                <p-select
+                  formControlName="moduloId"
+                  [options]="modulosOptions()"
+                  placeholder="Seleccione módulo"
+                  styleClass="w-full"
+                  size="small"
+                  [appendTo]="'body'"
+                />
+              </div>
+              <div class="form-field">
+                <label>Concepto contable *</label>
+                <p-select
+                  formControlName="plantillaId"
+                  [options]="plantillasConcepto()"
+                  placeholder="Seleccione concepto"
+                  styleClass="w-full"
+                  size="small"
+                  [appendTo]="'body'"
+                  [showClear]="true"
+                  [disabled]="!form.controls.moduloId.value"
+                />
+              </div>
+              <div class="form-field">
+                <label>Fecha documento *</label>
+                <p-datepicker
+                  formControlName="fechadocumento"
+                  dateFormat="dd/mm/yy"
+                  [showIcon]="true"
+                  iconDisplay="input"
+                  [fluid]="true"
+                  [appendTo]="'body'"
+                  styleClass="w-full"
+                  size="small"
+                />
+              </div>
+              <div class="form-field">
+                <label>Referencia</label>
+                <input
+                  pInputText
+                  pSize="small"
+                  formControlName="nroreferencia"
+                  maxlength="30"
+                  class="w-full"
+                  size="small"
+                  placeholder="Ej: FAC-001-001"
+                />
+              </div>
+              <div style="color: var(--color-texto-label)" class="form-field form-field-full">
+                <label>Descripción *</label>
+                <textarea
+                  style="color: var(--color-texto-label)"
+                  pTextarea
+                  formControlName="descripcion"
+                  rows="2"
+                  maxlength="200"
+                  class="w-full"
+                  placeholder="Descripción de la partida"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== DETALLE: p-table con ngModel (fuera del <form> para ngModel sin standalone) ===== -->
+          <div class="section-card">
+            <p-table
+              id="grid2"
+              [value]="lineas()"
+              dataKey="id"
+              [rowTrackBy]="trackById"
+              size="small"
+              showGridlines
+              styleClass="tabla-card"
+              [tableStyle]="{ 'min-width': '15rem' }"
+            >
+              <ng-template #caption>
+                <div class="flex items-center justify-between">
+                  <span style="color: var(--color-texto-label)" class="text"
+                    >Líneas de la Partida</span
+                  >
+                </div>
+              </ng-template>
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 40px">#</th>
+                  <th style="width: 25%">Cuenta</th>
+                  <th>Descripción</th>
+                  <th style="width: 140px" class="t-right">Debe</th>
+                  <th style="width: 140px" class="t-right">Haber</th>
+                  <th style="width: 50px"></th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-l>
+                <tr [attr.data-linea]="l.id">
+                  <td class="t-center">{{ l.id }}</td>
+                  <td>
+                    <span class="cta-code mr-2">{{ l.ctacontable }}</span>
+                    <span class="cta-nombre">{{ l.ctaNombre }}</span>
+                  </td>
+                  <td>
+                    <input
+                      pInputText
+                      class="w-full"
+                      pSize="small"
+                      maxlength="200"
+                      [ngModel]="l.descripcion"
+                      (ngModelChange)="editar(l.id, { descripcion: $event })"
+                    />
+                  </td>
+                  <td class="t-right">
+                    <p-inputNumber
+                      data-col="debe"
+                      size="small"
+                      [ngModel]="l.debe || null"
+                      (ngModelChange)="setDebe(l.id, $event)"
+                      [min]="0"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [locale]="'es-HN'"
+                      [fluid]="true"
+                      [inputStyle]="{ 'text-align': 'right' }"
+                    />
+                  </td>
+                  <td class="t-right">
+                    <p-inputNumber
+                      data-col="haber"
+                      size="small"
+                      [ngModel]="l.haber || null"
+                      (ngModelChange)="setHaber(l.id, $event)"
+                      [min]="0"
+                      [locale]="'es-HN'"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [fluid]="true"
+                      [inputStyle]="{ 'text-align': 'right' }"
+                    />
+                  </td>
+                  <td class="t-center">
+                    <p-button
+                      icon="pi pi-trash"
+                      severity="danger"
+                      [text]="true"
+                      [rounded]="true"
+                      size="small"
+                      [tabindex]="-1"
+                      aria-label="Quitar línea"
+                      (onClick)="quitar(l.id)"
+                    />
+                  </td>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="footer">
+                <!-- Fila fantasma: autocomplete para agregar cuentas -->
+                <tr>
+                  <td colspan="6">
+                    <p-autocomplete
+                      #buscador
+                      size="small"
+                      [(ngModel)]="seleccionada"
+                      [suggestions]="sugerencias()"
+                      (completeMethod)="buscar($event)"
+                      (onSelect)="agregar($event)"
+                      optionLabel="descripcion"
+                      [minLength]="1"
+                      [delay]="250"
+                      [fluid]="true"
+                      [appendTo]="'body'"
+                      placeholder="Escribe la cuenta contable o nombre de la cuenta para agregar una línea…"
+                      appendTo="body"
+                    >
+                      <ng-template #item let-c>
+                        <span class="cta-code mr-2">{{ c.ctacontable }}</span>{{ c.descripcion }}
+                      </ng-template>
+                      <ng-template #empty>
+                        <div class="text-muted px-3 py-2">
+                          No hay cuentas de movimiento con ese criterio
+                        </div>
+                      </ng-template>
+                    </p-autocomplete>
+                  </td>
+                </tr>
+
+                <!-- Totales -->
+                <tr>
+                  <td
+                    colspan="3"
+                    style="color: var(--color-texto-label)"
+                    class="t-right fw-semibold"
+                  >
+                    Totales
+                  </td>
+                  <td style="color: var(--color-texto-label)" class="t-right fw-semibold">
+                    {{ totalDebe() | number:'1.2-2' }}
+                  </td>
+                  <td style="color: var(--color-texto-label)" class="t-right fw-semibold">
+                    {{ totalCredito() | number:'1.2-2' }}
+                  </td>
+                  <td></td>
+                </tr>
+
+                <!-- Diferencia -->
+                <tr>
+                  <td colspan="3" style="color: var(--color-texto-label)" class="t-right">
+                    Diferencia
+                  </td>
+                  <td colspan="2">
+                    <div class="diferencia-bar">
+                      <span style="color: var(--color-texto-label)" class="diferencia-valor"
+                        >{{ diferencia() | number:'1.2-2' }}</span
+                      >
+                      @if (cuadrada()) {
+                      <p-tag severity="success" value="Cuadrada" />
+                      } @else {
+                      <p-tag severity="danger" value="Descuadrada" />
+                      }
+                    </div>
+                  </td>
+                  <td></td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div class="detail-footer">
+          <p-button
+            size="small"
+            label="Cancelar"
+            rounded
+            variant="text"
+            severity="secondary"
+            (onClick)="volver()"
+          />
+          <p-button
+            size="small"
+            label="Contabilizar"
+            icon="pi pi-check-circle"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            [rounded]="true"
+            [loading]="cargando()"
+            [disabled]="!puedeContabilizar()"
+            (onClick)="contabilizar()"
+          />
+        </div>
+      </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- VISTA DE SOLO LECTURA                      -->
+      <!-- ========================================== -->
+      @if (vista() === 'ver' && partidaSeleccionada(); as partida) {
+      <div class="detail-card">
+        <div class="detail-header">
+          <h3>Partida #{{ partida.nropartida }}</h3>
+          <div class="detail-header-actions">
+            <p-button
+              size="small"
+              icon="pi pi-pencil"
+              severity="warn"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Editar"
+              (onClick)="editarPartida(partida)"
+            />
+            <p-button
+              size="small"
+              icon="pi pi-trash"
+              severity="danger"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Eliminar"
+              (onClick)="eliminarPartida(partida)"
+            />
+            <p-button
+              size="small"
+              icon="pi pi-arrow-left"
+              severity="secondary"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Volver"
+              (onClick)="volver()"
+            />
+          </div>
+        </div>
+
+        <div class="detail-body">
+          <div class="section-card">
+            <h4 class="section-title">Datos de la Partida</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Módulo</span>
+                <span class="info-value">{{ getModuloLabel(partida.moduloId) }}</span>
+              </div>
+
+              <div class="info-item">
+                <span class="info-label">Concepto:</span>
+                <span class="info-value"
+                  >{{ getPlantillaLabel(partida.documentoId) || getModuloLabel(partida.moduloId)
+                  }}</span
+                >
+              </div>
+
+              <div class="info-item">
+                <span class="info-label">Período:</span>
+                <span class="info-value"
+                  >{{ getPeriodoLabel(partida.periodo) }} {{ partida.anio }}</span
+                >
+              </div>
+              <div class="info-item">
+                <span class="info-label">Referencia:</span>
+                <span class="info-value">{{ partida.nroreferencia }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Descripción:</span>
+                <span class="info-value">{{ partida.descripcion }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Fecha:</span>
+                <span class="info-value">{{ partida.fechadocumento | date:'dd/MM/yyyy' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Estado:</span>
+                <p-tag
+                  [value]="partida.sn_activo === 'S' ? 'Activa' : 'Inactiva'"
+                  [severity]="partida.sn_activo === 'S' ? 'success' : 'danger'"
+                />
+              </div>
+              <div class="info-item">
+                <span class="info-label">+ Información:</span>
+                <span class="info-value"> ver movimiento</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <p-table
+              id="grid1"
+              [value]="lineas()"
+              size="small"
+              [paginator]="true"
+              [rows]="10"
+              showGridlines
+              styleClass="tabla-card"
+              [tableStyle]="{ 'min-width': '15rem' }"
+              [showCurrentPageReport]="true"
+              currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+              [rowsPerPageOptions]="[5, 10, 25]"
+            >
+              <ng-template #caption>
+                <div class="flex items-center justify-between">
+                  <span class="section-title">Líneas de la Partida</span>
+                </div>
+              </ng-template>
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 3rem">Fila</th>
+                  <th style="text-align: left; margin-left: 1px; width: 8rem">Cuenta</th>
+                  <th style="text-align: left; margin-left: 1px; width: 15rem">Descripción</th>
+                  <th style="text-align: center; width: 7rem">Factor Cambio</th>
+                  <th class="t-right" style="width: 7rem">Débito</th>
+                  <th class="t-right" style="width: 7rem">Crédito</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-l>
+                <tr>
+                  <td class="t-center">{{ l.id }}</td>
+                  <td>
+                    <span class="cta-code">{{ l.ctacontable }}</span>
+                  </td>
+                  <td>
+                    <span class="cta-nombre"> {{ l.ctaNombre }}</span>
+                  </td>
+
+                  <!-- ARFM: 20260921 MEJORAR EL FACTOR DE CAMBIO -->
+                  <td class="columna-derecha">{{ l.factordecambio | number:'1.2-2'}}</td>
+                  <td class="columna-derecha">{{ l.debe | number:'1.2-2' }}</td>
+                  <td class="columna-derecha">{{ l.haber | number:'1.2-2' }}</td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="footer">
+                <!-- Totales -->
+                <tr>
+                  <td
+                    colspan="4"
+                    style="color: var(--color-texto-label)"
+                    class="t-right fw-semibold"
+                  >
+                    Totales
+                  </td>
+                  <!-- 20262109, ARFM No carga los totales cuando es consulta o seleccion de partida-->
+                  <td style="color: var(--color-texto-label)" class="t-right fw-semibold">
+                    {{ totalDebe() | number:'1.2-2' }}
+                  </td>
+                  <td style="color: var(--color-texto-label)" class="t-right fw-semibold">
+                    {{ totalCredito() | number:'1.2-2' }}
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="5" class="t-center text-muted">No hay líneas registradas</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- ===== COLUMNA IZQUIERDA: Lista de partidas ===== -->
+    <div class="left-column">
+      <div class="left-header">
+        <h3><i class="pi pi-book"></i> Partidas de Diario</h3>
+        <p-button
+          size="small"
+          label="Nueva"
+          icon="pi pi-plus"
+          severity="success"
+          variant="text"
+          [raised]="true"
+          [rounded]="true"
+          (onClick)="nuevaPartida()"
+        />
+      </div>
+
+      <!-- Filtros -->
+      <div class="filtros-bar">
+        <div class="filtro-item">
+          <label>Año</label>
+          <p-select
+            [options]="aniosOptions()"
+            placeholder="Todos"
+            styleClass="w-full"
+            size="small"
+            [appendTo]="'body'"
+            [ngModel]="filtroAnio()"
+            (ngModelChange)="filtroAnio.set($event)"
+            [showClear]="true"
+          />
+        </div>
+
+        <div class="filtro-item">
+          <label>Periodo</label>
+          <p-select
+            [options]="mesesOptions()"
+            placeholder="Todos"
+            styleClass="w-full"
+            size="small"
+            [appendTo]="'body'"
+            [ngModel]="filtroPeriodo()"
+            (ngModelChange)="filtroPeriodo.set($event)"
+            [showClear]="true"
+          />
+        </div>
+        <div class="filtro-item filtro-ref">
+          <label>Referencia</label>
+          <input
+            pInputText
+            pSize="small"
+            placeholder="Buscar..."
+            [ngModel]="filtroReferencia()"
+            (ngModelChange)="filtroReferencia.set($event)"
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <!-- Tabla partidas -->
+      @if (cargando() && vista() === 'lista') {
+      <div class="empty-state">
+        <i class="pi pi-spin pi-spinner empty-icon"></i>
+        <p>Cargando...</p>
+      </div>
+      } @else if (partidasFiltradas().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-inbox empty-icon"></i>
+        <h3>Sin partidas</h3>
+        <p>No se encontraron partidas de diario</p>
+        <p-button
+          label="Crear partida"
+          icon="pi pi-plus"
+          severity="success"
+          variant="text"
+          [rounded]="true"
+          size="small"
+          (onClick)="nuevaPartida()"
+        />
+      </div>
+      } @else {
+      <div class="partidas-lista">
+        @for (partida of partidasFiltradas(); track partida.copdamaeId) {
+        <div
+          class="partida-item"
+          [class.selected]="partidaSeleccionada()?.copdamaeId === partida.copdamaeId"
+          (click)="verPartida(partida)"
+        >
+          <div class="partida-item-header">
+            <span class="partida-num"> Partida No. {{ partida.nropartida }}</span>
+            <p-tag
+              [value]="getPeriodoLabel(partida.periodo) + ' ' + partida.anio"
+              [severity]="getPeriodoTagSeverity(partida.periodo)"
+              styleClass="tag-sm"
+            />
+          </div>
+          <div class="partida-item-ref">
+            <p-tag
+              [value]="'Auxiliar: ' + getModuloLabel(partida.moduloId)"
+              severity="secondary"
+              styleClass="tag-sm"
+            />
+          </div>
+          <div class="partida-item-ref">Referencia: {{ partida.nroreferencia }}</div>
+          <div class="partida-item-desc">Concepto: {{ partida.descripcion }}</div>
+          <div class="partida-item-actions">
+            <p-button
+              size="small"
+              icon="pi pi-eye"
+              severity="info"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Ver"
+              (onClick)="verPartida(partida); $event.stopPropagation()"
+            />
+            <p-button
+              size="small"
+              icon="pi pi-pencil"
+              severity="warn"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Editar"
+              (onClick)="editarPartida(partida); $event.stopPropagation()"
+            />
+            <p-button
+              size="small"
+              icon="pi pi-trash"
+              severity="danger"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Eliminar"
+              (onClick)="eliminarPartida(partida); $event.stopPropagation()"
+            />
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+</div>

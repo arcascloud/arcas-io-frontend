@@ -18,6 +18,8 @@ export const CONTABILIDAD_ROUTES: Routes = [
   { path: 'nivelcta/editar/:id', data: { nombre: 'nivelcta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'naturalezacta', data: { nombre: 'naturalezacta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'naturalezacta/editar/:id', data: { nombre: 'naturalezacta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
+  { path: 'meses', data: { nombre: 'meses' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
+  { path: 'meses/editar/:id', data: { nombre: 'meses' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'tipos-doc-fiscal', data: { nombre: 'tipos-doc-fiscal' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'tipos-doc-fiscal/editar/:id', data: { nombre: 'tipos-doc-fiscal' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'impuestovecinal', data: { nombre: 'impuestovecinal' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
@@ -32,12 +34,10 @@ export const CONTABILIDAD_ROUTES: Routes = [
   { path: 'saldoscta/editar/:id', data: { nombre: 'saldoscta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'repliquidez', data: { nombre: 'repliquidez' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'repliquidez/editar/:id', data: { nombre: 'repliquidez' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
-  { path: 'repdiarios', data: { nombre: 'repdiarios' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
-  { path: 'repdiarios/editar/:id', data: { nombre: 'repdiarios' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
+  { path: 'repdiarios', loadComponent: () => import('./libro-diario/libro-diario').then((m) => m.LibroDiarioComponent) },
   { path: 'repbalances', data: { nombre: 'repbalances' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'repbalances/editar/:id', data: { nombre: 'repbalances' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'movcta', data: { nombre: 'movcta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
-  { path: 'movcta/editar/:id', data: { nombre: 'movcta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
 
   // ===== Maestro-detalle =====
   { path: 'plantillapdamae', data: { nombre: 'plantillapda' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle').then((m) => m.MaestroDetalle) },
@@ -46,9 +46,12 @@ export const CONTABILIDAD_ROUTES: Routes = [
   { path: 'plantillabalancesmae', data: { nombre: 'plantillabalances' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle').then((m) => m.MaestroDetalle) },
   { path: 'plantillabalancesmae/nuevo', data: { nombre: 'plantillabalances' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm) },
   { path: 'plantillabalancesmae/editar/:id', data: { nombre: 'plantillabalances' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm) },
-  { path: 'copdamae', data: { nombre: 'copda' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle').then((m) => m.MaestroDetalle) },
-  { path: 'copdamae/nuevo', data: { nombre: 'copda' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm) },
-  { path: 'copdamae/editar/:id', data: { nombre: 'copda' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm) },
+  { path: 'copdamae', loadComponent: () => import('./copdamae-manager/copdamae-manager').then((m) => m.CopdamaeManager) },
+  { path: 'plantillapda', loadComponent: () => import('./plantilla-pda-manager/plantilla-pda-manager').then((m) => m.PlantillaPdaManager) },
+  { path: 'plantillabalances', loadComponent: () => import('./balances-manager/balances-manager').then((m) => m.BalancesManager) },
+  { path: 'copdamae-old', data: { nombre: 'copda' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle').then((m) => m.MaestroDetalle) },
+  { path: 'copdamae-old/nuevo', data: { nombre: 'copda' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm) },
+  { path: 'copdamae-old/editar/:id', data: { nombre: 'copda' }, loadComponent: () => import('../facturacion/maestro-detalle/maestro-detalle-form').then((m) => m.MaestroDetalleForm) },
 
   { path: '**', redirectTo: 'ctacontables' },
 ];

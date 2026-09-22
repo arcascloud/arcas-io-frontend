@@ -1,11 +1,23 @@
 <p-toast />
-<p-confirm-dialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+<p-confirm-dialog
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: '420px' }"
+/>
 
 <div class="page-container">
   <!-- Header -->
   <div class="page-header">
-    <h2><i class="pi pi-list"></i> Plan de Cuentas</h2>
-    <p-button size="small" label="Nueva Cuenta" icon="pi pi-plus" severity="success" variant="text" [raised]="true" [rounded]="true" (onClick)="nuevaCuenta()" />
+    <h2><i class="pi pi-list"></i> Catálogo de cuentas contable</h2>
+    <p-button
+      size="small"
+      label="Nueva Cuenta"
+      icon="pi pi-plus"
+      severity="success"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      (onClick)="nuevaCuenta()"
+    />
   </div>
 
   <!-- Filtros -->
@@ -14,26 +26,58 @@
       <div class="p-grid">
         <div class="p-col-12 p-col-4">
           <div class="p-field">
-            <label>Buscar</label>
-            <input pInputText placeholder="Código o descripción..." class="w-full" pSize="small" [ngModel]="filtroBuscar()" (ngModelChange)="filtroBuscar.set($event)" />
-          </div>
-        </div>
-        <div class="p-col-12 p-col-3">
-          <div class="p-field">
             <label>Grupo Contable</label>
-            <p-select [options]="grupos()" [(ngModel)]="filtroGrupo" optionLabel="descripcion" optionValue="tcogrupocontableId" placeholder="Todos" styleClass="w-full" size="small" />
+            <p-select
+              [options]="gruposOpts()"
+              [(ngModel)]="filtroGrupo"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Todos"
+              styleClass="w-full"
+              size="small"
+            />
           </div>
         </div>
         <div class="p-col-12 p-col-3">
           <div class="p-field">
-            <label>Naturaleza</label>
-            <p-select [options]="naturalezasOpts" [(ngModel)]="filtroNaturaleza" optionLabel="label" optionValue="value" placeholder="Todas" styleClass="w-full" size="small" />
+            <label>Nivel</label>
+            <p-select
+              [options]="nivelesOpts()"
+              [(ngModel)]="filtroNivel"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Todos"
+              styleClass="w-full"
+              size="small"
+            />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-3">
+          <div class="p-field">
+            <label>Buscar</label>
+            <input
+              pInputText
+              placeholder="Código o descripción..."
+              class="w-full"
+              pSize="small"
+              [ngModel]="filtroBuscar()"
+              (ngModelChange)="filtroBuscar.set($event)"
+            />
           </div>
         </div>
         <div class="p-col-12 p-col-2">
           <div class="p-field">
             <label>&nbsp;</label>
-            <p-button size="small" label="Limpiar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="limpiarFiltros()" styleClass="w-full" />
+            <p-button
+              size="small"
+              label="Limpiar"
+              icon="pi pi-times"
+              severity="secondary"
+              variant="text"
+              [rounded]="true"
+              (onClick)="limpiarFiltros()"
+              styleClass="w-full"
+            />
           </div>
         </div>
       </div>
@@ -42,61 +86,113 @@
 
   <!-- Tabla -->
   <div class="card">
-    <p-table [value]="cuentasFiltradas()" [loading]="cargando()" [paginator]="true" [rows]="20" [rowsPerPageOptions]="[10, 20, 50, 100]"
-             [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-             size="small" [globalFilterFields]="['ctacontable', 'descripcion']">
+    <p-table
+      [value]="cuentasFiltradas()"
+      [loading]="cargando()"
+      [paginator]="true"
+      [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50, 100]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      size="small"
+      [globalFilterFields]="['ctacontable', 'descripcion']"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th style="width: 120px">Cuenta</th>
-          <th>Descripción</th>
-          <th style="width: 140px">Grupo</th>
-          <th style="width: 100px">Nivel</th>
-          <th style="width: 90px">Naturaleza</th>
-          <th style="width: 80px">Mayor</th>
-          <th style="width: 90px">Tipo</th>
-          <th style="width: 80px" class="text-center">Estado</th>
-          <th style="width: 100px" class="text-center">Acciones</th>
+          <th style="width: 8rem">Cuenta</th>
+          <th style="width: 15rem">Descripción</th>
+          <th style="width: 6rem; text-align: center">Nivel</th>
+          <th style="width: 6rem">Mayor</th>
+          <th style="width: 6rem">Grupo</th>
+          <th style="width: 6rem">Naturaleza</th>
+          <th style="width: 6rem; text-align: center">Tipo</th>
+          <th style="width: 6rem" class="text-center">Estado</th>
+          <th style="width: 10rem; text-align: left">Acciones</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-cuenta>
         <tr>
           <td><strong>{{ cuenta.ctacontable }}</strong></td>
           <td>{{ cuenta.descripcion }}</td>
-          <td>{{ getGrupoDescripcion(cuenta.tcogrupocontableId) }}</td>
           <td class="text-center">{{ cuenta.nivel }}</td>
-          <td class="text-center">
-            <p-tag [value]="naturalezaLabel(cuenta.naturaleza)" [severity]="naturalezaSeverity(cuenta.naturaleza)" styleClass="tag-sm" />
+          <td class="text-left">{{ cuenta.padre || '-' }}</td>
+          <td>{{ getGrupoDescripcion(cuenta.tcogrupocontableId) }}</td>
+          <td class="text-left">
+            <p-tag
+              [value]="naturalezaLabel(cuenta.naturaleza)"
+              [severity]="naturalezaSeverity(cuenta.naturaleza)"
+              styleClass="tag-sm"
+            />
           </td>
-          <td class="text-center">{{ cuenta.padre || '-' }}</td>
           <td class="text-center">
-            <p-tag [value]="cuenta.sn_operable === 'S' ? 'Diario' : 'Mayor'" [severity]="cuenta.sn_operable === 'S' ? 'success' : 'secondary'" styleClass="tag-sm" />
+            <p-tag
+              [value]="cuenta.sn_operable === 'S' ? 'Diario' : 'Mayor'"
+              [severity]="cuenta.sn_operable === 'S' ? 'success' : 'secondary'"
+              styleClass="tag-sm"
+            />
           </td>
           <td class="text-center">
-            <p-tag [value]="cuenta.sn_activo === 'S' ? 'Activo' : 'Inactivo'" [severity]="cuenta.sn_activo === 'S' ? 'success' : 'danger'" styleClass="tag-sm" />
+            <p-tag
+              [value]="cuenta.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cuenta.sn_activo === 'S' ? 'success' : 'danger'"
+              styleClass="tag-sm"
+            />
           </td>
           <td>
             <div class="d-flex gap-1 justify-content-center">
-              <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarCuenta(cuenta)" />
-              <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarCuenta(cuenta)" />
+              <p-button
+                size="small"
+                icon="pi pi-plus"
+                severity="success"
+                variant="text"
+                [rounded]="true"
+                pTooltip="Nueva Cuenta"
+                (onClick)="nuevaCuenta()"
+              />
+              <p-button
+                size="small"
+                icon="pi pi-pencil"
+                severity="warn"
+                variant="text"
+                [rounded]="true"
+                pTooltip="Editar"
+                (onClick)="editarCuenta(cuenta)"
+              />
+              <p-button
+                size="small"
+                icon="pi pi-trash"
+                severity="danger"
+                variant="text"
+                [rounded]="true"
+                pTooltip="Eliminar"
+                (onClick)="eliminarCuenta(cuenta)"
+              />
             </div>
           </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
-        <tr><td colspan="9" class="text-center text-muted">No se encontraron cuentas contables</td></tr>
+        <tr>
+          <td colspan="9" class="text-center text-muted">No se encontraron cuentas contables</td>
+        </tr>
       </ng-template>
     </p-table>
   </div>
 </div>
 
 <!-- Drawer Formulario -->
-<p-drawer [(visible)]="dialogFormVisible" [header]="esEdicion() ? 'Editar Cuenta Contable' : 'Nueva Cuenta Contable'"
-          [style]="{ width: '60%' }" position="right"
-          (onHide)="onCancelar()">
+<p-drawer
+  [(visible)]="dialogFormVisible"
+  [header]="esEdicion() ? 'Editar Cuenta Contable' : 'Nueva Cuenta Contable'"
+  [style]="{ width: '40%' }"
+  position="right"
+  (onHide)="onCancelar()"
+>
   <app-ctacontable-form
     [cuenta]="cuentaSeleccionada()"
     [esEdicion]="esEdicion()"
     [todasLasCuentas]="cuentas()"
     (guardado)="onGuardado()"
-    (cancelar)="onCancelar()" />
+    (cancelar)="onCancelar()"
+  />
 </p-drawer>

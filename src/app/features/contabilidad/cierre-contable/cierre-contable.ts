@@ -90,7 +90,6 @@ export class CierreContableComponent implements OnInit {
       accept: () => {
         this.cargando.set(true);
         this.contabilidad.realizarCierre({
-          empresaId: 0,
           periodo,
           anio,
           observacion: this.observacion() || `Cierre ${periodo}/${anio}`,

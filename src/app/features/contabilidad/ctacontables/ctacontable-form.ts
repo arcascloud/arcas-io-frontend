@@ -1,7 +1,8 @@
-import { Component, OnInit, OnChanges, SimpleChanges, inject, input, output, signal, computed, DestroyRef } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, inject, input, output, signal, computed, effect, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -48,6 +49,30 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
 
   form!: FormGroup;
 
+  // Effect reactivo: cuando cambia el input cuenta, actualizar formulario
+  private cuentaEffect = effect(() => {
+    const c = this.cuenta();
+    if (!this.form) return;
+    if (c) {
+      this.patchForm();
+    } else if (this.esEdicion() === false) {
+      this.form.reset({
+        ctacontable: '',
+        descripcion: '',
+        tcogrupocontableId: null,
+        naturaleza: 'D',
+        nivel: null,
+        padre: null,
+        sn_operable: 'S',
+        sn_activo: 'S',
+        zorden: 0,
+      });
+      this.grupoId.set(null);
+      this.nivelSeleccionado.set(null);
+      this.codigoCuenta.set('');
+    }
+  });
+
   readonly snOptions = [
     { label: 'Diario (Sí)', value: 'S' },
     { label: 'Mayor (No)', value: 'N' },
@@ -85,18 +110,17 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['cuenta'] && this.form) {
-      this.patchForm();
-    }
     if (changes['todasLasCuentas'] && this.form) {
+      this.form.get('ctacontable')?.updateValueAndValidity({ emitEvent: false });
+      this.form.get('descripcion')?.updateValueAndValidity({ emitEvent: false });
       this.form.get('padre')?.updateValueAndValidity();
     }
   }
 
   private initForm(): void {
     this.form = this.fb.group({
-      ctacontable: ['', [Validators.required, Validators.maxLength(20)]],
-      descripcion: ['', [Validators.required, Validators.maxLength(50)]],
+      ctacontable: ['', [Validators.required, Validators.maxLength(20), this.noTerminarEnGuion, this.cuentaNoDuplicada]],
+      descripcion: ['', [Validators.required, Validators.maxLength(50), this.descripcionNoDuplicada]],
       tcogrupocontableId: [null, Validators.required],
       naturaleza: ['D', Validators.required],
       nivel: [null, Validators.required],
@@ -105,7 +129,6 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
       sn_activo: ['S', Validators.required],
       zorden: [0],
     });
-    this.patchForm();
   }
 
   private patchForm(): void {
@@ -129,13 +152,22 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
   }
 
   private cargarDatos(): void {
-    this.contabilidad.getGrupos()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({ next: (data) => this.grupos.set(data), error: () => {} });
-
-    this.contabilidad.getNiveles()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({ next: (data) => this.niveles.set(data), error: () => {} });
+    forkJoin({
+      grupos: this.contabilidad.getGrupos(),
+      niveles: this.contabilidad.getNiveles(),
+    })
+    .pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe({
+      next: ({ grupos, niveles }) => {
+        this.grupos.set(grupos);
+        this.niveles.set(niveles);
+        // Después de cargar opciones, aplicar patch si hay cuenta seleccionada
+        if (this.cuenta()) {
+          this.patchForm();
+        }
+      },
+      error: () => {},
+    });
   }
 
   // ========== Listeners de reglas de negocio ==========
@@ -209,6 +241,25 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
   /** Nivel 1 = raíz, no necesita cuenta mayor */
   esNivelRaiz = computed(() => (this.nivelSeleccionado() || 1) === 1);
 
+  /** Warning: nivel > 1 pero no existe cuenta de mayor para el patrón */
+  faltaMayor = computed(() => {
+    const nivel = this.nivelSeleccionado() || 1;
+    if (nivel <= 1) return null;
+    const candidatas = this.cuentasMayor();
+    if (candidatas.length === 0) {
+      const codigo = this.codigoCuenta().trim();
+      if (codigo) {
+        const partes = codigo.split('-');
+        if (partes.length >= 2) {
+          const padreEsperado = partes.slice(0, -1).join('-');
+          return `No hay cuenta de mayor definida para el nivel ${nivel - 1} (${padreEsperado})`;
+        }
+      }
+      return `No hay cuenta de mayor definida para el nivel ${nivel - 1}`;
+    }
+    return null;
+  });
+
   private inferirNivelYPadre(codigo: string): void {
     const partes = codigo.split('-');
     const nivel = partes.length;
@@ -224,6 +275,37 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
 
   // ========== Helpers ==========
 
+  /** Validador: no permitir cuenta terminada en guion */
+  noTerminarEnGuion(control: AbstractControl): ValidationErrors | null {
+    const valor = control.value;
+    if (valor && typeof valor === 'string' && valor.endsWith('-')) {
+      return { terminaEnGuion: true };
+    }
+    return null;
+  }
+
+  /** Validador: cuenta contable no duplicada */
+  cuentaNoDuplicada = (control: AbstractControl): ValidationErrors | null => {
+    const valor = control.value?.trim();
+    if (!valor) return null;
+    const cuentaActual = this.cuenta();
+    const duplicada = this.todasLasCuentas().some(c =>
+      c.ctacontable === valor && c.cuentacontablesId !== cuentaActual?.cuentacontablesId
+    );
+    return duplicada ? { cuentaDuplicada: true } : null;
+  };
+
+  /** Validador: descripción no duplicada */
+  descripcionNoDuplicada = (control: AbstractControl): ValidationErrors | null => {
+    const valor = control.value?.trim();
+    if (!valor) return null;
+    const cuentaActual = this.cuenta();
+    const duplicada = this.todasLasCuentas().some(c =>
+      c.descripcion.toLowerCase() === valor.toLowerCase() && c.cuentacontablesId !== cuentaActual?.cuentacontablesId
+    );
+    return duplicada ? { descripcionDuplicada: true } : null;
+  };
+
   invalid(ctrl: string): boolean {
     const c = this.form.get(ctrl);
     return !!c && c.invalid && (c.dirty || c.touched);
@@ -234,6 +316,9 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
     if (!c || !c.errors) return '';
     if (c.errors['required']) return 'Este campo es obligatorio';
     if (c.errors['maxlength']) return `Máximo ${c.errors['maxlength'].requiredLength} caracteres`;
+    if (c.errors['terminaEnGuion']) return 'La cuenta no puede terminar en guion';
+    if (c.errors['cuentaDuplicada']) return 'Ya existe una cuenta con este código';
+    if (c.errors['descripcionDuplicada']) return 'Ya existe una cuenta con esta descripción';
     return 'Campo inválido';
   }
 

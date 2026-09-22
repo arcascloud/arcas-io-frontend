@@ -34,15 +34,46 @@
 .tabla-card {
   padding: 0;
   overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
 }
 
 .facturas-table {
-  :host ::ng-deep .p-datatable-tbody > tr > td {
+
+
+  /* 1. Contenedor general de la tabla con bordes redondeados */
+  :host ::ng-deep .p-datatable {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--c-border);
+    /* Opcional: si quieres un borde general limpio */
+  }
+
+  /* 2. Redondear la esquina superior izquierda y derecha del encabezado */
+  :host ::ng-deep .p-datatable-thead>tr:first-child>th:first-child {
+    border-top-left-radius: 8px;
+  }
+
+  :host ::ng-deep .p-datatable-thead>tr:first-child>th:last-child {
+    border-top-right-radius: 8px;
+  }
+
+  /* 3. Redondear la esquina inferior izquierda y derecha de la última fila */
+  :host ::ng-deep .p-datatable-tbody>tr:last-child>td:first-child {
+    border-bottom-left-radius: 8px;
+  }
+
+  :host ::ng-deep .p-datatable-tbody>tr:last-child>td:last-child {
+    border-bottom-right-radius: 8px;
+  }
+
+
+  :host ::ng-deep .p-datatable-tbody>tr>td {
     padding: 0.6rem 0.75rem;
     vertical-align: middle;
   }
 
-  :host ::ng-deep .p-datatable-thead > tr > th {
+  :host ::ng-deep .p-datatable-thead>tr>th {
     padding: 0.65rem 0.75rem;
     font-size: 0.75rem;
     font-weight: 600;
@@ -53,15 +84,15 @@
     border-bottom: 2px solid var(--c-border);
   }
 
-  :host ::ng-deep .p-datatable-tbody > tr {
+  :host ::ng-deep .p-datatable-tbody>tr {
     transition: background-color 0.15s;
   }
 
-  :host ::ng-deep .p-datatable-tbody > tr:hover {
+  :host ::ng-deep .p-datatable-tbody>tr:hover {
     background-color: var(--c-surface-ground);
   }
 
-  :host ::ng-deep .p-datatable-tbody > tr > td {
+  :host ::ng-deep .p-datatable-tbody>tr>td {
     border-bottom: 1px solid var(--c-border);
   }
 }
