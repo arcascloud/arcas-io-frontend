@@ -17,7 +17,6 @@ import { ContabilidadService } from '../../../core/services/contabilidad.service
 import { PartidaDiario } from '../../../core/models/contabilidad.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { EmpresasService } from '../../../core/services/empresas.service';
-import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -33,7 +32,7 @@ import {
   imports: [
     CommonModule, FormsModule, TableModule, ButtonModule,
     InputTextModule, DatePickerModule, ToastModule, TooltipModule, TagModule, CardModule,
-    DialogModule, NgxExtendedPdfViewerModule,
+    DialogModule,
   ],
   providers: [MessageService],
   templateUrl: './libro-diario.html',

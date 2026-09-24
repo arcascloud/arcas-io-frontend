@@ -130,9 +130,17 @@ export class CatalogoForm implements OnInit, OnChanges {
   private cargarOpciones() {
     for (const c of this.campos) {
       if (c.cargaOpciones) {
-        this.api.get<any[]>(c.cargaOpciones.url).subscribe({
-          next: (items) => {
-            const opts = (items ?? []).map((i) => ({
+        this.api.get<any>(c.cargaOpciones.url).subscribe({
+          next: (res) => {
+            // Aceptar arrays planos y respuestas paginadas { data, total }
+            let items: any[] = [];
+            if (Array.isArray(res)) {
+              items = res;
+            } else if (res && typeof res === 'object') {
+              const candidate = res.data ?? res.results ?? Object.values(res).find(Array.isArray) ?? [];
+              items = Array.isArray(candidate) ? candidate : [];
+            }
+            const opts = items.map((i) => ({
               label: String(i[c.cargaOpciones!.labelCampo] ?? i[c.cargaOpciones!.valueCampo] ?? ''),
               value: i[c.cargaOpciones!.valueCampo],
             }));

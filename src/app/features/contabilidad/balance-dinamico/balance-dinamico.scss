@@ -1,0 +1,215 @@
+.page-container {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i { color: var(--c-primary); }
+  }
+}
+
+// Encabezado del reporte
+.reporte-header {
+  text-align: center;
+  padding: 1.25rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+}
+
+.reporte-empresa {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.reporte-titulo {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0.25rem 0;
+}
+
+.reporte-periodo {
+  font-size: 0.9rem;
+  color: var(--c-text-muted);
+
+  .nivel-tag {
+    display: inline-block;
+    margin-left: 0.75rem;
+    padding: 0.15rem 0.6rem;
+    background: var(--c-primary);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .tipo-tag {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.15rem 0.6rem;
+    background: #fee2e2;
+    color: #b91c1c;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    &.tipo-balance {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+  }
+}
+
+// Tabla única de balances
+.tabla-balances {
+  :host ::ng-deep .p-datatable-thead > tr > th {
+    background: var(--c-surface-ground);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--c-text-muted);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  :host ::ng-deep .p-datatable-tbody > tr > td {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+}
+
+.col-header {
+  min-width: 7rem;
+  text-align: right;
+
+  small {
+    font-weight: 400;
+    font-size: 0.65rem;
+    opacity: 0.7;
+  }
+}
+
+.col0-header {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+
+// Badge de nivel
+.nivel-badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--c-surface-ground);
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-border);
+
+  &.nivel-1 { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+  &.nivel-2 { background: #dcfce7; color: #15803d; border-color: #86efac; }
+  &.nivel-3 { background: #fef3c7; color: #b45309; border-color: #fcd34d; }
+  &.nivel-4 { background: #fce7f3; color: #be185d; border-color: #f9a8d4; }
+}
+
+// Saldos
+.saldo {
+  font-variant-numeric: tabular-nums;
+  font-family: 'Mukta', monospace;
+  white-space: nowrap;
+
+  &.celda-valor {
+    font-weight: 600;
+    background: rgba(16, 185, 129, 0.04);
+  }
+}
+
+.totales-row {
+  background: var(--c-surface-ground);
+  font-weight: 700;
+
+  td {
+    padding: 0.5rem 0.75rem;
+    border-top: 2px solid var(--c-border);
+  }
+}
+
+// Resumen cards
+.resumen-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.resumen-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+}
+
+.resumen-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: white;
+  flex-shrink: 0;
+
+  &.bg-primary { background: var(--c-primary); }
+  &.bg-info { background: #3b82f6; }
+  &.bg-success { background: var(--c-success); }
+  &.bg-warning { background: var(--c-warning); }
+}
+
+.resumen-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.resumen-label {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  font-weight: 500;
+}
+
+.resumen-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .tabla-balances {
+    :host ::ng-deep .p-datatable-tbody > tr > td,
+    :host ::ng-deep .p-datatable-thead > tr > th {
+      padding: 0.3rem 0.4rem;
+      font-size: 0.75rem;
+    }
+  }
+}

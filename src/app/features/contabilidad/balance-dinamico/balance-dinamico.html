@@ -1,0 +1,131 @@
+<p-toast />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-chart-pie"></i> Balances Dinámicos</h2>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-4">
+          <div class="p-field">
+            <label>Plantilla de Balance</label>
+            <p-select [options]="plantillaOptions()" [(ngModel)]="plantillaId" optionLabel="label" optionValue="value"
+                      placeholder="Seleccionar plantilla" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Nivel de Detalle</label>
+            <p-select [options]="nivelOptions()" [(ngModel)]="nivelDetalle" optionLabel="label" optionValue="value"
+                      placeholder="Todos" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Período</label>
+            <p-select [options]="meses" [(ngModel)]="periodo" optionLabel="label" optionValue="value"
+                      placeholder="Mes" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Año</label>
+            <p-inputNumber [(ngModel)]="anio" [min]="2020" [max]="2030" styleClass="w-full" size="small" />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2 d-flex align-items-end">
+          <p-button size="small" label="Generar" icon="pi pi-play" severity="success" variant="text"
+                    [raised]="true" [rounded]="true" [loading]="cargando()" (onClick)="generar()" styleClass="w-full" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Encabezado del reporte -->
+  @if (reporte(); as rep) {
+    <div class="reporte-header mb-3">
+      <div class="reporte-empresa">{{ rep.empresaName }}</div>
+      <div class="reporte-titulo">{{ rep.balancename }}</div>
+      <div class="reporte-periodo">
+        Período: {{ getMesLabel() }} {{ rep.anio }}
+        @if (rep.nivelDetalle != null) {
+          <span class="nivel-tag">Nivel {{ rep.nivelDetalle }}</span>
+        }
+        <span class="tipo-tag" [class.tipo-balance]="rep.esBalance">
+          {{ rep.esBalance ? 'Balance' : 'Estado de Resultado' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Tabla única: Cuenta | Descripción | [Col0] | Col1..Col7 -->
+    <div class="card">
+      <p-table [value]="lineasOrdenadas()" size="small" styleClass="p-table-sm tabla-balances">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 3rem">#</th>
+            <th style="width: 7.5rem">Cuenta</th>
+            <th>Descripción</th>
+            <th style="width: 3.5rem" class="text-center">Nivel</th>
+            @if (mostrarCol0()) {
+              <th class="text-right col-header col0-header">Col 0<br /><small>Acum. Ant.</small></th>
+            }
+            @for (col of columnasVisibles(); track col) {
+              <th class="text-right col-header">Col {{ col }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row let-rowIndex="rowIndex">
+          <tr>
+            <td class="text-muted">{{ row.renglon }}</td>
+            <td><strong>{{ row.ctacontable }}</strong></td>
+            <td>{{ row.descripcion }}</td>
+            <td class="text-center">
+              <span class="nivel-badge" [class]="'nivel-' + row.nivel">{{ row.nivel ?? '-' }}</span>
+            </td>
+            @if (mostrarCol0()) {
+              <td class="text-right saldo">
+                {{ (row.col0 ?? 0) | number:'1.2-2' }}
+              </td>
+            }
+            @for (col of columnasVisibles(); track col) {
+              <td class="text-right saldo"
+                  [class.celda-valor]="row.columna === col">
+                @if (row.columna === col) {
+                  {{ row.valor | number:'1.2-2' }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="footer">
+          <tr class="totales-row">
+            <td colspan="4"><strong>TOTALES</strong></td>
+            @if (mostrarCol0()) {
+              <td class="text-right"><strong>{{ totalCol(0) | number:'1.2-2' }}</strong></td>
+            }
+            @for (col of columnasVisibles(); track col) {
+              <td class="text-right"><strong>{{ totalCol(col) | number:'1.2-2' }}</strong></td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [colSpan]="4 + (mostrarCol0() ? 1 : 0) + columnasVisibles().length" class="text-center text-muted">
+              Sin líneas para mostrar
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+  } @else {
+    <div class="card text-center p-4 text-muted">
+      <i class="pi pi-chart-pie" style="font-size: 2rem; opacity: 0.4;"></i>
+      <p class="mt-2 mb-0">Seleccione una plantilla y haga clic en "Generar" para ver el reporte de balances.</p>
+    </div>
+  }
+</div>

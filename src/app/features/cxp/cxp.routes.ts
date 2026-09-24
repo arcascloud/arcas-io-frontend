@@ -34,5 +34,29 @@ export const CXP_ROUTES: Routes = [
     loadComponent: () => import('./historico/historico-manager').then((m) => m.CxpHistoricoManager),
   },
 
+  // Carteras contables por proveedor (catálogo genérico)
+  {
+    path: 'carteras-cta',
+    data: { nombre: 'carteras-cta' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+  },
+  {
+    path: 'carteras-cta/editar/:id',
+    data: { nombre: 'carteras-cta' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+  },
+
+  // Información de proveedores - correos, celulares y direcciones (catálogo genérico)
+  {
+    path: 'proveedor-info',
+    data: { nombre: 'proveedor-info' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+  },
+  {
+    path: 'proveedor-info/editar/:id',
+    data: { nombre: 'proveedor-info' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+  },
+
   { path: '**', redirectTo: 'proveedores' },
 ];

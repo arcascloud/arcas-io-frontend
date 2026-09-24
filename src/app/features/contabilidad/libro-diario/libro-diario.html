@@ -185,27 +185,6 @@
   </ng-template>
 
   @if (pdfUrl()) {
-    <ngx-extended-pdf-viewer
-      [src]="pdfUrl()"
-      [height]="'75vh'"
-      [textLayer]="true"
-      [showToolbar]="true"
-      [showSidebarButton]="false"
-      [showFindButton]="true"
-      [showPagingButtons]="true"
-      [showDrawEditor]="false"
-      [showStampEditor]="false"
-      [showTextEditor]="false"
-      [showZoomButtons]="true"
-      [showPresentationModeButton]="false"
-      [showOpenFileButton]="false"
-      [showPrintButton]="true"
-      [showDownloadButton]="false"
-      [showSecondaryToolbarButton]="true"
-      [showRotateButton]="false"
-      [showHandToolButton]="false"
-      [showSpreadButton]="false"
-      [showPropertiesButton]="false">
-    </ngx-extended-pdf-viewer>
+    <iframe [src]="pdfUrl()" class="pdf-iframe"></iframe>
   }
 </p-dialog>

@@ -255,14 +255,25 @@ export class BalancesManager implements OnInit {
             this.guardarDetalles(maeId);
             return;
           }
-          let eliminados = 0;
+          let completados = 0;
+          let fallos = 0;
           const total = detallesExistentes.length;
+          const avanzar = () => {
+            completados++;
+            if (completados < total) return;
+            if (fallos > 0) {
+              this.cargando.set(false);
+              this.mostrarError(`No se pudieron eliminar ${fallos} de ${total} líneas existentes. Intente de nuevo.`);
+              return;
+            }
+            this.guardarDetalles(maeId);
+          };
           for (const det of detallesExistentes) {
             this.contabilidad.deletePlantillaBalancesDet(det.tcoplantillabalancesdetid)
               .pipe(takeUntilDestroyed(this.destroyRef))
               .subscribe({
-                next: () => { eliminados++; if (eliminados === total) this.guardarDetalles(maeId); },
-                error: () => { eliminados++; if (eliminados === total) this.guardarDetalles(maeId); },
+                next: () => avanzar(),
+                error: () => { fallos++; avanzar(); },
               });
           }
         },

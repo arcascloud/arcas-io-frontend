@@ -42,6 +42,13 @@
                     (ngModelChange)="movimientoModel.set({...movimientoModel(), concepto: $event})"
                     placeholder="Descripcion del movimiento" />
                 </div>
+                <div class="p-field">
+                  <label>Cartera Contable</label>
+                  <p-select size="small" [options]="carterasOptions()" [ngModel]="movimientoModel().carteracontableId"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), carteracontableId: $event})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar cartera"
+                    [showClear]="true"></p-select>
+                </div>
               </div>
             </div>
 

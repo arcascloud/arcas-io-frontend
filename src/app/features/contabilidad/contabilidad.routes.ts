@@ -6,6 +6,7 @@ export const CONTABILIDAD_ROUTES: Routes = [
   // ===== Componentes especializados =====
   { path: 'partida-diario', loadComponent: () => import('./partida-diario/partida-diario').then((m) => m.PartidaDiarioComponent) },
   { path: 'reportes', loadComponent: () => import('./reportes/reportes-contables').then((m) => m.ReportesContablesComponent) },
+  { path: 'balance-dinamico', loadComponent: () => import('./balance-dinamico/balance-dinamico').then((m) => m.BalanceDinamicoComponent) },
   { path: 'cierre-contable', loadComponent: () => import('./cierre-contable/cierre-contable').then((m) => m.CierreContableComponent) },
 
   // ===== Cuentas Contables (componente dedicado) =====
@@ -14,6 +15,10 @@ export const CONTABILIDAD_ROUTES: Routes = [
   // ===== Catálogos genéricos =====
   { path: 'grupocontable', data: { nombre: 'grupocontable' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'grupocontable/editar/:id', data: { nombre: 'grupocontable' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
+  { path: 'carteras', data: { nombre: 'carteras' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
+  { path: 'carteras/editar/:id', data: { nombre: 'carteras' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
+  { path: 'cierredet', data: { nombre: 'cierredet' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
+  { path: 'cierredet/editar/:id', data: { nombre: 'cierredet' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'nivelcta', data: { nombre: 'nivelcta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'nivelcta/editar/:id', data: { nombre: 'nivelcta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'naturalezacta', data: { nombre: 'naturalezacta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
@@ -35,6 +40,8 @@ export const CONTABILIDAD_ROUTES: Routes = [
   { path: 'repliquidez', data: { nombre: 'repliquidez' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'repliquidez/editar/:id', data: { nombre: 'repliquidez' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'repdiarios', loadComponent: () => import('./libro-diario/libro-diario').then((m) => m.LibroDiarioComponent) },
+  { path: 'libro-mayor', loadComponent: () => import('./libro-mayor/libro-mayor').then((m) => m.LibroMayorComponent) },
+  { path: 'reclasificacion-cuentas', loadComponent: () => import('./reclasificacion-cuentas/reclasificacion-cuentas').then((m) => m.ReclasificacionCuentasComponent) },
   { path: 'repbalances', data: { nombre: 'repbalances' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'repbalances/editar/:id', data: { nombre: 'repbalances' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'movcta', data: { nombre: 'movcta' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },

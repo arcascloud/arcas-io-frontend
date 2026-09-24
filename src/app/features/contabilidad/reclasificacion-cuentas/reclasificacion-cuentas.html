@@ -1,0 +1,175 @@
+<p-toast />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-arrow-right-arrow-left"></i> Reclasificación de Cuentas Contables</h2>
+  </div>
+
+  <!-- Formulario principal -->
+  <div class="card">
+    <p class="mb-3 text-muted">
+      Reclasifica una cuenta contable en todas las tablas del sistema:
+      partidas contables, movimientos, saldos de cierre, saldos mensuales y plantillas.
+    </p>
+
+    <div class="p-grid">
+      <!-- Cuenta origen -->
+      <div class="p-col-12 p-col-5">
+        <div class="p-field">
+          <label>Cuenta origen (actual)</label>
+          <p-select [options]="cuentas()" [ngModel]="ctaOrigen()" (ngModelChange)="ctaOrigen.set($event)"
+                    optionLabel="ctacontable" optionValue="ctacontable"
+                    placeholder="Seleccionar cuenta..." styleClass="w-full" size="small" appendTo="body"
+                    [filter]="true" filterBy="ctacontable,descripcion" />
+          @if (ctaOrigen()) {
+            <small class="text-muted">{{ getCuentaDesc(ctaOrigen()) }}</small>
+          }
+        </div>
+      </div>
+
+      <!-- Flecha -->
+      <div class="p-col-12 p-col-2 flex align-items-center justify-content-center">
+        <i class="pi pi-arrow-right" style="font-size: 1.5rem; color: var(--c-primary);"></i>
+      </div>
+
+      <!-- Cuenta destino -->
+      <div class="p-col-12 p-col-5">
+        <div class="p-field">
+          <label>Cuenta destino (nueva)</label>
+          <p-select [options]="cuentas()" [ngModel]="ctaDestino()" (ngModelChange)="ctaDestino.set($event)"
+                    optionLabel="ctacontable" optionValue="ctacontable"
+                    placeholder="Seleccionar cuenta..." styleClass="w-full" size="small" appendTo="body"
+                    [filter]="true" filterBy="ctacontable,descripcion" />
+          @if (ctaDestino()) {
+            <small class="text-muted">{{ getCuentaDesc(ctaDestino()) }}</small>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla resumen de tablas afectadas -->
+    @if (ctaOrigen()) {
+      <div class="resumen-tablas mt-3">
+        <h5>Tablas que serán afectadas:</h5>
+        <div class="p-grid">
+          <div class="p-col-12 p-col-4">
+            <div class="tabla-item">
+              <i class="pi pi-database"></i>
+              <span><strong>copdadet</strong> — Detalle partidas</span>
+            </div>
+          </div>
+          <div class="p-col-12 p-col-4">
+            <div class="tabla-item">
+              <i class="pi pi-database"></i>
+              <span><strong>coctamov</strong> — Movimientos contables</span>
+            </div>
+          </div>
+          <div class="p-col-12 p-col-4">
+            <div class="tabla-item">
+              <i class="pi pi-database"></i>
+              <span><strong>cosaldoscierre</strong> — Saldos cierre</span>
+            </div>
+          </div>
+          <div class="p-col-12 p-col-4">
+            <div class="tabla-item">
+              <i class="pi pi-database"></i>
+              <span><strong>coctasaldos</strong> — Saldos mensuales</span>
+            </div>
+          </div>
+          <div class="p-col-12 p-col-4">
+            <div class="tabla-item">
+              <i class="pi pi-database"></i>
+              <span><strong>tcoplantillapdadet</strong> — Plantilla partidas</span>
+            </div>
+          </div>
+          <div class="p-col-12 p-col-4">
+            <div class="tabla-item">
+              <i class="pi pi-database"></i>
+              <span><strong>tcoplantillabalancesdet</strong> — Plantilla balances</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Acciones -->
+    <div class="d-flex gap-2 justify-content-end mt-3">
+      <p-button size="small" label="Limpiar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
+                (onClick)="limpiar()" />
+      <p-button size="small" label="Reclasificar" icon="pi pi-arrow-right-arrow-left" severity="warn" variant="text" [raised]="true" [rounded]="true"
+                [disabled]="!puedeReclasificar" [loading]="cargando()" (onClick)="confirmarReclasificacion()" />
+    </div>
+  </div>
+</div>
+
+<!-- Dialog de confirmación -->
+<p-dialog [visible]="mostrarDialog()" (visibleChange)="mostrarDialog.set($event)" [header]="resultadoReclasificacion() ? 'Resultado' : 'Confirmar Reclasificación'"
+          [modal]="true" [draggable]="false" [resizable]="false"
+          [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+          styleClass="w-full max-w-30rem">
+
+  @if (resultadoReclasificacion(); as res) {
+    <!-- Resultado exitoso -->
+    <div class="flex flex-column gap-3 pt-2">
+      <div class="resultado-header">
+        <i class="pi pi-check-circle" style="font-size: 2rem; color: var(--c-success);"></i>
+        <span style="font-size: 1.1rem; font-weight: 600;">{{ res.message }}</span>
+      </div>
+
+      <div class="card-resultados">
+        <p-table [value]="getTablaResultados(res.registrosAfectados)" size="small">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Tabla</th>
+              <th class="text-right">Registros afectados</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td><code>{{ row.tabla }}</code></td>
+              <td class="text-right"><strong>{{ row.afectados }}</strong></td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="footer">
+            <tr class="font-bold">
+              <td>TOTAL</td>
+              <td class="text-right">{{ res.totalRegistros }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  } @else {
+    <!-- Confirmación pendiente -->
+    <div class="flex flex-column gap-3 pt-2">
+      <div class="campo-info">
+        <label>Cuenta origen:</label>
+        <strong>{{ ctaOrigen() }}</strong>
+        <span class="text-muted">{{ getCuentaDesc(ctaOrigen()) }}</span>
+      </div>
+      <div class="campo-info">
+        <label>Cuenta destino:</label>
+        <strong>{{ ctaDestino() }}</strong>
+        <span class="text-muted">{{ getCuentaDesc(ctaDestino()) }}</span>
+      </div>
+
+      <div class="alerta-warning">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>Se actualizarán <strong>TODAS</strong> las referencias de la cuenta <code>{{ ctaOrigen() }}</code> a <code>{{ ctaDestino() }}</code> en las 6 tablas del sistema.</span>
+      </div>
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    @if (resultadoReclasificacion()) {
+      <p-button size="small" label="Cerrar" severity="secondary" variant="text" [rounded]="true"
+                (onClick)="cerrarDialog(); limpiar()" />
+    } @else {
+      <p-button size="small" label="Cancelar" severity="secondary" variant="text" [rounded]="true"
+                (onClick)="cerrarDialog()" />
+      <p-button size="small" label="Confirmar Reclasificación" icon="pi pi-check" severity="danger" variant="text" [raised]="true" [rounded]="true"
+                [loading]="cargando()" (onClick)="ejecutarReclasificacion()" />
+    }
+  </ng-template>
+</p-dialog>

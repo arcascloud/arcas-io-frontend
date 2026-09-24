@@ -90,11 +90,11 @@
               </ng-template>
               <ng-template pTemplate="header">
                 <tr>
-                  <th style="width: 40px">#</th>
-                  <th style="width: 25%">Cuenta Contable</th>
-                  <th>Descripción</th>
-                  <th style="width: 100px">Naturaleza</th>
-                  <th style="width: 50px"></th>
+                  <th style="width: 2rem">#</th>
+                  <th style="width: 8rem">Cuenta</th>
+                  <th style="width: 18rem">Descripción</th>
+                  <th style="width: 3rem">Naturaleza</th>
+                  <th style="text-align: center; width: 5rem">Acción</th>
                 </tr>
               </ng-template>
 
@@ -102,9 +102,12 @@
                 <tr [attr.data-linea]="l.id">
                   <td class="t-center">{{ l.id }}</td>
                   <td>
-                    <span class="cta-code mr-2">{{ l.ctacontable }}</span>
-                    <span class="cta-nombre">{{ l.ctaNombre }}</span>
+                    <span class="cta-code"> {{ l.ctacontable }}</span>
                   </td>
+                  <td>
+                    <span class="cta-nombre"> {{ l.ctaNombre }}</span>
+                  </td>
+
                   <td>
                     <p-select
                       [options]="naturalezaOptions"

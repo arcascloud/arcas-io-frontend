@@ -14,6 +14,33 @@
   </header>
 
   <div class="filtros card">
+    @for (f of config()?.filtros || []; track f.key) {
+      <div class="campo">
+        <label>{{ f.label }}</label>
+        @if (f.tipo === 'select') {
+          <p-select
+            [options]="opcionesFiltro(f.key)"
+            [ngModel]="filtrosValores()[f.key] ?? null"
+            (ngModelChange)="setFiltro(f.key, $event)"
+            optionLabel="label"
+            optionValue="value"
+            [showClear]="true"
+            placeholder="Todos"
+            styleClass="w-full"
+            size="small"
+            [appendTo]="'body'" />
+        } @else {
+          <input
+            pInputText
+            type="text"
+            pSize="small"
+            [placeholder]="'Filtrar ' + f.label.toLowerCase() + '...'"
+            [ngModel]="filtrosValores()[f.key] ?? ''"
+            (ngModelChange)="setFiltro(f.key, $event)"
+            (keyup.enter)="buscar()" />
+        }
+      </div>
+    }
     <div class="campo">
       <label>Buscar</label>
       <input pInputText type="text"
@@ -50,7 +77,11 @@
     <ng-template pTemplate="header">
       <tr>
         @for (col of campos(); track col.key) {
-          <th>{{ col.label }}</th>
+          @if (col.frozen) {
+            <th pFrozenColumn alignFrozen="left">{{ col.label }}</th>
+          } @else {
+            <th>{{ col.label }}</th>
+          }
         }
         @if (config() && config()!.sinEstado !== true) {
           <th style="width: 8rem" class="text-center">Estado</th>
@@ -65,7 +96,11 @@
       <tr [style.cursor]="config() && !config()!.soloLectura ? 'pointer' : 'default'"
           (click)="config() && !config()!.soloLectura && editar(item[config()!.idKey])">
         @for (col of campos(); track col.key) {
-          <td>{{ formatValor(item, col) }}</td>
+          @if (col.frozen) {
+            <td pFrozenColumn alignFrozen="left">{{ formatValor(item, col) }}</td>
+          } @else {
+            <td>{{ formatValor(item, col) }}</td>
+          }
         }
         @if (config() && config()!.sinEstado !== true) {
           <td class="text-center">

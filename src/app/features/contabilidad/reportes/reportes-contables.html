@@ -178,13 +178,14 @@
           <ng-template pTemplate="body" let-mov>
             <tr>
               <td><strong>{{ mov.ctacontable }}</strong></td>
-              <td>{{ mov.descripcionCta }}</td>
+              <td>{{ mov.descripcion }}</td>
               <td class="text-right">{{ mov.debe | number:'1.2-2' }}</td>
               <td class="text-right">{{ mov.haber | number:'1.2-2' }}</td>
-              <td class="text-right" [class.text-danger]="mov.saldo > 0" [class.text-success]="mov.saldo < 0">
+              <td class="text-right" [class.text-danger]="mov.naturaleza === 'D'" [class.text-success]="mov.naturaleza === 'C'">
                 {{ mov.saldo | number:'1.2-2' }}
+                <small>{{ mov.naturaleza === 'D' ? 'D' : 'C' }}</small>
               </td>
-              <td>{{ mov.fecultmov | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>-</td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">

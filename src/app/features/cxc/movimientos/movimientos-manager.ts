@@ -92,6 +92,7 @@ export class MovimientosManager implements OnInit {
     importe: 0,
     nroreferencia: '',
     fecharegistro: new Date().toISOString(),
+    carteracontableId: null,
   });
 
   movimientoFecha = computed(() => {
@@ -104,6 +105,9 @@ export class MovimientosManager implements OnInit {
   // Documentos fiscales
   documentosOptions = signal<{ label: string; value: any }[]>([]);
   documentoSelected = signal<any>(null);
+
+  // Carteras contables
+  carterasOptions = signal<{ label: string; value: any }[]>([]);
 
   readonly tipoMovOptions = [
     { label: 'Debito', value: 'D' },
@@ -144,6 +148,7 @@ export class MovimientosManager implements OnInit {
 
   ngOnInit() {
     this.loadDocumentos();
+    this.loadCarteras();
 
     // Leer clienteId de query params y movimiento completo de router state
     const clienteIdParam = this.route.snapshot.queryParamMap.get('clienteId');
@@ -290,6 +295,26 @@ export class MovimientosManager implements OnInit {
     });
   }
 
+  // ===== CARTERAS CONTABLES =====
+  loadCarteras() {
+    const user = this.auth.currentUser();
+    this.catalogService.getAll<any>('/contabilidad/carteras').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const filtered = (res || []).filter((r: any) => {
+          const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
+          const mismaEmpresa = user?.empresaId ? Number(r.empresaId) === Number(user.empresaId) : true;
+          return activo && mismaEmpresa;
+        });
+        const opts = filtered.map((r: any) => ({
+          label: r.descripcion || String(r.tcocarteraId || r.id),
+          value: r.tcocarteraId ?? r.id,
+        }));
+        this.carterasOptions.set(opts);
+      },
+      error: () => this.carterasOptions.set([]),
+    });
+  }
+
   // ===== MOVIMIENTOS =====
   private loadMovimientos(clienteId: number) {
     this.movimientosLoading.set(true);
@@ -322,6 +347,7 @@ export class MovimientosManager implements OnInit {
       importe: 0,
       nroreferencia: '',
       fecharegistro: new Date().toISOString(),
+      carteracontableId: null,
     });
     this.documentoSelected.set(null);
     this.selectedCliente.set(null);

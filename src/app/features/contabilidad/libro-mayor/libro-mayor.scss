@@ -1,0 +1,204 @@
+.page-container {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i { color: var(--c-primary); }
+  }
+}
+
+// ── Resumen bar ──
+.resumen-bar {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.resumen-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumen-label {
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.resumen-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--c-text);
+
+  &.debe { color: var(--c-primary); }
+  &.haber { color: #ef4444; }
+}
+
+// ── Tabla ──
+::ng-deep .p-datatable {
+  .p-datatable-thead > tr > th {
+    background: var(--c-surface-ground);
+    color: var(--c-text);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  .p-datatable-tbody > tr > td {
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid var(--c-border);
+    font-size: 0.85rem;
+  }
+}
+
+// ── Filas por nivel ──
+.fila-sumaria {
+  background: var(--c-surface-ground) !important;
+  font-weight: 600;
+
+  td {
+    border-top: 1px solid var(--c-border);
+    border-bottom: 1px solid var(--c-border);
+  }
+}
+
+.fila-operable {
+  td {
+    font-weight: 400;
+  }
+}
+
+// ── Badge de nivel ──
+.nivel-badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.nivel-badge-1 {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.nivel-badge-2 {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.nivel-badge-3 {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.nivel-badge-4 {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.nivel-badge-5 {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+// ── Montos ──
+.debe {
+  color: var(--c-primary);
+  font-weight: 600;
+}
+
+.haber {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+// ── Badge de naturaleza (D/C) junto al saldo ──
+.naturaleza-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  vertical-align: middle;
+  background: var(--c-surface-ground);
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-border);
+}
+
+// ── Totales ──
+.totales-row {
+  background: var(--c-surface-ground) !important;
+  font-weight: 700;
+  border-top: 2px solid var(--c-border);
+
+  td {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+// ── Estado vacío ──
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+}
+
+// ── Responsive ──
+@media (max-width: 768px) {
+  .resumen-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+}
+
+// ── Visor PDF ──
+.pdf-viewer-container {
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+}
+
+.pdf-iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+  border: none;
+  border-radius: 4px;
+}

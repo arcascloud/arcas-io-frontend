@@ -8,7 +8,9 @@ import {
   TipoDocFiscal, FactorCambio, ReporteLiquidez, ReporteDiario,
   ReporteBalance, ImpuestoVecinal, NivelCta, NaturalezaCta,
   ContabilizarPartidaDto, CierreContableRequest, ReporteRequest,
-  BalanceComprobacion, PartidaDiario,
+  BalanceComprobacion, PartidaDiario, LibroMayorItem,
+  BalanceDinamicoRequest, BalanceDinamicoReporte,
+  Cartera, CierreDet,
 } from '../models/contabilidad.models';
 
 @Injectable({ providedIn: 'root' })
@@ -145,6 +147,18 @@ export class ContabilidadService {
     return this.api.getOne<MovCta>(`${this.R}/movcta`, id);
   }
 
+  reclasificarCuenta(ctacontableAnterior: string, ctacontableNueva: string, empresaId: number): Observable<any> {
+    return this.api.post<any>(`${this.R}/movcta/reclasificar`, {
+      ctacontableAnterior,
+      ctacontableNueva,
+      empresaId,
+    });
+  }
+
+  getCtacontables(): Observable<CtaContable[]> {
+    return this.api.get<CtaContable[]>(`${this.R}/ctacontables`);
+  }
+
   // ========== Saldos de Cuentas ==========
 
   getSaldos(): Observable<SaldoCta[]> {
@@ -203,6 +217,28 @@ export class ContabilidadService {
     return this.api.post<any>(`${this.R}/cierrectable/realizar`, request);
   }
 
+  // ========== Detalle de Cierre Contable ==========
+
+  getCierresDet(cocierremaeId?: number): Observable<CierreDet[]> {
+    return this.api.get<CierreDet[]>(`${this.R}/cierredet`, cocierremaeId != null ? { cocierremaeId } : undefined);
+  }
+
+  getCierreDet(id: number): Observable<CierreDet> {
+    return this.api.getOne<CierreDet>(`${this.R}/cierredet`, id);
+  }
+
+  crearCierreDet(dto: Partial<CierreDet>): Observable<CierreDet> {
+    return this.api.post<CierreDet>(`${this.R}/cierredet`, dto);
+  }
+
+  actualizarCierreDet(id: number, dto: Partial<CierreDet>): Observable<CierreDet> {
+    return this.api.put<CierreDet>(`${this.R}/cierredet`, id, dto);
+  }
+
+  eliminarCierreDet(id: number): Observable<any> {
+    return this.api.put<any>(`${this.R}/cierredet`, `${id}/remove`, {});
+  }
+
   // ========== Plantillas PDA ==========
 
   getPlantillasPda(): Observable<PlantillaPdaMae[]> {
@@ -226,7 +262,7 @@ export class ContabilidadService {
   }
 
   deletePlantillaPdaMae(id: number): Observable<void> {
-    return this.api.delete<void>(`${this.R}/plantillapdamae`, id);
+    return this.api.putBase<void>(`${this.R}/plantillapdamae/${id}/remove`, {});
   }
 
   createPlantillaPdaDet(dto: Partial<PlantillaPdaDet>): Observable<PlantillaPdaDet> {
@@ -238,7 +274,7 @@ export class ContabilidadService {
   }
 
   deletePlantillaPdaDet(id: number): Observable<void> {
-    return this.api.delete<void>(`${this.R}/plantillapdadet`, id);
+    return this.api.putBase<void>(`${this.R}/plantillapdadet/${id}/remove`, {});
   }
 
   // ========== Plantillas Balances ==========
@@ -264,7 +300,7 @@ export class ContabilidadService {
   }
 
   deletePlantillaBalancesMae(id: number): Observable<void> {
-    return this.api.delete<void>(`${this.R}/plantillabalancesmae`, id);
+    return this.api.putBase<void>(`${this.R}/plantillabalancesmae/${id}/remove`, {});
   }
 
   createPlantillaBalancesDet(dto: Partial<PlantillaBalancesDet>): Observable<PlantillaBalancesDet> {
@@ -276,7 +312,7 @@ export class ContabilidadService {
   }
 
   deletePlantillaBalancesDet(id: number): Observable<void> {
-    return this.api.delete<void>(`${this.R}/plantillabalancesdet`, id);
+    return this.api.putBase<void>(`${this.R}/plantillabalancesdet/${id}/remove`, {});
   }
 
   // ========== Tipos de Documento Fiscal ==========
@@ -315,14 +351,40 @@ export class ContabilidadService {
     return this.api.post<PartidaDiario[]>(`${this.R}/reportes/libro-diario`, request);
   }
 
-  generarLibroMayor(request: ReporteRequest): Observable<MovCta[]> {
-    return this.api.post<MovCta[]>(`${this.R}/reportes/libro-mayor`, request);
+  generarLibroMayor(request: ReporteRequest): Observable<LibroMayorItem[]> {
+    return this.api.post<LibroMayorItem[]>(`${this.R}/reportes/libro-mayor`, request);
+  }
+
+  generarBalanceDinamico(request: BalanceDinamicoRequest): Observable<BalanceDinamicoReporte> {
+    return this.api.post<BalanceDinamicoReporte>(`${this.R}/reportes/balance-dinamico`, request);
   }
 
   // ========== Impuesto Vecinal ==========
 
   getImpuestosVecinales(): Observable<ImpuestoVecinal[]> {
     return this.api.get<ImpuestoVecinal[]>(`${this.R}/impuestovecinal`);
+  }
+
+  // ========== Carteras Contables ==========
+
+  getCarteras(): Observable<Cartera[]> {
+    return this.api.get<Cartera[]>(`${this.R}/carteras`);
+  }
+
+  getCartera(id: number): Observable<Cartera> {
+    return this.api.getOne<Cartera>(`${this.R}/carteras`, id);
+  }
+
+  crearCartera(dto: Partial<Cartera>): Observable<Cartera> {
+    return this.api.post<Cartera>(`${this.R}/carteras`, dto);
+  }
+
+  actualizarCartera(id: number, dto: Partial<Cartera>): Observable<Cartera> {
+    return this.api.put<Cartera>(`${this.R}/carteras`, id, dto);
+  }
+
+  eliminarCartera(id: number): Observable<any> {
+    return this.api.put<any>(`${this.R}/carteras`, `${id}/remove`, {});
   }
 
   // ========== Integración con otros módulos ==========

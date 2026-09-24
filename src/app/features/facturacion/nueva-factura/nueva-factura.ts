@@ -434,16 +434,9 @@ export class NuevaFactura implements OnInit {
       this.form.patchValue({
         nrocliente: c.nrocliente ?? '',
         nombrecliente: `${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim() || null,
+        // cxccclientesdir eliminada: la dirección ya no se resuelve desde catálogo
+        direccion: '',
       });
-      this.api.get<any>(`/cxc/clientes-dir`, { empresaId: this.auth.currentUser()?.empresaId ?? 2 })
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (dirs) => {
-            const dirCliente = Array.isArray(dirs) ? dirs.find((d: any) => d.clienteid === clienteId && d.sn_activo === 'S') : null;
-            this.form.patchValue({ direccion: dirCliente?.descripcion || 'N/A' });
-          },
-          error: () => this.form.patchValue({ direccion: 'N/A' }),
-        });
     }
   }
 

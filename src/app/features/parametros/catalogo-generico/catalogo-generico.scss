@@ -3,9 +3,11 @@
   gap: 0.75rem;
   align-items: flex-end;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 
   .campo {
-    flex: 1;
+    flex: 1 1 10rem;
+    min-width: 8rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -14,6 +16,10 @@
       font-weight: 500;
       font-size: 0.85rem;
       color: var(--c-text-muted, #64748b);
+    }
+
+    p-select {
+      width: 100%;
     }
   }
 
@@ -27,6 +33,11 @@
 .tabla-responsive {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+
+  ::ng-deep .p-datatable .p-frozen-column {
+    background: var(--c-surface, #ffffff);
+    font-weight: 600;
+  }
 }
 
 @media (max-width: 768px) {

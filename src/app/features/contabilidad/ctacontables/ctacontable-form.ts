@@ -1,7 +1,27 @@
-import { Component, OnInit, OnChanges, SimpleChanges, inject, input, output, signal, computed, effect, DestroyRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  inject,
+  input,
+  output,
+  signal,
+  computed,
+  effect,
+  DestroyRef,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+  AbstractControl,
+  ValidationErrors,
+} from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -16,8 +36,14 @@ import { CtaContable, GrupoContable, NivelCta } from '../../../core/models/conta
   selector: 'app-ctacontable-form',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, ReactiveFormsModule,
-    ButtonModule, InputTextModule, InputNumberModule, SelectModule, ToastModule,
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    InputNumberModule,
+    SelectModule,
+    ToastModule,
   ],
   providers: [MessageService],
   templateUrl: './ctacontable-form.html',
@@ -74,8 +100,8 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
   });
 
   readonly snOptions = [
-    { label: 'Diario (Sí)', value: 'S' },
-    { label: 'Mayor (No)', value: 'N' },
+    { label: 'Diario', value: 'S' },
+    { label: 'Mayor', value: 'N' },
   ];
 
   readonly naturalezaOptions = [
@@ -90,17 +116,20 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
 
   get nivelesSelect() {
     return this.niveles()
-      .filter(n => n.sn_activo === 'S')
-      .map(n => ({ label: `Nivel ${n.nivel}${n.sn_diario === 'S' ? ' (Diario)' : ' (Mayor)'}`, value: n.nivel }));
+      .filter((n) => n.sn_activo === 'S')
+      .map((n) => ({
+        label: `Nivel ${n.nivel}${n.sn_diario === 'S' ? ' (Diario)' : ' (Mayor)'}`,
+        value: n.nivel,
+      }));
   }
 
   /** Mapa de grupo → naturaleza automática */
   private readonly NATURALEZA_POR_GRUPO: Record<string, 'D' | 'C'> = {
-    'activo': 'D',
-    'pasivo': 'C',
-    'capital': 'C',
-    'ingresos': 'C',
-    'gastos': 'D',
+    activo: 'D',
+    pasivo: 'C',
+    capital: 'C',
+    ingresos: 'C',
+    gastos: 'D',
   };
 
   ngOnInit(): void {
@@ -119,8 +148,19 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
 
   private initForm(): void {
     this.form = this.fb.group({
-      ctacontable: ['', [Validators.required, Validators.maxLength(20), this.noTerminarEnGuion, this.cuentaNoDuplicada]],
-      descripcion: ['', [Validators.required, Validators.maxLength(50), this.descripcionNoDuplicada]],
+      ctacontable: [
+        '',
+        [
+          Validators.required,
+          Validators.maxLength(20),
+          this.noTerminarEnGuion,
+          this.cuentaNoDuplicada,
+        ],
+      ],
+      descripcion: [
+        '',
+        [Validators.required, Validators.maxLength(50), this.descripcionNoDuplicada],
+      ],
       tcogrupocontableId: [null, Validators.required],
       naturaleza: ['D', Validators.required],
       nivel: [null, Validators.required],
@@ -156,18 +196,18 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
       grupos: this.contabilidad.getGrupos(),
       niveles: this.contabilidad.getNiveles(),
     })
-    .pipe(takeUntilDestroyed(this.destroyRef))
-    .subscribe({
-      next: ({ grupos, niveles }) => {
-        this.grupos.set(grupos);
-        this.niveles.set(niveles);
-        // Después de cargar opciones, aplicar patch si hay cuenta seleccionada
-        if (this.cuenta()) {
-          this.patchForm();
-        }
-      },
-      error: () => {},
-    });
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ grupos, niveles }) => {
+          this.grupos.set(grupos);
+          this.niveles.set(niveles);
+          // Después de cargar opciones, aplicar patch si hay cuenta seleccionada
+          if (this.cuenta()) {
+            this.patchForm();
+          }
+        },
+        error: () => {},
+      });
   }
 
   // ========== Listeners de reglas de negocio ==========
@@ -200,7 +240,7 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
   // ========== Reglas de negocio ==========
 
   private obtenerNaturalezaPorGrupo(grupoId: number): 'D' | 'C' | null {
-    const grupo = this.grupos().find(g => g.tcogrupocontableId === grupoId);
+    const grupo = this.grupos().find((g) => g.tcogrupocontableId === grupoId);
     if (!grupo) return null;
     const desc = grupo.descripcion.toLowerCase().trim();
     for (const [key, nat] of Object.entries(this.NATURALEZA_POR_GRUPO)) {
@@ -219,8 +259,8 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
     const todas = this.todasLasCuentas();
 
     // 1. Filtrar por grupo y nivel exacto (nivel - 1)
-    let candidatas = todas.filter(c =>
-      c.tcogrupocontableId === grupoId && c.nivel === nivel - 1 && c.sn_activo === 'S'
+    let candidatas = todas.filter(
+      (c) => c.tcogrupocontableId === grupoId && c.nivel === nivel - 1 && c.sn_activo === 'S',
     );
 
     // 2. Si hay código tipeado, filtrar por patrón: prefijo antes del último guión
@@ -228,11 +268,11 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
       const lastDash = codigo.lastIndexOf('-');
       if (lastDash > 0) {
         const prefijo = codigo.substring(0, lastDash);
-        candidatas = candidatas.filter(c => c.ctacontable === prefijo);
+        candidatas = candidatas.filter((c) => c.ctacontable === prefijo);
       }
     }
 
-    return candidatas.map(c => ({
+    return candidatas.map((c) => ({
       label: `${c.ctacontable} — ${c.descripcion}`,
       value: c.ctacontable,
     }));
@@ -289,8 +329,8 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
     const valor = control.value?.trim();
     if (!valor) return null;
     const cuentaActual = this.cuenta();
-    const duplicada = this.todasLasCuentas().some(c =>
-      c.ctacontable === valor && c.cuentacontablesId !== cuentaActual?.cuentacontablesId
+    const duplicada = this.todasLasCuentas().some(
+      (c) => c.ctacontable === valor && c.cuentacontablesId !== cuentaActual?.cuentacontablesId,
     );
     return duplicada ? { cuentaDuplicada: true } : null;
   };
@@ -300,8 +340,10 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
     const valor = control.value?.trim();
     if (!valor) return null;
     const cuentaActual = this.cuenta();
-    const duplicada = this.todasLasCuentas().some(c =>
-      c.descripcion.toLowerCase() === valor.toLowerCase() && c.cuentacontablesId !== cuentaActual?.cuentacontablesId
+    const duplicada = this.todasLasCuentas().some(
+      (c) =>
+        c.descripcion.toLowerCase() === valor.toLowerCase() &&
+        c.cuentacontablesId !== cuentaActual?.cuentacontablesId,
     );
     return duplicada ? { descripcionDuplicada: true } : null;
   };
@@ -336,30 +378,30 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
     raw.nivel = Number(raw.nivel);
     const cuenta = this.cuenta();
 
-    const op = this.esEdicion() && cuenta
-      ? this.contabilidad.actualizarCuenta(cuenta.cuentacontablesId, raw)
-      : this.contabilidad.crearCuenta(raw);
+    const op =
+      this.esEdicion() && cuenta
+        ? this.contabilidad.actualizarCuenta(cuenta.cuentacontablesId, raw)
+        : this.contabilidad.crearCuenta(raw);
 
-    op.pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.guardando.set(false);
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Guardado',
-            detail: this.esEdicion() ? 'Cuenta actualizada' : 'Cuenta creada correctamente',
-          });
-          this.guardado.emit();
-        },
-        error: (err) => {
-          this.guardando.set(false);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: err.error?.message || 'No se pudo guardar la cuenta',
-          });
-        },
-      });
+    op.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Guardado',
+          detail: this.esEdicion() ? 'Cuenta actualizada' : 'Cuenta creada correctamente',
+        });
+        this.guardado.emit();
+      },
+      error: (err) => {
+        this.guardando.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: err.error?.message || 'No se pudo guardar la cuenta',
+        });
+      },
+    });
   }
 
   onCancelar(): void {

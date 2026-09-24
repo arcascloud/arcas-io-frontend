@@ -122,6 +122,21 @@ export interface MovCta {
   fechaUpdated?: Date;
 }
 
+/** Línea del Libro Mayor con mayorización escalonada */
+export interface LibroMayorItem {
+  ctacontable: string;
+  descripcion: string;
+  /** Naturaleza de la cuenta: D = deudora, C = acreedora. El saldo SIEMPRE es positivo. */
+  naturaleza: 'D' | 'C';
+  nivel: number;
+  padre: string | null;
+  sn_operable: string;
+  debe: number;
+  haber: number;
+  saldo: number;
+  saldoAcum: number;
+}
+
 // ========== Saldos de Cuentas ==========
 
 export interface SaldoCta {
@@ -169,6 +184,20 @@ export interface CierreContable {
   fechacierre: Date;
   observacion?: string;
   sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: Date;
+}
+
+export interface CierreDet {
+  cocierredetId: number;
+  cocierremaeId: number;
+  anio: number;
+  periodo: number;
+  ctacontable: string;
+  saldo?: number;
+  Idsucursal: number;
   empresaId: number;
   usuarioCreated: string;
   usuarioUpdated?: string;
@@ -313,6 +342,18 @@ export interface ImpuestoVecinal {
   fechaUpdated?: Date;
 }
 
+// ========== Carteras Contables ==========
+
+export interface Cartera {
+  tcocarteraId: number;
+  moduloId?: number;
+  descripcion?: string;
+  ctacontable?: string;
+  sn_activo: 'S' | 'N';
+  empresaId?: number;
+  usuarioCreated?: string;
+}
+
 // ========== Interfaces para Reportes Generados ==========
 
 export interface PartidaDiario {
@@ -387,4 +428,53 @@ export interface ReporteRequest {
   ctacontable?: string;
   fechaDesde?: Date;
   fechaHasta?: Date;
+}
+
+// ========== Reporte de Balances Dinámico ==========
+
+export interface BalanceDinamicoRequest {
+  empresaId: number;
+  plantillaId: number;
+  nivelDetalle?: number;
+  periodo?: number;
+  anio?: number;
+}
+
+export interface BalanceDinamicoLinea {
+  empresaName: string;
+  balancename: string;
+  ctacontable: string;
+  descripcion: string;
+  columna: number;
+  renglon: number;
+  tipo: string;
+  nivel: number | null;
+  /** Saldo acumulado ANTES del período (solo balances) */
+  acum: number;
+  /** Débitos del período (mayorizado) */
+  debe: number;
+  /** Créditos del período (mayorizado) */
+  haber: number;
+  /** Saldo Acumulado + (Débitos - Créditos) del período → va en columna `columna` */
+  valor: number;
+  /** Columna 0: saldo acumulado antes del período (null si es estado de resultado) */
+  col0: number | null;
+}
+
+export interface BalanceDinamicoReporte {
+  empresaName: string;
+  balancename: string;
+  plantillaId: number;
+  nivelDetalle: number | null;
+  periodo: number | null;
+  anio: number | null;
+  /** true = balance (cuentas 1/2/3), false = estado de resultado (4/5/6/7) */
+  esBalance: boolean;
+  /** true = mostrar Columna 0 (solo balances) */
+  mostrarCol0: boolean;
+  /** Columnas 1..7 efectivamente usadas por la plantilla */
+  columnasUsadas: number[];
+  lineas: BalanceDinamicoLinea[];
+  /** Totales por columna: key "0" (si aplica), "1".."7" */
+  totales: Record<string, number>;
 }

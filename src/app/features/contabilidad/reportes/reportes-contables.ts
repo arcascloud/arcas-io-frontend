@@ -11,6 +11,7 @@ import { TabsModule } from 'primeng/tabs';
 import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import { LibroMayorItem } from '../../../core/models/contabilidad.models';
 
 @Component({
   selector: 'app-reportes-contables',
@@ -36,7 +37,7 @@ export class ReportesContablesComponent implements OnInit {
   // Datos de reportes
   balanceComprobacion = signal<any[]>([]);
   libroDiario = signal<any[]>([]);
-  libroMayor = signal<any[]>([]);
+  libroMayor = signal<LibroMayorItem[]>([]);
 
   // Tab activa
   tabActiva = signal(0);

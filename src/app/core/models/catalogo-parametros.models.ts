@@ -2,11 +2,22 @@ export interface CampoCatalogo {
   key: string;
   label: string;
   tipo: 'texto' | 'numero' | 'select' | 'fecha';
-  opciones?: { label: string; value: string }[];
+  opciones?: { label: string; value: string | number }[];
   cargaOpciones?: { url: string; labelCampo: string; valueCampo: string };
   requerido?: boolean;
   principal?: boolean;
   formato?: string;
+  frozen?: boolean;
+}
+
+/** Filtro de selección en la barra de filtros del catálogo genérico */
+export interface CampoFiltroCatalogo {
+  key: string;
+  label: string;
+  /** texto = input libre; select = desplegable (opciones estáticas o únicas de los datos) */
+  tipo: 'texto' | 'select';
+  /** Opciones fijas para tipo select. Si se omite, se derivan de los datos cargados. */
+  opciones?: { label: string; value: string | number }[];
 }
 
 export interface CatalogoConfig {
@@ -16,9 +27,13 @@ export interface CatalogoConfig {
   idKey: string;
   icono: string;
   campos: CampoCatalogo[];
+  /** Filtros de selección adicionales (Año, Período, Descripción, etc.) */
+  filtros?: CampoFiltroCatalogo[];
   incluyeEmpresaId?: boolean;
   sinEstado?: boolean;
   soloLectura?: boolean;
+  /** Precargar filtros 'anio' y 'periodo' con el período contable abierto (coperiodoctable.sn_abierto='S') */
+  preCargarPeriodoAbierto?: boolean;
 }
 
 export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
@@ -480,6 +495,172 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'sitemap',
     campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
   },
+  carteras: {
+    ruta: '/contabilidad/carteras',
+    titulo: 'Carteras Contables',
+    subtitulo: 'Carteras de cuentas contables',
+    idKey: 'tcocarteraId',
+    icono: 'folder-open',
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+      {
+        key: 'moduloId',
+        label: 'Módulo',
+        tipo: 'select',
+        cargaOpciones: { url: '/modulos', labelCampo: 'descripcion', valueCampo: 'moduloId' },
+      },
+      {
+        key: 'ctacontable',
+        label: 'Cuenta Contable',
+        tipo: 'select',
+        cargaOpciones: { url: '/contabilidad/ctacontables', labelCampo: 'descripcion', valueCampo: 'ctacontable' },
+      },
+    ],
+  },
+  cierredet: {
+    ruta: '/contabilidad/cierredet',
+    titulo: 'Detalle de Cierre Contable',
+    subtitulo: 'Saldos de cierre por cuenta',
+    idKey: 'cocierredetId',
+    icono: 'lock',
+    sinEstado: true,
+    campos: [
+      {
+        key: 'cocierremaeId',
+        label: 'Cierre Maestro',
+        tipo: 'select',
+        requerido: true,
+        principal: true,
+        cargaOpciones: { url: '/contabilidad/cierrectable', labelCampo: 'observacion', valueCampo: 'cierrectableId' },
+      },
+      { key: 'anio', label: 'Año', tipo: 'numero', requerido: true },
+      { key: 'periodo', label: 'Período', tipo: 'numero', requerido: true },
+      {
+        key: 'ctacontable',
+        label: 'Cuenta Contable',
+        tipo: 'select',
+        requerido: true,
+        cargaOpciones: { url: '/contabilidad/ctacontables', labelCampo: 'descripcion', valueCampo: 'ctacontable' },
+      },
+      { key: 'saldo', label: 'Saldo', tipo: 'numero' },
+    ],
+  },
+  'carteras-cta': {
+    ruta: '/cxp/carteras-cta',
+    titulo: 'Carteras Contables por Proveedor',
+    subtitulo: 'Asignación de cartera contable a proveedores',
+    idKey: 'id',
+    icono: 'folder-open',
+    sinEstado: true,
+    campos: [
+      {
+        key: 'proveedorId',
+        label: 'Proveedor',
+        tipo: 'select',
+        requerido: true,
+        principal: true,
+        cargaOpciones: { url: '/cxp/proveedores', labelCampo: 'razonsocial', valueCampo: 'proveedorId' },
+      },
+      {
+        key: 'carteractaId',
+        label: 'Cartera Contable',
+        tipo: 'select',
+        requerido: true,
+        cargaOpciones: { url: '/contabilidad/carteras', labelCampo: 'descripcion', valueCampo: 'tcocarteraId' },
+      },
+    ],
+  },
+  'proveedor-info': {
+    ruta: '/cxp/proveedor-info',
+    titulo: 'Información de Proveedores',
+    subtitulo: 'Correos, celulares y direcciones de contacto',
+    idKey: 'id',
+    icono: 'address-book',
+    campos: [
+      {
+        key: 'proveedorId',
+        label: 'Proveedor',
+        tipo: 'select',
+        requerido: true,
+        principal: true,
+        cargaOpciones: { url: '/cxp/proveedores', labelCampo: 'razonsocial', valueCampo: 'proveedorId' },
+      },
+      {
+        key: 'tipo',
+        label: 'Tipo',
+        tipo: 'select',
+        requerido: true,
+        opciones: [
+          { label: 'Correo', value: 'CORREO' },
+          { label: 'Celular', value: 'CELULAR' },
+          { label: 'Dirección', value: 'DIRECCION' },
+        ],
+      },
+      {
+        key: 'descripcion',
+        label: 'Descripción',
+        tipo: 'texto',
+      },
+    ],
+  },
+  'carteras-cliente': {
+    ruta: '/cxc/carteras-cliente',
+    titulo: 'Carteras Contables por Cliente',
+    subtitulo: 'Asignación de cartera contable a clientes',
+    idKey: 'id',
+    icono: 'folder-open',
+    sinEstado: true,
+    campos: [
+      {
+        key: 'clienteId',
+        label: 'Cliente',
+        tipo: 'select',
+        requerido: true,
+        principal: true,
+        cargaOpciones: { url: '/cxc/clientes?limit=1000', labelCampo: 'razonsocial', valueCampo: 'clienteId' },
+      },
+      {
+        key: 'carteractaId',
+        label: 'Cartera Contable',
+        tipo: 'select',
+        requerido: true,
+        cargaOpciones: { url: '/contabilidad/carteras', labelCampo: 'descripcion', valueCampo: 'tcocarteraId' },
+      },
+    ],
+  },
+  'clientes-info': {
+    ruta: '/cxc/clientes-info',
+    titulo: 'Información de Clientes',
+    subtitulo: 'Celulares, direcciones y correos de contacto',
+    idKey: 'id',
+    icono: 'address-book',
+    campos: [
+      {
+        key: 'clienteid',
+        label: 'Cliente',
+        tipo: 'select',
+        requerido: true,
+        principal: true,
+        cargaOpciones: { url: '/cxc/clientes?limit=1000', labelCampo: 'razonsocial', valueCampo: 'clienteId' },
+      },
+      {
+        key: 'tipo',
+        label: 'Tipo',
+        tipo: 'select',
+        requerido: true,
+        opciones: [
+          { label: 'Celular', value: 'CELULAR' },
+          { label: 'Dirección', value: 'DIRECCION' },
+          { label: 'Correo', value: 'CORREO' },
+        ],
+      },
+      {
+        key: 'descripcion',
+        label: 'Descripción',
+        tipo: 'texto',
+      },
+    ],
+  },
   nivelcta: {
     ruta: '/contabilidad/nivelcta',
     titulo: 'Niveles Contables',
@@ -687,8 +868,8 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     sinEstado: true,
     soloLectura: true,
     campos: [
-      { key: 'anio', label: 'Año', tipo: 'numero' },
-      { key: 'ctacontable', label: 'Cuenta', tipo: 'texto', requerido: true, principal: true },
+      { key: 'anio', label: 'Año', tipo: 'numero', frozen: true },
+      { key: 'ctacontable', label: 'Cuenta', tipo: 'texto', requerido: true, principal: true, frozen: true },
       { key: 'saldoanterior', label: 'Saldo Anterior', tipo: 'numero' },
       { key: 'enero', label: 'Enero', tipo: 'numero' },
       { key: 'febrero', label: 'Febrero', tipo: 'numero' },
@@ -751,22 +932,41 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'arrows-spin',
     soloLectura: true,
     sinEstado: true,
-    campos: [
+    preCargarPeriodoAbierto: true,
+    filtros: [
+      { key: 'anio', label: 'Año', tipo: 'select' },
       {
-        key: 'monedaId',
-        label: 'Moneda',
+        key: 'periodo',
+        label: 'Período',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/monedas', labelCampo: 'descripcion', valueCampo: 'monedaId' },
+        opciones: [
+          { label: 'Enero', value: 1 },
+          { label: 'Febrero', value: 2 },
+          { label: 'Marzo', value: 3 },
+          { label: 'Abril', value: 4 },
+          { label: 'Mayo', value: 5 },
+          { label: 'Junio', value: 6 },
+          { label: 'Julio', value: 7 },
+          { label: 'Agosto', value: 8 },
+          { label: 'Septiembre', value: 9 },
+          { label: 'Octubre', value: 10 },
+          { label: 'Noviembre', value: 11 },
+          { label: 'Diciembre', value: 12 },
+        ],
       },
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto' },
+    ],
+    campos: [
       { key: 'ctacontable', label: 'Cuenta', tipo: 'texto', requerido: true, principal: true },
-      { key: 'anio', label: 'Año', tipo: 'numero' },
-      { key: 'periodo', label: 'Periodo', tipo: 'numero' },
-      { key: 'sacum', label: 'Saldo Acum.', tipo: 'numero' },
-      { key: 'debe', label: 'Debe', tipo: 'numero' },
-      { key: 'haber', label: 'Haber', tipo: 'numero' },
-      { key: 'saldo', label: 'Saldo', tipo: 'numero' },
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto' },
+      { key: 'anio', label: 'Año', tipo: 'numero', formato: 'entero' },
+      { key: 'periodo', label: 'Periodo', tipo: 'numero', formato: 'entero' },
+      { key: 'sacum', label: 'Saldo Acum.', tipo: 'numero', formato: 'moneda' },
+      { key: 'debe', label: 'Debe', tipo: 'numero', formato: 'moneda' },
+      { key: 'haber', label: 'Haber', tipo: 'numero', formato: 'moneda' },
+      { key: 'saldo', label: 'Saldo', tipo: 'numero', formato: 'moneda' },
       { key: 'fecultmov', label: 'Últ. Mov.', tipo: 'fecha', formato: 'dd/MM/yyyy' },
-      { key: 'ultnropda', label: 'Últ. PDA', tipo: 'numero' },
+      { key: 'ultnropda', label: 'Últ. PDA', tipo: 'numero', formato: 'entero' },
     ],
   },
 
