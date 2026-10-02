@@ -36,8 +36,32 @@
   border-top: 1px solid var(--c-border, #e2e8f0);
 }
 
+.mensaje-proteccion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  background: #fef3c7;
+  border: 1px solid var(--c-warning, #f59e0b);
+  color: var(--c-text, #1e293b);
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  i {
+    color: var(--c-warning, #f59e0b);
+  }
+}
+
 .req {
   color: var(--c-error, #ef4444);
+}
+
+.fila-protegida {
+  color: var(--c-warning, #f59e0b);
+  font-size: 0.95rem;
+  cursor: not-allowed;
 }
 
 .err {

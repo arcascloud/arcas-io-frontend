@@ -47,6 +47,10 @@
          [rounded]="true" [text]="true"
          icon="pi pi-arrow-left" />
 
+        <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-search"
+          (onClick)="quickNav.abrir()" size="small" iconOnly
+          pTooltip="Navegación rápida (Ctrl+Alt+1)" tooltipPosition="bottom" />
+
         <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-sign-out" (onClick)="cerrarSesion()"
           size="small" iconOnly pTooltip="Presione para salir de la app" tooltipPosition="bottom" />
 
@@ -70,3 +74,6 @@
 <!-- Globales: notificaciones y confirmaciones -->
 <p-toast />
 <p-confirmdialog />
+
+<!-- Navegación rápida global (Ctrl+Alt+1) -->
+<app-quick-nav />

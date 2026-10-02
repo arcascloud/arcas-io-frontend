@@ -1,4 +1,16 @@
 <div class="movimientos-manager">
+  <!-- Origen: esta pantalla se abrió desde una partida contable -->
+  @if (partidaId()) {
+    <div class="barra-origen">
+      <span class="barra-origen__texto">
+        <i class="pi pi-file-edit"></i>
+        Movimiento abierto desde una partida contable
+      </span>
+      <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+        variant="text" [rounded]="true" (onClick)="volverAPartida()" />
+    </div>
+  }
+
   <div class="split-layout">
 
     <!-- Columna izquierda: detalle / formulario -->

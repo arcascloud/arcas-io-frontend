@@ -1,0 +1,130 @@
+<p-toast />
+<p-confirm-dialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '480px' }" />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-replay"></i> Revertir Cierre / Reabrir Período</h2>
+    <p-button size="small" label="Volver al cierre" icon="pi pi-arrow-left" severity="secondary" variant="text" [rounded]="true"
+              (onClick)="volver()" />
+  </div>
+
+  <div class="cierre-layout">
+    <!-- Panel izquierdo: Formulario de reversión -->
+    <div class="cierre-form-panel">
+      <div class="card">
+        <h4><i class="pi pi-replay"></i> Revertir Cierre de Período</h4>
+        <p class="text-muted mb-3">
+          Deshace el cierre seleccionado y devuelve el período a estado abierto.
+          Solo puede revertirse el cierre <strong>más reciente</strong>.
+        </p>
+
+        <div class="p-fluid">
+          <div class="p-field mb-3">
+            <label>Período (Mes)</label>
+            <p-select [options]="meses" [(ngModel)]="periodoSeleccionado" optionLabel="label" optionValue="value"
+                      placeholder="Seleccionar mes" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+
+          <div class="p-field mb-3">
+            <label>Año</label>
+            <p-inputNumber [(ngModel)]="anioSeleccionado" [min]="2020" [max]="2030" [useGrouping]="false" styleClass="w-full" size="small" />
+          </div>
+
+          <div class="p-field mb-3">
+            <label>Motivo de la reversión (opcional)</label>
+            <input pInputText [(ngModel)]="motivo" class="w-full" pSize="small" placeholder="Motivo de la reapertura" />
+          </div>
+
+          <p-button size="small" label="Revertir Cierre" icon="pi pi-replay" severity="danger" variant="text" [raised]="true" [rounded]="true"
+                    [loading]="cargando()" (onClick)="revertir()" styleClass="w-full" />
+        </div>
+      </div>
+
+      <!-- Info card -->
+      <div class="card info-card mt-3">
+        <h5><i class="pi pi-info-circle"></i> ¿Qué hace la reversión?</h5>
+        <ul>
+          <li>Elimina la <strong>partida de cierre</strong> del período</li>
+          <li>Revierte los <strong>movimientos</strong> (coctamov) y <strong>saldos mensuales</strong> (coctasaldos) que generó</li>
+          <li>Elimina el <strong>espejo de saldos</strong> (cocierredet / cocierremae)</li>
+          <li>Quita el candado <strong>Cerrada</strong> a todas las partidas del período</li>
+          <li>Reabre el período para volver a registrar</li>
+        </ul>
+        <p class="aviso mt-2">
+          <i class="pi pi-exclamation-triangle"></i>
+          No se puede revertir si existen cierres o partidas en períodos posteriores:
+          revierta primero los más recientes.
+        </p>
+      </div>
+    </div>
+
+    <!-- Panel derecho: Períodos cerrados -->
+    <div class="cierre-status-panel">
+      <!-- Períodos cerrados -->
+      <div class="card mb-3">
+        <h4><i class="pi pi-lock"></i> Períodos Cerrados</h4>
+        <p-table [value]="cerrados()" [paginator]="true" [rows]="12" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[6, 12, 24]">
+          <ng-template pTemplate="header">
+            <tr>
+              <th class="col-anio">Año</th>
+              <th>Mes</th>
+              <th class="col-estado">Estado</th>
+              <th class="col-accion">Acción</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-periodo>
+            <tr class="fila-cerrada">
+              <td class="text-center"><strong>{{ periodo.nroanio }}</strong></td>
+              <td>{{ getMesLabel(periodo.nromes) }}</td>
+              <td class="text-center">
+                <p-tag value="Cerrado" severity="warning" styleClass="tag-sm" />
+              </td>
+              <td class="text-center">
+                @if (esUltimoCerrado(periodo)) {
+                  <p-button size="small" icon="pi pi-replay" severity="danger" variant="text" [rounded]="true"
+                            pTooltip="Revertir este cierre" (onClick)="seleccionarYRevertir(periodo)" />
+                } @else {
+                  <i class="pi pi-lock text-warning" pTooltip="Cierre no reversible: existen cierres más recientes" tooltipPosition="left"></i>
+                }
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-muted">No hay períodos cerrados</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Historial de cierres -->
+      <div class="card">
+        <h4><i class="pi pi-history"></i> Historial de Cierres</h4>
+        <p-table [value]="cierres()" [paginator]="true" [rows]="10" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[5, 10, 25]">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Período</th>
+              <th>Fecha Cierre</th>
+              <th>Observación</th>
+              <th>Usuario</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-cierre>
+            <tr>
+              <td><strong>{{ cierre.periodo }}/{{ cierre.anio }}</strong></td>
+              <td>{{ cierre.fechacierre | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ cierre.observacion }}</td>
+              <td>{{ cierre.usuarioCreated }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-muted">No hay cierres registrados</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+</div>

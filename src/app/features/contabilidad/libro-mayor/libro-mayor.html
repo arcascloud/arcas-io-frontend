@@ -30,7 +30,7 @@
         <div class="p-col-12 p-col-2">
           <div class="p-field">
             <label>Año</label>
-            <p-inputNumber [(ngModel)]="anio" [min]="2020" [max]="2030" styleClass="w-full" size="small" />
+            <p-inputNumber [(ngModel)]="anio" [min]="2020" [max]="2030" [useGrouping]="false" styleClass="w-full" size="small" />
           </div>
         </div>
         <div class="p-col-12 p-col-2">
@@ -49,34 +49,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Resumen -->
-  @if (datos().length > 0) {
-    <div class="resumen-bar mb-3">
-      <div class="resumen-item">
-        <span class="resumen-label">Cuentas</span>
-        <span class="resumen-value">{{ datosFiltrados().length }}</span>
-      </div>
-      <div class="resumen-item">
-        <span class="resumen-label">Saldo Acum.</span>
-        <span class="resumen-value">L {{ formatNumber(totalSaldoAcum()) }}</span>
-      </div>
-      <div class="resumen-item">
-        <span class="resumen-label">Total Debe</span>
-        <span class="resumen-value debe">L {{ formatNumber(totalDebe()) }}</span>
-      </div>
-      <div class="resumen-item">
-        <span class="resumen-label">Total Haber</span>
-        <span class="resumen-value haber">L {{ formatNumber(totalHaber()) }}</span>
-      </div>
-      <div class="resumen-item">
-        <span class="resumen-label">Saldo Período</span>
-        <span class="resumen-value">
-          L {{ formatNumber(totalSaldo()) }}
-        </span>
-      </div>
-    </div>
-  }
 
   <!-- Tabla Libro Mayor -->
   @if (datos().length > 0) {
@@ -114,23 +86,22 @@
             <td class="text-center">
               <span class="nivel-badge" [class]="'nivel-badge-' + row.nivel">N{{ row.nivel }}</span>
             </td>
-            <td class="text-right">{{ formatNumber(row.saldoAcum) }}</td>
+            <td class="text-right">{{ formatNumber(row.saldoAcum) }} ({{ row.naturaleza }})</td>
             <td class="text-right">{{ row.debe > 0 ? formatNumber(row.debe) : '-' }}</td>
             <td class="text-right">{{ row.haber > 0 ? formatNumber(row.haber) : '-' }}</td>
             <td class="text-right" [class.debe]="row.naturaleza === 'D'" [class.haber]="row.naturaleza === 'C'">
-              {{ formatNumber(row.saldo) }}
-              <small class="naturaleza-badge">{{ row.naturaleza === 'D' ? 'D' : 'C' }}</small>
+              {{ formatNumber(row.saldo) }} ({{ row.naturaleza }})
             </td>
           </tr>
         </ng-template>
         <ng-template pTemplate="footer">
           <tr class="totales-row">
             <td colspan="3"><strong>TOTALES</strong></td>
-            <td class="text-right"><strong>{{ formatNumber(totalSaldoAcum()) }}</strong></td>
+            <td class="text-right"><strong>{{ formatNumber(totalSaldoAcum()) }} ({{ esDeudor() ? 'D' : 'C' }})</strong></td>
             <td class="text-right"><strong>{{ formatNumber(totalDebe()) }}</strong></td>
             <td class="text-right"><strong>{{ formatNumber(totalHaber()) }}</strong></td>
             <td class="text-right">
-              <strong>{{ formatNumber(totalSaldo()) }}</strong>
+              <strong>{{ formatNumber(totalSaldo()) }} ({{ esDeudor() ? 'D' : 'C' }})</strong>
             </td>
           </tr>
         </ng-template>

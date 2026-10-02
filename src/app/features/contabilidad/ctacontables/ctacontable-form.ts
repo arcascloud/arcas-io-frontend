@@ -30,6 +30,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { CtaContable, GrupoContable, NivelCta } from '../../../core/models/contabilidad.models';
 
 @Component({
@@ -52,6 +53,7 @@ import { CtaContable, GrupoContable, NivelCta } from '../../../core/models/conta
 export class CtacontableFormComponent implements OnInit, OnChanges {
   private fb = inject(FormBuilder);
   private contabilidad = inject(ContabilidadService);
+  private auth = inject(AuthService);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
 
@@ -72,6 +74,23 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
   grupoId = signal<number | null>(null);
   nivelSeleccionado = signal<number | null>(null);
   codigoCuenta = signal<string>('');
+
+  // ========== Protección de cuentas con historial de movimiento/cierre ==========
+  /** La cuenta seleccionada ya registra historial (coctamov/coctasaldos/copdadet/cocierredet) */
+  cuentaProtegida = computed(() => this.cuenta()?.sn_protegida === true);
+  /** Usuario con rol admin/supervisor/contador */
+  esPrivilegiado = this.auth.esRolContabilidad;
+  /** Cuenta bloqueada: con historial y sin rol privilegiado → ningún campo editable */
+  bloqueada = computed(() => this.cuentaProtegida() && !this.esPrivilegiado());
+  /** Habilita el select de Tipo de Cuenta (Diario/Mayor) */
+  snOperableHabilitado = computed(() => {
+    if (this.bloqueada()) return false;
+    if (this.esPrivilegiado()) return true;
+    const c = this.cuenta();
+    if (!c) return true; // alta nueva
+    // Sin historial: solo puede pasar de Diario a Mayor, nunca habilitar como operable
+    return c.sn_operable === 'S';
+  });
 
   form!: FormGroup;
 
@@ -96,6 +115,7 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
       this.grupoId.set(null);
       this.nivelSeleccionado.set(null);
       this.codigoCuenta.set('');
+      this.aplicarBloqueo();
     }
   });
 
@@ -188,6 +208,16 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
       this.grupoId.set(c.tcogrupocontableId);
       this.nivelSeleccionado.set(Number(c.nivel));
       this.codigoCuenta.set(c.ctacontable);
+      this.aplicarBloqueo();
+    }
+  }
+
+  /** Bloquea/desbloquea todos los controles según historial y rol del usuario */
+  private aplicarBloqueo(): void {
+    if (this.bloqueada()) {
+      this.form.disable({ emitEvent: false });
+    } else if (this.form.disabled) {
+      this.form.enable({ emitEvent: false });
     }
   }
 
@@ -367,6 +397,14 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
   // ========== Acciones ==========
 
   onGuardar(): void {
+    if (this.bloqueada()) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cuenta protegida',
+        detail: 'La cuenta tiene historial de movimiento/cierre. Solo Contador, Supervisor o Administrador pueden modificarla.',
+      });
+      return;
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;

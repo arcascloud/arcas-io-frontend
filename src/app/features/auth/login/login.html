@@ -4,7 +4,7 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-logo">
-        <img src="assets/images/arcas-logo.svg" alt="Arcas Software" class="login-logo-img" />
+        <img src="assets/images/logo1.png" alt="Arcas Software" class="login-logo-img" />
       </div>
 
       <div class="login-header">
@@ -13,7 +13,7 @@
       </div>
 
       @if (error()) {
-        <p-message severity="error" [text]="error()" styleClass="w-full mb-3" />
+      <p-message severity="error" [text]="error()" styleClass="w-full mb-3" />
       }
 
       <form class="login-form" (ngSubmit)="login()">
@@ -29,6 +29,7 @@
             placeholder="Ingrese su usuario"
             [disabled]="loading()"
             autofocus
+            style="background-color: var(--c-bg-login-inputtext)"
           />
         </div>
 
@@ -44,6 +45,7 @@
             autocomplete="current-password"
             placeholder="Ingrese su contraseña"
             [disabled]="loading()"
+            style="background-color: var(--c-bg-login-inputtext)"
           />
         </div>
 
@@ -52,6 +54,9 @@
           label="Iniciar Sesión"
           icon="pi pi-sign-in"
           size="small"
+          rounded="true"
+          variant="outlined"
+          severity="success"
           [loading]="loading()"
           styleClass="w-full mt-2"
         />

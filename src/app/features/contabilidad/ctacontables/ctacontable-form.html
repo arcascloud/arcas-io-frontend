@@ -1,5 +1,17 @@
 <p-toast />
 <div class="ctacontable-form" [formGroup]="form">
+  @if (bloqueada()) {
+  <div class="mensaje-bloqueo">
+    <i class="pi pi-lock"></i>
+    <div>
+      <strong>Cuenta protegida</strong>
+      <span
+        >Ya registra historial de movimiento/cierre contable. Solo Contador, Supervisor o Administrador pueden
+        modificarla.</span
+      >
+    </div>
+  </div>
+  }
   <div class="formgrid grid">
     <div class="field col">
       <!-- Cuenta contable -->
@@ -62,6 +74,7 @@
           optionValue="value"
           styleClass="w-full"
           size="small"
+          [disabled]="!snOperableHabilitado()"
         />
         <small class="field-hint">Solo las cuentas de Diario permiten movimientos</small>
       </div>
@@ -184,7 +197,7 @@
     [raised]="true"
     [rounded]="true"
     [loading]="guardando()"
-    [disabled]="form.invalid"
+    [disabled]="form.invalid || bloqueada()"
     (onClick)="onGuardar()"
   />
 </div>

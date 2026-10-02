@@ -23,6 +23,26 @@
   margin: 0.25rem 0 0 0;
 }
 
+/* Retorno a la partida contable de origen */
+.origen-vuelta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  align-self: center;
+
+  &__texto {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+}
+
 .campo {
   margin-bottom: 0.75rem;
 
@@ -50,6 +70,13 @@
 .row-anulada {
   opacity: 0.5;
   text-decoration: line-through;
+}
+
+// Fila resaltada: movimiento de origen (trazabilidad desde partida contable)
+:host ::ng-deep tr.row-origen {
+  background: color-mix(in srgb, var(--c-primary) 16%, var(--c-surface)) !important;
+  box-shadow: inset 3px 0 0 var(--c-primary);
+  font-weight: 600;
 }
 
 :host ::ng-deep .tag-sm {

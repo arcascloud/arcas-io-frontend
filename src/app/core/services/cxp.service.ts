@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { Proveedor, CompraMae, CompraDet } from '../models/inventario.models';
+import { ProveedorInfo, ProveedorCartera } from '../models/cxp.models';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 
@@ -104,6 +105,11 @@ export class CxpService {
     return this.api.get<any[]>(`/cxp/movimientos/proveedor/${proveedorId}`);
   }
 
+  /** Movimiento CxP por su id (cxpmovId) — trazabilidad de partidas contables. */
+  getMovimiento(id: number): Observable<any> {
+    return this.api.get<any>(`/cxp/movimientos/${id}`);
+  }
+
   createMovimiento(payload: unknown): Observable<any> {
     return this.api.post<any>('/cxp/movimientos', payload);
   }
@@ -130,5 +136,73 @@ export class CxpService {
 
   getSaldosAv(): Observable<any[]> {
     return this.api.get<any[]>('/cxp/saldos-av');
+  }
+
+  // ── Información de proveedor (proveedorinfo: correo/celular/dirección) ──
+
+  /**
+   * Información de contacto de un proveedor (máx. un registro por tipo).
+   * @param proveedorId - Identificador del proveedor
+   * @returns Observable con los registros de proveedorinfo
+   */
+  getProveedorInfo(proveedorId: number): Observable<ProveedorInfo[]> {
+    return this.api.get<ProveedorInfo[]>(`/cxp/proveedor-info/proveedor/${proveedorId}`);
+  }
+
+  /**
+   * Crea un registro de información de proveedor.
+   * @param payload - Datos (proveedorId, tipo, descripcion, sn_activo, empresaId)
+   * @returns Observable con el registro creado
+   */
+  createProveedorInfo(payload: unknown): Observable<ProveedorInfo> {
+    return this.api.post<ProveedorInfo>('/cxp/proveedor-info', payload);
+  }
+
+  /**
+   * Actualiza un registro de información de proveedor.
+   * @param id - Identificador del registro (proveedorinfo.id)
+   * @param payload - Campos a actualizar
+   * @returns Observable con el registro actualizado
+   */
+  updateProveedorInfo(id: number, payload: unknown): Observable<ProveedorInfo> {
+    return this.api.put<ProveedorInfo>('/cxp/proveedor-info', id, payload);
+  }
+
+  /**
+   * Desactiva lógicamente un registro (sn_activo = N).
+   * @param id - Identificador del registro (proveedorinfo.id)
+   * @returns Observable con el registro desactivado
+   */
+  removeProveedorInfo(id: number): Observable<ProveedorInfo> {
+    return this.api.putBase<ProveedorInfo>(`/cxp/proveedor-info/${id}/remove`, {});
+  }
+
+  // ── Cartera contable por proveedor (cxpcarteracta) ──
+
+  /**
+   * Todas las asignaciones de cartera contable de la empresa.
+   * El filtro por proveedor se hace en el componente (el endpoint no expone proveedorId).
+   * @returns Observable con las asignaciones de cxpcarteracta
+   */
+  getCarterasProveedor(): Observable<ProveedorCartera[]> {
+    return this.api.get<ProveedorCartera[]>('/cxp/carteras-cta');
+  }
+
+  /**
+   * Asigna una cartera contable a un proveedor.
+   * @param payload - Datos (proveedorId, carteractaId, empresaId, Idsucursal)
+   * @returns Observable con la asignación creada
+   */
+  createCarteraProveedor(payload: unknown): Observable<ProveedorCartera> {
+    return this.api.post<ProveedorCartera>('/cxp/carteras-cta', payload);
+  }
+
+  /**
+   * Elimina (físico) la asignación de cartera contable de un proveedor.
+   * @param id - Identificador de la asignación (cxpcarteracta.id)
+   * @returns Observable con el resultado
+   */
+  removeCarteraProveedor(id: number): Observable<{ id: number; eliminado: boolean }> {
+    return this.api.putBase<{ id: number; eliminado: boolean }>(`/cxp/carteras-cta/${id}/remove`, {});
   }
 }

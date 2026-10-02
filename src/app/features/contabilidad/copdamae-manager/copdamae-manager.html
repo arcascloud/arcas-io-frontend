@@ -23,10 +23,15 @@
       @if (vista() === 'crear' || vista() === 'editar') {
       <div class="detail-card">
         <div class="detail-header">
-          <h3>
-            {{ vista() === 'crear' ? 'Nueva Partida' : 'Editar Partida #' +
-            (partidaSeleccionada()?.nropartida ?? '') }}
-          </h3>
+          <div class="detail-header-title">
+            <h3>
+              {{ vista() === 'crear' ? 'Nueva Partida' : 'Editar Partida #' +
+              (partidaSeleccionada()?.nropartida ?? '') }}
+            </h3>
+            @if (partidaSeleccionada()?.sn_contabilizada === 'S') {
+            <p-tag severity="warn" value="Ya contabilizada" />
+            }
+          </div>
           <p-button
             size="small"
             icon="pi pi-arrow-right"
@@ -309,7 +314,8 @@
               severity="warn"
               variant="text"
               [rounded]="true"
-              pTooltip="Editar"
+              [disabled]="partida.sn_cerrada === 'S'"
+              [pTooltip]="partida.sn_cerrada === 'S' ? 'Partida cerrada (período cerrado)' : 'Editar'"
               (onClick)="editarPartida(partida)"
             />
             <p-button
@@ -318,7 +324,8 @@
               severity="danger"
               variant="text"
               [rounded]="true"
-              pTooltip="Eliminar"
+              [disabled]="partida.sn_cerrada === 'S'"
+              [pTooltip]="partida.sn_cerrada === 'S' ? 'Partida cerrada (período cerrado)' : 'Eliminar'"
               (onClick)="eliminarPartida(partida)"
             />
             <p-button
@@ -369,15 +376,47 @@
                 <span class="info-value">{{ partida.fechadocumento | date:'dd/MM/yyyy' }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Estado:</span>
+                <span class="info-label">Anulada:</span>
                 <p-tag
-                  [value]="partida.sn_activo === 'S' ? 'Activa' : 'Inactiva'"
-                  [severity]="partida.sn_activo === 'S' ? 'success' : 'danger'"
+                  [value]="partida.sn_anulada === 'S' ? 'Sí' : 'No'"
+                  [severity]="partida.sn_anulada === 'S' ? 'danger' : 'success'"
                 />
               </div>
               <div class="info-item">
-                <span class="info-label">+ Información:</span>
-                <span class="info-value"> ver movimiento</span>
+                <span class="info-label">Contabilizada:</span>
+                <p-tag
+                  [value]="partida.sn_contabilizada === 'S' ? 'Sí' : 'No'"
+                  [severity]="partida.sn_contabilizada === 'S' ? 'success' : 'secondary'"
+                />
+              </div>
+              <div class="info-item">
+                <span class="info-label">Cerrada:</span>
+                <p-tag
+                  [value]="partida.sn_cerrada === 'S' ? 'Cerrada' : 'Abierta'"
+                  [severity]="partida.sn_cerrada === 'S' ? 'danger' : 'info'"
+                  [icon]="partida.sn_cerrada === 'S' ? 'pi pi-lock' : 'pi pi-lock-open'"
+                />
+              </div>
+              <div class="info-item info-item--origen">
+                <span class="info-label">Origen del documento:</span>
+                <span class="info-value origen-doc">
+                  <span class="origen-doc-texto">
+                    {{ origenTipoLabel(partida)
+                    }}{{ partida.nroreferencia ? ' · ' + partida.nroreferencia : '' }}
+                  </span>
+                  @let origen = enlaceOrigen(partida);
+                  @if (origen) {
+                    <p-button
+                      size="small"
+                      label="Ver documento"
+                      icon="pi pi-external-link"
+                      severity="info"
+                      variant="text"
+                      [rounded]="true"
+                      (onClick)="irAOrigen(partida)"
+                    />
+                  }
+                </span>
               </div>
             </div>
           </div>
@@ -476,43 +515,62 @@
 
       <!-- Filtros -->
       <div class="filtros-bar">
-        <div class="filtro-item">
-          <label>Año</label>
-          <p-select
-            [options]="aniosOptions()"
-            placeholder="Todos"
-            styleClass="w-full"
-            size="small"
-            [appendTo]="'body'"
-            [ngModel]="filtroAnio()"
-            (ngModelChange)="filtroAnio.set($event)"
-            [showClear]="true"
-          />
+        <div class="filtros-row">
+          <div class="filtro-item filtro-anio">
+            <label>Año</label>
+            <p-select
+              [options]="aniosOptions()"
+              placeholder="Todos"
+              styleClass="w-full"
+              size="small"
+              [appendTo]="'body'"
+              [ngModel]="filtroAnio()"
+              (ngModelChange)="filtroAnio.set($event)"
+              [showClear]="true"
+            />
+          </div>
+
+          <div class="filtro-item filtro-periodo">
+            <label>Periodo</label>
+            <p-select
+              [options]="mesesOptions()"
+              placeholder="Todos"
+              styleClass="w-full"
+              size="small"
+              [appendTo]="'body'"
+              [ngModel]="filtroPeriodo()"
+              (ngModelChange)="filtroPeriodo.set($event)"
+              [showClear]="true"
+            />
+          </div>
         </div>
 
-        <div class="filtro-item">
-          <label>Periodo</label>
-          <p-select
-            [options]="mesesOptions()"
-            placeholder="Todos"
-            styleClass="w-full"
-            size="small"
-            [appendTo]="'body'"
-            [ngModel]="filtroPeriodo()"
-            (ngModelChange)="filtroPeriodo.set($event)"
-            [showClear]="true"
-          />
-        </div>
-        <div class="filtro-item filtro-ref">
-          <label>Referencia</label>
-          <input
-            pInputText
-            pSize="small"
-            placeholder="Buscar..."
-            [ngModel]="filtroReferencia()"
-            (ngModelChange)="filtroReferencia.set($event)"
-            class="w-full"
-          />
+        <div class="filtros-row">
+          <div class="filtro-item filtro-aux">
+            <label>Auxiliar</label>
+            <p-select
+              [options]="auxiliaresFiltroOptions()"
+              placeholder="Todos"
+              styleClass="w-full"
+              size="small"
+              [appendTo]="'body'"
+              [ngModel]="filtroAuxiliar()"
+              (ngModelChange)="filtroAuxiliar.set($event)"
+              [showClear]="true"
+            />
+          </div>
+
+          <div class="filtro-item filtro-ref">
+            <label>Concepto</label>
+            <input
+              pInputText
+              pSize="small"
+              placeholder="Buscar concepto o referencia..."
+              [ngModel]="filtroConcepto()"
+              (ngModelChange)="filtroConcepto.set($event)"
+              class="w-full"
+            />
+          </div>
         </div>
       </div>
 
@@ -539,17 +597,28 @@
       </div>
       } @else {
       <div class="partidas-lista">
-        @for (partida of partidasFiltradas(); track partida.copdamaeId) {
+        @for (partida of partidasFiltradas(); track partida.partidaId) {
         <div
           class="partida-item"
-          [class.selected]="partidaSeleccionada()?.copdamaeId === partida.copdamaeId"
+          [class.selected]="partidaSeleccionada()?.partidaId === partida.partidaId"
+          [class.partida-cerrada]="partida.sn_cerrada === 'S'"
           (click)="verPartida(partida)"
         >
           <div class="partida-item-header">
             <span class="partida-num"> Partida No. {{ partida.nropartida }}</span>
+            @if (partida.sn_cerrada === 'S') {
+            <p-tag
+              value="Cerrada"
+              severity="danger"
+              styleClass="tag-sm"
+              icon="pi pi-lock"
+              pTooltip="Período cerrado: la partida no puede modificarse"
+            />
+            }
             <p-tag
               [value]="getPeriodoLabel(partida.periodo) + ' ' + partida.anio"
               [severity]="getPeriodoTagSeverity(partida.periodo)"
+              style="font-size: 0.8rem; font-weight: 600"
               styleClass="tag-sm"
             />
           </div>
@@ -557,12 +626,20 @@
             <p-tag
               [value]="'Auxiliar: ' + getModuloLabel(partida.moduloId)"
               severity="secondary"
+              style="font-size: 0.8rem; font-weight: 600"
               styleClass="tag-sm"
             />
           </div>
           <div class="partida-item-ref">Referencia: {{ partida.nroreferencia }}</div>
           <div class="partida-item-desc">Concepto: {{ partida.descripcion }}</div>
           <div class="partida-item-actions">
+            <!-- 20260929 Alineado a left Contabilizada: Sí -->
+            <span class="partida-item-desc">Contabilizada: </span>
+            <p-tag
+              [value]="partida.sn_contabilizada === 'S' ? 'Sí' : 'No'"
+              [severity]="partida.sn_contabilizada === 'S' ? 'success' : 'warn'"
+              styleClass="tag-sm contabilizada-left"
+            />
             <p-button
               size="small"
               icon="pi pi-eye"
@@ -578,7 +655,8 @@
               severity="warn"
               variant="text"
               [rounded]="true"
-              pTooltip="Editar"
+              [disabled]="partida.sn_cerrada === 'S'"
+              [pTooltip]="partida.sn_cerrada === 'S' ? 'Partida cerrada' : 'Editar'"
               (onClick)="editarPartida(partida); $event.stopPropagation()"
             />
             <p-button
@@ -587,7 +665,8 @@
               severity="danger"
               variant="text"
               [rounded]="true"
-              pTooltip="Eliminar"
+              [disabled]="partida.sn_cerrada === 'S'"
+              [pTooltip]="partida.sn_cerrada === 'S' ? 'Partida cerrada' : 'Eliminar'"
               (onClick)="eliminarPartida(partida); $event.stopPropagation()"
             />
           </div>

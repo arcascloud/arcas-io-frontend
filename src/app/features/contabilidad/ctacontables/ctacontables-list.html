@@ -130,6 +130,13 @@
               [severity]="cuenta.sn_operable === 'S' ? 'success' : 'secondary'"
               styleClass="tag-sm"
             />
+            @if (cuenta.sn_protegida) {
+            <i
+              class="pi pi-lock lock-cuenta"
+              pTooltip="Con historial de movimiento/cierre"
+              tooltipPosition="top"
+            ></i>
+            }
           </td>
           <td class="text-center">
             <p-tag
@@ -164,7 +171,8 @@
                 severity="danger"
                 variant="text"
                 [rounded]="true"
-                pTooltip="Eliminar"
+                [disabled]="bloqueada(cuenta)"
+                [pTooltip]="bloqueada(cuenta) ? 'Cuenta protegida: solo Contador, Supervisor o Administrador' : 'Eliminar'"
                 (onClick)="eliminarCuenta(cuenta)"
               />
             </div>

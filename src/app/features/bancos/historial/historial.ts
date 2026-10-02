@@ -1,7 +1,9 @@
 import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, of } from 'rxjs';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -29,6 +31,11 @@ export class HistorialBancos implements OnInit {
   private api = inject(ApiService);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
+  partidaId = signal<number | null>(null);
 
   // Datos
   bancos = signal<any[]>([]);
@@ -36,6 +43,13 @@ export class HistorialBancos implements OnInit {
   movimientos = signal<BcoMovimiento[]>([]);
   cuentaFiltro = signal<number | null>(null);
   cargando = signal(false);
+
+  /** Trazabilidad: id del movimiento origen (llega desde partida en copdamae) */
+  movOrigenId = signal<number | null>(null);
+  /** Primera fila del paginador para dejar visible el movimiento origen */
+  primeraFila = signal(0);
+
+  private readonly rowsPagina = 15;
 
   readonly TIPO_MOV_OPTIONS = [
     { label: 'Depósito', value: 'DEPOSITO' },
@@ -47,7 +61,45 @@ export class HistorialBancos implements OnInit {
   ngOnInit() {
     this.cargarBancos();
     this.cargarCuentas();
+
+    // Partida contable de origen (botón "Volver a la partida")
+    const partidaParam = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partidaParam) && partidaParam > 0) this.partidaId.set(partidaParam);
+
+    // Trazabilidad contable: ?movimientoId=<bcomovimientosId>
+    const movId = Number(this.route.snapshot.queryParamMap.get('movimientoId'));
+    if (!isNaN(movId) && movId > 0) {
+      this.movOrigenId.set(movId);
+      this.api.get<BcoMovimiento>(`/bancos/movimientos/${movId}`).pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError(() => {
+          this.movOrigenId.set(null);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el movimiento de origen' });
+          this.cargarTodos();
+          return of(null);
+        }),
+      ).subscribe({
+        next: (mov) => {
+          if (mov?.bcoctasId) {
+            this.cuentaFiltro.set(Number(mov.bcoctasId));
+            this.onFiltroChange();
+          } else {
+            this.cargarTodos();
+          }
+        },
+      });
+      return;
+    }
+
     this.cargarTodos();
+  }
+
+  /** Regresa a la partida contable de origen desde la que se abrió este movimiento. */
+  volverAPartida(): void {
+    if (!this.partidaId()) return;
+    this.router.navigate(['/contabilidad/copdamae'], {
+      queryParams: { partidaId: this.partidaId() },
+    });
   }
 
   cargarBancos() {
@@ -74,6 +126,7 @@ export class HistorialBancos implements OnInit {
           importe: Number(m.importe),
         })));
         this.cargando.set(false);
+        this.aplicarPaginaOrigen();
       },
       error: () => {
         this.cargando.set(false);
@@ -97,12 +150,39 @@ export class HistorialBancos implements OnInit {
             importe: Number(m.importe),
           })));
           this.cargando.set(false);
+          this.aplicarPaginaOrigen();
         },
         error: () => {
           this.cargando.set(false);
           this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los movimientos' });
         },
       });
+  }
+
+  /**
+   * Posiciona el paginador en la página que contiene el movimiento origen
+   * y desplaza la vista hasta la fila resaltada.
+   */
+  private aplicarPaginaOrigen(): void {
+    const id = this.movOrigenId();
+    if (!id) {
+      this.primeraFila.set(0);
+      return;
+    }
+    const idx = this.movimientos().findIndex(m => Number(m.bcomovimientosId) === id);
+    if (idx < 0) {
+      this.primeraFila.set(0);
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Movimiento no encontrado',
+        detail: `El movimiento #${id} no se encuentra en la cuenta seleccionada`,
+      });
+      return;
+    }
+    this.primeraFila.set(Math.floor(idx / this.rowsPagina) * this.rowsPagina);
+    setTimeout(() => {
+      document.querySelector('.row-origen')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 300);
   }
 
   // ── Helpers ─────────────────────────────────────────────

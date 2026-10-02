@@ -5,6 +5,16 @@
   <!-- Header -->
   <div class="page-header">
     <h2><i class="pi pi-lock"></i> Cierre Contable</h2>
+    @if (partidaId()) {
+      <div class="origen-vuelta">
+        <span class="origen-vuelta__texto">
+          <i class="pi pi-file-edit"></i>
+          Abierto desde una partida contable
+        </span>
+        <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+          variant="text" [rounded]="true" (onClick)="volverAPartida()" />
+      </div>
+    }
   </div>
 
   <div class="cierre-layout">
@@ -17,18 +27,20 @@
         <div class="p-fluid">
           <div class="p-field mb-3">
             <label>Período (Mes)</label>
-            <p-select [options]="meses" [(ngModel)]="periodoSeleccionado" optionLabel="label" optionValue="value"
+            <p-select [options]="meses" [ngModel]="periodoSeleccionado()" (ngModelChange)="periodoSeleccionado.set($event)"
+                      optionLabel="label" optionValue="value"
                       placeholder="Seleccionar mes" styleClass="w-full" size="small" appendTo="body" />
           </div>
 
           <div class="p-field mb-3">
             <label>Año</label>
-            <p-inputNumber [(ngModel)]="anioSeleccionado" [min]="2020" [max]="2030" styleClass="w-full" size="small" />
+            <p-inputNumber [ngModel]="anioSeleccionado()" (ngModelChange)="anioSeleccionado.set($event)"
+                           [min]="2020" [max]="2030" [useGrouping]="false" styleClass="w-full" size="small" />
           </div>
 
           <div class="p-field mb-3">
             <label>Observación (opcional)</label>
-            <input pInputText [(ngModel)]="observacion" class="w-full" pSize="small" placeholder="Motivo del cierre" />
+            <input pInputText [ngModel]="observacion()" (ngModelChange)="observacion.set($event)" class="w-full" pSize="small" placeholder="Motivo del cierre" />
           </div>
 
           <p-button size="small" label="Realizar Cierre" icon="pi pi-lock" severity="danger" variant="text" [raised]="true" [rounded]="true"
@@ -65,7 +77,8 @@
             </tr>
           </ng-template>
             <ng-template pTemplate="body" let-periodo>
-            <tr [class.fila-cerrada]="periodo.sn_abierto === 'N'" [class.fila-actual]="isPeriodoActual(periodo.nromes, periodo.nroanio)">
+            <tr [class.fila-cerrada]="periodo.sn_abierto === 'N'" [class.fila-actual]="isPeriodoActual(periodo.nromes, periodo.nroanio)"
+              [class.fila-origen]="esOrigen(periodo)">
               <td class="text-center"><strong>{{ periodo.nroanio }}</strong></td>
               <td>{{ getMesLabel(periodo.nromes) }}</td>
               <td class="text-center">
@@ -73,10 +86,8 @@
               </td>
               <td class="text-center">
                 @if (periodo.sn_abierto === 'S') {
-                  <p-button size="small" icon="pi pi-lock" severity="danger" variant="text" [rounded]="true"
+                  <p-button size="small" icon="pi pi-lock-open" severity="success" variant="text" [rounded]="true"
                             pTooltip="Cerrar período" (onClick)="periodoSeleccionado.set(periodo.nromes); anioSeleccionado.set(periodo.nroanio)" />
-                } @else {
-                  <i class="pi pi-check-circle text-success"></i>
                 }
               </td>
             </tr>

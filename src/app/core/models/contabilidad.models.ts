@@ -12,10 +12,12 @@ export interface CtaContable {
   naturaleza: 'D' | 'C';
   nivel: number;
   padre?: string;
-  sn_operable: 'S' | 'N';
-  tcogrupocontableId: number;
-  sn_activo: 'S' | 'N';
-  zorden: number;
+    sn_operable: 'S' | 'N';
+    tcogrupocontableId: number;
+    sn_activo: 'S' | 'N';
+    zorden: number;
+    /** true = la cuenta ya registra historial (movimiento/cierre) → edición restringida */
+    sn_protegida?: boolean;
   empresaId: number;
   Idsucursal?: number;
   usuarioCreated: string;
@@ -66,7 +68,12 @@ export interface CopdaMae {
   factordecambio: number;
   nroreferencia: string;
   descripcion: string;
-  sn_activo: 'S' | 'N';
+  /** 'S' = partida anulada, 'N' = vigente */
+  sn_anulada: 'S' | 'N';
+  /** 'S' = la partida está posteada en coctamov/coctasaldos (estado actual) */
+  sn_contabilizada: 'S' | 'N';
+  /** 'S' = su período contable está cerrado → inmutable (bloqueado en backend con 403) */
+  sn_cerrada: 'S' | 'N';
   nropartida: number;
   Idsucursal: number;
   empresaId: number;
@@ -94,7 +101,8 @@ export interface CopdaDet {
   debito: number;
   credito: number;
   factordecambio: number;
-  sn_activo: 'S' | 'N';
+  /** 'S' = línea anulada, 'N' = vigente */
+  sn_anulada: 'S' | 'N';
   Idsucursal: number;
   empresaId: number;
   usuarioCreated: string;
@@ -197,6 +205,8 @@ export interface CierreDet {
   periodo: number;
   ctacontable: string;
   saldo?: number;
+  /** D (deudor) / C (acreedor) */
+  tiposaldo?: string;
   Idsucursal: number;
   empresaId: number;
   usuarioCreated: string;

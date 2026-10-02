@@ -82,3 +82,30 @@ export interface Modulo {
   usuarioUpdated?: string;
   fechaUpdated?: Date;
 }
+
+/** Asignación de rol de usuario (tusuarios_rol) */
+export interface UsuarioRol {
+  rol_id: number;
+  usuarioId: number;
+  rol: string;
+  empresaId: number;
+  usuarioCreated: string;
+  fechaCreated?: Date | null;
+  usuarioUpdated?: string | null;
+  fechaUpdate?: Date | null;
+  /** Nombre completo del usuario (enriquecido por el backend) */
+  nombreUsuario?: string;
+  /** Login del usuario (enriquecido por el backend) */
+  loginUsuario?: string;
+}
+
+/** Catálogo de roles disponibles (ttipo_rol) */
+export interface TipoRol {
+  id_rol: number;
+  rol: string;
+  empresaId?: number | null;
+  usuarioCreated?: string | null;
+  fechaCreated?: Date | null;
+  usuarioUpdate?: string | null;
+  fechaUpdate?: Date | null;
+}

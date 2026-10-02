@@ -4,10 +4,10 @@ export const CONTABILIDAD_ROUTES: Routes = [
   { path: '', redirectTo: 'ctacontables', pathMatch: 'full' },
 
   // ===== Componentes especializados =====
-  { path: 'partida-diario', loadComponent: () => import('./partida-diario/partida-diario').then((m) => m.PartidaDiarioComponent) },
   { path: 'reportes', loadComponent: () => import('./reportes/reportes-contables').then((m) => m.ReportesContablesComponent) },
   { path: 'balance-dinamico', loadComponent: () => import('./balance-dinamico/balance-dinamico').then((m) => m.BalanceDinamicoComponent) },
   { path: 'cierre-contable', loadComponent: () => import('./cierre-contable/cierre-contable').then((m) => m.CierreContableComponent) },
+  { path: 'reversar-cierre', loadComponent: () => import('./reversar-cierre/reversar-cierre').then((m) => m.ReversarCierreComponent) },
 
   // ===== Cuentas Contables (componente dedicado) =====
   { path: 'ctacontables', loadComponent: () => import('./ctacontables/ctacontables-list').then((m) => m.CtacontablesListComponent) },
@@ -29,6 +29,8 @@ export const CONTABILIDAD_ROUTES: Routes = [
   { path: 'tipos-doc-fiscal/editar/:id', data: { nombre: 'tipos-doc-fiscal' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'impuestovecinal', data: { nombre: 'impuestovecinal' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'impuestovecinal/editar/:id', data: { nombre: 'impuestovecinal' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
+  { path: 'isr', data: { nombre: 'isr' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
+  { path: 'isr/editar/:id', data: { nombre: 'isr' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'factordecambio', data: { nombre: 'factordecambio' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },
   { path: 'factordecambio/editar/:id', data: { nombre: 'factordecambio' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm) },
   { path: 'cierrectable', data: { nombre: 'cierrectable' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico) },

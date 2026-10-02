@@ -14,7 +14,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable, of, catchError } from 'rxjs';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CtaContable, PlantillaBalancesMae, PlantillaBalancesDet } from '../../../core/models/contabilidad.models';
@@ -24,12 +24,29 @@ type VistaTipo = 'lista' | 'crear' | 'editar' | 'ver';
 /** Línea de detalle en el formulario */
 interface LineaBalance {
   id: number;
+  /** ID en BD (null = línea nueva aún no guardada) */
+  dbId?: number | null;
   tipo: string;
   ctacontable: string;
   ctaNombre: string;
+  /** Nivel contable de la cuenta (participa en el orden de presentación) */
+  nivel: number;
   descripcion: string;
   columna: number | null;
   renglon: number | null;
+}
+
+/**
+ * Orden de presentación de cuentas contables (selector y tabla de líneas):
+ * siempre por cuenta contable ASC y nivel contable ASC.
+ */
+function ordenarPorCuenta<T extends { ctacontable?: string; nivel?: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const ctaA = a.ctacontable ?? '';
+    const ctaB = b.ctacontable ?? '';
+    if (ctaA !== ctaB) return ctaA < ctaB ? -1 : 1;
+    return (a.nivel ?? 0) - (b.nivel ?? 0);
+  });
 }
 
 @Component({
@@ -53,6 +70,8 @@ export class BalancesManager implements OnInit {
   private confirmationService = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
   private siguienteId = 1;
+  /** IDs en BD de las líneas cargadas al abrir la plantilla (para detectar bajas) */
+  private dbIdsOriginales: number[] = [];
 
   // ===== ESTADO =====
   plantillas = signal<PlantillaBalancesMae[]>([]);
@@ -89,7 +108,14 @@ export class BalancesManager implements OnInit {
     return r;
   });
 
-  cuentasMovimiento = computed(() => this.cuentas().filter(c => c.sn_operable === 'S'));
+  /**
+   * Todas las cuentas del plan de cuentas: cualquier nivel (1, 2, 3, 4, 5, 6, 8…),
+   * operables o no y activas o no. El detalle de la plantilla puede registrarlas todas.
+   */
+  cuentasDisponibles = computed(() => this.cuentas());
+
+  /** Líneas presentadas siempre por cuenta contable ASC y nivel ASC */
+  lineasOrdenadas = computed(() => ordenarPorCuenta(this.lineas()));
 
   puedeGuardar = computed(() =>
     this.estadoForm() === 'VALID' &&
@@ -124,6 +150,7 @@ export class BalancesManager implements OnInit {
     this.plantillaSeleccionada.set(null);
     this.form.reset({ descripcion: '' });
     this.lineas.set([]);
+    this.dbIdsOriginales = [];
     this.seleccionada.set(null);
     this.siguienteId = 1;
     this.vista.set('crear');
@@ -146,11 +173,16 @@ export class BalancesManager implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (detalles) => {
+          this.dbIdsOriginales = detalles
+            .map(d => d.tcoplantillabalancesdetid)
+            .filter((id): id is number => id != null);
           this.lineas.set(detalles.map(d => ({
             id: this.siguienteId++,
+            dbId: d.tcoplantillabalancesdetid ?? null,
             tipo: d.tipo ?? 'D',
             ctacontable: d.ctacontable ?? '',
             ctaNombre: this.getCuentaNombre(d.ctacontable ?? ''),
+            nivel: this.getCuentaNivel(d.ctacontable ?? ''),
             descripcion: d.descripcion ?? '',
             columna: d.columna ?? null,
             renglon: d.renglon ?? null,
@@ -166,15 +198,19 @@ export class BalancesManager implements OnInit {
     this.vista.set('lista');
     this.plantillaSeleccionada.set(null);
     this.lineas.set([]);
+    this.dbIdsOriginales = [];
   }
 
   // ===== BÚSQUEDA DE CUENTAS =====
   buscar(e: AutoCompleteCompleteEvent): void {
     const q = e.query.trim().toLowerCase();
+    // Orden de presentación: cuenta contable ASC y nivel ASC
     this.sugerencias.set(
-      this.cuentasMovimiento().filter(c =>
-        c.ctacontable.toLowerCase().includes(q) ||
-        c.descripcion.toLowerCase().includes(q)
+      ordenarPorCuenta(
+        this.cuentasDisponibles().filter(c =>
+          c.ctacontable.toLowerCase().includes(q) ||
+          c.descripcion.toLowerCase().includes(q),
+        ),
       ),
     );
   }
@@ -183,9 +219,11 @@ export class BalancesManager implements OnInit {
     const cuenta = e.value as CtaContable;
     const linea: LineaBalance = {
       id: this.siguienteId++,
+      dbId: null,
       tipo: 'D',
       ctacontable: cuenta.ctacontable,
       ctaNombre: cuenta.descripcion,
+      nivel: cuenta.nivel,
       descripcion: cuenta.descripcion,
       columna: null,
       renglon: null,
@@ -207,6 +245,12 @@ export class BalancesManager implements OnInit {
   guardar(): void {
     if (!this.puedeGuardar()) {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Verifique el formulario y que haya al menos 1 línea' });
+      return;
+    }
+
+    const errorLineas = this.validarLineas();
+    if (errorLineas) {
+      this.mostrarError(errorLineas);
       return;
     }
 
@@ -237,7 +281,7 @@ export class BalancesManager implements OnInit {
       this.contabilidad.updatePlantillaBalancesMae(id, maePayload)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: () => this.eliminarDetallesExistentes(id),
+          next: () => this.guardarDetalles(id),
           error: (err) => {
             this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al actualizar plantilla' });
             this.cargando.set(false);
@@ -246,76 +290,94 @@ export class BalancesManager implements OnInit {
     }
   }
 
-  private eliminarDetallesExistentes(maeId: number): void {
-    this.contabilidad.getDetallesPlantillaBalances(maeId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (detallesExistentes) => {
-          if (detallesExistentes.length === 0) {
-            this.guardarDetalles(maeId);
-            return;
-          }
-          let completados = 0;
-          let fallos = 0;
-          const total = detallesExistentes.length;
-          const avanzar = () => {
-            completados++;
-            if (completados < total) return;
-            if (fallos > 0) {
-              this.cargando.set(false);
-              this.mostrarError(`No se pudieron eliminar ${fallos} de ${total} líneas existentes. Intente de nuevo.`);
-              return;
-            }
-            this.guardarDetalles(maeId);
-          };
-          for (const det of detallesExistentes) {
-            this.contabilidad.deletePlantillaBalancesDet(det.tcoplantillabalancesdetid)
-              .pipe(takeUntilDestroyed(this.destroyRef))
-              .subscribe({
-                next: () => avanzar(),
-                error: () => { fallos++; avanzar(); },
-              });
-          }
-        },
-        error: () => this.guardarDetalles(maeId),
-      });
-  }
-
+  /**
+   * Guarda el detalle por diferencia: elimina las líneas que el usuario quitó,
+   * actualiza in-place las existentes y crea las nuevas.
+   * (Antes se borraban y se re-creaban todas, lo que chocaba contra la clave
+   *  única de tcoplantillabalancesdet porque el borrado es suave: sn_activo='N'.)
+   */
   private guardarDetalles(maeId: number): void {
-    const lineasEnv = this.lineas();
-    if (lineasEnv.length === 0) {
+    const lineasAct = this.lineas();
+    const idsActuales = new Set(lineasAct.map(l => l.dbId).filter((id): id is number => id != null));
+    const aEliminar = this.dbIdsOriginales.filter(id => !idsActuales.has(id));
+    const aActualizar: { id: number; payload: Partial<PlantillaBalancesDet> }[] = [];
+    const aCrear: Partial<PlantillaBalancesDet>[] = [];
+
+    lineasAct.forEach(l => {
+      const payload: Partial<PlantillaBalancesDet> = {
+        tipo: l.tipo,
+        ctacontable: l.ctacontable,
+        descripcion: l.descripcion,
+        columna: l.columna ?? undefined,
+        // El renglón lo define el usuario: el sistema lo respeta y jamás
+        // lo asigna ni lo renumera automáticamente.
+        renglon: l.renglon,
+      };
+      if (l.dbId != null) {
+        aActualizar.push({ id: l.dbId, payload });
+      } else {
+        aCrear.push({ ...payload, cocdefbalmaId: maeId });
+      }
+    });
+
+    // Orden: bajas → actualizaciones → altas (libera cuentas antes de reutilizarlas)
+    const operaciones: Array<() => Observable<unknown>> = [
+      ...aEliminar.map(id => () => this.contabilidad.deletePlantillaBalancesDet(id)),
+      ...aActualizar.map(({ id, payload }) => () => this.contabilidad.updatePlantillaBalancesDet(id, payload)),
+      ...aCrear.map(payload => () => this.contabilidad.createPlantillaBalancesDet(payload)),
+    ];
+
+    if (operaciones.length === 0) {
       this.finalizarGuardado();
       return;
     }
 
-    let guardados = 0;
-    const total = lineasEnv.length;
+    let indice = 0;
+    let fallos = 0;
+    const ejecutarSiguiente = (): void => {
+      if (indice >= operaciones.length) {
+        if (fallos > 0) {
+          this.cargando.set(false);
+          this.mostrarError(`No se pudieron guardar ${fallos} de ${operaciones.length} líneas. Corrija los datos e intente de nuevo.`);
+        } else {
+          this.finalizarGuardado();
+        }
+        return;
+      }
+      operaciones[indice++]()
+        .pipe(
+          catchError(() => { fallos++; return of(null); }),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe({ next: () => ejecutarSiguiente() });
+    };
+    ejecutarSiguiente();
+  }
 
-    for (let i = 0; i < lineasEnv.length; i++) {
-      const l = lineasEnv[i];
-      const detPayload = {
-        cocdefbalmaId: maeId,
-        tipo: l.tipo,
-        ctacontable: l.ctacontable,
-        descripcion: l.descripcion,
-        columna: l.columna,
-        renglon: i + 1,
-      };
-
-      this.contabilidad.createPlantillaBalancesDet(detPayload)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => {
-            guardados++;
-            if (guardados === total) this.finalizarGuardado();
-          },
-          error: (err) => {
-            guardados++;
-            this.mostrarError(`Error guardando línea: ${err.error?.message || ''}`);
-            if (guardados === total) this.finalizarGuardado();
-          },
-        });
+  /**
+   * Valida las líneas antes de guardar:
+   * - columna obligatoria y dentro del rango 1..4
+   * - cuenta contable no repetida dentro de la plantilla
+   */
+  private validarLineas(): string | null {
+    const vistos = new Set<string>();
+    const lineas = this.lineas();
+    for (let i = 0; i < lineas.length; i++) {
+      const l = lineas[i];
+      const ref = `línea ${i + 1} (${l.ctacontable || 'sin cuenta'})`;
+      if (l.columna == null) {
+        return `La columna es obligatoria en la ${ref}`;
+      }
+      if (!Number.isInteger(l.columna) || l.columna < 1 || l.columna > 4) {
+        return `La columna debe estar entre 1 y 4 en la ${ref}`;
+      }
+      const clave = (l.ctacontable ?? '').trim().toUpperCase();
+      if (clave && vistos.has(clave)) {
+        return `La cuenta contable ${l.ctacontable} está repetida en la plantilla`;
+      }
+      vistos.add(clave);
     }
+    return null;
   }
 
   private finalizarGuardado(): void {
@@ -356,6 +418,11 @@ export class BalancesManager implements OnInit {
   // ===== HELPERS =====
   getCuentaNombre(ctacontable: string): string {
     return this.cuentas().find(c => c.ctacontable === ctacontable)?.descripcion ?? '';
+  }
+
+  /** Nivel contable de una cuenta (999 = no encontrada, se ubica al final) */
+  private getCuentaNivel(ctacontable: string): number {
+    return this.cuentas().find(c => c.ctacontable === ctacontable)?.nivel ?? 999;
   }
 
   private mostrarError(msg: string): void {

@@ -14,6 +14,7 @@ import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { CtaContable, GrupoContable, NivelCta } from '../../../core/models/contabilidad.models';
 import { CtacontableFormComponent } from './ctacontable-form';
 
@@ -32,9 +33,13 @@ import { CtacontableFormComponent } from './ctacontable-form';
 })
 export class CtacontablesListComponent implements OnInit {
   private contabilidad = inject(ContabilidadService);
+  private auth = inject(AuthService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
+
+  /** Usuario con rol admin/supervisor/contador */
+  esPrivilegiado = this.auth.esRolContabilidad;
 
   // Datos
   cuentas = signal<CtaContable[]>([]);
@@ -155,7 +160,12 @@ export class CtacontablesListComponent implements OnInit {
               this.messageService.add({ severity: 'success', summary: 'Eliminada', detail: 'Cuenta contable eliminada' });
               this.cargarDatos();
             },
-            error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la cuenta' }),
+            error: (err) =>
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err.error?.message || 'No se pudo eliminar la cuenta',
+              }),
           });
       },
     });
@@ -171,6 +181,11 @@ export class CtacontablesListComponent implements OnInit {
   }
 
   // ========== Helpers ==========
+
+  /** Cuenta con historial de movimiento/cierre y usuario sin rol privilegiado */
+  bloqueada(cuenta: CtaContable): boolean {
+    return cuenta.sn_protegida === true && !this.esPrivilegiado();
+  }
 
   getGrupoDescripcion(grupoId: number): string {
     return this.grupos().find(g => g.tcogrupocontableId === grupoId)?.descripcion ?? '-';

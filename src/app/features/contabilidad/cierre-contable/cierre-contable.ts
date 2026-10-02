@@ -12,6 +12,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { PeriodoContable, CierreContable } from '../../../core/models/contabilidad.models';
 
@@ -32,6 +33,11 @@ export class CierreContableComponent implements OnInit {
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
+  partidaId = signal<number | null>(null);
 
   // Estado
   periodos = signal<PeriodoContable[]>([]);
@@ -43,6 +49,10 @@ export class CierreContableComponent implements OnInit {
   anioSeleccionado = signal<number>(new Date().getFullYear());
   observacion = signal('');
 
+  /** Período/año marcado como origen (llega desde partida en copdamae) */
+  origenPeriodo = signal<number | null>(null);
+  origenAnio = signal<number | null>(null);
+
   // Meses
   readonly meses = [
     { label: 'Enero', value: 1 }, { label: 'Febrero', value: 2 }, { label: 'Marzo', value: 3 },
@@ -52,7 +62,37 @@ export class CierreContableComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    // Partida contable de origen (botón "Volver a la partida")
+    const partida = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partida) && partida > 0) this.partidaId.set(partida);
+
+    // Trazabilidad contable: ?periodo=&anio= (llega desde partida de cierre en copdamae)
+    const periodo = Number(this.route.snapshot.queryParamMap.get('periodo'));
+    const anio = Number(this.route.snapshot.queryParamMap.get('anio'));
+    if (periodo >= 1 && periodo <= 12) {
+      this.periodoSeleccionado.set(periodo);
+      this.origenPeriodo.set(periodo);
+    }
+    if (anio >= 2000 && anio <= 2100) {
+      this.anioSeleccionado.set(anio);
+      this.origenAnio.set(anio);
+    }
     this.cargarDatos();
+  }
+
+  /** Marca la fila del período que originó la partida contable. */
+  esOrigen(periodo: PeriodoContable): boolean {
+    const p = this.origenPeriodo();
+    const a = this.origenAnio();
+    return p != null && a != null && periodo.nromes === p && periodo.nroanio === a;
+  }
+
+  /** Regresa a la partida contable de origen desde la que se abrió este cierre. */
+  volverAPartida(): void {
+    if (!this.partidaId()) return;
+    this.router.navigate(['/contabilidad/copdamae'], {
+      queryParams: { partidaId: this.partidaId() },
+    });
   }
 
   private cargarDatos(): void {
@@ -78,6 +118,20 @@ export class CierreContableComponent implements OnInit {
     const yaCerrado = this.periodos().find(p => p.nroanio === anio && p.nromes === periodo && p.sn_abierto === 'N');
     if (yaCerrado) {
       this.messageService.add({ severity: 'warn', summary: 'Ya cerrado', detail: `El período ${periodo}/${anio} ya está cerrado` });
+      return;
+    }
+
+    // Cierre secuencial: no cerrar si quedan períodos anteriores abiertos
+    const anterioresAbiertos = this.periodos()
+      .filter(p => p.sn_abierto === 'S' && (p.nroanio < anio || (p.nroanio === anio && p.nromes < periodo)))
+      .sort((a, b) => a.nroanio - b.nroanio || a.nromes - b.nromes);
+    if (anterioresAbiertos.length > 0) {
+      const lista = anterioresAbiertos.map(p => `${p.nromes}/${p.nroanio}`).join(', ');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cierre no permitido',
+        detail: `Primero deben cerrarse los períodos anteriores abiertos: ${lista}`,
+      });
       return;
     }
 
@@ -115,7 +169,7 @@ export class CierreContableComponent implements OnInit {
   }
 
   getSeverityPeriodo(periodo: PeriodoContable): string {
-    return periodo.sn_abierto === 'S' ? 'success' : 'danger';
+    return periodo.sn_abierto === 'S' ? 'success' : 'warning';
   }
 
   getMesLabel(mes: number): string {

@@ -66,6 +66,8 @@
   /* ===== Design tokens ===== */
   --c-bg: #1e2e3b;
   --c-bg-muted: #1e2e3b00;
+  --c-bg-login: #030713;
+  --c-bg-login-inputtext: #030713;
   --c-surface: #1e2e3b;
   --c-surface-muted: #2d3d50b4;
   --c-card-background: #08131c;
@@ -235,7 +237,12 @@ ul {
   /* O el valor que prefieras, ej: 10px, 0.5rem */
 }
 
+.tabla-card {
+  padding: 0.05rem;
+  overflow: hidden;
+  border-radius: 12px;
 
+}
 
 /* =====================================================
    Animaciones de entrada

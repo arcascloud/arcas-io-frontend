@@ -448,3 +448,28 @@
     gap: 0.5rem;
   }
 }
+
+
+/* Barra de retorno a la partida contable de origen */
+.barra-origen {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+
+  &__texto {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+}

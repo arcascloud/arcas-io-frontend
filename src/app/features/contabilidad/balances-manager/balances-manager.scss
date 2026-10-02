@@ -348,6 +348,24 @@
   color: var(--c-text-muted);
 }
 
+// ===== Autocomplete: metadatos de la cuenta (nivel / estado) =====
+.cta-meta {
+  display: inline-block;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  padding: 0 0.35rem;
+  margin-left: 0.35rem;
+  white-space: nowrap;
+}
+
+.cta-alerta {
+  color: var(--c-error);
+  border-color: var(--c-error);
+}
+
 // ===== Barra de diferencia =====
 .diferencia-bar {
   display: flex;

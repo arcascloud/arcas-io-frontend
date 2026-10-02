@@ -1,0 +1,152 @@
+.page-container {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      color: var(--c-warning);
+    }
+  }
+}
+
+.cierre-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 1rem;
+}
+
+.cierre-form-panel {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      color: var(--c-warning);
+    }
+  }
+}
+
+.cierre-status-panel {
+  h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.1rem;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      color: var(--c-warning);
+    }
+  }
+}
+
+.info-card {
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-warning);
+
+  h5 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.95rem;
+    color: var(--c-warning);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    line-height: 1.8;
+  }
+
+  .aviso {
+    margin: 0.75rem 0 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--c-warning);
+    background: var(--c-surface);
+    border-left: 3px solid var(--c-warning);
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    line-height: 1.5;
+
+    i {
+      margin-top: 0.15rem;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.col-anio {
+  width: 80px;
+}
+
+.col-estado {
+  width: 110px;
+}
+
+.col-accion {
+  width: 90px;
+}
+
+.fila-cerrada {
+  opacity: 0.75;
+  background: var(--c-surface-ground);
+}
+
+.text-muted {
+  color: var(--c-text-muted);
+}
+
+.text-warning {
+  color: var(--c-warning);
+}
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+// Responsive
+@media (max-width: 960px) {
+  .cierre-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cierre-form-panel {
+    position: static;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

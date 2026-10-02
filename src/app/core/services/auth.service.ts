@@ -20,7 +20,12 @@ export interface AuthUser {
   idsucursal: number;
   /** Rol del usuario (ej: 'admin', 'contador') */
   rol?: string;
+  /** Roles del usuario (ttipo_rol vía tusuarios_rol) */
+  roles?: string[];
 }
+
+/** Roles con permiso de administrar cuentas contables (sn_operable / cuentas con historial) */
+export const ROLES_CONTABILIDAD = ['admin', 'supervisor', 'contador'];
 
 /** Respuesta del endpoint de login */
 export interface LoginResponse {
@@ -44,6 +49,13 @@ export class AuthService {
   readonly currentUser = this.user.asReadonly();
   /** Token JWT actual (solo lectura) */
   readonly tokenValue = this.token.asReadonly();
+  /** true si el usuario tiene un rol privilegiado en contabilidad (admin/supervisor/contador) */
+  readonly esRolContabilidad = computed(() => {
+    const u = this.user();
+    if (!u) return false;
+    const roles = u.roles ?? (u.rol ? [u.rol] : []);
+    return roles.some((r) => ROLES_CONTABILIDAD.includes(r));
+  });
 
   /**
    * Autentica al usuario con credenciales

@@ -8,6 +8,25 @@ export interface CampoCatalogo {
   principal?: boolean;
   formato?: string;
   frozen?: boolean;
+  /** No se muestra en el formulario (ej: ID que asigna el backend). Sí aparece en la lista */
+  ocultoForm?: boolean;
+  /** El valor de este campo no puede ser menor al del campo indicado (key). Ej: precioventa >= preciocompra */
+  minCampo?: string;
+  /** Cifras decimales para mostrar en formulario y lista (ej: 4 para tipo de cambio 26.9745) */
+  decimales?: number;
+  /**
+   * En la lista el valor se muestra como SALDO ACUMULADO a fin de mes
+   * (saldoanterior + netos de los meses anteriores + mes actual) con lado (C)/(D).
+   * Ej: columnas Enero…Diciembre de saldoscta.
+   */
+  acumulado?: boolean;
+  /**
+   * En la lista el valor es un SALDO (acumulado o actual): se imprime en
+   * positivo con el lado contable (C)/(D) derivado del signo. Ej:
+   * "12,247.00 (C)" / "63,042.00 (D)". 0.00 va sin sufijo.
+   * Ej: columnas Saldo Acum. y Saldo de movcta, Saldo Acumulado de saldoscta.
+   */
+  lado?: boolean;
 }
 
 /** Filtro de selección en la barra de filtros del catálogo genérico */
@@ -18,6 +37,42 @@ export interface CampoFiltroCatalogo {
   tipo: 'texto' | 'select';
   /** Opciones fijas para tipo select. Si se omite, se derivan de los datos cargados. */
   opciones?: { label: string; value: string | number }[];
+  /**
+   * Fila de la barra de filtros (default 1). `2` = va en la segunda fila,
+   * a ancho completo, debajo de los filtros y de los botones Buscar/Limpiar.
+   * Ej: Descripción de movcta.
+   */
+  fila?: number;
+}
+
+/** Config del diálogo de detalle (estado de cuenta) del catálogo genérico */
+export interface CatalogoDetalleConfig {
+  /** Endpoint GET que recibe los parámetros indicados en `params` desde la fila seleccionada */
+  ruta: string;
+  /** Claves de la fila a enviar como query string (ej: ['ctacontable', 'anio']) */
+  params: string[];
+  /** Clave de la fila con el código mostrado en el encabezado (ej: ctacontable) */
+  tituloKey: string;
+  /** Clave de la fila con el saldo acumulado inicial (ej: saldoanterior) */
+  saldoKey: string;
+  /** Columnas del reporte de detalle */
+  columnas: CampoCatalogo[];
+  /** Título del diálogo (default: 'Estado de Cuenta') */
+  titulo?: string;
+}
+
+/** Respuesta del endpoint de detalle (estado de cuenta por partida) */
+export interface DetalleEstadoCuenta {
+  descripcion: string;
+  movimientos: Record<string, any>[];
+  totales: { debito: number; credito: number };
+  /**
+   * Saldo acumulado inicial calculado por el backend:
+   * saldoanterior (cierre del año anterior) + Σ(debito-credito) de los
+   * períodos ANTERIORES al filtro. Para movcta (fila = cuenta+año+período)
+   * es la base correcta; `sacum` de la fila puede venir en 0 (cocierredet vacía).
+   */
+  saldoAcumulado?: number;
 }
 
 export interface CatalogoConfig {
@@ -32,8 +87,17 @@ export interface CatalogoConfig {
   incluyeEmpresaId?: boolean;
   sinEstado?: boolean;
   soloLectura?: boolean;
+  /**
+   * Filas protegidas: las que cumplen la condición (por defecto sn_abierto='N')
+   * se muestran con candado y no se pueden editar/eliminar.
+   */
+  protegerCerrados?: boolean;
+  /** Mensaje mostrado en el formulario cuando el registro está protegido */
+  proteccionMensaje?: string;
   /** Precargar filtros 'anio' y 'periodo' con el período contable abierto (coperiodoctable.sn_abierto='S') */
   preCargarPeriodoAbierto?: boolean;
+  /** Diálogo de detalle (estado de cuenta) al hacer clic en una fila o con el botón 👁 */
+  detalle?: CatalogoDetalleConfig;
 }
 
 export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
@@ -43,7 +107,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de estado',
     idKey: 'estadoId',
     icono: 'flag',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   meses: {
     ruta: '/parametros/meses',
@@ -61,7 +127,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de forma de pago',
     idKey: 'formapagoId',
     icono: 'credit-card',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   monedas: {
     ruta: '/parametros/monedas',
@@ -92,7 +160,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de país',
     idKey: 'paisId',
     icono: 'globe',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   'departamentos-pais': {
     ruta: '/parametros/departamentos-pais',
@@ -100,7 +170,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de departamento por país',
     idKey: 'ttipodeptopaisId',
     icono: 'map',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   'departamentos-empresa': {
     ruta: '/parametros/departamentos-empresa',
@@ -119,7 +191,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de dirección',
     idKey: 'direccionId',
     icono: 'map-marker',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   telefonos: {
     ruta: '/parametros/telefonos',
@@ -127,7 +201,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de teléfono',
     idKey: 'telefonoId',
     icono: 'phone',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   'tarjetas-credito': {
     ruta: '/parametros/tarjetas-credito',
@@ -135,7 +211,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de tarjeta de crédito',
     idKey: 'tarjetacreditoId',
     icono: 'credit-card',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   pasatiempos: {
     ruta: '/parametros/pasatiempos',
@@ -143,7 +221,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de pasatiempo',
     idKey: 'pasatiempoId',
     icono: 'heart',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   zonas: {
     ruta: '/parametros/zonas',
@@ -151,7 +231,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de zona',
     idKey: 'tzonadId',
     icono: 'map',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   gestores: {
     ruta: '/parametros/gestores',
@@ -207,7 +289,13 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'hashtag',
     sinEstado: true,
     campos: [
-      { key: 'nrofactura', label: 'Nro. Factura', tipo: 'numero', requerido: true, principal: true },
+      {
+        key: 'nrofactura',
+        label: 'Nro. Factura',
+        tipo: 'numero',
+        requerido: true,
+        principal: true,
+      },
       { key: 'TCPIP', label: 'TCP/IP', tipo: 'texto', requerido: true },
     ],
   },
@@ -247,7 +335,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Plazos de días de cobro',
     idKey: 'tdiascobrosId',
     icono: 'calendar',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   bancos: {
     ruta: '/bancos/bancos',
@@ -255,7 +345,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Catálogo de bancos',
     idKey: 'bancoId',
     icono: 'building-columns',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   cuentas: {
     ruta: '/bancos/cuentas',
@@ -276,7 +368,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'monedaId',
         label: 'Moneda',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/monedas', labelCampo: 'descripcion', valueCampo: 'monedaId' },
+        cargaOpciones: {
+          url: '/parametros/monedas',
+          labelCampo: 'descripcion',
+          valueCampo: 'monedaId',
+        },
         requerido: true,
       },
     ],
@@ -288,7 +384,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     idKey: 'puestosId',
     icono: 'briefcase',
     sinEstado: true,
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   profesiones: {
     ruta: '/planilla/profesiones',
@@ -296,7 +394,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Profesiones de empleados',
     idKey: 'profesionId',
     icono: 'graduation-cap',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   deducciones: {
     ruta: '/planilla/deducciones',
@@ -367,7 +467,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'empleadoId',
         label: 'Empleado',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/empleados', labelCampo: 'nombres', valueCampo: 'empleadoId' },
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampo: 'nombres',
+          valueCampo: 'empleadoId',
+        },
         requerido: true,
       },
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
@@ -384,7 +488,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'empleadoId',
         label: 'Empleado',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/empleados', labelCampo: 'nombres', valueCampo: 'empleadoId' },
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampo: 'nombres',
+          valueCampo: 'empleadoId',
+        },
       },
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
     ],
@@ -400,7 +508,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'empleadoId',
         label: 'Empleado',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/empleados', labelCampo: 'nombres', valueCampo: 'empleadoId' },
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampo: 'nombres',
+          valueCampo: 'empleadoId',
+        },
         requerido: true,
       },
       { key: 'horaentrada', label: 'Hora Entrada', tipo: 'texto' },
@@ -421,7 +533,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'empleadoId',
         label: 'Empleado',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/empleados', labelCampo: 'nombres', valueCampo: 'empleadoId' },
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampo: 'nombres',
+          valueCampo: 'empleadoId',
+        },
         requerido: true,
       },
       { key: 'comisionId', label: 'Comisión', tipo: 'numero', requerido: true },
@@ -456,14 +572,22 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'empleadoId',
         label: 'Empleado',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/empleados', labelCampo: 'nombres', valueCampo: 'empleadoId' },
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampo: 'nombres',
+          valueCampo: 'empleadoId',
+        },
         requerido: true,
       },
       {
         key: 'deduccionId',
         label: 'Deducción',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/deducciones', labelCampo: 'descripcion', valueCampo: 'deduccioneId' },
+        cargaOpciones: {
+          url: '/planilla/deducciones',
+          labelCampo: 'descripcion',
+          valueCampo: 'deduccioneId',
+        },
         requerido: true,
       },
       {
@@ -493,7 +617,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Grupos contables',
     idKey: 'tcogrupocontableId',
     icono: 'sitemap',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   carteras: {
     ruta: '/contabilidad/carteras',
@@ -513,7 +639,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'ctacontable',
         label: 'Cuenta Contable',
         tipo: 'select',
-        cargaOpciones: { url: '/contabilidad/ctacontables', labelCampo: 'descripcion', valueCampo: 'ctacontable' },
+        cargaOpciones: {
+          url: '/contabilidad/ctacontables',
+          labelCampo: 'descripcion',
+          valueCampo: 'ctacontable',
+        },
       },
     ],
   },
@@ -524,6 +654,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     idKey: 'cocierredetId',
     icono: 'lock',
     sinEstado: true,
+    soloLectura: true,
     campos: [
       {
         key: 'cocierremaeId',
@@ -531,7 +662,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         requerido: true,
         principal: true,
-        cargaOpciones: { url: '/contabilidad/cierrectable', labelCampo: 'observacion', valueCampo: 'cierrectableId' },
+        cargaOpciones: {
+          url: '/contabilidad/cierrectable',
+          labelCampo: 'observacion',
+          valueCampo: 'cierrectableId',
+        },
       },
       { key: 'anio', label: 'Año', tipo: 'numero', requerido: true },
       { key: 'periodo', label: 'Período', tipo: 'numero', requerido: true },
@@ -540,9 +675,22 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         label: 'Cuenta Contable',
         tipo: 'select',
         requerido: true,
-        cargaOpciones: { url: '/contabilidad/ctacontables', labelCampo: 'descripcion', valueCampo: 'ctacontable' },
+        cargaOpciones: {
+          url: '/contabilidad/ctacontables',
+          labelCampo: 'descripcion',
+          valueCampo: 'ctacontable',
+        },
       },
       { key: 'saldo', label: 'Saldo', tipo: 'numero' },
+      {
+        key: 'tiposaldo',
+        label: 'Tipo Saldo',
+        tipo: 'select',
+        opciones: [
+          { label: 'Deudor (D)', value: 'D' },
+          { label: 'Acreedor (C)', value: 'C' },
+        ],
+      },
     ],
   },
   'carteras-cta': {
@@ -559,14 +707,22 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         requerido: true,
         principal: true,
-        cargaOpciones: { url: '/cxp/proveedores', labelCampo: 'razonsocial', valueCampo: 'proveedorId' },
+        cargaOpciones: {
+          url: '/cxp/proveedores',
+          labelCampo: 'razonsocial',
+          valueCampo: 'proveedorId',
+        },
       },
       {
         key: 'carteractaId',
         label: 'Cartera Contable',
         tipo: 'select',
         requerido: true,
-        cargaOpciones: { url: '/contabilidad/carteras', labelCampo: 'descripcion', valueCampo: 'tcocarteraId' },
+        cargaOpciones: {
+          url: '/contabilidad/carteras',
+          labelCampo: 'descripcion',
+          valueCampo: 'tcocarteraId',
+        },
       },
     ],
   },
@@ -583,7 +739,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         requerido: true,
         principal: true,
-        cargaOpciones: { url: '/cxp/proveedores', labelCampo: 'razonsocial', valueCampo: 'proveedorId' },
+        cargaOpciones: {
+          url: '/cxp/proveedores',
+          labelCampo: 'razonsocial',
+          valueCampo: 'proveedorId',
+        },
       },
       {
         key: 'tipo',
@@ -617,14 +777,22 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         requerido: true,
         principal: true,
-        cargaOpciones: { url: '/cxc/clientes?limit=1000', labelCampo: 'razonsocial', valueCampo: 'clienteId' },
+        cargaOpciones: {
+          url: '/cxc/clientes?limit=1000',
+          labelCampo: 'razonsocial',
+          valueCampo: 'clienteId',
+        },
       },
       {
         key: 'carteractaId',
         label: 'Cartera Contable',
         tipo: 'select',
         requerido: true,
-        cargaOpciones: { url: '/contabilidad/carteras', labelCampo: 'descripcion', valueCampo: 'tcocarteraId' },
+        cargaOpciones: {
+          url: '/contabilidad/carteras',
+          labelCampo: 'descripcion',
+          valueCampo: 'tcocarteraId',
+        },
       },
     ],
   },
@@ -641,7 +809,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         requerido: true,
         principal: true,
-        cargaOpciones: { url: '/cxc/clientes?limit=1000', labelCampo: 'razonsocial', valueCampo: 'clienteId' },
+        cargaOpciones: {
+          url: '/cxc/clientes?limit=1000',
+          labelCampo: 'razonsocial',
+          valueCampo: 'clienteId',
+        },
       },
       {
         key: 'tipo',
@@ -739,7 +911,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'cuentacontableId',
         label: 'Cuenta Contable',
         tipo: 'select',
-        cargaOpciones: { url: '/contabilidad/ctacontables', labelCampo: 'ctacontable', valueCampo: 'cuentacontablesId' },
+        cargaOpciones: {
+          url: '/contabilidad/ctacontables',
+          labelCampo: 'ctacontable',
+          valueCampo: 'cuentacontablesId',
+        },
       },
       { key: 'nrocorrelativo', label: 'Nro. Correlativo', tipo: 'numero' },
     ],
@@ -752,9 +928,22 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'landmark',
     campos: [
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
-      { key: 'del', label: 'Desde', tipo: 'numero' },
-      { key: 'al', label: 'Hasta', tipo: 'numero' },
-      { key: 'importe', label: 'Importe', tipo: 'numero' },
+      { key: 'del', label: 'Desde', tipo: 'numero', formato: 'moneda' },
+      { key: 'al', label: 'Hasta', tipo: 'numero', formato: 'moneda' },
+      { key: 'importe', label: 'Importe', tipo: 'numero', formato: 'moneda' },
+    ],
+  },
+  isr: {
+    ruta: '/contabilidad/isr',
+    titulo: 'ISR (Retención en la Fuente)',
+    subtitulo: 'Rangos de impuesto sobre la renta',
+    idKey: 'tcoisrId',
+    icono: 'percent',
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+      { key: 'del', label: 'Desde', tipo: 'numero', formato: 'moneda' },
+      { key: 'al', label: 'Hasta', tipo: 'numero', formato: 'moneda' },
+      { key: 'importe', label: 'Importe', tipo: 'numero', formato: 'moneda' },
     ],
   },
   factordecambio: {
@@ -765,10 +954,23 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'dollar',
     sinEstado: true,
     campos: [
-      { key: 'factordecambioId', label: 'ID', tipo: 'numero', requerido: true, principal: true },
+      {
+        key: 'factordecambioId',
+        label: 'ID',
+        tipo: 'numero',
+        requerido: true,
+        principal: true,
+        ocultoForm: true,
+      },
       { key: 'fecharegistro', label: 'Fecha', tipo: 'fecha' },
-      { key: 'preciocompra', label: 'Precio Compra', tipo: 'numero' },
-      { key: 'precioventa', label: 'Precio Venta', tipo: 'numero' },
+      { key: 'preciocompra', label: 'Precio Compra', tipo: 'numero', decimales: 4 },
+      {
+        key: 'precioventa',
+        label: 'Precio Venta',
+        tipo: 'numero',
+        minCampo: 'preciocompra',
+        decimales: 4,
+      },
       {
         key: 'tipomoneda',
         label: 'Tipo Moneda',
@@ -787,9 +989,10 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Cierres contables',
     idKey: 'cierrectableId',
     icono: 'lock',
+    soloLectura: true,
     campos: [
       { key: 'periodo', label: 'Periodo', tipo: 'numero' },
-      { key: 'anio', label: 'Año', tipo: 'numero' },
+      { key: 'anio', label: 'Año', tipo: 'numero', formato: 'anio' },
       { key: 'fechacierre', label: 'Fecha Cierre', tipo: 'fecha' },
       { key: 'observacion', label: 'Observación', tipo: 'texto' },
     ],
@@ -801,8 +1004,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     idKey: 'periodoscontableId',
     icono: 'calendar-check',
     sinEstado: true,
+    protegerCerrados: true,
+    proteccionMensaje:
+      'Período cerrado — registro protegido. No es modificable ni puede reabrirse bajo ninguna circunstancia. Los cierres se realizan desde Cierre Contable.',
     campos: [
-      { key: 'nroanio', label: 'Año', tipo: 'numero', requerido: true },
+      { key: 'nroanio', label: 'Año', tipo: 'numero', formato: 'anio', requerido: true },
       { key: 'nromes', label: 'Mes', tipo: 'numero', requerido: true },
       {
         key: 'sn_abierto',
@@ -833,7 +1039,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'tcogrupocontableId',
         label: 'Grupo Contable',
         tipo: 'select',
-        cargaOpciones: { url: '/contabilidad/grupocontable', labelCampo: 'descripcion', valueCampo: 'tcogrupocontableId' },
+        cargaOpciones: {
+          url: '/contabilidad/grupocontable',
+          labelCampo: 'descripcion',
+          valueCampo: 'tcogrupocontableId',
+        },
         requerido: true,
       },
       {
@@ -861,28 +1071,50 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   },
   saldoscta: {
     ruta: '/contabilidad/saldoscta',
-    titulo: 'Saldos',
-    subtitulo: 'Saldos por cuenta y mes',
+    titulo: 'Saldos anuales',
+    subtitulo: 'Saldos acumulado por año',
     idKey: 'cosaldosctaId',
     icono: 'chart-line',
     sinEstado: true,
     soloLectura: true,
+    // Año como filtro de búsqueda (dropdown con los años existentes en los datos)
+    filtros: [{ key: 'anio', label: 'Año', tipo: 'select' }],
+    // Estado de cuenta por partida (estilo libro diario) al seleccionar una fila
+    detalle: {
+      ruta: '/contabilidad/saldoscta-detalle',
+      params: ['ctacontable', 'anio'],
+      tituloKey: 'ctacontable',
+      saldoKey: 'saldoanterior',
+      titulo: 'Estado de Cuenta',
+      columnas: [
+        { key: 'nropartida', label: 'Nro Partida', tipo: 'numero' },
+        { key: 'fecharegistro', label: 'Fecha Registro', tipo: 'fecha' },
+        { key: 'debito', label: 'Debe', tipo: 'numero', decimales: 2 },
+        { key: 'credito', label: 'Haber', tipo: 'numero', decimales: 2 },
+      ],
+    },
     campos: [
-      { key: 'anio', label: 'Año', tipo: 'numero', frozen: true },
-      { key: 'ctacontable', label: 'Cuenta', tipo: 'texto', requerido: true, principal: true, frozen: true },
-      { key: 'saldoanterior', label: 'Saldo Anterior', tipo: 'numero' },
-      { key: 'enero', label: 'Enero', tipo: 'numero' },
-      { key: 'febrero', label: 'Febrero', tipo: 'numero' },
-      { key: 'marzo', label: 'Marzo', tipo: 'numero' },
-      { key: 'abril', label: 'Abril', tipo: 'numero' },
-      { key: 'mayo', label: 'Mayo', tipo: 'numero' },
-      { key: 'junio', label: 'Junio', tipo: 'numero' },
-      { key: 'julio', label: 'Julio', tipo: 'numero' },
-      { key: 'agosto', label: 'Agosto', tipo: 'numero' },
-      { key: 'septiembre', label: 'Septiembre', tipo: 'numero' },
-      { key: 'octubre', label: 'Octubre', tipo: 'numero' },
-      { key: 'noviembre', label: 'Noviembre', tipo: 'numero' },
-      { key: 'diciembre', label: 'Diciembre', tipo: 'numero' },
+      {
+        key: 'ctacontable',
+        label: 'Cuenta',
+        tipo: 'texto',
+        requerido: true,
+        principal: true,
+        frozen: true,
+      },
+      { key: 'saldoanterior', label: 'Saldo Acumulado', tipo: 'numero', decimales: 2, lado: true },
+      { key: 'enero', label: 'Enero', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'febrero', label: 'Febrero', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'marzo', label: 'Marzo', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'abril', label: 'Abril', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'mayo', label: 'Mayo', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'junio', label: 'Junio', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'julio', label: 'Julio', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'agosto', label: 'Agosto', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'septiembre', label: 'Septiembre', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'octubre', label: 'Octubre', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'noviembre', label: 'Noviembre', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'diciembre', label: 'Diciembre', tipo: 'numero', decimales: 2, acumulado: true },
     ],
   },
   repliquidez: {
@@ -917,22 +1149,38 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     campos: [
       { key: 'ctacontable', label: 'Cuenta', tipo: 'texto' },
       { key: 'periodoA', label: 'Periodo A', tipo: 'numero', requerido: true },
-      { key: 'anioA', label: 'Año A', tipo: 'numero', requerido: true },
+      { key: 'anioA', label: 'Año A', tipo: 'numero', formato: 'anio', requerido: true },
       { key: 'saldoA', label: 'Saldo A', tipo: 'numero' },
       { key: 'periodoB', label: 'Periodo B', tipo: 'numero', requerido: true },
-      { key: 'anioB', label: 'Año B', tipo: 'numero', requerido: true },
+      { key: 'anioB', label: 'Año B', tipo: 'numero', formato: 'anio', requerido: true },
       { key: 'saldoB', label: 'Saldo B', tipo: 'numero' },
     ],
   },
   movcta: {
     ruta: '/contabilidad/movcta',
     titulo: 'Movimientos de Cuentas',
-    subtitulo: 'Movimientos por cuenta contable',
+    subtitulo: 'Movimientos por periodos',
     idKey: 'movctascontablesId',
     icono: 'arrows-spin',
     soloLectura: true,
     sinEstado: true,
     preCargarPeriodoAbierto: true,
+    // Fila expandida: partidas del período de esa fila (cuenta + año + período)
+    // + Nro. Partida clickeable → drawer con la partida contable.
+    // 'sacum' = saldo acumulado ANTES de ese período → base de los bloques.
+    detalle: {
+      ruta: '/contabilidad/saldoscta-detalle',
+      params: ['ctacontable', 'anio', 'periodo'],
+      tituloKey: 'ctacontable',
+      saldoKey: 'sacum',
+      titulo: 'Estado de Cuenta',
+      columnas: [
+        { key: 'nropartida', label: 'Nro Partida', tipo: 'numero' },
+        { key: 'fecharegistro', label: 'Fecha Registro', tipo: 'fecha' },
+        { key: 'debito', label: 'Debe', tipo: 'numero', decimales: 2 },
+        { key: 'credito', label: 'Haber', tipo: 'numero', decimales: 2 },
+      ],
+    },
     filtros: [
       { key: 'anio', label: 'Año', tipo: 'select' },
       {
@@ -954,19 +1202,17 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
           { label: 'Diciembre', value: 12 },
         ],
       },
-      { key: 'descripcion', label: 'Descripción', tipo: 'texto' },
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', fila: 2 },
     ],
     campos: [
       { key: 'ctacontable', label: 'Cuenta', tipo: 'texto', requerido: true, principal: true },
       { key: 'descripcion', label: 'Descripción', tipo: 'texto' },
-      { key: 'anio', label: 'Año', tipo: 'numero', formato: 'entero' },
+      { key: 'anio', label: 'Año', tipo: 'numero', formato: 'anio' },
       { key: 'periodo', label: 'Periodo', tipo: 'numero', formato: 'entero' },
-      { key: 'sacum', label: 'Saldo Acum.', tipo: 'numero', formato: 'moneda' },
+      { key: 'sacum', label: 'Saldo Acum.', tipo: 'numero', formato: 'moneda', lado: true },
       { key: 'debe', label: 'Debe', tipo: 'numero', formato: 'moneda' },
       { key: 'haber', label: 'Haber', tipo: 'numero', formato: 'moneda' },
-      { key: 'saldo', label: 'Saldo', tipo: 'numero', formato: 'moneda' },
-      { key: 'fecultmov', label: 'Últ. Mov.', tipo: 'fecha', formato: 'dd/MM/yyyy' },
-      { key: 'ultnropda', label: 'Últ. PDA', tipo: 'numero', formato: 'entero' },
+      { key: 'saldo', label: 'Saldo', tipo: 'numero', formato: 'moneda', lado: true },
     ],
   },
 
@@ -977,7 +1223,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Categorías de productos',
     idKey: 'categoriaId',
     icono: 'pi-tags',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   marcas: {
     ruta: '/inventario/marcas',
@@ -985,7 +1233,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Marcas de productos',
     idKey: 'marcaId',
     icono: 'pi-bookmark',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   modelos: {
     ruta: '/inventario/modelos',
@@ -993,7 +1243,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Modelos de productos',
     idKey: 'modeloId',
     icono: 'pi-box',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   colores: {
     ruta: '/inventario/colores',
@@ -1001,7 +1253,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Colores de productos',
     idKey: 'colorId',
     icono: 'pi-palette',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   'unidades-medida': {
     ruta: '/inventario/unidades-medida',
@@ -1009,7 +1263,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Unidades de medida',
     idKey: 'unidadmedidaId',
     icono: 'pi-arrows-h',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   embalajes: {
     ruta: '/inventario/embalajes',
@@ -1017,7 +1273,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de embalaje',
     idKey: 'embalajeId',
     icono: 'pi-shopping-bag',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   bodegas: {
     ruta: '/inventario/bodegas',
@@ -1025,7 +1283,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Bodegas',
     idKey: 'bodegaId',
     icono: 'pi-building',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   ubicaciones: {
     ruta: '/inventario/ubicaciones',
@@ -1033,7 +1293,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Ubicaciones',
     idKey: 'ubicacionId',
     icono: 'pi-map-marker',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   pasillos: {
     ruta: '/inventario/pasillos',
@@ -1041,7 +1303,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Pasillos',
     idKey: 'pasilloId',
     icono: 'pi-directions',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   casas: {
     ruta: '/inventario/casas',
@@ -1049,7 +1313,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Casas',
     idKey: 'casaId',
     icono: 'pi-home',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   testantes: {
     ruta: '/inventario/testantes',
@@ -1057,7 +1323,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Testantes',
     idKey: 'testanteId',
     icono: 'pi-verified',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   tags: {
     ruta: '/inventario/tags',
@@ -1065,6 +1333,8 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tags de productos',
     idKey: 'tagsId',
     icono: 'pi-hashtag',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
 };

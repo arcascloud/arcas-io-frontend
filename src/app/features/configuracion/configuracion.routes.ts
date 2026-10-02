@@ -96,6 +96,21 @@ export const CONFIGURACION_ROUTES: Routes = [
     loadComponent: () =>
       import('../usuarios/usuario-modauth/usuario-modauth-form').then((m) => m.UsuarioModAuthForm),
   },
+  {
+    path: 'usuarios/usuario-roles',
+    loadComponent: () =>
+      import('../usuarios/usuario-roles/usuario-roles').then((m) => m.UsuarioRolesPage),
+  },
+  {
+    path: 'usuarios/usuario-roles/nuevo',
+    loadComponent: () =>
+      import('../usuarios/usuario-roles/usuario-roles-form').then((m) => m.UsuarioRolesForm),
+  },
+  {
+    path: 'usuarios/usuario-roles/editar/:id',
+    loadComponent: () =>
+      import('../usuarios/usuario-roles/usuario-roles-form').then((m) => m.UsuarioRolesForm),
+  },
 
   // Parámetros (catálogos genéricos configurables)
   {

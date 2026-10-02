@@ -19,6 +19,76 @@
 
     i { color: var(--c-primary); }
   }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}
+
+// ── Visor PDF ──
+.pdf-viewer-container {
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+}
+
+.pdf-iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+  border: none;
+  border-radius: 4px;
+}
+
+// ── Visor PDF: diálogo a pantalla completa ──
+// (PrimeNG 21 no tiene input `fullscreen`; se fuerza por CSS.
+//  `!important` gana a los estilos inline de posicionamiento de PrimeNG)
+:host ::ng-deep .pdf-viewer-dialog {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  display: flex;
+  flex-direction: column;
+
+  .p-dialog-header {
+    flex: 0 0 auto;
+    padding: 0.7rem 1.25rem;
+  }
+
+  .p-dialog-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    padding: 0;
+  }
+
+  .p-dialog-footer {
+    flex: 0 0 auto;
+    padding: 0.6rem 1.25rem;
+  }
+
+  .pdf-viewer-container {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .pdf-iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+  }
 }
 
 // Encabezado del reporte

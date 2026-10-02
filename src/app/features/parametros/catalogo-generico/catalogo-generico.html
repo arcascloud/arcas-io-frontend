@@ -6,126 +6,337 @@
     </div>
     <div>
       @if (config() && !config()!.soloLectura) {
-      <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()"
-      variant="text"
-      [raised]="true" severity="success" [rounded]="true" />
+      <p-button
+        label="Nuevo"
+        icon="pi pi-plus"
+        size="small"
+        (onClick)="nuevo()"
+        variant="text"
+        [raised]="true"
+        severity="success"
+        [rounded]="true"
+      />
       }
     </div>
   </header>
 
+  <!-- Campo de filtro compartido por las dos filas de la barra -->
+  <ng-template #campoFiltro let-f>
+    <div class="campo" [class.campo-fila2]="f.fila === 2">
+      <label>{{ f.label }}</label>
+      @if (f.tipo === 'select') {
+      <p-select
+        [options]="opcionesFiltro(f.key)"
+        [ngModel]="filtrosValores()[f.key] ?? null"
+        (ngModelChange)="setFiltro(f.key, $event)"
+        optionLabel="label"
+        optionValue="value"
+        [showClear]="true"
+        placeholder="Todos"
+        styleClass="w-full"
+        size="small"
+        [appendTo]="'body'"
+      />
+      } @else {
+      <input
+        pInputText
+        type="text"
+        pSize="small"
+        [placeholder]="'Filtrar ' + f.label.toLowerCase() + '...'"
+        [ngModel]="filtrosValores()[f.key] ?? ''"
+        (ngModelChange)="setFiltro(f.key, $event)"
+        (keyup.enter)="buscar()"
+      />
+      }
+    </div>
+  </ng-template>
+
   <div class="filtros card">
+    <!-- Fila 1: filtros + acciones -->
     @for (f of config()?.filtros || []; track f.key) {
-      <div class="campo">
-        <label>{{ f.label }}</label>
-        @if (f.tipo === 'select') {
-          <p-select
-            [options]="opcionesFiltro(f.key)"
-            [ngModel]="filtrosValores()[f.key] ?? null"
-            (ngModelChange)="setFiltro(f.key, $event)"
-            optionLabel="label"
-            optionValue="value"
-            [showClear]="true"
-            placeholder="Todos"
-            styleClass="w-full"
-            size="small"
-            [appendTo]="'body'" />
-        } @else {
-          <input
-            pInputText
-            type="text"
-            pSize="small"
-            [placeholder]="'Filtrar ' + f.label.toLowerCase() + '...'"
-            [ngModel]="filtrosValores()[f.key] ?? ''"
-            (ngModelChange)="setFiltro(f.key, $event)"
-            (keyup.enter)="buscar()" />
-        }
-      </div>
+    @if (f.fila !== 2) {
+    <ng-container *ngTemplateOutlet="campoFiltro; context: { $implicit: f }" />
     }
-    <div class="campo">
-      <label>Buscar</label>
-      <input pInputText type="text"
-       pSize="small"
-       placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)"
-        (keyup.enter)="buscar()" />
-    </div>
+    }
     <div class="campo acciones">
-      <p-button label="Buscar"
-      size="small"
-      severity="info"
-      variant="text"
-      icon="pi pi-search" size="small" (onClick)="buscar()"
-      [rounded]="true" />
-      <p-button label="Limpiar"
-       [rounded]="true"
-        icon="pi pi-times" severity="secondary" text size="small"
-        (onClick)="limpiarFiltros()" />
+      <p-button
+        label="Buscar"
+        size="small"
+        severity="info"
+        variant="text"
+        icon="pi pi-search"
+        size="small"
+        (onClick)="buscar()"
+        [rounded]="true"
+      />
+      <p-button
+        label="Limpiar"
+        [rounded]="true"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        size="small"
+        (onClick)="limpiarFiltros()"
+      />
     </div>
+    <!-- Fila 2: filtros anchos (ej: Descripción de movcta) -->
+    @for (f of config()?.filtros || []; track f.key) {
+    @if (f.fila === 2) {
+    <ng-container *ngTemplateOutlet="campoFiltro; context: { $implicit: f }" />
+    }
+    }
   </div>
 
   <div class="tabla-responsive">
-  <p-table
-    [value]="filtered()"
-    [loading]="cargando()"
-    [paginator]="true"
-    [rows]="20"
-    [rowsPerPageOptions]="[10, 20, 50]"
-    [tableStyle]="{ 'min-width': '20rem' }"
-    [showCurrentPageReport]="true"
-    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-    size="small">
-
-    <ng-template pTemplate="header">
-      <tr>
-        @for (col of campos(); track col.key) {
-          @if (col.frozen) {
-            <th pFrozenColumn alignFrozen="left">{{ col.label }}</th>
+    <p-table
+      [value]="filtered()"
+      [loading]="cargando()"
+      [paginator]="true"
+      [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50]"
+      [tableStyle]="{ 'min-width': '20rem' }"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      size="small"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          @if (config()?.detalle) {
+          <th style="width: 2.5rem"></th>
+          } @for (col of campos(); track col.key) { @if (col.frozen) {
+          <th pFrozenColumn alignFrozen="left" [class.text-right]="col.tipo === 'numero'">
+            {{ col.label }}
+          </th>
           } @else {
-            <th>{{ col.label }}</th>
-          }
-        }
-        @if (config() && config()!.sinEstado !== true) {
+          <th [class.text-right]="col.tipo === 'numero'">{{ col.label }}</th>
+          } } @if (config() && config()!.sinEstado !== true) {
           <th style="width: 8rem" class="text-center">Estado</th>
-        }
-        @if (config() && !config()!.soloLectura) {
-        <th style="width: 4rem" class="text-center"></th>
-        }
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="body" let-item>
-      <tr [style.cursor]="config() && !config()!.soloLectura ? 'pointer' : 'default'"
-          (click)="config() && !config()!.soloLectura && editar(item[config()!.idKey])">
-        @for (col of campos(); track col.key) {
-          @if (col.frozen) {
-            <td pFrozenColumn alignFrozen="left">{{ formatValor(item, col) }}</td>
-          } @else {
-            <td>{{ formatValor(item, col) }}</td>
+          } @if (config() && !config()!.soloLectura) {
+          <th style="width: 4rem" class="text-center"></th>
           }
-        }
-        @if (config() && config()!.sinEstado !== true) {
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-item>
+        <tr
+          class="mono"
+          [class.fila-expandida]="expandida(item)"
+          [style.cursor]="esClickeable(item) ? 'pointer' : 'default'"
+          (click)="onFilaClick(item)"
+        >
+          @if (config()?.detalle) {
+          <td class="ec-chevron">
+            <i class="pi" [ngClass]="expandida(item) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+          </td>
+          } @for (col of campos(); track col.key) { @if (col.frozen) {
+          <td pFrozenColumn alignFrozen="left" [class.text-right]="col.tipo === 'numero'">
+            {{ formatValor(item, col) }}
+          </td>
+          } @else {
+          <td [class.text-right]="col.tipo === 'numero'">{{ formatValor(item, col) }}</td>
+          } } @if (config() && config()!.sinEstado !== true) {
           <td class="text-center">
             <p-tag [value]="activoLbl(item.sn_activo)" [severity]="activoSev(item.sn_activo)" />
           </td>
-        }
-        @if (config() && !config()!.soloLectura) {
-        <td class="text-center">
-          <p-button
-            icon="pi pi-pencil"
-            size="small"
-            variant="text"
-            [rounded]="true"
-            severity="secondary"
-            (click)="$event.stopPropagation(); config() && editar(item[config()!.idKey])" />
-        </td>
-        }
-      </tr>
-    </ng-template>
+          } @if (config() && !config()!.soloLectura) {
+          <td class="text-center">
+            @if (esProtegido(item)) {
+            <i
+              class="pi pi-lock fila-protegida"
+              pTooltip="Período cerrado — registro protegido (no modificable)"
+              tooltipPosition="left"
+            ></i>
+            } @else {
+            <p-button
+              icon="pi pi-pencil"
+              size="small"
+              variant="text"
+              [rounded]="true"
+              severity="secondary"
+              (click)="$event.stopPropagation(); config() && editar(item[config()!.idKey])"
+            />
+            }
+          </td>
+          }
+        </tr>
 
-    <ng-template pTemplate="empty">
-      <tr>
-        <td colspan="10" class="text-center p-4">No hay registros.</td>
-      </tr>
-    </ng-template>
-  </p-table>
+        <!-- Fila expandida: estado de cuenta (mismo estilo que libro-diario / repdiarios) -->
+        @if (config()?.detalle && expandida(item)) {
+        <tr class="ec-detalle-row">
+          <td [attr.colspan]="colspanTabla()">
+            <div class="ec-detalle">
+              <div class="ec-encabezado mono">
+                <div>Cuenta: {{ ecCuenta(item) }}</div>
+                <div>{{ ecDescripcion(item) }}</div>
+              </div>
+
+              @if (cargandoDetalle(item)) {
+              <div class="ec-cargando">
+                <i class="pi pi-spin pi-spinner"></i> Cargando movimientos...
+              </div>
+              } @else { @let bloques = bloquesMes(item); @for (b of bloques; track b.periodo) {
+              <div class="ec-mes mono">
+                <div class="ec-negrita">{{ b.mes }}</div>
+                <div>Saldo Acum: {{ b.saldoAcum }}</div>
+              </div>
+
+              <table class="ec-detalle-table mono">
+                <thead>
+                  <tr>
+                    @for (col of config()!.detalle!.columnas; track col.key) {
+                    <th [class.text-right]="col.tipo === 'numero' || col.tipo === 'fecha'">
+                      {{ col.label }}
+                    </th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (mov of b.movimientos; track $index) {
+                  <tr>
+                    @for (col of config()!.detalle!.columnas; track col.key) {
+                    <td [class.text-right]="col.tipo === 'numero' || col.tipo === 'fecha'">
+                      @if (col.key === 'nropartida' && mov['partidaId']) {
+                      <button
+                        type="button"
+                        class="partida-link mono"
+                        (click)="$event.stopPropagation(); abrirPartida(mov)"
+                        pTooltip="Ver partida contable"
+                        tooltipPosition="top"
+                      >
+                        {{ formatValor(mov, col) }}
+                      </button>
+                      } @else {
+                      {{ formatValor(mov, col) }}
+                      }
+                    </td>
+                    }
+                  </tr>
+                  }
+                </tbody>
+              </table>
+
+              <div class="ec-pie mono">Movimiento mes: {{ b.movimientoMes }}</div>
+              <div class="ec-pie mono ec-negrita">Saldo actual: {{ b.saldoActual }}</div>
+              <div class="ec-separador"></div>
+              } @if (bloques.length === 0) {
+              <div class="text-center mono">Sin movimientos.</div>
+              }
+
+              <div class="ec-pie mono">Saldo actual: {{ ecSaldoActual(item) }}</div>
+              }
+            </div>
+          </td>
+        </tr>
+        }
+      </ng-template>
+
+      <ng-template pTemplate="empty">
+        <tr>
+          <td colspan="10" class="text-center p-4">No hay registros.</td>
+        </tr>
+      </ng-template>
+    </p-table>
   </div>
 </section>
+
+<!-- Drawer: partida contable (cabecera + líneas)
+     IMPORTANTE: al RAÍZ del template, fuera de <section class="page"> —
+     la animación .page>* (fill: both) deja un transform residual que
+     rompe el position:fixed del panel/máscara del drawer. -->
+<p-drawer
+  [(visible)]="drawerPartida"
+  [header]="'Partida Contable' + (partida() ? ' #' + partida()!.nropartida : '')"
+  [style]="{ width: '45%' }"
+  position="right"
+  (onHide)="cerrarPartida()"
+>
+  @if (partidaCargando()) {
+  <div class="text-center p-4">
+    <i class="pi pi-spin pi-spinner"></i> Cargando partida...
+  </div>
+  } @else if (partida(); as p) {
+  <div class="partida-drawer mono">
+    <div class="partida-cabecera">
+      <div class="partida-campo">
+        <span class="partida-label">Partida</span>
+        <span class="partida-valor">#{{ p.nropartida }}</span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Fecha</span>
+        <span class="partida-valor">{{ p.fecharegistro | date: 'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Período</span>
+        <span class="partida-valor">{{ p.periodo }}/{{ p.anio }}</span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Referencia</span>
+        <span class="partida-valor">{{ p.nroreferencia || '-' }}</span>
+      </div>
+      <div class="partida-campo partida-campo-ancho">
+        <span class="partida-label">Descripción</span>
+        <span class="partida-valor">{{ p.descripcion || '-' }}</span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Contabilizada</span>
+        <span class="partida-valor">
+          <p-tag
+            [value]="p.sn_contabilizada === 'S' ? 'Sí' : 'No'"
+            [severity]="p.sn_contabilizada === 'S' ? 'success' : 'warn'"
+          />
+        </span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Cerrada</span>
+        <span class="partida-valor">
+          <p-tag
+            [value]="p.sn_cerrada === 'S' ? 'Cerrada 🔒' : 'Abierta 🔓'"
+            [severity]="p.sn_cerrada === 'S' ? 'danger' : 'success'"
+          />
+        </span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Anulada</span>
+        <span class="partida-valor">
+          <p-tag
+            [value]="p.sn_anulada === 'S' ? 'Sí' : 'No'"
+            [severity]="p.sn_anulada === 'S' ? 'danger' : 'success'"
+          />
+        </span>
+      </div>
+    </div>
+
+    <table class="partida-lineas">
+      <thead>
+        <tr>
+          <th>Cuenta</th>
+          <th>Descripción</th>
+          <th class="text-right">Debe</th>
+          <th class="text-right">Haber</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (l of partidaLineas(); track l.copdadetId) {
+        <tr>
+          <td>{{ l.ctacontable }}</td>
+          <td>{{ l.descripcion }}</td>
+          <td class="text-right">{{ formatValor(l, colDebe()) }}</td>
+          <td class="text-right">{{ formatValor(l, colHaber()) }}</td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="4" class="text-center">Sin líneas.</td>
+        </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" class="text-right">Totales</td>
+          <td class="text-right">{{ formatNumero(partidaTotales().debito) }}</td>
+          <td class="text-right">{{ formatNumero(partidaTotales().credito) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  }
+</p-drawer>

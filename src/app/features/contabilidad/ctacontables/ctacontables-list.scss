@@ -13,6 +13,13 @@
   padding: 0.15rem 0.5rem;
 }
 
+.lock-cuenta {
+  font-size: 0.72rem;
+  color: var(--c-warning, #f59e0b);
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
 ::ng-deep .p-datatable-tbody > tr > td {
   padding: 0.35rem 0.75rem;
 }

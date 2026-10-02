@@ -10,7 +10,9 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService, MenuItem } from 'primeng/api';
 import { AuthService } from '../../core/services/auth.service';
 import { MenuConfigService } from '../../core/services/menu-config.service';
+import { QuickNavService } from '../../core/services/quick-nav.service';
 import { Drawer, DrawerModule } from 'primeng/drawer';
+import { QuickNav } from '../quick-nav/quick-nav';
 
 @Component({
   selector: 'app-main-layout',
@@ -25,6 +27,7 @@ import { Drawer, DrawerModule } from 'primeng/drawer';
     SplitButtonModule,
     TooltipModule,
     DrawerModule,
+    QuickNav,
   ],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss',
@@ -35,6 +38,8 @@ export class MainLayout {
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
   private menuConfig = inject(MenuConfigService);
+  /** Instancia del servicio de navegación rápida (botón del topbar) */
+  readonly quickNav = inject(QuickNavService);
 
   mobileSidebarOpen = signal(false);
   sidebarHidden = signal(false);

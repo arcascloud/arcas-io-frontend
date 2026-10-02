@@ -191,18 +191,37 @@ export class PlantillaPdaManager implements OnInit {
   }
 
   // ===== BÚSQUEDA DE CUENTAS (autocomplete) =====
+  /** Filtra cuentas de movimiento por código o nombre (excluye las ya usadas en el detalle) */
   buscar(e: AutoCompleteCompleteEvent): void {
     const q = e.query.trim().toLowerCase();
+    const usadas = new Set(this.lineas().map(l => l.ctacontable));
     this.sugerencias.set(
       this.cuentasMovimiento().filter(c =>
-        c.ctacontable.toLowerCase().includes(q) ||
-        c.descripcion.toLowerCase().includes(q)
+        !usadas.has(c.ctacontable) &&
+        (c.ctacontable.toLowerCase().includes(q) ||
+        c.descripcion.toLowerCase().includes(q)),
       ),
     );
   }
 
+  /**
+   * Agrega una línea con la cuenta seleccionada.
+   * REGLA: una cuenta contable solo puede ingresar UNA vez en el detalle de la plantilla.
+   */
   agregar(e: AutoCompleteSelectEvent): void {
     const cuenta = e.value as CtaContable;
+
+    // Una cuenta ya ingresada no puede repetirse en el detalle
+    if (this.lineas().some(l => l.ctacontable === cuenta.ctacontable)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cuenta duplicada',
+        detail: `La cuenta ${cuenta.ctacontable} - ${cuenta.descripcion} ya fue ingresada en el detalle`,
+      });
+      setTimeout(() => this.seleccionada.set(null));
+      return;
+    }
+
     const linea: LineaPlantilla = {
       id: this.siguienteId++,
       nrofila: this.lineas().length + 1,
@@ -234,6 +253,17 @@ export class PlantillaPdaManager implements OnInit {
   guardar(): void {
     if (!this.puedeGuardar()) {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Verifique el formulario y que haya al menos 1 línea' });
+      return;
+    }
+
+    // Auditoría final: ninguna cuenta puede repetirse en el detalle (también lo valida el backend)
+    const duplicadas = this.ctasRepetidas();
+    if (duplicadas.length > 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Cuentas duplicadas',
+        detail: `Cuenta(s) repetida(s) en el detalle: ${duplicadas.join(', ')}`,
+      });
       return;
     }
 
@@ -381,6 +411,23 @@ export class PlantillaPdaManager implements OnInit {
   }
 
   // ===== HELPERS =====
+
+  /** Cuentas contables que aparecen más de una vez en el detalle (debe venir vacío) */
+  ctasRepetidas(): string[] {
+    const vistos = new Set<string>();
+    const repetidas: string[] = [];
+    for (const l of this.lineas()) {
+      const cta = l.ctacontable?.trim();
+      if (!cta) continue;
+      if (vistos.has(cta)) {
+        if (!repetidas.includes(cta)) repetidas.push(cta);
+      } else {
+        vistos.add(cta);
+      }
+    }
+    return repetidas;
+  }
+
   getCuentaNombre(ctacontable: string): string {
     return this.cuentas().find(c => c.ctacontable === ctacontable)?.descripcion ?? '';
   }

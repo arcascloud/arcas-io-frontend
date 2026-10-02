@@ -27,6 +27,9 @@ export class ConsultaFacturaDetalle implements OnInit {
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
 
+  /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
+  partidaId = signal<number | null>(null);
+
   factura = signal<any>(null);
   detalles = signal<any[]>([]);
   pagos = signal<any[]>([]);
@@ -39,6 +42,10 @@ export class ConsultaFacturaDetalle implements OnInit {
   enviando = signal(false);
 
   ngOnInit() {
+    // Partida contable de origen: viaja en la URL al abrir desde copdamae
+    const partida = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partida) && partida > 0) this.partidaId.set(partida);
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.facturaId = Number(id);
@@ -65,6 +72,12 @@ export class ConsultaFacturaDetalle implements OnInit {
   }
 
   volver() {
+    // Si vino de una partida contable, regresa al detalle de esa partida
+    const partida = this.partidaId();
+    if (partida) {
+      this.router.navigate(['/contabilidad/copdamae'], { queryParams: { partidaId: partida } });
+      return;
+    }
     this.router.navigate(['/facturacion/consultas']);
   }
 

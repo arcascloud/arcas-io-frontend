@@ -1,7 +1,8 @@
-import { Component, inject, signal, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, inject, signal, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -9,6 +10,7 @@ import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo } from '../../../core/models/catalogo-parametros.models';
 
@@ -33,7 +35,9 @@ export class CatalogoForm implements OnInit, OnChanges {
   private router = inject(Router);
   private service = inject(CatalogoParametrosService);
   private api = inject(ApiService);
+  private auth = inject(AuthService);
   private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
 
   /** Modo embebido: nombre del catálogo (ej: 'bancos', 'cuentas') */
   @Input() catalogoNombre = '';
@@ -51,6 +55,8 @@ export class CatalogoForm implements OnInit, OnChanges {
   cargando = signal(false);
   guardando = signal(false);
   titulo = signal('');
+  /** Registro protegido (ej: período cerrado) → formulario bloqueado, sin Guardar */
+  protegido = signal(false);
 
   opcionesMap = signal<Record<string, { label: string; value: any }[]>>({});
 
@@ -86,8 +92,15 @@ export class CatalogoForm implements OnInit, OnChanges {
       return;
     }
     this.campos = this.config.campos;
+    this.protegido.set(false);
     this.titulo.set(this.esNuevo(id) ? `Nuevo ${this.config.titulo.slice(0, -1)}` : `Editar ${this.config.titulo.slice(0, -1)}`);
     this.buildForm();
+
+    // Catálogo protegido: sn_abierto nunca se toca desde aquí
+    // (cerrar un período es exclusivo de Cierre Contable, que genera la partida)
+    if (this.config.protegerCerrados && this.form.contains('sn_abierto')) {
+      this.form.get('sn_abierto')?.disable();
+    }
     this.cargarOpciones();
 
     if (!this.esNuevo(id)) {
@@ -100,6 +113,12 @@ export class CatalogoForm implements OnInit, OnChanges {
           for (const c of this.campos) patch[c.key] = item?.[c.key];
           if (!this.config.sinEstado) patch['sn_activo'] = item?.sn_activo === 'S' ? 'S' : 'N';
           this.form.patchValue(patch);
+
+          // Registro protegido (ej: período cerrado sn_abierto='N') → bloqueo total
+          if (this.config.protegerCerrados && item?.['sn_abierto'] === 'N') {
+            this.protegido.set(true);
+            this.form.disable();
+          }
           this.cargando.set(false);
         },
         error: () => {
@@ -120,7 +139,38 @@ export class CatalogoForm implements OnInit, OnChanges {
         }
       }
       if (Object.keys(patch).length) this.form.patchValue(patch);
+
+      // Al crear: campos 'fecha' vacíos se instancian con tempresas.fechasistema
+      this.precargarFechaSistema();
     }
+  }
+
+  /**
+   * Solo al crear: prellena los campos tipo 'fecha' que estén vacíos
+   * con la fecha del sistema de la empresa (tempresas.fechasistema).
+   * En edición nunca se toca (conserva la fecha guardada).
+   */
+  private precargarFechaSistema() {
+    const camposFecha = this.campos.filter((c) => c.tipo === 'fecha');
+    if (!camposFecha.length) return;
+    const empresaId = this.auth.currentUser()?.empresaId;
+    if (!empresaId) return;
+    this.api
+      .get<{ fechasistema?: string }>(`/companies/${empresaId}`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (emp) => {
+          if (!emp?.fechasistema) return;
+          const d = new Date(emp.fechasistema);
+          if (isNaN(d.getTime())) return;
+          const patch: Record<string, any> = {};
+          for (const c of camposFecha) {
+            // Solo si está vacío (un valor por queryParams tiene prioridad)
+            if (!this.form.get(c.key)?.value) patch[c.key] = d;
+          }
+          if (Object.keys(patch).length) this.form.patchValue(patch);
+        },
+      });
   }
 
   private esNuevo(id: string): boolean {
@@ -166,11 +216,40 @@ export class CatalogoForm implements OnInit, OnChanges {
     }
     if (!this.config.sinEstado) group['sn_activo'] = ['S'];
     this.form = this.fb.group(group);
+
+    // Validaciones cruzadas declarativas (ej: precioventa >= preciocompra)
+    const form = this.form;
+    for (const c of this.campos) {
+      if (!c.minCampo) continue;
+      const ctrl = form.get(c.key);
+      const refCtrl = form.get(c.minCampo);
+      if (!ctrl || !refCtrl) continue;
+      ctrl.addValidators((control) => {
+        const ref = refCtrl.value;
+        if (ref == null || ref === '') return null;
+        return Number(control.value) < Number(ref) ? { minCampo: c.minCampo } : null;
+      });
+      ctrl.updateValueAndValidity({ emitEvent: false });
+      // Revalidar cuando cambia el campo de referencia
+      refCtrl.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+        ctrl.updateValueAndValidity({ emitEvent: false });
+      });
+    }
   }
 
   invalid(ctrl: string): boolean {
     const c = this.form.get(ctrl);
     return !!c && c.invalid && (c.dirty || c.touched);
+  }
+
+  /** Mensaje del error del campo: minCampo tiene texto propio, si no es "obligatorio" */
+  mensajeError(c: CampoCatalogo): string {
+    const err = this.form.get(c.key)?.errors;
+    if (err?.['minCampo']) {
+      const ref = this.campos.find((x) => x.key === err['minCampo']);
+      return `${c.label} no puede ser menor al campo ${ref?.label ?? err['minCampo']}`;
+    }
+    return `${c.label} es obligatorio`;
   }
 
   volver() {
@@ -183,8 +262,21 @@ export class CatalogoForm implements OnInit, OnChanges {
   }
 
   guardar() {
+    if (this.protegido()) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Registro protegido',
+        detail: this.config?.proteccionMensaje || 'Este registro no es modificable',
+      });
+      return;
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Revise los campos marcados en rojo',
+      });
       return;
     }
 

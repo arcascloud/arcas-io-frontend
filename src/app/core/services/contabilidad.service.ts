@@ -217,6 +217,11 @@ export class ContabilidadService {
     return this.api.post<any>(`${this.R}/cierrectable/realizar`, request);
   }
 
+  /** Reversión de cierre: deshace el cierre y reabre el período contable */
+  revertirCierre(request: CierreContableRequest): Observable<any> {
+    return this.api.post<any>(`${this.R}/cierrectable/revertir`, request);
+  }
+
   // ========== Detalle de Cierre Contable ==========
 
   getCierresDet(cocierremaeId?: number): Observable<CierreDet[]> {

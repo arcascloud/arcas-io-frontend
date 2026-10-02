@@ -49,9 +49,6 @@
   font-size: 1rem;
   font-weight: 700;
   color: var(--c-text);
-
-  &.debe { color: var(--c-primary); }
-  &.haber { color: #ef4444; }
 }
 
 // ── Tabla ──
@@ -128,12 +125,10 @@
 
 // ── Montos ──
 .debe {
-  color: var(--c-primary);
   font-weight: 600;
 }
 
 .haber {
-  color: #ef4444;
   font-weight: 600;
 }
 

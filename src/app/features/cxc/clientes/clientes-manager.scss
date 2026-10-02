@@ -75,6 +75,14 @@
   right: 0.25rem;
 }
 
+
+.tabla-card {
+  padding: 0.05rem;
+  overflow: hidden;
+  border-radius: 12px;
+
+}
+
 // ===== Empty states =====
 
 .empty-state {
@@ -167,13 +175,19 @@
   }
 }
 
+.tab-subtitulo {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+}
+
 // ===== Estado de cuenta =====
 
 .detalle-estado-cuenta {
   .table {
     width: 100%;
 
-    th, td {
+    th,
+    td {
       padding: 0.5rem 0.75rem;
     }
 
@@ -191,6 +205,22 @@
       width: 150px;
       text-align: right;
       font-variant-numeric: tabular-nums;
+    }
+
+    // Columnas del listado de información adicional
+    .col-tipo {
+      width: 120px;
+    }
+
+    .col-estado {
+      width: 110px;
+      text-align: center;
+    }
+
+    .col-acciones {
+      width: 110px;
+      text-align: right;
+      white-space: nowrap;
     }
   }
 }
@@ -320,6 +350,165 @@
   border-radius: 8px;
 }
 
+// ===== Inf. Adicional: 2 columnas (formulario | listado) =====
+
+.info-adicional-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.info-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.info-panel-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-panel-list {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.info-form-actions {
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0 0;
+}
+
+.info-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  .form-col-title {
+    margin: 0;
+    flex: 1;
+  }
+}
+
+.info-list-total {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  background: var(--c-bg);
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+}
+
+// ===== Cartera contable por cliente =====
+
+.info-panel-form h4 {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.carteras-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+}
+
+.carteras-sin-opciones {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+// Bloque de solo-lectura (columna derecha del tab Inf. Adicional)
+
+.carteras-asignadas {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--c-border);
+}
+
+// ===== Tablas estándar p-table (tab Inf. Adicional) =====
+
+.info-adicional-grid ::ng-deep .p-datatable {
+  .p-datatable-thead>tr>th {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--c-text-muted);
+    background: var(--c-bg);
+    border-color: var(--c-border);
+    white-space: nowrap;
+  }
+
+  .p-datatable-tbody>tr>td {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.82rem;
+    color: var(--c-text);
+    border-color: var(--c-border);
+    vertical-align: middle;
+  }
+
+  .p-datatable-tbody>tr:hover>td {
+    background: color-mix(in srgb, var(--c-primary) 6%, transparent);
+  }
+
+  .p-datatable-emptymessage td {
+    color: var(--c-text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 0.75rem;
+  }
+
+  // Columnas compartidas por los bloques del tab
+  .col-tipo {
+    width: 6.5rem;
+  }
+
+  .col-estado {
+    width: 5rem;
+    text-align: center;
+  }
+
+  .col-acciones {
+    width: 5.5rem;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .col-cta {
+    width: 5.5rem;
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+  }
+
+  .celda-cartera {
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .celda-cta-desc {
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+    line-height: 1.3;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
 // ===== Lista de clientes (fichas) =====
 
 .clientes-lista {
@@ -442,6 +631,10 @@
 @media (max-width: 768px) {
   .split-layout {
     flex-direction: column;
+  }
+
+  .info-adicional-grid {
+    grid-template-columns: 1fr;
   }
 
   .left-column {

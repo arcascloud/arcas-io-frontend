@@ -6,6 +6,16 @@
       <h1 class="page-title">Historial de Movimientos</h1>
       <p class="page-subtitle">Consulta de movimientos bancarios</p>
     </div>
+    @if (partidaId()) {
+      <div class="origen-vuelta">
+        <span class="origen-vuelta__texto">
+          <i class="pi pi-file-edit"></i>
+          Abierto desde una partida contable
+        </span>
+        <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+          variant="text" [rounded]="true" (onClick)="volverAPartida()" />
+      </div>
+    }
   </header>
 
   <!-- ═══ Filtros ═══ -->
@@ -15,7 +25,8 @@
         <div class="p-col-12 p-col-6">
           <div class="campo">
             <label>Cuenta Bancaria</label>
-            <p-select [options]="cuentas()" [(ngModel)]="cuentaFiltro"
+            <p-select [options]="cuentas()" [ngModel]="cuentaFiltro()"
+              (ngModelChange)="cuentaFiltro.set($event)"
               optionValue="bcoctasId" placeholder="Todas las cuentas"
               pSize="small" styleClass="w-full" appendTo="body" [showClear]="true"
               (onChange)="onFiltroChange()">
@@ -35,7 +46,8 @@
   <!-- ═══ Tabla de movimientos ═══ -->
   <div class="card mb-3">
     <p-table [value]="movimientos()" [loading]="cargando()" size="small"
-      [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15, 25, 50]"
+      [paginator]="true" [rows]="15" [first]="primeraFila()" (onPage)="primeraFila.set($event.first)"
+      [rowsPerPageOptions]="[15, 25, 50]"
       [showCurrentPageReport]="true"
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
       <ng-template pTemplate="header">
@@ -50,7 +62,8 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-mov>
-        <tr [class.row-anulada]="mov.sn_doc_anulado === 'S'">
+        <tr [class.row-anulada]="mov.sn_doc_anulado === 'S'"
+          [class.row-origen]="movOrigenId() === mov.bcomovimientosId">
           <td>{{ formatFecha(mov.fecharegistro) }}</td>
           <td><p-tag [value]="tipoMovLabel(mov.tipomov)" [severity]="tipoMovSeverity(mov.tipomov)" styleClass="tag-sm" /></td>
           <td><p-tag [value]="dcLabel(mov.dc_debitocredito)" [severity]="dcSeverity(mov.dc_debitocredito)" styleClass="tag-sm" /></td>

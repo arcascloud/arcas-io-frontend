@@ -1,0 +1,108 @@
+<p-dialog
+  [visible]="nav.abierto()"
+  (visibleChange)="nav.abierto.set($event)"
+  header="Navegación rápida"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [focusOnShow]="true"
+  [closeOnEscape]="true"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  styleClass="quick-nav-dialog"
+  (onShow)="onShow()"
+  (onHide)="onHide()"
+>
+  <div class="quick-nav-body">
+    <div class="quick-nav-tabs">
+      <p-selectButton
+        [options]="tabs"
+        [ngModel]="pestana()"
+        (ngModelChange)="cambiarPestana($event)"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="quick-nav-tabgroup"
+      />
+      <span class="quick-nav-hint">{{ hintPestana }}</span>
+    </div>
+
+    <p-autoComplete
+      [suggestions]="sugerencias()"
+      [minLength]="0"
+      [delay]="250"
+      [showClear]="true"
+      [autoHighlight]="true"
+      [completeOnFocus]="true"
+      [forceSelection]="false"
+      [appendTo]="'body'"
+      optionLabel="label"
+      placeholder="Buscar pantalla o dato…"
+      styleClass="quick-nav-input"
+      inputStyleClass="quick-nav-input-el"
+      panelStyleClass="quick-nav-panel"
+      (completeMethod)="buscar($event.query)"
+      (onSelect)="onSelect($event.value)"
+      (onKeyUp)="onKeyup($event)"
+      (onClear)="buscar('')"
+    >
+      <ng-template let-item pTemplate="item">
+        <div class="quick-nav-item">
+          <i [class]="item.icono"></i>
+          <div class="quick-nav-item-text">
+            <span class="quick-nav-item-label">{{ item.label }}</span>
+            @if (item.detalle) {
+              <span class="quick-nav-item-detalle">{{ item.detalle }}</span>
+            }
+          </div>
+          <span class="quick-nav-item-tipo">{{ item.tipo }}</span>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="empty">
+        <div class="quick-nav-empty">
+          @if (cargando()) {
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>Buscando…</span>
+          } @else {
+            <i class="pi pi-search"></i>
+            <span>
+              @if (pestana() === 'datos') {
+                Sin resultados. Use 2 o más caracteres.
+              } @else {
+                Sin coincidencias.
+              }
+            </span>
+          }
+        </div>
+      </ng-template>
+    </p-autoComplete>
+
+    <div class="quick-nav-footer">
+      <div class="quick-nav-keys">
+        <span class="kbd">Enter</span> ir
+        <span class="kbd-sep">·</span>
+        <span class="kbd">Esc</span> cerrar
+        <span class="kbd-sep">·</span>
+        <span class="kbd">Ctrl+Alt+1</span> abrir / cerrar
+      </div>
+      <div class="quick-nav-actions">
+        <p-button
+          size="small"
+          label="Cerrar"
+          rounded
+          variant="text"
+          severity="secondary"
+          (onClick)="nav.cerrar()"
+        />
+        <p-button
+          size="small"
+          label="Ir"
+          icon="pi pi-arrow-right"
+          [rounded]="true"
+          [raised]="true"
+          severity="success"
+          (onClick)="ir()"
+        />
+      </div>
+    </div>
+  </div>
+</p-dialog>

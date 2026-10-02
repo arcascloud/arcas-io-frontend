@@ -81,11 +81,48 @@ export class LibroMayorComponent implements OnInit {
     });
   });
 
-  // Totales — siempre en positivo (regla contable: nunca saldos negativos)
-  totalDebe = computed(() => this.datosFiltrados().reduce((sum, r) => sum + Math.abs(Number(r.debe) || 0), 0));
-  totalHaber = computed(() => this.datosFiltrados().reduce((sum, r) => sum + Math.abs(Number(r.haber) || 0), 0));
-  totalSaldoAcum = computed(() => this.datosFiltrados().reduce((sum, r) => sum + Math.abs(Number(r.saldoAcum) || 0), 0));
-  totalSaldo = computed(() => this.datosFiltrados().reduce((sum, r) => sum + Math.abs(Number(r.saldo) || 0), 0));
+  /**
+   * Filas "finales" del conjunto filtrado: no tienen hijas visibles.
+   * Evita duplicar montos, ya que las cuentas padre ya agregan a sus hijas
+   * (sin esto, el total salía exactamente doble).
+   */
+  private filasFinalesDe(filas: LibroMayorItem[]): LibroMayorItem[] {
+    const conHijas = new Set(filas.map(f => f.padre).filter(p => p != null));
+    return filas.filter(f => !conHijas.has(f.ctacontable));
+  }
+
+  // Totales — solo cuentas finales (jerarquía sin duplicar)
+  finales = computed(() => this.filasFinalesDe(this.datosFiltrados()));
+  totalDebe = computed(() => this.finales().reduce((sum, r) => sum + Math.abs(Number(r.debe) || 0), 0));
+  totalHaber = computed(() => this.finales().reduce((sum, r) => sum + Math.abs(Number(r.haber) || 0), 0));
+
+  /** Acumulado neto: cuentas deudoras (D) menos acreedoras (C). */
+  acumFirmado = computed(() =>
+    this.finales().reduce((sum, r) => sum + (r.naturaleza === 'C' ? -1 : 1) * Math.abs(Number(r.saldoAcum) || 0), 0));
+
+  /** Saldo acumulado del total (siempre positivo). */
+  totalSaldoAcum = computed(() => Math.abs(this.acumFirmado()));
+
+  /**
+   * Naturaleza del total: deudor si el acumulado firmado es deudor;
+   * si no hay acumulado (o cancela), manda el movimiento neto del período.
+   */
+  esDeudor = computed(() => {
+    const acum = this.acumFirmado();
+    return acum !== 0 ? acum > 0 : this.totalDebe() >= this.totalHaber();
+  });
+
+  /**
+   * Saldo final del total — regla contable:
+   * - Deudor:  acumulado + debe − haber
+   * - Acreedor: acumulado + haber − debe
+   */
+  totalSaldo = computed(() => {
+    const acum = Math.abs(this.acumFirmado());
+    return this.esDeudor()
+      ? acum + this.totalDebe() - this.totalHaber()
+      : acum + this.totalHaber() - this.totalDebe();
+  });
 
   ngOnInit(): void {
     const empresaId = this.auth.currentUser()?.empresaId;

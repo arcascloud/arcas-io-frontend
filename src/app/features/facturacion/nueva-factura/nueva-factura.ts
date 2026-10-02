@@ -21,6 +21,7 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { FooterHelper } from '../../helpers/footer';
 import { Producto } from '../../../core/models/inventario.models';
 import { AuthService } from '../../../core/services/auth.service';
+import { QuickNavService } from '../../../core/services/quick-nav.service';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { DividerModule } from 'primeng/divider';
@@ -90,6 +91,7 @@ export class NuevaFactura implements OnInit {
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
+  private quickNav = inject(QuickNavService);
 
   ref: DynamicDialogRef | undefined;
 
@@ -486,6 +488,10 @@ export class NuevaFactura implements OnInit {
     const tag = el?.tagName?.toLowerCase();
     if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
     if (this.dialogProductos() || this.dialogAtajos()) return;
+    // Ctrl+Alt+1 = navegación rápida global (QuickNav) → no capturar combos con Ctrl
+    if (event.ctrlKey || event.metaKey) return;
+    // Cuadro de navegación rápido abierto → Escape lo cierra él, no resetear la factura
+    if (this.quickNav.abierto()) return;
 
     if (event.key === 'Escape') {
       event.preventDefault();

@@ -112,6 +112,64 @@ Si necesitas un parámetro nuevo, **pregunta al usuario** y esperá confirmació
 - ✅ **`INSERT`/`UPDATE`/`DELETE`** en tablas existentes siguen las reglas de cada módulo
 
 **Razón**: La estructura de tablas del ERP es criticisima para la integridad referencial. Un CREATE TABLE o ALTER TABLE incorrecto puede romper migraciones, fixtures, reportes y otros módulos dependientes.
+
+---
+
+## 📐 ESTÁNDAR DE SALDOS ACUMULADOS EN CONTABILIDAD (OBLIGATORIO · 30/09/2026)
+
+Regla normativa y **definitiva** para `coctamov` (movcta), `coctasaldos` (saldoscta), `cocierredet` (espejo de cierre) y Libro Mayor. Toda lógica nueva o reconstrucción **debe** cumplir estos incisos. Fuente de secuencia de acumulados = **`cocierredet`** (mes anterior al período vigente).
+
+### 1.- `coctamov` (movcta) — registro de movimientos de cuentas
+
+Sirve para registrar movimientos de cuentas **existentes o nuevas**.
+
+| Campo | Regla de poblado |
+|-------|------------------|
+| **`sacum`** | = `saldo` registrado en **`cocierredet`** del mes anterior (el que precede al período vigente/abierto).<br>**`sacum = 0` SOLO SI** no hubieran movimientos en el mes que precede al período vigente (o no existe fila en `cocierredet` para ese mes). |
+| **`debe`** | = **sumatoria** de todos los movimientos del **mes abierto**. |
+| **`haber`** = **sumatoria** de todos los movimientos del **mes abierto**. |
+| **`saldo`** | = **`sacum + (debe - haber)`** |
+
+### 2.- `coctasaldos` (saldoscta) — tabla RESUMEN de saldos finales
+
+Es **solo tabla de resumen**: guarda los **saldos finales** de cuentas ya existentes o nuevas. No es fuente de secuencia.
+
+**Cálculo del saldo final del período:**
+
+```
+saldo final = saldo acum. (cocierredet del período anterior) + (debe - haber)
+```
+
+**`tiposaldo` (D/C)** — casos según el lado del acumulado y la dirección del movimiento del mes:
+
+| # | Caso | tiposaldo |
+|---|------|-----------|
+| 1 | `sacum(D)` + `debe > haber` | **D** |
+| 2 | `sacum(D)` + `debe < haber` | **C** |
+| 3 | `sacum(C)` + `haber > debe` | **C** |
+| 4 | `sacum(C)` + `haber < debe` | **D** |
+
+> **Regla computacional**: `tiposaldo = D si saldo final ≥ 0; C si saldo final < 0`.
+> Los casos 1 y 3 se cumplen **siempre**. Los casos 2 y 4 se cumplen cuando el movimiento del mes **invierte** el signo del acumulado; si el movimiento es menor que el acumulado, el saldo **conserva su lado** (la etiqueta D/C refleja siempre el signo real del saldo final).
+
+> ⚠️ **INVARIANTE OBLIGATORIO**: **EL SALDO FINAL DE `COCTASALDOS` Y `COCTAMOV` DEBE CUADRAR**, lo mismo que su **saldo acumulado**. Si difieren, hay un bug — no se arregla con datos.
+
+### 3.- Libro Mayor
+
+- El **saldo acumulado** se pobla desde **`cocierredet`** (acumulado del período anterior), con las mismas reglas `tiposaldo` del inciso 2.
+- Se debe **mantener la integridad de la MAYORIZACIÓN ESCALONADA siempre**: cada cuenta padre = **Σ de sus hijos**, resuelta de nivel máx → 1. Nunca se suma el acumulado previo de un padre por separado (ya viene contenido en sus hijos → doble conteo).
+
+### 4.- Invariantes a verificar en cualquier reconstrucción/cierre
+
+| ID | Invariante |
+|----|-----------|
+| I1 | `coctamov.saldo` == `coctasaldos[mes]` para toda cuenta/período |
+| I2 | `coctamov.saldo` == `sacum + (debe - haber)` |
+| I3 | `sacum(P)` == `cocierredet[P-1].saldo` (0 si no hay fila) |
+| I4 | `SUM(debe)` == `SUM(haber)` por partida y global |
+| I5 | Cuenta padre == Σ hijos (mayorización escalonada) |
+| I6 | `cocierredet` guarda **todas** las cuentas del catálogo, ordenadas `ctacontable` ASC, incluso en saldo 0 |
+
 ## Quick Reference �?Backend Operations
 
 ### Common backend operations
@@ -1402,3 +1460,218 @@ this.confirmationService.confirm({
 ### Pendiente
 - Verificar conciliación bancaria end-to-end en browser (upload CSV → matching → guardar)
 - Agregar menú de Conciliación en `tusuariomnuitem` para acceso desde sidebar
+
+---
+
+## Bitácora – 28/09/2026
+
+### Completado
+
+#### Protección de cuentas contables (`sn_operable` + historial de cierre)
+- **Reglas** (16/16 pruebas E2E):
+  - **R1**: Cuenta con historial (`coctamov`/`coctasaldos`/`copdadet`/`cocierredet`) + rol fuera de `ROLES_CONTABILIDAD` → 403 en cualquier campo incl. eliminar
+  - **R2**: Operable 'S' + historial → cambiar a 'N' (convertir a Mayor) = 403 absoluto para todos
+  - **R3**: Habilitar `sn_operable='S'` → solo roles privilegiados
+- **Fuente de roles**: tablas `ttipo_rol` / `tusuarios_rol` (usuario logueado → `auth.service.ts` devuelve `roles: string[]`)
+- **Constante**: `ROLES_CONTABILIDAD = ['admin', 'supervisor', 'contador']` — en `Backend/src/modules/users/roles.service.ts` y `Frontend/src/app/core/services/auth.service.ts` (cambiar en ambos lugares)
+- **Backend**: `roles.service.ts` (nuevo), `contabilidad.service.ts` (`validarProteccionCuenta`, `sn_protegida` en queries), protección en `removeCtacontable` con `@CurrentUser()`
+- **Frontend**: `ctacontable-form` (banner + bloqueo de campos), `ctacontables-list` (candado 🔒 en columna Diario/Mayor + Eliminar deshabilitado)
+- **Historial real empresa 2**: 9/127 cuentas protegidas (`cocierredet` vacía)
+
+#### CRUD de Roles de Usuario (`/usuarios/usuario-roles`)
+- **Tablas**: `tusuarios_rol` (rol_id PK, usuarioId, rol, empresaId, UNIQUE `usuarioId_rol`) y catálogo `ttipo_rol` (15 roles) — **solo lectura** para el catálogo
+- **Backend** (`users/`):
+  - `dto/usuario-rol.dto.ts` — `CreateUsuarioRolDto {usuarioId, rol, empresaId}` / `UpdateUsuarioRolDto {usuarioId?, rol?}`
+  - `users.service.ts` — `findAllRoles` (enriquecido con nombre/login), `findRole`, `findAllTiposRol` (incluye globales `empresaId NULL`), `createRole`, `updateRole` (setea `usuarioUpdated`/`fechaUpdate` — NO usa `updateEntity` porque esa clave es `fechaUpdated`), `removeRole` (hard delete), `validarRole` (404 usuario / 400 rol fuera de catálogo / 409 duplicado)
+  - `users.controller.ts` — `GET/POST /users/roles`, `GET /users/roles/tipos`, `GET/PUT/DELETE /users/roles/:id` (antes de rutas `:usuario` del final)
+- **Frontend**:
+  - `core/services/usuario-roles.service.ts` (path `/users/roles`)
+  - `core/models/usuario.models.ts` — `UsuarioRol`, `TipoRol`
+  - `features/usuarios/usuario-roles/` — lista (tabla paginada, filtro, tags por severidad) + form (selects de usuario/rol; usuario deshabilitado en edición)
+  - Rutas: montadas en `configuracion.routes.ts` → `/configuracion/usuarios/usuario-roles` (+`/nuevo`, `/editar/:id`); **`usuarios.routes.ts` NO está importado en `app.routes.ts` (código muerto, no agregar rutas ahí)**
+- **Prueba E2E 16/16 OK** (`test-roles-crud.js`): CRUD completo, 409 duplicado, 400 rol inexistente, 404 usuario inexistente; baseline de 3 filas intacta tras la prueba
+- **Gotcha**: el frontend inyecta `empresaId` en el body vía `ApiService.post` — las pruebas con curl deben mandarlo explícito o el DTO rechaza con 400
+- Menú de Usuarios ya incluido en `tusuariomnuitem` por aprobación del usuario
+
+#### Protección de períodos contables (`coperiodoctable` + `cocierremae`/`cocierredet`) — E2E 20/20 OK
+- **Reglas aprobadas** ("paquete completo"):
+  - **P1**: Período cerrado (`sn_abierto='N'`) = inmutable para siempre → PUT/DELETE 403 con mensaje "no es modificable ni puede reabrirse bajo ninguna circunstancia"
+  - **P2**: Período con otro cerrado posterior también está protegido (previos/antecesores) → 403
+  - **P3**: Cerrar un período SOLO desde `/contabilidad/cierre-contable` (genera partida): POST cerrado → 403; PUT `sn_abierto:'N'` desde catálogo → 400 "use Cierre Contable"
+  - **P4**: Cierre secuencial: `realizarCierre` valida tras "período abierto" que no existan meses/años anteriores abiertos → 400 "primero deben cerrarse los períodos anteriores abiertos: 9/2026"; validación replicada en `cierre-contable.ts` (cliente) con lista de pendientes
+  - **P5**: `cocierremae`/`cocierredet` = solo lectura absoluta: create/update/remove → 403 (throw inmediato, sin findOne → cualquier id también da 403)
+  - **P6**: DELETE de período con cierre registrado → 403 "tiene cierre contable registrado" (evita huérfanos en historial)
+- **Backend**: `contabilidad.service.ts` — helper `explicarProteccionPeriodo()`, reglas en `create/update/removePeriodoctable`, cierres mae+det bloqueados, guard de cierre huérfano en `removePeriodoctable`; `contabilidad-logica.service.ts` — paso "1b. CIERRE SECUENCIAL" en `realizarCierre`
+- **Backend — fix crítico**: `removePeriodoctable` usaba `softDelete()` genérico pero **`coperiodoctable` no tiene columna `sn_activo`** → era un no-op silencioso (fila seguía apareciendo). Cambiado a **hard delete** (sin FKs hacia `periodoscontableId`)
+- **Frontend**:
+  - `catalogo-parametros.models.ts` — flags `protegerCerrados`/`proteccionMensaje` en `CatalogoConfig`; `periodoctable` (protegido), `cierrectable`/`cierredet` (`soloLectura: true`)
+  - `catalogo-generico.ts/html/scss` — `esProtegido(item)`: filas cerradas muestran candado `pi-lock` con tooltip (sin click/editar)
+  - `catalogo-form.ts/html/scss` — signal `protegido`: bloqueo total (`form.disable()` + ocultar Guardar + banner `mensaje-proteccion`); control `sn_abierto` deshabilitado siempre en catálogos protegidos (getRawValue lo omite)
+  - `cierre-contable.ts` — validación secuencial previa al confirm; `cierre-contable.html` — candado verde en períodos cerrados
+- **Datos reales empresa 2**: meses 1–8/2026 cerrados, 9/2026 abierto (con cierre "prueba" registrado en `cocierremae`); estado intacto tras las 20 pruebas
+- **Test**: `C:\Users\ALLANR~1\AppData\Local\Temp\opencode\test-periodos-protegidos.js` (20/20)
+
+### Pendiente
+- Verificar en browser: protección de cuentas, CRUD de roles, períodos (`/contabilidad/periodoctable`, `/contabilidad/cierre-contable`) y candidato a menú de Conciliación Bancaria
+
+---
+
+## Bitácora – 29/09/2026
+
+### Completado
+
+#### Estado de Cuenta (`/contabilidad/saldoscta`) — solo partidas vigentes y contabilizadas
+- **Endpoint** `findSaldosCtaDetalle` (`contabilidad.service.ts`) — criterio ACTUAL (29/09/2026): **doble bandera `sn_anulada='N'` + `sn_contabilizada='S'`**; FAC-19 aparece una sola vez (las anuladas duplicaban 43 documentos)
+- Agrupación por `nropartida` con `MIN(fecharegistro)` — **`nropartida` NO es único** (secuencia por `(anio, periodo)`)
+- **`coctasaldos` reparado**: 12 meses × 8 cuentas recalculados desde `copdadet` activas; 6 celdas de septiembre corregidas (Ventas -52,430→-104,540; Caja -121,327.73→-61,412.05; Costo 31,394→61,504; ISV -7,249.27→-15,064.95; Mercadería 1,219,423→1,189,313; 4-3-10-001 5,240→5,250); **8/8 cuadran**; `saldoanterior` intacto; suma meses Ventas = neto detalle ✓
+
+#### Flags `sn_contabilizada` / `sn_cerrada` en partidas (backend + UI) — E2E 13/13 OK
+- **DB**: columnas `enum('S','N') NOT NULL DEFAULT 'N'` **ya existían** en `copdamae` y `copdadet` (sin DDL nuevo)
+- **Entidades + DTOs**: agregados a `copdamae.entity.ts`, `copdadet.entity.ts` y a `CreateCopdamaeDto`, `UpdateCopdamaeDto`, `CreateCopdadetDto`, `UpdateCopdadetDto` (`@IsEnum(['S','N']) @IsOptional()`); con `whitelist:true` los campos NO declarados en DTO se descartan silenciosamente
+- **Ciclo de vida** (`contabilidad-logica.service.ts`):
+  - `contabilizarPartida` → mae+det `sn_contabilizada='S'`
+  - `realizarCierre` → partida de cierre `S` + **bulk `sn_cerrada='S'`** mae+det (UPDATE por empresa/anio/periodo + subquery para det) tras cerrar período (step 12)
+  - `descontabilizarFactura` y reconstrucción Fase 0 (`updMae`/`updDet`) → `sn_contabilizada='N'`
+- **Guards** (`contabilidad.service.ts`): `exigirPartidaModificable(ref, etiqueta, accion)` → **403** si `sn_cerrada='S'` **o** el período está cerrado en `coperiodoctable` (fallback); aplicado en `create/update/remove` de `copdamae` y `copdadet`
+- **Invariantes en remove**: `removeCopdamae` → mae `N/N` + **cascada a líneas** (UPDATE copdadet por partidaId); `removeCopdadet` → línea `N/N`
+- **Backfill** (snapshot previo: `Temp\opencode\snapshot-flags-partidas.json`): `sn_cerrada='S'` en partidas de períodos cerrados; `sn_contabilizada` normalizado a **estado actual** (decisión usuario: activa='S', inactiva='N' — 90 filas inactivas traían el valor invertido de la DB); final: mae 153 → S/S/S:33, S/S/N:30, N/N/S:34, N/N/N:56; det 499 coherente
+- **Tests**: `test-flags-e2e.js` **13/13** — 403 en partida cerrada (mae/det, crear/editar/eliminar), 200 en abierta, contabilizar→S/S/N, remove→cascada N/N, reversa exacta de `coctamov`/`coctasaldos`, cleanup completo (partida 155 eliminada, residuos 0/0, conteos 153/499)
+- **Frontend UI** (`/contabilidad/copdamae` → `copdamae-manager`):
+  - `contabilidad.models.ts` — `CopdaMae` + `sn_contabilizada`/`sn_cerrada` (el GET ya los devolvía)
+  - **Detalle (vista "ver")**: tags "Contabilizada: Sí/No" y "Cerrada: Cerrada 🔒 / Abierta 🔓"; botones Editar/Eliminar `[disabled]` con tooltip condicional
+  - **Lista**: tag "Cerrada" con `pi pi-lock` + tooltip en cabecera, tag "Contabilizada"/"No contabilizada" junto a Auxiliar, borde izquierdo rojo (`.partida-cerrada`); botones Editar/Eliminar deshabilitados
+  - **Guards de UX** en `editarPartida`/`eliminarPartida`: toast warn "Partida cerrada" antes de intentar (el 403 del backend sigue siendo la autoridad)
+  - **Bug fix**: la lista usaba `track partida.copdamaeId` y `partidaSeleccionada()?.copdamaeId` — el PK es `partidaId` → `undefined === undefined` resaltaba TODAS las filas; corregido a `partidaId`
+- **Gotchas**:
+  - `PUT/DELETE copdamae/:id` y `copdadet/:id` requieren **`?empresaId=2` como query param** (no en body)
+  - `mysql2` `affectedRows` vs `affectedRows` del UPDATE con el mismo valor → usar SELECT previo para confirmar cambio
+  - `NOW()` y paréntesis rompen el inline `node -e` de PowerShell → scripts `.js` en archivo
+  - Backend reiniciado con `cmd /c ... > backend-out.log 2> backend-error.log` vía `Invoke-CimMethod Win32_Process.Create`
+
+#### Cálculo de saldos de cuentas (`POST /contabilidad/saldoscta/calcular`)
+- **Contexto**: el usuario aportó `sp_calcular_saldos_cuenta(anio, periodo, empresaId, usuarioCreated)` con indicación "o lo invocas o lo creas en backend" → **decisión: versión backend** (el proyecto no usa procedures y `synchronize:false` dejaría la procedure fuera de versionado)
+- **La procedure fue creada en la BD y ejecutada** (hoy 20:57) — dañó `septiembre` en las 9 filas de `coctasaldos` (guardó `ABS(total año)` en vez del neto del período 9) e insertó `1-1-20-3-001` con signo invertido; el nuevo endpoint la reparó (8 filas / 8 celdas)
+- **Regla de cálculo de saldos (definida por el usuario, 29/09/2026)**: **doble bandera `sn_anulada='N'` + `sn_contabilizada='S'`** en TODOS los cálculos de saldos = solo movimientos **vigentes y contabilizados**. Las banderas no son intercambiables: `sn_anulada` descarta anuladas, `sn_contabilizada` descarta las no asentadas al mayor. Aplicada en `findSaldosCtaDetalle` (detalle) y `calcularSaldosCta` (catálogo) para que cuadren.
+- **4 correcciones vs el SP original** (todas en el JSDoc del método `calcularSaldosCta`):
+  1. **Sin `ABS()`** — guarda neto firmado `SUM(debito-credito)`; la UI marca negativo=(C)/positivo=(D) y la suma de meses debe igualar el neto del detalle
+  2. **Filtra por columna `periodo`**, no por `fecharegistro BETWEEN` — todas las partidas de 2026 se registraron en septiembre (reconstrucción), el rango de fechas metía los 12 meses en septiembre
+  3. **Doble bandera `sn_anulada='N'` + `sn_contabilizada='S'`** — mismo criterio en catálogo y detalle
+  4. **`empresaId` en TODAS las operaciones** — el SP lo omitía en UPDATE/EXISTS (riesgo multi-empresa)
+- **Implementación**: `contabilidad.service.ts` → `calcularSaldosCta(dto, usuario)` (QueryBuilder, crea fila faltante si hay movimiento, nunca toca `saldoanterior`, idempotente, `fechaSistema` para `fechaUpdated`); DTO `CalcularSaldosCtaDto` (anio, periodo opcional 1-12, empresaId); controller `@Post('saldoscta/calcular')`
+- **Verificación E2E**: 1ª invocación → 8 filas/8 celdas corregidas; 2ª invocación → 0/0 (idempotente); `periodo:13` → 400; verificación DB **9/9 OK sumaMeses=real, suma global=0.00**; cuadre vía API catálogo↔detalle **9/9, global 0**
+- **Gotcha**: el proceso en :3000 tras matar al anterior puede tardar ~15s en aparecer en `Get-NetTCPConnection`; verificar con un `GET` HTTP antes de asumir fallo
+
+### Pendiente
+- Verificar en browser: flags y candado en `/contabilidad/copdamae` (partidas cerradas 1–8/2026)
+- Prueba en vivo de `realizarCierre` (bulk `sn_cerrada='S'` en un cierre real) — **irreversible por diseño P1**, pendiente cuando el usuario lo indique
+- Decidir destino de `sp_calcular_saldos_cuenta` en la BD (corregirla con las 4 mismas correcciones o eliminarla en favor del endpoint — requiere aprobación del usuario; no usarla tal cual, daña los datos)
+
+---
+
+## Bitácora – 30/09/2026
+
+### Completado
+
+#### Espejo de saldos en `realizarCierre` (cocierredet: hojas + padres mayorizados)
+- **Paso 10 reescrito** (`contabilidad-logica.service.ts`): ya no guarda solo las filas de `coctamov`; ahora itera `mayorizarSaldoFinal(...)` y guarda el saldo final de TODAS las cuentas con `tiposaldo = saldo >= 0 ? 'D' : 'C'`
+- **Nuevo método privado `mayorizarSaldoFinal(empresaId, movimientos, anio, periodo)`**:
+  1. Hojas operables: fuente = `coctamov.saldo` (YA es el acumulado a fin de período = saldo acumulado + debe − haber, la fórmula del Libro Mayor). Cuentas operables SIN movimiento en el período → arrastre desde `cocierredet` del período anterior
+  2. Padres/grupos (`sn_operable='N'`): mayorización escalonada nivel máx → 1: `Σ hijos + movimientos propios`. **NO** suma el acumulado previo del padre (ya viene contenido en sus hijos → evitaría doble conteo)
+- **Filtros anti-doble-conteo** aplicados a la construcción del mapa de acumulados:
+  - `generarLibroMayor` (`contabilidad-logica.service.ts`): bloque de `saldoAcumMap` movido DESPUÉS del catálogo y con `if (cta && cta.sn_operable !== 'S') continue;`
+  - `generarBalanceDinamico` (`contabilidad.service.ts`, paso 5): mismo filtro en ambos bucles de `acumMap`
+  - Mismo criterio en ambos: el acumulado de un padre se deriva SIEMPRE de sus hijos. Hoy `cocierredet` está vacía → **numéricamente nada cambió** en los reportes
+- **`values` del upsert**: agregado `usuarioUpdated` y `fechaUpdated` para que el `overwrite` del `orUpdate` no los escriba NULL
+- **Verificación (réplica exacta en Node con datos reales, empresa 2 / 2026 / per 9)**: 29 filas (mismo conteo que Libro Mayor) · todas las raíces cuadran con Σ hijos · **Σ hojas = 0.00** · tiposaldo D=13 / C=16 · muestra: `1-1-10-1-001` = 63,042.00 D, `4-1-10-001` = −122,481.00 C, raíz `1` = −175,181.74 C
+- **Upsert validado en transacción con ROLLBACK** (sin rastro): INSERT con `tiposaldo` OK → 2ª pasada = UPDATE con 1 sola fila → **unique match CONFIRMADO** para `conflict_target: ['ctacontable','anio','empresaId']` → rollback deja 0 filas
+- **Reportes verificados 200**: `cierredet` (0 filas), `libro-mayor` (29), `balance-dinamico`, `balance-comprobacion`; `nest build` + `ng build --configuration production` OK; backend reiniciado en :3000
+- **Columna real**: `cocierredet.tiposaldo enum('D','C') NULL DEFAULT 'D'` ya existía en la BD (sin DDL nuevo); la tabla tiene **0 filas**
+
+### Hallazgos (requieren su aprobación — no ejecutados)
+1. **Dato huérfano en catálogo**: `2-1-70-001` (saldo −17,100.26) tiene `padre = '2-2-70'` que **no existe** en `coctacontables` → ese saldo no se mayoriza hasta la raíz "2" (el Libro Mayor tiene el mismo efecto). Corrección = `UPDATE coctacontables` (el padre correcto hay que confirmarlo con usted)
+2. **`cosaldoscierreUnique(ctacontable, anio, empresaId)` NO incluye `periodo`** → solo puede existir **1 fila por cuenta-año** en `cocierredet`. Al cerrar el período 10 se sobrescribiría la fila del período 9 y el Libro Mayor de períodos intermedios perdería el acumulado. Requiere `ALTER TABLE` (necesita su aprobación):
+   ```sql
+   ALTER TABLE cocierredet DROP INDEX cosaldoscierreUnique;
+   ALTER TABLE cocierredet ADD UNIQUE KEY cosaldoscierreUnique (ctacontable, anio, periodo, empresaId);
+   ```
+   (y cambiar `conflict_target` a `['ctacontable','anio','periodo','empresaId']`)
+
+#### Reversión de cierre / reapertura de período (nuevo proceso, por separado del cierre)
+- **Endpoint**: `POST /contabilidad/cierrectable/revertir` (paralelo a `/cierrectable/realizar`), recibe `CierreContableDto` (empresaId, anio, periodo, observacion?)
+- **Backend** `contabilidad-logica.service.ts` → `revertirCierre(dto, currentUser)`, **todo dentro de UNA transacción** (`DataSource` → `createQueryRunner`, rollback si algo falla). Inyección nueva: `private readonly dataSource: DataSource`
+- **Validaciones previas (no destructivas)**:
+  1. Período existe y está **CERRADO** (si no → 400; si no existe → 404)
+  2. **Secuencia inversa**: no reabrir si hay períodos posteriores **cerrados** (lista cuáles)
+  3. **No puede haber partidas en períodos posteriores** (sus acumulados en `coctamov` dependen de este cierre → 400 con conteo)
+  4. Localiza la partida de cierre por `nroreferencia = 'CIERRE-{p}-{a}'` y verifica **FK RESTRICT** hacia `cotrxref` / `posfacmov` (si tiene transacciones → 400)
+- **Reversión (orden inverso al cierre)**:
+  1. `coctamov`: resta por cuenta lo que la partida de cierre acumuló (`UPDATE`QueryBuilder explícito, bypass de change detection en decimals); `saldo` recalculado **con signo** (`debe - haber`)
+  2. `coctasaldos`: resta el neto de la columna del mes
+  3. Elimina partida de cierre: `copdadet` → `copdamae` (FK RESTRICT, det primero)
+  4. Elimina espejo: `cocierredet` → `cocierremae`
+  5. `sn_cerrada='N'` en `copdamae` + `copdadet` del período (libera el candado)
+  6. `sn_abierto='S'` en `coperiodoctable`
+- **Verificación 4/4 validaciones OK** (API real): 9/2026 abierto→400, 8/2026 cerrado→400 "51 partidas en períodos posteriores", 13/2026→404, 7/2026→400 "primero revertir 8/2026"
+- **Verificación de las 11 queries destructivas** en transacción con **ROLLBACK**: todas válidas (nombres de columna: `coctamovId`, `cosaldosctaId`, `cierrectableId`, `cocierremaeId`, `periodoscontableId`); estado posterior intacto → `copdamae`=82, `copdadet`=267, períodos 1–8=N, 9=S
+- **Frontend**:
+  - Nuevo componente `contabilidad/reversar-cierre/` (`reversar-cierre.ts/html/scss`) — ruta **`/contabilidad/reversar-cierre`**
+  - Preselección por query params (`?periodo=&anio=`) leídos en `ngOnInit`
+  - Tabla "Períodos cerrados" con botón de reversión **solo en el cierre más reciente** (`esUltimoCerrado()`), los demás muestran candado con tooltip
+  - `ContabilidadService.revertirCierre(request)` → `POST ${R}/cierrectable/revertir`
+  - `cierre-contable`: botón **"Revertir cierre"** en el header + icono `pi-replay` en las filas cerradas → navegan con `Router`
+- **Nota**: el menú del sidebar sale de `tusuariomnuitem` (BD) → el acceso es por botón desde Cierre Contable; agregar entrada de menú requiere INSERT aprobado
+
+#### Pruebas E2E del ciclo cerrar → revertir → re-cerrar (septiembre 2026) — 8/8 OK
+- **Ciclo completo ejecutado 3 veces** (cerrar → verificar → revertir → re-cerrar): septiembre 2026 **quedó CERRADO** (`cierrectableId=5`, partida `CIERRE-9-2026` #91, 4 líneas, utilidad 33,609.37)
+- **Validación de facturas funcionó**: primer intento → 400 "4 factura(s) sin contabilizar en el período 9/2026"
+
+##### 4 bugs encontrados y corregidos en backend (`contabilidad-logica.service.ts`)
+1. **`identificarConcepto()` no reconocía facturas de crédito** → `desc.includes('CLIENTES') || desc.includes('CXC')` agregado al caso `'COBRO'`. Sin esto, "Clientes/CxC" → `'DESCONOCIDO'` → línea omitida → partida NO cuadrada → `contabilizarFactura` devolvía `false` silencioso. **Ninguna factura de crédito se había contabilizado jamás**
+2. **Cuenta de utilidad default `'1-200'` no existe** en el catálogo → 500 FK `fk_copdadet_ctacontables` + **partida de cierre a medias sin transacción** (tuve que limpiar `partidaId=160` manualmente). Cambiado a **`'3-1-13-001' Resultados Acumulados`** (elegido por el usuario; la única operable del grupo 3)
+3. **Espejo `cocierredet` con signos absolutos** (Σ hojas = 850,065.27 ≠ 0): `mayorizarSaldoFinal` leía `coctamov.saldo` (que se escribe con `Math.abs`). **Fix**: fuente cambiada a `coctasaldos` (`saldoanterior` + meses hasta el período, firmado ✓ Σ=0.00) **Y** movido el paso del espejo ANTES de `actualizarMovimientosContables`/`actualizarSaldosCuentas` (si no, lee `septiembre` ya con la partida de cierre restada)
+4. **`coctamov.saldo` escrito con `Math.abs(debe-haber)` sin `sacum`** (L294/L309) → ahora `(sacum) + (debe - haber)` CON SIGNO, en `actualizarMovimientosContables` **y** en `revertirCierre` (mi reversión original usaba `debe-haber` y perdía el acumulado → la partida de cierre re-cerrada dejaba residual de -18,001)
+- `L473 Math.abs(mov.saldo)` se MANTIENE a propósito: es la construcción de la partida de cierre (cierra el saldo absoluto con la naturaleza como dirección)
+
+##### Verificación final del cierre #3 — 8/8
+- Espejo: **Σ hojas = 0.00** (29 filas, 9 hojas, D=13/C=16 firmados)
+- Cuentas de resultado en **0 real** (`saldo` y `sacum+d-h` = 0) — antes quedaba residual
+- Partida de cierre cuadrada: D = H = **175,648.50** (4 líneas)
+- Utilidad coherente: espejo −33,609.37 ↔ partida 33,609.37
+- Período `N`, 56 partidas `sn_cerrada='S'`, `cocierremae` id=5, 0 facturas pendientes
+- **Reportes API 200**: libro-mayor (32), balance-comprobacion (10), libro-diario (56), balance-dinamico
+- **Reversión verificada 2 veces**: elimina partida cierre + espejo, restaura `coctamov`/`coctasaldos` con signo, libera `sn_cerrada` (flags vuelven a N=55/S=31), reabre período; residuo menor: fila `3-1-13-001` en `coctamov`/`coctasaldos` queda en 0 (se creó en el cierre)
+
+##### Hallazgos PENDIENTES → resueltos (18/09/2026, aprobación del usuario)
+- **UPDATE `coctamov.saldo`** (aprobado): `SET saldo = COALESCE(sacum,0)+(debe-haber) WHERE empresaId=2 AND anio=2026 AND periodo=9` → ejecutado, 10 filas revisadas / **0 fuera de regla**
+- **Unique de `cocierredet` con `periodo`** (aprobado): ya estaba aplicado en la BD — `(ctacontable, anio, periodo, empresaId)` UNIQUE, 30 filas sin duplicados. Un `DROP INDEX` de prueba falló con "needed in a foreign key constraint" (los FK `fk_cosaldoscierre_ctacontables`/`fk_cosaldoscierre_tcoctacontables` usan ese índice) — **sin efecto, nada se rompió**. `conflict_target` del código actualizado a `['ctacontable','anio','periodo','empresaId']` (`contabilidad-logica.service.ts` L624; en MySQL es documentativo — el upsert usa el índice físico)
+- **Padre de `2-1-70-001`**: ya era `2-1-70` (correcto, existe) — corregido vía UI (fechaUpdated hoy con `fechaSistema`). Verificado: **0 huérfanos en empresa 2** → UPDATE no necesario
+- **`sp_calcular_saldos_cuenta`**: el usuario indicó que solo daña **si se invoca** y no la ha ejecutado → **se deja como está** (no eliminar ni corregir)
+
+##### Ciclo final revertir → re-cerrar (con padre correcto + unique de 4 columnas) — 12/12 OK
+- Reversión de cierre #3 OK → re-cierre **`cierrectableId=6`** regeneró el espejo: **30 filas** (apareció `2-1-70`)
+- **Grupo 2 ahora mayoriza el ISV**: raíz `2` = **214,439.11** (238,717 − 24,277.89); antes el cierre #3 corrió con el padre roto y la raíz quedó en 238,717 sin el ISV
+- Verificaciones: Σ hojas = 0 ✅ · **cada grupo = Σ hijos directos (21 grupos)** ✅ · coctamov cumple `sacum+(d-h)` (0 desviadas) ✅ · resultados en 0 ✅ · partida D=H=175,648.50 ✅ · período N + 56 flags S ✅ · utilidad coherente (−33,609.37 ↔ 33,609.37) ✅ · 0 facturas pendientes ✅ · espejo sin duplicados ✅
+- Reportes 200: libro-mayor (**33**), balance-comprobacion (10), libro-diario (56), balance-dinamico
+- **Frontend**: botones "Revertir cierre" (header + `pi-replay` por fila) **quitados de `cierre-contable`** (método `irARevertir` + import `Router` eliminados) — la reversión se accede desde el menú de usuario (según el usuario, ya habilitado en `tusuariomnuitem`); ruta `/contabilidad/reversar-cierre` intacta
+- Builds: `nest build` + `ng build --configuration production` OK; backend reiniciado
+
+#### Balance Dinámico (`/contabilidad/balance-dinamico`) — Columna 0 = saldo acumulado del período anterior
+- **Petición del usuario**: "para cualquier balance que no sea Estado de Resultado, traer el saldo acumulado del período anterior y mostrarlo en la columna 0; no olvidar la impresión en PDF, Excel y Word"
+- **Causa raíz**: `generarBalanceDinamico` (`contabilidad.service.ts`) leía el acumulado de **`cocierredet`**, que solo tiene filas de los períodos **ya cerrados** → para per. 8 no existía nada → `acum = 0` → `col0 = 0` **y** `valor` mostraba solo el neto del mes (incorrecto para un balance: `1-1-10-1-001` daba 47,235.01 en vez de 63,042)
+- **Fix (solo el paso 5)**: nueva fuente `acum(P) = coctasaldos.saldoanterior(año) + Σ (debe − haber) de coctamov(año, período < P)` — **idéntico al `sacum`** que guarda `coctamov` para el período P, pero calculado para todas las cuentas (también las que no se movieron en P)
+  - `esBalance` se subió del **paso 9 al 2b** (depende solo de `det`, pero lo necesita el paso 5); en el paso 9 queda solo el comentario
+  - **Estado de Resultado conserva el código legacy de `cocierredet`** (`else if (!esBalance)`): el ER presenta el flujo del período y su `col0` es `null`; cambiarlo a YTD habría alterado sus cifras sin que se pidiera
+  - Filtro `sn_operable !== 'S'` conservado en ambas rutas (el acumulado de un padre se deriva de sus hijos en `calcularMayorizado`)
+- **Verificación (empresa 2, plantilla 2 = Balance general, plantilla 1 = ER)**:
+  - per 9/2026: `1-1-10-1-001` col0 **15,806.99** / valor **63,042** ✓ · `1-1` col0 **7,739.99** / valor **180,829.74** ✓ · `2-1` col0 **849.01** / valor **214,439.11** ✓ · sin movimiento → 0/0 ✓
+  - **Invariante `col0(P+1) == valor(P)`** verificado P=4..8 → **0 fallos** (prueba fuerte de corrección)
+  - ER en per 1/4/9 → `col0 = null`, `mostrarCol0 = false` → **sin regresión**
+  - `backend-error.log` vacío
+- **Exports (ya lo soportaban, solo se afinó la etiqueta)**: `encabezadoColumnas()` / `filasCuerpo()` / `filaTotales()` de `balance-dinamico.ts` incluyen `col0` cuando `mostrarCol0()`; `columnStylesPDF` calcula el ancho con `encabezado.length`; Excel agrega el `wch` extra; Word agrega la celda alineada a la derecha. Etiqueta `'Saldo. Acum'` unificada a **`'Saldo Acum.'`** para coincidir con el HTML
+- **Sin fila de TOTALES en balances** (diseño actual: `@if (!reporte()?.esBalance)` en HTML y en los 3 exports) → `totales['0']` (24,395.99, suma literal de la columna con padres e hijos) **no se muestra**; no se tocó
+- Archivos: `Backend/src/modules/contabilidad/contabilidad.service.ts` (paso 2b + paso 5), `Frontend/src/app/features/contabilidad/balance-dinamico/balance-dinamico.ts`
+
+### Pendiente
+- (Antes: hallazgos 1/2 del espejo, normalización de coctamov, SP) → **todos resueltos o decididos**
+- Entrada de menú `/contabilidad/reversar-cierre`: el usuario indicó que ya está habilitada en el menú de usuario (no requirió INSERT)
+- **Balance Dinámico / Estado de Resultado**: el usuario indicó *"no me gustó el resultado, pero dejemos esos reportes para otro día"* — **el fix de la columna 0 quedó APLICADO** (decisión suya: no revertir). Pendiente de retomar cuando él lo indique; posible foco: revisar la presentación/criterio de `col0` y de `valor`, que es lo que no le convenció (la corrección numérica sí pasó todas las verificaciones).

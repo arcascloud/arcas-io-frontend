@@ -61,7 +61,7 @@
           <div class="section-card">
             <p-table
               id="grid2"
-              [value]="lineas()"
+              [value]="lineasOrdenadas()"
               dataKey="id"
               [rowTrackBy]="trackById"
               size="small"
@@ -120,7 +120,8 @@
                       size="small"
                       [ngModel]="l.columna"
                       (ngModelChange)="editar(l.id, { columna: $event })"
-                      [min]="0"
+                      [min]="1"
+                      [max]="4"
                       [useGrouping]="false"
                       [fluid]="true"
                       [inputStyle]="{ 'text-align': 'right' }"
@@ -168,10 +169,16 @@
                       [delay]="250"
                       [fluid]="true"
                       [appendTo]="'body'"
-                      placeholder="Escribe la cuenta contable o nombre para agregar una línea…"
+                      placeholder="Escribe la cuenta o nombre (cualquier nivel) para agregar una línea…"
                     >
                       <ng-template #item let-c>
                         <span class="cta-code mr-2">{{ c.ctacontable }}</span>{{ c.descripcion }}
+                        <span class="cta-meta ml-2">Nivel {{ c.nivel }}</span>
+                        @if (c.sn_activo === 'N') {
+                          <span class="cta-meta cta-alerta ml-2">Inactiva</span>
+                        } @else if (c.sn_operable === 'N') {
+                          <span class="cta-meta ml-2">No operable</span>
+                        }
                       </ng-template>
                       <ng-template #empty>
                         <div class="text-muted px-3 py-2">
@@ -271,7 +278,7 @@
           <div class="section-card">
             <p-table
               id="grid1"
-              [value]="lineas()"
+              [value]="lineasOrdenadas()"
               size="small"
               [paginator]="true"
               [rows]="10"

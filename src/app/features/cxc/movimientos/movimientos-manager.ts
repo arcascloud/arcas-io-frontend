@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -56,6 +56,10 @@ export class MovimientosManager implements OnInit {
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
+  partidaId = signal<number | null>(null);
 
   // ===== CLIENTES =====
   data = signal<CxcCliente[]>([]);
@@ -150,6 +154,38 @@ export class MovimientosManager implements OnInit {
     this.loadDocumentos();
     this.loadCarteras();
 
+    // Partida contable de origen (botón "Volver a la partida")
+    const partidaParam = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partidaParam) && partidaParam > 0) this.partidaId.set(partidaParam);
+
+    // Trazabilidad contable: ?movimientoId=<clienteMovId> (llega desde partida en copdamae)
+    const movIdParam = this.route.snapshot.queryParamMap.get('movimientoId');
+    if (movIdParam) {
+      const movId = Number(movIdParam);
+      if (!isNaN(movId) && movId > 0) {
+        this.service.getMovimiento(movId).pipe(
+          takeUntilDestroyed(this.destroyRef),
+          timeout(10000),
+          catchError(() => {
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el movimiento de origen' });
+            this.loadClientes();
+            return of(null);
+          }),
+        ).subscribe({
+          next: (mov) => {
+            const clienteId = mov ? Number(mov['clienteId']) : 0;
+            if (clienteId > 0) {
+              this.vieneDeHistorico = true;
+              this.autoSelectCliente(clienteId, mov);
+            } else {
+              this.loadClientes();
+            }
+          },
+        });
+        return;
+      }
+    }
+
     // Leer clienteId de query params y movimiento completo de router state
     const clienteIdParam = this.route.snapshot.queryParamMap.get('clienteId');
     const movimientoState = (history.state as any)?.movimiento ?? null;
@@ -166,6 +202,14 @@ export class MovimientosManager implements OnInit {
 
     // Carga normal: cargar lista completa de clientes
     this.loadClientes();
+  }
+
+  /** Regresa a la partida contable de origen desde la que se abrió este movimiento. */
+  volverAPartida(): void {
+    if (!this.partidaId()) return;
+    this.router.navigate(['/contabilidad/copdamae'], {
+      queryParams: { partidaId: this.partidaId() },
+    });
   }
 
   /**
@@ -303,7 +347,9 @@ export class MovimientosManager implements OnInit {
         const filtered = (res || []).filter((r: any) => {
           const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
           const mismaEmpresa = user?.empresaId ? Number(r.empresaId) === Number(user.empresaId) : true;
-          return activo && mismaEmpresa;
+          // CxC = módulo 4: solo carteras contables de Cuentas por Cobrar
+          const mismoModulo = Number(r.moduloId) === 4;
+          return activo && mismaEmpresa && mismoModulo;
         });
         const opts = filtered.map((r: any) => ({
           label: r.descripcion || String(r.tcocarteraId || r.id),

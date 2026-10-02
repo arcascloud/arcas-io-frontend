@@ -19,54 +19,65 @@
     <div class="card">Cargando datos...</div>
   } @else {
     <form [formGroup]="form" (ngSubmit)="guardar()" class="card">
+      @if (protegido()) {
+        <div class="mensaje-proteccion">
+          <i class="pi pi-lock"></i>
+          <span>{{ config?.proteccionMensaje || 'Registro protegido — no es modificable' }}</span>
+        </div>
+      }
       <div class="form-grid">
         @for (c of campos; track c.key) {
-          <div class="campo">
-            <label [for]="c.key">{{ c.label }} @if (c.requerido) {<span class="req">*</span>}</label>
+          @if (!c.ocultoForm) {
+            <div class="campo">
+              <label [for]="c.key">{{ c.label }} @if (c.requerido) {<span class="req">*</span>}</label>
 
-            @if (c.tipo === 'texto') {
-              <input
-                pInputText
-                pSize="small"
-                [id]="c.key"
-                [formControlName]="c.key"
-                maxlength="50"
-                [placeholder]="c.label"
-                [ngClass]="{ 'ng-invalid': invalid(c.key) }"
-              />
-            } @else if (c.tipo === 'numero') {
-              <p-inputnumber size="small"
-                size="small"
-                [formControlName]="c.key"
-                [showButtons]="true"
-                [ngClass]="{ 'ng-invalid': invalid(c.key) }"
-              />
-            } @else if (c.tipo === 'select') {
-              <p-select
-                size="small"
-                [formControlName]="c.key"
-                [options]="opciones(c)"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Seleccionar..."
-                styleClass="w-full"
-                [appendTo]="'body'"
-              />
-            } @else if (c.tipo === 'fecha') {
-              <p-datepicker
-                size="small"
-                [formControlName]="c.key"
-                dateFormat="dd/mm/yy"
-                [showIcon]="true"
-                [appendTo]="'body'"
-                styleClass="w-full"
-              />
-            }
+              @if (c.tipo === 'texto') {
+                <input
+                  pInputText
+                  pSize="small"
+                  [id]="c.key"
+                  [formControlName]="c.key"
+                  maxlength="50"
+                  [placeholder]="c.label"
+                  [ngClass]="{ 'ng-invalid': invalid(c.key) }"
+                />
+              } @else if (c.tipo === 'numero') {
+                <p-inputnumber size="small"
+                  [formControlName]="c.key"
+                  [showButtons]="true"
+                  [locale]="'es-HN'"
+                  [useGrouping]="c.formato !== 'anio'"
+                  [minFractionDigits]="c.decimales ?? (c.formato === 'moneda' ? 2 : undefined)"
+                  [maxFractionDigits]="c.decimales ?? (c.formato === 'moneda' ? 2 : undefined)"
+                  [ngClass]="{ 'ng-invalid': invalid(c.key) }"
+                />
+              } @else if (c.tipo === 'select') {
+                <p-select
+                  size="small"
+                  [formControlName]="c.key"
+                  [options]="opciones(c)"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccionar..."
+                  styleClass="w-full"
+                  [appendTo]="'body'"
+                />
+              } @else if (c.tipo === 'fecha') {
+                <p-datepicker
+                  size="small"
+                  [formControlName]="c.key"
+                  dateFormat="dd/mm/yy"
+                  [showIcon]="true"
+                  [appendTo]="'body'"
+                  styleClass="w-full"
+                />
+              }
 
-            @if (invalid(c.key)) {
-              <small class="err">{{ c.label }} es obligatorio</small>
-            }
-          </div>
+              @if (invalid(c.key)) {
+                <small class="err">{{ mensajeError(c) }}</small>
+              }
+            </div>
+          }
         }
 
         @if (!config.sinEstado) {
@@ -95,10 +106,12 @@
           rounded
           (onClick)="volver()"
         />
-        <p-button type="submit" label="Guardar"
-        [raised]="true" severity="success"
-        [rounded]="true"
-        icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+        @if (!protegido()) {
+          <p-button type="submit" label="Guardar"
+          [raised]="true" severity="success"
+          [rounded]="true"
+          icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+        }
       </div>
     </form>
   }

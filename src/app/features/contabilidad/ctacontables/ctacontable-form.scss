@@ -43,6 +43,39 @@
   border-top: 1px solid var(--c-border, #e2e8f0);
 }
 
+.mensaje-bloqueo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--c-warning, #f59e0b);
+  background: rgba(245, 158, 11, 0.08);
+  border-radius: 6px;
+
+  i {
+    color: var(--c-warning, #f59e0b);
+    font-size: 1.05rem;
+    margin-top: 0.1rem;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  strong {
+    font-size: 0.85rem;
+    color: var(--c-text, #1e293b);
+  }
+
+  span {
+    font-size: 0.78rem;
+    color: var(--c-text-muted, #64748b);
+  }
+}
+
 .req {
   color: var(--c-error, #ef4444);
 }

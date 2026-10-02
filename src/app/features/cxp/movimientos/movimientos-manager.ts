@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, D
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { timeout, catchError, of } from 'rxjs';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
@@ -52,6 +52,10 @@ export class CxpMovimientosManager implements OnInit {
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
+  partidaId = signal<number | null>(null);
 
   // ===== PROVEEDORES =====
   data = signal<Proveedor[]>([]);
@@ -139,6 +143,38 @@ export class CxpMovimientosManager implements OnInit {
     this.loadDocumentos();
     this.loadCarteras();
 
+    // Partida contable de origen (botón "Volver a la partida")
+    const partidaParam = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partidaParam) && partidaParam > 0) this.partidaId.set(partidaParam);
+
+    // Trazabilidad contable: ?movimientoId=<cxpmovId> (llega desde partida en copdamae)
+    const movIdParam = this.route.snapshot.queryParamMap.get('movimientoId');
+    if (movIdParam) {
+      const movId = Number(movIdParam);
+      if (!isNaN(movId) && movId > 0) {
+        this.service.getMovimiento(movId).pipe(
+          takeUntilDestroyed(this.destroyRef),
+          timeout(10000),
+          catchError(() => {
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el movimiento de origen' });
+            this.loadProveedores();
+            return of(null);
+          }),
+        ).subscribe({
+          next: (mov) => {
+            const proveedorId = mov ? Number(mov['proveedorId']) : 0;
+            if (proveedorId > 0) {
+              this.vieneDeHistorico = true;
+              this.autoSelectProveedor(proveedorId, mov);
+            } else {
+              this.loadProveedores();
+            }
+          },
+        });
+        return;
+      }
+    }
+
     // Leer proveedorId de query params y movimiento completo de router state
     const proveedorIdParam = this.route.snapshot.queryParamMap.get('proveedorId');
     const movimientoState = (history.state as any)?.movimiento ?? null;
@@ -155,6 +191,14 @@ export class CxpMovimientosManager implements OnInit {
 
     // Carga normal: cargar lista completa de proveedores
     this.loadProveedores();
+  }
+
+  /** Regresa a la partida contable de origen desde la que se abrió este movimiento. */
+  volverAPartida(): void {
+    if (!this.partidaId()) return;
+    this.router.navigate(['/contabilidad/copdamae'], {
+      queryParams: { partidaId: this.partidaId() },
+    });
   }
 
   // ===== PROVEEDORES =====

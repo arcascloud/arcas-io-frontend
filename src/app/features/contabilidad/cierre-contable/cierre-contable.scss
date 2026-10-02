@@ -94,12 +94,23 @@
   background: var(--c-card-background);
 }
 
+// Período de origen de la partida contable (trazabilidad)
+:host ::ng-deep tr.fila-origen {
+  background: color-mix(in srgb, var(--c-primary) 16%, var(--c-surface)) !important;
+  box-shadow: inset 3px 0 0 var(--c-primary);
+  font-weight: 600;
+}
+
 .text-muted {
   color: var(--c-text-muted);
 }
 
 .text-success {
   color: var(--c-success);
+}
+
+.text-warning {
+  color: var(--c-warning);
 }
 
 .tag-sm {
@@ -115,5 +126,25 @@
 
   .cierre-form-panel {
     position: static;
+  }
+}
+
+
+/* Retorno a la partida contable de origen */
+.origen-vuelta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  &__texto {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+    i {
+      color: var(--c-primary);
+    }
   }
 }

@@ -4,6 +4,7 @@
   align-items: flex-end;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+  max-width: 100%;
 
   .campo {
     flex: 1 1 10rem;
@@ -23,10 +24,18 @@
     }
   }
 
+  // Filtro de fila 2 (ej: Descripción): ocupa el ancho completo y baja de línea
+  .campo-fila2 {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
   .acciones {
-    flex: 0;
+    flex: 0 0 auto;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 0.5rem;
+    min-width: 0;
   }
 }
 
@@ -37,6 +46,215 @@
   ::ng-deep .p-datatable .p-frozen-column {
     background: var(--c-surface, #ffffff);
     font-weight: 600;
+  }
+}
+
+.fila-protegida {
+  color: var(--c-warning, #f59e0b);
+  font-size: 0.95rem;
+  cursor: not-allowed;
+}
+
+// Importes y montos: alineados a la derecha (header y celdas)
+.text-right {
+  text-align: right;
+}
+
+// Filas de la tabla en monoespaciada (misma estética que libro-diario)
+.mono {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+// ===== Estado de cuenta (diálogo de detalle) =====
+
+.ec-encabezado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+
+  .ec-negrita {
+    font-weight: 600;
+  }
+}
+
+.ec-separador {
+  border-top: 1px dashed var(--c-border-strong, #2c4d6f);
+  margin: 0.6rem 0;
+}
+
+.ec-pie {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.ec-mes {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.ec-cargando {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--c-text-muted, #64748b);
+  font-size: 0.85rem;
+  padding: 1.25rem 0;
+}
+
+// Chevron de expansión (columna inicial cuando el catálogo tiene detalle)
+.ec-chevron {
+  width: 2.5rem;
+  text-align: center;
+  color: var(--c-text-muted, #64748b);
+  font-size: 0.7rem;
+}
+
+// Fila principal con el detalle abierto
+.fila-expandida {
+  background: var(--c-bg);
+}
+
+// ===== Fila expandida: estado de cuenta (mismo estilo que libro-diario) =====
+.ec-detalle-row > td {
+  padding: 0 !important;
+  border-bottom: 2px solid var(--c-primary, #10b981) !important;
+  background: var(--c-bg);
+}
+
+.ec-detalle {
+  padding: 0.5rem 1rem 0.75rem 0;
+}
+
+.ec-detalle-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+
+  thead th {
+    background: var(--c-bg);
+    color: var(--c-text-muted, #64748b);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid var(--c-border-strong, #2c4d6f);
+
+    &.text-right {
+      text-align: right;
+    }
+  }
+
+  tbody td {
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--c-border, #e2e8f0);
+
+    &.text-right {
+      text-align: right;
+    }
+  }
+}
+
+// ===== Drawer: partida contable =====
+
+// Nro. Partida clickeable dentro del detalle del estado de cuenta
+.partida-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-family: 'Courier New', monospace;
+  color: var(--c-primary, #10b981);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: var(--c-primary-hover, #059669);
+  }
+}
+
+.partida-drawer {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.partida-cabecera {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dashed var(--c-border-strong, #2c4d6f);
+  margin-bottom: 0.75rem;
+}
+
+.partida-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+
+  &.partida-campo-ancho {
+    grid-column: span 3;
+  }
+}
+
+.partida-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--c-text-muted, #64748b);
+  font-weight: 600;
+}
+
+.partida-valor {
+  font-size: 0.85rem;
+  color: var(--c-text, #1e293b);
+  word-break: break-word;
+}
+
+.partida-lineas {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead th {
+    background: var(--c-bg);
+    color: var(--c-text-muted, #64748b);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--c-border-strong, #2c4d6f);
+
+    &.text-right {
+      text-align: right;
+    }
+  }
+
+  tbody td {
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid var(--c-border, #e2e8f0);
+
+    &.text-right {
+      text-align: right;
+    }
+  }
+
+  tfoot td {
+    padding: 0.5rem;
+    font-weight: 600;
+    border-top: 2px solid var(--c-primary, #10b981);
+
+    &.text-right {
+      text-align: right;
+    }
   }
 }
 
@@ -63,6 +281,13 @@
   .filtros {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  // En columna, flex-basis sería alto → reset a ancho completo
+  .filtros .campo-fila2 {
+    flex: none;
+    width: 100%;
+    max-width: 100%;
   }
 
   .tabla-responsive {

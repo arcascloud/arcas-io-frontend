@@ -50,3 +50,39 @@ export interface CxcSaldoFavor {
   cxcsalfavId: number;
   [key: string]: any;
 }
+
+/** Tipos de información de contacto del cliente (tabla cxccclientesinfo) */
+export type TipoInfoCliente = 'CELULAR' | 'DIRECCION' | 'CORREO';
+
+/**
+ * Registro de información adicional del cliente (cxccclientesinfo).
+ * Regla de negocio: un solo registro por (clienteid, tipo, empresaId).
+ */
+export interface CxcClienteInfo {
+  id: number;
+  clienteid: number;
+  tipo: TipoInfoCliente;
+  descripcion: string | null;
+  sn_activo: 'S' | 'N';
+  empresaId?: number | null;
+  usuarioCreated?: string;
+  usuarioUpdated?: string | null;
+  fechaUpdated?: string | null;
+}
+
+/**
+ * Asignación de cartera contable a un cliente (cxccarteracta).
+ * La tabla NO tiene sn_activo: las eliminaciones son físicas.
+ * Nota: la columna sucursal en BD se llama "Idsucusal" (typo original).
+ */
+export interface CxcCarteraCliente {
+  id: number;
+  clienteId: number;
+  carteractaId: number;
+  Idsucursal?: number;
+  empresaId: number;
+  usuarioCreated?: string;
+  fechaCreated?: string;
+  usuarioUpdate?: string;
+  fechaUpdate?: string;
+}

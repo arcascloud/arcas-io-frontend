@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import { CxcCliente, CxcMovimiento, CxcHistorico, CxcSaldoFavor } from '../models/cxc.models';
+import { CxcCliente, CxcMovimiento, CxcHistorico, CxcSaldoFavor, CxcClienteInfo, CxcCarteraCliente } from '../models/cxc.models';
 
 @Injectable({ providedIn: 'root' })
 export class CxcService {
@@ -67,6 +67,15 @@ export class CxcService {
    */
   getMovimientosByCliente(clienteId: number): Observable<CxcMovimiento[]> {
     return this.api.get<CxcMovimiento[]>(`/cxc/movimientos/cliente/${clienteId}`);
+  }
+
+  /**
+   * Obtiene un movimiento de CxC por su identificador (clienteMovId).
+   * Usado para la trazabilidad de partidas contables (ver documento origen).
+   * @param id - Identificador del movimiento en cxcmovimientos
+   */
+  getMovimiento(id: number): Observable<CxcMovimiento> {
+    return this.api.get<CxcMovimiento>(`/cxc/movimientos/${id}`);
   }
 
   /**
@@ -255,5 +264,73 @@ export class CxcService {
    */
   getDocumentosPendientesCliente(clienteId: number): Observable<any[]> {
     return this.api.get<any[]>(`/cxc/documentos-pendientes/cliente/${clienteId}`);
+  }
+
+  // ========== Información adicional del cliente (cxccclientesinfo) ==========
+
+  /**
+   * Obtiene la información de contacto (celular, dirección, correo) de un cliente.
+   * @param clienteId - Identificador del cliente
+   * @returns Observable con los registros de cxccclientesinfo del cliente
+   */
+  getClienteInfoByCliente(clienteId: number): Observable<CxcClienteInfo[]> {
+    return this.api.get<CxcClienteInfo[]>(`/cxc/clientes-info/cliente/${clienteId}`);
+  }
+
+  /**
+   * Crea un registro de información de contacto del cliente.
+   * @param payload - Datos del registro a crear (clienteid, tipo, descripcion, empresaId)
+   * @returns Observable con el registro creado
+   */
+  createClienteInfo(payload: unknown): Observable<CxcClienteInfo> {
+    return this.api.post<CxcClienteInfo>('/cxc/clientes-info', payload);
+  }
+
+  /**
+   * Actualiza un registro de información de contacto del cliente.
+   * @param id - Identificador del registro (cxccclientesinfo.id)
+   * @param payload - Datos a actualizar
+   * @returns Observable con el registro actualizado
+   */
+  updateClienteInfo(id: number, payload: unknown): Observable<CxcClienteInfo> {
+    return this.api.put<CxcClienteInfo>('/cxc/clientes-info', id, payload);
+  }
+
+  /**
+   * Desactiva un registro de información de contacto (sn_activo = 'N').
+   * @param id - Identificador del registro (cxccclientesinfo.id)
+   * @returns Observable con el registro desactivado
+   */
+  removeClienteInfo(id: number): Observable<CxcClienteInfo> {
+    return this.api.putBase<CxcClienteInfo>(`/cxc/clientes-info/${id}/remove`, {});
+  }
+
+  // ========== Cartera contable por cliente (cxccarteracta) ==========
+
+  /**
+   * Obtiene todas las asignaciones de cartera contable de la empresa.
+   * El filtro por cliente se hace en el componente (el endpoint no expone clienteId).
+   * @returns Observable con las asignaciones de cxccarteracta
+   */
+  getCarterasCliente(): Observable<CxcCarteraCliente[]> {
+    return this.api.get<CxcCarteraCliente[]>('/cxc/carteras-cliente');
+  }
+
+  /**
+   * Asigna una cartera contable a un cliente.
+   * @param payload - Datos (clienteId, carteractaId, empresaId, Idsucursal)
+   * @returns Observable con la asignación creada
+   */
+  createCarteraCliente(payload: unknown): Observable<CxcCarteraCliente> {
+    return this.api.post<CxcCarteraCliente>('/cxc/carteras-cliente', payload);
+  }
+
+  /**
+   * Elimina (físico) la asignación de cartera contable de un cliente.
+   * @param id - Identificador de la asignación (cxccarteracta.id)
+   * @returns Observable con el resultado
+   */
+  removeCarteraCliente(id: number): Observable<{ id: number; eliminado: boolean }> {
+    return this.api.putBase<{ id: number; eliminado: boolean }>(`/cxc/carteras-cliente/${id}/remove`, {});
   }
 }

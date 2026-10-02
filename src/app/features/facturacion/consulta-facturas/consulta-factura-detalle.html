@@ -1,7 +1,8 @@
 <section class="page">
   <header class="page-header">
     <div class="header-left">
-      <p-button icon="pi pi-arrow-left" severity="secondary" text rounded size="small" (onClick)="volver()" pTooltip="Volver a la lista" />
+      <p-button icon="pi pi-arrow-left" severity="secondary" text rounded size="small" (onClick)="volver()"
+        [pTooltip]="partidaId() ? 'Volver a la partida' : 'Volver a la lista'" />
       <div>
         <h1 class="page-title">Factura #{{ factura()?.nrofactura }}</h1>
         <p class="page-subtitle">{{ fechaLarga(factura()?.fecharegistro) }}</p>

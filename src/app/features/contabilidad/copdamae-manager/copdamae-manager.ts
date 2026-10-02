@@ -19,6 +19,7 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModulosService } from '../../../core/services/modulos.service';
@@ -70,6 +71,8 @@ export class CopdamaeManager implements OnInit {
   private destroyRef = inject(DestroyRef);
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   private injector = inject(Injector);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private buscadorEl = viewChild('buscador', { read: ElementRef });
   private siguienteId = 1;
 
@@ -87,7 +90,8 @@ export class CopdamaeManager implements OnInit {
   // ===== FILTROS =====
   filtroPeriodo = signal<number | null>(null);
   filtroAnio = signal<number | null>(null);
-  filtroReferencia = signal('');
+  filtroAuxiliar = signal<number | null>(null);
+  filtroConcepto = signal('');
 
   // ===== LÍNEAS DE DETALLE (señal-based) =====
   lineas = signal<LineaDetalle[]>([]);
@@ -106,6 +110,14 @@ export class CopdamaeManager implements OnInit {
       .filter(m => m.sn_activo === 'S' && m.sn_auxiliar_contable === 'S')
       .map(m => ({ label: m.descripcion_contable || m.descripcion, value: m.moduloId }))
       .sort((a, b) => a.label.localeCompare(b.label))
+  );
+
+  /** Auxiliares del filtro de lista: módulos 2,3,4,5,6,7 (los que usa el ERP) */
+  auxiliaresFiltroOptions = computed(() =>
+    this.modulos()
+      .filter(m => [2, 3, 4, 5, 6, 7].includes(m.moduloId))
+      .map(m => ({ label: m.descripcion_contable || m.descripcion, value: m.moduloId }))
+      .sort((a, b) => a.value - b.value)
   );
 
   // ===== FORMULARIO (tipado con NonNullableFormBuilder) =====
@@ -143,10 +155,18 @@ export class CopdamaeManager implements OnInit {
     let r = this.partidas();
     const periodo = this.filtroPeriodo();
     const anio = this.filtroAnio();
-    const ref = this.filtroReferencia();
+    const aux = this.filtroAuxiliar();
+    const concepto = this.filtroConcepto();
     if (periodo != null) r = r.filter(p => p.periodo === periodo);
     if (anio != null) r = r.filter(p => p.anio === anio);
-    if (ref) r = r.filter(p => p.nroreferencia?.toLowerCase().includes(ref.toLowerCase()));
+    if (aux != null) r = r.filter(p => p.moduloId === aux);
+    if (concepto) {
+      const q = concepto.toLowerCase();
+      r = r.filter(p =>
+        p.descripcion?.toLowerCase().includes(q) ||
+        p.nroreferencia?.toLowerCase().includes(q),
+      );
+    }
     return r.sort((a, b) => (b.nropartida ?? 0) - (a.nropartida ?? 0));
   });
 
@@ -158,12 +178,14 @@ export class CopdamaeManager implements OnInit {
   diferencia = computed(() => r2(this.totalDebe() - this.totalCredito()));
   cuadrada = computed(() => this.totalDebe() > 0 && this.diferencia() === 0);
 
-  /** Guardar habilitado: maestro válido + debe=haber + ≥2 líneas + ninguna en cero */
+  /** Guardar habilitado: maestro válido + debe=haber + ≥2 líneas + ninguna en cero
+   *  Y que la partida seleccionada NO esté ya contabilizada (evita doble contabilización) */
   puedeContabilizar = computed(() =>
     this.estadoForm() === 'VALID' &&
     this.cuadrada() &&
     this.lineas().length >= 2 &&
-    this.lineas().every(l => l.debe > 0 || l.haber > 0)
+    this.lineas().every(l => l.debe > 0 || l.haber > 0) &&
+    this.partidaSeleccionada()?.sn_contabilizada !== 'S'
   );
 
   /** Evita recrear la fila y perder foco mientras se edita un monto */
@@ -199,9 +221,52 @@ export class CopdamaeManager implements OnInit {
             this.filtroPeriodo.set(abierto.nromes);
           }
           this.cargando.set(false);
+          this.restaurarPartidaDesdeUrl();
         },
         error: () => { this.mostrarError('Error cargando datos'); this.cargando.set(false); },
       });
+  }
+
+  /**
+   * Restaura el detalle de partida al volver (atrás/forward) desde un documento
+   * de origen. La partida queda marcada en la URL como ?partidaId=.
+   */
+  private restaurarPartidaDesdeUrl(): void {
+    const raw = this.route.snapshot.queryParamMap.get('partidaId');
+    if (!raw) return;
+    const id = Number(raw);
+    if (isNaN(id) || id <= 0) return;
+    const partida = this.partidas().find(p => Number(p.partidaId) === id);
+    if (!partida) return;
+    this.filtroPeriodo.set(partida.periodo);
+    this.filtroAnio.set(partida.anio);
+    this.verPartida(partida);
+  }
+
+  /**
+   * Escribe (o limpia) ?partidaId= en la URL actual SIN crear una entrada de
+   * historial nueva, de modo que "atrás" regrese al detalle de la partida.
+   * Devuelve la promesa de la navegación, o `null` si la URL ya estaba así.
+   */
+  private marcarPartidaEnUrl(partidaId: number | null): Promise<boolean> | null {
+    const actual = this.route.snapshot.queryParamMap.get('partidaId');
+    const nuevo = partidaId != null ? String(partidaId) : null;
+    if (actual === nuevo) return null;
+    return this.router.navigate([], {
+      queryParams: this.queryParamsConPartida(partidaId),
+      replaceUrl: true,
+    });
+  }
+
+  /** Query params actuales con `partidaId` actualizado (los demás se conservan). */
+  private queryParamsConPartida(partidaId: number | null): Record<string, string> {
+    const qpm = this.route.snapshot.queryParamMap;
+    const params: Record<string, string> = {};
+    qpm.keys.forEach(k => {
+      if (k !== 'partidaId' && qpm.get(k) != null) params[k] = qpm.get(k)!;
+    });
+    if (partidaId != null) params['partidaId'] = String(partidaId);
+    return params;
   }
 
   // ===== NAVEGACIÓN =====
@@ -216,10 +281,21 @@ export class CopdamaeManager implements OnInit {
     this.seleccionada.set(null);
     this.siguienteId = 1;
     this.vista.set('crear');
+    this.marcarPartidaEnUrl(null);
   }
 
   editarPartida(partida: CopdaMae): void {
+    // Control de partidas cerradas: el backend responde 403, avisamos antes (UX)
+    if (partida.sn_cerrada === 'S') {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Partida cerrada',
+        detail: `La Partida #${partida.nropartida} pertenece a un período cerrado y no puede modificarse`,
+      });
+      return;
+    }
     this.partidaSeleccionada.set(partida);
+    this.marcarPartidaEnUrl(partida.partidaId);
     this.form.reset({
       moduloId: partida.moduloId,
       plantillaId: partida.documentoId || null,
@@ -227,13 +303,15 @@ export class CopdamaeManager implements OnInit {
       fechadocumento: new Date(partida.fechadocumento),
       nroreferencia: partida.nroreferencia,
       descripcion: partida.descripcion,
-      factordecambio: partida.factordecambio,
+      // decimal de MySQL llega como string ("1.00") → coaccionar a number
+      factordecambio: Number(partida.factordecambio) || 1,
     });
     this.cargarDetalles(partida.partidaId, 'editar');
   }
 
   verPartida(partida: CopdaMae): void {
     this.partidaSeleccionada.set(partida);
+    this.marcarPartidaEnUrl(partida.partidaId);
     this.cargarDetalles(partida.partidaId, 'ver');
   }
 
@@ -263,17 +341,108 @@ export class CopdamaeManager implements OnInit {
     this.vista.set('lista');
     this.partidaSeleccionada.set(null);
     this.lineas.set([]);
+    this.marcarPartidaEnUrl(null);
+  }
+
+  // ===== ORIGEN DEL DOCUMENTO (trazabilidad) =====
+
+  /**
+   * Etiqueta legible del tipo de documento de origen, derivada del prefijo de
+   * `nroreferencia`. Si el prefijo no se reconoce, cae en el nombre del módulo.
+   */
+  origenTipoLabel(partida: CopdaMae): string {
+    const prefijo = (partida.nroreferencia || '').trim().toUpperCase().split('-')[0];
+    const mapa: Record<string, string> = {
+      FAC: 'Factura',
+      NCF: 'Factura',
+      NDB: 'Nota débito',
+      ND: 'Nota débito',
+      NC: 'Nota crédito',
+      NCR: 'Nota crédito',
+      CXC: 'Cobro CxC',
+      CXP: 'Pago CxP',
+      BCO: 'Movimiento bancario',
+      CAJA: 'Caja',
+      CHEQ: 'Cheque',
+      CIERRE: 'Cierre contable',
+    };
+    return mapa[prefijo] || this.getModuloLabel(partida.moduloId);
+  }
+
+  /**
+   * Resuelve a qué pantalla navegar para ver el documento que originó la partida.
+   * Devuelve `null` cuando no existe una ruta que aterrice en el registro exacto.
+   */
+  enlaceOrigen(partida: CopdaMae): { ruta: string; params?: Record<string, string | number> } | null {
+    const doc = Number(partida.documentoId) || 0;
+    switch (Number(partida.moduloId)) {
+      case 1: {
+        // Referencia: CIERRE-{periodo}-{anio}
+        const m = /CIERRE-(\d{1,2})-(\d{4})/i.exec(partida.nroreferencia || '');
+        return {
+          ruta: '/contabilidad/cierre-contable',
+          params: m ? { periodo: Number(m[1]), anio: Number(m[2]) } : undefined,
+        };
+      }
+      case 2:
+        // Inventarios: cuando el origen es una factura, documentoId = posfacmae.facturaId
+        if (doc > 0 && /^FAC-/i.test(partida.nroreferencia || '')) {
+          return { ruta: `/facturacion/consultas/${doc}` };
+        }
+        return null;
+      case 3:
+        // facturaId en posfacmae
+        return doc > 0 ? { ruta: `/facturacion/consultas/${doc}` } : null;
+      case 4:
+        // clienteMovId en cxcmovimientos
+        return doc > 0 ? { ruta: '/cxc/movimientos', params: { movimientoId: doc } } : null;
+      case 5:
+        // cxpmovId en cxpmovimientos
+        return doc > 0 ? { ruta: '/cxp/movimientos', params: { movimientoId: doc } } : null;
+      case 6:
+        // bcomovimientosId en bcosmovimientos
+        return doc > 0 ? { ruta: '/bancos/historial', params: { movimientoId: doc } } : null;
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Navega al documento de origen.
+   *
+   * Antes de salir, escribe la partida en la entrada de historial actual
+   * (replaceUrl) para que "atrás" regrese al detalle de la partida y no a la
+   * lista. Se encadenan las dos navegaciones para evitar que se cancelen entre sí.
+   */
+  irAOrigen(partida: CopdaMae): void {
+    const link = this.enlaceOrigen(partida);
+    if (!link) return;
+
+    const navegar = () => this.router.navigate([link.ruta], {
+      // partidaId viaja junto al documento para que el destino pueda regresar
+      queryParams: { ...link.params, partidaId: partida.partidaId },
+    });
+
+    const marcada = this.marcarPartidaEnUrl(partida.partidaId);
+    if (marcada) {
+      // esperar a que la navegación de reemplazo termine (resuelta o cancelada)
+      marcada.then(navegar, navegar);
+    } else {
+      navegar();
+    }
   }
 
   // ===== BÚSQUEDA DE CUENTAS (autocomplete) =====
 
-  /** Filtra cuentas de movimiento por código o nombre */
+  /** Filtra cuentas de movimiento por código o nombre (excluye las ya usadas en el detalle) */
   buscar(e: AutoCompleteCompleteEvent): void {
     const q = e.query.trim().toLowerCase();
+    const usadas = new Set(this.lineas().map(l => l.ctacontable));
     this.sugerencias.set(
       this.cuentasMovimiento().filter(c =>
-        c.ctacontable.toLowerCase().includes(q) ||
-        c.descripcion.toLowerCase().includes(q)
+        !usadas.has(c.ctacontable) &&
+        (c.ctacontable.toLowerCase().includes(q) ||
+        c.descripcion.toLowerCase().includes(q)),
       ),
     );
   }
@@ -281,10 +450,22 @@ export class CopdamaeManager implements OnInit {
   /**
    * Agrega una línea con la cuenta seleccionada.
    * Si la partida está descuadrada, propone el monto que la cuadra en el lado contrario.
-   * Una misma cuenta puede repetirse (no se deduplica).
+   * REGLA: una cuenta contable solo puede ingresar UNA vez en el detalle (no se admiten repetidas).
    */
   agregar(e: AutoCompleteSelectEvent): void {
     const cuenta = e.value as CtaContable;
+
+    // Una cuenta ya ingresada no puede repetirse en el detalle
+    if (this.lineas().some(l => l.ctacontable === cuenta.ctacontable)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cuenta duplicada',
+        detail: `La cuenta ${cuenta.ctacontable} - ${cuenta.descripcion} ya fue ingresada en el detalle`,
+      });
+      setTimeout(() => this.seleccionada.set(null));
+      return;
+    }
+
     const dif = this.diferencia(); // debe - haber
 
     const linea: LineaDetalle = {
@@ -334,8 +515,30 @@ export class CopdamaeManager implements OnInit {
   // ===== CONTABILIZAR =====
 
   contabilizar(): void {
+    // Blindaje: una partida ya contabilizada nunca puede volver a contabilizarse
+    const sel = this.partidaSeleccionada();
+    if (sel?.sn_contabilizada === 'S') {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Ya contabilizada',
+        detail: `La Partida #${sel.nropartida} ya está contabilizada (sn_contabilizada = 'S') y no puede contabilizarse de nuevo`,
+      });
+      return;
+    }
+
     if (!this.puedeContabilizar()) {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Verifique el formulario y que la partida esté cuadrada' });
+      return;
+    }
+
+    // Auditoría final: ninguna cuenta puede repetirse en el detalle (también lo valida el backend)
+    const duplicadas = this.ctasRepetidas();
+    if (duplicadas.length > 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Cuentas duplicadas',
+        detail: `Cuenta(s) repetida(s) en el detalle: ${duplicadas.join(', ')}`,
+      });
       return;
     }
 
@@ -354,7 +557,7 @@ export class CopdamaeManager implements OnInit {
       fechadocumento: fecha,
       nroreferencia: fv.nroreferencia,
       descripcion: fv.descripcion,
-      factordecambio: fv.factordecambio,
+      factordecambio: Number(fv.factordecambio) || 1,
       lineas: this.lineas().map(l => ({
         ctacontable: l.ctacontable,
         descripcion: l.descripcion,
@@ -380,6 +583,15 @@ export class CopdamaeManager implements OnInit {
   // ===== ELIMINAR =====
 
   eliminarPartida(partida: CopdaMae): void {
+    // Control de partidas cerradas: el backend responde 403, avisamos antes (UX)
+    if (partida.sn_cerrada === 'S') {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Partida cerrada',
+        detail: `La Partida #${partida.nropartida} pertenece a un período cerrado y no puede eliminarse`,
+      });
+      return;
+    }
     this.confirmationService.confirm({
       message: `¿Está seguro de eliminar la Partida #${partida.nropartida}?`,
       header: 'Confirmar eliminación',
@@ -402,6 +614,22 @@ export class CopdamaeManager implements OnInit {
   }
 
   // ===== HELPERS =====
+
+  /** Cuentas contables que aparecen más de una vez en el detalle (debe venir vacío) */
+  ctasRepetidas(): string[] {
+    const vistos = new Set<string>();
+    const repetidas: string[] = [];
+    for (const l of this.lineas()) {
+      const cta = l.ctacontable?.trim();
+      if (!cta) continue;
+      if (vistos.has(cta)) {
+        if (!repetidas.includes(cta)) repetidas.push(cta);
+      } else {
+        vistos.add(cta);
+      }
+    }
+    return repetidas;
+  }
 
   getCuentaNombre(ctacontable: string): string {
     return this.cuentas().find(c => c.ctacontable === ctacontable)?.descripcion ?? '';

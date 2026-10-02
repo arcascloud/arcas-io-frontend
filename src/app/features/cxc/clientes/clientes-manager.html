@@ -1,6 +1,5 @@
 <div class="clientes-manager">
   <div class="split-layout" [class.form-active]="showForm()">
-
     <div class="left-column">
       <!-- Empty state -->
       @if (!selectedCliente() && !showForm() && !nuevoCliente()) {
@@ -9,23 +8,42 @@
         <h3>Pulse un cliente</h3>
         <p>Haga clic en un cliente de la lista para ver su información</p>
 
-
         <div class="grid">
           <div class="col-12 flex flex-wrap justify-center gap-2">
             <p-iconField>
-              <p-inputIcon class="pi pi-search " />
-              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
-                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
-              <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
-                [rounded]="true" size="small"></p-button>
+              <p-inputIcon class="pi pi-search" />
+              <input
+                type="text"
+                pSize="small"
+                pInputText
+                [ngModel]="q()"
+                (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..."
+                class="mr-1"
+              />
+              <p-button
+                *ngIf="q()"
+                icon="pi pi-times"
+                (click)="limpiarFiltros()"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                size="small"
+              ></p-button>
             </p-iconField>
           </div>
         </div>
 
-        <p-button label="Agregar nuevo cliente" icon="pi pi-plus" (click)="nuevo()" variant="text" severity="success"
-          [rounded]="true" class="mr-2" size="small"></p-button>
-
-
+        <p-button
+          label="Agregar nuevo cliente"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          class="mr-2"
+          size="small"
+        ></p-button>
       </div>
       }
 
@@ -39,14 +57,18 @@
               <span>Cliente</span>
             </p-tab>
             <p-tab value="1" [disabled]="nuevoCliente()">
+              <i class="pi pi-info-circle"></i>
+              <span>Inf. Adicional</span>
+            </p-tab>
+            <p-tab value="2" [disabled]="nuevoCliente()">
               <i class="pi pi-wallet"></i>
               <span>Estado de Cuenta</span>
             </p-tab>
-            <p-tab value="2" [disabled]="nuevoCliente()">
+            <p-tab value="3" [disabled]="nuevoCliente()">
               <i class="pi pi-address-book"></i>
               <span>Referencias</span>
             </p-tab>
-            <p-tab value="3" [disabled]="nuevoCliente()">
+            <p-tab value="4" [disabled]="nuevoCliente()">
               <i class="pi pi-users"></i>
               <span>Parientes</span>
             </p-tab>
@@ -55,13 +77,298 @@
           <p-tabpanels>
             <p-tabpanel value="0">
               <div class="tab-content">
-                <app-cliente-form #clienteFormRef
+                <app-cliente-form
+                  #clienteFormRef
                   [clienteIdInput]="nuevoCliente() ? null : (selectedCliente()?.clienteId ?? null)"
-                  (saved)="onFormSaved()" (cancelled)="onFormCancelled()" />
+                  (saved)="onFormSaved()"
+                  (cancelled)="onFormCancelled()"
+                />
               </div>
             </p-tabpanel>
 
             <p-tabpanel value="1">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Información Adicional</h4>
+                  <span class="tab-subtitulo">Celular, dirección y correo del cliente</span>
+                </div>
+
+                <div class="info-adicional-grid">
+                  <!-- Columna izquierda: formulario alta / edición -->
+                  <div class="info-panel info-panel-form">
+                    <h5 class="form-col-title">
+                      {{ infoModel().id != null ? 'Editar información de contacto' : 'Nueva
+                      información de contacto' }}
+                    </h5>
+
+                    <div class="form-col">
+                      <div class="p-field">
+                        <label>Tipo</label>
+                        <p-select
+                          size="small"
+                          [options]="infoTipoOptions"
+                          [ngModel]="infoModel().tipo"
+                          (ngModelChange)="infoModel.set({...infoModel(), tipo: $event})"
+                          placeholder="Seleccione tipo"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                      <div class="p-field">
+                        <label>Descripción</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="infoModel().descripcion"
+                          (ngModelChange)="infoModel.set({...infoModel(), descripcion: $event})"
+                          placeholder="Valor del contacto"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Estado</label>
+                        <p-select
+                          size="small"
+                          [options]="infoEstadoOptions"
+                          [ngModel]="infoModel().sn_activo"
+                          (ngModelChange)="infoModel.set({...infoModel(), sn_activo: $event})"
+                          placeholder="Seleccione estado"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                    </div>
+
+                    <div class="form-actions info-form-actions">
+                      @if (infoModel().id != null) {
+                      <p-button
+                        label="Cancelar edición"
+                        icon="pi pi-times"
+                        variant="text"
+                        severity="secondary"
+                        (click)="cancelarInfo()"
+                        [rounded]="true"
+                        size="small"
+                      ></p-button>
+                      } @else {
+                      <p-button
+                        label="Limpiar"
+                        icon="pi pi-times"
+                        variant="text"
+                        severity="secondary"
+                        (click)="cancelarInfo()"
+                        [rounded]="true"
+                        size="small"
+                      ></p-button>
+                      }
+                      <p-button
+                        label="Guardar"
+                        icon="pi pi-check"
+                        variant="text"
+                        severity="success"
+                        [loading]="infoSaving()"
+                        (click)="guardarInfo()"
+                        [rounded]="true"
+                        size="small"
+                      ></p-button>
+                    </div>
+
+                    <!--20260424 agregar informacion de cartera contable -->
+                    <h4>Cartera contable</h4>
+
+                    <div class="form-col">
+                      <div class="p-field">
+                        <label>Cartera</label>
+                        <p-select
+                          size="small"
+                          [options]="carterasDisponibles()"
+                          [ngModel]="carteraSeleccionada()"
+                          (ngModelChange)="carteraSeleccionada.set($event)"
+                          placeholder="Seleccione cartera"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                          [showClear]="true"
+                        ></p-select>
+                        @if (carterasDisponibles().length === 0) {
+                        <small class="carteras-sin-opciones">
+                          No hay carteras disponibles para asignar
+                        </small>
+                        }
+                      </div>
+                    </div>
+
+                    <div class="carteras-actions">
+                      <p-button
+                        label="Asignar"
+                        icon="pi pi-plus"
+                        variant="text"
+                        severity="success"
+                        [rounded]="true"
+                        size="small"
+                        [loading]="carteraSaving()"
+                        (click)="agregarCartera()"
+                      ></p-button>
+                    </div>
+
+                    <p-table
+                      [value]="carterasCliente()"
+                      showGridlines
+                      styleClass="tabla-card"
+                      [tableStyle]="{ 'min-width': '15rem' }"
+                      [loading]="carteraLoading()"
+                      size="small"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th>Cartera</th>
+                          <th class="col-cta">Cuenta</th>
+                          <th class="col-acciones"></th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-cartera>
+                        <tr>
+                          <td class="celda-cartera">{{ nombreCartera(cartera.carteractaId) }}</td>
+                          <td class="col-cta">{{ ctaCartera(cartera.carteractaId) || '—' }}</td>
+                          <td class="col-acciones">
+                            <p-button
+                              icon="pi pi-trash"
+                              [rounded]="true"
+                              size="small"
+                              text
+                              severity="danger"
+                              pTooltip="Quitar"
+                              tooltipPosition="left"
+                              (click)="eliminarCartera(cartera)"
+                            />
+                          </td>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="emptymessage">
+                        <tr>
+                          <td colspan="3" class="text-center text-muted">
+                            No tiene carteras contables asignadas
+                          </td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+
+                  <!-- Columna derecha: listado -->
+                  <div class="info-panel info-panel-list">
+                    <div class="info-list-header">
+                      <h5 class="form-col-title">Información de contacto</h5>
+                      <span class="info-list-total">{{ infoData().length }} registro(s)</span>
+                    </div>
+
+                    <div class="detalle-estado-cuenta">
+                      <p-table
+                        [value]="infoData()"
+                        [loading]="infoLoading()"
+                        showGridlines
+                        styleClass="tabla-card"
+                        [tableStyle]="{ 'min-width': '15rem' }"
+                        size="small"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th></th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-info>
+                          <tr>
+                            <td class="col-tipo">{{ infoTipoLabel(info.tipo) }}</td>
+                            <td>{{ info.descripcion || '—' }}</td>
+                            <td class="col-estado text-center">
+                              <p-tag
+                                [value]="info.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+                                [severity]="info.sn_activo === 'S' ? 'success' : 'danger'"
+                              />
+                            </td>
+                            <td class="col-acciones">
+                              <p-button
+                                icon="pi pi-pencil"
+                                (click)="editarInfo(info)"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="secondary"
+                                pTooltip="Editar"
+                                tooltipPosition="left"
+                              />
+                              <p-button
+                                icon="pi pi-trash"
+                                (click)="eliminarInfo(info)"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="danger"
+                                pTooltip="Desactivar"
+                                tooltipPosition="left"
+                              />
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                          <tr>
+                            <td colspan="4" class="text-center text-muted">
+                              No tiene información registrada
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
+                    </div>
+
+                    <!-- 20260924 Necesito ver la cartera o las carteras contable asignadas -->
+                    <div class="carteras-asignadas">
+                      <div class="info-list-header">
+                        <h5 class="form-col-title">Carteras contables asignadas</h5>
+                        <span class="info-list-total"
+                          >{{ carterasCliente().length }} asignada(s)</span
+                        >
+                      </div>
+
+                      <p-table
+                        [value]="carterasCliente()"
+                        [loading]="carteraLoading()"
+                        showGridlines
+                        styleClass="tabla-card"
+                        [tableStyle]="{ 'min-width': '15rem' }"
+                        size="small"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Cartera</th>
+                            <th class="col-cta">Cuenta</th>
+                            <th>Cuenta contable</th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-cartera>
+                          <tr>
+                            <td class="celda-cartera">{{ nombreCartera(cartera.carteractaId) }}</td>
+                            <td class="col-cta">{{ ctaCartera(cartera.carteractaId) || '—' }}</td>
+                            <td class="celda-cta-desc">
+                              {{ descripcionCtaCartera(cartera.carteractaId) || '—' }}
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                          <tr>
+                            <td colspan="3" class="text-center text-muted">
+                              No tiene carteras contables asignadas
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
+                    </div>
+                  </div>
+                  <!-- Fin Columna derecha: listado -->
+                </div>
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="2">
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Estado de Cuenta</h4>
@@ -70,7 +377,10 @@
                   </div>
                 </div>
 
-                <div class="detalle-estado-cuenta" *ngIf="!estadoCuentaLoading(); else loadingSkeleton">
+                <div
+                  class="detalle-estado-cuenta"
+                  *ngIf="!estadoCuentaLoading(); else loadingSkeleton"
+                >
                   <div class="table-responsive">
                     <table class="table table-striped">
                       <thead>
@@ -94,13 +404,17 @@
                           </td>
                           <td class="col-ref">{{ mov.nroreferencia || '—' }}</td>
                           <td>{{ mov.concepto }}</td>
-                          <td class="col-importe"
-                            [ngClass]="{'text-success': mov.tipomov === 'D', 'text-danger': mov.tipomov !== 'D'}">
+                          <td
+                            class="col-importe"
+                            [ngClass]="{'text-success': mov.tipomov === 'D', 'text-danger': mov.tipomov !== 'D'}"
+                          >
                             {{ mov.tipomov === 'D' ? '+' : '-' }}{{ moneda(mov.importe) }}
                           </td>
                         </tr>
                         <tr *ngIf="estadoCuentaData().length === 0">
-                          <td colspan="6" class="text-center text-muted">No tiene movimientos el cliente</td>
+                          <td colspan="6" class="text-center text-muted">
+                            No tiene movimientos el cliente
+                          </td>
                         </tr>
                       </tbody>
                       <tfoot>
@@ -131,7 +445,7 @@
               </div>
             </p-tabpanel>
 
-            <p-tabpanel value="2">
+            <p-tabpanel value="3">
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Referencias</h4>
@@ -143,32 +457,54 @@
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Nombres</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().nombres"
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().nombres"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), nombres: $event})"
-                          placeholder="Nombres" />
+                          placeholder="Nombres"
+                        />
                       </div>
                       <div class="p-field">
                         <label>Apellidos</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().apellidos"
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().apellidos"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), apellidos: $event})"
-                          placeholder="Apellidos" />
+                          placeholder="Apellidos"
+                        />
                       </div>
                       <div class="p-field">
                         <label>DNI</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().dni"
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().dni"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), dni: $event})"
-                          placeholder="DNI" />
+                          placeholder="DNI"
+                        />
                       </div>
                       <div class="p-field">
                         <label>Fecha de Nacimiento</label>
-                        <p-datepicker [ngModel]="referenciaFecha()" (ngModelChange)="onReferenciaFechaChange($event)"
-                          dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
+                        <p-datepicker
+                          [ngModel]="referenciaFecha()"
+                          (ngModelChange)="onReferenciaFechaChange($event)"
+                          dateFormat="dd/mm/yy"
+                          [showIcon]="true"
+                        ></p-datepicker>
                       </div>
                       <div class="p-field">
                         <label>Tipo</label>
-                        <p-select size="small" [options]="referenciaTipoOptions" [ngModel]="referenciaModel().tipo"
+                        <p-select
+                          size="small"
+                          [options]="referenciaTipoOptions"
+                          [ngModel]="referenciaModel().tipo"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), tipo: $event})"
-                          placeholder="Seleccione tipo" styleClass="w-full" [appendTo]="'body'"></p-select>
+                          placeholder="Seleccione tipo"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
                       </div>
                     </div>
                   </div>
@@ -177,49 +513,89 @@
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Teléfono</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().telefono"
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().telefono"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), telefono: $event})"
-                          placeholder="Teléfono fijo" />
+                          placeholder="Teléfono fijo"
+                        />
                       </div>
                       <div class="p-field">
                         <label>Celular</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().celular"
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().celular"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), celular: $event})"
-                          placeholder="Celular" />
+                          placeholder="Celular"
+                        />
                       </div>
                       <div class="p-field">
                         <label>Parentesco</label>
-                        <p-select size="small" [options]="referenciaParentescoOptions"
+                        <p-select
+                          size="small"
+                          [options]="referenciaParentescoOptions"
                           [ngModel]="referenciaModel().parentesco"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), parentesco: $event})"
-                          placeholder="Seleccione parentesco" styleClass="w-full" [appendTo]="'body'"></p-select>
+                          placeholder="Seleccione parentesco"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
                       </div>
                       <div class="p-field">
                         <label>Dirección</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().direccion1"
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().direccion1"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), direccion1: $event})"
-                          placeholder="Dirección" />
+                          placeholder="Dirección"
+                        />
                       </div>
                       <div class="p-field">
                         <label>Lugar de Trabajo</label>
-                        <input pInputText pSize="small" [ngModel]="referenciaModel().lugarTrabajo"
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().lugarTrabajo"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), lugarTrabajo: $event})"
-                          placeholder="Lugar de trabajo" />
+                          placeholder="Lugar de trabajo"
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div class="form-actions mb-3">
-                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
-                    (click)="cancelarReferencia()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
-                    [loading]="referenciaSaving()" (click)="guardarReferencia()" [rounded]="true"
-                    size="small"></p-button>
+                  <p-button
+                    label="Limpiar"
+                    icon="pi pi-times"
+                    variant="text"
+                    severity="secondary"
+                    (click)="cancelarReferencia()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
+                  <p-button
+                    label="Guardar"
+                    icon="pi pi-check"
+                    variant="text"
+                    severity="success"
+                    [loading]="referenciaSaving()"
+                    (click)="guardarReferencia()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
                 </div>
 
-                <p-dataView [value]="referenciasData()" [loading]="referenciasLoading()" size="small" layout="list"
-                  class="referencias-dataview">
+                <p-dataView
+                  [value]="referenciasData()"
+                  [loading]="referenciasLoading()"
+                  size="small"
+                  layout="list"
+                  class="referencias-dataview"
+                >
                   <ng-template #list let-ref>
                     <div class="referencia-item">
                       <div class="ref-nombre">{{ ref.nombres || ref.nombre }}</div>
@@ -231,7 +607,7 @@
               </div>
             </p-tabpanel>
 
-            <p-tabpanel value="3">
+            <p-tabpanel value="4">
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Parientes</h4>
@@ -243,20 +619,33 @@
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Nombres</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().nombres"
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().nombres"
                           (ngModelChange)="parienteModel.set({...parienteModel(), nombres: $event})"
-                          placeholder="Nombres" />
+                          placeholder="Nombres"
+                        />
                       </div>
                       <div class="p-field">
                         <label>Apellidos</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().apellidos"
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().apellidos"
                           (ngModelChange)="parienteModel.set({...parienteModel(), apellidos: $event})"
-                          placeholder="Apellidos" />
+                          placeholder="Apellidos"
+                        />
                       </div>
                       <div class="p-field">
                         <label>DNI</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().dni"
-                          (ngModelChange)="parienteModel.set({...parienteModel(), dni: $event})" placeholder="DNI" />
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().dni"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), dni: $event})"
+                          placeholder="DNI"
+                        />
                       </div>
                     </div>
                   </div>
@@ -265,30 +654,59 @@
                     <div class="p-fluid">
                       <div class="p-field">
                         <label>Parentesco</label>
-                        <p-select size="small" [options]="parienteParentescoOptions"
+                        <p-select
+                          size="small"
+                          [options]="parienteParentescoOptions"
                           [ngModel]="parienteModel().parentesco"
                           (ngModelChange)="parienteModel.set({...parienteModel(), parentesco: $event})"
-                          placeholder="Seleccione parentesco" styleClass="w-full" [appendTo]="'body'"></p-select>
+                          placeholder="Seleccione parentesco"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
                       </div>
                       <div class="p-field">
                         <label>Teléfono</label>
-                        <input pInputText pSize="small" [ngModel]="parienteModel().telefono"
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().telefono"
                           (ngModelChange)="parienteModel.set({...parienteModel(), telefono: $event})"
-                          placeholder="Teléfono de contacto" />
+                          placeholder="Teléfono de contacto"
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div class="form-actions mb-3">
-                  <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
-                    (click)="cancelarPariente()" [rounded]="true" size="small"></p-button>
-                  <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
-                    [loading]="parienteSaving()" (click)="guardarPariente()" [rounded]="true" size="small"></p-button>
+                  <p-button
+                    label="Limpiar"
+                    icon="pi pi-times"
+                    variant="text"
+                    severity="secondary"
+                    (click)="cancelarPariente()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
+                  <p-button
+                    label="Guardar"
+                    icon="pi pi-check"
+                    variant="text"
+                    severity="success"
+                    [loading]="parienteSaving()"
+                    (click)="guardarPariente()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
                 </div>
 
-                <p-dataView [value]="parientesData()" [loading]="parientesLoading()" size="small" layout="list"
-                  class="parientes-dataview">
+                <p-dataView
+                  [value]="parientesData()"
+                  [loading]="parientesLoading()"
+                  size="small"
+                  layout="list"
+                  class="parientes-dataview"
+                >
                   <ng-template #list let-par>
                     <div class="pariente-item">
                       <div class="par-nombre">{{ par.nombres }} {{ par.apellidos }}</div>
@@ -310,17 +728,35 @@
       <div class="search-bar">
         <div class="search-input-wrapper">
           <i class="pi pi-search"></i>
-          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
-            placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="search-input" />
-          <p-button *ngIf="q()" label="Limpiar" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
-            [rounded]="true" size="small" class="clear-btn"></p-button>
-
+          <input
+            type="text"
+            pInputText
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event)"
+            placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..."
+            class="search-input"
+          />
+          <p-button
+            *ngIf="q()"
+            label="Limpiar"
+            icon="pi pi-times"
+            (click)="limpiarFiltros()"
+            severity="secondary"
+            [rounded]="true"
+            size="small"
+            class="clear-btn"
+          ></p-button>
         </div>
 
-        <p-button label="Nuevo" icon="pi pi-plus" (click)="nuevo()" variant="text" severity="success" [rounded]="true"
-          size="small"></p-button>
-
-
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        ></p-button>
       </div>
 
       @if (cargando()) {
@@ -338,20 +774,31 @@
         <i class="pi pi-users empty-icon"></i>
         <h3>No hay clientes</h3>
         <p>No se encontraron clientes registrados.</p>
-        <p-button label="Nuevo" icon="pi pi-plus" (click)="nuevo()" severity="success" [rounded]="true"
-          size="small"></p-button>
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        ></p-button>
       </div>
       } @else {
       <div class="clientes-lista">
         @for (cliente of data(); track cliente.clienteId) {
-        <div class="cliente-item-ficha" [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
-          (click)="seleccionarCliente(cliente)">
+        <div
+          class="cliente-item-ficha"
+          [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)"
+        >
           <div class="item-ficha-header">
             <span class="ficha-label">Codigo:</span>
             <span class="ficha-value">{{ cliente.nrocliente }}</span>
-            <p-tag [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+            <p-tag
+              [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
               [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
-              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}"
+            />
           </div>
           <div class="item-ficha-row">
             <span class="ficha-label">Apellidos:</span>
@@ -404,16 +851,28 @@
             <span class="ficha-value">{{ cliente.razonsocial }}</span>
           </div>
           <div class="item-ficha-actions">
-            <p-button icon="pi pi-pencil" (click)="editarCliente(cliente, $event)" [rounded]="true" size="small" text
-              pTooltip="Editar" tooltipPosition="left" />
+            <p-button
+              icon="pi pi-pencil"
+              (click)="editarCliente(cliente, $event)"
+              [rounded]="true"
+              size="small"
+              text
+              pTooltip="Editar"
+              tooltipPosition="left"
+            />
           </div>
         </div>
         }
       </div>
 
-      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
-        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
-        styleClass="paginator-compact"></p-paginator>
+      <p-paginator
+        [first]="(page() - 1) * limit()"
+        [rows]="limit()"
+        [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"
+      ></p-paginator>
       }
     </div>
   </div>
