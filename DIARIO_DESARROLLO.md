@@ -220,3 +220,79 @@ Para garantizar la escalabilidad, seguridad y una integración perfecta con nues
 | `Backend/src/modules/contabilidad/entities/copdadet.entity.ts` | FK `partidaId` |
 | `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.ts` | Ticket con `p_descuento`, payload con `%` + monto, `nrofactura` en toasts |
 | `Frontend/src/app/features/facturacion/nueva-factura/nueva-factura.html` | CAI en ticket, alert toast |
+
+---
+
+### 05 de Octubre de 2026 — Reportes de Contabilidad: letterhead compartido (PDF + Excel + Word)
+
+**Alcance aprobado**: exportación con letterhead (PDF + Excel + Word) para los 4 reportes con botones: Balance Dinámico, Balance Financiero, Libro Mayor y Libro Diario. **Decisión final del día: el letterhead es SOLO de los archivos exportados; en pantalla NO se muestra** ("quitame esto de la UI"). (`reportes-contables` / Balance de Comprobación NO tiene botones de exportación → queda pendiente.)
+
+#### Servicio compartido `core/services/reportes-print.service.ts`
+
+- `encabezado(titulo, meta)` → `EncabezadoPrint { titulo, empresa, fiscal, meta, usuario, fecha, logo }` con cache por empresa (nombre + `tempresasdet` + logo).
+- **PDF**: `pdfEncabezado` (logo + título + empresa + fiscal + meta + filete), `pdfTabla` (minimalista: filete bajo cabecera, filete + negrita en totales), `pdfPaginar` (encabezado repetido pág. 2+ y pie `usuario | Página X de Y | fecha`).
+- **Excel (exceljs)**: `nuevoLibro`, `excelEncabezado` (logo embebido + celdas mergeadas), `excelTabla` (cabecera con filete, `numFmt #,##0.00`, totales con filete, cabecera congelada, `fitToWidth`), `descargarExcel`.
+- **Word (docx v9)**: `wordEncabezado` (logo `ImageRun` + título), `wordPie` (tabla usuario | paginación | fecha), `wordTabla`, `wordDocumento` (header/footer repetidos por página).
+- **Tipos**: `ColumnaPrint { titulo, alinear, pdf (mm), word (twips), excel (chars) }`, `TablaPrint { columnas, filas, filasTotales?, filaTotales? }` — los números se formatean solos en PDF/Word.
+
+#### Correcciones aplicadas al service
+
+| Fix | Detalle |
+|-----|---------|
+| docx v9 `ImageRun.type` | `jpeg` → `'jpg'` (el tipo de `docx` no acepta `"jpeg"`) |
+| docx v9 `ITableBordersOptions` | `between` no existe → `insideHorizontal` + `insideVertical` |
+| `wordPie` retorno | `(Paragraph \| Table)[]` (el footer acepta tablas) |
+| `pdfAnchos`/`wordAnchos` | El ancho fijo de la 1ª columna (cuenta) no se descontaba del reparto → columnas desbordaban/cortaban ancho; ahora: 1ª col fija → descripción 30%/35% → resto en partes iguales |
+| `wordTabla` ancho | 14112/10512 → **13840/10240** (página − márgenes 1000 twips c/u); antes la tabla desbordaba el margen |
+
+#### Integración por componente
+
+- **Balance Dinámico**: exports con `construirPDF()` + `tablaPrint()`; se eliminó toda la maquinaria propia (`autoTable`/`XLSX`/docx manual, `columnStylesPDF`, `encabezadoPaginaPDF`, `celulaWord`, etc.).
+- **Balance Financiero**: mismos exports + **3 filas de totales** (`ACTIVOS`/`PASIVOS`/`CAPITAL`) en `filasTotales`; meta incluye `Nivel` cuando `nivelMaximo !== 99`.
+- **Libro Mayor**: **2 variantes de tabla** — `tablaPdfWord()` (7 col., importe y D/C combinados `"123,456.00 (D)"`, `-` en ceros) y `tablaExcel()` (9 col., números puros + D/C en columna aparte, conservando el comportamiento numérico con el que siempre se exportó). `filaTotales` en ambas.
+- **Libro Diario**: PDF/Word con **una tabla por partida** (título `Partida #N | fecha | descripción` + tabla + totales de la partida; PDF salta de página antes de orfar el título), Excel plano con columna Partida/Fecha y `filasTotales` por partida.
+- **Pantalla**: el letterhead **se eliminó** de los 4 templates (bloque `.report-letterhead` quitado de sus HTML y purgado de sus TS: `letterhead`/`logoUrl`/`cargarLetterhead()`); la pantalla queda limpia y los exportados conservan logo a la derecha + nombre del libro en letra pequeña debajo.
+- `EmpresasService` ya no se inyecta en Libro Mayor/Libro Diario (la empresa la resuelve el service).
+
+#### Estilos globales
+
+- La sección `.report-letterhead` que se había agregado a `src/styles.scss` fue **eliminada** (CSS muerto al quitar el letterhead de la pantalla).
+
+#### Encabezado de exportados rediseñado (PDF + Excel + Word) — sin logo, fuente Audiowide
+
+Decisión suya: **NO logo, NO "Dir: …", NO "Tel: …"**. El encabezado queda en 4 elementos + filete, todos en **Audiowide**:
+
+| # | Elemento | Alineación | Tamaño (px → pt/word half-points) |
+|---|----------|------------|-----------------------------------|
+| 1 | Nombre de la empresa (AUTOSEL) | **Izquierda** | 1.75rem / 28px → 21pt → Word 42 · Excel 21 |
+| 2 | RTN (debajo de la empresa) | **Izquierda** | 0.75rem / 12px → 9pt → Word 18 · Excel 9 |
+| 3 | Título del reporte | **Centrado** | 1.06rem ≈ 17px → 12.7pt → Word 26 · Excel 13 |
+| 4 | Criterio de filtro (ej. `Del: 01/10/2026 al 04/10/2026`) | **Centrado** | 0.75rem / 12px → 9pt → Word 18 · Excel 9 |
+
+- **Datos**: `EncabezadoPrint` → `fiscal` y `logo` reemplazados por **`rtn`** (solo `RTN: 0801…`; dirección y teléfono ya no se imprimen). Eliminado todo el pipeline de logo del servicio (`logoDataUrl`, `normalizarLogo`, `medirAspecto`, `proporciones`, `empresas.getLogo`).
+- **Fuente Audiowide** (se probó Grotesk primero, luego cambió a Audiowide):
+  - **PDF (jsPDF)**: TTF embebida vía `addFileToVFS` + `addFont`, descargada de `/assets/fonts/Audiowide/Audiowide-Regular.ttf` y cacheada en sesión (`prepararFuente()` se espera dentro de `encabezado()`, con flag `fuenteCargada`/`fuenteB64`); si falla → fallback `helvetica`. Re-registro por página (`pdfPaginar` → `registrarFuente()`) verificado sin errores.
+  - **Excel/Word**: `font: 'Audiowide'` (nombre de familia) en los 4 elementos del encabezado.
+- **Cobertura de glifos**: `Audiowide-Regular.ttf` (**47 KB, 366 glifos**, Google Fonts, OFL) ya existía en `public/assets/fonts/Audiowide/`; verificada con fontTools (acentos, `:`, `/`, `—` OK, TTF `glyf` embebible en jsPDF).
+- **Grotesk queda fuera**: los `.woff2` de `public/assets/fonts/grotesk/` son un subconjunto de prueba de **67 glifos** (sin acentos, sin `:` ni `/`) → inutilizables; el `Grotesk-Regular.ttf` que se había generado (88 KB, Space Grotesk OFL) tampoco se usa ya — borrarlos cuando usted lo indique.
+- **Libro Diario**: el criterio de fecha ahora dice `Del: 01/10/2026 al 04/10/2026` (antes `Rango: …`); los reportes por período conservan `Período: Octubre 2026`.
+- **"Impreso por"**: Word y PDF lo llevan en el **pie de página** (ya existente); Excel no tiene pie → se conserva como fila pequeña gris bajo el criterio (dígamelo si la quiere fuera).
+- **Verificación**: render del PDF a PNG (pypdfium2) → exactamente el diseño pedido en Audiowide · `word/header1.xml` → `w:rFonts w:ascii="Audiowide"` ×4 con sizes 42/18/26/18 y alineaciones left/left/center/center · `styles.xml` de xlsx → `<name val="Audiowide"/>` sizes 21/9/13 · `ng build` dev + prod → **exit=0**.
+- **Aviso**: Audiowide **sí está instalada en esta PC** (HKCU, per-user) → Word y Excel la muestran bien aquí; en otras PCs que no la tengan Office sustituye. El PDF sí la lleva embebida y se ve siempre igual.
+
+#### Tipografía global: Figtree (activada en styles.scss)
+
+- `public/assets/fonts/Figtree/` (Google Fonts, OFL): VF `Figtree-VariableFont_wght.ttf` (ejes `wght` 300–900) + `Figtree-Italic-VariableFont_wght.ttf` + 14 estáticas en `static/`.
+- **Dos `@font-face`** en `src/styles.scss` (romana + itálica, `font-weight: 300 900`, `font-display: swap`) → familia **Figtree**.
+- **Activada como tipografía global**: `--font-family: 'Figtree', 'Mukta', sans-serif` (Mukta queda como fallback y sus `@font-face` originales siguen intactos).
+- `ArcasPreset` de PrimeNG no define `fontFamily` y no existe `--p-content-font-family` → **toda la UI hereda Figtree del `body`** (texto y componentes PrimeNG), sin tocar tema ni componentes.
+- Verificado en `dist` (dev y prod): ambos `@font-face` de Figtree + la variable `--font-family` presentes; `ng build` **exit=0**.
+- Nota: `.saldo` en `balance-dinamico.scss` sigue en `font-family: 'Mukta', monospace` (tabular-nums) — pendiente de decisión si se pasa a Figtree.
+- Los `@font-face` de Grotesk que había en `styles.scss` salieron en el restore desde git HEAD (código muerto, 0 usos).
+
+#### Dependencias / builds
+
+- `exceljs ^4.4.0` agregado (Excel con letterhead; `xlsx` solo queda en componentes no migrados).
+- `npx ng build --configuration development` y `--configuration production` → **exit=0** (solo warnings CommonJS de `exceljs`/`html2canvas`/`tesseract.js`, ya existentes).
+
+**Pendiente**: `reportes-contables` (Balance de Comprobación / Libro Diario / Libro Mayor en una pantalla) no tiene exportación → evaluar sumarla cuando usted lo indique; verificación visual en browser de los 4 reportes (pantalla, PDF, Excel, Word).
