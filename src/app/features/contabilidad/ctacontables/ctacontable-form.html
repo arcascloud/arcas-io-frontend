@@ -1,4 +1,3 @@
-<p-toast />
 <div class="ctacontable-form" [formGroup]="form">
   @if (bloqueada()) {
   <div class="mensaje-bloqueo">
@@ -59,9 +58,8 @@
           placeholder="Seleccionar"
           styleClass="w-full"
           size="small"
-          [disabled]="form.get('tcogrupocontableId')?.value != null"
         />
-        <small class="field-hint">Se asigna según grupo contable</small>
+        <small class="field-hint">Se sugiere según grupo contable; puede cambiarlo</small>
       </div>
 
       <!-- Tipo de cuenta -->

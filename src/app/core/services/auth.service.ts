@@ -27,6 +27,9 @@ export interface AuthUser {
 /** Roles con permiso de administrar cuentas contables (sn_operable / cuentas con historial) */
 export const ROLES_CONTABILIDAD = ['admin', 'supervisor', 'contador'];
 
+/** Roles con permiso de administrar fechas autorizadas (tfecma/tfecdet) y de corregir la Fecha del Sistema del ERP */
+export const ROLES_FECHAS = ['admin', 'supervisor', 'contador'];
+
 /** Respuesta del endpoint de login */
 export interface LoginResponse {
   /** Token JWT de autenticación */
@@ -55,6 +58,14 @@ export class AuthService {
     if (!u) return false;
     const roles = u.roles ?? (u.rol ? [u.rol] : []);
     return roles.some((r) => ROLES_CONTABILIDAD.includes(r));
+  });
+
+  /** true si el usuario puede administrar fechas autorizadas y la Fecha del Sistema (admin/supervisor/contador) */
+  readonly esRolFechas = computed(() => {
+    const u = this.user();
+    if (!u) return false;
+    const roles = u.roles ?? (u.rol ? [u.rol] : []);
+    return roles.some((r) => ROLES_FECHAS.includes(r));
   });
 
   /**

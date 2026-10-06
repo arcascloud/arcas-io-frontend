@@ -1,4 +1,4 @@
-<section class="page">
+@if (!modoInline()) {
   <header class="page-header">
     <div>
       <h1 class="page-title">{{ titulo() }}</h1>
@@ -11,459 +11,230 @@
       text
       size="small"
       rounded
-      (onClick)="volver()"
+      (onClick)="cancelar()"
     />
   </header>
+}
 
-  @if (cargando()) {
-    <div class="card">Cargando datos...</div>
-  } @else {
-    <p-tabs [value]="activeTabValue()" (valueChange)="activeTabValue.set($event)">
-      <p-tablist>
-        <p-tab value="0">
-          <i class="pi pi-user"></i>
-          <span>Datos</span>
-        </p-tab>
-        <p-tab value="1" [disabled]="!esEdicion()">
-          <i class="pi pi-info-circle"></i>
-          <span>Inf. Adicional</span>
-        </p-tab>
-        <p-tab value="2" [disabled]="!esEdicion()">
-          <i class="pi pi-wallet"></i>
-          <span>Carteras</span>
-        </p-tab>
-      </p-tablist>
+@if (cargando()) {
+  <div class="card mb-3">Cargando datos...</div>
+} @else {
+  <div class="card mb-3">
+    <div class="prestamo-form-columns" [formGroup]="form">
+      <div class="form-col">
+        <h5 class="form-col-title">Datos del Proveedor</h5>
 
-      <p-tabpanels>
-        <!-- ===== Tab 0: Datos del proveedor ===== -->
-        <p-tabpanel value="0">
-          <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
-            <div class="campo">
-              <label for="nroproveedor">Nro. proveedor <span class="req">*</span></label>
-              <input
-                pInputText
-                id="nroproveedor"
-                formControlName="nroproveedor"
-                maxlength="20"
-                placeholder="Número de proveedor"
-                [ngClass]="{ 'ng-invalid': invalid('nroproveedor') }"
-              />
-              @if (invalid('nroproveedor')) {
-                <small class="err">El número de proveedor es obligatorio</small>
-              }
-            </div>
+        <div class="p-field">
+          <label>Nro. proveedor <span class="req">*</span></label>
+          <input
+            #primerCampo
+            pInputText
+            pSize="small"
+            [formControl]="form.get('nroproveedor')"
+            maxlength="20"
+            placeholder="Número de proveedor"
+          />
+          @if (form.get('nroproveedor')?.invalid && form.get('nroproveedor')?.touched) {
+            <small class="p-error">El número de proveedor es obligatorio</small>
+          }
+        </div>
 
-            <div class="campo">
-              <label for="nombres">Nombres <span class="req">*</span></label>
-              <input
-                pInputText
-                id="nombres"
-                formControlName="nombres"
-                maxlength="50"
-                placeholder="Nombres"
-                [ngClass]="{ 'ng-invalid': invalid('nombres') }"
-              />
-              @if (invalid('nombres')) {
-                <small class="err">Los nombres son obligatorios</small>
-              }
-            </div>
+        <div class="p-field">
+          <label>Nombres <span class="req">*</span></label>
+          <input
+            pInputText
+            pSize="small"
+            [formControl]="form.get('nombres')"
+            maxlength="50"
+            placeholder="Nombres"
+          />
+          @if (form.get('nombres')?.invalid && form.get('nombres')?.touched) {
+            <small class="p-error">Los nombres son obligatorios</small>
+          }
+        </div>
 
-            <div class="campo">
-              <label for="apellidos">Apellidos <span class="req">*</span></label>
-              <input
-                pInputText
-                id="apellidos"
-                formControlName="apellidos"
-                maxlength="50"
-                placeholder="Apellidos"
-                [ngClass]="{ 'ng-invalid': invalid('apellidos') }"
-              />
-              @if (invalid('apellidos')) {
-                <small class="err">Los apellidos son obligatorios</small>
-              }
-            </div>
+        <div class="p-field">
+          <label>Apellidos <span class="req">*</span></label>
+          <input
+            pInputText
+            pSize="small"
+            [formControl]="form.get('apellidos')"
+            maxlength="50"
+            placeholder="Apellidos"
+          />
+          @if (form.get('apellidos')?.invalid && form.get('apellidos')?.touched) {
+            <small class="p-error">Los apellidos son obligatorios</small>
+          }
+        </div>
 
-            <div class="campo">
-              <label for="razonsocial">Razón social</label>
-              <input
-                pInputText
-                id="razonsocial"
-                formControlName="razonsocial"
-                maxlength="120"
-                placeholder="Razón social"
-              />
-            </div>
+        <div class="p-field">
+          <label>Razón social</label>
+          <input
+            pInputText
+            pSize="small"
+            [formControl]="form.get('razonsocial')"
+            maxlength="120"
+            placeholder="Razón social"
+          />
+        </div>
 
-            <div class="campo">
-              <label for="rtn">RTN</label>
-              <input pInputText id="rtn" formControlName="rtn" maxlength="50" placeholder="RTN" />
-            </div>
+        <div class="p-field">
+          <label>DNI</label>
+          <input pInputText pSize="small" [formControl]="form.get('dni')" maxlength="20" placeholder="DNI" />
+        </div>
 
-            <div class="campo">
-              <label for="dni">DNI</label>
-              <input pInputText id="dni" formControlName="dni" maxlength="20" placeholder="DNI" />
-            </div>
+        <div class="p-field">
+          <label>RTN</label>
+          <input pInputText pSize="small" [formControl]="form.get('rtn')" maxlength="50" placeholder="RTN" />
+        </div>
 
-            <div class="campo">
-              <label for="sexo">Sexo</label>
-              <p-select
-                size="small"
-                id="sexo"
-                formControlName="sexo"
-                [options]="sexoOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Seleccione sexo"
-                [fluid]="true"
-                [showClear]="true"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="estadocivil">Estado civil</label>
-              <p-select
-                size="small"
-                id="estadocivil"
-                formControlName="estadocivil"
-                [options]="estadoCivilOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Seleccione estado civil"
-                [fluid]="true"
-                [showClear]="true"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="limiteCredito">Límite de crédito</label>
-              <p-inputnumber
-                size="small"
-                id="limiteCredito"
-                formControlName="limiteCredito"
-                [mode]="'currency'"
-                currency="HNL"
-                [minFractionDigits]="2"
-                [maxFractionDigits]="2"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="diasplazo">Días de plazo</label>
-              <p-inputnumber
-                size="small"
-                id="diasplazo"
-                formControlName="diasplazo"
-                [min]="0"
-                [max]="999"
-                [useGrouping]="false"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="interes">Interés (%)</label>
-              <p-inputnumber
-                size="small"
-                id="interes"
-                formControlName="interes"
-                [minFractionDigits]="2"
-                [maxFractionDigits]="2"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="moratorio">Moratorio (%)</label>
-              <p-inputnumber
-                size="small"
-                id="moratorio"
-                formControlName="moratorio"
-                [minFractionDigits]="2"
-                [maxFractionDigits]="2"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="categoria">Categoría</label>
-              <p-select
-                size="small"
-                id="categoria"
-                formControlName="categoria"
-                [options]="categoriaOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Seleccione categoría"
-                [fluid]="true"
-                [showClear]="true"
-              />
-            </div>
-
-            @if (esEdicion()) {
-              <div class="campo">
-                <label>Estado <span class="req">*</span></label>
-                <p-selectbutton
-                  size="small"
-                  [options]="snOptions"
-                  formControlName="sn_activo"
-                  optionLabel="label"
-                  optionValue="value"
-                />
-              </div>
-            }
-
-            <div class="acciones-form">
-              <p-button
-                type="button"
-                label="Cancelar"
-                icon="pi pi-times"
-                severity="secondary"
-                size="small"
-                rounded
-                (onClick)="volver()"
-              />
-              <p-button
-                type="submit"
-                label="Guardar"
-                icon="pi pi-check"
-                rounded
-                size="small"
-                [loading]="guardando()"
-              />
-            </div>
-          </form>
-        </p-tabpanel>
-
-        <!-- ===== Tab 1: Inf. Adicional (proveedorinfo) ===== -->
-        <p-tabpanel value="1">
-          <div class="tab-content">
-            <div class="tab-header">
-              <h4>Información Adicional</h4>
-              <span class="tab-subtitulo">Correo, celular y dirección del proveedor</span>
-            </div>
-
-            <div class="info-adicional-grid">
-              <!-- Columna izquierda: formulario alta / edición -->
-              <div class="info-panel info-panel-form">
-                <h5 class="form-col-title">
-                  {{ infoModel().id != null ? 'Editar registro' : 'Nuevo registro' }}
-                </h5>
-
-                <div class="campo">
-                  <label>Tipo</label>
-                  <p-select
-                    size="small"
-                    [options]="infoTipoOptions"
-                    [ngModel]="infoModel().tipo"
-                    (ngModelChange)="infoModel.set({ ...infoModel(), tipo: $event })"
-                    placeholder="Seleccione tipo"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                  />
-                </div>
-
-                <div class="campo">
-                  <label>Descripción</label>
-                  <input
-                    pInputText
-                    size="small"
-                    maxlength="50"
-                    [ngModel]="infoModel().descripcion"
-                    (ngModelChange)="infoModel.set({ ...infoModel(), descripcion: $event })"
-                    placeholder="Valor del contacto"
-                  />
-                </div>
-
-                <div class="campo">
-                  <label>Estado</label>
-                  <p-select
-                    size="small"
-                    [options]="infoEstadoOptions"
-                    [ngModel]="infoModel().sn_activo"
-                    (ngModelChange)="infoModel.set({ ...infoModel(), sn_activo: $event })"
-                    placeholder="Seleccione estado"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                  />
-                </div>
-
-                <div class="acciones-form acciones-info">
-                  @if (infoModel().id != null) {
-                    <p-button
-                      label="Cancelar"
-                      icon="pi pi-times"
-                      variant="text"
-                      severity="secondary"
-                      (click)="cancelarInfo()"
-                      [rounded]="true"
-                      size="small"
-                    />
-                  }
-                  <p-button
-                    [label]="infoModel().id != null ? 'Actualizar' : 'Agregar'"
-                    [icon]="infoModel().id != null ? 'pi pi-check' : 'pi pi-plus'"
-                    variant="text"
-                    severity="success"
-                    [raised]="true"
-                    [rounded]="true"
-                    size="small"
-                    [loading]="infoSaving()"
-                    (click)="guardarInfo()"
-                  />
-                </div>
-              </div>
-
-              <!-- Columna derecha: listado -->
-              <div class="info-panel info-panel-list">
-                <div class="info-list-header">
-                  <h5 class="form-col-title">Registros</h5>
-                  <span class="info-list-total">{{ infoData().length }} registro(s)</span>
-                </div>
-
-                <p-table [value]="infoData()" [loading]="infoLoading()" size="small">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th class="col-tipo">Tipo</th>
-                      <th>Descripción</th>
-                      <th class="col-estado">Estado</th>
-                      <th class="col-acciones"></th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-info>
-                    <tr>
-                      <td class="col-tipo">{{ infoTipoLabel(info.tipo) }}</td>
-                      <td>{{ info.descripcion || '—' }}</td>
-                      <td class="col-estado text-center">
-                        <p-tag
-                          [value]="info.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
-                          [severity]="info.sn_activo === 'S' ? 'success' : 'danger'"
-                        />
-                      </td>
-                      <td class="col-acciones">
-                        <p-button
-                          icon="pi pi-pencil"
-                          (click)="editarInfo(info)"
-                          [rounded]="true"
-                          size="small"
-                          text
-                          severity="secondary"
-                          pTooltip="Editar"
-                          tooltipPosition="left"
-                        />
-                        <p-button
-                          icon="pi pi-trash"
-                          (click)="eliminarInfo(info)"
-                          [rounded]="true"
-                          size="small"
-                          text
-                          severity="danger"
-                          pTooltip="Desactivar"
-                          tooltipPosition="left"
-                        />
-                      </td>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="emptymessage">
-                    <tr>
-                      <td colspan="4" class="text-center text-muted">
-                        No tiene información registrada
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-              </div>
-            </div>
+        <div class="form-row">
+          <div class="p-field">
+            <label>Sexo</label>
+            <p-select
+              size="small"
+              [formControl]="form.get('sexo')"
+              [options]="sexoOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccione sexo"
+              [showClear]="true"
+              styleClass="w-full"
+              [appendTo]="'body'"
+            />
           </div>
-        </p-tabpanel>
-
-        <!-- ===== Tab 2: Carteras contables (cxpcarteracta) ===== -->
-        <p-tabpanel value="2">
-          <div class="tab-content">
-            <div class="tab-header">
-              <h4>Carteras contables</h4>
-              <div class="saldo-total">
-                Asignadas:
-                <strong>{{ carterasProveedor().length }}</strong>
-              </div>
-            </div>
-
-            <div class="info-panel">
-              <div class="carteras-toolbar">
-                <div class="campo campo-cartera">
-                  <label>Cartera</label>
-                  <p-select
-                    size="small"
-                    [options]="carterasDisponibles()"
-                    [ngModel]="carteraSeleccionada()"
-                    (ngModelChange)="carteraSeleccionada.set($event)"
-                    placeholder="Seleccione cartera"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                    [showClear]="true"
-                  />
-                  @if (carterasDisponibles().length === 0) {
-                    <small class="hint">No hay carteras disponibles para asignar</small>
-                  }
-                </div>
-                <div class="campo campo-btn">
-                  <label>&nbsp;</label>
-                  <p-button
-                    label="Asignar"
-                    icon="pi pi-plus"
-                    severity="success"
-                    variant="text"
-                    [raised]="true"
-                    [rounded]="true"
-                    size="small"
-                    [loading]="carteraSaving()"
-                    (click)="agregarCartera()"
-                  />
-                </div>
-              </div>
-
-              <p-table
-                [value]="carterasProveedor()"
-                [loading]="carteraLoading()"
-                size="small"
-              >
-                <ng-template pTemplate="header">
-                  <tr>
-                    <th>Cartera</th>
-                    <th class="col-cta">Cuenta</th>
-                    <th>Cuenta contable</th>
-                    <th class="col-acciones"></th>
-                  </tr>
-                </ng-template>
-                <ng-template pTemplate="body" let-cartera>
-                  <tr>
-                    <td class="celda-cartera">{{ nombreCartera(cartera.carteractaId) }}</td>
-                    <td class="col-cta">{{ ctaCartera(cartera.carteractaId) || '—' }}</td>
-                    <td class="celda-cta-desc">
-                      {{ descripcionCtaCartera(cartera.carteractaId) || '—' }}
-                    </td>
-                    <td class="col-acciones">
-                      <p-button
-                        icon="pi pi-trash"
-                        [rounded]="true"
-                        size="small"
-                        text
-                        severity="danger"
-                        pTooltip="Quitar"
-                        tooltipPosition="left"
-                        (click)="eliminarCartera(cartera)"
-                      />
-                    </td>
-                  </tr>
-                </ng-template>
-                <ng-template pTemplate="emptymessage">
-                  <tr>
-                    <td colspan="4" class="text-center text-muted">
-                      No tiene carteras contables asignadas
-                    </td>
-                  </tr>
-                </ng-template>
-              </p-table>
-            </div>
+          <div class="p-field">
+            <label>Estado civil</label>
+            <p-select
+              size="small"
+              [formControl]="form.get('estadocivil')"
+              [options]="estadoCivilOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccione estado civil"
+              [showClear]="true"
+              styleClass="w-full"
+              [appendTo]="'body'"
+            />
           </div>
-        </p-tabpanel>
-      </p-tabpanels>
-    </p-tabs>
-  }
-</section>
+        </div>
+      </div>
+
+      <div class="form-col">
+        <h5 class="form-col-title">Clasificación y Crédito</h5>
+
+        <div class="p-field">
+          <label>Categoría</label>
+          <p-select
+            size="small"
+            [formControl]="form.get('categoria')"
+            [options]="categoriaOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccione categoría"
+            [showClear]="true"
+            styleClass="w-full"
+            [appendTo]="'body'"
+          />
+        </div>
+
+        <div class="p-field">
+          <label>Límite de crédito</label>
+          <p-inputNumber
+            size="small"
+            [formControl]="form.get('limiteCredito')"
+            mode="currency"
+            currency="HNL"
+            [locale]="'es-HN'"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [useGrouping]="true"
+            [inputStyle]="{ 'width': '100%' }"
+          />
+        </div>
+
+        <div class="p-field">
+          <label>Días de plazo</label>
+          <p-inputNumber
+            size="small"
+            [formControl]="form.get('diasplazo')"
+            [min]="0"
+            [max]="999"
+            [useGrouping]="false"
+          />
+        </div>
+
+        <div class="p-field">
+          <label>Interés (%)</label>
+          <p-inputNumber
+            size="small"
+            [formControl]="form.get('interes')"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [inputStyle]="{ 'width': '100%' }"
+          />
+        </div>
+
+        <div class="p-field">
+          <label>Moratorio (%)</label>
+          <p-inputNumber
+            size="small"
+            [formControl]="form.get('moratorio')"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [inputStyle]="{ 'width': '100%' }"
+          />
+        </div>
+
+        @if (esEdicion()) {
+          <div class="p-field">
+            <label>Estado <span class="req">*</span></label>
+            <p-selectButton
+              size="small"
+              [formControl]="form.get('sn_activo')"
+              [options]="snOptions"
+              optionLabel="label"
+              optionValue="value"
+            />
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="form-actions">
+      @if (modoInline()) {
+        <p-button
+          label="Cancelar"
+          icon="pi pi-times"
+          size="small"
+          variant="text"
+          severity="secondary"
+          [rounded]="true"
+          (onClick)="cancelar()"
+        />
+      } @else {
+        <p-button
+          label="Limpiar"
+          icon="pi pi-times"
+          size="small"
+          variant="text"
+          severity="secondary"
+          [rounded]="true"
+          (onClick)="cancelar()"
+        />
+      }
+      <p-button
+        label="Guardar"
+        icon="pi pi-check"
+        size="small"
+        variant="text"
+        severity="success"
+        [rounded]="true"
+        [loading]="guardando()"
+        (onClick)="guardar()"
+      />
+    </div>
+  </div>
+}

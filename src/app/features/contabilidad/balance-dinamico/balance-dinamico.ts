@@ -21,8 +21,12 @@ import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { EmpresasService } from '../../../core/services/empresas.service';
-import { EmpresaDet } from '../../../core/models/empresa.models';
+import {
+  ReportesPrintService,
+  EncabezadoPrint,
+  TablaPrint,
+  ColumnaPrint,
+} from '../../../core/services/reportes-print.service';
 import {
   PlantillaBalancesMae,
   NivelCta,
@@ -31,19 +35,7 @@ import {
 } from '../../../core/models/contabilidad.models';
 
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  Table,
-  TableRow,
-  TableCell,
-  WidthType,
-  AlignmentType,
-} from 'docx';
+import { Packer } from 'docx';
 
 @Component({
   selector: 'app-balance-dinamico',
@@ -67,7 +59,7 @@ import {
 export class BalanceDinamicoComponent implements OnInit {
   private contabilidad = inject(ContabilidadService);
   private auth = inject(AuthService);
-  private empresas = inject(EmpresasService);
+  private print = inject(ReportesPrintService);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private sanitizer = inject(DomSanitizer);
@@ -79,8 +71,6 @@ export class BalanceDinamicoComponent implements OnInit {
   // Catálogos
   plantillas = signal<PlantillaBalancesMae[]>([]);
   niveles = signal<NivelCta[]>([]);
-  // Datos fiscales de la empresa (tempresasdet): RTN, dirección, teléfono
-  empresaDet = signal<EmpresaDet[]>([]);
 
   // Filtros
   plantillaId = signal<number | null>(null);
@@ -164,15 +154,6 @@ export class BalanceDinamicoComponent implements OnInit {
         next: (niveles) => this.niveles.set(niveles),
         error: () => {},
       });
-
-    // Datos fiscales (RTN / dirección / teléfono) para el encabezado de impresión
-    this.empresas
-      .getAllDet()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (det) => this.empresaDet.set(det ?? []),
-        error: () => {}, // opcionales: el reporte se imprime aunque falten
-      });
   }
 
   generar(): void {
@@ -246,26 +227,6 @@ export class BalanceDinamicoComponent implements OnInit {
 
   // ========== UTILIDADES DE IMPRESIÓN ==========
 
-  private getNombreEmpresa(): string {
-    return this.reporte()?.empresaName || 'Empresa';
-  }
-
-  private getUsuarioImpresion(): string {
-    const user = this.auth.currentUser();
-    return user?.nombre || user?.usuario || '';
-  }
-
-  private getFechaHoraImpresion(): string {
-    return new Date().toLocaleString('es-HN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  }
-
   /** Título del reporte: plantilla + período + nivel */
   private getTituloReporte(): string {
     const rep = this.reporte();
@@ -275,48 +236,13 @@ export class BalanceDinamicoComponent implements OnInit {
     return titulo;
   }
 
-  /** Dato fiscal activo de la empresa por tipo (RTN, DIRECCION, TELEFONO…) */
-  private datoEmpresa(tipo: EmpresaDet['tipo']): string {
-    return (
-      this.empresaDet()
-        .find((d) => d.tipo === tipo && d.sn_activo === 'S')
-        ?.descripcion?.trim() ?? ''
-    );
-  }
-
-  /** Línea de datos fiscales para el encabezado de impresión */
-  private lineaFiscal(): string {
-    const partes: string[] = [];
-    const rtn = this.datoEmpresa('RTN');
-    if (rtn) partes.push(`RTN: ${rtn}`);
-    const dir = this.datoEmpresa('DIRECCION');
-    if (dir) partes.push(`Dir: ${dir}`);
-    const tel = this.datoEmpresa('TELEFONO');
-    if (tel) partes.push(`Tel: ${tel}`);
-    return partes.join('   |   ');
-  }
-
-  /** Recorta el texto para que no desborde el ancho de la página */
-  private cortar(texto: string, max: number): string {
-    if (!texto) return '';
-    return texto.length > max ? `${texto.slice(0, max - 1)}…` : texto;
-  }
-
-  /** Formato numérico es-HN con 2 decimales */
-  private fmt(valor: number | null | undefined): string {
-    if (valor == null) return '';
-    return (Number(valor) || 0).toLocaleString('es-HN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-
-  /** Encabezado de columnas de los documentos exportados: Cuenta | Descripción | Saldo Acum. | Parcial | Total */
-  private encabezadoColumnas(): string[] {
-    const cols = ['Cuenta', 'Descripción'];
-    if (this.mostrarCol0()) cols.push(this.etiquetaColumna(0));
-    for (const c of this.columnasVisibles()) cols.push(this.etiquetaColumna(c));
-    return cols;
+  /**
+   * Encabezado de los archivos exportados (logo + empresa + datos fiscales +
+   * nombre del libro + meta): PDF, Excel y Word.
+   */
+  private async encabezadoImpresion(): Promise<EncabezadoPrint> {
+    const rep = this.reporte();
+    return this.print.encabezado(rep?.balancename || 'BALANCE DINÁMICO', this.getTituloReporte());
   }
 
   /** Etiqueta de cada columna del balance en el output: Saldo Acum. / Parcial / Total */
@@ -337,35 +263,50 @@ export class BalanceDinamicoComponent implements OnInit {
     }
   }
 
-  private filasCuerpo(): string[][] {
+  /**
+   * Tabla imprimible compartida por PDF, Excel y Word (ReportesPrintService).
+   * Los importes van como `number` para que el service los formatee igual en
+   * los tres formatos (1,234.56) y en Excel queden como valores, no texto.
+   */
+  private tablaPrint(): TablaPrint {
     const rep = this.reporte();
-    if (!rep) return [];
-    const columnas = this.columnasVisibles();
-    const conCol0 = this.mostrarCol0();
+    const columnas: ColumnaPrint[] = [
+      { titulo: 'Cuenta', alinear: 'left' },
+      { titulo: 'Descripción', alinear: 'left' },
+    ];
+    if (this.mostrarCol0()) columnas.push({ titulo: this.etiquetaColumna(0), alinear: 'right' });
+    for (const col of this.columnasVisibles()) {
+      columnas.push({ titulo: this.etiquetaColumna(col), alinear: 'right' });
+    }
 
-    return rep.lineas.map((l: BalanceDinamicoLinea) => {
-      const fila = [l.ctacontable ?? '', l.descripcion ?? ''];
-      if (conCol0) fila.push(this.fmt(l.col0 ?? 0));
-      for (const col of columnas) {
-        fila.push(l.columna === col ? this.fmt(l.valor) : '');
-      }
-      return fila;
-    });
-  }
+    const filas: (string | number | null)[][] = (rep?.lineas ?? []).map(
+      (l: BalanceDinamicoLinea) => {
+        const fila: (string | number | null)[] = [l.ctacontable ?? '', l.descripcion ?? ''];
+        if (this.mostrarCol0()) fila.push(Number(l.col0) || 0);
+        for (const col of this.columnasVisibles()) {
+          fila.push(l.columna === col ? Number(l.valor) : null);
+        }
+        return fila;
+      },
+    );
 
-  private filaTotales(): string[] {
-    const fila = ['', 'TOTALES'];
-    if (this.mostrarCol0()) fila.push(this.fmt(this.totalCol(0)));
-    for (const col of this.columnasVisibles()) fila.push(this.fmt(this.totalCol(col)));
-    return fila;
+    const tab: TablaPrint = { columnas, filas };
+    // La fila de TOTALES solo se muestra en Estado de Resultado (no en Balance)
+    if (rep && !rep.esBalance) {
+      const totales: (string | number | null)[] = ['', 'TOTALES'];
+      if (this.mostrarCol0()) totales.push(Number(this.totalCol(0)) || 0);
+      for (const col of this.columnasVisibles()) totales.push(Number(this.totalCol(col)) || 0);
+      tab.filaTotales = totales;
+    }
+    return tab;
   }
 
   // ========== EXPORTACIONES ==========
 
   /** Genera el PDF y lo muestra en pantalla (visor) */
-  exportPDF(): void {
+  async exportPDF(): Promise<void> {
     if (!this.reporte()) return;
-    const doc = this.construirPDF();
+    const doc = await this.construirPDF();
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
@@ -381,9 +322,10 @@ export class BalanceDinamicoComponent implements OnInit {
   }
 
   /** Descarga el PDF generado desde el visor */
-  descargarPDF(): void {
+  async descargarPDF(): Promise<void> {
     if (!this.reporte()) return;
-    this.construirPDF().save('balance-dinamico.pdf');
+    const doc = await this.construirPDF();
+    doc.save('balance-dinamico.pdf');
     this.messageService.add({
       severity: 'success',
       summary: 'PDF descargado',
@@ -391,147 +333,28 @@ export class BalanceDinamicoComponent implements OnInit {
     });
   }
 
-  private construirPDF(): jsPDF {
+  /**
+   * PDF: letterhead con logo + tabla minimalista + firmas + encabezado
+   * repetido y pie paginado en TODAS las páginas.
+   */
+  private async construirPDF(): Promise<jsPDF> {
+    const enc = await this.encabezadoImpresion();
     const doc = new jsPDF('l', 'mm', 'letter'); // horizontal
-    const pageW = doc.internal.pageSize.getWidth();
-    const fecha = this.getFechaHoraImpresion();
-    const altoEnc = this.altoEncabezadoPDF();
+    const altoEnc = this.print.pdfEncabezado(doc, enc);
 
-    const encabezado = this.encabezadoColumnas();
-    const body = this.filasCuerpo();
-    // La fila de TOTALES solo se muestra en Estado de Resultado (no en Balance)
-    if (!this.reporte()?.esBalance) body.push(this.filaTotales());
-
-    autoTable(doc, {
-      startY: altoEnc,
-      head: [encabezado],
-      body,
-      theme: 'plain',
-      // Sin cuadrícula: se eliminan los bordes de celdas (antes gris 150,150,150
-      // y cabecera gris oscuro 100,100,100)
-      styles: {
-        fontSize: 7,
-        cellPadding: 1.2,
-        lineWidth: 0,
-        overflow: 'linebreak',
-      },
-      headStyles: {
-        fillColor: false,
-        textColor: [50, 50, 50],
-        fontStyle: 'bold',
-        lineWidth: 0,
-      },
-      // Alineación de títulos: Cuenta y Descripción a la izquierda;
-      // Saldo Acum., Parcial y Totales a la derecha.
-      // (columnStyles NO aplica a la cabecera en autoTable → se usa didParseCell)
-      didParseCell: (data) => {
-        if (data.section === 'head') {
-          data.cell.styles.halign = data.column.index <= 1 ? 'left' : 'right';
-        }
-      },
-      // top deja espacio para el encabezado repetido; bottom para el pie
-      margin: { left: 10, right: 10, top: altoEnc, bottom: 16 },
-      columnStyles: this.columnStylesPDF(pageW, encabezado.length),
-      // El encabezado y el pie se dibujan después, en todas las páginas
-    });
+    this.print.pdfTabla(doc, this.tablaPrint(), altoEnc, altoEnc);
 
     // Bloque de firmas al final del contenido (agrega página si no cabe)
     const finalY = Number((doc as any).lastAutoTable?.finalY ?? altoEnc);
-    this.agregarFirmasPDF(doc, finalY + 10);
+    this.agregarFirmasPDF(doc, finalY + 10, altoEnc);
 
-    // Encabezado repetido + pie con "Página X de Y" en TODAS las páginas
-    const total = doc.getNumberOfPages();
-    for (let i = 1; i <= total; i++) {
-      doc.setPage(i);
-      this.encabezadoPaginaPDF(doc, fecha);
-      this.piePaginaPDF(doc, i, total, fecha);
-    }
+    // Encabezado repetido (páginas 2+) + pie "Página X de Y"
+    this.print.pdfPaginar(doc, enc, altoEnc);
     return doc;
   }
 
-  /** Anchos de columna calculados para que siempre quepan en horizontal Letter */
-  private columnStylesPDF(pageW: number, totalCols: number): Record<number, any> {
-    const margenIzq = 10;
-    const margenDer = 10;
-    const anchoFijoCuenta = 30;
-
-    // Columnas de valores = total − (Cuenta, Descripción)
-    const ncolsVal = totalCols - 2;
-    const fijo = anchoFijoCuenta + margenIzq + margenDer;
-    const disponible = Math.max(pageW - fijo, 60);
-    const anchoDesc = Math.round(disponible * 0.3);
-    const anchoVal = Math.max((disponible - anchoDesc) / Math.max(ncolsVal, 1), 12);
-
-    // Cuenta y Descripción a la izquierda; columnas de valor a la derecha
-    const styles: Record<number, any> = {
-      0: { halign: 'left', cellWidth: anchoFijoCuenta },
-      1: { halign: 'left', cellWidth: anchoDesc },
-    };
-    for (let i = 2; i < totalCols; i++) {
-      styles[i] = { halign: 'right', cellWidth: anchoVal };
-    }
-    return styles;
-  }
-
-  /** Altura del encabezado repetido (crece si hay línea de datos fiscales) */
-  private altoEncabezadoPDF(): number {
-    return this.lineaFiscal() ? 31 : 26.5;
-  }
-
-  /** Encabezado que se repite en cada página del PDF */
-  private encabezadoPaginaPDF(doc: jsPDF, fecha: string): void {
-    const pageW = doc.internal.pageSize.getWidth();
-    const rep = this.reporte()!;
-    let y = 11;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.text((rep.balancename || 'BALANCE DINÁMICO').toUpperCase(), pageW / 2, y, {
-      align: 'center',
-    });
-
-    y += 5.5;
-    doc.setFontSize(9.5);
-    doc.text(this.getNombreEmpresa(), pageW / 2, y, { align: 'center' });
-
-    const fiscal = this.lineaFiscal();
-    if (fiscal) {
-      y += 4.5;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.text(this.cortar(fiscal, 170), pageW / 2, y, { align: 'center' });
-    }
-
-    y += 4.5;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.text(this.cortar(this.getTituloReporte(), 95), 12, y);
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}   —   ${fecha}`, pageW - 12, y, {
-      align: 'right',
-    });
-
-    y += 3;
-    doc.setDrawColor(120, 120, 120);
-    doc.setLineWidth(0.4);
-    doc.line(12, y, pageW - 12, y);
-  }
-
-  /** Pie con usuario, fecha y paginación "Página X de Y" */
-  private piePaginaPDF(doc: jsPDF, pagina: number, total: number, fecha: string): void {
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(10, pageH - 12, pageW - 10, pageH - 12);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 10, pageH - 8);
-    doc.text(`Página ${pagina} de ${total}`, pageW / 2, pageH - 8, { align: 'center' });
-    doc.text(fecha, pageW - 10, pageH - 8, { align: 'right' });
-  }
-
   /** Bloque de firmas al final del reporte (agrega página cuando no cabe) */
-  private agregarFirmasPDF(doc: jsPDF, startY: number): void {
+  private agregarFirmasPDF(doc: jsPDF, startY: number, altoEnc: number): void {
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const altoBloque = 22;
@@ -539,7 +362,7 @@ export class BalanceDinamicoComponent implements OnInit {
 
     if (y + altoBloque > pageH - 16) {
       doc.addPage();
-      y = 40; // el encabezado de esta página se dibuja en el bucle final
+      y = altoEnc + 6; // el encabezado de esta página lo dibuja pdfPaginar
     }
 
     const firmas = ['Elaborado por', 'Revisado por', 'Aprobado por'];
@@ -556,51 +379,19 @@ export class BalanceDinamicoComponent implements OnInit {
     });
   }
 
-  exportExcel(): void {
+  /** Excel con letterhead (logo, empresa, datos fiscales) vía exceljs */
+  async exportExcel(): Promise<void> {
     const rep = this.reporte();
     if (!rep) return;
 
-    const rows: any[][] = [];
-    rows.push([this.getNombreEmpresa()]);
-    rows.push([(rep.balancename || 'BALANCE DINÁMICO').toUpperCase()]);
-    rows.push([this.getTituloReporte()]);
-    rows.push([
-      `Impreso por: ${this.getUsuarioImpresion()}   |   Fecha: ${this.getFechaHoraImpresion()}`,
-    ]);
-    rows.push([]);
-    rows.push(this.encabezadoColumnas());
+    const enc = await this.encabezadoImpresion();
+    const tab = this.tablaPrint();
+    const wb = this.print.nuevoLibro();
+    const ws = wb.addWorksheet('Balance Dinámico');
+    const filaCabecera = this.print.excelEncabezado(wb, ws, enc, tab);
+    this.print.excelTabla(ws, tab, filaCabecera, 'landscape');
+    await this.print.descargarExcel(wb, 'balance-dinamico.xlsx');
 
-    const columnas = this.columnasVisibles();
-    const conCol0 = this.mostrarCol0();
-
-    for (const l of rep.lineas) {
-      const fila: any[] = [l.ctacontable ?? '', l.descripcion ?? ''];
-      if (conCol0) fila.push(Number(l.col0) || 0);
-      for (const col of columnas) {
-        fila.push(l.columna === col ? Number(l.valor) || 0 : null);
-      }
-      rows.push(fila);
-    }
-
-    // La fila de TOTALES solo se muestra en Estado de Resultado (no en Balance)
-    if (!rep.esBalance) {
-      rows.push([]);
-      const totales: any[] = ['', 'TOTALES'];
-      if (conCol0) totales.push(Number(this.totalCol(0)) || 0);
-      for (const col of columnas) totales.push(Number(this.totalCol(col)) || 0);
-      rows.push(totales);
-    }
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Balance Dinámico');
-
-    const anchos = [{ wch: 15 }, { wch: 42 }];
-    if (conCol0) anchos.push({ wch: 20 });
-    for (let i = 0; i < columnas.length; i++) anchos.push({ wch: 17 });
-    ws['!cols'] = anchos;
-
-    XLSX.writeFile(wb, 'balance-dinamico.xlsx');
     this.messageService.add({
       severity: 'success',
       summary: 'Excel generado',
@@ -608,145 +399,28 @@ export class BalanceDinamicoComponent implements OnInit {
     });
   }
 
-  exportWord(): void {
+  /** Word con letterhead repetido en cada página (header) vía docx */
+  async exportWord(): Promise<void> {
     const rep = this.reporte();
     if (!rep) return;
 
-    const children: any[] = [];
+    const enc = await this.encabezadoImpresion();
+    const documento = this.print.wordDocumento(enc, 'landscape', [
+      this.print.wordTabla(this.tablaPrint(), 'landscape'),
+    ]);
 
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [
-          new TextRun({
-            text: (rep.balancename || 'BALANCE DINÁMICO').toUpperCase(),
-            bold: true,
-            size: 28,
-          }),
-        ],
-      }),
-    );
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: this.getNombreEmpresa(), bold: true, size: 22 })],
-      }),
-    );
-    children.push(
-      new Paragraph({ children: [new TextRun({ text: this.getTituloReporte(), size: 18 })] }),
-    );
-    children.push(
-      new Paragraph({
-        children: [new TextRun({ text: `Impreso por: ${this.getUsuarioImpresion()}`, size: 18 })],
-      }),
-    );
-    children.push(
-      new Paragraph({
-        children: [
-          new TextRun({ text: `Fecha impresión: ${this.getFechaHoraImpresion()}`, size: 18 }),
-        ],
-      }),
-    );
-    children.push(new Paragraph({ text: '' }));
+    const blob = await Packer.toBlob(documento);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'balance-dinamico.docx';
+    a.click();
+    URL.revokeObjectURL(url);
 
-    const encabezado = this.encabezadoColumnas();
-    const columnas = this.columnasVisibles();
-    const conCol0 = this.mostrarCol0();
-
-    const headerRow = new TableRow({
-      tableHeader: true,
-      children: encabezado.map((h, i) =>
-        this.celdaWord(h, {
-          bold: true,
-          // Cuenta y Descripción a la izquierda; Saldo Acum. / Parcial / Totales a la derecha
-          align: i <= 1 ? AlignmentType.LEFT : AlignmentType.RIGHT,
-        }),
-      ),
-    });
-
-    const dataRows = rep.lineas.map((l: BalanceDinamicoLinea) => {
-      const celdas: TableCell[] = [
-        this.celdaWord(l.ctacontable ?? ''),
-        this.celdaWord(l.descripcion ?? ''),
-      ];
-      if (conCol0)
-        celdas.push(this.celdaWord(this.fmt(l.col0 ?? 0), { align: AlignmentType.RIGHT }));
-      for (const col of columnas) {
-        celdas.push(
-          this.celdaWord(l.columna === col ? this.fmt(l.valor) : '', {
-            align: AlignmentType.RIGHT,
-          }),
-        );
-      }
-      return new TableRow({ children: celdas });
-    });
-
-    // Fila totales — solo en Estado de Resultado (no en Balance)
-    if (!rep.esBalance) {
-      const celdasTot: TableCell[] = [
-        this.celdaWord('', {}),
-        this.celdaWord('TOTALES', { bold: true }),
-      ];
-      if (conCol0)
-        celdasTot.push(
-          this.celdaWord(this.fmt(this.totalCol(0)), { bold: true, align: AlignmentType.RIGHT }),
-        );
-      for (const col of columnas) {
-        celdasTot.push(
-          this.celdaWord(this.fmt(this.totalCol(col)), { bold: true, align: AlignmentType.RIGHT }),
-        );
-      }
-      dataRows.push(new TableRow({ children: celdasTot }));
-    }
-
-    children.push(
-      new Table({
-        rows: [headerRow, ...dataRows],
-        width: { size: 100, type: WidthType.PERCENTAGE },
-      }),
-    );
-
-    children.push(new Paragraph({ text: '' }));
-    children.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `Impreso por: ${this.getUsuarioImpresion()} | Fecha: ${this.getFechaHoraImpresion()}`,
-            size: 16,
-            color: '666666',
-          }),
-        ],
-      }),
-    );
-
-    const doc = new Document({ sections: [{ children }] });
-
-    Packer.toBlob(doc).then((blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'balance-dinamico.docx';
-      a.click();
-      URL.revokeObjectURL(url);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Word generado',
-        detail: 'Balance dinámico exportado en Word',
-      });
-    });
-  }
-
-  private celdaWord(
-    texto: string,
-    opts: { bold?: boolean; align?: (typeof AlignmentType)[keyof typeof AlignmentType] } = {},
-  ): TableCell {
-    return new TableCell({
-      children: [
-        new Paragraph({
-          alignment: opts.align ?? AlignmentType.LEFT,
-          children: [new TextRun({ text: texto, bold: opts.bold ?? false, size: 16 })],
-        }),
-      ],
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Word generado',
+      detail: 'Balance dinámico exportado en Word',
     });
   }
 }

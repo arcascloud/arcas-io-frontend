@@ -4,10 +4,10 @@ import { Consulta } from '../cxc/consulta/consulta';
 export const CXP_ROUTES: Routes = [
   { path: '', redirectTo: 'proveedores', pathMatch: 'full' },
 
-  // Proveedores
+  // Proveedores (maestro/detalle, igual que Clientes CxC)
   {
     path: 'proveedores',
-    loadComponent: () => import('./proveedores/proveedores').then((m) => m.CxpProveedores),
+    loadComponent: () => import('./proveedores/proveedores-manager').then((m) => m.ProveedoresManager),
   },
   {
     path: 'proveedores/nuevo',

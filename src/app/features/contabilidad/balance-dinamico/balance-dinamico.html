@@ -121,21 +121,7 @@
     </div>
   </div>
 
-  <!-- Encabezado del reporte -->
-  @if (reporte(); as rep) {
-  <div class="reporte-header mb-3">
-    <div class="reporte-empresa">{{ rep.empresaName }}</div>
-    <div class="reporte-titulo">{{ rep.balancename }}</div>
-    <div class="reporte-periodo">
-      Período: {{ getMesLabel() }} {{ rep.anio }} @if (rep.nivelDetalle != null) {
-      <span class="nivel-tag">Nivel {{ rep.nivelDetalle }}</span>
-      }
-      <span class="tipo-tag" [class.tipo-balance]="rep.esBalance">
-        {{ rep.esBalance ? 'Balance' : 'Estado de Resultado' }}
-      </span>
-    </div>
-  </div>
-
+  @if (reporte()) {
   <!-- Tabla única: Cuenta | Descripción | [Col0] | Col1..Col7 -->
   <div class="card">
     <p-table [value]="lineasOrdenadas()" size="small" styleClass="p-table-sm tabla-balances">

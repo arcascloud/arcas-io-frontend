@@ -29,7 +29,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
 
         // Mostrar notificación estándar en todo el ERP
-        if (error.status === 404) {
+        if (error.error?.code === 'FECHA_SISTEMA') {
+          // La Fecha del Sistema del ERP no coincide con la del servidor:
+          // el backend bloqueó la operación. Mensaje propio (el genérico de 409
+          // no explica cómo desbloquearse).
+          msgs.add({ severity: 'error', summary: 'Fecha del Sistema desactualizada', detail });
+        } else if (error.status === 404) {
           msgs.add({ severity: 'warn', summary: 'No encontrado', detail });
         } else if (error.status === 409) {
           msgs.add({ severity: 'error', summary: 'Conflicto de Datos', detail });

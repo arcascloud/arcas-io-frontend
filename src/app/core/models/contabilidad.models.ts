@@ -134,14 +134,27 @@ export interface MovCta {
 export interface LibroMayorItem {
   ctacontable: string;
   descripcion: string;
-  /** Naturaleza de la cuenta: D = deudora, C = acreedora. El saldo SIEMPRE es positivo. */
+  /**
+   * Naturaleza CONTABLE de la cuenta según el catálogo (coctacontables.naturaleza).
+   * D = cuenta deudora por naturaleza (Activo, Gasto), C = acreedora (Pasivo, Patrimonio, Ingreso).
+   * Es un atributo ESTÁTICO: NO describe el saldo. Solo informativo/para filtrados.
+   */
   naturaleza: 'D' | 'C';
+  /**
+   * Dirección REAL del saldo del período, calculada por operación contable:
+   * D si saldo >= 0, C si saldo < 0. Es lo que se muestra en pantalla como D/C.
+   */
+  tiposaldo: 'D' | 'C';
+  /** Dirección real del saldo acumulado del período anterior: D si >= 0, C si < 0. */
+  tiposaldoAcum: 'D' | 'C';
   nivel: number;
   padre: string | null;
   sn_operable: string;
   debe: number;
   haber: number;
+  /** Monto SIEMPRE en positivo; la dirección la indica `tiposaldo`. */
   saldo: number;
+  /** Monto SIEMPRE en positivo; la dirección la indica `tiposaldoAcum`. */
   saldoAcum: number;
 }
 
@@ -424,6 +437,19 @@ export interface LineaPartidaDto {
   credito: number;
 }
 
+/**
+ * Carga de la partida inicial de operaciones.
+ * El período NO viaja: lo define el backend con el período contable abierto.
+ */
+export interface CrearPartidaInicialRequest {
+  Idsucursal?: number;
+  /** Auxiliar / módulo de origen (default 7 = CONTABILIDAD) */
+  moduloId?: number;
+  descripcion?: string;
+  nroreferencia?: string;
+  lineas: LineaPartidaDto[];
+}
+
 export interface CierreContableRequest {
   empresaId?: number;
   periodo: number;
@@ -487,4 +513,187 @@ export interface BalanceDinamicoReporte {
   lineas: BalanceDinamicoLinea[];
   /** Totales por columna: key "0" (si aplica), "1".."7" */
   totales: Record<string, number>;
+}
+
+// ========== Reporte de Balance Financiero ==========
+
+export interface BalanceFinancieroRequest {
+  empresaId: number;
+  anio?: number;
+  periodo?: number;
+}
+
+export interface BalanceFinancieroFila {
+  ctacontable: string;
+  descripcion: string;
+  nivel: number;
+  /** No se muestra en la tabla (columna eliminada por decisión de diseño) */
+  padre: string;
+  /** 'S' operativa/detalle · 'N' mayor. Define qué columna (Parcial/Total) se llena */
+  sn_operable: string;
+  /** 'D' deudora · 'C' acreedora. NO se muestra en la tabla; gobierna los signos */
+  naturaleza: string;
+  /** Lado del acumulado anterior (cierre previo o signo/naturaleza) — columna eliminada */
+  tiposaldo: string;
+  /**
+   * Saldo acumulado de los períodos anteriores. **Positivo** cuando el lado
+   * anterior es acreedor (`tiposaldo = 'C'`), para que sume con su Parcial.
+   */
+  sacum: number;
+  /** Débitos del período (mayorizado) */
+  debe: number;
+  /** Créditos del período (mayorizado) */
+  haber: number;
+  /**
+   * PARCIAL — solo `sn_operable = 'S'` con saldo del período distinto de 0:
+   * `debe - haber`, **invertido** (`haber - debe`) en naturaleza C, de modo
+   * que `sacum + parcial` reproduzca el saldo del período.
+   */
+  parcial: number;
+  /**
+   * TOTAL — solo `sn_operable = 'N'`: `saldoAnterior + (debe - haber)`
+   * (el movimiento SIEMPRE se suma firmado) y `ABS(...)` en naturaleza C
+   * para expresarlo en el lado propio de la cuenta.
+   */
+  total: number;
+  /** Saldo del período en `coctamov` (solo cuentas con movimiento en el mes) */
+  saldo: number;
+}
+
+export interface BalanceFinancieroTotal {
+  saldo: number;
+  tiposaldo: string;
+}
+
+export interface BalanceFinancieroReporte {
+  empresaName: string;
+  anio: number;
+  periodo: number;
+  filas: BalanceFinancieroFila[];
+  totales: {
+    activos: BalanceFinancieroTotal;
+    pasivos: BalanceFinancieroTotal;
+    capital: BalanceFinancieroTotal;
+  };
+}
+
+// ===================== Estado de Resultado =====================
+
+/**
+ * Línea del Estado de Resultado (formato estándar multi-paso con subtotales):
+ *  - `seccion`  → cabecera de grupo (ej: "INGRESOS OPERACIONALES")
+ *  - `cuenta`   → cuenta individual con su valor firmado por naturaleza ER
+ *  - `total`    → subtotal de la sección
+ *  - `resultado`→ subtotal intermedio/final (Utilidad bruta, operativa, del período)
+ */
+export interface EstadoResultadoLinea {
+  tipo: 'seccion' | 'cuenta' | 'total' | 'resultado';
+  titulo?: string;
+  ctacontable?: string;
+  descripcion?: string;
+  valor?: number;
+}
+
+/** Request del reporte: UNA variante por vez (decisión 05/10/2026). */
+export interface EstadoResultadoRequest {
+  empresaId: number;
+  anio: number;
+  periodo: number;
+  /** P = Período (mes), A = Acumulado enero–mes, N = Año anterior (mismo mes) */
+  tipo: 'P' | 'A' | 'N';
+}
+
+/** Respuesta del reporte de Estado de Resultado. */
+export interface EstadoResultadoReporte {
+  tipo: 'P' | 'A' | 'N';
+  anio: number;
+  periodo: number;
+  /** Etiqueta legible del alcance (ej: "Acumulado: enero – octubre 2026"). */
+  etiqueta: string;
+  lineas: EstadoResultadoLinea[];
+  subtotales: {
+    ingresos: number;
+    costoVentas: number;
+    costoProduccion: number;
+    utilidadBruta: number;
+    gastos: number;
+    utilidadOperativa: number;
+    imputados: number;
+    cuentasOrden: number;
+    resultadoEjercicio: number;
+    utilidad: number;
+  };
+}
+
+// ===================== Dashboard Módulo 7 =====================
+
+/** Widget 1 — Composición patrimonial (pastel), saldos firmados del mes. */
+export interface DashboardResumen {
+  activos: number;
+  pasivos: number;
+  capital: number;
+}
+
+/**
+ * Widget 1b — Resultados del período (segmentos 4 Ingresos + 5/6/7 Gastos y
+ * Costos tras la reestructuración 05/10/2026), APARTE del pastel patrimonial
+ * (decisión 05/10/2026). `utilidad > 0` = ganancia, `< 0` = pérdida.
+ */
+export interface DashboardResultados {
+  ingresos: number;
+  gastos: number;
+  utilidad: number;
+}
+
+/** Widget 2 — Cuentas nivel 2 de Activos y Pasivos (barras). */
+export interface DashboardNivel2 {
+  ctacontable: string;
+  descripcion: string;
+  grupo: 'Activos' | 'Pasivos';
+  valor: number;
+}
+
+/** Widgets 3/4 — Comparativo Ingresos/Gastos: mes actual vs mes anterior. */
+export interface DashboardComparativo {
+  ctacontable: string;
+  descripcion: string;
+  actual: number;
+  anterior: number;
+}
+
+/** Widget 5 — CxC: facturado (D) vs recuperado (suma del haber, C). */
+export interface DashboardCxc {
+  facturado: number;
+  recuperado: number;
+  saldo: number;
+  docsPendientes: number;
+  docsPendientesSaldo: number;
+  clientesConSaldo: number;
+}
+
+/** Widget 6 — CxP: debitado (D) vs pagado (suma del haber, C) + compras sin pagar. */
+export interface DashboardCxp {
+  debitado: number;
+  pagado: number;
+  saldo: number;
+  docsPendientes: number;
+  docsPendientesSaldo: number;
+  comprasPendientes: number;
+  comprasPendientesTotal: number;
+}
+
+export interface DashboardData {
+  anio: number;
+  periodo: number;
+  periodoMax: number;
+  periodoAnterior: number;
+  etiquetaPeriodo: string;
+  etiquetaAnterior: string;
+  resumen: DashboardResumen;
+  resultados: DashboardResultados;
+  nivel2: DashboardNivel2[];
+  ingresos: DashboardComparativo[];
+  gastos: DashboardComparativo[];
+  cxc: DashboardCxc;
+  cxp: DashboardCxp;
 }

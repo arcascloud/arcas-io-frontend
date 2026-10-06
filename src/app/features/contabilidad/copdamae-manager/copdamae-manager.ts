@@ -15,16 +15,18 @@ import { DatePicker } from 'primeng/datepicker';
 import { Button } from 'primeng/button';
 import { Tag } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
+import * as XLSX from 'xlsx';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModulosService } from '../../../core/services/modulos.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
-import { CtaContable, CopdaMae, CopdaDet, PeriodoContable, PlantillaPdaMae } from '../../../core/models/contabilidad.models';
+import { CtaContable, CopdaMae, CopdaDet, PeriodoContable, PlantillaPdaMae, LineaPartidaDto } from '../../../core/models/contabilidad.models';
 import { Modulo } from '../../../core/models/usuario.models';
 
 /** Registro de ttipomes desde la API */
@@ -52,7 +54,7 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
   imports: [
     DecimalPipe, DatePipe, FormsModule, ReactiveFormsModule,
     TableModule, AutoComplete, InputNumber, InputText, Textarea,
-    Select, DatePicker, Button, Tag, TooltipModule,
+    Select, DatePicker, Button, Tag, TooltipModule, DialogModule,
     ToastModule, ConfirmDialogModule,
   ],
   providers: [MessageService, ConfirmationService],
@@ -86,6 +88,13 @@ export class CopdamaeManager implements OnInit {
   partidaSeleccionada = signal<CopdaMae | null>(null);
   vista = signal<VistaTipo>('lista');
   cargando = signal(false);
+
+  // ===== PARTIDA INICIAL (carga desde archivo Excel) =====
+  dialogInicial = signal(false);
+  inicialCargando = signal(false);
+  inicialNombreArchivo = signal<string | null>(null);
+  inicialLineas = signal<LineaPartidaDto[]>([]);
+  inicialErrores = signal<string[]>([]);
 
   // ===== FILTROS =====
   filtroPeriodo = signal<number | null>(null);
@@ -190,6 +199,93 @@ export class CopdamaeManager implements OnInit {
 
   /** Evita recrear la fila y perder foco mientras se edita un monto */
   trackById = (_: number, l: LineaDetalle) => l.id;
+
+  // ===== COMPUTED: PARTIDA INICIAL =====
+
+  inicialTotalDebe = computed(() => r2(this.inicialLineas().reduce((acc, l) => acc + l.debito, 0)));
+  inicialTotalHaber = computed(() => r2(this.inicialLineas().reduce((acc, l) => acc + l.credito, 0)));
+  inicialDiferencia = computed(() => r2(this.inicialTotalDebe() - this.inicialTotalHaber()));
+
+  /**
+   * Cuentas del archivo que no están en el plan de cuentas de la empresa
+   * (o están inactivas / no operables). Si hay al menos una, la carga de la
+   * partida inicial queda bloqueada: el archivo no se envía al backend.
+   */
+  inicialCuentasInvalidas = computed(() => {
+    const lineas = this.inicialLineas();
+    const catalogo = this.cuentas();
+    if (lineas.length === 0 || catalogo.length === 0) return [];
+
+    const mapa = new Map<string, CtaContable>();
+    for (const c of catalogo) mapa.set(String(c.ctacontable).trim().toUpperCase(), c);
+
+    const inexistentes: string[] = [];
+    const inactivas: string[] = [];
+    const noOperables: string[] = [];
+    const naturalezas: string[] = [];
+    for (const l of lineas) {
+      const clave = String(l.ctacontable).trim().toUpperCase();
+      const cuenta = mapa.get(clave);
+      if (!cuenta) {
+        if (!inexistentes.includes(clave)) inexistentes.push(clave);
+        continue;
+      }
+      if (cuenta.sn_activo !== 'S') {
+        if (!inactivas.includes(clave)) inactivas.push(clave);
+        continue;
+      }
+      if (cuenta.sn_operable !== 'S') {
+        if (!noOperables.includes(clave)) noOperables.push(clave);
+        continue;
+      }
+      // La naturaleza del archivo (D/C) debe coincidir con la del plan de cuentas
+      const nat = l.debito > 0 && l.credito <= 0 ? 'D' : l.credito > 0 && l.debito <= 0 ? 'C' : null;
+      if (nat && cuenta.naturaleza && nat !== cuenta.naturaleza) {
+        const detalle = `${clave} (archivo ${nat} / plan ${cuenta.naturaleza})`;
+        if (!naturalezas.some(n => n.startsWith(`${clave} `))) naturalezas.push(detalle);
+      }
+    }
+
+    const resumir = (lista: string[], max = 10): string =>
+      lista.length <= max ? lista.join(', ') : `${lista.slice(0, max).join(', ')} … y ${lista.length - max} más`;
+
+    const msgs: string[] = [];
+    if (inexistentes.length > 0) {
+      msgs.push(`No existen en el plan de cuentas (${inexistentes.length}): ${resumir(inexistentes)}`);
+    }
+    if (inactivas.length > 0) {
+      msgs.push(`Cuentas inactivas (${inactivas.length}): ${resumir(inactivas)}`);
+    }
+    if (noOperables.length > 0) {
+      msgs.push(`Cuentas no operables (${noOperables.length}): ${resumir(noOperables)}`);
+    }
+    if (naturalezas.length > 0) {
+      msgs.push(`Naturaleza distinta a la del plan de cuentas (${naturalezas.length}): ${resumir(naturalezas)}`);
+    }
+    return msgs;
+  });
+
+  /** Todo lo que impide cargar: errores de lectura + cuentas fuera del plan */
+  inicialProblemas = computed(() => [...this.inicialErrores(), ...this.inicialCuentasInvalidas()]);
+
+  /** Habilita "Cargar": sin problemas, ≥2 líneas y débitos = créditos */
+  inicialLista = computed(() =>
+    this.inicialProblemas().length === 0 &&
+    this.inicialLineas().length >= 2 &&
+    this.inicialTotalDebe() > 0 &&
+    this.inicialDiferencia() === 0,
+  );
+
+  /**
+   * Período contable abierto donde caerá la partida (el más antiguo).
+   * Es la misma regla que aplica el backend; aquí solo sirve para previsualizar.
+   */
+  inicialPeriodo = computed(() => {
+    const abierto = this.periodos()
+      .filter(p => p.sn_abierto === 'S')
+      .sort((a, b) => a.nroanio - b.nroanio || a.nromes - b.nromes)[0];
+    return abierto ? { anio: abierto.nroanio, periodo: abierto.nromes } : null;
+  });
 
   // ===== CICLO DE VIDA =====
   ngOnInit(): void {
@@ -611,6 +707,295 @@ export class CopdamaeManager implements OnInit {
           });
       },
     });
+  }
+
+  // ===== PARTIDA INICIAL (carga desde archivo Excel) =====
+
+  /** Abre el diálogo de carga de la partida inicial (estado limpio). */
+  abrePartidaInicial(): void {
+    this.inicialNombreArchivo.set(null);
+    this.inicialLineas.set([]);
+    this.inicialErrores.set([]);
+    this.inicialCargando.set(false);
+    this.dialogInicial.set(true);
+  }
+
+  cierraPartidaInicial(valor: boolean): void {
+    if (this.inicialCargando()) return;
+    this.dialogInicial.set(valor);
+  }
+
+  /**
+   * Lee el archivo Excel elegido y extrae las líneas de la partida.
+   * Columnas buscadas: `ctacontable`, `D/C` e `importe` (con alias tolerados).
+   * La fila de encabezados se localiza por la columna `ctacontable`, así que
+   * el archivo puede llevar columnas extra (ej: `fila`) antes o después.
+   */
+  onArchivoInicial(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ''; // permite volver a elegir el mismo archivo
+    if (!file) return;
+
+    this.inicialNombreArchivo.set(file.name);
+    this.inicialLineas.set([]);
+    this.inicialErrores.set([]);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const wb = XLSX.read(new Uint8Array(reader.result as ArrayBuffer), { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        if (!ws) throw new Error('el archivo no tiene hojas');
+        const filas = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+          header: 1, raw: true, defval: null, blankrows: false,
+        });
+        this.procesarFilasExcel(filas);
+      } catch (e) {
+        this.inicialErrores.set([`No se pudo leer el archivo Excel: ${(e as Error).message}`]);
+      }
+    };
+    reader.onerror = () => this.inicialErrores.set(['No se pudo leer el archivo.']);
+    reader.readAsArrayBuffer(file);
+  }
+
+  /** Convierte las filas crudas del Excel en líneas de partida, con validaciones. */
+  private procesarFilasExcel(filas: unknown[][]): void {
+    const norm = (v: unknown) => String(v ?? '').trim().toLowerCase().replace(/\s+/g, '');
+
+    // 1) Los encabezados deben ser exactamente los esperados
+    const errorEncabezado = this.validarEncabezados(filas);
+    if (errorEncabezado) {
+      this.inicialLineas.set([]);
+      this.inicialErrores.set([errorEncabezado]);
+      return;
+    }
+
+    const col = this.detectarColumnas(filas);
+    if (!col) {
+      this.inicialErrores.set([
+        'No se pudieron identificar las columnas del archivo. Se necesitan: cuenta contable, naturaleza D/C e importe.',
+      ]);
+      return;
+    }
+
+    const errores: string[] = [];
+    const lineas: LineaPartidaDto[] = [];
+    const vistos = new Set<string>();
+    const repetidas = new Set<string>();
+
+    for (let i = col.iDesde; i < filas.length; i++) {
+      const fila = filas[i];
+      if (!Array.isArray(fila)) continue;
+      if (fila.every(c => norm(c) === '')) continue;             // fila vacía
+      if (norm(fila[col.iCta]) === 'ctacontable') continue;       // encabezado repetido
+
+      const nroFila = i + 1; // 1-based, para que coincida con el Excel
+      const cta = String(fila[col.iCta] ?? '').trim();
+      const dc = String(fila[col.iDC] ?? '').trim().toUpperCase().replace(/\s+/g, '');
+      const bruto = fila[col.iImp];
+      const importe = Number(String(bruto ?? '').replace(/[^\d.-]/g, ''));
+      const desc = col.iDesc != null ? String(fila[col.iDesc] ?? '').trim() : '';
+
+      if (!cta) { errores.push(`Fila ${nroFila}: falta el código de cuenta contable.`); continue; }
+      if (dc !== 'D' && dc !== 'C') { errores.push(`Fila ${nroFila}: la naturaleza debe ser D o C (valor "${dc}").`); continue; }
+      if (!Number.isFinite(importe)) { errores.push(`Fila ${nroFila}: importe inválido (${bruto ?? 'vacío'}).`); continue; }
+      if (importe < 0) { errores.push(`Fila ${nroFila}: el importe no puede ser negativo (${String(bruto).trim()}).`); continue; }
+      if (importe === 0) { errores.push(`Fila ${nroFila}: el importe debe ser mayor que cero.`); continue; }
+
+      if (vistos.has(cta)) repetidas.add(cta); else vistos.add(cta);
+
+      lineas.push({
+        ctacontable: cta,
+        descripcion: desc || undefined,
+        debito: dc === 'D' ? importe : 0,
+        credito: dc === 'C' ? importe : 0,
+      });
+    }
+
+    if (repetidas.size > 0) {
+      errores.push(
+        `Cuenta(s) repetida(s) — una partida admite una sola línea por cuenta: ${[...repetidas].join(', ')}`,
+      );
+    }
+    if (lineas.length === 0 && errores.length === 0) {
+      errores.push('No se encontraron líneas con datos en el archivo.');
+    }
+
+    this.inicialLineas.set(lineas);
+    this.inicialErrores.set(errores.slice(0, 15));
+  }
+
+  /**
+   * Encabezados obligatorios del archivo de partida inicial (fila 1).
+   * Se comparan sin distinguir mayúsculas, acentos ni espacios sobrantes.
+   */
+  private static readonly ENCABEZADOS_PARTIDA = ['No', 'Cuenta', 'Descripcion', 'Naturaleza', 'Importe'];
+
+  /**
+   * Valida que la primera fila contenga exactamente los encabezados
+   * `No | Cuenta | Descripcion | Naturaleza | Importe`.
+   * Devuelve un mensaje de error, o `null` si los encabezados son correctos.
+   */
+  private validarEncabezados(filas: unknown[][]): string | null {
+    const esperados = CopdamaeManager.ENCABEZADOS_PARTIDA;
+    const norm = (v: unknown) =>
+      String(v ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    const esperadosNorm = esperados.map(e => norm(e));
+
+    const fila0 = Array.isArray(filas[0]) ? (filas[0] as unknown[]) : [];
+    const leidos = fila0.map(norm).filter(v => v !== '');
+    const texto = esperados.join(', ');
+
+    // ¿Existe fila de encabezados en absoluto?
+    if (!leidos.some(v => esperadosNorm.includes(v))) {
+      return `Falta la fila de encabezados. En la primera fila debe ir: ${texto}.`;
+    }
+
+    const encontrados = new Set(leidos);
+    const faltantes = esperados.filter((e, i) => !encontrados.has(esperadosNorm[i]));
+    const inesperados = leidos.filter(v => !esperadosNorm.includes(v));
+
+    if (faltantes.length > 0 || inesperados.length > 0) {
+      const partes: string[] = [];
+      if (faltantes.length > 0) {
+        partes.push(`faltan: ${faltantes.map(f => `"${f}"`).join(', ')}`);
+      }
+      if (inesperados.length > 0) {
+        partes.push(`inesperados: ${inesperados.map(f => `"${f}"`).join(', ')}`);
+      }
+      return `Los encabezados del archivo no son los correctos (${partes.join('; ')}). Se espera: ${texto}.`;
+    }
+
+    return null;
+  }
+
+  /**
+   * Identifica los índices de columna del archivo.
+   *
+   * La fila de encabezados (validada antes) se salta; los índices de las
+   * columnas de datos se infieren por contenido:
+   *   - cuenta: valores con guiones (`1-1-10-1-001`)
+   *   - naturaleza: valores exactamente `D` o `C`
+   *   - importe: última columna numérica que no es cuenta ni naturaleza
+   *   - descripción: primera columna de texto restante
+   */
+  private detectarColumnas(filas: unknown[][]): {
+    iDesde: number; iCta: number; iDesc: number | null; iDC: number; iImp: number;
+  } | null {
+    const norm = (v: unknown) => String(v ?? '').trim().toLowerCase().replace(/\s+/g, '');
+    const esCta = (v: unknown) => /^\s*\d+(\s*-\s*\d+)+\s*$/.test(String(v ?? ''));
+    const esDC = (v: unknown) => ['D', 'C'].includes(String(v ?? '').trim().toUpperCase());
+    const esNum = (v: unknown) =>
+      v !== null && v !== undefined && v !== '' &&
+      !/[a-z]/i.test(String(v).trim()) &&
+      Number.isFinite(Number(String(v).replace(/[^\d.-]/g, '')));
+
+    // ¿Hay fila de encabezados? Si existe, la saltamos (los datos empiezan después)
+    let iHdr = -1;
+    for (let i = 0; i < filas.length; i++) {
+      const f = filas[i];
+      if (Array.isArray(f) && f.some(c => ['ctacontable', 'cuenta', 'cta'].includes(norm(c)))) {
+        iHdr = i;
+        break;
+      }
+    }
+    const iDesde = iHdr >= 0 ? iHdr + 1 : 0;
+
+    const datos = filas.slice(iDesde).filter(f => Array.isArray(f) && f.some(c => norm(c) !== ''));
+    if (datos.length === 0) return null;
+
+    const ancho = Math.max(...datos.map(f => f.length));
+    const pct = (fn: (v: unknown) => boolean, c: number): number => {
+      let hit = 0;
+      let n = 0;
+      for (const f of datos) {
+        const v = f[c];
+        if (norm(v) === '') continue;
+        n++;
+        if (fn(v)) hit++;
+      }
+      return n > 0 ? hit / n : 0;
+    };
+    const cols = Array.from({ length: ancho }, (_, c) => c);
+    const mejor = (fn: (v: unknown) => boolean): number | undefined =>
+      cols
+        .filter(c => pct(fn, c) >= 0.5)
+        .sort((a, b) => pct(fn, b) - pct(fn, a))[0];
+
+    const iDC = mejor(esDC);
+    const iCta = mejor(esCta);
+    if (iCta == null || iDC == null || iCta === iDC) return null;
+
+    const candidatos = cols.filter(c => c !== iCta && c !== iDC && pct(esNum, c) >= 0.5);
+    const iImp = candidatos.length > 0 ? candidatos[candidatos.length - 1] : undefined;
+    if (iImp == null) return null;
+
+    const iDesc =
+      cols.find(c => c !== iCta && c !== iDC && c !== iImp && pct(esNum, c) < 0.5 && pct(v => norm(v) !== '', c) >= 0.5) ?? null;
+
+    return { iDesde, iCta, iDesc, iDC, iImp };
+  }
+
+  confirmarPartidaInicial(): void {
+    const periodo = this.inicialPeriodo();
+    if (!periodo) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Sin período abierto',
+        detail: 'No hay ningún período contable abierto para esta empresa.',
+      });
+      return;
+    }
+    if (!this.inicialLista()) return;
+
+    this.confirmationService.confirm({
+      message:
+        `Se cargará la partida inicial con ${this.inicialLineas().length} líneas por ` +
+        `L ${this.formatearMoneda(this.inicialTotalDebe())} en el período ` +
+        `${periodo.periodo}/${periodo.anio}. ¿Continuar?`,
+      header: 'Partida inicial',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Cargar partida', severity: 'success', variant: 'text', size: 'small', rounded: true },
+      accept: () => this.ejecutarPartidaInicial(),
+    });
+  }
+
+  /**
+   * Envía las líneas al backend. El servidor decide el período (abierto),
+   * la fecha documento (último día del período) y la referencia
+   * (INICIAL-{periodo}-{año}), y rechaza con 409 si ya fue cargada.
+   */
+  private ejecutarPartidaInicial(): void {
+    this.inicialCargando.set(true);
+    this.contabilidad.crearPartidaInicial({
+      moduloId: 7,
+      descripcion: 'balances inicial de operaciones mercantiles',
+      lineas: this.inicialLineas(),
+    }).pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (partida) => {
+          this.inicialCargando.set(false);
+          this.dialogInicial.set(false);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Partida inicial creada',
+            detail: `Partida #${partida.nropartida} · ${this.inicialLineas().length} líneas · período ${partida.periodo}/${partida.anio}`,
+          });
+          this.inicialNombreArchivo.set(null);
+          this.inicialLineas.set([]);
+          this.inicialErrores.set([]);
+          this.cargarDatos();
+        },
+        // El interceptor ya muestra el toast con el mensaje del backend
+        error: () => this.inicialCargando.set(false),
+      });
   }
 
   // ===== HELPERS =====

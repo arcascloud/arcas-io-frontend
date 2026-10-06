@@ -210,13 +210,35 @@
 
             <div class="field">
               <div class="campo ml-campo">
-                <label for="nrocarnet">Nro. Carnet</label>
-                <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet"
+                <label for="tipoconstancia">Tipo Constancia</label>
+                <p-select id="tipoconstancia" formControlName="tipoconstancia" [options]="tipoConstanciaOpciones"
+                  optionLabel="label" optionValue="value" placeholder="Seleccionar..." size="small"
+                  styleClass="w-full" [appendTo]="'body'"
+                  [disabled]="form.get('sn_excenta')?.value !== 'S'" />
+                @if (form.get('sn_excenta')?.value === 'S' && invalid('tipoconstancia')) {
+                <small class="err">Seleccione el tipo de constancia</small>
+                }
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="campo ml-campo">
+                <label for="nroconstancia">Nro. Constancia</label>
+                <input pInputText id="nroconstancia" formControlName="nroconstancia" pSize="small" placeholder="Constancia"
                   [attr.readonly]="form.get('sn_excenta')?.value !== 'S' || null"
                   [class.p-inputtext-disabled]="form.get('sn_excenta')?.value !== 'S'" />
-                @if (form.get('sn_excenta')?.value === 'S' && invalid('nrocarnet')) {
-                <small class="err">Ingrese el número de carnet</small>
+                @if (form.get('sn_excenta')?.value === 'S' && invalid('nroconstancia')) {
+                <small class="err">Ingrese el número de constancia</small>
                 }
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="campo ml-campo">
+                <label for="importe_excento">Importe Excento</label>
+                <p-inputNumber id="importe_excento" formControlName="importe_excento" mode="currency" currency="HNL"
+                  [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+                  size="small" styleClass="w-full" [inputStyle]="{ width: '100%' }" [readonly]="true" />
               </div>
             </div>
 

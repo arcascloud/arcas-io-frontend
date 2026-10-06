@@ -13,7 +13,7 @@
       <input
         pInputText
         type="text"
-        placeholder="Descripción..."
+        placeholder="Descripción o abreviatura..."
         [ngModel]="q()"
         (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()"
@@ -55,6 +55,10 @@
               <div class="dv-row">
                 <span class="dv-label">ID</span>
                 <span class="dv-value">{{ m.moduloId }}</span>
+              </div>
+              <div class="dv-row">
+                <span class="dv-label">Abreviatura</span>
+                <span class="dv-value">{{ m.abreviatura || '—' }}</span>
               </div>
             </div>
 

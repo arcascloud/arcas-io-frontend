@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -7,15 +7,21 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { TagModule } from 'primeng/tag';
 import { FieldsetModule } from 'primeng/fieldset';
+import { DrawerModule } from 'primeng/drawer';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { EmpresasService } from '../../../core/services/empresas.service';
 import { ParametroUnificadoService } from '../../../core/services/parametro-unificado.service';
-import { TipoParametro, MODULO_LABELS } from '../../../core/models/parametro-unificado.model';
+import {
+  TipoParametro,
+  GrupoTipoParametro,
+  GRUPOS_TIPO_PARAMETRO,
+  MODULO_LABELS,
+} from '../../../core/models/parametro-unificado.model';
 import { Empresa } from '../../../core/models/empresa.models';
-import { Sucursal } from '../../../core/models/sucursal.models';
 
 @Component({
   selector: 'app-param-manager-modulos',
@@ -29,8 +35,10 @@ import { Sucursal } from '../../../core/models/sucursal.models';
     InputTextModule,
     InputNumberModule,
     SelectModule,
+    MultiSelectModule,
     TagModule,
     FieldsetModule,
+    DrawerModule,
     TooltipModule,
   ],
   templateUrl: './param-manager-modulos.html',
@@ -54,9 +62,10 @@ export class ParamManagerModulos implements OnInit {
     { label: 'Inactivo', value: 'N' },
   ];
 
+  readonly grupoOptions = GRUPOS_TIPO_PARAMETRO;
+
   // Datos de selects
   empresas = signal<Empresa[]>([]);
-  sucursales = signal<Sucursal[]>([]);
   modulos = signal<{ label: string; value: number }[]>([]);
 
   // Estado
@@ -66,19 +75,33 @@ export class ParamManagerModulos implements OnInit {
 
   // Filtros
   empresaId = signal<number | null>(null);
-  sucursalId = signal<number | null>(null);
   moduloId = signal<number | null>(null);
+  grupoFiltro = signal<GrupoTipoParametro[]>([]);
 
-  // Selección / edición inline
+  // Selección / edición
   selectedParam = signal<TipoParametro | null>(null);
   editando = signal(false);
   form!: FormGroup;
 
+  // Drawer de creación y edición (la tabla ocupa toda la pantalla)
+  drawer = signal(false);
+
+  // Valor editado directo en la tabla (guardado al salir del campo)
+  valorOriginal = signal<string | null>(null);
+
+  /** Parámetros visibles aplicando la selección múltiple de tipos de configuración */
+  parametrosVista = computed(() => {
+    const sel = this.grupoFiltro();
+    return sel.length ? this.parametros().filter(p => sel.includes(p.grupo)) : this.parametros();
+  });
+
   ngOnInit() {
     this.form = this.fb.group({
       field: ['', Validators.required],
+      descripcion: [''],
       tipo: ['STRING', Validators.required],
       valor: ['', Validators.required],
+      grupo: ['CORRELATIVO', Validators.required],
       sn_activo: ['S', Validators.required],
     });
 
@@ -90,7 +113,6 @@ export class ParamManagerModulos implements OnInit {
           this.empresas.set(data);
           if (data.length > 0) {
             this.empresaId.set(data[0].empresaId);
-            this.cargarSucursales(data[0].empresaId);
           }
         },
       });
@@ -107,28 +129,14 @@ export class ParamManagerModulos implements OnInit {
     }
   }
 
-  cargarSucursales(empresaId: number) {
-    this.empresasService.getAllSucursales(empresaId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (data) => {
-          this.sucursales.set(data);
-          if (data.length > 0) {
-            this.sucursalId.set(data[0].idsucursal);
-          }
-        },
-      });
-  }
-
   onEmpresaChange(empresaId: number) {
     this.empresaId.set(empresaId);
-    this.sucursalId.set(null);
     this.parametros.set([]);
     this.limpiarSeleccion();
-    this.cargarSucursales(empresaId);
+    this.cargarParametros();
   }
 
-  onModuloChange(moduloId: number) {
+  onModuloChange(moduloId: number | null) {
     this.moduloId.set(moduloId);
     this.limpiarSeleccion();
     this.cargarParametros();
@@ -157,20 +165,19 @@ export class ParamManagerModulos implements OnInit {
   // ── Selección / Edición inline ──────────────────────────
 
   onRowClick(param: TipoParametro) {
-    if (this.selectedParam()?.ttipoparametrosId === param.ttipoparametrosId) {
-      this.limpiarSeleccion();
-    } else {
-      this.selectedParam.set(param);
-      this.cargarForm(param);
-    }
+    this.selectedParam.set(param);
+    this.cargarForm(param);
+    this.drawer.set(true);
   }
 
   private cargarForm(param: TipoParametro) {
     this.editando.set(true);
     this.form.reset({
       field: param.field,
+      descripcion: param.descripcion || '',
       tipo: param.tipo,
       valor: param.valor,
+      grupo: param.grupo || 'CORRELATIVO',
       sn_activo: param.sn_activo,
     });
     this.form.get('field')?.disable();
@@ -181,8 +188,10 @@ export class ParamManagerModulos implements OnInit {
     this.editando.set(false);
     this.form.reset({
       field: '',
+      descripcion: '',
       tipo: 'STRING',
       valor: '',
+      grupo: 'CORRELATIVO',
       sn_activo: 'S',
     });
     this.form.get('field')?.enable();
@@ -191,34 +200,96 @@ export class ParamManagerModulos implements OnInit {
   // ── Guardar ─────────────────────────────────────────────
 
   guardar() {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Complete los campos requeridos' });
+      return;
+    }
 
     const eid = this.empresaId();
-    const mid = this.moduloId();
+    const paramSel = this.selectedParam();
+    // En edición se usa el módulo DEL parámetro (la tabla puede mostrar varios módulos)
+    const mid = paramSel ? paramSel.moduloId : this.moduloId();
     if (!eid || !mid) {
-      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Seleccione empresa y módulo' });
+      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Seleccione la empresa y el módulo en el contexto' });
       return;
     }
 
     const raw = this.form.getRawValue();
-    this.guardando.set(true);
+    if (raw.tipo === 'NUMBER' && (String(raw.valor).trim() === '' || isNaN(Number(raw.valor)))) {
+      this.msgs.add({ severity: 'warn', summary: 'Valor inválido', detail: 'El valor debe ser numérico' });
+      return;
+    }
 
-    this.parametroService.upsert(mid, raw.field, raw.valor, raw.tipo)
+    this.guardando.set(true);
+    this.parametroService.upsert(mid, raw.field, String(raw.valor), raw.tipo, raw.descripcion ?? '', raw.grupo)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
           this.guardando.set(false);
           this.msgs.add({
             severity: 'success',
-            summary: this.editando() ? 'Actualizado' : 'Creado',
-            detail: this.editando() ? 'Parámetro actualizado' : 'Parámetro creado',
+            summary: paramSel ? 'Actualizado' : 'Creado',
+            detail: paramSel ? 'Parámetro actualizado' : 'Parámetro creado',
           });
+          this.drawer.set(false);
           this.limpiarSeleccion();
           this.cargarParametros();
         },
         error: () => {
           this.guardando.set(false);
           this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el parámetro' });
+        },
+      });
+  }
+
+  // ── Drawer (crear y editar) ─────────────────────────────
+
+  abrirNuevo() {
+    this.limpiarSeleccion();
+    this.drawer.set(true);
+  }
+
+  onDrawerChange(visible: boolean) {
+    this.drawer.set(visible);
+    if (!visible) {
+      this.limpiarSeleccion();
+    }
+  }
+
+  // ── Valor editable en la tabla ─────────────────────────
+
+  onValorFocus(param: TipoParametro) {
+    this.valorOriginal.set(param.valor);
+  }
+
+  onValorEnter(ev: Event) {
+    (ev.target as HTMLInputElement | null)?.blur();
+  }
+
+  guardarValorInline(param: TipoParametro) {
+    const original = this.valorOriginal();
+    const nuevo = param.valor;
+    if (original === null || nuevo === original) return;
+
+    if (param.tipo === 'NUMBER' && (String(nuevo).trim() === '' || isNaN(Number(nuevo)))) {
+      this.msgs.add({ severity: 'warn', summary: 'Valor inválido', detail: 'Este parámetro requiere un valor numérico' });
+      param.valor = original;
+      return;
+    }
+
+    this.guardando.set(true);
+    this.parametroService.upsert(param.moduloId, param.field, String(nuevo), param.tipo, param.descripcion ?? '', param.grupo)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.guardando.set(false);
+          this.msgs.add({ severity: 'success', summary: 'Guardado', detail: `${param.field} = ${nuevo}` });
+          this.cargarParametros();
+        },
+        error: () => {
+          param.valor = original;
+          this.guardando.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el valor' });
         },
       });
   }
@@ -252,6 +323,21 @@ export class ParamManagerModulos implements OnInit {
 
   tipoSeverity(tipo: string): 'success' | 'info' {
     return tipo === 'NUMBER' ? 'success' : 'info';
+  }
+
+  grupoLabel(grupo: string): string {
+    return GRUPOS_TIPO_PARAMETRO.find(g => g.value === grupo)?.label || grupo || '-';
+  }
+
+  grupoSeverity(grupo: string): 'info' | 'warn' | 'success' | 'secondary' | 'contrast' {
+    switch (grupo) {
+      case 'IMPUESTO': return 'warn';
+      case 'INTERES': return 'success';
+      case 'IMPRESION': return 'secondary';
+      case 'CONTABLE': return 'contrast';
+      case 'ASIENTO': return 'info';
+      default: return 'info';
+    }
   }
 
   estadoLabel(sn: string): string {

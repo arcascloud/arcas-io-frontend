@@ -1,0 +1,599 @@
+<div class="proveedores-manager">
+  <div class="split-layout">
+    <div class="left-column">
+      <!-- Empty state -->
+      @if (!selectedProveedor() && !nuevoProveedor()) {
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Pulse un proveedor</h3>
+        <p>Haga clic en un proveedor de la lista para ver su información</p>
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input
+                type="text"
+                pSize="small"
+                pInputText
+                [ngModel]="q()"
+                (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. proveedor..."
+                class="mr-1"
+              />
+              @if (q()) {
+              <p-button
+                icon="pi pi-times"
+                (click)="limpiarFiltros()"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                size="small"
+              ></p-button>
+              }
+            </p-iconField>
+          </div>
+        </div>
+
+        <p-button
+          label="Agregar nuevo proveedor"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          class="mr-2"
+          size="small"
+        ></p-button>
+      </div>
+      }
+
+      <!-- Tabs detalle -->
+      @if ((selectedProveedor() || nuevoProveedor())) {
+      <div class="proveedor-detail">
+        <p-tabs [value]="activeTabValue()" (valueChange)="activeTabValue.set($event)">
+          <p-tablist>
+            <p-tab value="0">
+              <i class="pi pi-building"></i>
+              <span>Proveedor</span>
+            </p-tab>
+            <p-tab value="1" [disabled]="nuevoProveedor()">
+              <i class="pi pi-info-circle"></i>
+              <span>Inf. Adicional</span>
+            </p-tab>
+            <p-tab value="2" [disabled]="nuevoProveedor()">
+              <i class="pi pi-wallet"></i>
+              <span>Estado de Cuenta</span>
+            </p-tab>
+          </p-tablist>
+
+          <p-tabpanels>
+            <!-- ===== Tab 0: Datos del proveedor ===== -->
+            <p-tabpanel value="0">
+              <div class="tab-content">
+                <app-cxp-proveedor-form
+                  #proveedorFormRef
+                  [proveedorIdInput]="nuevoProveedor() ? null : (selectedProveedor()?.proveedorId ?? null)"
+                  (saved)="onFormSaved()"
+                  (cancelled)="onFormCancelled()"
+                />
+              </div>
+            </p-tabpanel>
+
+            <!-- ===== Tab 1: Inf. Adicional + Carteras ===== -->
+            <p-tabpanel value="1">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Información Adicional</h4>
+                  <span class="tab-subtitulo">Correo, celular y dirección del proveedor</span>
+                </div>
+
+                <div class="info-adicional-grid">
+                  <!-- Columna izquierda: formulario alta / edición -->
+                  <div class="info-panel info-panel-form">
+                    <h5 class="form-col-title">
+                      {{ infoModel().id != null ? 'Editar información de contacto' : 'Nueva
+                      información de contacto' }}
+                    </h5>
+
+                    <div class="form-col">
+                      <div class="p-field">
+                        <label>Tipo</label>
+                        <p-select
+                          size="small"
+                          [options]="infoTipoOptions"
+                          [ngModel]="infoModel().tipo"
+                          (ngModelChange)="infoModel.set({...infoModel(), tipo: $event})"
+                          placeholder="Seleccione tipo"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                      <div class="p-field">
+                        <label>Descripción</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="infoModel().descripcion"
+                          (ngModelChange)="infoModel.set({...infoModel(), descripcion: $event})"
+                          placeholder="Valor del contacto"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Estado</label>
+                        <p-select
+                          size="small"
+                          [options]="infoEstadoOptions"
+                          [ngModel]="infoModel().sn_activo"
+                          (ngModelChange)="infoModel.set({...infoModel(), sn_activo: $event})"
+                          placeholder="Seleccione estado"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                    </div>
+
+                    <div class="form-actions info-form-actions">
+                      @if (infoModel().id != null) {
+                      <p-button
+                        label="Cancelar edición"
+                        icon="pi pi-times"
+                        variant="text"
+                        severity="secondary"
+                        (click)="cancelarInfo()"
+                        [rounded]="true"
+                        size="small"
+                      ></p-button>
+                      } @else {
+                      <p-button
+                        label="Limpiar"
+                        icon="pi pi-times"
+                        variant="text"
+                        severity="secondary"
+                        (click)="cancelarInfo()"
+                        [rounded]="true"
+                        size="small"
+                      ></p-button>
+                      }
+                      <p-button
+                        label="Guardar"
+                        icon="pi pi-check"
+                        variant="text"
+                        severity="success"
+                        [loading]="infoSaving()"
+                        (click)="guardarInfo()"
+                        [rounded]="true"
+                        size="small"
+                      ></p-button>
+                    </div>
+
+                    <!-- Cartera contable -->
+                    <h4>Cartera contable</h4>
+
+                    <div class="form-col">
+                      <div class="p-field">
+                        <label>Cartera</label>
+                        <p-select
+                          size="small"
+                          [options]="carterasDisponibles()"
+                          [ngModel]="carteraSeleccionada()"
+                          (ngModelChange)="carteraSeleccionada.set($event)"
+                          placeholder="Seleccione cartera"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                          [showClear]="true"
+                        ></p-select>
+                        @if (carterasDisponibles().length === 0) {
+                        <small class="carteras-sin-opciones">
+                          No hay carteras disponibles para asignar
+                        </small>
+                        }
+                      </div>
+                    </div>
+
+                    <div class="carteras-actions">
+                      <p-button
+                        label="Asignar"
+                        icon="pi pi-plus"
+                        variant="text"
+                        severity="success"
+                        [rounded]="true"
+                        size="small"
+                        [loading]="carteraSaving()"
+                        (click)="agregarCartera()"
+                      ></p-button>
+                    </div>
+
+                    <p-table
+                      [value]="carterasProveedor()"
+                      showGridlines
+                      styleClass="tabla-card"
+                      [tableStyle]="{ 'min-width': '15rem' }"
+                      [loading]="carteraLoading()"
+                      size="small"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th>Cartera</th>
+                          <th class="col-cta">Cuenta</th>
+                          <th class="col-acciones"></th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-cartera>
+                        <tr>
+                          <td class="celda-cartera">{{ nombreCartera(cartera.carteractaId) }}</td>
+                          <td class="col-cta">{{ ctaCartera(cartera.carteractaId) || '—' }}</td>
+                          <td class="col-acciones">
+                            <p-button
+                              icon="pi pi-trash"
+                              [rounded]="true"
+                              size="small"
+                              text
+                              severity="danger"
+                              pTooltip="Quitar"
+                              tooltipPosition="left"
+                              (click)="eliminarCartera(cartera)"
+                            />
+                          </td>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="emptymessage">
+                        <tr>
+                          <td colspan="3" class="text-center text-muted">
+                            No tiene carteras contables asignadas
+                          </td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+
+                  <!-- Columna derecha: listado -->
+                  <div class="info-panel info-panel-list">
+                    <div class="info-list-header">
+                      <h5 class="form-col-title">Información de contacto</h5>
+                      <span class="info-list-total">{{ infoData().length }} registro(s)</span>
+                    </div>
+
+                    <div class="detalle-estado-cuenta">
+                      <p-table
+                        [value]="infoData()"
+                        [loading]="infoLoading()"
+                        showGridlines
+                        styleClass="tabla-card"
+                        [tableStyle]="{ 'min-width': '15rem' }"
+                        size="small"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th></th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-info>
+                          <tr>
+                            <td class="col-tipo">{{ infoTipoLabel(info.tipo) }}</td>
+                            <td>{{ info.descripcion || '—' }}</td>
+                            <td class="col-estado text-center">
+                              <p-tag
+                                [value]="info.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+                                [severity]="info.sn_activo === 'S' ? 'success' : 'danger'"
+                              />
+                            </td>
+                            <td class="col-acciones">
+                              <p-button
+                                icon="pi pi-pencil"
+                                (click)="editarInfo(info)"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="secondary"
+                                pTooltip="Editar"
+                                tooltipPosition="left"
+                              />
+                              <p-button
+                                icon="pi pi-trash"
+                                (click)="eliminarInfo(info)"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="danger"
+                                pTooltip="Desactivar"
+                                tooltipPosition="left"
+                              />
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                          <tr>
+                            <td colspan="4" class="text-center text-muted">
+                              No tiene información registrada
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
+                    </div>
+
+                    <!-- Carteras contables asignadas -->
+                    <div class="carteras-asignadas">
+                      <div class="info-list-header">
+                        <h5 class="form-col-title">Carteras contables asignadas</h5>
+                        <span class="info-list-total"
+                          >{{ carterasProveedor().length }} asignada(s)</span
+                        >
+                      </div>
+
+                      <p-table
+                        [value]="carterasProveedor()"
+                        [loading]="carteraLoading()"
+                        showGridlines
+                        styleClass="tabla-card"
+                        [tableStyle]="{ 'min-width': '15rem' }"
+                        size="small"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Cartera</th>
+                            <th class="col-cta">Cuenta</th>
+                            <th>Cuenta contable</th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-cartera>
+                          <tr>
+                            <td class="celda-cartera">{{ nombreCartera(cartera.carteractaId) }}</td>
+                            <td class="col-cta">{{ ctaCartera(cartera.carteractaId) || '—' }}</td>
+                            <td class="celda-cta-desc">
+                              {{ descripcionCtaCartera(cartera.carteractaId) || '—' }}
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                          <tr>
+                            <td colspan="3" class="text-center text-muted">
+                              No tiene carteras contables asignadas
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
+                    </div>
+                  </div>
+                  <!-- Fin Columna derecha: listado -->
+                </div>
+              </div>
+            </p-tabpanel>
+
+            <!-- ===== Tab 2: Estado de Cuenta ===== -->
+            <p-tabpanel value="2">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Estado de Cuenta</h4>
+                  <div class="saldo-total">
+                    Saldo: <strong>{{ moneda(saldoPendiente()) }}</strong>
+                  </div>
+                </div>
+
+                @if (estadoCuentaLoading()) {
+                <div class="loading-skeleton">
+                  @for (i of [1,2,3,4,5]; track i) {
+                  <div class="skeleton-row">
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                  </div>
+                  }
+                </div>
+                } @else {
+                <div class="detalle-estado-cuenta">
+                  <div class="table-responsive">
+                    <table class="table table-striped">
+                      <thead>
+                        <tr>
+                          <th class="col-fila">Fila</th>
+                          <th>Fecha</th>
+                          <th>D/C</th>
+                          <th class="col-ref">Referencia</th>
+                          <th>Concepto</th>
+                          <th class="col-importe">Importe</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (mov of estadoCuentaData(); track mov.bcomovId) {
+                        <tr>
+                          <td class="col-fila">{{ mov.bcomovId }}</td>
+                          <td>{{ mov.fecharegistro | date:'dd/MM/yyyy' }}</td>
+                          <td>
+                            <span class="badge" [ngClass]="getTipoMovSeverity(mov.tipomov)">
+                              {{ getTipoMovLabel(mov.tipomov) }}
+                            </span>
+                          </td>
+                          <td class="col-ref">{{ mov.nroreferencia || '—' }}</td>
+                          <td>{{ mov.concepto }}</td>
+                          <td
+                            class="col-importe"
+                            [ngClass]="{'text-success': mov.tipomov === 'D', 'text-danger': mov.tipomov !== 'D'}"
+                          >
+                            {{ mov.tipomov === 'D' ? '+' : '-' }}{{ moneda(mov.importe) }}
+                          </td>
+                        </tr>
+                        } @empty {
+                        <tr>
+                          <td colspan="6" class="text-center text-muted">
+                            No tiene movimientos el proveedor
+                          </td>
+                        </tr>
+                        }
+                      </tbody>
+                      <tfoot>
+                        <tr class="fw-bold">
+                          <td colspan="5" class="text-end">Saldo Total:</td>
+                          <td class="col-importe">{{ moneda(saldoPendiente()) }}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+                }
+              </div>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+      </div>
+      }
+    </div>
+
+    <!-- Columna derecha: lista de proveedores -->
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            pInputText
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event)"
+            placeholder="Buscar por nombre, DNI, RTN o Nro. proveedor..."
+            class="search-input"
+          />
+          @if (q()) {
+          <p-button
+            label="Limpiar"
+            icon="pi pi-times"
+            (click)="limpiarFiltros()"
+            severity="secondary"
+            [rounded]="true"
+            size="small"
+            class="clear-btn"
+          ></p-button>
+          }
+        </div>
+
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        ></p-button>
+      </div>
+
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay proveedores</h3>
+        <p>No se encontraron proveedores registrados.</p>
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        ></p-button>
+      </div>
+      } @else {
+      <div class="proveedores-lista">
+        @for (proveedor of data(); track proveedor.proveedorId) {
+        <div
+          class="proveedor-item-ficha"
+          [class.selected]="selectedProveedor()?.proveedorId === proveedor.proveedorId"
+          (click)="seleccionarProveedor(proveedor)"
+        >
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ proveedor.nroproveedor }}</span>
+            <p-tag
+              [value]="activoLbl(proveedor.sn_activo)"
+              [severity]="activoSev(proveedor.sn_activo)"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}"
+            />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ proveedor.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ proveedor.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ proveedor.dni || '—' }}</span>
+          </div>
+          @if (proveedor.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ proveedor.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ proveedor.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(proveedor.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa interes:</span>
+            <span class="ficha-value">{{ proveedor.interes }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa moratoria:</span>
+            <span class="ficha-value">{{ proveedor.moratorio }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ proveedor.categoria }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Estado:</span>
+            <span class="ficha-value">{{ activoLbl(proveedor.sn_activo) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Razon social:</span>
+            <span class="ficha-value">{{ proveedor.razonsocial || '—' }}</span>
+          </div>
+          <div class="item-ficha-actions">
+            <p-button
+              icon="pi pi-pencil"
+              (click)="editarProveedor(proveedor, $event)"
+              [rounded]="true"
+              size="small"
+              text
+              pTooltip="Editar"
+              tooltipPosition="left"
+            />
+          </div>
+        </div>
+        }
+      </div>
+
+      <p-paginator
+        [first]="(page() - 1) * limit()"
+        [rows]="limit()"
+        [totalRecords]="totalProveedores()"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"
+      ></p-paginator>
+      }
+    </div>
+  </div>
+</div>

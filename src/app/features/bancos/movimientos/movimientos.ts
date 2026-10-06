@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -72,6 +72,13 @@ export class MovimientosBancos implements OnInit {
       concepto: [''],
       factordecambio: [1],
     });
+    // El tipo de movimiento determina la naturaleza D/C:
+    // depósito (entrada) → 'D'; retiro/transferencia/pago (salida) → 'C'
+    this.form.get('tipomov')!.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((tipo) => {
+        this.form.patchValue({ dc_debitocredito: this.dcPorTipo(tipo) }, { emitEvent: false });
+      });
     this.cargarBancos();
     this.cargarMonedas();
     this.cargarFactoresCambio();
@@ -174,7 +181,7 @@ export class MovimientosBancos implements OnInit {
     this.editId.set(mov.bcomovimientosId);
     this.form.reset({
       tipomov: mov.tipomov,
-      dc_debitocredito: mov.dc_debitocredito,
+      dc_debitocredito: this.dcPorTipo(mov.tipomov),
       nroreferencia: mov.nroreferencia || '',
       importe: mov.importe,
       concepto: mov.concepto || '',
@@ -186,6 +193,22 @@ export class MovimientosBancos implements OnInit {
     if (this.form.invalid || !this.cuentaSeleccionada()) return;
     const raw = this.form.getRawValue();
     const cuenta = this.cuentaSeleccionada()!;
+
+    // Validación de saldo: las salidas (retiro/transferencia/pago) exigen saldo suficiente.
+    // En edición, saldoCuenta ya excluye el movimiento que se está editando.
+    const dc = this.dcPorTipo(raw.tipomov);
+    if (dc === 'C') {
+      const saldo = this.saldoCuenta();
+      if (saldo < raw.importe) {
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Saldo insuficiente',
+          detail: `Saldo actual ${this.formatCurrency(saldo)} — importe solicitado ${this.formatCurrency(raw.importe)}`,
+        });
+        return;
+      }
+    }
+
     this.guardando.set(true);
 
     const payload = {
@@ -193,7 +216,7 @@ export class MovimientosBancos implements OnInit {
       bcoctasId: cuenta.bcoctasId,
       moduloId: 1,
       tipomov: raw.tipomov,
-      dc_debitocredito: raw.dc_debitocredito,
+      dc_debitocredito: dc,
       nroreferencia: raw.nroreferencia || null,
       factordecambio: raw.factordecambio || 1,
       importe: raw.importe,
@@ -233,7 +256,8 @@ export class MovimientosBancos implements OnInit {
       rejectButtonProps: { severity: 'secondary', variant: 'text', size: 'small', rounded: true },
       acceptButtonProps: { severity: 'danger', variant: 'text', size: 'small', rounded: true },
       accept: () => {
-        this.api.putBase(`/bancos/movimientos/${mov.bcomovimientosId}?empresaId=${mov.empresaId}`, { sn_doc_anulado: 'S' })
+        // Endpoint dedicado /anular: marca fec_anulacion y revierte efectos de cheques (CxP)
+        this.api.putBase(`/bancos/movimientos/${mov.bcomovimientosId}/anular?empresaId=${mov.empresaId}`, {})
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: () => {
@@ -249,6 +273,30 @@ export class MovimientosBancos implements OnInit {
   }
 
   // ── Helpers ─────────────────────────────────────────────
+
+  /**
+   * Naturaleza derivada del tipo de movimiento:
+   * depósito (entrada) → 'D'; retiro/transferencia/pago (salida) → 'C'
+   */
+  dcPorTipo(tipomov: string): 'D' | 'C' {
+    return tipomov === 'DEPOSITO' ? 'D' : 'C';
+  }
+
+  /**
+   * Saldo de la cuenta seleccionada: Σ Débitos − Σ Créditos,
+   * excluyendo anulados y (en edición) el movimiento que se está editando.
+   */
+  readonly saldoCuenta = computed(() => {
+    const excluirId = this.editando() ? this.editId() : null;
+    return this.movimientos()
+      .filter(m => m.sn_doc_anulado !== 'S' && m.bcomovimientosId !== excluirId)
+      .reduce((suma, m) => suma + (m.dc_debitocredito === 'D' ? Number(m.importe) : -Number(m.importe)), 0);
+  });
+
+  saldoTexto(): string {
+    if (this.cargandoMovimientos()) return 'Cargando…';
+    return this.formatCurrency(this.saldoCuenta());
+  }
 
   tipoMovLabel(tipo: string): string {
     return this.TIPO_MOV_OPTIONS.find(o => o.value === tipo)?.label || tipo;

@@ -258,27 +258,33 @@ Para garantizar la escalabilidad, seguridad y una integración perfecta con nues
 
 - La sección `.report-letterhead` que se había agregado a `src/styles.scss` fue **eliminada** (CSS muerto al quitar el letterhead de la pantalla).
 
-#### Encabezado de exportados rediseñado (PDF + Excel + Word) — sin logo, fuente Audiowide
+#### Encabezado de exportados rediseñado (PDF + Excel + Word) — sin logo, fuentes Audiowide + Mukta
 
-Decisión suya: **NO logo, NO "Dir: …", NO "Tel: …"**. El encabezado queda en 4 elementos + filete, todos en **Audiowide**:
+Decisión suya: **NO logo, NO "Dir: …", NO "Tel: …"**. El encabezado queda en 4 elementos + filete. **Empresa en Audiowide; título, RTN y criterio en Mukta** (cambio suyo del 05/10/2026):
 
-| # | Elemento | Alineación | Tamaño (px → pt/word half-points) |
-|---|----------|------------|-----------------------------------|
-| 1 | Nombre de la empresa (AUTOSEL) | **Izquierda** | 1.75rem / 28px → 21pt → Word 42 · Excel 21 |
-| 2 | RTN (debajo de la empresa) | **Izquierda** | 0.75rem / 12px → 9pt → Word 18 · Excel 9 |
-| 3 | Título del reporte | **Centrado** | 1.06rem ≈ 17px → 12.7pt → Word 26 · Excel 13 |
-| 4 | Criterio de filtro (ej. `Del: 01/10/2026 al 04/10/2026`) | **Centrado** | 0.75rem / 12px → 9pt → Word 18 · Excel 9 |
+| # | Elemento | Alineación | Fuente | Tamaño (px → pt/word half-points) |
+|---|----------|------------|--------|-----------------------------------|
+| 1 | Nombre de la empresa (AUTOSEL) | **Izquierda** | **Audiowide** | 1.75rem / 28px → 21pt → Word 42 · Excel 21 |
+| 2 | RTN (debajo de la empresa) | **Izquierda** | **Mukta** | 0.75rem / 12px → 9pt → Word 18 · Excel 9 |
+| 3 | Título del reporte | **Centrado** | **Mukta** | 1.06rem ≈ 17px → 12.7pt → Word 26 · Excel 13 |
+| 4 | Criterio de filtro (ej. `Del: 01/10/2026 al 04/10/2026`) | **Centrado** | **Mukta** | 0.75rem / 12px → 9pt → Word 18 · Excel 9 |
 
 - **Datos**: `EncabezadoPrint` → `fiscal` y `logo` reemplazados por **`rtn`** (solo `RTN: 0801…`; dirección y teléfono ya no se imprimen). Eliminado todo el pipeline de logo del servicio (`logoDataUrl`, `normalizarLogo`, `medirAspecto`, `proporciones`, `empresas.getLogo`).
-- **Fuente Audiowide** (se probó Grotesk primero, luego cambió a Audiowide):
-  - **PDF (jsPDF)**: TTF embebida vía `addFileToVFS` + `addFont`, descargada de `/assets/fonts/Audiowide/Audiowide-Regular.ttf` y cacheada en sesión (`prepararFuente()` se espera dentro de `encabezado()`, con flag `fuenteCargada`/`fuenteB64`); si falla → fallback `helvetica`. Re-registro por página (`pdfPaginar` → `registrarFuente()`) verificado sin errores.
-  - **Excel/Word**: `font: 'Audiowide'` (nombre de familia) en los 4 elementos del encabezado.
-- **Cobertura de glifos**: `Audiowide-Regular.ttf` (**47 KB, 366 glifos**, Google Fonts, OFL) ya existía en `public/assets/fonts/Audiowide/`; verificada con fontTools (acentos, `:`, `/`, `—` OK, TTF `glyf` embebible en jsPDF).
+- **Dos fuentes en el encabezado**:
+  - **PDF (jsPDF)**: `prepararFuente()` descarga y cachea **las 2 TTFs** (`Audiowide-Regular.ttf` + `Mukta-Regular.ttf`) vía helper `cargarTtf()`; `registrarFuente(doc)` devuelve `{ audiowide, mukta }` y `pdfEncabezado` usa `fontEmpresa = audiowide ? 'Audiowide' : 'helvetica'` y `fontTexto = mukta ? 'Mukta' : 'helvetica'` (fallback independiente por fuente). Re-registro por página (`pdfPaginar`) verificado sin errores.
+  - **Excel**: `filaCompartida()` acepta `fontIzq`/`fontDer` → fila 1 `Audiowide` (empresa) + `Mukta` (título); fila 2 `Mukta`/`Mukta` (RTN y criterio). `Impreso por` sigue en Calibri.
+  - **Word**: `celda()` acepta parámetro `fuente` → empresa `Audiowide` (42hp), título `Mukta` (26hp), RTN/criterio `Mukta` (18hp).
+- **Cobertura de glifos**: `Mukta-Regular.ttf` (418 KB, TTF con `glyf`, OFL, ya en `public/assets/fonts/Mukta/`) verificada con fontTools: `—` (U+2014), acentos, `:`, `/` ✓. `Audiowide-Regular.ttf` (47 KB, 366 glifos) también verificada.
 - **Grotesk queda fuera**: los `.woff2` de `public/assets/fonts/grotesk/` son un subconjunto de prueba de **67 glifos** (sin acentos, sin `:` ni `/`) → inutilizables; el `Grotesk-Regular.ttf` que se había generado (88 KB, Space Grotesk OFL) tampoco se usa ya — borrarlos cuando usted lo indique.
 - **Libro Diario**: el criterio de fecha ahora dice `Del: 01/10/2026 al 04/10/2026` (antes `Rango: …`); los reportes por período conservan `Período: Octubre 2026`.
 - **"Impreso por"**: Word y PDF lo llevan en el **pie de página** (ya existente); Excel no tiene pie → se conserva como fila pequeña gris bajo el criterio (dígamelo si la quiere fuera).
-- **Verificación**: render del PDF a PNG (pypdfium2) → exactamente el diseño pedido en Audiowide · `word/header1.xml` → `w:rFonts w:ascii="Audiowide"` ×4 con sizes 42/18/26/18 y alineaciones left/left/center/center · `styles.xml` de xlsx → `<name val="Audiowide"/>` sizes 21/9/13 · `ng build` dev + prod → **exit=0**.
-- **Aviso**: Audiowide **sí está instalada en esta PC** (HKCU, per-user) → Word y Excel la muestran bien aquí; en otras PCs que no la tengan Office sustituye. El PDF sí la lleva embebida y se ve siempre igual.
+- **Verificación (05/10/2026, mixta Audiowide+Mukta)**:
+  - **PDF**: content stream de la página 1 → `BT /F15 16 Tf … AUTOSEL` con `/F15 = Audiowide` y `/F16 12.7 Tf … LIBRO DIARIO` + `/F16 9 Tf` para RTN y criterio con `/F16 = Mukta` (Type0 embebidas ambas) · pdfium extrae el texto de las 6 páginas en orden correcto (p1 = encabezado, p6 = "Página 6 de 6");
+  - **Word**: `word/header1.xml` runs → `AUTOSEL` Audiowide 42 · `LIBRO DIARIO` Mukta 26 · `RTN:` Mukta 18 · `Del:…` Mukta 18;
+  - **Excel** (openpyxl): A1 Audiowide 21 · B1 Mukta 13 · A2/B2 Mukta 9 · A3 Impreso por Calibri 9;
+  - `ng build` dev + prod → **exit=0**.
+  - *Nota*: los renders PNG se verificaron por extracción de texto/hash (el visor de imágenes del agente adjuntó renders desfasados en varias lecturas — glitch de visualización, los archivos en disco sí corresponden).
+- **Aviso**: Audiowide y Mukta **sí están instaladas en esta PC** (HKCU, per-user) → Word y Excel las muestran bien aquí; en otras PCs que no las tengan Office sustituye. El PDF sí las lleva embebidas y se ve siempre igual.
 
 #### Tipografía global: Figtree (activada en styles.scss)
 
@@ -295,4 +301,21 @@ Decisión suya: **NO logo, NO "Dir: …", NO "Tel: …"**. El encabezado queda e
 - `exceljs ^4.4.0` agregado (Excel con letterhead; `xlsx` solo queda en componentes no migrados).
 - `npx ng build --configuration development` y `--configuration production` → **exit=0** (solo warnings CommonJS de `exceljs`/`html2canvas`/`tesseract.js`, ya existentes).
 
-**Pendiente**: `reportes-contables` (Balance de Comprobación / Libro Diario / Libro Mayor en una pantalla) no tiene exportación → evaluar sumarla cuando usted lo indique; verificación visual en browser de los 4 reportes (pantalla, PDF, Excel, Word).
+#### Nuevo layout de exportados: ceros en blanco, encabezado 2 filas, filetes discontinuos (05/10/2026)
+
+- **Regla de ceros (solo importes)**: `esCero()` en `reportes-print.service.ts` (`|num| < 0.005`; textos `'0'`/`'0.00'`) → los importes en 0 quedan **en blanco** en PDF/Word (`filaATexto`) y Excel (`escribirFilaExcel` → `null`). Textos no numéricos (`1-1-10`, `N3`, `03/10/2026`) jamás se suprimen. Libro Mayor: `'-'` → `''` y `dc()` retorna `''` cuando el importe ≈ 0.
+- **Encabezado en 2 filas** (PDF/Excel/Word): fila 1 = empresa (izquierda) + **título** (centrado, misma línea); fila 2 = RTN (izquierda) + **criterio** (centrado, misma línea); filete debajo. Tamaños: PDF 16/12.7/9/9 pt · Excel 21/13/9/9 · Word 42/26/18/18 half-points. Excel logra el centrado con merge de columnas 2..N (`B1:F1`, `B2:F2`, `A3:F3`); Word con tabla de 3 columnas sin bordes y `VerticalAlign.CENTER`.
+- **Filetes discontinuos**: helper `pdfLineaDiscontinua` (`setLineDashPattern([1.1,1.1],0)`, lw 0.3) vía `didDrawCell` (bajo la cabecera y encima de TOTALES); Excel bordes `dashed` (`style="dashed"` en styles.xml); Word `BorderStyle.DASHED`. Nuevo `TablaPrint.alineacionesTotales` (override de alineación solo en filas de totales → "TOTALES" queda pegado a los importes).
+- **Bloque de partida** (Libro Diario): `Partida No.: ` + `nropartida.padStart(10,'0')` · `Fecha......: ` (colon en índice 11, fecha con ceros) · `Concepto...: ` (colon en índice 11, `splitTextToSize` para no desbordar); se reserva el alto del bloque y `y += 2` en blanco antes de la tabla; en Word los mismos 3 párrafos por partida.
+- **Fecha del criterio sin ceros a la izquierda**: `fechaSinCero()` → `Del: 1/10/2026 al 4/10/2026` (solo Libro Diario); `Partida Fecha` conserva `formatFechaCorta` (padded). Balances/Libro Mayor siguen con `Período: ...`.
+- **Fix de anchos de tabla**: `pdfAnchos`/`wordAnchos` descartaban el ancho sobrante cuando Descripción era la única columna libre (tabla salía con 126 de 190 mm → la descripción se partía y autoTable avisaba `64 units could not fit page` ×30) → top-up: el sobrante se da a la columna de descripción (o a la última) para que **la tabla ocupe siempre todo el ancho útil**. Aviso desaparecido; Libro Diario pasó de 8 a 6 páginas (sin saltos de línea en descripción).
+- **Fix crítico `wordPie`**: usaba `GRIS_CLARO = 'FF94A3B8'` (8 dígitos con alfa) → `docx` lanza `Invalid hex value 'FF94A3B8'. Expected 6 digit hex value` al construir celdas → **la exportación Word crasheaba**; cambiado a `'94A3B8'`.
+- **Verificación end-to-end con el código real** (harness esbuild en Temp: `build-harness.js` + shims de Angular/rxjs/Empresas/Auth → `harness.cjs`; datos mock suyos: AUTOSEL, RTN 08011974088068, 30 partidas):
+  - **PDF** 6 páginas renderizadas (p.1/p.2/p.6): encabezado repetido en todas, tablas a ancho completo, ceros en blanco, TOTALES alineados, filetes discontinuos ✓;
+  - **XLSX** (openpyxl): merges `B1:F1`/`B2:F2`/`A3:F3`, 60 celdas con borde dashed (cabecera + totales), **0** ceros literales, fuentes Audiowide ✓;
+  - **DOCX** (zip + XML): Audiowide ×4, sizes 42/26/18, grid 3400/3440/3400, dashed ×240, TOTALES ×30, 60 celdas de importe vacías, **0** ceros literales, UTF-8 correcto (falsa alarma: "según" va con `ú`).
+- **Builds**: `ng build` dev y prod → **exit=0**.
+
+**✅ Aprobado (05/10/2026)**: usted revisó los reportes exportados en **PDF, Word y Excel** (encabezado mixto Audiowide+Mukta, layout 2 filas, filetes discontinuos, ceros en blanco) → *"estamos bien con estos reportes"*. Incluye la fila "Impreso por" de Excel.
+
+**Pendiente**: `reportes-contables` (Balance de Comprobación / Libro Diario / Libro Mayor en una pantalla) no tiene exportación → evaluar sumarla cuando usted lo indique; borrar `public/assets/fonts/grotesk/`; decisión de `.saldo` en Mukta vs Figtree.

@@ -69,6 +69,12 @@
   font-size: 0.75rem;
 }
 
+.pista {
+  color: var(--c-text-muted, #64748b);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
 :host ::ng-deep .p-inputnumber {
   width: 100%;
 

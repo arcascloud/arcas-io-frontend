@@ -22,6 +22,7 @@ import { FooterHelper } from '../../helpers/footer';
 import { Producto } from '../../../core/models/inventario.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { QuickNavService } from '../../../core/services/quick-nav.service';
+import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { DividerModule } from 'primeng/divider';
@@ -45,6 +46,7 @@ interface FilaDet {
   precioventa: number;
   descuento: number;
   impuesto: number;
+  impuestoExcento?: number;
   subTotal: number;
 }
 
@@ -92,6 +94,7 @@ export class NuevaFactura implements OnInit {
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
   private quickNav = inject(QuickNavService);
+  private impresion = inject(FacturaImpresionService);
 
   ref: DynamicDialogRef | undefined;
 
@@ -179,6 +182,13 @@ export class NuevaFactura implements OnInit {
   readonly snOptions = [
     { label: 'No', value: 'N' },
     { label: 'Sí', value: 'S' }
+  ];
+
+  readonly tipoConstanciaOpciones = [
+    { label: 'OCE', value: 'OCE' },
+    { label: 'SAG', value: 'SAG' },
+    { label: 'CEA', value: 'CEA' },
+    { label: 'FNE', value: 'FNE' },
   ];
 
   constructor(public dialogService: DialogService) {}
@@ -310,7 +320,9 @@ export class NuevaFactura implements OnInit {
       tarjetacreditoId: [null as number | null],
       nrotarjeta: [''],
       nroreferencia: [''],
-      nrocarnet: [''],
+      tipoconstancia: ['FNE'],
+      nroconstancia: [''],
+      importe_excento: [0],
       diascredito: [0],
       fechavencimiento: [null as Date | null],
       sn_excenta: ['N'],
@@ -566,7 +578,9 @@ export class NuevaFactura implements OnInit {
       nrocliente: raw.nrocliente,
       nombreClienteManual: this.nombreClienteManual(),
       sn_excenta: raw.sn_excenta,
-      nrocarnet: raw.nrocarnet,
+      tipoconstancia: raw.tipoconstancia,
+      nroconstancia: raw.nroconstancia,
+      importe_excento: raw.importe_excento,
       filas: filas.map(f => ({ ...f })),
       totales: { ...this.totales() },
     };
@@ -599,7 +613,9 @@ export class NuevaFactura implements OnInit {
       clienteId: venta.clienteId,
       nrocliente: venta.nrocliente ?? '',
       sn_excenta: venta.sn_excenta ?? 'N',
-      nrocarnet: venta.nrocarnet ?? '',
+      tipoconstancia: venta.tipoconstancia ?? 'FNE',
+      nroconstancia: venta.nroconstancia ?? '',
+      importe_excento: venta.importe_excento ?? 0,
     });
     this.nombreClienteManual.set(venta.nombreClienteManual ?? '');
     this.filas.set((venta.filas ?? []).map((f: any) => ({ ...f })));
@@ -839,10 +855,15 @@ export class NuevaFactura implements OnInit {
 
     if (this.impuestoIncluido) {
       const subConImp = bruto * (1 + this.tasaImpuesto) * (1 - descuento / 100);
-      row.impuesto = exenta ? 0 : Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
+      // ISV que se dejó de cobrar (15%) — se guarda en importe_excento cuando la venta es exenta
+      const isvCalculado = Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
+      row.impuesto = exenta ? 0 : isvCalculado;
+      row.impuestoExcento = exenta ? isvCalculado : 0;
       row.subTotal = Math.round(subConImp * 100) / 100;
     } else {
-      row.impuesto = exenta ? 0 : Math.round(brutoDesc * this.tasaImpuesto * 100) / 100;
+      const isvCalculado = Math.round(brutoDesc * this.tasaImpuesto * 100) / 100;
+      row.impuesto = exenta ? 0 : isvCalculado;
+      row.impuestoExcento = exenta ? isvCalculado : 0;
       row.subTotal = Math.round((brutoDesc + row.impuesto) * 100) / 100;
     }
 
@@ -852,14 +873,21 @@ export class NuevaFactura implements OnInit {
 
   recalcularExenta() {
     const exenta = this.form.get('sn_excenta')?.value === 'S';
-    const ctrl = this.form.get('nrocarnet')!;
+    const ctrl = this.form.get('nroconstancia')!;
+    const tipoCtrl = this.form.get('tipoconstancia')!;
+    const exentoCtrl = this.form.get('importe_excento')!;
     if (exenta) {
       ctrl.setValidators([Validators.required]);
+      tipoCtrl.setValidators([Validators.required]);
     } else {
       ctrl.clearValidators();
       ctrl.setValue('');
+      tipoCtrl.clearValidators();
+      tipoCtrl.setValue('FNE');
+      exentoCtrl.setValue(0);
     }
     ctrl.updateValueAndValidity();
+    tipoCtrl.updateValueAndValidity();
     for (const r of this.filas()) {
       this.recalcularFila(r);
     }
@@ -889,13 +917,17 @@ export class NuevaFactura implements OnInit {
     let bruto = 0;
     let descuento = 0;
     let impuesto = 0;
+    let impuestoExcento = 0;
     for (const r of this.filas()) {
       bruto += (r.cantidad ?? 0) * (r.precioventa ?? 0);
       descuento += (r.cantidad ?? 0) * (r.precioventa ?? 0) * ((r.descuento ?? 0) / 100);
       impuesto += r.impuesto ?? 0;
+      impuestoExcento += r.impuestoExcento ?? 0;
     }
     const total = bruto - descuento + impuesto;
     const efectivo = this.form?.get('efectivo_recibido')?.value ?? 0;
+    // Importe exento: ISV 15% que se dejó de cobrar — se llena automáticamente (campo no editable)
+    this.form?.get('importe_excento')?.setValue(Math.round(impuestoExcento * 100) / 100);
     this.totales.set({
       subTotal: Math.round(bruto * 100) / 100,
       descuento: Math.round(descuento * 100) / 100,
@@ -1042,7 +1074,9 @@ export class NuevaFactura implements OnInit {
       cajaId: raw.cajaId,
       gestorId: raw.gestorId || null,
       sn_excenta: raw.sn_excenta,
-      nrocarnet: raw.nrocarnet || null,
+      tipoconstancia: raw.tipoconstancia || 'FNE',
+      nroconstancia: raw.nroconstancia || null,
+      importe_excento: raw.importe_excento || 0,
       sn_pagada: esCredito ? 'N' : 'S',
       sn_anulada: 'N',
       sn_contabilizada: 'N',
@@ -1162,162 +1196,14 @@ export class NuevaFactura implements OnInit {
     this.api.get<any>(`/facturacion/facturas/${facturaId}/ticket`)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (data) => this.abrirTicket(data),
+        // El formato (TICKET/CARTA) lo resuelve el servicio desde timpresoras
+        next: (data) => this.impresion.imprimir(data).catch(() => {
+          this.msgs.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudo imprimir la factura' });
+        }),
         error: () => {
           this.msgs.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudieron cargar los datos del ticket' });
         },
       });
-  }
-
-  private abrirTicket(data: any) {
-    const { factura: fac, detalles, pagos, empresa, correlativo } = data;
-    const fecha = new Date(fac.fecharegistro).toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const hora = new Date(fac.fecharegistro).toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
-    const condicion = fac.tipofactura === 'C' ? 'CRÉDITO' : 'CONTADO';
-    const nroFactura = String(fac.nrofactura).padStart(8, '0');
-    // Formatear número con prefijo del rango: 000-001-01-00120004
-    let nroFacturaFmt = nroFactura;
-    if (correlativo?.rangoDesde) {
-      const partes = correlativo.rangoDesde.split('-');
-      if (partes.length > 1) {
-        const prefijo = partes.slice(0, -1).join('-') + '-';
-        nroFacturaFmt = prefijo + nroFactura;
-      }
-    }
-
-    const lineasHtml = (detalles || []).map((d: any) => {
-      const desc = d.descripcion || `#${d.productoId}`;
-      const cod = d.codbarra || '';
-      const cant = Number(d.cantidad);
-      const precio = Number(d.precioventa);
-      const tot = Number(d.subTotal) || (cant * precio);
-      const descuento = Number(d.descuento) || 0;
-      const pDescuento = Number(d.p_descuento) || 0;
-      const descLinea = pDescuento > 0 ? `<div class="linea-desc">Desc: -${Number(pDescuento.toFixed(0))}%</div>` : `<div class="linea-desc">Desc: 0%</div>`;
-      return `<div class="linea-item"><div class="linea-desc">${desc}</div>${cod ? `<div class="linea-cod">Cod. ${cod}</div>` : ''}${descLinea}<div class="linea"><span>Cant. ${cant}</span><span>${this.formatNum(precio)}</span><span class="right">${this.formatNum(tot)}</span></div></div>`;
-    }).join('');
-
-    const pagosHtml = (pagos || []).filter((p: any) => Number(p.importe_otros) > 0 || Number(p.importe_efectivo) > 0).map((p: any) => {
-      const importe = Number(p.importe_otros) || Number(p.importe_efectivo) || 0;
-      const formaPago = this.formaspago().find((f) => f.value === p.formapagoId);
-      let desc = formaPago?.label || `Pago #${p.formapagoId}`;
-
-      if (desc.toLowerCase().includes('tarjeta') && p.nrotarjeta) {
-        const last4 = p.nrotarjeta.toString().slice(-4);
-        desc += ` ****${last4}`;
-      }
-
-      if (p.nroautorizacion) {
-        desc += ` Aut: ${p.nroautorizacion}`;
-      }
-
-      return `<div class="linea"><span>${desc}</span><span class="right">${this.formatNum(importe)}</span></div>`;
-    }).join('');
-
-    const subtotal = Number(fac.subTotal) || 0;
-    const impuesto = Number(fac.impuesto) || 0;
-    const descuento = Number(fac.descuento) || 0;
-    const total = Number(fac.total) || 0;
-    const efectivo = Number(fac.efectivo_recibido) || 0;
-    const cambio = Number(fac.importe_cambio) || 0;
-
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Factura ${nroFacturaFmt}</title>
-<style>
-  @page { size: 80mm auto; margin: 2mm; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Courier New', Courier, monospace; font-size: 11px; width: 76mm; color: #000; }
-  .center { text-align: center; }
-  .bold { font-weight: bold; }
-  .linea { display: flex; justify-content: space-between; padding: 1px 0; }
-  .linea-item { margin-bottom: 4px; padding-bottom: 4px; }
-  .linea-desc { font-size: 9px; }
-  .linea-cod { font-size: 7px; color: #555; }
-  .right { text-align: right; }
-  .sep { border-top: 1px dashed #000; margin: 3px 0; }
-  .header { text-align: center; margin-bottom: 4px; }
-  .header .nombre { font-size: 14px; font-weight: bold; }
-  .header .info { font-size: 9px; }
-  .factura-info { margin: 4px 0; }
-  .factura-info .row { display: flex; justify-content: space-between; }
-  .items { margin: 4px 0; }
-  .totales { margin: 4px 0; }
-  .footer { text-align: center; margin-top: 6px; font-size: 9px; }
-</style>
-</head>
-<body>
-  <div class="header">
-    <div class="nombre">${empresa.nombre}</div>
-    ${empresa.rtn ? `<div class="info">RTN: ${empresa.rtn}</div>` : ''}
-    ${empresa.direccion ? `<div class="info">${empresa.direccion}</div>` : ''}
-    ${empresa.telefono ? `<div class="info">Tel: ${empresa.telefono}</div>` : ''}
-  </div>
-
-  <div class="sep"></div>
-
-  <div class="factura-info">
-    <div class="row bold"><span>FACTURA # ${nroFacturaFmt}</span></div>
-    <div class="row"><span>Fecha:</span><span>${fecha} ${hora}</span></div>
-    <div class="row"><span>Cliente:</span><span>${(fac.nombrecliente || 'N/A').substring(0, 25)}</span></div>
-    <div class="row"><span>Condición:</span><span>${condicion}</span></div>
-    ${fac.direccion ? `<div class="row"><span>Dir:</span><span>${fac.direccion.substring(0, 25)}</span></div>` : ''}
-  </div>
-
-  ${correlativo ? `
-  <div class="sep"></div>
-  <div class="cai-info">
-    <div class="center bold" style="font-size: 8px;">RANGO AUTORIZADO</div>
-    <div style="font-size: 8px; text-align: center;">del ${correlativo.rangoDesde}</div>
-    <div style="font-size: 8px; text-align: center;">al ${correlativo.rangoHasta}</div>
-    <div class="center bold" style="font-size: 8px; margin-top: 2px;">CODIGO CAI</div>
-    <div class="center" style="font-size: 7px; letter-spacing: 0.5px;">${correlativo.cai}</div>
-  </div>
-  ` : ''}
-
-  <div class="sep"></div>
-
-  <div class="items">
-    <div class="linea bold"><span>ARTICULO</span><span>P.U.</span><span>TOTAL</span></div>
-    ${lineasHtml}
-  </div>
-
-  <div class="sep"></div>
-
-  <div class="totales">
-    <div class="linea"><span>Subtotal:</span><span class="right">${this.formatNum(subtotal)}</span></div>
-    ${descuento > 0 ? `<div class="linea"><span>Descuento:</span><span class="right">-${this.formatNum(descuento)}</span></div>` : ''}
-    ${impuesto > 0 ? `<div class="linea"><span>ISV 15%:</span><span class="right">${this.formatNum(impuesto)}</span></div>` : ''}
-    <div class="linea bold"><span>TOTAL:</span><span class="right">${this.formatNum(total)}</span></div>
-  </div>
-
-  <div class="sep"></div>
-
-  ${pagosHtml ? `<div>${pagosHtml}</div><div class="sep"></div>` : ''}
-  ${efectivo > 0 ? `<div class="linea"><span>Efectivo:</span><span class="right">${this.formatNum(efectivo)}</span></div>` : ''}
-  ${cambio > 0 ? `<div class="linea"><span>Cambio:</span><span class="right">${this.formatNum(cambio)}</span></div>` : ''}
-
-  <div class="footer">
-    ${empresa.mensajeDevolucion ? `<div>${empresa.mensajeDevolucion}</div>` : ''}
-    ${empresa.mensajeFactura ? `<div>${empresa.mensajeFactura}</div>` : ''}
-    <div>Gracias por su compra</div>
-  </div>
-</body>
-</html>`;
-
-    const ventana = window.open('', '_blank', 'width=320,height=600');
-    if (ventana) {
-      ventana.document.write(html);
-      ventana.document.close();
-      ventana.focus();
-      setTimeout(() => ventana.print(), 300);
-    }
-  }
-
-  private formatNum(n: number): string {
-    return n.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   showHelperProductos() {

@@ -9,10 +9,47 @@
       <!-- Empty state -->
       @if (!empresaSeleccionada()) {
       <div class="empty-state">
-        <i class="pi pi-building empty-icon"></i>
-        <h3>Seleccione una empresa</h3>
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Pulse una empresa</h3>
         <p>Haga clic en una empresa de la lista para ver su información</p>
-        <p-button label="Nueva Empresa" icon="pi pi-plus" (click)="nueva()" severity="success" variant="text" [rounded]="true" size="small" />
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input
+                type="text"
+                pSize="small"
+                pInputText
+                [ngModel]="q()"
+                (ngModelChange)="q.set($event); filtrar()"
+                placeholder="Buscar por nombre o código..."
+                class="mr-1"
+              />
+              @if (q()) {
+              <p-button
+                icon="pi pi-times"
+                (click)="limpiarFiltros()"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                size="small"
+              />
+              }
+            </p-iconField>
+          </div>
+        </div>
+
+        <p-button
+          label="Agregar nueva empresa"
+          icon="pi pi-plus"
+          (click)="nueva()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          size="small"
+          class="mr-2"
+        />
       </div>
       }
 
@@ -51,41 +88,44 @@
             <!-- TAB 0: Empresa - Formulario 2 columnas -->
             <p-tabpanel value="0">
               <div class="tab-content">
-                <div class="prestamo-form-columns">
-                  <!-- Columna 1 -->
-                  <div class="form-col">
-                    <h4 class="form-col-title">Información General</h4>
-                    <div class="p-fluid" [formGroup]="empresaForm">
-                      <div class="campo">
+                <div class="tab-header">
+                  <h4>Empresa</h4>
+                  <span class="tab-subtitulo">Datos generales y mensajes al pie de documento</span>
+                </div>
+
+                <div class="card mb-3">
+                  <div class="prestamo-form-columns" [formGroup]="empresaForm">
+                    <!-- Columna 1 -->
+                    <div class="form-col">
+                      <h5 class="form-col-title">Información General</h5>
+                      <div class="p-field">
                         <label for="descripcion">Descripción <span class="req">*</span></label>
-                        <input pInputText id="descripcion" formControlName="descripcion" pSize="small" placeholder="Nombre de la empresa" />
+                        <input pInputText pSize="small" id="descripcion" formControlName="descripcion" placeholder="Nombre de la empresa" />
                         @if (empresaForm.get('descripcion')?.invalid && empresaForm.get('descripcion')?.touched) {
                         <small class="err">Ingrese la descripción</small>
                         }
                       </div>
-                      <div class="campo">
+                      <div class="p-field">
                         <label for="sn_activo">Estado</label>
-                        <p-select id="sn_activo" formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
+                        <p-select id="sn_activo" formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione estado" />
                       </div>
                     </div>
-                  </div>
-                  <!-- Columna 2 -->
-                  <div class="form-col">
-                    <h4 class="form-col-title">Mensajes</h4>
-                    <div class="p-fluid" [formGroup]="empresaForm">
-                      <div class="campo">
+                    <!-- Columna 2 -->
+                    <div class="form-col">
+                      <h5 class="form-col-title">Mensajes</h5>
+                      <div class="p-field">
                         <label for="msjfactura">Mensaje Factura</label>
                         <textarea pTextarea id="msjfactura" formControlName="msjfactura" [rows]="3" pSize="small" placeholder="Mensaje al pie de factura"></textarea>
                       </div>
-                      <div class="campo">
+                      <div class="p-field">
                         <label for="msjdevfactura">Mensaje Devolución</label>
                         <textarea pTextarea id="msjdevfactura" formControlName="msjdevfactura" [rows]="3" pSize="small" placeholder="Mensaje de política de devolución"></textarea>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div class="form-actions">
-                  <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="saving()" (onClick)="guardarEmpresa()" />
+                  <div class="form-actions">
+                    <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="saving()" (onClick)="guardarEmpresa()" />
+                  </div>
                 </div>
               </div>
             </p-tabpanel>
@@ -93,130 +133,178 @@
             <!-- TAB 1: Datos Específicos -->
             <p-tabpanel value="1">
               <div class="tab-content">
-                <!-- Formulario agregar/editar -->
-                <div class="card mb-3">
-                  <div class="p-fluid" [formGroup]="detForm">
-                    <div class="p-grid">
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Tipo</label>
-                          <p-select formControlName="tipo" [options]="TIPO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Valor <span class="req">*</span></label>
-                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Valor" />
-                        </div>
-                      </div>
-                      <div class="p-col-12">
-                        <div class="form-actions">
-                          @if (detEditando()) {
-                          <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarDet()" />
-                          }
-                          <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingDet()" (onClick)="guardarDet()" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                <div class="tab-header">
+                  <h4>Datos Específicos</h4>
+                  <span class="tab-subtitulo">RTN, teléfono, dirección, correo y otros datos de la empresa</span>
                 </div>
 
-                <!-- Lista -->
-                @if (empresaDet().length > 0) {
-                <p-table [value]="empresaDet()" size="small" [tableStyle]="{ 'min-width': '40rem' }">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th>Tipo</th>
-                      <th>Valor</th>
-                      <th style="width: 8rem;">Acciones</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-det>
-                    <tr>
-                      <td><p-tag [value]="det.tipo" severity="info" styleClass="tag-sm" /></td>
-                      <td>{{ det.descripcion }}</td>
-                      <td>
-                        <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarDet(det)" />
-                        <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarDet(det)" />
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-                } @else {
-                <div class="text-center text-muted py-3">No hay datos registrados</div>
-                }
+                <div class="info-adicional-grid">
+                  <!-- Formulario alta / edicion -->
+                  <div class="info-panel info-panel-form">
+                    <div class="form-col" [formGroup]="detForm">
+                      <div class="p-field">
+                        <label>Tipo</label>
+                        <p-select formControlName="tipo" [options]="TIPO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione tipo" />
+                      </div>
+                      <div class="p-field">
+                        <label>Valor <span class="req">*</span></label>
+                        <input pInputText pSize="small" formControlName="descripcion" placeholder="Valor del dato" />
+                      </div>
+                    </div>
+
+                    <div class="form-actions info-form-actions">
+                      @if (detEditando()) {
+                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarDet()" />
+                      } @else {
+                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarDet()" />
+                      }
+                      <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingDet()" (click)="guardarDet()" />
+                    </div>
+                  </div>
+
+                  <!-- Listado -->
+                  <div class="info-panel info-panel-list">
+                    <div class="detalle-header">
+                      <span>DETALLE</span>
+                    </div>
+                    <!-- test-hmr -->
+
+                    <p-table
+                      [value]="empresaDet()"
+                      [loading]="loadingDet()"
+                      showGridlines
+                      styleClass="tabla-card"
+                      [tableStyle]="{ 'min-width': '15rem' }"
+                      size="small"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th class="col-tipo">Tipo</th>
+                          <th>Valor</th>
+                          <th class="col-estado">Estado</th>
+                          <th class="col-acciones"></th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-det>
+                        <tr>
+                          <td class="col-tipo">{{ det.tipo }}</td>
+                          <td>{{ det.descripcion }}</td>
+                          <td class="col-estado text-center">
+                            <p-tag [value]="getEstadoLabel(det.sn_activo)" [severity]="getEstadoSeverity(det.sn_activo)" styleClass="tag-sm" />
+                          </td>
+                          <td class="col-acciones">
+                            <p-button icon="pi pi-pencil" (click)="editarDet(det)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                            <p-button icon="pi pi-trash" (click)="eliminarDet(det)" [rounded]="true" size="small" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
+                          </td>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="emptymessage">
+                        <tr>
+                          <td colspan="4" class="text-center text-muted">No hay datos registrados</td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+                </div>
               </div>
             </p-tabpanel>
 
             <!-- TAB 2: Sucursales -->
             <p-tabpanel value="2">
               <div class="tab-content">
-                <div class="card mb-3">
-                  <div class="p-fluid" [formGroup]="sucForm">
-                    <div class="p-grid">
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Descripción <span class="req">*</span></label>
-                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Nombre sucursal" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-3">
-                        <div class="campo">
-                          <label>Estado</label>
-                          <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-3">
-                        <div class="campo">
-                          <label>&nbsp;</label>
-                          <div class="d-flex gap-2">
-                            @if (sucEditando()) {
-                            <p-button size="small" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarSuc()" />
-                            }
-                            <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingSuc()" (onClick)="guardarSucursal()" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                <div class="tab-header">
+                  <h4>Sucursales</h4>
+                  <span class="tab-subtitulo">Plazas habilitadas de la empresa</span>
                 </div>
 
-                @if (sucursales().length > 0) {
-                <p-table [value]="sucursales()" size="small" [tableStyle]="{ 'min-width': '30rem' }">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th>ID</th>
-                      <th>Descripción</th>
-                      <th>Estado</th>
-                      <th style="width: 5rem;">Acciones</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-suc>
-                    <tr>
-                      <td class="text-center">{{ suc.idsucursal }}</td>
-                      <td>{{ suc.descripcion }}</td>
-                      <td><p-tag [value]="getEstadoLabel(suc.sn_activo)" [severity]="getEstadoSeverity(suc.sn_activo)" styleClass="tag-sm" /></td>
-                      <td>
-                        <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarSuc(suc)" />
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-                } @else {
-                <div class="text-center text-muted py-3">No hay sucursales registradas</div>
-                }
+                <div class="info-adicional-grid">
+                  <!-- Formulario -->
+                  <div class="info-panel info-panel-form">
+                    <h5 class="form-col-title">
+                      {{ sucEditando() ? 'Editar sucursal' : 'Nueva sucursal' }}
+                    </h5>
+
+                    <div class="form-col" [formGroup]="sucForm">
+                      <div class="p-field">
+                        <label>Descripción <span class="req">*</span></label>
+                        <input pInputText pSize="small" formControlName="descripcion" placeholder="Nombre sucursal" />
+                      </div>
+                      <div class="p-field">
+                        <label>Estado</label>
+                        <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione estado" />
+                      </div>
+                    </div>
+
+                    <div class="form-actions info-form-actions">
+                      @if (sucEditando()) {
+                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarSuc()" />
+                      } @else {
+                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarSuc()" />
+                      }
+                      <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingSuc()" (click)="guardarSucursal()" />
+                    </div>
+                  </div>
+
+                  <!-- Listado -->
+                  <div class="info-panel info-panel-list">
+                    <div class="info-list-header">
+                      <h5 class="form-col-title">Sucursales registradas</h5>
+                      <span class="info-list-total">{{ sucursales().length }} registro(s)</span>
+                    </div>
+
+                    <p-table
+                      [value]="sucursales()"
+                      [loading]="loadingSuc()"
+                      showGridlines
+                      styleClass="tabla-card"
+                      [tableStyle]="{ 'min-width': '15rem' }"
+                      size="small"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th class="col-tipo">ID</th>
+                          <th>Descripción</th>
+                          <th class="col-estado">Estado</th>
+                          <th class="col-acciones"></th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-suc>
+                        <tr>
+                          <td class="col-tipo">{{ suc.idsucursal }}</td>
+                          <td>{{ suc.descripcion }}</td>
+                          <td class="col-estado text-center">
+                            <p-tag [value]="getEstadoLabel(suc.sn_activo)" [severity]="getEstadoSeverity(suc.sn_activo)" styleClass="tag-sm" />
+                          </td>
+                          <td class="col-acciones">
+                            <p-button icon="pi pi-pencil" (click)="editarSuc(suc)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                          </td>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="emptymessage">
+                        <tr>
+                          <td colspan="4" class="text-center text-muted">No hay sucursales registradas</td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+                </div>
               </div>
             </p-tabpanel>
 
             <!-- TAB 3: CAI - Maestro/Detalle -->
             <p-tabpanel value="3">
               <div class="tab-content">
+                <div class="tab-header">
+                  <h4>CAI y Correlativos</h4>
+                  <span class="tab-subtitulo">Autorizaciones de impresión y rangos de facturación</span>
+                </div>
+
                 <!-- Maestro: Lista de CAIs -->
                 <p-fieldset legend="CAI Registrados" [toggleable]="true">
                   @if (caiRecords().length > 0) {
                   <div class="cai-list">
-                    @for (cai of caiRecords(); track cai.empresasdetId) {
-                    <div class="cai-item" [class.selected]="caiSeleccionado()?.empresasdetId === cai.empresasdetId" (click)="seleccionarCai(cai)">
+                    @for (cai of caiRecords(); track cai.caiId) {
+                    <div class="cai-item" [class.selected]="caiSeleccionado()?.caiId === cai.caiId" (click)="seleccionarCai(cai)">
                       <div class="cai-item-header">
                         <p-tag [value]="getEstadoLabel(cai.sn_activo)" [severity]="getEstadoSeverity(cai.sn_activo)" styleClass="tag-sm" />
                         <div class="cai-item-actions">
@@ -234,37 +322,36 @@
 
                   <!-- Formulario nuevo/editar CAI -->
                   <div class="card mt-3">
-                    <h5 class="mb-3">{{ caiEditando() ? 'Editar CAI' : 'Nuevo CAI' }}</h5>
-                    <div class="p-fluid" [formGroup]="caiForm">
-                      <div class="p-grid">
-                        <div class="p-col-12 p-col-8">
-                          <div class="campo">
-                            <label>Código CAI <span class="req">*</span> <small class="text-muted">(mínimo 35 caracteres, letras/números/guiones)</small></label>
-                            <input pInputText formControlName="descripcion" pSize="small" placeholder="Ejemplo: A1B2FF-C3D4FF-E5F6BB-G7H8GG-I9J0TT-K1" [style]="{ 'font-family': 'monospace' }" />
-                            @if (caiForm.get('descripcion')?.touched && caiForm.get('descripcion')?.invalid) {
-                            <small class="err">
-                              @if (caiForm.get('descripcion')?.errors?.['minlength']) {
-                              Mínimo 35 caracteres (actual: {{ caiForm.get('descripcion')?.value?.length || 0 }})
-                              } @else {
-                              Solo letras, números y guiones
-                              }
-                            </small>
+                    <div class="prestamo-form-columns" [formGroup]="caiForm">
+                      <div class="form-col">
+                        <h5 class="form-col-title">Código CAI</h5>
+                        <div class="p-field">
+                          <label>Código <span class="req">*</span> <small class="text-muted">(mínimo 35 caracteres, letras/números/guiones)</small></label>
+                          <input pInputText pSize="small" formControlName="cai" placeholder="Ejemplo: A1B2FF-C3D4FF-E5F6BB-G7H8GG-I9J0TT-K1" class="cai-input-mono" />
+                          @if (caiForm.get('cai')?.touched && caiForm.get('cai')?.invalid) {
+                          <small class="err">
+                            @if (caiForm.get('cai')?.errors?.['minlength']) {
+                            Mínimo 35 caracteres (actual: {{ caiForm.get('cai')?.value?.length || 0 }})
+                            } @else {
+                            Solo letras, números y guiones
                             }
-                          </div>
-                        </div>
-                        <div class="p-col-12 p-col-4">
-                          <div class="campo">
-                            <label>Estado</label>
-                            <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
-                          </div>
+                          </small>
+                          }
                         </div>
                       </div>
-                      <div class="form-actions">
-                        @if (caiEditando()) {
-                        <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarCai()" />
-                        }
-                        <p-button size="small" [label]="caiEditando() ? 'Actualizar CAI' : 'Crear CAI'" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingCai()" (onClick)="guardarCai()" />
+                      <div class="form-col">
+                        <h5 class="form-col-title">Estado</h5>
+                        <div class="p-field">
+                          <label>Estado del CAI</label>
+                          <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione estado" />
+                        </div>
                       </div>
+                    </div>
+                    <div class="form-actions">
+                      @if (caiEditando()) {
+                      <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarCai()" />
+                      }
+                      <p-button [label]="caiEditando() ? 'Actualizar CAI' : 'Crear CAI'" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingCai()" (onClick)="guardarCai()" />
                     </div>
                   </div>
                 </p-fieldset>
@@ -274,63 +361,60 @@
                 <p-fieldset legend="Correlativos (Rangos de Factura)" [toggleable]="true" styleClass="mt-3">
                   <!-- Formulario nuevo/editar correlativo -->
                   <div class="card mb-3">
-                    <h5 class="mb-3">{{ corrEditando() ? 'Editar Correlativo' : 'Nuevo Correlativo' }}</h5>
-                    <div class="p-fluid" [formGroup]="corrForm">
-                      <div class="p-grid">
-                        <div class="p-col-12 p-col-6">
-                          <div class="campo">
-                            <label>Sucursal <span class="req">*</span></label>
-                            <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" pSize="small" styleClass="w-full" appendTo="body" placeholder="Seleccionar sucursal" (onChange)="onSucursalChange()" />
-                          </div>
+                    <div class="prestamo-form-columns" [formGroup]="corrForm">
+                      <div class="form-col">
+                        <h5 class="form-col-title">Documento</h5>
+                        <div class="p-field">
+                          <label>Sucursal <span class="req">*</span></label>
+                          <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar sucursal" (onChange)="onSucursalChange()" />
                         </div>
-                        <div class="p-col-12 p-col-6">
-                          <div class="campo">
-                            <label>Nro. Factura Actual <span class="req">*</span></label>
-                            <p-inputNumber formControlName="nrofactura" [min]="0" pSize="small" styleClass="w-full" [inputStyle]="{ 'width': '100%' }" />
-                          </div>
-                        </div>
-                        <div class="p-col-12 p-col-4">
-                          <div class="campo">
-                            <label>Rango Desde <span class="req">*</span></label>
-                            <input pInputText formControlName="rangoDesde" pSize="small" placeholder="001-001-01000001" />
-                          </div>
-                        </div>
-                        <div class="p-col-12 p-col-4">
-                          <div class="campo">
-                            <label>Rango Hasta <span class="req">*</span></label>
-                            <input pInputText formControlName="rangoHasta" pSize="small" placeholder="001-001-01000500" />
-                          </div>
-                        </div>
-                        <div class="p-col-12 p-col-4">
-                          <div class="campo">
-                            <label>Fecha Límite <span class="req">*</span></label>
-                            <p-datepicker formControlName="fechaLimite" pSize="small" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" placeholder="Fecha de vencimiento" />
-                          </div>
-                        </div>
-                        <div class="p-col-12">
-                          <div class="form-actions">
-                            @if (corrEditando()) {
-                            <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarCorr()" />
-                            }
-                            <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingCorr()" (onClick)="guardarCorrelativo()" />
-                          </div>
+                        <div class="p-field">
+                          <label>Nro. Factura Actual <span class="req">*</span></label>
+                          <p-inputNumber formControlName="nrofactura" [min]="0" size="small" styleClass="w-full" [inputStyle]="{ 'width': '100%' }" />
                         </div>
                       </div>
+                      <div class="form-col">
+                        <h5 class="form-col-title">Rango de facturación</h5>
+                        <div class="p-field">
+                          <label>Rango Desde <span class="req">*</span></label>
+                          <input pInputText pSize="small" formControlName="rangoDesde" placeholder="001-001-01000001" />
+                        </div>
+                        <div class="p-field">
+                          <label>Rango Hasta <span class="req">*</span></label>
+                          <input pInputText pSize="small" formControlName="rangoHasta" placeholder="001-001-01000500" />
+                        </div>
+                        <div class="p-field">
+                          <label>Fecha Límite <span class="req">*</span></label>
+                          <p-datepicker formControlName="fechaLimite" size="small" dateFormat="dd/mm/yy" [showIcon]="true" [appendTo]="'body'" styleClass="w-full" placeholder="Fecha de vencimiento" />
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-actions">
+                      @if (corrEditando()) {
+                      <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarCorr()" />
+                      }
+                      <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingCorr()" (onClick)="guardarCorrelativo()" />
                     </div>
                   </div>
 
                   <!-- Lista de correlativos -->
-                  @if (correlativos().length > 0) {
-                  <p-table [value]="correlativos()" size="small" [tableStyle]="{ 'min-width': '55rem' }">
+                  <p-table
+                    [value]="correlativos()"
+                    [loading]="loadingCorr()"
+                    showGridlines
+                    styleClass="tabla-card"
+                    [tableStyle]="{ 'min-width': '50rem' }"
+                    size="small"
+                  >
                     <ng-template pTemplate="header">
                       <tr>
                         <th>Sucursal</th>
                         <th>Rango</th>
-                        <th>Nro. Factura</th>
+                        <th class="col-estado">Nro. Factura</th>
                         <th>Disponibles</th>
-                        <th>Estado</th>
+                        <th class="col-estado">Estado</th>
                         <th>Fecha Límite</th>
-                        <th style="width: 8rem;">Acciones</th>
+                        <th class="col-acciones"></th>
                       </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-corr>
@@ -344,23 +428,25 @@
                             </div>
                           </div>
                         </td>
-                        <td class="text-center">{{ corr.nrofactura }}</td>
+                        <td class="col-estado text-center">{{ corr.nrofactura }}</td>
                         <td>
                           <span class="disponibles-text">{{ getRangoDisponible(corr.Idsucursal) }}</span>
                           <span class="porcentaje-text">({{ getRangoPorcentaje(corr.Idsucursal) }}%)</span>
                         </td>
-                        <td><p-tag [value]="getRangoLabel(corr.Idsucursal)" [severity]="getRangoEstadoSeverity(corr.Idsucursal)" styleClass="tag-sm" /></td>
+                        <td class="col-estado"><p-tag [value]="getRangoLabel(corr.Idsucursal)" [severity]="getRangoEstadoSeverity(corr.Idsucursal)" styleClass="tag-sm" /></td>
                         <td>{{ formatFecha(corr.fechaLimite) }}</td>
-                        <td>
-                          <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarCorr(corr)" />
-                          <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarCorr(corr)" />
+                        <td class="col-acciones">
+                          <p-button icon="pi pi-pencil" (click)="editarCorr(corr)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                          <p-button icon="pi pi-trash" (click)="eliminarCorr(corr)" [rounded]="true" size="small" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
                         </td>
                       </tr>
                     </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                      <tr>
+                        <td colspan="7" class="text-center text-muted">No hay correlativos registrados para este CAI</td>
+                      </tr>
+                    </ng-template>
                   </p-table>
-                  } @else {
-                  <div class="text-center text-muted py-3">No hay correlativos registrados para este CAI</div>
-                  }
                 </p-fieldset>
                 }
               </div>
@@ -369,10 +455,12 @@
             <!-- TAB 4: Logo -->
             <p-tabpanel value="4">
               <div class="tab-content">
-                <div class="card mb-3">
-                  <h5 class="mb-3">Logotipo de la Empresa</h5>
-                  <p class="text-muted mb-3">Se mostrará en facturas, reportes y tickets térmicos.</p>
+                <div class="tab-header">
+                  <h4>Logo</h4>
+                  <span class="tab-subtitulo">Se mostrará en facturas, reportes y tickets térmicos</span>
+                </div>
 
+                <div class="card mb-3">
                   <!-- Preview del logo -->
                   @if (logoPreview()) {
                   <div class="logo-preview-container">
@@ -380,21 +468,21 @@
                   </div>
                   } @else {
                   <div class="logo-empty">
-                    <i class="pi pi-image" style="font-size: 3rem; color: var(--c-text-muted);"></i>
+                    <i class="pi pi-image logo-empty-icon"></i>
                     <p class="text-muted mt-2">No hay logo configurado</p>
                   </div>
                   }
 
                   <!-- Upload -->
-                  <div class="d-flex gap-2 mt-3 align-items-center">
-                    <label class="p-button p-button-sm p-button-outlined p-button-secondary" style="cursor: pointer;">
+                  <div class="form-actions logo-actions">
+                    <label class="upload-btn">
                       <i class="pi pi-upload mr-2"></i>
                       <span>{{ logoPreview() ? 'Cambiar imagen' : 'Seleccionar imagen' }}</span>
-                      <input type="file" accept="image/png,image/jpeg,image/jpg" (change)="onLogoSelect($event)" style="display: none;" />
+                      <input type="file" accept="image/png,image/jpeg,image/jpg" (change)="onLogoSelect($event)" />
                     </label>
                     @if (logoPreview()) {
-                    <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingLogo()" (onClick)="guardarLogo()" />
-                    <p-button size="small" label="Eliminar" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" (onClick)="eliminarLogo()" />
+                    <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingLogo()" (onClick)="guardarLogo()" />
+                    <p-button label="Eliminar" icon="pi pi-trash" variant="text" severity="danger" [rounded]="true" size="small" (onClick)="eliminarLogo()" />
                     }
                   </div>
                 </div>
@@ -404,91 +492,103 @@
             <!-- TAB 5: Impresoras -->
             <p-tabpanel value="5">
               <div class="tab-content">
-                <!-- Formulario agregar/editar -->
-                <div class="card mb-3">
-                  <h5 class="mb-3">{{ impEditando() ? 'Editar Impresora' : 'Nueva Impresora' }}</h5>
-                  <div class="p-fluid" [formGroup]="impForm">
-                    <div class="p-grid">
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Descripción</label>
-                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Nombre de la impresora" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-3">
-                        <div class="campo">
-                          <label>Formato</label>
-                          <p-select formControlName="formato" [options]="FORMATO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-3">
-                        <div class="campo">
-                          <label>Modo Correlativo</label>
-                          <p-select formControlName="modo_correlativo" [options]="MODO_CORRELATIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" pTooltip="Automático: usa rangos CAI. Manual: ingresa número manually." />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-3">
-                        <div class="campo">
-                          <label>Sucursal <span class="req">*</span></label>
-                          <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" pSize="small" styleClass="w-full" appendTo="body" placeholder="Seleccionar" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Driver</label>
-                          <input pInputText formControlName="driver" pSize="small" placeholder="Ej: EPSON, BIXOLON" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Puerto</label>
-                          <input pInputText formControlName="puerto" pSize="small" placeholder="Ej: USB, LPT1, COM1" />
-                        </div>
-                      </div>
-                      <div class="p-col-12">
-                        <div class="form-actions">
-                          @if (impEditando()) {
-                          <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarImp()" />
-                          }
-                          <p-button size="small" [label]="impEditando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingImp()" (onClick)="guardarImpresora()" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                <div class="tab-header">
+                  <h4>Impresoras</h4>
+                  <span class="tab-subtitulo">Equipos habilitados para impresión de tickets y cartas</span>
                 </div>
 
-                <!-- Lista -->
-                @if (impresoras().length > 0) {
-                <p-table [value]="impresoras()" size="small" [tableStyle]="{ 'min-width': '45rem' }">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th>Descripción</th>
-                      <th>Formato</th>
-                      <th>Modo</th>
-                      <th>Sucursal</th>
-                      <th>Driver</th>
-                      <th>Puerto</th>
-                      <th style="width: 8rem;">Acciones</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-imp>
-                    <tr>
-                      <td>{{ imp.descripcion || '-' }}</td>
-                      <td><p-tag [value]="imp.formato" [severity]="imp.formato === 'TICKET' ? 'info' : 'warn'" styleClass="tag-sm" /></td>
-                      <td><p-tag [value]="imp.modo_correlativo === 'A' ? 'Automático' : 'Manual'" [severity]="imp.modo_correlativo === 'A' ? 'success' : 'secondary'" styleClass="tag-sm" /></td>
-                      <td>{{ getSucursalNombre(imp.Idsucursal) }}</td>
-                      <td>{{ imp.driver || '-' }}</td>
-                      <td>{{ imp.puerto || '-' }}</td>
-                      <td>
-                        <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarImp(imp)" />
-                        <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarImp(imp)" />
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-                } @else {
-                <div class="text-center text-muted py-3">No hay impresoras configuradas</div>
-                }
+                <div class="info-adicional-grid">
+                  <!-- Formulario -->
+                  <div class="info-panel info-panel-form">
+                    <h5 class="form-col-title">
+                      {{ impEditando() ? 'Editar impresora' : 'Nueva impresora' }}
+                    </h5>
+
+                    <div class="form-col" [formGroup]="impForm">
+                      <div class="p-field">
+                        <label>Descripción</label>
+                        <input pInputText pSize="small" formControlName="descripcion" placeholder="Nombre de la impresora" />
+                      </div>
+                      <div class="p-field">
+                        <label>Formato</label>
+                        <p-select formControlName="formato" [options]="FORMATO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione formato" />
+                      </div>
+                      <div class="p-field">
+                        <label>Modo Correlativo</label>
+                        <p-select formControlName="modo_correlativo" [options]="MODO_CORRELATIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" pTooltip="Automático: usa rangos CAI. Manual: ingresa el número manualmente." />
+                      </div>
+                      <div class="p-field">
+                        <label>Sucursal <span class="req">*</span></label>
+                        <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar" />
+                      </div>
+                      <div class="p-field">
+                        <label>Driver</label>
+                        <input pInputText pSize="small" formControlName="driver" placeholder="Ej: EPSON, BIXOLON" />
+                      </div>
+                      <div class="p-field">
+                        <label>Puerto</label>
+                        <input pInputText pSize="small" formControlName="puerto" placeholder="Ej: USB, LPT1, COM1" />
+                      </div>
+                    </div>
+
+                    <div class="form-actions info-form-actions">
+                      @if (impEditando()) {
+                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarImp()" />
+                      } @else {
+                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarImp()" />
+                      }
+                      <p-button [label]="impEditando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingImp()" (onClick)="guardarImpresora()" />
+                    </div>
+                  </div>
+
+                  <!-- Listado -->
+                  <div class="info-panel info-panel-list">
+                    <div class="info-list-header">
+                      <h5 class="form-col-title">Impresoras configuradas</h5>
+                      <span class="info-list-total">{{ impresoras().length }} registro(s)</span>
+                    </div>
+
+                    <p-table
+                      [value]="impresoras()"
+                      [loading]="loadingImp()"
+                      showGridlines
+                      styleClass="tabla-card"
+                      [tableStyle]="{ 'min-width': '30rem' }"
+                      size="small"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th>Descripción</th>
+                          <th class="col-tipo">Formato</th>
+                          <th class="col-tipo">Modo</th>
+                          <th>Sucursal</th>
+                          <th>Driver</th>
+                          <th>Puerto</th>
+                          <th class="col-acciones"></th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-imp>
+                        <tr>
+                          <td>{{ imp.descripcion || '-' }}</td>
+                          <td class="col-tipo"><p-tag [value]="imp.formato" [severity]="imp.formato === 'TICKET' ? 'info' : 'warn'" styleClass="tag-sm" /></td>
+                          <td class="col-tipo"><p-tag [value]="imp.modo_correlativo === 'A' ? 'Automático' : 'Manual'" [severity]="imp.modo_correlativo === 'A' ? 'success' : 'secondary'" styleClass="tag-sm" /></td>
+                          <td>{{ getSucursalNombre(imp.Idsucursal) }}</td>
+                          <td>{{ imp.driver || '-' }}</td>
+                          <td>{{ imp.puerto || '-' }}</td>
+                          <td class="col-acciones">
+                            <p-button icon="pi pi-pencil" (click)="editarImp(imp)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                            <p-button icon="pi pi-trash" (click)="eliminarImp(imp)" [rounded]="true" size="small" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
+                          </td>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="emptymessage">
+                        <tr>
+                          <td colspan="7" class="text-center text-muted">No hay impresoras configuradas</td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+                </div>
               </div>
             </p-tabpanel>
           </p-tabpanels>
@@ -501,21 +601,46 @@
     <div class="right-column">
       <div class="search-bar">
         <div class="search-input-wrapper">
-          <p-iconField>
-            <p-inputIcon class="pi pi-search" />
-            <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event); filtrar()" placeholder="Buscar empresa..." class="search-input" />
-            @if (q()) {
-            <p-button icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text" [rounded]="true" size="small" />
-            }
-          </p-iconField>
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            pInputText
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event); filtrar()"
+            placeholder="Buscar por nombre o código..."
+            class="search-input"
+          />
+          @if (q()) {
+          <p-button
+            label="Limpiar"
+            icon="pi pi-times"
+            (click)="limpiarFiltros()"
+            severity="secondary"
+            [rounded]="true"
+            size="small"
+            class="clear-btn"
+          />
+          }
         </div>
-        <p-button size="small" icon="pi pi-plus" severity="success" variant="text" [rounded]="true" pTooltip="Nueva empresa" (onClick)="nueva()" />
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nueva()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        />
       </div>
 
       @if (cargando()) {
       <div class="loading-skeleton">
         @for (i of [1,2,3,4,5]; track i) {
-        <div class="skeleton-item"><p-skeleton styleClass="mb-2" /><p-skeleton width="60%" styleClass="mb-2" /><p-skeleton width="40%" /></div>
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
         }
       </div>
       } @else if (empresasFiltradas().length === 0) {
@@ -523,23 +648,48 @@
         <i class="pi pi-building empty-icon"></i>
         <h3>No hay empresas</h3>
         <p>Registre una empresa para comenzar</p>
+        <p-button label="Nuevo" icon="pi pi-plus" (click)="nueva()" severity="success" [rounded]="true" size="small" />
       </div>
       } @else {
-      <div class="empresa-list">
-        @for (emp of empresasFiltradas(); track emp.empresaId) {
+      <div class="empresas-lista">
+        @for (emp of empresasPaginadas(); track emp.empresaId) {
         <div class="empresa-item-ficha" [class.selected]="empresaSeleccionada()?.empresaId === emp.empresaId" (click)="seleccionar(emp)">
-          <div class="ficha-header">
-            <span class="ficha-id">#{{ emp.empresaId }}</span>
-            <p-tag [value]="getEstadoLabel(emp.sn_activo)" [severity]="getEstadoSeverity(emp.sn_activo)" styleClass="tag-sm" />
+          <div class="item-ficha-header">
+            <span class="ficha-label">Código:</span>
+            <span class="ficha-value">#{{ emp.empresaId }}</span>
+            <p-tag [value]="getEstadoLabel(emp.sn_activo)" [severity]="getEstadoSeverity(emp.sn_activo)" styleClass="tag-ficha" />
           </div>
-          <div class="ficha-name">{{ emp.descripcion }}</div>
-          <div class="ficha-meta-row">
-            <span class="ficha-meta-label">Creada:</span>
-            <span class="ficha-meta-value">{{ formatFecha(emp.fechasistema) }}</span>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombre:</span>
+            <span class="ficha-value">{{ emp.descripcion }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Mensaje factura:</span>
+            <span class="ficha-value">{{ emp.msjfactura || '—' }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Creada:</span>
+            <span class="ficha-value">{{ formatFecha(emp.fechasistema) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Registrado por:</span>
+            <span class="ficha-value">{{ emp.usuarioCreated || '—' }}</span>
+          </div>
+          <div class="item-ficha-actions">
+            <p-button icon="pi pi-pencil" (click)="editarEmpresa(emp, $event)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
           </div>
         </div>
         }
       </div>
+
+      <p-paginator
+        [first]="(page() - 1) * limit()"
+        [rows]="limit()"
+        [totalRecords]="totalEmpresas()"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"
+      ></p-paginator>
       }
     </div>
 

@@ -16,15 +16,15 @@ import { MessageService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { PartidaDiario } from '../../../core/models/contabilidad.models';
 import { AuthService } from '../../../core/services/auth.service';
-import { EmpresasService } from '../../../core/services/empresas.service';
+import {
+  ReportesPrintService,
+  EncabezadoPrint,
+  TablaPrint,
+  ColumnaPrint,
+} from '../../../core/services/reportes-print.service';
 
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-import {
-  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-  WidthType, AlignmentType, HeadingLevel,
-} from 'docx';
+import { Packer, Paragraph, TextRun, Table } from 'docx';
 
 @Component({
   selector: 'app-libro-diario',
@@ -41,7 +41,7 @@ import {
 export class LibroDiarioComponent implements OnInit {
   private contabilidad = inject(ContabilidadService);
   private auth = inject(AuthService);
-  private empresas = inject(EmpresasService);
+  private print = inject(ReportesPrintService);
   private sanitizer = inject(DomSanitizer);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
@@ -50,7 +50,6 @@ export class LibroDiarioComponent implements OnInit {
   partidas = signal<PartidaDiario[]>([]);
   cargando = signal(false);
   expandido = signal<Set<number>>(new Set());
-  nombreEmpresa = signal('');
 
   // Visor PDF
   mostrarVisor = signal(false);
@@ -65,14 +64,6 @@ export class LibroDiarioComponent implements OnInit {
     const hoy = new Date();
     this.fechaDesde.set(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
     this.fechaHasta.set(hoy);
-
-    // Cargar nombre de empresa
-    const empresaId = this.auth.currentUser()?.empresaId;
-    if (empresaId) {
-      this.empresas.getOne(empresaId)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({ next: (e) => this.nombreEmpresa.set(e.descripcion) });
-    }
 
     this.buscar();
   }
@@ -134,102 +125,100 @@ export class LibroDiarioComponent implements OnInit {
 
   // ========== UTILIDADES DE IMPRESIÓN ==========
 
-  private getNombreEmpresa(): string {
-    return this.nombreEmpresa() || 'Empresa';
+  /** Rango de fechas y auxiliar aplicados (línea meta de la impresión) */
+  private metaImpresion(): string {
+    let meta = `Del: ${this.getRangoFechas()}`;
+    if (this.auxiliar()) meta += ` — Auxiliar: ${this.auxiliar()}`;
+    return meta;
   }
 
-  private getUsuarioImpresion(): string {
-    const user = this.auth.currentUser();
-    return user?.nombre || user?.usuario || '';
+  /** Encabezado de los archivos exportados (PDF, Excel y Word) */
+  private async encabezadoImpresion(): Promise<EncabezadoPrint> {
+    return this.print.encabezado('LIBRO DIARIO', this.metaImpresion());
   }
 
-  private getFechaHoraImpresion(): string {
-    return new Date().toLocaleString('es-HN', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
+  /** Columnas PDF/Word: una tabla por partida (Cta, Descripción, Débito, Crédito) */
+  private readonly columnas: ColumnaPrint[] = [
+    { titulo: 'Cta Contable', alinear: 'left', pdf: 30, word: 1700 },
+    { titulo: 'Descripción', alinear: 'left' },
+    { titulo: 'Débito', alinear: 'right', pdf: 34, word: 1750 },
+    { titulo: 'Crédito', alinear: 'right', pdf: 34, word: 1750 },
+  ];
+
+  /** Columnas Excel: plano con Partida y Fecha por línea */
+  private readonly columnasExcel: ColumnaPrint[] = [
+    { titulo: 'Partida', alinear: 'left', excel: 10 },
+    { titulo: 'Fecha', alinear: 'left', excel: 13 },
+    { titulo: 'Cta Contable', alinear: 'left', excel: 15 },
+    { titulo: 'Descripción', alinear: 'left', excel: 40 },
+    { titulo: 'Débito', alinear: 'right', excel: 15 },
+    { titulo: 'Crédito', alinear: 'right', excel: 15 },
+  ];
+
+  /** Tabla de UNA partida (PDF y Word): líneas + totales de la partida */
+  private tablaPartida(partida: PartidaDiario): TablaPrint {
+    return {
+      columnas: this.columnas,
+      filas: partida.lineas.map((l) => [
+        l.ctacontable,
+        l.descripcionCta || l.descripcion || '',
+        Number(l.debito) || 0,
+        Number(l.credito) || 0,
+      ]),
+      filaTotales: [
+        '',
+        'TOTALES',
+        Number(partida.totalDebito) || 0,
+        Number(partida.totalCredito) || 0,
+      ],
+      // "TOTALES" a la derecha de Descripción, pegado a los importes
+      alineacionesTotales: [undefined, 'right', undefined, undefined],
+    };
+  }
+
+  /** Tabla única de Excel: todas las partidas con sus líneas */
+  private tablaExcel(): TablaPrint {
+    const filas: (string | number | null)[][] = [];
+    const filasTotales: number[] = [];
+
+    this.partidas().forEach((p, i) => {
+      if (i > 0) filas.push(['', '', '', '', '', '']);
+      for (const l of p.lineas) {
+        filas.push([
+          p.nropartida,
+          this.formatFechaCorta(p.fecha),
+          l.ctacontable,
+          l.descripcionCta || l.descripcion || '',
+          Number(l.debito) || 0,
+          Number(l.credito) || 0,
+        ]);
+      }
+      filasTotales.push(filas.length);
+      filas.push([
+        '',
+        '',
+        '',
+        'TOTALES',
+        Number(p.totalDebito) || 0,
+        Number(p.totalCredito) || 0,
+      ]);
     });
+
+    return {
+      columnas: this.columnasExcel,
+      filas,
+      filasTotales,
+      // "TOTALES" a la derecha de Descripción, pegado a los importes
+      alineacionesTotales: [undefined, undefined, undefined, 'right', undefined, undefined],
+    };
   }
 
   // ========== EXPORTACIONES ==========
 
-  exportPDF(): void {
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageW = doc.internal.pageSize.getWidth();
-
-    // Encabezado
-    doc.setFontSize(14);
-    doc.text('LIBRO DIARIO', pageW / 2, 12, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.text(this.getNombreEmpresa(), pageW / 2, 19, { align: 'center' });
-
-    doc.setFontSize(9);
-    doc.text(`Rango: ${this.getRangoFechas()}`, 14, 26);
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 14, 31);
-    doc.text(`Fecha impresión: ${this.getFechaHoraImpresion()}`, pageW - 14, 31, { align: 'right' });
-
-    // Línea separadora gris
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(14, 33, pageW - 14, 33);
-
-    let y = 38;
-    for (const partida of this.partidas()) {
-      if (y > 250) {
-        this.agregarPiePDF(doc);
-        doc.addPage();
-        y = 15;
-      }
-
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Partida #${partida.nropartida}  |  ${this.formatFechaCorta(partida.fecha)}  |  ${partida.descripcion}`, 14, y);
-      y += 5;
-
-      const body = partida.lineas.map(l => [
-        l.ctacontable,
-        l.descripcionCta || l.descripcion || '',
-        l.debito.toFixed(2),
-        l.credito.toFixed(2),
-      ]);
-
-      body.push(['', 'TOTALES', (partida.totalDebito || 0).toFixed(2), (partida.totalCredito || 0).toFixed(2)]);
-
-      autoTable(doc, {
-        startY: y,
-        head: [['Cta Contable', 'Descripción', 'Débito', 'Crédito']],
-        body,
-        theme: 'plain',
-        styles: {
-          fontSize: 8,
-          lineWidth: 0.1,
-          lineColor: [150, 150, 150],
-        },
-        headStyles: {
-          fillColor: false,
-          textColor: [50, 50, 50],
-          fontStyle: 'bold',
-          lineWidth: 0.3,
-          lineColor: [100, 100, 100],
-        },
-        margin: { left: 14, right: 14 },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: 'auto' },
-          2: { halign: 'right', cellWidth: 30 },
-          3: { halign: 'right', cellWidth: 30 },
-        },
-        didDrawPage: () => {
-          this.agregarPiePDF(doc);
-        },
-      });
-
-      y = (doc as any).lastAutoTable.finalY + 8;
-    }
-
-    this.agregarPiePDF(doc);
-
-    // Generar blob y mostrar en visor
+  /** Genera el PDF y lo muestra en pantalla (visor) */
+  async exportPDF(): Promise<void> {
+    if (!this.partidas().length) return;
+    const doc = await this.construirPDF();
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
@@ -244,215 +233,114 @@ export class LibroDiarioComponent implements OnInit {
     this.mostrarVisor.set(false);
   }
 
-  descargarPDF(): void {
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageW = doc.internal.pageSize.getWidth();
-
-    doc.setFontSize(14);
-    doc.text('LIBRO DIARIO', pageW / 2, 12, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text(this.getNombreEmpresa(), pageW / 2, 19, { align: 'center' });
-    doc.setFontSize(9);
-    doc.text(`Rango: ${this.getRangoFechas()}`, 14, 26);
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 14, 31);
-    doc.text(`Fecha impresión: ${this.getFechaHoraImpresion()}`, pageW - 14, 31, { align: 'right' });
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(14, 33, pageW - 14, 33);
-
-    let y = 38;
-    for (const partida of this.partidas()) {
-      if (y > 250) {
-        this.agregarPiePDF(doc);
-        doc.addPage();
-        y = 15;
-      }
-
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Partida #${partida.nropartida}  |  ${this.formatFechaCorta(partida.fecha)}  |  ${partida.descripcion}`, 14, y);
-      y += 5;
-
-      const body = partida.lineas.map(l => [
-        l.ctacontable,
-        l.descripcionCta || l.descripcion || '',
-        l.debito.toFixed(2),
-        l.credito.toFixed(2),
-      ]);
-
-      body.push(['', 'TOTALES', (partida.totalDebito || 0).toFixed(2), (partida.totalCredito || 0).toFixed(2)]);
-
-      autoTable(doc, {
-        startY: y,
-        head: [['Cta Contable', 'Descripción', 'Débito', 'Crédito']],
-        body,
-        theme: 'plain',
-        styles: { fontSize: 8, lineWidth: 0.1, lineColor: [150, 150, 150] },
-        headStyles: { fillColor: false, textColor: [50, 50, 50], fontStyle: 'bold', lineWidth: 0.3, lineColor: [100, 100, 100] },
-        margin: { left: 14, right: 14 },
-        columnStyles: { 0: { cellWidth: 30 }, 1: { cellWidth: 'auto' }, 2: { halign: 'right', cellWidth: 30 }, 3: { halign: 'right', cellWidth: 30 } },
-        didDrawPage: () => { this.agregarPiePDF(doc); },
-      });
-
-      y = (doc as any).lastAutoTable.finalY + 8;
-    }
-
-    this.agregarPiePDF(doc);
+  async descargarPDF(): Promise<void> {
+    if (!this.partidas().length) return;
+    const doc = await this.construirPDF();
     doc.save('libro-diario.pdf');
     this.messageService.add({ severity: 'success', summary: 'PDF descargado', detail: 'Libro Diario descargado' });
   }
 
-  private agregarPiePDF(doc: jsPDF): void {
-    const pageH = doc.internal.pageSize.getHeight();
-    const pageW = doc.internal.pageSize.getWidth();
+  /**
+   * PDF: encabezado compartido + bloque de partida con etiquetas alineadas
+   * (`Partida No.:` / `Fecha......:` / `Concepto...:`) + tabla por partida
+   * (filetes discontinuos, importes en 0.00 suprimidos y totales de la
+   * partida) + encabezado/pie paginados.
+   */
+  private async construirPDF(): Promise<jsPDF> {
+    const enc = await this.encabezadoImpresion();
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const altoEnc = this.print.pdfEncabezado(doc, enc);
+    const limite = doc.internal.pageSize.getHeight() - 22;
+    const anchoUtil = doc.internal.pageSize.getWidth() - 20;
 
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(14, pageH - 12, pageW - 14, pageH - 12);
-
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 14, pageH - 8);
-    doc.text(`${this.getFechaHoraImpresion()}`, pageW - 14, pageH - 8, { align: 'right' });
-  }
-
-  exportExcel(): void {
-    const rows: any[][] = [];
-
-    // Encabezado
-    rows.push([this.getNombreEmpresa()]);
-    rows.push(['LIBRO DIARIO']);
-    rows.push([`Rango: ${this.getRangoFechas()}`]);
-    rows.push([`Impreso por: ${this.getUsuarioImpresion()}   |   Fecha: ${this.getFechaHoraImpresion()}`]);
-    rows.push([]);
-
-    // Columnas
-    rows.push(['Partida', 'Fecha', 'Cta Contable', 'Descripción', 'Débito', 'Crédito']);
-
+    let y = altoEnc;
     for (const partida of this.partidas()) {
-      for (const l of partida.lineas) {
-        rows.push([
-          partida.nropartida,
-          this.formatFechaCorta(partida.fecha),
-          l.ctacontable,
-          l.descripcionCta || l.descripcion || '',
-          l.debito,
-          l.credito,
-        ]);
+      const concepto = doc.splitTextToSize(`Concepto...: ${partida.descripcion}`, anchoUtil) as string[];
+
+      // Reserva: 2 líneas fijas + concepto + línea en blanco + cabecera + 1 fila
+      const altoBloque = 4.5 * (2 + concepto.length) + 2 + 16;
+      if (y + altoBloque > limite) {
+        doc.addPage();
+        y = altoEnc;
       }
-      rows.push(['', '', '', 'TOTALES', partida.totalDebito || 0, partida.totalCredito || 0]);
-      rows.push([]);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(`Partida No.: ${String(partida.nropartida).padStart(10, '0')}`, 10, y);
+      y += 4.5;
+      doc.text(`Fecha......: ${this.formatFechaCorta(partida.fecha)}`, 10, y);
+      y += 4.5;
+      for (const linea of concepto) {
+        doc.text(linea, 10, y);
+        y += 4.5;
+      }
+      y += 2; // línea en blanco antes de la tabla
+
+      this.print.pdfTabla(doc, this.tablaPartida(partida), y, altoEnc);
+      y = ((doc as any).lastAutoTable?.finalY ?? y) + 9;
     }
 
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Libro Diario');
+    this.print.pdfPaginar(doc, enc, altoEnc);
+    return doc;
+  }
 
-    ws['!cols'] = [
-      { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 40 }, { wch: 15 }, { wch: 15 },
-    ];
+  /** Excel con letterhead (logo, empresa, datos fiscales) vía exceljs */
+  async exportExcel(): Promise<void> {
+    if (!this.partidas().length) return;
 
-    XLSX.writeFile(wb, 'libro-diario.xlsx');
+    const enc = await this.encabezadoImpresion();
+    const tab = this.tablaExcel();
+    const wb = this.print.nuevoLibro();
+    const ws = wb.addWorksheet('Libro Diario');
+    const filaCabecera = this.print.excelEncabezado(wb, ws, enc, tab);
+    this.print.excelTabla(ws, tab, filaCabecera, 'landscape');
+    await this.print.descargarExcel(wb, 'libro-diario.xlsx');
+
     this.messageService.add({ severity: 'success', summary: 'Excel generado', detail: 'Libro Diario exportado en Excel' });
   }
 
-  exportWord(): void {
-    const children: any[] = [];
+  /** Word: encabezado compartido repetido en cada página + bloque de partida */
+  async exportWord(): Promise<void> {
+    if (!this.partidas().length) return;
 
-    // Encabezado
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: 'LIBRO DIARIO', bold: true, size: 28 })],
-    }));
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: this.getNombreEmpresa(), bold: true, size: 22 })],
-    }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Rango: ${this.getRangoFechas()}`, size: 18 })],
-    }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Impreso por: ${this.getUsuarioImpresion()}`, size: 18 })],
-    }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Fecha impresión: ${this.getFechaHoraImpresion()}`, size: 18 })],
-    }));
-    children.push(new Paragraph({ text: '' }));
+    const enc = await this.encabezadoImpresion();
+    const children: (Paragraph | Table)[] = [];
 
     for (const partida of this.partidas()) {
-      children.push(new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        children: [new TextRun({
-          text: `Partida #${partida.nropartida} - ${this.formatFechaCorta(partida.fecha)} - ${partida.descripcion}`,
-          bold: true, size: 20,
-        })],
-      }));
-
-      const headerRow = new TableRow({
-        tableHeader: true,
-        children: ['Cta Contable', 'Descripción', 'Débito', 'Crédito'].map(h =>
-          new TableCell({
-            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 18 })] })],
-          })
-        ),
-      });
-
-      const rows = partida.lineas.map(l =>
-        new TableRow({
+      children.push(
+        new Paragraph({
+          spacing: { before: 280, after: 0 },
           children: [
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: l.ctacontable, size: 18 })] })] }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: l.descripcionCta || l.descripcion || '', size: 18 })] })] }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: l.debito.toFixed(2), size: 18 })], alignment: AlignmentType.RIGHT })],
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: l.credito.toFixed(2), size: 18 })], alignment: AlignmentType.RIGHT })],
+            new TextRun({
+              text: `Partida No.: ${String(partida.nropartida).padStart(10, '0')}`,
+              bold: true,
+              size: 20,
             }),
           ],
-        })
+        }),
+        new Paragraph({
+          spacing: { after: 0 },
+          children: [new TextRun({ text: `Fecha......: ${this.formatFechaCorta(partida.fecha)}`, size: 20 })],
+        }),
+        new Paragraph({
+          spacing: { after: 120 },
+          children: [new TextRun({ text: `Concepto...: ${partida.descripcion}`, size: 20 })],
+        }),
       );
-
-      rows.push(new TableRow({
-        children: [
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '', size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'TOTALES', bold: true, size: 18 })] })] }),
-          new TableCell({
-            children: [new Paragraph({ children: [new TextRun({ text: (partida.totalDebito || 0).toFixed(2), bold: true, size: 18 })], alignment: AlignmentType.RIGHT })],
-          }),
-          new TableCell({
-            children: [new Paragraph({ children: [new TextRun({ text: (partida.totalCredito || 0).toFixed(2), bold: true, size: 18 })], alignment: AlignmentType.RIGHT })],
-          }),
-        ],
-      }));
-
-      const table = new Table({
-        rows: [headerRow, ...rows],
-        width: { size: 100, type: WidthType.PERCENTAGE },
-      });
-
-      children.push(table);
-      children.push(new Paragraph({ text: '' }));
+      children.push(this.print.wordTabla(this.tablaPartida(partida), 'portrait'));
     }
 
-    // Pie
-    children.push(new Paragraph({ text: '' }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Impreso por: ${this.getUsuarioImpresion()} | Fecha: ${this.getFechaHoraImpresion()}`, size: 16, color: '666666' })],
-    }));
+    const documento = this.print.wordDocumento(enc, 'portrait', children);
 
-    const doc = new Document({
-      sections: [{ children }],
-    });
+    const blob = await Packer.toBlob(documento);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'libro-diario.docx';
+    a.click();
+    URL.revokeObjectURL(url);
 
-    Packer.toBlob(doc).then(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'libro-diario.docx';
-      a.click();
-      URL.revokeObjectURL(url);
-      this.messageService.add({ severity: 'success', summary: 'Word generado', detail: 'Libro Diario exportado en Word' });
-    });
+    this.messageService.add({ severity: 'success', summary: 'Word generado', detail: 'Libro Diario exportado en Word' });
   }
 
   // ========== UTILIDADES ==========
@@ -466,10 +354,16 @@ export class LibroDiarioComponent implements OnInit {
     return d.toLocaleDateString('es-HN');
   }
 
+  /** Rango de fechas del criterio: "1/10/2026 al 4/10/2026" (sin ceros a la izquierda) */
   getRangoFechas(): string {
-    const desde = this.fechaDesde() ? this.formatFechaCorta(this.fechaDesde()!) : 'Inicio';
-    const hasta = this.fechaHasta() ? this.formatFechaCorta(this.fechaHasta()!) : 'Hoy';
+    const desde = this.fechaDesde() ? this.fechaSinCero(this.fechaDesde()!) : 'Inicio';
+    const hasta = this.fechaHasta() ? this.fechaSinCero(this.fechaHasta()!) : 'Hoy';
     return `${desde} al ${hasta}`;
+  }
+
+  /** Fecha d/m/aaaa SIN ceros a la izquierda (formato del criterio del encabezado) */
+  private fechaSinCero(fecha: Date): string {
+    return `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
   }
 
   get granTotalDebito(): number {

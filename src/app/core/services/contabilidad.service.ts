@@ -8,9 +8,12 @@ import {
   TipoDocFiscal, FactorCambio, ReporteLiquidez, ReporteDiario,
   ReporteBalance, ImpuestoVecinal, NivelCta, NaturalezaCta,
   ContabilizarPartidaDto, CierreContableRequest, ReporteRequest,
+  CrearPartidaInicialRequest,
   BalanceComprobacion, PartidaDiario, LibroMayorItem,
   BalanceDinamicoRequest, BalanceDinamicoReporte,
-  Cartera, CierreDet,
+  BalanceFinancieroRequest, BalanceFinancieroReporte,
+  EstadoResultadoRequest, EstadoResultadoReporte,
+  Cartera, CierreDet, DashboardData,
 } from '../models/contabilidad.models';
 
 @Injectable({ providedIn: 'root' })
@@ -135,6 +138,14 @@ export class ContabilidadService {
 
   contabilizarPartida(dto: ContabilizarPartidaDto): Observable<CopdaMae> {
     return this.api.post<CopdaMae>(`${this.R}/copdamae/contabilizar`, dto);
+  }
+
+  /**
+   * Crea la partida inicial de operaciones en el período contable ABIERTO.
+   * El backend decide el período, la fecha documento y la referencia.
+   */
+  crearPartidaInicial(dto: CrearPartidaInicialRequest): Observable<CopdaMae> {
+    return this.api.post<CopdaMae>(`${this.R}/partida-inicial`, dto);
   }
 
   // ========== Movimientos Contables ==========
@@ -364,6 +375,20 @@ export class ContabilidadService {
     return this.api.post<BalanceDinamicoReporte>(`${this.R}/reportes/balance-dinamico`, request);
   }
 
+  /** Estado de Resultado — UNA variante por vez (P=período, A=acumulado, N=año anterior). */
+  generarEstadoResultado(request: EstadoResultadoRequest): Observable<EstadoResultadoReporte> {
+    return this.api.post<EstadoResultadoReporte>(`${this.R}/reportes/estado-resultado`, request);
+  }
+
+  generarBalanceFinanciero(
+    request: BalanceFinancieroRequest,
+  ): Observable<BalanceFinancieroReporte> {
+    return this.api.post<BalanceFinancieroReporte>(
+      `${this.R}/reportes/balance-financiero`,
+      request,
+    );
+  }
+
   // ========== Impuesto Vecinal ==========
 
   getImpuestosVecinales(): Observable<ImpuestoVecinal[]> {
@@ -390,6 +415,19 @@ export class ContabilidadService {
 
   eliminarCartera(id: number): Observable<any> {
     return this.api.put<any>(`${this.R}/carteras`, `${id}/remove`, {});
+  }
+
+  // ========== Dashboard Módulo 7 ==========
+
+  /**
+   * Payload completo del dashboard de Contabilidad (6 widgets).
+   * `empresaId` lo inyecta ApiService automáticamente en la query string.
+   */
+  getDashboard(anio?: number, periodo?: number): Observable<DashboardData> {
+    const params: Record<string, number> = {};
+    if (anio != null) params['anio'] = anio;
+    if (periodo != null) params['periodo'] = periodo;
+    return this.api.get<DashboardData>(`${this.R}/dashboard`, params);
   }
 
   // ========== Integración con otros módulos ==========

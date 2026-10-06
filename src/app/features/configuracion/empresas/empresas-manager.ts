@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
@@ -17,9 +17,12 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
 import { FieldsetModule } from 'primeng/fieldset';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { SkeletonModule } from 'primeng/skeleton';
+import { PaginatorModule } from 'primeng/paginator';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { forkJoin, of } from 'rxjs';
 import { EmpresasService } from '../../../core/services/empresas.service';
-import { Empresa, EmpresaDet, Correlativo, EmpresaLogo, Impresora, EstadoCorrelativo } from '../../../core/models/empresa.models';
+import { Empresa, EmpresaDet, Correlativo, Cai, EmpresaLogo, Impresora, EstadoCorrelativo } from '../../../core/models/empresa.models';
 import { Sucursal } from '../../../core/models/sucursal.models';
 
 @Component({
@@ -31,6 +34,7 @@ import { Sucursal } from '../../../core/models/sucursal.models';
     TagModule, TooltipModule, TabsModule, TableModule,
     ToastModule, IconFieldModule, InputIconModule, ConfirmDialog,
     FieldsetModule, DatePickerModule, InputNumberModule,
+    SkeletonModule, PaginatorModule,
   ],
   templateUrl: './empresas-manager.html',
   styleUrl: './empresas-manager.scss',
@@ -69,6 +73,7 @@ export class EmpresasManager implements OnInit {
   // ===== Datos específicos (EmpresaDet) =====
   empresaDet = signal<EmpresaDet[]>([]);
   savingDet = signal(false);
+  loadingDet = signal(false);
   detForm = this.fb.group({
     tipo: ['RTN', Validators.required],
     descripcion: ['', Validators.required],
@@ -89,6 +94,7 @@ export class EmpresasManager implements OnInit {
   // ===== Sucursales =====
   sucursales = signal<Sucursal[]>([]);
   savingSuc = signal(false);
+  loadingSuc = signal(false);
   sucForm = this.fb.group({
     descripcion: ['', Validators.required],
     sn_activo: ['S'],
@@ -96,14 +102,16 @@ export class EmpresasManager implements OnInit {
   sucEditando = signal<Sucursal | null>(null);
 
   // ===== Correlativos (CAI) - Maestro/Detalle =====
-  caiRecords = signal<EmpresaDet[]>([]);
+  caiRecords = signal<Cai[]>([]);
   correlativos = signal<Correlativo[]>([]);
   savingCai = signal(false);
   savingCorr = signal(false);
+  loadingCai = signal(false);
+  loadingCorr = signal(false);
 
-  // Formulario maestro CAI (EmpresaDet tipo='CAI')
+  // Formulario maestro CAI (tcai)
   caiForm = this.fb.group({
-    descripcion: ['', [Validators.required, Validators.minLength(35)]],
+    cai: ['', [Validators.required, Validators.minLength(35)]],
     sn_activo: ['N'],
   });
 
@@ -116,9 +124,9 @@ export class EmpresasManager implements OnInit {
     fechaLimite: [null as Date | null, Validators.required],
   });
 
-  caiEditando = signal<EmpresaDet | null>(null);
+  caiEditando = signal<Cai | null>(null);
   corrEditando = signal<Correlativo | null>(null);
-  caiSeleccionado = signal<EmpresaDet | null>(null);
+  caiSeleccionado = signal<Cai | null>(null);
 
   // ===== Logo =====
   logo = signal<EmpresaLogo | null>(null);
@@ -129,6 +137,7 @@ export class EmpresasManager implements OnInit {
   // ===== Impresoras =====
   impresoras = signal<Impresora[]>([]);
   savingImp = signal(false);
+  loadingImp = signal(false);
   impEditando = signal<Impresora | null>(null);
   impForm = this.fb.group({
     descripcion: [''],
@@ -155,6 +164,15 @@ export class EmpresasManager implements OnInit {
   // ===== Filtros =====
   empresasFiltradas = signal<Empresa[]>([]);
 
+  // ===== Paginación (client-side) =====
+  page = signal(1);
+  limit = signal(10);
+  totalEmpresas = computed(() => this.empresasFiltradas().length);
+  empresasPaginadas = computed(() => {
+    const start = (this.page() - 1) * this.limit();
+    return this.empresasFiltradas().slice(start, start + this.limit());
+  });
+
   // ===== Datos para selects =====
   rtnTelefono = signal('');
   rtnDireccion = signal('');
@@ -175,6 +193,7 @@ export class EmpresasManager implements OnInit {
       next: (data) => {
         this.empresas.set(data ?? []);
         this.empresasFiltradas.set(data ?? []);
+        this.page.set(1);
         this.cargando.set(false);
       },
       error: () => {
@@ -201,6 +220,17 @@ export class EmpresasManager implements OnInit {
     this.loadEstadoCorrelativos(emp.empresaId);
   }
 
+  /** Botón lápiz de la ficha: evita que el click burbujee a la tarjeta */
+  editarEmpresa(emp: Empresa, event: Event) {
+    event.stopPropagation();
+    this.seleccionar(emp);
+  }
+
+  onPageChange(event: { page: number; rows: number }) {
+    this.page.set(event.page + 1);
+    this.limit.set(event.rows);
+  }
+
   nueva() {
     this.empresaSeleccionada.set(null);
     this.activeTabValue.set('0');
@@ -223,6 +253,7 @@ export class EmpresasManager implements OnInit {
   }
 
   filtrar() {
+    this.page.set(1);
     const texto = this.q().toLowerCase();
     if (!texto) {
       this.empresasFiltradas.set(this.empresas());
@@ -238,7 +269,8 @@ export class EmpresasManager implements OnInit {
 
   limpiarFiltros() {
     this.q.set('');
-    this.filtrar();
+    this.page.set(1);
+    this.empresasFiltradas.set(this.empresas());
   }
 
   guardarEmpresa() {
@@ -277,15 +309,18 @@ export class EmpresasManager implements OnInit {
   // ==================================================
 
   loadDet(empresaId: number) {
+    this.loadingDet.set(true);
     this.empresasService.getAllDet(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         const todos = data ?? [];
         this.empresaDet.set(todos.filter(d => d.tipo !== 'CAI'));
         this.extraerDatosEmpresa(todos);
+        this.loadingDet.set(false);
       },
       error: () => {
         this.empresaDet.set([]);
         this.limpiarDatosEmpresa();
+        this.loadingDet.set(false);
       },
     });
   }
@@ -364,9 +399,16 @@ export class EmpresasManager implements OnInit {
   // ==================================================
 
   loadSucursales(empresaId: number) {
+    this.loadingSuc.set(true);
     this.empresasService.getAllSucursales(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => this.sucursales.set(data ?? []),
-      error: () => this.sucursales.set([]),
+      next: (data) => {
+        this.sucursales.set(data ?? []);
+        this.loadingSuc.set(false);
+      },
+      error: () => {
+        this.sucursales.set([]);
+        this.loadingSuc.set(false);
+      },
     });
   }
 
@@ -406,14 +448,16 @@ export class EmpresasManager implements OnInit {
   }
 
   // ==================================================
-  //  CAI - MAESTRO (EmpresaDet tipo='CAI')
+  //  CAI - MAESTRO (tcai)
   // ==================================================
 
   loadCaiRecords(empresaId: number) {
-    this.empresasService.getAllDet(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.loadingCai.set(true);
+    this.empresasService.getAllCai(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
-        const caiList = (data ?? []).filter(d => d.tipo === 'CAI');
+        const caiList = data ?? [];
         this.caiRecords.set(caiList);
+        this.loadingCai.set(false);
         if (caiList.length > 0 && !this.caiSeleccionado()) {
           this.seleccionarCai(caiList[0]);
         } else if (caiList.length === 0) {
@@ -424,44 +468,44 @@ export class EmpresasManager implements OnInit {
       error: () => {
         this.caiRecords.set([]);
         this.correlativos.set([]);
+        this.loadingCai.set(false);
       },
     });
   }
 
-  seleccionarCai(cai: EmpresaDet) {
+  seleccionarCai(cai: Cai) {
     this.caiSeleccionado.set(cai);
     this.caiEditando.set(null);
-    this.caiForm.reset({ descripcion: cai.descripcion });
+    this.caiForm.reset({ cai: cai.cai, sn_activo: cai.sn_activo });
     this.loadCorrelativos(cai.empresaId);
   }
 
   guardarCai() {
     if (this.caiForm.invalid || !this.empresaSeleccionada()) return;
 
-    const desc = this.caiForm.value.descripcion || '';
-    if (desc.length < 35) {
+    const codigo = this.caiForm.value.cai || '';
+    if (codigo.length < 35) {
       this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'El CAI debe tener al menos 35 caracteres' });
       return;
     }
 
     this.savingCai.set(true);
-    const dto: Partial<EmpresaDet> = {
-      tipo: 'CAI',
-      descripcion: desc.toUpperCase(),
+    const dto: Partial<Cai> = {
+      cai: codigo.toUpperCase(),
       sn_activo: this.caiForm.value.sn_activo || 'N',
       empresaId: this.empresaSeleccionada()!.empresaId,
     };
     const editando = this.caiEditando();
 
     const obs = editando
-      ? this.empresasService.updateDet(editando.empresasdetId, dto)
-      : this.empresasService.createDet(dto);
+      ? this.empresasService.updateCai(editando.caiId, dto)
+      : this.empresasService.createCai(dto);
 
     obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'CAI guardado correctamente' });
         this.savingCai.set(false);
-        this.caiForm.reset({ descripcion: '', sn_activo: 'N' });
+        this.caiForm.reset({ cai: '', sn_activo: 'N' });
         this.caiEditando.set(null);
         this.loadCaiRecords(this.empresaSeleccionada()!.empresaId);
       },
@@ -472,12 +516,12 @@ export class EmpresasManager implements OnInit {
     });
   }
 
-  editarCai(cai: EmpresaDet) {
+  editarCai(cai: Cai) {
     this.caiEditando.set(cai);
-    this.caiForm.reset({ descripcion: cai.descripcion, sn_activo: cai.sn_activo });
+    this.caiForm.reset({ cai: cai.cai, sn_activo: cai.sn_activo });
   }
 
-  eliminarCai(cai: EmpresaDet) {
+  eliminarCai(cai: Cai) {
     this.confirm.confirm({
       message: '¿Eliminar este CAI y todos sus correlativos?',
       header: 'Confirmar',
@@ -485,22 +529,38 @@ export class EmpresasManager implements OnInit {
       rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
       acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
       accept: () => {
-        this.empresasService.removeDet(cai.empresasdetId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: () => {
-            this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'CAI eliminado' });
-            this.caiSeleccionado.set(null);
-            this.correlativos.set([]);
-            this.loadCaiRecords(this.empresaSeleccionada()!.empresaId);
+        // Cascada: primero los correlativos del CAI, luego el CAI
+        this.empresasService.getAllCorr(cai.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: (corrs) => {
+            const dels = (corrs ?? [])
+              .filter(c => c.caiId === cai.caiId)
+              .map(c => this.empresasService.removeCorr(c.caiAutorizadoId, c.empresaId));
+            (dels.length > 0 ? forkJoin(dels) : of([])).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+              next: () => this.procesarEliminacionCai(cai),
+              error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudieron eliminar los correlativos' }),
+            });
           },
-          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
+          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudieron leer los correlativos' }),
         });
       },
     });
   }
 
+  private procesarEliminacionCai(cai: Cai) {
+    this.empresasService.removeCai(cai.caiId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'CAI eliminado' });
+        this.caiSeleccionado.set(null);
+        this.correlativos.set([]);
+        this.loadCaiRecords(this.empresaSeleccionada()!.empresaId);
+      },
+      error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
+    });
+  }
+
   cancelarCai() {
     this.caiEditando.set(null);
-    this.caiForm.reset({ descripcion: '', sn_activo: 'N' });
+    this.caiForm.reset({ cai: '', sn_activo: 'N' });
   }
 
   // ==================================================
@@ -508,9 +568,18 @@ export class EmpresasManager implements OnInit {
   // ==================================================
 
   loadCorrelativos(empresaId: number) {
+    this.loadingCorr.set(true);
+    const caiId = this.caiSeleccionado()?.caiId;
     this.empresasService.getAllCorr(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => this.correlativos.set(data ?? []),
-      error: () => this.correlativos.set([]),
+      next: (data) => {
+        // Solo los rangos del CAI seleccionado
+        this.correlativos.set((data ?? []).filter(c => caiId == null || c.caiId === caiId));
+        this.loadingCorr.set(false);
+      },
+      error: () => {
+        this.correlativos.set([]);
+        this.loadingCorr.set(false);
+      },
     });
   }
 
@@ -524,6 +593,7 @@ export class EmpresasManager implements OnInit {
       : formVal.fechaLimite;
 
     const dto: Partial<Correlativo> = {
+      caiId: this.caiSeleccionado()?.caiId,
       Idsucursal: formVal.Idsucursal!,
       rangoDesde: formVal.rangoDesde!,
       rangoHasta: formVal.rangoHasta!,
@@ -535,7 +605,7 @@ export class EmpresasManager implements OnInit {
     const editando = this.corrEditando();
 
     const obs = editando
-      ? this.empresasService.updateCorr(editando.poscorrelativosId, dto)
+      ? this.empresasService.updateCorr(editando.caiAutorizadoId, dto)
       : this.empresasService.createCorr(dto);
 
     obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -573,7 +643,7 @@ export class EmpresasManager implements OnInit {
       rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
       acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
       accept: () => {
-        this.empresasService.removeCorr(corr.poscorrelativosId, corr.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        this.empresasService.removeCorr(corr.caiAutorizadoId, corr.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Correlativo eliminado' });
             this.loadCorrelativos(this.empresaSeleccionada()!.empresaId);
@@ -700,9 +770,16 @@ export class EmpresasManager implements OnInit {
   // ==================================================
 
   loadImpresoras(empresaId: number) {
+    this.loadingImp.set(true);
     this.empresasService.getAllImpresoras(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => this.impresoras.set(data ?? []),
-      error: () => this.impresoras.set([]),
+      next: (data) => {
+        this.impresoras.set(data ?? []);
+        this.loadingImp.set(false);
+      },
+      error: () => {
+        this.impresoras.set([]);
+        this.loadingImp.set(false);
+      },
     });
   }
 
@@ -843,10 +920,10 @@ export class EmpresasManager implements OnInit {
     return this.empresaDet().find(d => d.tipo === 'TELEFONO')?.descripcion || '-';
   }
 
-  getCaiDescripcion(cai: EmpresaDet): string {
-    return cai.descripcion.length > 50
-      ? cai.descripcion.substring(0, 50) + '...'
-      : cai.descripcion;
+  getCaiDescripcion(cai: Cai): string {
+    return cai.cai.length > 50
+      ? cai.cai.substring(0, 50) + '...'
+      : cai.cai;
   }
 
   getSucursalNombre(idsucursal: number): string {

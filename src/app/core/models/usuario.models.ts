@@ -74,6 +74,7 @@ export interface UsuarioModAuth {
 export interface Modulo {
   moduloId: number;
   descripcion: string;
+  abreviatura?: string;
   descripcion_contable?: string;
   sn_auxiliar_contable?: 'S' | 'N';
   sn_activo: 'S' | 'N';

@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+﻿import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,6 +11,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { FacturaImpresionService, FacturaImpresionData } from '../../../core/services/factura-impresion.service';
+import { numeroALetras } from '../../../core/utils/numeros-a-letras';
 
 @Component({
   selector: 'app-consulta-factura-detalle',
@@ -26,6 +28,7 @@ export class ConsultaFacturaDetalle implements OnInit {
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
+  private impresion = inject(FacturaImpresionService);
 
   /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
   partidaId = signal<number | null>(null);
@@ -34,6 +37,10 @@ export class ConsultaFacturaDetalle implements OnInit {
   detalles = signal<any[]>([]);
   pagos = signal<any[]>([]);
   empresa = signal<any>({});
+  correlativo = signal<any>(null);
+  impuestos = signal<any>(null);
+  cajero = signal<{ usuario?: string; nombre?: string; apellidos?: string } | null>(null);
+  tpv = signal<number | string | null>(null);
   cargando = signal(false);
   facturaId: number = 0;
 
@@ -61,6 +68,10 @@ export class ConsultaFacturaDetalle implements OnInit {
         this.detalles.set(data.detalles ?? []);
         this.pagos.set(data.pagos ?? []);
         this.empresa.set(data.empresa ?? {});
+        this.correlativo.set(data.correlativo ?? null);
+        this.impuestos.set(data.impuestos ?? null);
+        this.cajero.set(data.cajero ?? null);
+        this.tpv.set(data.tpv ?? null);
         this.cargando.set(false);
       },
       error: () => {
@@ -121,134 +132,58 @@ export class ConsultaFacturaDetalle implements OnInit {
     return 'warn';
   }
 
-  descuentoVisible(): boolean {
-    const f = this.factura();
-    return f ? Number(f.descuento ?? 0) > 0 : false;
+  /** Desglose fiscal por tasa (viene del backend; fallback: ISV total → 15%) */
+  desglose = computed(() => {
+    const imp = this.impuestos();
+    if (imp && (imp.gravado15 != null || imp.gravado18 != null)) {
+      return {
+        exonerado: Number(imp.exonerado) || 0,
+        excento: Number(imp.excento) || 0,
+        gravado15: Number(imp.gravado15) || 0,
+        gravado18: Number(imp.gravado18) || 0,
+      };
+    }
+    return { exonerado: 0, excento: 0, gravado15: Number(this.factura()?.impuesto) || 0, gravado18: 0 };
+  });
+
+  /** Total en letras formato ticket: "... OCHOCIENTOS CON 00/100" */
+  totalEnLetrasTexto(): string {
+    const base = numeroALetras(Number(this.factura()?.total) || 0).replace(/\s*LEMPIRAS$/i, '').trim();
+    if (/\d{2}\/100$/.test(base)) return base.replace(/(\d{2}\/100)$/, 'CON $1');
+    return base + ' CON 00/100';
   }
 
-  // ==================== PDF ====================
+  // ==================== IMPRESIÓN / PDF ====================
 
-  async buildPdfAndDo(action: 'print' | 'download'): Promise<void> {
-    const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-    const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-    pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-
-    const doc = this.buildPdfDefinition();
-    if (action === 'print') {
-      (pdfMake as any).createPdf(doc).print();
-    } else {
-      const id = this.factura()?.nrofactura ?? this.facturaId;
-      (pdfMake as any).createPdf(doc).download('factura-' + id + '.pdf');
-    }
+  /** Payload para el servicio de impresión (formato TICKET/CARTA desde timpresoras) */
+  private datosImpresion(): FacturaImpresionData {
+    return {
+      factura: this.factura(),
+      detalles: this.detalles(),
+      pagos: this.pagos(),
+      empresa: this.empresa(),
+      correlativo: this.correlativo(),
+      impuestos: this.impuestos() ?? undefined,
+      cajero: this.cajero(),
+      tpv: this.tpv(),
+    };
   }
 
   async imprimir() {
-    await this.buildPdfAndDo('print');
+    try {
+      await this.impresion.imprimir(this.datosImpresion());
+    } catch {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar la impresión' });
+    }
   }
 
   async descargarPdf() {
-    await this.buildPdfAndDo('download');
-  }
-
-  private buildPdfDefinition(): any {
-    const f = this.factura();
-    const dets = this.detalles();
-    const emp = this.empresa();
-
-    const detRows = dets.map((d: any, i: number) => [
-      '' + (i + 1),
-      d.descripcion || d.codbarra || '',
-      '' + Number(d.cantidad),
-      'L ' + Number(d.precioventa).toFixed(2),
-      (Number(d.descuento) || 0) > 0 ? '-' + Number(d.descuento).toFixed(0) + '%' : '0%',
-      'L ' + Number(d.subTotal).toFixed(2),
-    ]);
-
-    return {
-      pageSize: 'LETTER',
-      pageMargins: [40, 60, 40, 60],
-      content: [
-        { text: emp.nombre || 'EMPRESA', style: 'header', alignment: 'center' },
-        { text: emp.rtn ? 'RTN: ' + emp.rtn : '', alignment: 'center', fontSize: 9 },
-        { text: emp.direccion || '', alignment: 'center', fontSize: 9 },
-        { text: emp.telefono ? 'Tel: ' + emp.telefono : '', alignment: 'center', fontSize: 9 },
-        { text: '\n' },
-        { columns: [
-          { text: '', width: '*' },
-          { text: [
-            { text: this.getEstado() + '\n', bold: true, fontSize: 12, color: '#10b981' },
-            { text: 'FACTURA ', bold: true, fontSize: 16 },
-            { text: '#' + (f?.nrofactura || this.facturaId), fontSize: 16 },
-            '\n',
-            { text: 'Fecha: ', bold: true }, this.fechaLarga(f?.fecharegistro) + '\n',
-            { text: 'Hora: ', bold: true }, this.horaCorta(f?.fecharegistro) + '\n',
-            { text: 'Tipo: ', bold: true }, this.getTipoFactura(f?.tipofactura),
-          ], width: '*', alignment: 'right' },
-        ] },
-        { text: '\n' },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
-        { text: '\n' },
-        { columns: [
-          { text: [
-            { text: 'CLIENTE\n', bold: true, fontSize: 10 },
-            f?.nombrecliente || 'Sin cliente', '\n',
-            f?.direccion || '',
-          ], width: '*' },
-          { text: [
-            { text: 'DIRECCION DE ENTREGA\n', bold: true, fontSize: 10 },
-            f?.direccion || 'N/A',
-          ], width: '*' },
-        ] },
-        { text: '\n' },
-        {
-          table: {
-            headerRows: 1,
-            widths: [30, '*', 50, 70, 50, 70],
-            body: [
-              [
-                { text: '#', style: 'tableHeader' },
-                { text: 'Producto', style: 'tableHeader' },
-                { text: 'Cant.', style: 'tableHeader', alignment: 'right' },
-                { text: 'Precio', style: 'tableHeader', alignment: 'right' },
-                { text: 'Desc.', style: 'tableHeader', alignment: 'right' },
-                { text: 'Subtotal', style: 'tableHeader', alignment: 'right' },
-              ],
-              ...detRows,
-            ],
-          },
-          layout: 'lightHorizontalLines',
-        },
-        { text: '\n' },
-        {
-          alignment: 'right',
-          columns: [
-            { width: '*', text: '' },
-            { width: 200, text: [
-              { text: 'Subtotal: ', bold: true }, 'L ' + Number(f?.subTotal ?? 0).toFixed(2),
-              '\n', { text: 'ISV 15%: ', bold: true }, 'L ' + Number(f?.impuesto ?? 0).toFixed(2),
-              '\n', { text: 'Descuento: ', bold: true }, 'L ' + Number(f?.descuento ?? 0).toFixed(2),
-              '\n', { text: 'TOTAL: ', bold: true, fontSize: 14 }, { text: 'L ' + Number(f?.total ?? 0).toFixed(2), bold: true, fontSize: 14, color: '#10b981' },
-            ] },
-          ],
-        },
-        { text: '\n' },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
-        { text: '\n' },
-        { text: 'PAGOS', bold: true, fontSize: 10 },
-        ...this.pagos().map((p: any) => ({
-          text: `Forma de pago: Efectivo L ${Number(p.importe_efectivo ?? 0).toFixed(2)} / Otros L ${Number(p.importe_otros ?? 0).toFixed(2)}`,
-          fontSize: 9,
-        })),
-        f?.tipofactura === 'E' ? { text: 'Efectivo recibido: L ' + Number(f?.efectivo_recibido ?? 0).toFixed(2) + '  Cambio: L ' + Number(f?.importe_cambio ?? 0).toFixed(2), fontSize: 9 } : { text: '' },
-        { text: '\n' },
-        { text: emp.mensajeFactura || '', alignment: 'center', fontSize: 8, italics: true, color: '#64748b' },
-      ],
-      styles: {
-        header: { fontSize: 18, bold: true },
-        tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#10b981' },
-      },
-      defaultStyle: { fontSize: 10 },
-    };
+    try {
+      const id = this.factura()?.nrofactura ?? this.facturaId;
+      await this.impresion.descargar(this.datosImpresion(), 'factura-' + id + '.pdf');
+    } catch {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar el PDF' });
+    }
   }
 
   // ==================== CORREO ====================
@@ -283,17 +218,13 @@ export class ConsultaFacturaDetalle implements OnInit {
 
   async compartir() {
     try {
-      const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-      const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
       const id = this.factura()?.nrofactura ?? this.facturaId;
       const total = this.moneda(this.factura()?.total);
       const nombre = this.factura()?.nombrecliente || 'Cliente';
       const texto = encodeURIComponent(`Factura #${id} - ${nombre} - Total: ${total}`);
 
-      const blob = await new Promise<Blob>((resolve) => {
-        (pdfMake.createPdf(this.buildPdfDefinition()) as any).getBlob(resolve);
-      });
+      // PDF en el formato parametrizado (TICKET 80mm o CARTA LETTER)
+      const blob = await this.impresion.getBlob(this.datosImpresion());
       const file = new File([blob], 'factura-' + id + '.pdf', { type: 'application/pdf' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {

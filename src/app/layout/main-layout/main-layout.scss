@@ -266,7 +266,14 @@ $topbar-height: 60px;
     .p-panelmenu-header-icon {
       color: var(--d-menuitem-text-color);
       min-width: 1.25rem;
-      font-size: 1.1rem;
+      font-size: 0.05rem;
+      
+        // Font Awesome: ligeramente más compacto para alinearse con PrimeIcons
+        &.fa-solid,
+        &.fa-regular,
+        &.fa-brands {
+          font-size: 0.05rem;
+        }
     }
 
     .p-panelmenu-header-label {
@@ -351,8 +358,15 @@ $topbar-height: 60px;
 
     .p-panelmenu-item-icon {
       color: var(--d-menuitem-text-color);
-      min-width: 1.25rem;
-      font-size: 1rem;
+      min-width: 0.55rem;
+        font-size: 0.03rem;
+      
+        // Font Awesome: ligeramente más compacto para alinearse con PrimeIcons
+        &.fa-solid,
+        &.fa-regular,
+        &.fa-brands {
+          font-size: 0.3rem;
+        }
     }
 
     .p-panelmenu-item-label {

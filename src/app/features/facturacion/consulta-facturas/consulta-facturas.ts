@@ -12,6 +12,7 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 
 @Component({
   selector: 'app-consulta-facturas',
@@ -26,6 +27,7 @@ export class ConsultaFacturas implements OnInit {
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
+  private impresion = inject(FacturaImpresionService);
 
   facturas = signal<any[]>([]);
   filtered = signal<any[]>([]);
@@ -123,132 +125,13 @@ export class ConsultaFacturas implements OnInit {
   async reimprimir(f: any, $event?: Event) {
     $event?.stopPropagation();
     try {
-      const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-      const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-
       const data = await this.api.get<any>(`/facturacion/facturas/${f.facturaId}/ticket`).toPromise();
       if (!data) return;
-
-      const doc = this.buildPdfDefinition(data);
-      (pdfMake as any).createPdf(doc).print();
+      // El formato (TICKET/CARTA) lo resuelve el servicio desde timpresoras
+      await this.impresion.imprimir(data);
     } catch {
-      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el PDF' });
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar la impresión' });
     }
-  }
-
-  private buildPdfDefinition(data: any): any {
-    const f = data.factura;
-    const dets = data.detalles ?? [];
-    const emp = data.empresa ?? {};
-    const pagos = data.pagos ?? [];
-
-    const detRows = dets.map((d: any, i: number) => [
-      '' + (i + 1),
-      d.descripcion || d.codbarra || '',
-      '' + Number(d.cantidad),
-      'L ' + Number(d.precioventa).toFixed(2),
-      (Number(d.descuento) || 0) > 0 ? '-' + Number(d.descuento).toFixed(0) + '%' : '0%',
-      'L ' + Number(d.subTotal).toFixed(2),
-    ]);
-
-    return {
-      pageSize: 'LETTER',
-      pageMargins: [40, 60, 40, 60],
-      content: [
-        { text: emp.nombre || 'EMPRESA', style: 'header', alignment: 'center' },
-        { text: emp.rtn ? 'RTN: ' + emp.rtn : '', alignment: 'center', fontSize: 9 },
-        { text: emp.direccion || '', alignment: 'center', fontSize: 9 },
-        { text: emp.telefono ? 'Tel: ' + emp.telefono : '', alignment: 'center', fontSize: 9 },
-        { text: '\n' },
-        { columns: [
-          { text: '', width: '*' },
-          { text: [
-            { text: this.getEstadoLabel(f) + '\n', bold: true, fontSize: 12, color: '#10b981' },
-            { text: 'FACTURA ', bold: true, fontSize: 16 },
-            { text: '#' + (f?.nrofactura || ''), fontSize: 16 },
-            '\n',
-            { text: 'Fecha: ', bold: true }, this.fechaLarga(f?.fecharegistro) + '\n',
-            { text: 'Hora: ', bold: true }, this.horaCorta(f?.fecharegistro) + '\n',
-            { text: 'Tipo: ', bold: true }, (f?.tipofactura === 'C' ? 'Credito' : 'Contado'),
-          ], width: '*', alignment: 'right' },
-        ] },
-        { text: '\n' },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
-        { text: '\n' },
-        { columns: [
-          { text: [
-            { text: 'CLIENTE\n', bold: true, fontSize: 10 },
-            f?.nombrecliente || 'Sin cliente', '\n',
-            f?.direccion || '',
-          ], width: '*' },
-          { text: [
-            { text: 'DIRECCION DE ENTREGA\n', bold: true, fontSize: 10 },
-            f?.direccion || 'N/A',
-          ], width: '*' },
-        ] },
-        { text: '\n' },
-        {
-          table: {
-            headerRows: 1,
-            widths: [30, '*', 50, 70, 50, 70],
-            body: [
-              [
-                { text: '#', style: 'tableHeader' },
-                { text: 'Producto', style: 'tableHeader' },
-                { text: 'Cant.', style: 'tableHeader', alignment: 'right' },
-                { text: 'Precio', style: 'tableHeader', alignment: 'right' },
-                { text: 'Desc.', style: 'tableHeader', alignment: 'right' },
-                { text: 'Subtotal', style: 'tableHeader', alignment: 'right' },
-              ],
-              ...detRows,
-            ],
-          },
-          layout: 'lightHorizontalLines',
-        },
-        { text: '\n' },
-        {
-          alignment: 'right',
-          columns: [
-            { width: '*', text: '' },
-            { width: 200, text: [
-              { text: 'Subtotal: ', bold: true }, 'L ' + Number(f?.subTotal ?? 0).toFixed(2),
-              '\n', { text: 'ISV 15%: ', bold: true }, 'L ' + Number(f?.impuesto ?? 0).toFixed(2),
-              '\n', { text: 'Descuento: ', bold: true }, 'L ' + Number(f?.descuento ?? 0).toFixed(2),
-              '\n', { text: 'TOTAL: ', bold: true, fontSize: 14 }, { text: 'L ' + Number(f?.total ?? 0).toFixed(2), bold: true, fontSize: 14, color: '#10b981' },
-            ] },
-          ],
-        },
-        { text: '\n' },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
-        { text: '\n' },
-        { text: 'PAGOS', bold: true, fontSize: 10 },
-        ...pagos.map((p: any) => ({
-          text: `Forma de pago: Efectivo L ${Number(p.importe_efectivo ?? 0).toFixed(2)} / Otros L ${Number(p.importe_otros ?? 0).toFixed(2)}`,
-          fontSize: 9,
-        })),
-        f?.tipofactura === 'E' ? { text: 'Efectivo recibido: L ' + Number(f?.efectivo_recibido ?? 0).toFixed(2) + '  Cambio: L ' + Number(f?.importe_cambio ?? 0).toFixed(2), fontSize: 9 } : { text: '' },
-        { text: '\n' },
-        { text: emp.mensajeFactura || '', alignment: 'center', fontSize: 8, italics: true, color: '#64748b' },
-      ],
-      styles: {
-        header: { fontSize: 18, bold: true },
-        tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#10b981' },
-      },
-      defaultStyle: { fontSize: 10 },
-    };
-  }
-
-  private fechaLarga(fecha: string | Date): string {
-    if (!fecha) return '-';
-    const d = new Date(fecha);
-    return d.toLocaleDateString('es-HN', { day: '2-digit', month: 'long', year: 'numeric' });
-  }
-
-  private getEstadoLabel(f: any): string {
-    if (f?.sn_anulada === 'S') return 'Anulada';
-    if (f?.sn_pagada === 'S') return 'Pagada';
-    return 'Pendiente';
   }
 
   // ==================== CORREO ====================
@@ -288,10 +171,6 @@ export class ConsultaFacturas implements OnInit {
   async compartirWhatsapp(f: any, $event?: Event) {
     $event?.stopPropagation();
     try {
-      const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-      const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-
       const data = await this.api.get<any>(`/facturacion/facturas/${f.facturaId}/ticket`).toPromise();
       if (!data) return;
 
@@ -300,9 +179,8 @@ export class ConsultaFacturas implements OnInit {
       const nombre = f.nombrecliente || 'Cliente';
       const texto = encodeURIComponent(`Factura #${id} - ${nombre} - Total: ${total}`);
 
-      const blob = await new Promise<Blob>((resolve) => {
-        (pdfMake.createPdf(this.buildPdfDefinition(data)) as any).getBlob(resolve);
-      });
+      // PDF en el formato parametrizado (TICKET 80mm o CARTA LETTER)
+      const blob = await this.impresion.getBlob(data);
       const file = new File([blob], 'factura-' + id + '.pdf', { type: 'application/pdf' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {

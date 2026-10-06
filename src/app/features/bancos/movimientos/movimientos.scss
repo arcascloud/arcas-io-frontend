@@ -56,6 +56,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
     margin-bottom: 0.75rem;
     margin-top: 3px;
     padding: 0.75rem 1rem;
@@ -63,6 +64,54 @@
     border: 1px solid var(--c-border);
     border-radius: 0.5rem;
   }
+}
+
+/* ═══════════════ Header de cuenta seleccionada ═══════════════ */
+.cuenta-info {
+  min-width: 0;
+}
+
+.cuenta-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cuenta-subtitulo {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  margin: 0;
+}
+
+.saldo-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  flex-shrink: 0;
+
+  .saldo-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+  }
+
+  .saldo-valor {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+}
+
+.hint {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
 }
 
 .card {

@@ -1,7 +1,7 @@
 // ── Contexto ──────────────────────────────────────────
 .ctx-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
 
   @media (max-width: 768px) {
@@ -25,64 +25,21 @@
   }
 }
 
-// ── Layout 2 columnas ─────────────────────────────────
-.content-2col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  align-items: start;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
+.text-muted {
+  color: var(--c-text-muted);
+  font-size: 0.85rem;
 }
 
-.col-left {
-  min-width: 0;
-  overflow: hidden;
-}
+// ── Campos del formulario (drawer) ────────────────────
+.p-field {
+  margin-bottom: 1rem;
 
-.col-right {
-  min-width: 0;
-}
-
-// ── Panel formulario derecha ──────────────────────────
-.form-panel {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  position: sticky;
-  top: 1rem;
-}
-
-.form-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--c-border);
-
-  h3 {
-    margin: 0;
-    font-size: 0.95rem;
+  label {
+    display: block;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--c-text);
-  }
-}
-
-.form-panel-body {
-  padding: 1rem;
-
-  .p-field {
-    margin-bottom: 1rem;
-
-    label {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--c-text-muted);
-      margin-bottom: 0.3rem;
-    }
+    color: var(--c-text-muted);
+    margin-bottom: 0.3rem;
   }
 }
 

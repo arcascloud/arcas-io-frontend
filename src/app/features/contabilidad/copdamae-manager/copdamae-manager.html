@@ -401,20 +401,19 @@
                 <span class="info-label">Origen del documento:</span>
                 <span class="info-value origen-doc">
                   <span class="origen-doc-texto">
-                    {{ origenTipoLabel(partida)
-                    }}{{ partida.nroreferencia ? ' · ' + partida.nroreferencia : '' }}
+                    {{ origenTipoLabel(partida) }}{{ partida.nroreferencia ? ' · ' +
+                    partida.nroreferencia : '' }}
                   </span>
-                  @let origen = enlaceOrigen(partida);
-                  @if (origen) {
-                    <p-button
-                      size="small"
-                      label="Ver documento"
-                      icon="pi pi-external-link"
-                      severity="info"
-                      variant="text"
-                      [rounded]="true"
-                      (onClick)="irAOrigen(partida)"
-                    />
+                  @let origen = enlaceOrigen(partida); @if (origen) {
+                  <p-button
+                    size="small"
+                    label="Ver documento"
+                    icon="pi pi-external-link"
+                    severity="info"
+                    variant="text"
+                    [rounded]="true"
+                    (onClick)="irAOrigen(partida)"
+                  />
                   }
                 </span>
               </div>
@@ -501,16 +500,28 @@
     <div class="left-column">
       <div class="left-header">
         <h3><i class="pi pi-book"></i> Partidas de Diario</h3>
-        <p-button
-          size="small"
-          label="Nueva"
-          icon="pi pi-plus"
-          severity="success"
-          variant="text"
-          [raised]="true"
-          [rounded]="true"
-          (onClick)="nuevaPartida()"
-        />
+        <div class="left-header-actions">
+          <p-button
+            size="small"
+            label="Inicial"
+            icon="pi pi-file-excel"
+            severity="info"
+            variant="text"
+            [rounded]="true"
+            pTooltip="Cargar partida inicial desde un archivo Excel"
+            (onClick)="abrePartidaInicial()"
+          />
+          <p-button
+            size="small"
+            label="Nueva"
+            icon="pi pi-plus"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            [rounded]="true"
+            (onClick)="nuevaPartida()"
+          />
+        </div>
       </div>
 
       <!-- Filtros -->
@@ -677,3 +688,168 @@
     </div>
   </div>
 </div>
+
+<!-- ===== Diálogo: cargar partida inicial desde Excel ===== -->
+<p-dialog
+  header="Cargar partida inicial"
+  [visible]="dialogInicial()"
+  (visibleChange)="cierraPartidaInicial($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!inicialCargando()"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: '700px' }"
+>
+  <div class="inicial-body">
+    <!-- Período de destino -->
+    @if (!inicialPeriodo()) {
+    <div class="inicial-aviso aviso-error">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>
+        No hay ningún período contable abierto para esta empresa. Abra un período antes de cargar la
+        partida inicial.
+      </span>
+    </div>
+    } @else {
+    <div class="inicial-aviso aviso-info">
+      <i class="pi pi-calendar"></i>
+      <span>
+        Se cargará en el período
+        <strong>{{ inicialPeriodo()!.periodo }}/{{ inicialPeriodo()!.anio }}</strong>
+        · Auxiliar <strong>Contabilidad</strong> · Referencia automática
+        <strong>INICIAL-{{ inicialPeriodo()!.periodo }}-{{ inicialPeriodo()!.anio }}</strong>
+        · Fecha de documento: último día del período.
+      </span>
+    </div>
+    }
+
+    <!-- Selector de archivo -->
+    <div class="inicial-archivo">
+      <input
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        [disabled]="inicialCargando() || !inicialPeriodo()"
+        (change)="onArchivoInicial($event)"
+      />
+      @if (inicialNombreArchivo()) {
+      <span class="archivo-nombre">
+        <i class="pi pi-file-excel"></i> {{ inicialNombreArchivo() }}
+      </span>
+      }
+    </div>
+    <!-- Errores de lectura del archivo -->
+    @if (inicialErrores().length) {
+    <div class="inicial-aviso aviso-error">
+      <i class="pi pi-times-circle"></i>
+      <div>
+        <strong>
+          No se puede leer el archivo ({{ inicialErrores().length }}
+          observación(es)):
+        </strong>
+        <ul>
+          @for (e of inicialErrores(); track e) {
+          <li>{{ e }}</li>
+          }
+        </ul>
+      </div>
+    </div>
+    }
+
+    <!-- Cuentas fuera del plan de cuentas: advertencia (igual bloquea la carga) -->
+    @if (inicialCuentasInvalidas().length) {
+    <div class="inicial-aviso aviso-warning">
+      <i class="pi pi-exclamation-triangle"></i>
+      <div>
+        <strong>El archivo no se puede cargar:</strong>
+        <ul>
+          @for (e of inicialCuentasInvalidas(); track e) {
+          <li>{{ e }}</li>
+          }
+        </ul>
+      </div>
+    </div>
+    }
+
+    <!-- Resumen + preview de líneas -->
+    @if (inicialLineas().length) {
+    <div class="inicial-resumen" [class.res-cuadrada]="inicialLista()">
+      <div class="res-item">
+        <span>Líneas</span>
+        <strong>{{ inicialLineas().length }}</strong>
+      </div>
+      <div class="res-item">
+        <span>Débitos</span>
+        <strong>L {{ formatearMoneda(inicialTotalDebe()) }}</strong>
+      </div>
+      <div class="res-item">
+        <span>Créditos</span>
+        <strong>L {{ formatearMoneda(inicialTotalHaber()) }}</strong>
+      </div>
+      <div class="res-item" [class.res-error]="inicialDiferencia() !== 0">
+        <span>Diferencia</span>
+        <strong>L {{ formatearMoneda(inicialDiferencia()) }}</strong>
+      </div>
+    </div>
+
+    <p-table
+      [value]="inicialLineas()"
+      [paginator]="true"
+      [rows]="25"
+      [showCurrentPageReport]="true"
+      [scrollable]="true"
+      scrollHeight="200px"
+      [virtualScroll]="true"
+      [virtualScrollItemSize]="60"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[25, 50, 100]"
+      size="small"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 7rem">Cuenta</th>
+          <th>Descripción</th>
+          <th style="width: 8rem" class="t-right">Débito</th>
+          <th style="width: 8rem" class="t-right">Crédito</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-l>
+        <tr>
+          <td>{{ l.ctacontable }}</td>
+          <td>{{ l.descripcion || getCuentaNombre(l.ctacontable) }}</td>
+          <td class="t-right">{{ l.debito > 0 ? formatearMoneda(l.debito) : '' }}</td>
+          <td class="t-right">{{ l.credito > 0 ? formatearMoneda(l.credito) : '' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="t-center text-muted">Seleccione un archivo para ver las líneas</td>
+        </tr>
+      </ng-template>
+    </p-table>
+    }
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      size="small"
+      label="Cancelar"
+      rounded
+      variant="text"
+      severity="secondary"
+      [disabled]="inicialCargando()"
+      (onClick)="cierraPartidaInicial(false)"
+    />
+    <p-button
+      size="small"
+      label="Cargar partida"
+      icon="pi pi-check"
+      [raised]="true"
+      [rounded]="true"
+      severity="success"
+      [loading]="inicialCargando()"
+      [disabled]="!inicialLista()"
+      (onClick)="confirmarPartidaInicial()"
+    />
+  </ng-template>
+</p-dialog>

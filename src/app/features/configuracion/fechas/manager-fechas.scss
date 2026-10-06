@@ -1,0 +1,365 @@
+/* ===== Rangos de vigencia y usuarios habilitados ===== */
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+.mr-1 {
+  margin-right: 0.25rem;
+}
+
+.req {
+  color: var(--c-error, #ef4444);
+  margin-left: 0.15rem;
+}
+
+/* Aviso de rol restringido */
+.permiso-restringido {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-warning, #f59e0b);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+
+  i {
+    font-size: 1.25rem;
+    color: var(--c-warning, #f59e0b);
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+  }
+
+  strong {
+    color: var(--c-text);
+    font-size: 0.9rem;
+  }
+
+  code {
+    background: var(--c-surface-ground, #f8fafc);
+    padding: 0 0.3rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ===== Verificador de autorización ===== */
+
+/* ===== Fecha del Sistema del ERP ===== */
+
+.fecha-sistema {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-success, #10b981);
+  border-radius: 4px;
+  padding: 0.85rem 1rem;
+
+  &.desalineada {
+    border-color: var(--c-error, #ef4444);
+    border-left-color: var(--c-error, #ef4444);
+    background: rgba(239, 68, 68, 0.05);
+  }
+}
+
+.fs-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.fs-titulo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+
+  > i {
+    font-size: 1.15rem;
+    color: var(--c-primary, #10b981);
+    margin-top: 0.1rem;
+  }
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  strong {
+    font-size: 0.9rem;
+    color: var(--c-text);
+  }
+
+  span {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    line-height: 1.35;
+  }
+
+  code {
+    background: var(--c-surface-ground, #f8fafc);
+    padding: 0 0.3rem;
+    border-radius: 3px;
+    font-size: 0.78rem;
+  }
+}
+
+.fs-vals {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.fs-val {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 11rem;
+
+  label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--c-text-secondary, #6c757d);
+  }
+
+  .fs-valor {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--c-text);
+    line-height: 1.1;
+
+    &.rojo {
+      color: var(--c-error, #ef4444);
+    }
+  }
+}
+
+.fs-flecha {
+  padding-bottom: 0.2rem;
+
+  i {
+    color: var(--c-text-muted);
+    opacity: 0.6;
+  }
+}
+
+.fs-accion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  padding-bottom: 0.1rem;
+  flex-wrap: wrap;
+}
+
+.fs-aviso {
+  font-size: 0.78rem;
+  color: var(--c-text-muted);
+  max-width: 22rem;
+
+  code {
+    background: var(--c-surface-ground, #f8fafc);
+    padding: 0 0.3rem;
+    border-radius: 3px;
+  }
+}
+
+@media (max-width: 640px) {
+  .fs-vals {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fs-flecha {
+    display: none;
+  }
+
+  .fs-accion {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+}
+
+.verif-grid {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 14rem;
+    flex: 1;
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--c-text-secondary, #6c757d);
+    }
+  }
+
+  .acciones-verif {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+
+    .campo {
+      min-width: 0;
+    }
+  }
+}
+
+.resultado-verif {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 4px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+
+  i {
+    font-size: 1.3rem;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+  }
+
+  strong {
+    font-size: 0.9rem;
+    color: var(--c-text);
+  }
+
+  &.autorizado {
+    border-left: 3px solid var(--c-success, #10b981);
+
+    i {
+      color: var(--c-success, #10b981);
+    }
+  }
+
+  &.rechazado {
+    border-left: 3px solid var(--c-error, #ef4444);
+
+    i {
+      color: var(--c-error, #ef4444);
+    }
+  }
+}
+
+/* ===== Filtros ===== */
+
+.filtros .acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  justify-content: flex-end;
+
+  .resumen {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+
+    .sep {
+      margin: 0 0.35rem;
+      opacity: 0.5;
+    }
+  }
+}
+
+/* ===== Celda de usuarios habilitados ===== */
+
+.celda-usuarios {
+  .chip-usuario {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.1rem 0.45rem;
+    margin: 0.1rem 0.25rem 0.1rem 0;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.14);
+    color: var(--c-success, #10b981);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+
+    &.chip-no {
+      background: rgba(100, 116, 139, 0.14);
+      color: var(--c-text-muted, #64748b);
+      border-color: rgba(100, 116, 139, 0.35);
+      text-decoration: line-through;
+    }
+  }
+
+  .sin-datos {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    font-style: italic;
+  }
+}
+
+.icono-lock {
+  color: var(--c-text-muted);
+  opacity: 0.6;
+}
+
+/* ===== Diálogo ===== */
+
+.agregar-usuario {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+
+  ::ng-deep .p-select {
+    width: 100%;
+  }
+}
+
+.detalle-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.5rem;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  small {
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+  }
+}
+
+/* El diálogo se anida en el body: el estilo viaja con styleClass global */
+::ng-deep .p-select {
+  width: 100%;
+}

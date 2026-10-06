@@ -1,0 +1,190 @@
+<p-toast />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-chart-line"></i> Estado de Resultado</h2>
+    <div class="header-actions">
+      <p-button
+        size="small"
+        label="PDF"
+        icon="pi pi-file-pdf"
+        severity="danger"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportPDF()"
+        [disabled]="!reporte()"
+        pTooltip="Ver PDF en pantalla"
+      />
+      <p-button
+        size="small"
+        label="Excel"
+        icon="pi pi-file-excel"
+        severity="success"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportExcel()"
+        [disabled]="!reporte()"
+        pTooltip="Descargar Excel"
+      />
+      <p-button
+        size="small"
+        label="Word"
+        icon="pi pi-file-word"
+        severity="info"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportWord()"
+        [disabled]="!reporte()"
+        pTooltip="Descargar Word"
+      />
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-4">
+          <div class="p-field">
+            <label>Variante del reporte</label>
+            <p-select
+              [options]="tipoOptions"
+              [(ngModel)]="tipo"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar variante"
+              styleClass="w-full"
+              size="small"
+              appendTo="body"
+            />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-3">
+          <div class="p-field">
+            <label>Período (mes de referencia)</label>
+            <p-select
+              [options]="meses"
+              [(ngModel)]="periodo"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Mes"
+              styleClass="w-full"
+              size="small"
+              appendTo="body"
+            />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Año</label>
+            <p-inputNumber
+              [(ngModel)]="anio"
+              [min]="2020"
+              [max]="2030"
+              [useGrouping]="false"
+              styleClass="w-full"
+              size="small"
+            />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-3 d-flex align-items-end">
+          <p-button
+            size="small"
+            label="Generar"
+            icon="pi pi-play"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            [rounded]="true"
+            [loading]="cargando()"
+            (onClick)="generar()"
+            styleClass="w-full"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (reporte(); as rep) {
+  <!-- Reporte -->
+  <div class="card">
+    <div class="er-head">
+      <h3>ESTADO DE RESULTADO</h3>
+      <span class="er-meta">{{ rep.etiqueta }}</span>
+    </div>
+
+    <table class="er-tabla">
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th class="er-col-cta">Cuenta</th>
+          <th class="text-right">Importe</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (l of rep.lineas; track $index) {
+        <tr [ngClass]="'er-' + l.tipo">
+          <td>
+            @if (l.tipo === 'cuenta') {
+            <span class="er-desc">{{ l.descripcion }}</span>
+            } @else {
+            <strong>{{ l.titulo }}</strong>
+            }
+          </td>
+          <td class="er-cta">{{ l.tipo === 'cuenta' ? l.ctacontable : '' }}</td>
+          <td class="text-right er-val">
+            @if (l.tipo !== 'seccion') { {{ l.valor ?? 0 | number: '1.2-2' }} }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  } @else {
+  <div class="card text-center p-4 text-muted">
+    <i class="pi pi-chart-line" style="font-size: 2rem; opacity: 0.4"></i>
+    <p class="mt-2 mb-0">
+      Seleccione la variante (Período / Acumulado / Año anterior) y haga clic en
+      "Generar" para ver el Estado de Resultado.
+    </p>
+  </div>
+  }
+</div>
+
+<!-- Visor PDF (pantalla completa) -->
+<p-dialog
+  [(visible)]="mostrarVisor"
+  [header]="'Estado de Resultado — ' + (reporte()?.etiqueta ?? '')"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="pdf-viewer-dialog"
+>
+  <div class="pdf-viewer-container">
+    @if (pdfUrl()) {
+    <iframe [src]="pdfUrl()" class="pdf-iframe"></iframe>
+    }
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button
+      size="small"
+      label="Descargar PDF"
+      icon="pi pi-download"
+      severity="danger"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      (onClick)="descargarPDF()"
+    />
+    <p-button
+      size="small"
+      label="Cerrar"
+      icon="pi pi-times"
+      severity="secondary"
+      variant="text"
+      [rounded]="true"
+      (onClick)="cerrarVisor()"
+    />
+  </ng-template>
+</p-dialog>

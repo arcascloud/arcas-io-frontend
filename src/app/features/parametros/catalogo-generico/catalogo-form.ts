@@ -66,6 +66,8 @@ export class CatalogoForm implements OnInit, OnChanges {
   ];
 
   private itemId = 0;
+  /** true cuando la ruta es "nuevo" (o id embebido vacío) — controla los valores por defecto */
+  private nuevoRegistro = false;
 
   form!: FormGroup;
 
@@ -93,7 +95,9 @@ export class CatalogoForm implements OnInit, OnChanges {
     }
     this.campos = this.config.campos;
     this.protegido.set(false);
-    this.titulo.set(this.esNuevo(id) ? `Nuevo ${this.config.titulo.slice(0, -1)}` : `Editar ${this.config.titulo.slice(0, -1)}`);
+    this.nuevoRegistro = this.esNuevo(id);
+    const singular = this.config.tituloSingular ?? this.config.titulo.slice(0, -1);
+    this.titulo.set(this.nuevoRegistro ? `Nuevo ${singular}` : `Editar ${singular}`);
     this.buildForm();
 
     // Catálogo protegido: sn_abierto nunca se toca desde aquí
@@ -146,13 +150,17 @@ export class CatalogoForm implements OnInit, OnChanges {
   }
 
   /**
-   * Solo al crear: prellena los campos tipo 'fecha' que estén vacíos
-   * con la fecha del sistema de la empresa (tempresas.fechasistema).
-   * En edición nunca se toca (conserva la fecha guardada).
+   * Solo al crear:
+   *  - campos tipo 'fecha' vacíos  → tempresas.fechasistema
+   *  - campos formato 'anio'        → año de tempresas.fechasistema
+   *  - campo 'nromes'               → mes de tempresas.fechasistema
+   * En edición nunca se toca (conserva lo guardado).
    */
   private precargarFechaSistema() {
     const camposFecha = this.campos.filter((c) => c.tipo === 'fecha');
-    if (!camposFecha.length) return;
+    const camposAnio = this.campos.filter((c) => c.formato === 'anio');
+    const campoMes = this.campos.find((c) => c.key === 'nromes');
+    if (!camposFecha.length && !camposAnio.length && !campoMes) return;
     const empresaId = this.auth.currentUser()?.empresaId;
     if (!empresaId) return;
     this.api
@@ -167,6 +175,13 @@ export class CatalogoForm implements OnInit, OnChanges {
           for (const c of camposFecha) {
             // Solo si está vacío (un valor por queryParams tiene prioridad)
             if (!this.form.get(c.key)?.value) patch[c.key] = d;
+          }
+          // Año y mes desde la fecha de sistema (solo si siguen vacíos)
+          for (const c of camposAnio) {
+            if (!this.form.get(c.key)?.value) patch[c.key] = d.getFullYear();
+          }
+          if (campoMes && !this.form.get(campoMes.key)?.value) {
+            patch[campoMes.key] = d.getMonth() + 1;
           }
           if (Object.keys(patch).length) this.form.patchValue(patch);
         },
@@ -209,10 +224,14 @@ export class CatalogoForm implements OnInit, OnChanges {
   private buildForm() {
     const group: Record<string, any> = {};
     for (const c of this.campos) {
-      group[c.key] = [
-        c.tipo === 'numero' ? 0 : '',
-        c.requerido ? Validators.required : [],
-      ];
+      // Valores por defecto al crear. Sin esto un campo numérico nace en 0 y un
+      // select en '' — ambos inválidos para el backend (ej: año/mes del período).
+      let inicial: any = c.tipo === 'numero' ? 0 : '';
+      if (this.nuevoRegistro && c.key === 'sn_abierto' && this.config.protegerCerrados) {
+        // Período contable: siempre se crea ABIERTO (el cierre es de Cierre Contable)
+        inicial = 'S';
+      }
+      group[c.key] = [inicial, c.requerido ? Validators.required : []];
     }
     if (!this.config.sinEstado) group['sn_activo'] = ['S'];
     this.form = this.fb.group(group);
@@ -301,9 +320,17 @@ export class CatalogoForm implements OnInit, OnChanges {
         });
         this.volver();
       },
-      error: () => {
+      error: (err: any) => {
         this.guardando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el registro' });
+        // El backend da mensajes específicos (período protegido, duplicado, validación):
+        // se muestran tal cual en vez de un genérico que oculta la causa.
+        const msg = err?.error?.message;
+        const detalle =
+          (Array.isArray(msg) ? msg.join(' · ') : msg) ||
+          err?.error?.error ||
+          err?.message ||
+          'No se pudo guardar el registro';
+        this.msgs.add({ severity: 'error', summary: 'No se pudo guardar', detail: detalle });
       },
     });
   }

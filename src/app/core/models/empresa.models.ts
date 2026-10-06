@@ -18,8 +18,21 @@ export interface EmpresaDet {
   empresaId: number;
 }
 
+/** CAI independiente (tabla tcai) */
+export interface Cai {
+  caiId: number;
+  cai: string;
+  sn_activo: string;
+  empresaId: number;
+  usuarioCreated?: string;
+  fechaCreated?: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
 export interface Correlativo {
-  poscorrelativosId: number;
+  caiAutorizadoId: number;
+  caiId?: number;
   nrofactura: number;
   TCPIP?: string;
   Idsucursal: number;
@@ -57,7 +70,7 @@ export interface Impresora {
 }
 
 export interface EstadoCorrelativo {
-  poscorrelativosId: number;
+  caiAutorizadoId: number;
   Idsucursal: number;
   rangoDesde: string;
   rangoHasta: string;

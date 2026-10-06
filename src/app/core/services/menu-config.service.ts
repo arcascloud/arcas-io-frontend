@@ -29,7 +29,8 @@ interface RawMnuItem {
 export interface MenuItemConfig {
   /** Texto visible del menú */
   label: string;
-  /** Clase del ícono (Font Awesome sin prefijo 'fa-') */
+  /** Clase(s) del ícono: nombre corto PrimeIcons (`home` → `pi pi-home`) o
+   *  clase completa Font Awesome (`fa-solid fa-box`) o PrimeIcons (`pi pi-home`) */
   icon: string;
   /** Ruta de navegación (si tiene ruta, es un enlace directo) */
   route?: string;

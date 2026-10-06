@@ -32,6 +32,18 @@
         }
       </div>
 
+      <div class="campo">
+        <label for="abreviatura">Abreviatura</label>
+        <input
+          pInputText
+          id="abreviatura"
+          formControlName="abreviatura"
+          maxlength="20"
+          placeholder="Ej: INV, FAC, CXC"
+        />
+        <small class="hint">Máximo 20 caracteres</small>
+      </div>
+
       @if (esEdicion()) {
         <div class="campo">
           <label>Estado <span class="req">*</span></label>

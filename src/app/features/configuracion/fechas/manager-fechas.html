@@ -1,0 +1,426 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Fechas Autorizadas</h1>
+      <p class="page-subtitle">Rangos de vigencia y usuarios habilitados para registrar en períodos cerrados</p>
+    </div>
+    @if (puedeEscribir()) {
+      <p-button label="Nuevo rango" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+    }
+  </header>
+
+  <!-- ══════════════ Fecha del Sistema del ERP ══════════════ -->
+  <div class="card fecha-sistema mb-3" [class.desalineada]="desalineada()">
+    <div class="fs-cabecera">
+      <div class="fs-titulo">
+        <i class="pi pi-calendar"></i>
+        <div>
+          <strong>Fecha del Sistema</strong>
+          <span>
+            Mientras no coincida con la fecha del servidor, el ERP bloquea toda operación
+            y transacción (409). Solo se exceptúan usuarios con un rango vigente en
+            <code>tfecdet</code>.
+          </span>
+        </div>
+      </div>
+
+      @if (cargandoFecha()) {
+        <p-tag value="Verificando..." severity="secondary" />
+      } @else if (desalineada()) {
+        <p-tag value="DESACTUALIZADA" severity="danger" />
+      } @else {
+        <p-tag value="Actualizada" severity="success" />
+      }
+    </div>
+
+    <div class="fs-vals">
+      <div class="fs-val">
+        <label>ERP · tempresas.fechasistema</label>
+        <span class="fs-valor" [class.rojo]="desalineada()">
+          {{ fechaTexto(estadoFecha()?.fechaSistema, 'sin registro') }}
+        </span>
+      </div>
+
+      <div class="fs-flecha"><i class="pi pi-arrow-right"></i></div>
+
+      <div class="fs-val">
+        <label>Servidor · MySQL CURDATE()</label>
+        <span class="fs-valor">{{ fechaTexto(estadoFecha()?.fechaServidor) }}</span>
+      </div>
+
+      <div class="fs-accion">
+        @if (desalineada() && puedeEscribir()) {
+          <p-button
+            label="Actualizar a la fecha del servidor"
+            icon="pi pi-refresh"
+            severity="danger"
+            size="small"
+            rounded
+            [loading]="actualizandoFecha()"
+            (onClick)="actualizarFechaSistema()"
+          />
+        } @else if (desalineada() && !puedeEscribir()) {
+          <small class="fs-aviso">
+            Un <code>admin</code>, <code>supervisor</code> o <code>contador</code> debe
+            actualizar la fecha para desbloquear el ERP.
+          </small>
+        }
+        <p-button
+          label="Verificar"
+          icon="pi pi-sync"
+          severity="secondary"
+          variant="text"
+          size="small"
+          rounded
+          [loading]="cargandoFecha()"
+          (onClick)="cargarEstadoFecha()"
+        />
+      </div>
+    </div>
+  </div>
+
+  @if (!puedeEscribir()) {
+    <div class="permiso-restringido card">
+      <i class="pi pi-lock"></i>
+      <div>
+        <strong>Solo lectura</strong>
+        <span>
+          La administración de fechas autorizadas está restringida a los roles
+          <code>admin</code>, <code>supervisor</code> y <code>contador</code>. Su perfil solo puede consultar.
+        </span>
+      </div>
+    </div>
+  }
+
+  <!-- ── Verificador de autorización ────────────────────────────────── -->
+  <p-fieldset legend="Verificar autorización de usuario" [toggleable]="true" styleClass="mb-3">
+    <div class="verif-grid">
+      <div class="campo">
+        <label>Usuario</label>
+        <p-select
+          size="small"
+          [options]="usuarios()"
+          optionLabel="nombre"
+          optionValue="usuario"
+          [filter]="true"
+          filterBy="nombre,usuario"
+          filterPlaceholder="Buscar usuario..."
+          placeholder="Seleccione usuario"
+          styleClass="w-full"
+          [appendTo]="'body'"
+          [ngModel]="chkUsuario()"
+          (ngModelChange)="chkUsuario.set($event)"
+        />
+      </div>
+
+      <div class="campo">
+        <label>Fecha a validar</label>
+        <p-datepicker
+          size="small"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          [appendTo]="'body'"
+          styleClass="w-full"
+          placeholder="Hoy (si se omite)"
+          [ngModel]="chkFecha()"
+          (ngModelChange)="chkFecha.set($event)"
+        />
+      </div>
+
+      <div class="campo acciones-verif">
+        <p-button
+          label="Verificar"
+          icon="pi pi-search"
+          severity="success"
+          size="small"
+          [loading]="chkConsultando()"
+          (onClick)="verificar()"
+        />
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" (onClick)="limpiarVerificacion()" />
+      </div>
+    </div>
+
+    @if (chkResultado(); as res) {
+      <div class="resultado-verif" [class.autorizado]="res.autorizado" [class.rechazado]="!res.autorizado">
+        @if (res.autorizado) {
+          <i class="pi pi-check-circle"></i>
+          <div>
+            <strong>Autorizado</strong>
+            <span>
+              {{ chkUsuario() }} puede registrar datos en la fecha consultada.
+              @if (res.fec_vig_desde) {
+                (rango {{ res.fec_vig_desde | date: 'dd/MM/yyyy' }} – {{ res.fec_vig_hasta | date: 'dd/MM/yyyy' }})
+              }
+            </span>
+          </div>
+        } @else {
+          <i class="pi pi-times-circle"></i>
+          <div>
+            <strong>No autorizado</strong>
+            <span>{{ res.motivo }}</span>
+          </div>
+        }
+      </div>
+    }
+  </p-fieldset>
+
+  <!-- ── Filtros ────────────────────────────────────────────────────── -->
+  <div class="filtros card">
+    <div class="campo">
+      <label>Buscar</label>
+      <input
+        pInputText
+        pSize="small"
+        type="text"
+        placeholder="Fecha, usuario o creador..."
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+      />
+    </div>
+    <div class="acciones">
+      <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" (onClick)="q.set('')" />
+      <div class="resumen">
+        <span>{{ filtered().length }} rango(s)</span>
+        <span class="sep">·</span>
+        <span>{{ totalHabilitados() }} usuario(s) habilitado(s)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tabla maestros ─────────────────────────────────────────────── -->
+  <p-table
+    [value]="filtered()"
+    [loading]="cargando()"
+    dataKey="tfecmaId"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 9rem">Vigente desde</th>
+        <th style="width: 9rem">Vigente hasta</th>
+        <th style="width: 7rem">Estado</th>
+        <th style="width: 7rem" class="text-center">Habilitados</th>
+        <th>Usuarios habilitados</th>
+        <th style="width: 9rem">Registrado por</th>
+        <th style="width: 7rem"></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        <td class="font-bold">{{ item.fec_vig_desde | date: 'dd/MM/yyyy' }}</td>
+        <td class="font-bold">{{ item.fec_vig_hasta | date: 'dd/MM/yyyy' }}</td>
+        <td>
+          @if (estadoVigencia(item); as est) {
+            <p-tag [value]="est.label" [severity]="est.severity" styleClass="tag-sm" />
+          }
+        </td>
+        <td class="text-center">
+          <p-tag [value]="habilitados(item) + ' / ' + (item.detalles?.length ?? 0)" severity="info" styleClass="tag-sm" />
+        </td>
+        <td class="celda-usuarios">
+          @for (d of item.detalles; track d.fecdetId) {
+            <span
+              class="chip-usuario"
+              [class.chip-no]="d.sn_permitido === 'N'"
+              [pTooltip]="d.sn_permitido === 'S' ? 'Habilitado para registrar' : 'Sin permiso de registro'"
+            >
+              {{ d.usuario }}
+            </span>
+          } @empty {
+            <span class="sin-datos">Sin usuarios en el detalle</span>
+          }
+        </td>
+        <td>{{ item.usuarioCreated }}</td>
+        <td class="text-center">
+          @if (puedeEscribir()) {
+            <p-button
+              icon="pi pi-pencil"
+              pTooltip="Editar"
+              severity="warn"
+              text
+              size="small"
+              rounded
+              class="mr-1"
+              (onClick)="editar(item, $event)"
+            />
+            <p-button
+              icon="pi pi-trash"
+              pTooltip="Eliminar"
+              severity="danger"
+              text
+              size="small"
+              rounded
+              (onClick)="eliminar(item, $event)"
+            />
+          } @else {
+            <i class="pi pi-lock icono-lock" pTooltip="Solo lectura (rol restringido)"></i>
+          }
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="7" class="text-center p-3">No hay rangos de vigencia registrados.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</section>
+
+<!-- ── Diálogo de alta / edición ──────────────────────────────────── -->
+<p-dialog
+  [visible]="dialogVisible()"
+  (visibleChange)="dialogVisible.set($event)"
+  [header]="esEdicion() ? 'Editar rango de vigencia' : 'Nuevo rango de vigencia'"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '85vw', '640px': '95vw' }"
+  [style]="{ width: '640px' }"
+>
+  <div class="p-fluid">
+    <div class="p-grid">
+      <div class="p-col-12 p-col-6">
+        <div class="p-field">
+          <label>Vigente desde <span class="req">*</span></label>
+          <p-datepicker
+            size="small"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            [ngModel]="fechaDesde()"
+            (ngModelChange)="fechaDesde.set($event)"
+          />
+        </div>
+      </div>
+
+      <div class="p-col-12 p-col-6">
+        <div class="p-field">
+          <label>Vigente hasta <span class="req">*</span></label>
+          <p-datepicker
+            size="small"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            [ngModel]="fechaHasta()"
+            (ngModelChange)="fechaHasta.set($event)"
+          />
+        </div>
+      </div>
+
+      <!-- Detalle: usuarios habilitados -->
+      <div class="p-col-12">
+        <div class="detalle-titulo">
+          <label>Usuarios habilitados en este rango <span class="req">*</span></label>
+          <small>Agregue al menos un usuario. "Permitido" es el que podrá registrar en períodos cerrados.</small>
+        </div>
+
+        @if (usuariosDisponibles().length > 0) {
+          <div class="agregar-usuario">
+            <p-select
+              size="small"
+              [options]="usuariosDisponibles()"
+              optionLabel="nombre"
+              optionValue="usuario"
+              [filter]="true"
+              filterBy="nombre,usuario"
+              filterPlaceholder="Buscar usuario..."
+              placeholder="Seleccione un usuario para agregar"
+              styleClass="w-full"
+              [appendTo]="'body'"
+              [ngModel]="nuevoUsuario()"
+              (ngModelChange)="nuevoUsuario.set($event)"
+            />
+            <p-button
+              icon="pi pi-plus"
+              severity="success"
+              size="small"
+              [rounded]="true"
+              pTooltip="Agregar usuario"
+              [disabled]="!nuevoUsuario()"
+              (onClick)="agregarDetalle()"
+            />
+          </div>
+        }
+
+        <p-table [value]="detalles()" size="small" [tableStyle]="{ 'min-width': '26rem' }">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Usuario</th>
+              <th style="width: 12rem">Permiso</th>
+              <th style="width: 3rem"></th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td class="font-bold">{{ row.usuario }}</td>
+              <td>
+                <p-select
+                  size="small"
+                  [options]="permitidoOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  styleClass="w-full"
+                  [appendTo]="'body'"
+                  [ngModel]="row.sn_permitido"
+                  (ngModelChange)="setPermitido(row.usuario, $event)"
+                />
+              </td>
+              <td class="text-center">
+                <p-button
+                  icon="pi pi-times"
+                  severity="danger"
+                  text
+                  size="small"
+                  rounded
+                  pTooltip="Quitar"
+                  (onClick)="quitarDetalle(row.usuario)"
+                />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="3" class="text-center p-3">
+                No hay usuarios agregados. Use el selector superior.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      size="small"
+      label="Cancelar"
+      rounded
+      variant="text"
+      severity="secondary"
+      (onClick)="dialogVisible.set(false)"
+    />
+    <p-button
+      size="small"
+      label="Guardar"
+      icon="pi pi-check"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      severity="success"
+      [loading]="guardando()"
+      (onClick)="guardar()"
+    />
+  </ng-template>
+</p-dialog>
+
+<p-toast />
+<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />

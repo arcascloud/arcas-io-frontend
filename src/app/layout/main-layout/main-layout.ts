@@ -64,13 +64,29 @@ export class MainLayout {
   );
 
   private mapItem(item: import('../../core/services/menu-config.service').MenuItemConfig): MenuItem {
-    const mi: MenuItem = { label: item.label, icon: `pi pi-${item.icon}` };
+    const mi: MenuItem = { label: item.label, icon: this.resolverIcono(item.icon) };
     if (item.route) mi.routerLink = [item.route];
     if (item.children?.length) {
       mi.expanded = false;
       mi.items = item.children.map((c) => this.mapItem(c));
     }
     return mi;
+  }
+
+  /**
+   * Resuelve el ícono del MenuItem sin romper clases completas:
+   *  - `'fa-solid fa-box'` / `'pi pi-home'` (con espacio) → se usa tal cual
+   *  - `'fa-box'` (solo una clase FA) → se completa con `fa-solid`
+   *  - `'pi-home'` → se completa con `pi `
+   *  - `'home'` (nombre corto) → `pi pi-home` (compatibilidad con el formato viejo)
+   */
+  private resolverIcono(icon: string): string {
+    const i = (icon ?? '').trim();
+    if (!i) return '';
+    if (i.includes(' ')) return i;
+    if (i.startsWith('fa-')) return `fa-solid ${i}`;
+    if (i.startsWith('pi-')) return `pi ${i}`;
+    return `pi pi-${i}`;
   }
 
   userMenuItems: MenuItem[] = [

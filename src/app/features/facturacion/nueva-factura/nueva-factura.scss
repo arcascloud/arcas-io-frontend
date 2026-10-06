@@ -1,11 +1,11 @@
 .field {
-    margin-bottom: 0.2rem;
+  margin-bottom: 0.2rem;
 }
 
 .col-5 {
-    flex: 0 0 auto;
-    padding: 0.2rem;
-    width: 41.6667%;
+  flex: 0 0 auto;
+  padding: 0.2rem;
+  width: 41.6667%;
 }
 
 .nf-side-panel {
@@ -35,6 +35,7 @@
 }
 
 .nf-toolbar {
+
   ::ng-deep .p-toolbar-group-start,
   ::ng-deep .p-toolbar-group-center,
   ::ng-deep .p-toolbar-group-end {
@@ -79,7 +80,7 @@
 
   ::ng-deep .p-inputicon {
     top: 50%;
-    left:97%;
+    left: 97%;
     transform: translateY(calc(-50% + 7px));
   }
 }
@@ -171,7 +172,10 @@
 }
 
 .pago-table {
-  p-select, p-inputnumber, input[pinputtext] {
+
+  p-select,
+  p-inputnumber,
+  input[pinputtext] {
     width: 100%;
   }
 }
@@ -284,16 +288,17 @@
     width: 100%;
   }
 
-  ::ng-deep .p-datatable-tbody > tr > td {
+  ::ng-deep .p-datatable-tbody>tr>td {
     padding: 0.25rem 0.75rem;
   }
 
-  ::ng-deep .p-datatable-thead > tr > th {
+  ::ng-deep .p-datatable-thead>tr>th {
     padding: 0.4rem 0.75rem;
   }
 }
 
 .nf-totales {
+
   .p-card-body,
   .card-body {
     padding: 0;
@@ -333,12 +338,13 @@
   flex-direction: column;
   gap: 0.25rem;
   min-width: 120px;
+
   .font-bold {
     font-size: 0.8rem;
     color: var(--text-muted-color);
   }
 
-  > div:last-child {
+  >div:last-child {
     font-size: 1.05rem;
     color: var(--text-color);
   }
@@ -348,7 +354,7 @@
   border-left: 1px solid var(--c-border);
   padding-left: 1rem;
 
-  > div:last-child {
+  >div:last-child {
     font-size: 1.35rem;
     color: var(--primary-color);
   }
@@ -405,23 +411,27 @@
   }
 }
 
-  .alt9 {
-    display: block;
-    font-weight: 300;
-    margin-left: 5px;
-    font-size: 1.05rem;
-    color: var(--c-warning);
-  }
+.alt9 {
+  display: block;
+  font-weight: 300;
+  margin-left: 5px;
+  font-size: 1.05rem;
+  color: var(--c-warning);
+}
 
 .img-producto {
   mix-blend-mode: multiply;
   background: transparent;
-  border-radius: 8px;
-  object-fit: contain; /* Asegura que la imagen no se deforme */
-  width: 50px; /* Ajusta según el tamaño en tu tabla */
+  border-radius: 7px;
+  object-fit: contain;
+  /* Asegura que la imagen no se deforme */
+  width: 50px;
+  /* Ajusta según el tamaño en tu tabla */
   height: 50px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Separa la imagen del fondo oscuro */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0);
+  /* Separa la imagen del fondo oscuro */
 }
+
 .campo-full {
   grid-column: 1 / -1;
 }
@@ -431,7 +441,7 @@
   width: 250px;
   height: 250px;
   object-fit: contain;
-  background: var(--surface-card);
+  background: var(--c-bg-white);
   border: 2px solid var(--surface-border);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
@@ -516,6 +526,6 @@
 
 }
 
- .surface-border{
+.surface-border {
   color: var(--for-border-color-alls);
- }
+}

@@ -86,6 +86,16 @@
                   <span style="color: var(--color-texto-label)" class="section-title"
                     >Líneas de la Plantilla</span
                   >
+                  <span class="detalle-balance">
+                    <p-tag
+                      [value]="'Debe: ' + lineasDebe()"
+                      [severity]="lineasDebe() > 0 ? 'success' : 'danger'"
+                    />
+                    <p-tag
+                      [value]="'Haber: ' + lineasHaber()"
+                      [severity]="lineasHaber() > 0 ? 'success' : 'danger'"
+                    />
+                  </span>
                 </div>
               </ng-template>
               <ng-template pTemplate="header">

@@ -64,10 +64,14 @@
         <div class="col-der-header">
           <div class="flex align-items-center gap-2">
             <p-button icon="pi pi-arrow-left" text size="small" rounded (click)="volver()" />
-            <div>
-              <h3 class="page-title" style="font-size: 1rem; margin: 0">Cuenta: {{ cuentaSeleccionada()!.nrocuenta }} - {{ bancoNombre(cuentaSeleccionada()!.bancoId) }} - {{ monedaNombre(cuentaSeleccionada()!.monedaId) }}</h3>
-              <p class="page-subtitle" style="margin: 0">Movimientos registrados</p>
+            <div class="cuenta-info">
+              <h3 class="cuenta-titulo">Cuenta: {{ cuentaSeleccionada()!.nrocuenta }} - {{ bancoNombre(cuentaSeleccionada()!.bancoId) }} - {{ monedaNombre(cuentaSeleccionada()!.monedaId) }}</h3>
+              <p class="cuenta-subtitulo">Movimientos registrados</p>
             </div>
+          </div>
+          <div class="saldo-badge">
+            <span class="saldo-label">Saldo actual</span>
+            <span class="saldo-valor">{{ saldoTexto() }}</span>
           </div>
         </div>
 
@@ -85,9 +89,10 @@
               </div>
               <div class="p-col-12 p-col-4">
                 <div class="campo">
-                  <label>D/C <span class="req">*</span></label>
+                  <label>D/C <span class="hint">(según tipo)</span></label>
                   <p-select formControlName="dc_debitocredito" [options]="DC_OPTIONS"
-                    optionLabel="label" optionValue="value" size="small" styleClass="w-full" appendTo="body" />
+                    optionLabel="label" optionValue="value" size="small" styleClass="w-full" appendTo="body"
+                    [disabled]="true" />
                 </div>
               </div>
               <div class="p-col-12">

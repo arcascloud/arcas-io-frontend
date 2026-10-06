@@ -5,14 +5,50 @@
   <div class="page-header">
     <h2><i class="pi pi-book"></i> Libro Mayor</h2>
     <div class="header-actions">
-      <p-button size="small" label="PDF" icon="pi pi-file-pdf" severity="danger" variant="text" [rounded]="true"
-                (onClick)="exportPDF()" [disabled]="datos().length === 0" pTooltip="Ver PDF" />
-      <p-button size="small" label="Excel" icon="pi pi-file-excel" severity="success" variant="text" [rounded]="true"
-                (onClick)="exportExcel()" [disabled]="datos().length === 0" pTooltip="Descargar Excel" />
-      <p-button size="small" label="Word" icon="pi pi-file-word" severity="info" variant="text" [rounded]="true"
-                (onClick)="exportWord()" [disabled]="datos().length === 0" pTooltip="Descargar Word" />
-      <p-button size="small" label="Imprimir" icon="pi pi-print" severity="secondary" variant="text" [rounded]="true"
-                (onClick)="imprimir()" [disabled]="datos().length === 0" pTooltip="Imprimir reporte" />
+      <p-button
+        size="small"
+        label="PDF"
+        icon="pi pi-file-pdf"
+        severity="danger"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportPDF()"
+        [disabled]="datos().length === 0"
+        pTooltip="Ver PDF"
+      />
+      <p-button
+        size="small"
+        label="Excel"
+        icon="pi pi-file-excel"
+        severity="success"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportExcel()"
+        [disabled]="datos().length === 0"
+        pTooltip="Descargar Excel"
+      />
+      <p-button
+        size="small"
+        label="Word"
+        icon="pi pi-file-word"
+        severity="info"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportWord()"
+        [disabled]="datos().length === 0"
+        pTooltip="Descargar Word"
+      />
+      <p-button
+        size="small"
+        label="Imprimir"
+        icon="pi pi-print"
+        severity="secondary"
+        variant="text"
+        [rounded]="true"
+        (onClick)="imprimir()"
+        [disabled]="datos().length === 0"
+        pTooltip="Imprimir reporte"
+      />
     </div>
   </div>
 
@@ -23,28 +59,66 @@
         <div class="p-col-12 p-col-2">
           <div class="p-field">
             <label>Período</label>
-            <p-select [options]="meses" [(ngModel)]="periodo" optionLabel="label" optionValue="value"
-                      placeholder="Mes" styleClass="w-full" size="small" appendTo="body" />
+            <p-select
+              [options]="meses"
+              [(ngModel)]="periodo"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Mes"
+              styleClass="w-full"
+              size="small"
+              appendTo="body"
+            />
           </div>
         </div>
         <div class="p-col-12 p-col-2">
           <div class="p-field">
             <label>Año</label>
-            <p-inputNumber [(ngModel)]="anio" [min]="2020" [max]="2030" [useGrouping]="false" styleClass="w-full" size="small" />
+            <p-inputNumber
+              [(ngModel)]="anio"
+              [min]="2020"
+              [max]="2030"
+              [useGrouping]="false"
+              styleClass="w-full"
+              size="small"
+            />
           </div>
         </div>
         <div class="p-col-12 p-col-2">
           <div class="p-field">
             <label>Nivel Máximo</label>
-            <p-select [options]="niveles()" [(ngModel)]="nivelMaximo" optionLabel="label" optionValue="value"
-                      styleClass="w-full" size="small" appendTo="body" />
+            <p-select
+              [options]="niveles()"
+              [(ngModel)]="nivelMaximo"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              size="small"
+              appendTo="body"
+            />
           </div>
         </div>
-        <div class="p-col-12 p-col-5 d-flex align-items-end gap-2">
-          <p-button size="small" label="Buscar" icon="pi pi-search" severity="success" variant="text" [raised]="true" [rounded]="true"
-                    [loading]="cargando()" (onClick)="buscar()" />
-          <p-button size="small" label="Limpiar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
-                    (onClick)="limpiar()" />
+        <div class="mt-3 p-col-12 p-col-5 d-flex align-items-end gap-2">
+          <p-button
+            size="small"
+            label="Buscar"
+            icon="pi pi-search"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            [rounded]="true"
+            [loading]="cargando()"
+            (onClick)="buscar()"
+          />
+          <p-button
+            size="small"
+            label="Limpiar"
+            icon="pi pi-times"
+            severity="secondary"
+            variant="text"
+            [rounded]="true"
+            (onClick)="limpiar()"
+          />
         </div>
       </div>
     </div>
@@ -52,93 +126,130 @@
 
   <!-- Tabla Libro Mayor -->
   @if (datos().length > 0) {
-    <div class="card">
-      <h4 class="mb-2">Libro Mayor — {{ getMesLabel() }} {{ anio() }}</h4>
-      <p-table [value]="datosFiltrados()" [paginator]="true" [rows]="50" size="small"
-               [showCurrentPageReport]="true"
-               currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-               [rowsPerPageOptions]="[25, 50, 100]"
-               [sortField]="'ctacontable'" [sortOrder]="1">
-        <ng-template pTemplate="header">
-          <tr>
-            <th style="width: 15%">Cuenta</th>
-            <th style="width: 25%">Descripción</th>
-            <th style="width: 8%" class="text-center">Nivel</th>
-            <th style="width: 15%" class="text-right">Saldo Acum.</th>
-            <th style="width: 15%" class="text-right">Debe</th>
-            <th style="width: 15%" class="text-right">Haber</th>
-            <th style="width: 15%" class="text-right">Saldo (D/C)</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-row>
-          <tr [class]="getNivelClass(row.nivel)" [class.fila-operable]="row.sn_operable === 'S'"
-              [class.fila-sumaria]="row.sn_operable === 'N'">
-            <td>
-              <span [style.marginLeft]="getIndentacion(row.nivel)">
-                <strong>{{ row.ctacontable }}</strong>
-              </span>
-            </td>
-            <td>
-              <span [style.marginLeft]="getIndentacion(row.nivel)">
-                {{ row.descripcion }}
-              </span>
-            </td>
-            <td class="text-center">
-              <span class="nivel-badge" [class]="'nivel-badge-' + row.nivel">N{{ row.nivel }}</span>
-            </td>
-            <td class="text-right">{{ formatNumber(row.saldoAcum) }} ({{ row.naturaleza }})</td>
-            <td class="text-right">{{ row.debe > 0 ? formatNumber(row.debe) : '-' }}</td>
-            <td class="text-right">{{ row.haber > 0 ? formatNumber(row.haber) : '-' }}</td>
-            <td class="text-right" [class.debe]="row.naturaleza === 'D'" [class.haber]="row.naturaleza === 'C'">
-              {{ formatNumber(row.saldo) }} ({{ row.naturaleza }})
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="footer">
-          <tr class="totales-row">
-            <td colspan="3"><strong>TOTALES</strong></td>
-            <td class="text-right"><strong>{{ formatNumber(totalSaldoAcum()) }} ({{ esDeudor() ? 'D' : 'C' }})</strong></td>
-            <td class="text-right"><strong>{{ formatNumber(totalDebe()) }}</strong></td>
-            <td class="text-right"><strong>{{ formatNumber(totalHaber()) }}</strong></td>
-            <td class="text-right">
-              <strong>{{ formatNumber(totalSaldo()) }} ({{ esDeudor() ? 'D' : 'C' }})</strong>
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="7" class="text-center text-muted">
-              No hay datos. Seleccione período y haga clic en "Buscar".
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </div>
+  <div class="card">
+    <p-table
+      [value]="datosFiltrados()"
+      [paginator]="true"
+      [rows]="50"
+      size="small"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[25, 50, 100]"
+      [sortField]="'ctacontable'"
+      [sortOrder]="1"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 15%">Cuenta</th>
+          <th style="width: 25%">Descripción</th>
+          <th style="width: 8%" class="text-center">Nivel</th>
+          <th style="width: 12%" class="text-right">Saldo Acum.</th>
+          <th style="width: 10%" class="text-right">Debe</th>
+          <th style="width: 10%" class="text-right">Haber</th>
+          <th style="width: 14%" class="text-right">Saldo (D/C)</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr
+          class="mono"
+          [ngClass]="getNivelClass(row.nivel)"
+          [class.fila-operable]="row.sn_operable === 'S'"
+          [class.fila-sumaria]="row.sn_operable === 'N'"
+        >
+          <td>
+            <span [style.marginLeft]="getIndentacion(row.nivel)">
+              <strong>{{ row.ctacontable }}</strong>
+            </span>
+          </td>
+          <td>
+            <span [style.marginLeft]="getIndentacion(row.nivel)"> {{ row.descripcion }} </span>
+          </td>
+          <td class="text-center">
+            <span class="nivel-badge" [class]="'nivel-badge-' + row.nivel">N{{ row.nivel }}</span>
+          </td>
+          <td class="text-right">{{ formatNumber(row.saldoAcum) }} ({{ row.tiposaldoAcum }})</td>
+          <td class="text-right">{{ row.debe > 0 ? formatNumber(row.debe) : '-' }}</td>
+          <td class="text-right">{{ row.haber > 0 ? formatNumber(row.haber) : '-' }}</td>
+          <td
+            class="text-right"
+            [class.debe]="row.tiposaldo === 'D'"
+            [class.haber]="row.tiposaldo === 'C'"
+            [title]="'Naturaleza de la cuenta: ' + (row.naturaleza === 'D' ? 'Deudora' : 'Acreedora') + ' (catálogo)'"
+          >
+            {{ formatNumber(row.saldo) }} ({{ row.tiposaldo }})
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="footer">
+        <tr class="totales-row mono">
+          <td colspan="3"><strong>TOTALES</strong></td>
+          <td class="text-right">
+            <strong>{{ formatNumber(totalSaldoAcum()) }} ({{ esDeudor() ? 'D' : 'C' }})</strong>
+          </td>
+          <td class="text-right"><strong>{{ formatNumber(totalDebe()) }}</strong></td>
+          <td class="text-right"><strong>{{ formatNumber(totalHaber()) }}</strong></td>
+          <td class="text-right">
+            <strong>{{ formatNumber(totalSaldo()) }} ({{ esDeudor() ? 'D' : 'C' }})</strong>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center text-muted">
+            No hay datos. Seleccione período y haga clic en "Buscar".
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
   }
 
   <!-- Estado vacío -->
   @if (datos().length === 0 && !cargando()) {
-    <div class="card empty-state">
-      <i class="pi pi-book" style="font-size: 3rem; color: var(--c-text-muted);"></i>
-      <h3 style="color: var(--c-text-muted); margin-top: 1rem;">Libro Mayor</h3>
-      <p style="color: var(--c-text-muted);">Seleccione el período y haga clic en "Buscar" para generar el reporte.</p>
-    </div>
+  <div class="card empty-state">
+    <i class="pi pi-book" style="font-size: 3rem; color: var(--c-text-muted)"></i>
+    <h3 style="color: var(--c-text-muted); margin-top: 1rem">Libro Mayor</h3>
+    <p style="color: var(--c-text-muted)">
+      Seleccione el período y haga clic en "Buscar" para generar el reporte.
+    </p>
+  </div>
   }
 </div>
 
 <!-- Visor PDF -->
-<p-dialog [(visible)]="mostrarVisor" [header]="'Libro Mayor — ' + getMesLabel() + ' ' + anio()"
-          [modal]="true" [draggable]="false" [resizable]="false" [style]="{ width: '90vw', height: '85vh' }"
-          [breakpoints]="{ '960px': '95vw', '640px': '98vw' }">
+<p-dialog
+  [(visible)]="mostrarVisor"
+  [header]="'Libro Mayor — ' + getMesLabel() + ' ' + anio()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', height: '85vh' }"
+  [breakpoints]="{ '960px': '95vw', '640px': '98vw' }"
+>
   <div class="pdf-viewer-container">
     @if (pdfUrl()) {
-      <iframe [src]="pdfUrl()" class="pdf-iframe"></iframe>
+    <iframe [src]="pdfUrl()" class="pdf-iframe"></iframe>
     }
   </div>
   <ng-template pTemplate="footer">
-    <p-button size="small" label="Descargar PDF" icon="pi pi-download" severity="danger" variant="text" [raised]="true" [rounded]="true"
-              (onClick)="descargarPDF()" />
-    <p-button size="small" label="Cerrar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
-              (onClick)="cerrarVisor()" />
+    <p-button
+      size="small"
+      label="Descargar PDF"
+      icon="pi pi-download"
+      severity="danger"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      (onClick)="descargarPDF()"
+    />
+    <p-button
+      size="small"
+      label="Cerrar"
+      icon="pi pi-times"
+      severity="secondary"
+      variant="text"
+      [rounded]="true"
+      (onClick)="cerrarVisor()"
+    />
   </ng-template>
 </p-dialog>

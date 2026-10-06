@@ -111,6 +111,19 @@ export const CONFIGURACION_ROUTES: Routes = [
     loadComponent: () =>
       import('../usuarios/usuario-roles/usuario-roles-form').then((m) => m.UsuarioRolesForm),
   },
+  {
+    // Catálogo genérico: Usuarios de Caja (tusuarios_caja) — menú "Caja por Usuario"
+    path: 'usuarios/usuarios-caja',
+    data: { nombre: 'usuarios-caja' },
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+  },
+  {
+    path: 'usuarios/usuarios-caja/editar/:id',
+    data: { nombre: 'usuarios-caja' },
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+  },
 
   // Parámetros (catálogos genéricos configurables)
   {
@@ -136,6 +149,13 @@ export const CONFIGURACION_ROUTES: Routes = [
     path: 'param-modulos',
     loadComponent: () =>
       import('../parametros/param-manager-modulos/param-manager-modulos').then((m) => m.ParamManagerModulos),
+  },
+
+  // Fechas autorizadas (tfecma / tfecdet) — solo admin/supervisor
+  {
+    path: 'fechas',
+    loadComponent: () =>
+      import('./fechas/manager-fechas').then((m) => m.ManagerFechas),
   },
 
   { path: '**', redirectTo: 'empresas' },

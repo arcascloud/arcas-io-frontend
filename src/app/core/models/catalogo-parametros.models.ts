@@ -14,6 +14,8 @@ export interface CampoCatalogo {
   minCampo?: string;
   /** Cifras decimales para mostrar en formulario y lista (ej: 4 para tipo de cambio 26.9745) */
   decimales?: number;
+  /** Texto de ayuda que se muestra debajo del campo en el formulario */
+  pista?: string;
   /**
    * En la lista el valor se muestra como SALDO ACUMULADO a fin de mes
    * (saldoanterior + netos de los meses anteriores + mes actual) con lado (C)/(D).
@@ -78,6 +80,9 @@ export interface DetalleEstadoCuenta {
 export interface CatalogoConfig {
   ruta: string;
   titulo: string;
+  /** Singular del título para los encabezados "Nuevo …" / "Editar …"
+   *  (si se omite se recorta el último carácter del plural). */
+  tituloSingular?: string;
   subtitulo?: string;
   idKey: string;
   icono: string;
@@ -99,6 +104,22 @@ export interface CatalogoConfig {
   /** Diálogo de detalle (estado de cuenta) al hacer clic en una fila o con el botón 👁 */
   detalle?: CatalogoDetalleConfig;
 }
+
+/** Meses del año como opciones de select (value = número de mes, 1-12) */
+export const MESES_NUMEROS: { label: string; value: number }[] = [
+  { label: 'Enero', value: 1 },
+  { label: 'Febrero', value: 2 },
+  { label: 'Marzo', value: 3 },
+  { label: 'Abril', value: 4 },
+  { label: 'Mayo', value: 5 },
+  { label: 'Junio', value: 6 },
+  { label: 'Julio', value: 7 },
+  { label: 'Agosto', value: 8 },
+  { label: 'Septiembre', value: 9 },
+  { label: 'Octubre', value: 10 },
+  { label: 'Noviembre', value: 11 },
+  { label: 'Diciembre', value: 12 },
+];
 
 export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   estados: {
@@ -285,7 +306,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     ruta: '/facturacion/correlativos',
     titulo: 'Correlativos',
     subtitulo: 'Correlativo de facturación',
-    idKey: 'poscorrelativosId',
+    idKey: 'caiAutorizadoId',
     icono: 'hashtag',
     sinEstado: true,
     campos: [
@@ -328,6 +349,45 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     idKey: 'cajaId',
     icono: 'money-bill',
     campos: [{ key: 'usuario', label: 'Usuario', tipo: 'texto', requerido: true, principal: true }],
+  },
+  'usuarios-caja': {
+    ruta: '/parametros/usuarios-caja',
+    titulo: 'Usuarios de Caja',
+    tituloSingular: 'Usuario de Caja',
+    subtitulo: 'Asignación de caja por usuario (formato de impresión y correlativo)',
+    idKey: 'id',
+    icono: 'id-card',
+    campos: [
+      {
+        key: 'usuario',
+        label: 'Usuario',
+        tipo: 'select',
+        cargaOpciones: { url: '/users', labelCampo: 'nombre', valueCampo: 'usuario' },
+        requerido: true,
+        principal: true,
+      },
+      { key: 'codigo', label: 'Código', tipo: 'numero', requerido: true },
+      {
+        key: 'forma',
+        label: 'Formato de Impresión',
+        tipo: 'select',
+        opciones: [
+          { label: 'Ticket', value: 'TICKET' },
+          { label: 'Carta', value: 'CARTA' },
+        ],
+        requerido: true,
+      },
+      {
+        key: 'modo_correlativo',
+        label: 'Modo de Correlativo',
+        tipo: 'select',
+        opciones: [
+          { label: 'Automático', value: 'A' },
+          { label: 'Manual', value: 'M' },
+        ],
+        requerido: true,
+      },
+    ],
   },
   'dias-cobro': {
     ruta: '/cxc/dias-cobro',
@@ -1003,17 +1063,19 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Periodos por año/mes',
     idKey: 'periodoscontableId',
     icono: 'calendar-check',
+    tituloSingular: 'Periodo Contable',
     sinEstado: true,
     protegerCerrados: true,
     proteccionMensaje:
       'Período cerrado — registro protegido. No es modificable ni puede reabrirse bajo ninguna circunstancia. Los cierres se realizan desde Cierre Contable.',
     campos: [
       { key: 'nroanio', label: 'Año', tipo: 'numero', formato: 'anio', requerido: true },
-      { key: 'nromes', label: 'Mes', tipo: 'numero', requerido: true },
+      { key: 'nromes', label: 'Mes', tipo: 'select', requerido: true, opciones: MESES_NUMEROS },
       {
         key: 'sn_abierto',
         label: 'Abierto',
         tipo: 'select',
+        pista: 'Se crea como Abierto. Cerrar un período se hace desde Cierre Contable, que genera la partida.',
         opciones: [
           { label: 'Sí', value: 'S' },
           { label: 'No', value: 'N' },

@@ -4,8 +4,11 @@ export const CONTABILIDAD_ROUTES: Routes = [
   { path: '', redirectTo: 'ctacontables', pathMatch: 'full' },
 
   // ===== Componentes especializados =====
+  { path: 'dashboardId7', loadComponent: () => import('./dashboard-id7/dashboard-id7').then((m) => m.DashboardId7Component) },
   { path: 'reportes', loadComponent: () => import('./reportes/reportes-contables').then((m) => m.ReportesContablesComponent) },
   { path: 'balance-dinamico', loadComponent: () => import('./balance-dinamico/balance-dinamico').then((m) => m.BalanceDinamicoComponent) },
+  { path: 'balance-financiero', loadComponent: () => import('./balance-financiero/balance-financiero').then((m) => m.BalanceFinancieroComponent) },
+  { path: 'estado-resultado', loadComponent: () => import('./estado-resultado/estado-resultado').then((m) => m.EstadoResultadoComponent) },
   { path: 'cierre-contable', loadComponent: () => import('./cierre-contable/cierre-contable').then((m) => m.CierreContableComponent) },
   { path: 'reversar-cierre', loadComponent: () => import('./reversar-cierre/reversar-cierre').then((m) => m.ReversarCierreComponent) },
 

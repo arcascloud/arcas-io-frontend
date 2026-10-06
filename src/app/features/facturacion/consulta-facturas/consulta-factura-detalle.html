@@ -9,10 +9,14 @@
       </div>
     </div>
     <div class="header-actions">
-      <p-button icon="pi pi-print" label="Imprimir" size="small" (onClick)="imprimir()" pTooltip="Imprimir factura" />
-      <p-button icon="pi pi-download" label="PDF" severity="secondary" size="small" (onClick)="descargarPdf()" pTooltip="Descargar PDF" />
-      <p-button icon="pi pi-envelope" label="Correo" severity="info" size="small" (onClick)="abrirDialogCorreo()" pTooltip="Enviar por correo" />
-      <p-button icon="pi pi-whatsapp" label="WhatsApp" severity="success" size="small" (onClick)="compartir()" styleClass="btn-whatsapp" pTooltip="Compartir por WhatsApp" />
+      <p-button icon="pi pi-print" [rounded]="true"
+      rainsed="true" label="Imprimir" size="small" (onClick)="imprimir()" pTooltip="Imprimir factura" severity="contrast" />
+      <p-button icon="pi pi-download" 
+      rainsed="true" [rounded]="true" label="PDF" severity="secondary" size="small" (onClick)="descargarPdf()" pTooltip="Descargar PDF" />
+      <p-button icon="pi pi-envelope" 
+      rainsed="true" [rounded]="true" label="Correo" severity="info" size="small" (onClick)="abrirDialogCorreo()" pTooltip="Enviar por correo" />
+      <p-button icon="pi pi-whatsapp" 
+      rainsed="true" [rounded]="true" label="WhatsApp" severity="success" size="small" (onClick)="compartir()" styleClass="btn-whatsapp" pTooltip="Compartir por WhatsApp" />
     </div>
   </header>
 
@@ -104,7 +108,7 @@
         </tbody>
       </table>
 
-      <!-- Totales -->
+      <!-- Totales (desglose fiscal por tasa) -->
       <div class="invoice-totals">
         <div class="totals-group">
           <div class="totals-row">
@@ -112,18 +116,32 @@
             <span class="totals-value">{{ moneda(factura()?.subTotal) }}</span>
           </div>
           <div class="totals-row">
-            <span class="totals-label">ISV 15%</span>
-            <span class="totals-value">{{ moneda(factura()?.impuesto) }}</span>
+            <span class="totals-label">-Rebajas y Descuentos</span>
+            <span class="totals-value">{{ moneda(factura()?.descuento ?? 0) }}</span>
           </div>
-          @if (descuentoVisible()) {
-            <div class="totals-row">
-              <span class="totals-label">Descuento</span>
-              <span class="totals-value totals-descuento">- {{ moneda(factura()?.descuento) }}</span>
-            </div>
-          }
+          <div class="totals-row">
+            <span class="totals-label">Importe Exonerado</span>
+            <span class="totals-value">{{ moneda(desglose().exonerado) }}</span>
+          </div>
+          <div class="totals-row">
+            <span class="totals-label">Importe Excento</span>
+            <span class="totals-value">{{ moneda(desglose().excento) }}</span>
+          </div>
+          <div class="totals-row">
+            <span class="totals-label">Importe Gravado 15%</span>
+            <span class="totals-value">{{ moneda(desglose().gravado15) }}</span>
+          </div>
+          <div class="totals-row">
+            <span class="totals-label">Importe Gravado 18%</span>
+            <span class="totals-value">{{ moneda(desglose().gravado18) }}</span>
+          </div>
           <div class="totals-row totals-grand">
-            <span class="totals-label">Total</span>
+            <span class="totals-label">Total a pagar</span>
             <span class="totals-value">{{ moneda(factura()?.total) }}</span>
+          </div>
+          <div class="totals-letras">
+            <span class="totals-letras-label">Total en Letras</span>
+            <span class="totals-letras-texto">{{ totalEnLetrasTexto() }}</span>
           </div>
         </div>
       </div>
@@ -156,6 +174,38 @@
               </div>
             </div>
           }
+        </div>
+      }
+
+      <!-- Trazabilidad CAI: correlativo del que proviene el número de factura -->
+      @if (correlativo()) {
+        <div class="invoice-cai-block">
+          <div class="cai-row">
+            <span class="cai-label">CAI</span>
+            <span class="cai-valor cai-mono">{{ correlativo().cai || '—' }}</span>
+          </div>
+          @if (correlativo().rangoDesde) {
+            <div class="cai-row">
+              <span class="cai-label">Rango autorizado</span>
+              <span class="cai-valor cai-mono">{{ correlativo().rangoDesde }} al {{ correlativo().rangoHasta }}</span>
+            </div>
+          }
+          @if (correlativo().fechaLimite) {
+            <div class="cai-row">
+              <span class="cai-label">Fecha limite de emision</span>
+              <span class="cai-valor">{{ fechaLarga(correlativo().fechaLimite) }}</span>
+            </div>
+          }
+          <div class="cai-row">
+            <span class="cai-label">Correlativo</span>
+            <span class="cai-valor">
+              @if (factura()?.caiAutorizadoId) {
+                <span class="cai-tag">#{{ factura()?.caiAutorizadoId }}</span>
+              } @else {
+                <span class="cai-tag cai-tag--legacy">sin asignar</span>
+              }
+            </span>
+          </div>
         </div>
       }
 

@@ -71,6 +71,12 @@
   }
 }
 
+// ── Filas en monoespaciada (mismo estilo que saldoscta / libro-diario) ──
+.mono {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
 // ── Filas por nivel ──
 .fila-sumaria {
   background: var(--c-surface-ground) !important;

@@ -30,8 +30,15 @@ export class ParametroUnificadoService {
   }
 
   /** Upsert un parámetro (usa query params para moduloId) */
-  upsert(moduloId: number, field: string, valor: string, tipo: string = 'STRING'): Observable<any> {
-    return this.api.putBase(`${this.BASE}/upsert?moduloId=${moduloId}`, { field, valor, tipo });
+  upsert(
+    moduloId: number,
+    field: string,
+    valor: string,
+    tipo: string = 'STRING',
+    descripcion?: string,
+    grupo?: string,
+  ): Observable<any> {
+    return this.api.putBase(`${this.BASE}/upsert?moduloId=${moduloId}`, { field, valor, tipo, descripcion, grupo });
   }
 
   /** Upsert lote de parámetros de un módulo */

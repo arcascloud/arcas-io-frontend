@@ -27,7 +27,6 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -44,9 +43,7 @@ import { CtaContable, GrupoContable, NivelCta } from '../../../core/models/conta
     InputTextModule,
     InputNumberModule,
     SelectModule,
-    ToastModule,
   ],
-  providers: [MessageService],
   templateUrl: './ctacontable-form.html',
   styleUrl: './ctacontable-form.scss',
 })
@@ -61,6 +58,8 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
   cuenta = input<CtaContable | null>(null);
   esEdicion = input(false);
   todasLasCuentas = input<CtaContable[]>([]);
+  /** Se incrementa en cada apertura del drawer → fuerza reset/patch del form */
+  apertura = input(0);
   guardado = output<void>();
   cancelar = output<void>();
 
@@ -94,28 +93,18 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
 
   form!: FormGroup;
 
-  // Effect reactivo: cuando cambia el input cuenta, actualizar formulario
+  // Effect reactivo: al abrir el drawer (cambio de `apertura` o de `cuenta`)
+  // se parchea si hay cuenta seleccionada, o se limpia el formulario si es alta.
+  // Sin `apertura`, un alta tras un alta no disparaba el effect (señales sin
+  // cambio) y el formulario conservaba los valores del registro anterior.
   private cuentaEffect = effect(() => {
     const c = this.cuenta();
+    this.apertura(); // debe leerse para que el effect reaccione a cada apertura
     if (!this.form) return;
     if (c) {
       this.patchForm();
-    } else if (this.esEdicion() === false) {
-      this.form.reset({
-        ctacontable: '',
-        descripcion: '',
-        tcogrupocontableId: null,
-        naturaleza: 'D',
-        nivel: null,
-        padre: null,
-        sn_operable: 'S',
-        sn_activo: 'S',
-        zorden: 0,
-      });
-      this.grupoId.set(null);
-      this.nivelSeleccionado.set(null);
-      this.codigoCuenta.set('');
-      this.aplicarBloqueo();
+    } else {
+      this.resetForm();
     }
   });
 
@@ -143,13 +132,14 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
       }));
   }
 
-  /** Mapa de grupo → naturaleza automática */
+  /** Mapa de grupo → naturaleza automática (sugerencia editable por el usuario) */
   private readonly NATURALEZA_POR_GRUPO: Record<string, 'D' | 'C'> = {
     activo: 'D',
     pasivo: 'C',
     capital: 'C',
     ingresos: 'C',
     gastos: 'D',
+    costo: 'D',
   };
 
   ngOnInit(): void {
@@ -210,6 +200,25 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
       this.codigoCuenta.set(c.ctacontable);
       this.aplicarBloqueo();
     }
+  }
+
+  /** Limpia el formulario a los valores por defecto de una alta nueva */
+  private resetForm(): void {
+    this.form.reset({
+      ctacontable: '',
+      descripcion: '',
+      tcogrupocontableId: null,
+      naturaleza: 'D',
+      nivel: null,
+      padre: null,
+      sn_operable: 'S',
+      sn_activo: 'S',
+      zorden: 0,
+    });
+    this.grupoId.set(null);
+    this.nivelSeleccionado.set(null);
+    this.codigoCuenta.set('');
+    this.aplicarBloqueo();
   }
 
   /** Bloquea/desbloquea todos los controles según historial y rol del usuario */
@@ -426,8 +435,10 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
         this.guardando.set(false);
         this.messageService.add({
           severity: 'success',
-          summary: 'Guardado',
-          detail: this.esEdicion() ? 'Cuenta actualizada' : 'Cuenta creada correctamente',
+          summary: this.esEdicion() ? 'Cuenta actualizada' : 'Cuenta registrada',
+          detail: this.esEdicion()
+            ? 'Los cambios se guardaron con éxito'
+            : 'La cuenta contable se guardó con éxito',
         });
         this.guardado.emit();
       },
@@ -435,8 +446,8 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
         this.guardando.set(false);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: err.error?.message || 'No se pudo guardar la cuenta',
+          summary: 'Error al guardar',
+          detail: err.error?.message || 'No se pudo guardar la cuenta contable',
         });
       },
     });

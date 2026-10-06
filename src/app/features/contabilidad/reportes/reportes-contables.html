@@ -181,9 +181,9 @@
               <td>{{ mov.descripcion }}</td>
               <td class="text-right">{{ mov.debe | number:'1.2-2' }}</td>
               <td class="text-right">{{ mov.haber | number:'1.2-2' }}</td>
-              <td class="text-right" [class.text-danger]="mov.naturaleza === 'D'" [class.text-success]="mov.naturaleza === 'C'">
+              <td class="text-right" [class.text-danger]="mov.tiposaldo === 'D'" [class.text-success]="mov.tiposaldo === 'C'">
                 {{ mov.saldo | number:'1.2-2' }}
-                <small>{{ mov.naturaleza === 'D' ? 'D' : 'C' }}</small>
+                <small>{{ mov.tiposaldo === 'D' ? 'D' : 'C' }}</small>
               </td>
               <td>-</td>
             </tr>

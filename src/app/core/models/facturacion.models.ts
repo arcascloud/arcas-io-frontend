@@ -119,7 +119,19 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
           { label: 'No', value: 'N' },
         ],
       },
-      { key: 'nrocarnet', label: 'Nro. Carnet', tipo: 'texto' },
+      {
+        key: 'tipoconstancia',
+        label: 'Tipo Constancia',
+        tipo: 'select',
+        opciones: [
+          { label: 'OCE', value: 'OCE' },
+          { label: 'SAG', value: 'SAG' },
+          { label: 'CEA', value: 'CEA' },
+          { label: 'FNE', value: 'FNE' },
+        ],
+      },
+      { key: 'nroconstancia', label: 'Nro. Constancia', tipo: 'texto' },
+      { key: 'importe_excento', label: 'Importe Excento', tipo: 'numero' },
       {
         key: 'sn_pagada',
         label: 'Pagada',

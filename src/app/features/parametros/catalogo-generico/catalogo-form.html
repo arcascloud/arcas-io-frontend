@@ -47,6 +47,8 @@
                   [showButtons]="true"
                   [locale]="'es-HN'"
                   [useGrouping]="c.formato !== 'anio'"
+                  [min]="c.formato === 'anio' ? 1990 : undefined"
+                  [max]="c.formato === 'anio' ? 2200 : undefined"
                   [minFractionDigits]="c.decimales ?? (c.formato === 'moneda' ? 2 : undefined)"
                   [maxFractionDigits]="c.decimales ?? (c.formato === 'moneda' ? 2 : undefined)"
                   [ngClass]="{ 'ng-invalid': invalid(c.key) }"
@@ -75,6 +77,8 @@
 
               @if (invalid(c.key)) {
                 <small class="err">{{ mensajeError(c) }}</small>
+              } @else if (c.pista) {
+                <small class="pista">{{ c.pista }}</small>
               }
             </div>
           }

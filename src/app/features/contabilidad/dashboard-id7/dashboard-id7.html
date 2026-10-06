@@ -1,0 +1,243 @@
+<div class="page-header">
+  <div class="ph-txt">
+    <h2>Dashboard Contable</h2>
+    <span class="ph-sub">Módulo 7 · Resumen ejecutivo de cuentas por cobrar, por pagar y balance</span>
+  </div>
+  <div class="ph-filtros">
+    <div class="campo-filter campo-filter--anio">
+      <label for="dashAnio">Año</label>
+      <p-select
+        inputId="dashAnio"
+        [options]="aniosOps()"
+        [ngModel]="anioSel()"
+        (ngModelChange)="cambiarAnio($event)"
+        placeholder="Año"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        size="small"
+      />
+    </div>
+    <div class="campo-filter campo-filter--periodo">
+      <label for="dashPeriodo">Período</label>
+      <p-select
+        inputId="dashPeriodo"
+        [options]="periodosOps()"
+        [ngModel]="periodoSel()"
+        (ngModelChange)="cambiarPeriodo($event)"
+        placeholder="Período"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        size="small"
+      />
+    </div>
+    <p-button
+      label="Actualizar"
+      icon="pi pi-refresh"
+      [loading]="cargando()"
+      (onClick)="cargar()"
+      pTooltip="Recarga los 6 widgets con el período seleccionado"
+      tooltipPosition="bottom"
+    />
+  </div>
+</div>
+
+@if (cargando()) {
+  <div class="estado-carga">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Cargando dashboard…</span>
+  </div>
+} @else if (datos(); as d) {
+  <div class="dash-grid">
+    <!-- ===== Widget 1 · Composición patrimonial ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Composición Patrimonial</h3>
+        <span class="chip">{{ d.etiquetaPeriodo }}</span>
+      </header>
+      <div class="chart-box">
+        <canvas id="chartPatrimonio"></canvas>
+      </div>
+      <div class="leyenda-pat">
+        <div>
+          <span class="pto pto--activos"></span>Activos <b>{{ abs(d.resumen.activos) | number: '1.2-2' }}</b>
+        </div>
+        <div>
+          <span class="pto pto--pasivos"></span>Pasivos <b>{{ abs(d.resumen.pasivos) | number: '1.2-2' }}</b>
+        </div>
+        <div>
+          <span class="pto pto--capital"></span>Capital <b>{{ abs(d.resumen.capital) | number: '1.2-2' }}</b>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Widget 1b · Resultados del período (segmentos 4+5, aparte del pastel) ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Resultados del Período</h3>
+        <span class="chip">{{ d.etiquetaPeriodo }}</span>
+      </header>
+      @if (d.resultados.ingresos !== 0 || d.resultados.gastos !== 0) {
+        <div class="chart-box chart-box--chico">
+          <canvas id="chartResultados"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin ingresos ni gastos (grupos 4 a 7) en el período</span>
+        </div>
+      }
+      <div class="stats">
+        <div class="stat stat--ok">
+          <span>Ingresos (grupo 4)</span>
+          <b>{{ fmt(d.resultados.ingresos) }}</b>
+        </div>
+        <div class="stat stat--err">
+          <span>Gastos y Costos (grupos 5-7)</span>
+          <b>{{ fmt(d.resultados.gastos) }}</b>
+        </div>
+        <div
+          [class.stat--ok]="d.resultados.utilidad >= 0"
+          [class.stat--err]="d.resultados.utilidad < 0"
+          class="stat"
+        >
+          <span>{{ d.resultados.utilidad >= 0 ? 'Utilidad' : 'Pérdida' }}</span>
+          <b>{{ fmt(abs(d.resultados.utilidad)) }}</b>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Widget 2 · Cuentas nivel 2 ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Cuentas Nivel 2 — Activos y Pasivos</h3>
+        <span class="chip">{{ d.etiquetaPeriodo }}</span>
+      </header>
+      @if (d.nivel2.length) {
+        <div class="chart-box">
+          <canvas id="chartNivel2"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin saldos registrados en el período</span>
+        </div>
+      }
+    </section>
+
+    <!-- ===== Widget 3 · Ingresos ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Comparativo de Ingresos</h3>
+        <span class="chip">{{ d.etiquetaPeriodo }} vs {{ d.etiquetaAnterior }}</span>
+      </header>
+      @if (d.ingresos.length) {
+        <div class="chart-box">
+          <canvas id="chartIngresos"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin partidas de ingresos (grupo 4) contabilizadas en el período</span>
+        </div>
+      }
+    </section>
+
+    <!-- ===== Widget 4 · Gastos ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Comparativo de Gastos y Costos</h3>
+        <span class="chip">{{ d.etiquetaPeriodo }} vs {{ d.etiquetaAnterior }}</span>
+      </header>
+      @if (d.gastos.length) {
+        <div class="chart-box">
+          <canvas id="chartGastos"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin partidas de gastos y costos (grupos 5-7) contabilizadas en el período</span>
+        </div>
+      }
+    </section>
+
+    <!-- ===== Widget 5 · CxC ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Cuentas por Cobrar</h3>
+        <span class="chip" title="Acumulado del ejercicio">{{ d.anio }}</span>
+      </header>
+      @if (d.cxc.recuperado !== 0 || d.cxc.saldo > 0) {
+        <div class="chart-box chart-box--chico">
+          <canvas id="chartCxc"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin movimientos de CxC registrados</span>
+        </div>
+      }
+      <div class="stats">
+        <div class="stat">
+          <span>Facturado (D)</span>
+          <b>{{ fmt(d.cxc.facturado) }}</b>
+        </div>
+        <div class="stat stat--ok">
+          <span>Recuperado (H)</span>
+          <b>{{ fmt(d.cxc.recuperado) }}</b>
+        </div>
+        <div class="stat stat--warn">
+          <span>Saldo por cobrar</span>
+          <b>{{ fmt(d.cxc.saldo) }}</b>
+        </div>
+        <div class="stat" [pTooltip]="d.cxc.docsPendientesSaldo | number: '1.2-2'">
+          <span>Docs. con saldo</span>
+          <b>{{ d.cxc.docsPendientes }}</b>
+        </div>
+        <div class="stat">
+          <span>Clientes con saldo</span>
+          <b>{{ d.cxc.clientesConSaldo }}</b>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Widget 6 · CxP ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Cuentas por Pagar</h3>
+        <span class="chip" title="Acumulado del ejercicio">{{ d.anio }}</span>
+      </header>
+      @if (d.cxp.pagado !== 0 || d.cxp.saldo > 0) {
+        <div class="chart-box chart-box--chico">
+          <canvas id="chartCxp"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin movimientos de CxP registrados</span>
+        </div>
+      }
+      <div class="stats">
+        <div class="stat">
+          <span>Debitado (D)</span>
+          <b>{{ fmt(d.cxp.debitado) }}</b>
+        </div>
+        <div class="stat stat--ok">
+          <span>Pagado (H)</span>
+          <b>{{ fmt(d.cxp.pagado) }}</b>
+        </div>
+        <div class="stat stat--err">
+          <span>Saldo pendiente</span>
+          <b>{{ fmt(d.cxp.saldo) }}</b>
+        </div>
+        <div class="stat" [pTooltip]="d.cxp.docsPendientesSaldo | number: '1.2-2'">
+          <span>Docs. con saldo</span>
+          <b>{{ d.cxp.docsPendientes }}</b>
+        </div>
+        <div class="stat" [pTooltip]="d.cxp.comprasPendientesTotal | number: '1.2-2'">
+          <span>Compras sin pagar</span>
+          <b>{{ d.cxp.comprasPendientes }}</b>
+        </div>
+      </div>
+    </section>
+  </div>
+}

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Empresa, EmpresaDet, Correlativo, EmpresaLogo, Impresora, EstadoCorrelativo } from '../models/empresa.models';
+import { Empresa, EmpresaDet, Correlativo, Cai, EmpresaLogo, Impresora, EstadoCorrelativo } from '../models/empresa.models';
 import { Sucursal } from '../models/sucursal.models';
 
 @Injectable({ providedIn: 'root' })
@@ -44,6 +44,24 @@ export class EmpresasService {
 
   removeDet(id: number): Observable<any> {
     return this.api.delete<any>(`${this.path}/det`, id);
+  }
+
+  // ===== CAIs (tcai) =====
+
+  getAllCai(empresaId: number): Observable<Cai[]> {
+    return this.api.get<Cai[]>(`${this.path}/cais`, { empresaId });
+  }
+
+  createCai(dto: Partial<Cai>): Observable<Cai> {
+    return this.api.post<Cai>(`${this.path}/cais`, dto);
+  }
+
+  updateCai(id: number, dto: Partial<Cai>): Observable<Cai> {
+    return this.api.put<Cai>(`${this.path}/cais`, id, dto);
+  }
+
+  removeCai(id: number): Observable<any> {
+    return this.api.delete<any>(`${this.path}/cais`, id);
   }
 
   // ===== Correlativos (CAI) =====

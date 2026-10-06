@@ -64,7 +64,7 @@ export class UsuarioForm implements OnInit {
       usuario: ['', Validators.required],
       nombre: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      password: [''],
+      password: ['', [Validators.maxLength(20)]],
       sn_activo: ['S' as 'S' | 'N'],
       empresaId: [null as number | null, Validators.required],
       Idsucursal: [null as number | null, Validators.required],
@@ -115,7 +115,11 @@ export class UsuarioForm implements OnInit {
       },
       error: () => {
         this.empresasCargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las empresas' });
+        this.msgs.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las empresas',
+        });
       },
     });
   }
@@ -133,7 +137,11 @@ export class UsuarioForm implements OnInit {
       error: () => {
         this.sucursales.set([]);
         this.sucursalesCargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las sucursales' });
+        this.msgs.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las sucursales',
+        });
       },
     });
   }
@@ -204,12 +212,20 @@ export class UsuarioForm implements OnInit {
       this.service.update(this.usuarioId, dto as any).subscribe({
         next: () => {
           this.guardando.set(false);
-          this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Usuario actualizado' });
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Guardado',
+            detail: 'Usuario actualizado',
+          });
           this.volver();
         },
         error: () => {
           this.guardando.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el usuario' });
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo guardar el usuario',
+          });
         },
       });
     } else {
@@ -226,12 +242,20 @@ export class UsuarioForm implements OnInit {
         .subscribe({
           next: () => {
             this.guardando.set(false);
-            this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Usuario creado correctamente' });
+            this.msgs.add({
+              severity: 'success',
+              summary: 'Guardado',
+              detail: 'Usuario creado correctamente',
+            });
             this.volver();
           },
           error: () => {
             this.guardando.set(false);
-            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el usuario' });
+            this.msgs.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo guardar el usuario',
+            });
           },
         });
     }

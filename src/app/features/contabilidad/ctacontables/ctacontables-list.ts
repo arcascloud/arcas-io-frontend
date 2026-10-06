@@ -56,6 +56,8 @@ export class CtacontablesListComponent implements OnInit {
   dialogFormVisible = signal(false);
   cuentaSeleccionada = signal<CtaContable | null>(null);
   esEdicion = signal(false);
+  /** Se incrementa en cada apertura del drawer para refrescar el formulario */
+  apertura = signal(0);
 
   readonly naturalezasOpts = [
     { label: 'Débito', value: 'D' },
@@ -136,12 +138,14 @@ export class CtacontablesListComponent implements OnInit {
   nuevaCuenta(): void {
     this.cuentaSeleccionada.set(null);
     this.esEdicion.set(false);
+    this.apertura.update((v) => v + 1);
     this.dialogFormVisible.set(true);
   }
 
   editarCuenta(cuenta: CtaContable): void {
     this.cuentaSeleccionada.set(cuenta);
     this.esEdicion.set(true);
+    this.apertura.update((v) => v + 1);
     this.dialogFormVisible.set(true);
   }
 

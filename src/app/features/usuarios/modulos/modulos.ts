@@ -66,7 +66,11 @@ export class Modulos implements OnInit {
     const q = this.q().toLowerCase();
     this.filtered.set(
       this.data().filter((m) => {
-        return !q || m.descripcion.toLowerCase().includes(q);
+        return (
+          !q ||
+          m.descripcion.toLowerCase().includes(q) ||
+          (m.abreviatura ?? '').toLowerCase().includes(q)
+        );
       }),
     );
   }
@@ -109,11 +113,11 @@ export class Modulos implements OnInit {
             });
             this.load();
           },
-          error: () => {
+          error: (err) => {
             this.msgs.add({
               severity: 'error',
-              summary: 'Error',
-              detail: 'No se pudo eliminar el módulo',
+              summary: 'No se pudo eliminar',
+              detail: err?.error?.message || 'No se pudo eliminar el módulo',
             });
           },
         });

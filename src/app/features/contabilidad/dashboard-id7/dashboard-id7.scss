@@ -1,0 +1,239 @@
+// Dashboard Módulo 7 (Contabilidad) — /contabilidad/dashboardId7
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+}
+
+.ph-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  .ph-sub {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+  }
+}
+
+.ph-filtros {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.campo-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+  }
+
+  .p-select {
+    width: 100%;
+  }
+
+  &--anio {
+    width: 6.5rem;
+  }
+
+  &--periodo {
+    width: 13rem;
+  }
+}
+
+// ===== Estado de carga =====
+
+.estado-carga {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 3.5rem 0;
+  color: var(--c-text-muted);
+  font-size: 0.95rem;
+
+  i {
+    font-size: 1.4rem;
+  }
+}
+
+// ===== Grid de widgets =====
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (max-width: 1100px) {
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dash-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.75rem;
+  padding: 1rem 1.1rem 1.1rem;
+  min-width: 0;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+
+    h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--c-text);
+    }
+  }
+}
+
+.chip {
+  font-size: 0.72rem;
+  white-space: nowrap;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+}
+
+.chart-box {
+  position: relative;
+  height: 280px;
+  min-width: 0;
+
+  &--chico {
+    height: 220px;
+  }
+}
+
+.sin-datos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 240px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  background: var(--c-surface-ground);
+  border: 1px dashed var(--c-border);
+  border-radius: 0.5rem;
+  padding: 0 1rem;
+
+  i {
+    font-size: 1.6rem;
+    opacity: 0.5;
+  }
+}
+
+// ===== Leyenda del pastel patrimonial =====
+
+.leyenda-pat {
+  display: flex;
+  gap: 1.1rem;
+  flex-wrap: wrap;
+  font-size: 0.83rem;
+  color: var(--c-text-muted);
+
+  b {
+    margin-left: 0.3rem;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pto {
+    display: inline-block;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 2px;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+
+    &--activos {
+      background: #10b981;
+    }
+
+    &--pasivos {
+      background: #f59e0b;
+    }
+
+    &--capital {
+      background: #3b82f6;
+    }
+  }
+}
+
+// ===== Mini-stats de CxC / CxP =====
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 0.6rem;
+}
+
+.stat {
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  min-width: 0;
+
+  span {
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  b {
+    font-size: 0.95rem;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &--ok b {
+    color: var(--c-success);
+  }
+
+  &--warn b {
+    color: var(--c-warning);
+  }
+
+  &--err b {
+    color: var(--c-error);
+  }
+}

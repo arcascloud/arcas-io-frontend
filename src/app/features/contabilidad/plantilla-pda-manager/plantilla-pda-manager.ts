@@ -109,9 +109,24 @@ export class PlantillaPdaManager implements OnInit {
   /** Solo cuentas de movimiento (sn_operable === 'S') */
   cuentasMovimiento = computed(() => this.cuentas().filter(c => c.sn_operable === 'S'));
 
+  /** Conteo de líneas por naturaleza */
+  lineasDebe = computed(() => this.lineas().filter(l => l.naturaleza === 'D').length);
+  lineasHaber = computed(() => this.lineas().filter(l => l.naturaleza === 'C').length);
+
+  /**
+   * REGLAS para guardar la plantilla:
+   *  1. Formulario válido
+   *  2. Al menos 1 línea
+   *  3. Al menos 1 cuenta en Debe (D)
+   *  4. Al menos 1 cuenta en Haber (C)
+   *  5. Ninguna cuenta repetida en el detalle
+   */
   puedeGuardar = computed(() =>
     this.estadoForm() === 'VALID' &&
-    this.lineas().length >= 1
+    this.lineas().length >= 1 &&
+    this.lineasDebe() >= 1 &&
+    this.lineasHaber() >= 1 &&
+    this.ctasRepetidas().length === 0
   );
 
   trackById = (_: number, l: LineaPlantilla) => l.id;
@@ -251,8 +266,19 @@ export class PlantillaPdaManager implements OnInit {
 
   // ===== GUARDAR =====
   guardar(): void {
-    if (!this.puedeGuardar()) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Verifique el formulario y que haya al menos 1 línea' });
+    if (this.estadoForm() !== 'VALID') {
+      this.messageService.add({
+        severity: 'warn', summary: 'Campos incompletos',
+        detail: 'Complete el auxiliar contable y la descripción de la plantilla',
+      });
+      return;
+    }
+
+    if (this.lineas().length === 0) {
+      this.messageService.add({
+        severity: 'warn', summary: 'Sin detalle',
+        detail: 'La plantilla debe tener al menos 1 cuenta en el detalle',
+      });
       return;
     }
 
@@ -264,6 +290,27 @@ export class PlantillaPdaManager implements OnInit {
         summary: 'Cuentas duplicadas',
         detail: `Cuenta(s) repetida(s) en el detalle: ${duplicadas.join(', ')}`,
       });
+      return;
+    }
+
+    // REGLA: el detalle debe equilibrar Debe y Haber
+    if (this.lineasDebe() === 0) {
+      this.messageService.add({
+        severity: 'warn', summary: 'Falta cuenta en Debe',
+        detail: 'El detalle debe tener al menos 1 cuenta con naturaleza Débito (D)',
+      });
+      return;
+    }
+    if (this.lineasHaber() === 0) {
+      this.messageService.add({
+        severity: 'warn', summary: 'Falta cuenta en Haber',
+        detail: 'El detalle debe tener al menos 1 cuenta con naturaleza Crédito (C)',
+      });
+      return;
+    }
+
+    if (!this.puedeGuardar()) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Verifique el formulario y las reglas del detalle' });
       return;
     }
 
@@ -357,6 +404,8 @@ export class PlantillaPdaManager implements OnInit {
         descripcion: l.descripcion,
         naturaleza: l.naturaleza,
         moduloId,
+        // REGLA: la línea siempre se guarda habilitada
+        sn_activo: 'S' as const,
       };
 
       this.contabilidad.createPlantillaPdaDet(detPayload)

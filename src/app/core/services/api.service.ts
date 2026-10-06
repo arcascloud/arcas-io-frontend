@@ -26,6 +26,7 @@ export class ApiService {
     '/contabilidad/ctacontables',
     '/contabilidad/cierrectable/realizar',
     '/contabilidad/cierredet',
+    '/contabilidad/partida-inicial',
     '/cxc/caja-mae',
     '/cxc/caja-det',
     '/cxc/carteras-cliente',

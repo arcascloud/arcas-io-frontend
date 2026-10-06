@@ -39,6 +39,7 @@ export class ModuloForm implements OnInit {
   ngOnInit() {
     this.form = this.fb.group({
       descripcion: ['', Validators.required],
+      abreviatura: ['', [Validators.maxLength(20)]],
       sn_activo: ['S', Validators.required],
     });
 
@@ -52,6 +53,7 @@ export class ModuloForm implements OnInit {
         next: (m) => {
           this.form.patchValue({
             descripcion: m.descripcion,
+            abreviatura: m.abreviatura ?? '',
             sn_activo: m.sn_activo === 'S' ? 'S' : 'N',
           });
           this.cargando.set(false);
@@ -82,8 +84,8 @@ export class ModuloForm implements OnInit {
 
     const raw = this.form.getRawValue();
     const payload = this.esEdicion()
-      ? { descripcion: raw.descripcion, sn_activo: raw.sn_activo }
-      : { descripcion: raw.descripcion, sn_activo: 'S' };
+      ? { descripcion: raw.descripcion, abreviatura: raw.abreviatura ?? '', sn_activo: raw.sn_activo }
+      : { descripcion: raw.descripcion, abreviatura: raw.abreviatura ?? '', sn_activo: 'S' };
 
     this.guardando.set(true);
     const op = this.esEdicion()

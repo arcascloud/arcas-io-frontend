@@ -2,14 +2,59 @@
   <header class="page-header">
     <div>
       <h1 class="page-title">Parámetros por Módulo</h1>
-      <p class="page-subtitle">Configuración de parámetros del sistema por empresa, sucursal y módulo</p>
+      <p class="page-subtitle">Configuración de parámetros del sistema por tipo, módulo y empresa</p>
     </div>
+    <p-button
+      label="Nuevo Parámetro"
+      icon="pi pi-plus"
+      size="small"
+      severity="success"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      (onClick)="abrirNuevo()"
+    />
   </header>
 
   <!-- ── Encabezado ──────────────────────────────────── -->
   <p-fieldset legend="Seleccionar Contexto" [toggleable]="true">
     <div class="ctx-grid">
-      <!-- Empresa -->
+      <!-- 1. Tipo de Configuración (Grupo) — selección múltiple -->
+      <div class="ctx-field">
+        <label>Tipo de Configuración</label>
+        <p-multiSelect
+          [options]="grupoOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Todos los tipos"
+          styleClass="w-full"
+          [ngModel]="grupoFiltro()"
+          (ngModelChange)="grupoFiltro.set($event || [])"
+          size="small"
+          [appendTo]="'body'"
+          [maxSelectedLabels]="6"
+          [showClear]="true"
+        />
+      </div>
+
+      <!-- 2. Módulo de Configuración -->
+      <div class="ctx-field">
+        <label>Módulo de Configuración</label>
+        <p-select
+          [options]="modulos()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Todos los módulos"
+          styleClass="w-full"
+          [ngModel]="moduloId()"
+          (ngModelChange)="onModuloChange($event)"
+          size="small"
+          [appendTo]="'body'"
+          [showClear]="true"
+        />
+      </div>
+
+      <!-- 3. Empresa -->
       <div class="ctx-field">
         <label>Empresa</label>
         <p-select
@@ -24,207 +69,203 @@
           [appendTo]="'body'"
         />
       </div>
-
-      <!-- Sucursal -->
-      <div class="ctx-field">
-        <label>Sucursal</label>
-        <p-select
-          [options]="sucursales()"
-          optionLabel="descripcion"
-          optionValue="idsucursal"
-          placeholder="Seleccionar..."
-          styleClass="w-full"
-          [ngModel]="sucursalId()"
-          (ngModelChange)="sucursalId.set($event)"
-          size="small"
-          [appendTo]="'body'"
-        />
-      </div>
-
-      <!-- Módulo -->
-      <div class="ctx-field">
-        <label>Módulo</label>
-        <p-select
-          [options]="modulos()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Todos los módulos"
-          styleClass="w-full"
-          [ngModel]="moduloId()"
-          (ngModelChange)="onModuloChange($event)"
-          size="small"
-          [appendTo]="'body'"
-        />
-      </div>
     </div>
   </p-fieldset>
 
-  <!-- ── Contenido: 2 columnas ──────────────────────── -->
-  <div class="content-2col">
-    <!-- Columna izquierda: Tabla -->
-    <div class="col-left">
-      <p-table
-        [value]="parametros()"
-        [loading]="cargando()"
-        [paginator]="true"
-        [rows]="15"
-        [rowsPerPageOptions]="[10, 25, 50]"
-        [showCurrentPageReport]="true"
-        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-        size="small"
-        [tableStyle]="{ 'min-width': '100%' }"
+  <!-- ── Tabla (pantalla completa) ───────────────────── -->
+  <p-table
+    [value]="parametrosVista()"
+    [loading]="cargando()"
+    [paginator]="true"
+    [rows]="15"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
+    [scrollable]="true"
+    scrollHeight="65vh"
+    [tableStyle]="{ 'min-width': '100%' }"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Descripción</th>
+        <th>Campo</th>
+        <th style="width: 7rem">Grupo</th>
+        <th style="width: 6rem">Tipo</th>
+        <th style="width: 16rem">Valor</th>
+        <th style="width: 6rem" class="text-center">Estado</th>
+        <th style="width: 3rem" class="text-center"></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-param>
+      <tr
+        (click)="onRowClick(param)"
+        [class.row-selected]="selectedParam()?.ttipoparametrosId === param.ttipoparametrosId"
       >
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Campo</th>
-            <th style="width: 6rem">Tipo</th>
-            <th>Valor</th>
-            <th style="width: 5rem" class="text-center">Estado</th>
-            <th style="width: 3rem" class="text-center"></th>
-          </tr>
-        </ng-template>
+        <td class="cell-desc">{{ param.descripcion || '-' }}</td>
+        <td class="font-bold">{{ param.field }}</td>
+        <td>
+          <p-tag [value]="grupoLabel(param.grupo)" [severity]="grupoSeverity(param.grupo)" styleClass="tag-sm" />
+        </td>
+        <td>
+          <p-tag [value]="tipoLabel(param.tipo)" [severity]="tipoSeverity(param.tipo)" styleClass="tag-sm" />
+        </td>
+        <td class="cell-valor">
+          <input
+            pInputText
+            pSize="small"
+            class="w-full valor-input"
+            [ngModel]="param.valor"
+            (ngModelChange)="param.valor = $event"
+            (focus)="onValorFocus(param)"
+            (blur)="guardarValorInline(param)"
+            (keydown.enter)="onValorEnter($event)"
+            (click)="$event.stopPropagation()"
+          />
+        </td>
+        <td class="text-center">
+          <p-tag [value]="estadoLabel(param.sn_activo)" [severity]="estadoSeverity(param.sn_activo)" styleClass="tag-sm" />
+        </td>
+        <td class="text-center">
+          <p-button
+            icon="pi pi-trash"
+            size="small"
+            variant="text"
+            [rounded]="true"
+            severity="danger"
+            (onClick)="eliminar(param); $event.stopPropagation()"
+          />
+        </td>
+      </tr>
+    </ng-template>
 
-        <ng-template pTemplate="body" let-param>
-          <tr
-            (click)="onRowClick(param)"
-            [class.row-selected]="selectedParam()?.ttipoparametrosId === param.ttipoparametrosId"
-          >
-            <td class="font-bold">{{ param.field }}</td>
-            <td>
-              <p-tag [value]="tipoLabel(param.tipo)" [severity]="tipoSeverity(param.tipo)" styleClass="tag-sm" />
-            </td>
-            <td>{{ param.valor }}</td>
-            <td class="text-center">
-              <p-tag [value]="estadoLabel(param.sn_activo)" [severity]="estadoSeverity(param.sn_activo)" styleClass="tag-sm" />
-            </td>
-            <td class="text-center">
-              <p-button
-                icon="pi pi-trash"
-                size="small"
-                variant="text"
-                [rounded]="true"
-                severity="danger"
-                (onClick)="eliminar(param); $event.stopPropagation()"
-              />
-            </td>
-          </tr>
-        </ng-template>
+    <ng-template pTemplate="empty">
+      <tr>
+        <td colspan="7" class="text-center p-4">
+          @if (!empresaId()) {
+            Seleccione una empresa para ver los parámetros.
+          } @else {
+            No hay parámetros que coincidan con los filtros.
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</section>
 
-        <ng-template pTemplate="empty">
-          <tr>
-            <td colspan="5" class="text-center p-4">
-              @if (!empresaId() || !moduloId()) {
-                Seleccione empresa y módulo para ver los parámetros.
-              } @else {
-                No hay parámetros para este módulo.
-              }
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+<!-- ── Drawer: Nuevo / Editar Parámetro ──────────────── -->
+<p-drawer
+  [visible]="drawer()"
+  (visibleChange)="onDrawerChange($event)"
+  [header]="editando() ? 'Editar Parámetro' : 'Nuevo Parámetro'"
+  position="right"
+  [style]="{ width: '28rem' }"
+>
+  <div class="p-fluid" [formGroup]="form">
+    <!-- Campo -->
+    <div class="p-field">
+      <label>Campo</label>
+      <input
+        pInputText
+        class="w-full"
+        formControlName="field"
+        placeholder="Ej: nrocliente, bodegaId..."
+        [disabled]="editando()"
+      />
     </div>
 
-    <!-- Columna derecha: Formulario -->
-    <div class="col-right">
-      <div class="form-panel">
-        <div class="form-panel-header">
-          <h3>{{ selectedParam() ? 'Editar Parámetro' : 'Nuevo Parámetro' }}</h3>
-          @if (selectedParam()) {
-            <p-button
-              icon="pi pi-times"
-              size="small"
-              variant="text"
-              [rounded]="true"
-              severity="secondary"
-              (onClick)="limpiarSeleccion()"
-              pTooltip="Deseleccionar"
-            />
-          }
-        </div>
+    <!-- Descripción -->
+    <div class="p-field">
+      <label>Descripción</label>
+      <input
+        pInputText
+        class="w-full"
+        formControlName="descripcion"
+        placeholder="Descripción del parámetro (máx. 80)"
+        maxlength="80"
+      />
+    </div>
 
-        <div class="form-panel-body">
-          <div class="p-fluid" [formGroup]="form">
-            <!-- Campo -->
-            <div class="p-field">
-              <label>Campo</label>
-              <input
-                pInputText
-                class="w-full"
-                formControlName="field"
-                placeholder="Ej: nrocliente, bodegaId..."
-                [disabled]="editando()"
-              />
-            </div>
+    <!-- Tipo -->
+    <div class="p-field">
+      <label>Tipo</label>
+      <p-select
+        [options]="tipoOptions"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="tipo"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        size="small"
+      />
+    </div>
 
-            <!-- Tipo -->
-            <div class="p-field">
-              <label>Tipo</label>
-              <p-select
-                [options]="tipoOptions"
-                optionLabel="label"
-                optionValue="value"
-                formControlName="tipo"
-                styleClass="w-full"
-                [appendTo]="'body'"
-                size="small"
-              />
-            </div>
+    <!-- Valor -->
+    <div class="p-field">
+      <label>Valor</label>
+      @if (form.get('tipo')?.value === 'NUMBER') {
+        <p-inputNumber
+          formControlName="valor"
+          [useGrouping]="false"
+          styleClass="w-full"
+          [inputStyle]="{ 'width': '100%' }"
+        />
+      } @else {
+        <input pInputText class="w-full" formControlName="valor" placeholder="Valor del parámetro" />
+      }
+    </div>
 
-            <!-- Valor -->
-            <div class="p-field">
-              <label>Valor</label>
-              @if (form.get('tipo')?.value === 'NUMBER') {
-                <p-inputNumber
-                  formControlName="valor"
-                  [useGrouping]="false"
-                  styleClass="w-full"
-                  [inputStyle]="{ 'width': '100%' }"
-                />
-              } @else {
-                <input pInputText class="w-full" formControlName="valor" placeholder="Valor del parámetro" />
-              }
-            </div>
+    <!-- Grupo -->
+    <div class="p-field">
+      <label>Grupo</label>
+      <p-select
+        [options]="grupoOptions"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="grupo"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        size="small"
+      />
+    </div>
 
-            <!-- Estado -->
-            <div class="p-field">
-              <label>Estado</label>
-              <p-select
-                [options]="estadoOptions"
-                optionLabel="label"
-                optionValue="value"
-                formControlName="sn_activo"
-                styleClass="w-full"
-                [appendTo]="'body'"
-                size="small"
-              />
-            </div>
+    <!-- Estado -->
+    <div class="p-field">
+      <label>Estado</label>
+      <p-select
+        [options]="estadoOptions"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="sn_activo"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        size="small"
+      />
+    </div>
 
-            <!-- Acciones -->
-            <div class="form-actions">
-              <p-button
-                size="small"
-                label="Cancelar"
-                rounded
-                variant="text"
-                severity="secondary"
-                (onClick)="limpiarSeleccion()"
-              />
-              <p-button
-                size="small"
-                [label]="editando() ? 'Actualizar' : 'Guardar'"
-                icon="pi pi-check"
-                variant="text"
-                [raised]="true"
-                [rounded]="true"
-                severity="success"
-                [loading]="guardando()"
-                [disabled]="form.invalid || !empresaId() || !moduloId()"
-                (onClick)="guardar()"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Acciones -->
+    <div class="form-actions">
+      <p-button
+        size="small"
+        label="Cancelar"
+        rounded
+        variant="text"
+        severity="secondary"
+        (onClick)="drawer.set(false)"
+      />
+      <p-button
+        size="small"
+        [label]="editando() ? 'Actualizar' : 'Guardar'"
+        icon="pi pi-check"
+        variant="text"
+        [raised]="true"
+        [rounded]="true"
+        severity="success"
+        [loading]="guardando()"
+        [disabled]="form.invalid || !empresaId() || (!editando() && !moduloId())"
+        (onClick)="guardar()"
+      />
     </div>
   </div>
-</section>
+</p-drawer>

@@ -20,6 +20,8 @@ import { BodegasService } from '../../../core/services/bodegas.service';
 import { ProductosService } from '../../../core/services/productos.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { EmpresasService } from '../../../core/services/empresas.service';
+import { firstValueFrom } from 'rxjs';
 import { CompraMae, CompraDet, Proveedor, Producto, Bodega } from '../../../core/models/inventario.models';
 import { OcrDialog } from './ocr-dialog';
 import { FacturaData } from '../../../core/utils/invoice-parser';
@@ -62,6 +64,7 @@ export class ComprasManager implements OnInit {
   private productosService = inject(ProductosService);
   private catalogService = inject(CatalogoParametrosService);
   private auth = inject(AuthService);
+  private empresasService = inject(EmpresasService);
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
@@ -558,14 +561,62 @@ export class ComprasManager implements OnInit {
       rejectLabel: 'Cancelar',
       accept: () => {
         this.confirm.close();
-        this.service.procesarCompra(mae.compraId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: (res: any) => {
-            this.msgs.add({ severity: 'success', summary: 'Procesada', detail: res?.message || 'Compra procesada' });
-            this.seleccionado.update(s => s ? { ...s, sn_procesada: 'S' } : null);
+        this.ejecutarProcesar(mae);
+      },
+      reject: () => {
+        this.confirm.close();
+      },
+    });
+  }
+
+  /** Llama al backend; si responde 400 por saldo insuficiente, sugiere crédito */
+  private ejecutarProcesar(mae: CompraMae): void {
+    this.service.procesarCompra(mae.compraId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res: any) => {
+        this.msgs.add({ severity: 'success', summary: 'Procesada', detail: res?.message || 'Compra procesada' });
+        this.seleccionado.update(s => s ? { ...s, sn_procesada: 'S' } : null);
+        this.cargarCompras();
+        this.cargarDetalles(mae.compraId);
+      },
+      error: (err) => this.manejarErrorProcesar(err, mae),
+    });
+  }
+
+  /**
+   * Saldo insuficiente en la cuenta de HABER (Caja) para comprar de contado:
+   * muestra la alerta del backend y ofrece registrar la compra al crédito (FCC).
+   */
+  private manejarErrorProcesar(err: any, mae: CompraMae): void {
+    const msgRaw: string = err?.error?.message || 'No se pudo procesar';
+    const esSaldoInsuficiente = err?.status === 400 && /saldo insuficiente/i.test(msgRaw);
+
+    if (!esSaldoInsuficiente) {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: msgRaw });
+      return;
+    }
+
+    // El backend envía el mensaje con saltos de línea; se convierten a <br>
+    const msg = msgRaw.replace(/\n/g, '<br>');
+    this.confirm.confirm({
+      message: `${msg}<br><br><b>¿Desea registrarla como compra al crédito y procesarla?</b>`,
+      header: 'Saldo insuficiente en Caja',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, al crédito',
+      rejectLabel: 'Cancelar',
+      acceptButtonProps: { label: 'Sí, al crédito', severity: 'warn', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.confirm.close();
+        this.service.updateCompra(mae.compraId, { TipoCompra: 'FCC' }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.seleccionado.update(s => s ? { ...s, TipoCompra: 'FCC' } : null);
+            this.msgs.add({ severity: 'info', summary: 'Cambiada a crédito', detail: `Compra #${mae.compraId} ahora es al crédito (FCC)` });
             this.cargarCompras();
-            this.cargarDetalles(mae.compraId);
+            this.ejecutarProcesar(mae);
           },
-          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo procesar' }),
+          error: (e2: any) => this.msgs.add({
+            severity: 'error', summary: 'Error', detail: e2.error?.message || 'No se pudo cambiar a crédito',
+          }),
         });
       },
       reject: () => {
@@ -613,8 +664,10 @@ export class ComprasManager implements OnInit {
   }
 
   moneda(val: number): string {
-    if (val == null || isNaN(val)) return 'L 0.00';
-    return val.toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
+    // TypeORM lee los decimal como string ('1250.00'); sin Number() no agrupa millares
+    const n = Number(val);
+    if (val == null || isNaN(n)) return 'L 0.00';
+    return n.toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
   }
 
   actualizarTotales() {
@@ -652,7 +705,24 @@ export class ComprasManager implements OnInit {
     return true;
   }
 
-  imprimir() {
+  /** Logo de la empresa: tempresaslogo.img (base64) por empresaId. Fallback al asset local. */
+  private async cargarLogo(): Promise<string> {
+    const fallback = `${window.location.origin}/assets/images/logo1.png`;
+    try {
+      const empresaId = this.auth.currentUser()?.empresaId;
+      if (!empresaId) return fallback;
+      const res = await firstValueFrom(this.empresasService.getLogo(empresaId));
+      const img = res?.img;
+      if (!img) return fallback;
+      if (img.startsWith('data:')) return img;
+      const mime = img.startsWith('/9j/') ? 'image/jpeg' : img.startsWith('R0lGOD') ? 'image/gif' : 'image/png';
+      return `data:${mime};base64,${img}`;
+    } catch {
+      return fallback;
+    }
+  }
+
+  async imprimir() {
     const mae = this.seleccionado();
     if (!mae) return;
     const dets = this.detalles();
@@ -661,7 +731,12 @@ export class ComprasManager implements OnInit {
     const tipoMap: Record<string, string> = { FCO: 'Factura Contado', FCC: 'Factura Crédito', ORC: 'Orden de Compra' };
     const tipo = tipoMap[mae.TipoCompra] || mae.TipoCompra;
     const fecha = mae.fecharegistro ? new Date(mae.fecharegistro).toLocaleDateString('es-HN') : '-';
-    const estado = mae.sn_anulada === 'S' ? 'ANULADA' : mae.sn_pagada === 'S' ? 'PAGADA' : 'PENDIENTE';
+    const nro = mae.nroreferencia || String(mae.compraId);
+    const logo = await this.cargarLogo();
+    const fechaImpresion = new Date().toLocaleString('es-HN');
+    const pagada = mae.sn_pagada === 'S' ? 'Sí' : 'No';
+    const anulada = mae.sn_anulada === 'S' ? 'Sí' : 'No';
+    const totalLineas = dets.reduce((s, d) => s + Number(d.subtotal || 0), 0);
 
     const lineas = dets.map(d => `
       <tr>
@@ -676,19 +751,22 @@ export class ComprasManager implements OnInit {
 
     const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
-<title>Compra #${mae.compraId}</title>
+<title>${tipo} : ${nro}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; color: #1e293b; }
-  .header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #1e2e3b; padding-bottom: 12px; }
-  .header h2 { color: #1e2e3b; font-size: 18px; }
-  .header .subtitle { color: #64748b; font-size: 11px; }
+  .header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 16px; border-bottom: 2px solid #1e2e3b; padding-bottom: 12px; }
+  .header .header-logo { height: 56px; width: auto; }
+  .header .header-num { text-align: right; }
+  .header .header-num .doc-tipo { color: #64748b; font-size: 12px; }
+  .header .header-num .doc-num { color: #1e2e3b; font-size: 18px; font-weight: 700; }
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 2rem; margin-bottom: 16px; padding: 10px; background: #f0f4f7; border-radius: 6px; }
   .info-grid .label { font-weight: 600; color: #64748b; }
   .info-grid .value { color: #1e293b; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
   th { background: #1e2e3b; color: white; padding: 6px 8px; text-align: left; font-size: 11px; }
   td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
+  tfoot td { border-top: 2px solid #1e2e3b; border-bottom: none; padding-top: 8px; font-size: 12px; }
   tbody tr:nth-child(even) { background: #f0f4f7; }
   .text-right { text-align: right; }
   .font-bold { font-weight: 700; }
@@ -700,25 +778,31 @@ export class ComprasManager implements OnInit {
   .estado-pagada { background: #d1fae5; color: #065f46; }
   .estado-pendiente { background: #fef3c7; color: #92400e; }
   .estado-anulada { background: #fee2e2; color: #991b1b; }
-  .footer { text-align: center; margin-top: 20px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 10px; }
+  .footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; text-align: left; margin-top: 20px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 10px; }
   @media print { body { padding: 10px; } }
 </style></head><body>
   <div class="header">
-    <h2>${tipo} #${mae.compraId}</h2>
-    <div class="subtitle">Impreso: ${new Date().toLocaleString('es-HN')}</div>
+    <img class="header-logo" src="${logo}" alt="Logo" />
+    <div class="header-num">
+      <div class="doc-tipo">${tipo}</div>
+      <div class="doc-num">${nro}</div>
+    </div>
   </div>
   <div class="info-grid">
     <div><span class="label">Proveedor: </span><span class="value">${prov}</span></div>
     <div><span class="label">Bodega: </span><span class="value">${bodega}</span></div>
     <div><span class="label">Fecha: </span><span class="value">${fecha}</span></div>
     <div><span class="label">Referencia: </span><span class="value">${mae.nroreferencia || '-'}</span></div>
-    <div><span class="label">Estado: </span>
-      <span class="estado ${mae.sn_anulada === 'S' ? 'estado-anulada' : mae.sn_pagada === 'S' ? 'estado-pagada' : 'estado-pendiente'}">${estado}</span>
-    </div>
+    <div><span class="label">Pagada: </span><span class="value">${pagada}</span></div>
+    <div><span class="label">Anulada: </span><span class="value">${anulada}</span></div>
   </div>
   <table>
     <thead><tr><th>#</th><th>Código</th><th>Producto</th><th class="text-right">Cant.</th><th class="text-right">P.U.</th><th class="text-right">Subtotal</th></tr></thead>
     <tbody>${lineas || '<tr><td colspan="6" style="text-align:center;color:#64748b;">Sin items</td></tr>'}</tbody>
+    ${dets.length ? `<tfoot><tr>
+      <td colspan="5" class="text-right font-bold">TOTAL</td>
+      <td class="text-right font-bold">${this.moneda(totalLineas)}</td>
+    </tr></tfoot>` : ''}
   </table>
   <div class="totales">
     <div class="total-item">
@@ -726,7 +810,10 @@ export class ComprasManager implements OnInit {
       <div class="total-value">${this.moneda(mae.total)}</div>
     </div>
   </div>
-  <div class="footer">ARCAS Software ERP &mdash; Documento generado automáticamente</div>
+  <div class="footer">
+    <span>ARCAS Software ERP &mdash; Documento generado automáticamente</span>
+    <span class="footer-fecha">Fecha de impresión: ${fechaImpresion}</span>
+  </div>
 </body></html>`;
 
     const win = window.open('', '_blank', 'width=800,height=600');

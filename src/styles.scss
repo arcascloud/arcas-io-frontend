@@ -36,6 +36,22 @@
   font-style: normal;
 }
 
+/* Figtree — fuente variable (pesos 300–900, romana + itálica) */
+@font-face {
+  font-family: 'Figtree';
+  src: url('/assets/fonts/Figtree/Figtree-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Figtree';
+  src: url('/assets/fonts/Figtree/Figtree-Italic-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
 @font-face {
   font-family: 'AstroSpace';
   src: url('/assets/fonts/AstroSpace/AstroSpace.ttf') format('truetype');
@@ -51,9 +67,29 @@
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'Audiowide';
+  src: url('/assets/fonts/Audiowide/Audiowide-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
+
+@font-face {
+  font-family: 'Hurricane';
+  src: url('/assets/fonts/Hurricane/Hurricane-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
+
+@font-face {
+  font-family: 'Rye';
+  src: url('/assets/fonts/Rye/Rye-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
 
 :root {
-  --font-family: 'Mukta', sans-serif;
+  --font-family: 'Figtree', 'Mukta', sans-serif;
 
   --color-font-sidebar: #dbe7f0;
   --color-texto-label: rgba(255, 255, 255, 0.4);
@@ -65,6 +101,8 @@
 
   /* ===== Design tokens ===== */
   --c-bg: #1e2e3b;
+  --c-bg-white: white;
+    --c-bg-black: black;
   --c-bg-muted: #1e2e3b00;
   --c-bg-login: #030713;
   --c-bg-login-inputtext: #030713;
@@ -188,8 +226,11 @@
 
   --surface-border: var(--for-border-color-alls);
 
-
+--p-button-contrast-background: var(--c-bg-black);
+  --p-button-contrast-border-color: var(--c-bg-black);
+  --p-button-contrast-color: var(--c-bg-white);
 }
+
 
 body {
   font-family: var(--font-family);

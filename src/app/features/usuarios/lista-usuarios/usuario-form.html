@@ -25,7 +25,7 @@
           pInputText
           id="usuario"
           formControlName="usuario"
-          maxlength="12"
+          maxlength="20"
           placeholder="Nombre de acceso"
           autocomplete="off"
           [readonly]="esEdicion()"
@@ -57,7 +57,7 @@
           pInputText
           id="email"
           formControlName="email"
-          maxlength="20"
+          maxlength="30"
           type="email"
           placeholder="correo@empresa.com"
           [ngClass]="{ 'ng-invalid': invalid('email') }"
@@ -124,12 +124,15 @@ size="small"           id="Idsucursal"
           [feedback]="false"
           autocomplete="new-password"
           [fluid]="true"
+          [maxLength]="250"
           [ngClass]="{ 'ng-invalid': invalid('password') || !!errorPassword() }"
         />
         @if (esEdicion()) {
           <small class="hint">Dejar vacío para mantener la actual</small>
         }
-        @if (invalid('password')) {
+        @if (form.get('password')?.errors?.['maxlength']) {
+          <small class="err">Máximo 250 caracteres</small>
+        } @else if (invalid('password')) {
           <small class="err">La contraseña es requerida</small>
         }
         @if (errorPassword() && !invalid('password')) {
