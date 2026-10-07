@@ -16,7 +16,7 @@ import { MessageService } from 'primeng/api';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { ApiService } from '../../../core/services/api.service';
-import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo, DetalleEstadoCuenta } from '../../../core/models/catalogo-parametros.models';
+import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo, DetalleEstadoCuenta, labelOpcion } from '../../../core/models/catalogo-parametros.models';
 import { CopdaMae, CopdaDet } from '../../../core/models/contabilidad.models';
 
 interface BloqueMes {
@@ -55,6 +55,13 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
   data = signal<any[]>([]);
   filtered = signal<any[]>([]);
   cargando = signal(false);
+
+  /**
+   * Opciones de los campos con cargaOpciones (por key de campo), para que la
+   * lista muestre la ETIQUETA y no el valor crudo (ej: módulo 4 → "Facturación").
+   * Mismo filtrado de `valores` que aplica catalogo-form.
+   */
+  opcionesCargadas = signal<Record<string, { label: string; value: any }[]>>({});
 
   q = signal('');
   /** Valores de los filtros de selección: { anio: 2026, periodo: 9, descripcion: 'x' } */
@@ -135,6 +142,7 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
     this.campos.set(nuevoConfig.campos);
     this.q.set('');
     this.filtrosValores.set({});
+    this.cargarOpcionesColumnas(nuevoConfig.campos);
 
     // Si el catálogo lo pide, precargar año/período con el período contable abierto
     if (nuevoConfig.preCargarPeriodoAbierto) {
@@ -164,6 +172,41 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
           // Silencioso: si falla, simplemente no se preselecciona
         },
       });
+  }
+
+  /**
+   * Carga las opciones de los campos con cargaOpciones (una sola vez por catálogo)
+   * para que formatValor() muestre la etiqueta en la lista.
+   */
+  private cargarOpcionesColumnas(campos: CampoCatalogo[]) {
+    this.opcionesCargadas.set({});
+    for (const c of campos) {
+      if (!c.cargaOpciones) continue;
+      this.api.get<any>(c.cargaOpciones.url)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => {
+            // Respuesta tardía tras navegar a otro catálogo → ignorar
+            if (!this.campos().some((x) => x.key === c.key && x.cargaOpciones?.url === c.cargaOpciones!.url)) return;
+            let items: any[] = [];
+            if (Array.isArray(res)) {
+              items = res;
+            } else if (res && typeof res === 'object') {
+              const candidate = res.data ?? res.results ?? Object.values(res).find(Array.isArray) ?? [];
+              items = Array.isArray(candidate) ? candidate : [];
+            }
+            let opts = items.map((i) => ({
+              label: labelOpcion(i, c.cargaOpciones!),
+              value: i[c.cargaOpciones!.valueCampo],
+            }));
+            const permitidos = c.cargaOpciones.valores;
+            if (permitidos?.length) {
+              opts = opts.filter((o) => permitidos.some((v) => String(v) === String(o.value)));
+            }
+            this.opcionesCargadas.update((m) => ({ ...m, [c.key]: opts }));
+          },
+        });
+    }
   }
 
   load() {
@@ -542,6 +585,11 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
     // select con opciones estáticas → mostrar la etiqueta (ej: D → Dólar, E → Euro, Y → Yen)
     if (col.tipo === 'select' && Array.isArray(col.opciones)) {
       const op = col.opciones.find((o: any) => String(o.value) === String(val));
+      return op ? String(op.label) : String(val);
+    }
+    // select con cargaOpciones → etiqueta desde el mapa cargado (ej: módulo 4 → "Facturación")
+    if (col.tipo === 'select' && col.cargaOpciones) {
+      const op = (this.opcionesCargadas()[col.key] ?? []).find((o) => String(o.value) === String(val));
       return op ? String(op.label) : String(val);
     }
     return val;

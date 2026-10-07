@@ -29,6 +29,14 @@ export class CxpService {
     return this.api.getOne<Proveedor>(this.proveedores, id);
   }
 
+  /** Verifica si un DNI ya existe en proveedores de la empresa (DNI = llave maestra) */
+  dniExiste(dni: string, excluirId?: number): Observable<{ existe: boolean; id: number | null; numero: string | null; nombre: string | null }> {
+    return this.api.get(`${this.proveedores}/dni-existe`, {
+      dni,
+      ...(excluirId ? { excluirId } : {}),
+    });
+  }
+
   createProveedor(payload: unknown): Observable<Proveedor> {
     return this.api.post<Proveedor>(this.proveedores, payload);
   }

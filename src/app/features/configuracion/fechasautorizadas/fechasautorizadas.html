@@ -1,0 +1,336 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Fechas Contables Autorizadas</h1>
+      <p class="page-subtitle">
+        Esta opción permite gestionar los rangos contables especiales para períodos cerrados
+      </p>
+    </div>
+  </header>
+
+  @if (!puedeEscribir()) {
+  <div class="permiso-restringido card">
+    <i class="pi pi-lock"></i>
+    <div>
+      <strong>Solo lectura</strong>
+      <span>
+        La administración de fechas autorizadas está restringida a los roles
+        <code>admin</code>, <code>supervisor</code> y <code>contador</code>. Su perfil solo puede
+        consultar.
+      </span>
+    </div>
+  </div>
+  }
+
+  <!-- ══════════ 1. Rango contable autorizado ══════════ -->
+  <div class="card mb-3">
+    <div class="sec-cabecera">
+      <h2 class="sec-titulo">Rango contable autorizado</h2>
+      @if (puedeEscribir()) {
+      <p-button
+        label="Nuevo rango"
+        icon="pi pi-plus"
+        size="small"
+        rounded
+        [raised]="true"
+        severity="success"
+        variant="text"
+        (onClick)="nuevo()"
+      />
+      }
+    </div>
+
+    <div class="p-fluid">
+      <div class="p-grid">
+        <!-- Empresa / Fecha contable -->
+        <div class="mt-1 p-col-12 p-col-6">
+          <div class="p-field">
+            <label>Empresa <span class="req">*</span></label>
+            <p-select
+              [options]="empresas()"
+              optionLabel="descripcion"
+              optionValue="empresaId"
+              placeholder="Seleccione una empresa"
+              styleClass="w-full"
+              [appendTo]="'body'"
+              [disabled]="!puedeEscribir()"
+              [ngModel]="empresaSel()"
+              (ngModelChange)="onEmpresaChange($event)"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="formgrid grid">
+    <div class="field col">
+      <!-- Tabla de rangos -->
+      <div class="p-col-12">
+        <p-table
+          [value]="items()"
+          dataKey="tfecmaId"
+          size="small"
+          [tableStyle]="{ 'min-width': '36rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Vigente desde</th>
+              <th>Vigente hasta</th>
+              <th>Fecha contable</th>
+              <th style="width: 15rem">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-item>
+            <tr>
+              <td>{{ item.fec_vig_desde | date: 'dd/MM/yyyy' }}</td>
+              <td>{{ item.fec_vig_hasta | date: 'dd/MM/yyyy' }}</td>
+              <td>{{ item.fechasistema | date: 'dd/MM/yyyy' }}</td>
+              <td>
+                <p-button
+                  label="Seleccionar"
+                  icon="pi pi-check"
+                  size="small"
+                  rounded
+                  variant="text"
+                  severity="success"
+                  (onClick)="seleccionar(item)"
+                />
+                @if (puedeEscribir()) {
+                <p-button
+                  label="Borrar"
+                  icon="pi pi-trash"
+                  size="small"
+                  rounded
+                  variant="text"
+                  severity="danger"
+                  (onClick)="eliminarRango(item)"
+                />
+                }
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="4" class="text-center p-3">No hay rangos registrados.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+
+      <!-- Vigencia -->
+      <div class="mt-1 p-col-12 p-col-6">
+        <div class="mt-2 p-field">
+          <label>Vigente desde <span class="req">*</span></label>
+          <p-datepicker
+            size="small"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            placeholder="Desde"
+            [disabled]="!puedeEscribir()"
+            [ngModel]="fechaDesde()"
+            (ngModelChange)="fechaDesde.set($event)"
+          />
+        </div>
+      </div>
+
+      <div class="mt-1 p-col-12 p-col-6">
+        <div class="p-field">
+          <label>Vigente hasta <span class="req">*</span></label>
+          <p-datepicker
+            size="small"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            placeholder="Hasta"
+            [disabled]="!puedeEscribir()"
+            [ngModel]="fechaHasta()"
+            (ngModelChange)="fechaHasta.set($event)"
+          />
+        </div>
+      </div>
+
+      <div class="p-col-12 p-col-6">
+        <div class="p-field">
+          <label>Fecha autorizada <span class="req">*</span></label>
+          <p-datepicker
+            size="small"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            placeholder="Seleccione fecha"
+            [disabled]="!puedeEscribir()"
+            [ngModel]="fechaContable()"
+            (ngModelChange)="fechaContable.set($event)"
+          />
+        </div>
+      </div>
+
+
+      <!-- Acciones -->
+      <div class="p-col-12">
+        <div class="acciones-form">
+          @if (seleccion() != null && puedeEscribir()) {
+          <p-button
+            label="Eliminar"
+            icon="pi pi-trash"
+            severity="danger"
+            variant="text"
+            rounded
+            size="small"
+            class="accion-izq"
+            (onClick)="eliminarRango()"
+          />
+          }
+          <p-button
+            label="Cancelar"
+            size="small"
+            rounded
+            variant="text"
+            severity="secondary"
+            (onClick)="cancelar()"
+          />
+          @if (puedeEscribir()) {
+          <p-button
+            label="Guardar"
+            icon="pi pi-check"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            rounded
+            size="small"
+            [loading]="guardando()"
+            (onClick)="guardar()"
+          />
+          }
+        </div>
+      </div>
+
+      <!-- ══════════ 2. Item ══════════ -->
+      <div class="card mb-3">
+        <div class="sec-cabecera">
+          <h2 class="sec-titulo">Item</h2>
+        </div>
+
+        <div class="p-fluid">
+          <div class="p-grid">
+            <div class="p-col-12 p-col-6 p-col-md-8">
+              <div class="p-field">
+                <label>Usuario <span class="req">*</span></label>
+                <p-select
+                  [options]="usuariosDisponibles()"
+                  optionLabel="nombre"
+                  optionValue="usuario"
+                  [filter]="true"
+                  filterBy="nombre,usuario"
+                  filterPlaceholder="Buscar usuario..."
+                  placeholder="Seleccione usuario"
+                  styleClass="w-full"
+                  [appendTo]="'body'"
+                  [disabled]="seleccion() == null || !puedeEscribir()"
+                  [ngModel]="nuevoUsuario()"
+                  (ngModelChange)="nuevoUsuario.set($event)"
+                />
+              </div>
+            </div>
+
+            <div class="p-col-12 p-col-6 p-col-md-4">
+              <div class="p-field">
+                <label class="label-acc">&nbsp;</label>
+                <div class="item-accion">
+                  <p-button
+                    label="Guardar"
+                    icon="pi pi-check"
+                    severity="success"
+                    variant="text"
+                    [raised]="true"
+                    rounded
+                    size="small"
+                    [disabled]="!nuevoUsuario() || seleccion() == null || !puedeEscribir()"
+                    [loading]="guardandoItem()"
+                    (onClick)="agregarItem()"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        @if (seleccion() == null) {
+        <small class="hint">Primero guarde el rango para poder agregar usuarios al detalle.</small>
+        }
+      </div>
+    </div>
+    <div class="field col">
+      <!-- ══════════ 3. DETALLE ══════════ -->
+      <div class="card mb-3">
+        <div class="sec-cabecera">
+          <h2 class="sec-titulo">Detalle</h2>
+          <span class="detalle-count">{{ detalles().length }} usuario(s)</span>
+        </div>
+
+        <p-table
+          [value]="detalles()"
+          dataKey="fecdetId"
+          size="small"
+          [tableStyle]="{ 'min-width': '32rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Usuario</th>
+              <th style="width: 11rem">Fecha contable</th>
+              <th style="width: 9rem">Permitido</th>
+              <th style="width: 4rem"></th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td class="font-bold">{{ row.usuario }}</td>
+              <td>{{ fechaContableTexto() }}</td>
+              <td>
+                <p-select
+                  size="small"
+                  [options]="permitidoOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  styleClass="w-full"
+                  [appendTo]="'body'"
+                  [disabled]="!puedeEscribir()"
+                  [ngModel]="row.sn_permitido"
+                  (ngModelChange)="setPermitido(row, $event)"
+                />
+              </td>
+              <td class="text-center">
+                @if (puedeEscribir()) {
+                <p-button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  variant="text"
+                  size="small"
+                  rounded
+                  pTooltip="Quitar"
+                  (onClick)="quitarItem(row)"
+                />
+                }
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="4" class="text-center p-3">
+                Sin usuarios en el detalle. Agréguelos en la tarjeta "Item".
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,5 +1,5 @@
 # ERP Arcas - Código Fuente Completo
-> Generado automáticamente el 29/9/2026, 6:53:02 p. m.
+> Generado automáticamente el 6/10/2026, 8:33:18 p. m.
 
 ---
 
@@ -41,15 +41,17 @@
               { "glob": "**/*", "input": "public" },
               { "glob": "**/*", "input": "src/assets", "output": "assets" }
             ],
-            "styles": ["node_modules/primeflex/primeflex.css",
+            "styles": [
+              "node_modules/primeflex/primeflex.css",
               "src/styles.scss",
-              "node_modules/primeicons/primeicons.css"
+              "node_modules/primeicons/primeicons.css",
+              "node_modules/@fortawesome/fontawesome-free/css/all.min.css"
             ]
           },
           "configurations": {
             "production": {
               "budgets": [
-                { "type": "initial", "maximumWarning": "1MB", "maximumError": "1.5MB" },
+                { "type": "initial", "maximumWarning": "1.2MB", "maximumError": "1.6MB" },
                 { "type": "anyComponentStyle", "maximumWarning": "12kB", "maximumError": "20kB" }
               ],
               "outputHashing": "all"
@@ -137,6 +139,7 @@
     "@angular/forms": "^22.1.0",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
+    "@fortawesome/fontawesome-free": "^7.3.1",
     "@primeicons/core": "^8.0.0",
     "@primeng/themes": "^21.0.4",
     "@primeuix/themes": "^1.0.0",
@@ -144,7 +147,9 @@
     "@types/file-saver": "^2.0.7",
     "chart.js": "^4.5.1",
     "docx": "^9.7.1",
+    "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
+    "font-awesome": "^4.7.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "ngx-extended-pdf-viewer": "^30.0.1",
@@ -545,7 +550,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
 
         // Mostrar notificación estándar en todo el ERP
-        if (error.status === 404) {
+        if (error.error?.code === 'FECHA_SISTEMA') {
+          // La Fecha del Sistema del ERP no coincide con la del servidor:
+          // el backend bloqueó la operación. Mensaje propio (el genérico de 409
+          // no explica cómo desbloquearse).
+          msgs.add({ severity: 'error', summary: 'Fecha del Sistema desactualizada', detail });
+        } else if (error.status === 404) {
           msgs.add({ severity: 'warn', summary: 'No encontrado', detail });
         } else if (error.status === 409) {
           msgs.add({ severity: 'error', summary: 'Conflicto de Datos', detail });
@@ -668,6 +678,21 @@ export interface CampoCatalogo {
   minCampo?: string;
   /** Cifras decimales para mostrar en formulario y lista (ej: 4 para tipo de cambio 26.9745) */
   decimales?: number;
+  /** Texto de ayuda que se muestra debajo del campo en el formulario */
+  pista?: string;
+  /**
+   * En la lista el valor se muestra como SALDO ACUMULADO a fin de mes
+   * (saldoanterior + netos de los meses anteriores + mes actual) con lado (C)/(D).
+   * Ej: columnas Enero…Diciembre de saldoscta.
+   */
+  acumulado?: boolean;
+  /**
+   * En la lista el valor es un SALDO (acumulado o actual): se imprime en
+   * positivo con el lado contable (C)/(D) derivado del signo. Ej:
+   * "12,247.00 (C)" / "63,042.00 (D)". 0.00 va sin sufijo.
+   * Ej: columnas Saldo Acum. y Saldo de movcta, Saldo Acumulado de saldoscta.
+   */
+  lado?: boolean;
 }
 
 /** Filtro de selección en la barra de filtros del catálogo genérico */
@@ -678,6 +703,12 @@ export interface CampoFiltroCatalogo {
   tipo: 'texto' | 'select';
   /** Opciones fijas para tipo select. Si se omite, se derivan de los datos cargados. */
   opciones?: { label: string; value: string | number }[];
+  /**
+   * Fila de la barra de filtros (default 1). `2` = va en la segunda fila,
+   * a ancho completo, debajo de los filtros y de los botones Buscar/Limpiar.
+   * Ej: Descripción de movcta.
+   */
+  fila?: number;
 }
 
 /** Config del diálogo de detalle (estado de cuenta) del catálogo genérico */
@@ -701,11 +732,21 @@ export interface DetalleEstadoCuenta {
   descripcion: string;
   movimientos: Record<string, any>[];
   totales: { debito: number; credito: number };
+  /**
+   * Saldo acumulado inicial calculado por el backend:
+   * saldoanterior (cierre del año anterior) + Σ(debito-credito) de los
+   * períodos ANTERIORES al filtro. Para movcta (fila = cuenta+año+período)
+   * es la base correcta; `sacum` de la fila puede venir en 0 (cocierredet vacía).
+   */
+  saldoAcumulado?: number;
 }
 
 export interface CatalogoConfig {
   ruta: string;
   titulo: string;
+  /** Singular del título para los encabezados "Nuevo …" / "Editar …"
+   *  (si se omite se recorta el último carácter del plural). */
+  tituloSingular?: string;
   subtitulo?: string;
   idKey: string;
   icono: string;
@@ -728,6 +769,22 @@ export interface CatalogoConfig {
   detalle?: CatalogoDetalleConfig;
 }
 
+/** Meses del año como opciones de select (value = número de mes, 1-12) */
+export const MESES_NUMEROS: { label: string; value: number }[] = [
+  { label: 'Enero', value: 1 },
+  { label: 'Febrero', value: 2 },
+  { label: 'Marzo', value: 3 },
+  { label: 'Abril', value: 4 },
+  { label: 'Mayo', value: 5 },
+  { label: 'Junio', value: 6 },
+  { label: 'Julio', value: 7 },
+  { label: 'Agosto', value: 8 },
+  { label: 'Septiembre', value: 9 },
+  { label: 'Octubre', value: 10 },
+  { label: 'Noviembre', value: 11 },
+  { label: 'Diciembre', value: 12 },
+];
+
 export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   estados: {
     ruta: '/parametros/estados',
@@ -735,7 +792,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de estado',
     idKey: 'estadoId',
     icono: 'flag',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   meses: {
     ruta: '/parametros/meses',
@@ -753,7 +812,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de forma de pago',
     idKey: 'formapagoId',
     icono: 'credit-card',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   monedas: {
     ruta: '/parametros/monedas',
@@ -784,7 +845,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de país',
     idKey: 'paisId',
     icono: 'globe',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   'departamentos-pais': {
     ruta: '/parametros/departamentos-pais',
@@ -792,7 +855,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de departamento por país',
     idKey: 'ttipodeptopaisId',
     icono: 'map',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   'departamentos-empresa': {
     ruta: '/parametros/departamentos-empresa',
@@ -811,7 +876,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de dirección',
     idKey: 'direccionId',
     icono: 'map-marker',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   telefonos: {
     ruta: '/parametros/telefonos',
@@ -819,7 +886,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de teléfono',
     idKey: 'telefonoId',
     icono: 'phone',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   'tarjetas-credito': {
     ruta: '/parametros/tarjetas-credito',
@@ -827,7 +896,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de tarjeta de crédito',
     idKey: 'tarjetacreditoId',
     icono: 'credit-card',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   pasatiempos: {
     ruta: '/parametros/pasatiempos',
@@ -835,7 +906,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de pasatiempo',
     idKey: 'pasatiempoId',
     icono: 'heart',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   zonas: {
     ruta: '/parametros/zonas',
@@ -843,7 +916,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de zona',
     idKey: 'tzonadId',
     icono: 'map',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   gestores: {
     ruta: '/parametros/gestores',
@@ -895,11 +970,17 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     ruta: '/facturacion/correlativos',
     titulo: 'Correlativos',
     subtitulo: 'Correlativo de facturación',
-    idKey: 'poscorrelativosId',
+    idKey: 'caiAutorizadoId',
     icono: 'hashtag',
     sinEstado: true,
     campos: [
-      { key: 'nrofactura', label: 'Nro. Factura', tipo: 'numero', requerido: true, principal: true },
+      {
+        key: 'nrofactura',
+        label: 'Nro. Factura',
+        tipo: 'numero',
+        requerido: true,
+        principal: true,
+      },
       { key: 'TCPIP', label: 'TCP/IP', tipo: 'texto', requerido: true },
     ],
   },
@@ -933,13 +1014,54 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'money-bill',
     campos: [{ key: 'usuario', label: 'Usuario', tipo: 'texto', requerido: true, principal: true }],
   },
+  'usuarios-caja': {
+    ruta: '/parametros/usuarios-caja',
+    titulo: 'Usuarios de Caja',
+    tituloSingular: 'Usuario de Caja',
+    subtitulo: 'Asignación de caja por usuario (formato de impresión y correlativo)',
+    idKey: 'id',
+    icono: 'id-card',
+    campos: [
+      {
+        key: 'usuario',
+        label: 'Usuario',
+        tipo: 'select',
+        cargaOpciones: { url: '/users', labelCampo: 'nombre', valueCampo: 'usuario' },
+        requerido: true,
+        principal: true,
+      },
+      { key: 'codigo', label: 'Código', tipo: 'numero', requerido: true },
+      {
+        key: 'forma',
+        label: 'Formato de Impresión',
+        tipo: 'select',
+        opciones: [
+          { label: 'Ticket', value: 'TICKET' },
+          { label: 'Carta', value: 'CARTA' },
+        ],
+        requerido: true,
+      },
+      {
+        key: 'modo_correlativo',
+        label: 'Modo de Correlativo',
+        tipo: 'select',
+        opciones: [
+          { label: 'Automático', value: 'A' },
+          { label: 'Manual', value: 'M' },
+        ],
+        requerido: true,
+      },
+    ],
+  },
   'dias-cobro': {
     ruta: '/cxc/dias-cobro',
     titulo: 'Días de Cobro',
     subtitulo: 'Plazos de días de cobro',
     idKey: 'tdiascobrosId',
     icono: 'calendar',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   bancos: {
     ruta: '/bancos/bancos',
@@ -947,7 +1069,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Catálogo de bancos',
     idKey: 'bancoId',
     icono: 'building-columns',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   cuentas: {
     ruta: '/bancos/cuentas',
@@ -968,7 +1092,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'monedaId',
         label: 'Moneda',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/monedas', labelCampo: 'descripcion', valueCampo: 'monedaId' },
+        cargaOpciones: {
+          url: '/parametros/monedas',
+          labelCampo: 'descripcion',
+          valueCampo: 'monedaId',
+        },
         requerido: true,
       },
     ],
@@ -980,7 +1108,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     idKey: 'puestosId',
     icono: 'briefcase',
     sinEstado: true,
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   profesiones: {
     ruta: '/planilla/profesiones',
@@ -988,7 +1118,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Profesiones de empleados',
     idKey: 'profesionId',
     icono: 'graduation-cap',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   deducciones: {
     ruta: '/planilla/deducciones',
@@ -1059,7 +1191,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'empleadoId',
         label: 'Empleado',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/empleados', labelCampo: 'nombres', valueCampo: 'empleadoId' },
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampo: 'nombres',
+          valueCampo: 'empleadoId',
+        },
         requerido: true,
       },
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
@@ -1076,7 +1212,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'empleadoId',
         label: 'Empleado',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/empleados', labelCampo: 'nombres', valueCampo: 'empleadoId' },
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampo: 'nombres',
+          valueCampo: 'empleadoId',
+        },
       },
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
     ],
@@ -1092,7 +1232,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'empleadoId',
         label: 'Empleado',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/empleados', labelCampo: 'nombres', valueCampo: 'empleadoId' },
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampo: 'nombres',
+          valueCampo: 'empleadoId',
+        },
         requerido: true,
       },
       { key: 'horaentrada', label: 'Hora Entrada', tipo: 'texto' },
@@ -1113,7 +1257,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'empleadoId',
         label: 'Empleado',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/empleados', labelCampo: 'nombres', valueCampo: 'empleadoId' },
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampo: 'nombres',
+          valueCampo: 'empleadoId',
+        },
         requerido: true,
       },
       { key: 'comisionId', label: 'Comisión', tipo: 'numero', requerido: true },
@@ -1148,14 +1296,22 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'empleadoId',
         label: 'Empleado',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/empleados', labelCampo: 'nombres', valueCampo: 'empleadoId' },
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampo: 'nombres',
+          valueCampo: 'empleadoId',
+        },
         requerido: true,
       },
       {
         key: 'deduccionId',
         label: 'Deducción',
         tipo: 'select',
-        cargaOpciones: { url: '/planilla/deducciones', labelCampo: 'descripcion', valueCampo: 'deduccioneId' },
+        cargaOpciones: {
+          url: '/planilla/deducciones',
+          labelCampo: 'descripcion',
+          valueCampo: 'deduccioneId',
+        },
         requerido: true,
       },
       {
@@ -1185,7 +1341,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Grupos contables',
     idKey: 'tcogrupocontableId',
     icono: 'sitemap',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   carteras: {
     ruta: '/contabilidad/carteras',
@@ -1205,7 +1363,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'ctacontable',
         label: 'Cuenta Contable',
         tipo: 'select',
-        cargaOpciones: { url: '/contabilidad/ctacontables', labelCampo: 'descripcion', valueCampo: 'ctacontable' },
+        cargaOpciones: {
+          url: '/contabilidad/ctacontables',
+          labelCampo: 'descripcion',
+          valueCampo: 'ctacontable',
+        },
       },
     ],
   },
@@ -1224,7 +1386,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         requerido: true,
         principal: true,
-        cargaOpciones: { url: '/contabilidad/cierrectable', labelCampo: 'observacion', valueCampo: 'cierrectableId' },
+        cargaOpciones: {
+          url: '/contabilidad/cierrectable',
+          labelCampo: 'observacion',
+          valueCampo: 'cierrectableId',
+        },
       },
       { key: 'anio', label: 'Año', tipo: 'numero', requerido: true },
       { key: 'periodo', label: 'Período', tipo: 'numero', requerido: true },
@@ -1233,9 +1399,22 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         label: 'Cuenta Contable',
         tipo: 'select',
         requerido: true,
-        cargaOpciones: { url: '/contabilidad/ctacontables', labelCampo: 'descripcion', valueCampo: 'ctacontable' },
+        cargaOpciones: {
+          url: '/contabilidad/ctacontables',
+          labelCampo: 'descripcion',
+          valueCampo: 'ctacontable',
+        },
       },
       { key: 'saldo', label: 'Saldo', tipo: 'numero' },
+      {
+        key: 'tiposaldo',
+        label: 'Tipo Saldo',
+        tipo: 'select',
+        opciones: [
+          { label: 'Deudor (D)', value: 'D' },
+          { label: 'Acreedor (C)', value: 'C' },
+        ],
+      },
     ],
   },
   'carteras-cta': {
@@ -1252,14 +1431,22 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         requerido: true,
         principal: true,
-        cargaOpciones: { url: '/cxp/proveedores', labelCampo: 'razonsocial', valueCampo: 'proveedorId' },
+        cargaOpciones: {
+          url: '/cxp/proveedores',
+          labelCampo: 'razonsocial',
+          valueCampo: 'proveedorId',
+        },
       },
       {
         key: 'carteractaId',
         label: 'Cartera Contable',
         tipo: 'select',
         requerido: true,
-        cargaOpciones: { url: '/contabilidad/carteras', labelCampo: 'descripcion', valueCampo: 'tcocarteraId' },
+        cargaOpciones: {
+          url: '/contabilidad/carteras',
+          labelCampo: 'descripcion',
+          valueCampo: 'tcocarteraId',
+        },
       },
     ],
   },
@@ -1276,7 +1463,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         requerido: true,
         principal: true,
-        cargaOpciones: { url: '/cxp/proveedores', labelCampo: 'razonsocial', valueCampo: 'proveedorId' },
+        cargaOpciones: {
+          url: '/cxp/proveedores',
+          labelCampo: 'razonsocial',
+          valueCampo: 'proveedorId',
+        },
       },
       {
         key: 'tipo',
@@ -1310,14 +1501,22 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         requerido: true,
         principal: true,
-        cargaOpciones: { url: '/cxc/clientes?limit=1000', labelCampo: 'razonsocial', valueCampo: 'clienteId' },
+        cargaOpciones: {
+          url: '/cxc/clientes?limit=1000',
+          labelCampo: 'razonsocial',
+          valueCampo: 'clienteId',
+        },
       },
       {
         key: 'carteractaId',
         label: 'Cartera Contable',
         tipo: 'select',
         requerido: true,
-        cargaOpciones: { url: '/contabilidad/carteras', labelCampo: 'descripcion', valueCampo: 'tcocarteraId' },
+        cargaOpciones: {
+          url: '/contabilidad/carteras',
+          labelCampo: 'descripcion',
+          valueCampo: 'tcocarteraId',
+        },
       },
     ],
   },
@@ -1334,7 +1533,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         requerido: true,
         principal: true,
-        cargaOpciones: { url: '/cxc/clientes?limit=1000', labelCampo: 'razonsocial', valueCampo: 'clienteId' },
+        cargaOpciones: {
+          url: '/cxc/clientes?limit=1000',
+          labelCampo: 'razonsocial',
+          valueCampo: 'clienteId',
+        },
       },
       {
         key: 'tipo',
@@ -1432,7 +1635,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'cuentacontableId',
         label: 'Cuenta Contable',
         tipo: 'select',
-        cargaOpciones: { url: '/contabilidad/ctacontables', labelCampo: 'ctacontable', valueCampo: 'cuentacontablesId' },
+        cargaOpciones: {
+          url: '/contabilidad/ctacontables',
+          labelCampo: 'ctacontable',
+          valueCampo: 'cuentacontablesId',
+        },
       },
       { key: 'nrocorrelativo', label: 'Nro. Correlativo', tipo: 'numero' },
     ],
@@ -1471,10 +1678,23 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'dollar',
     sinEstado: true,
     campos: [
-      { key: 'factordecambioId', label: 'ID', tipo: 'numero', requerido: true, principal: true, ocultoForm: true },
+      {
+        key: 'factordecambioId',
+        label: 'ID',
+        tipo: 'numero',
+        requerido: true,
+        principal: true,
+        ocultoForm: true,
+      },
       { key: 'fecharegistro', label: 'Fecha', tipo: 'fecha' },
       { key: 'preciocompra', label: 'Precio Compra', tipo: 'numero', decimales: 4 },
-      { key: 'precioventa', label: 'Precio Venta', tipo: 'numero', minCampo: 'preciocompra', decimales: 4 },
+      {
+        key: 'precioventa',
+        label: 'Precio Venta',
+        tipo: 'numero',
+        minCampo: 'preciocompra',
+        decimales: 4,
+      },
       {
         key: 'tipomoneda',
         label: 'Tipo Moneda',
@@ -1494,30 +1714,32 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     idKey: 'cierrectableId',
     icono: 'lock',
     soloLectura: true,
-      campos: [
-        { key: 'periodo', label: 'Periodo', tipo: 'numero' },
-        { key: 'anio', label: 'Año', tipo: 'numero', formato: 'anio' },
-        { key: 'fechacierre', label: 'Fecha Cierre', tipo: 'fecha' },
-        { key: 'observacion', label: 'Observación', tipo: 'texto' },
-      ],
-    },
-    periodoctable: {
-      ruta: '/contabilidad/periodoctable',
-      titulo: 'Periodos Contables',
-      subtitulo: 'Periodos por año/mes',
-      idKey: 'periodoscontableId',
-      icono: 'calendar-check',
-      sinEstado: true,
-      protegerCerrados: true,
-      proteccionMensaje:
-        'Período cerrado — registro protegido. No es modificable ni puede reabrirse bajo ninguna circunstancia. Los cierres se realizan desde Cierre Contable.',
-      campos: [
+    campos: [
+      { key: 'periodo', label: 'Periodo', tipo: 'numero' },
+      { key: 'anio', label: 'Año', tipo: 'numero', formato: 'anio' },
+      { key: 'fechacierre', label: 'Fecha Cierre', tipo: 'fecha' },
+      { key: 'observacion', label: 'Observación', tipo: 'texto' },
+    ],
+  },
+  periodoctable: {
+    ruta: '/contabilidad/periodoctable',
+    titulo: 'Periodos Contables',
+    subtitulo: 'Periodos por año/mes',
+    idKey: 'periodoscontableId',
+    icono: 'calendar-check',
+    tituloSingular: 'Periodo Contable',
+    sinEstado: true,
+    protegerCerrados: true,
+    proteccionMensaje:
+      'Período cerrado — registro protegido. No es modificable ni puede reabrirse bajo ninguna circunstancia. Los cierres se realizan desde Cierre Contable.',
+    campos: [
       { key: 'nroanio', label: 'Año', tipo: 'numero', formato: 'anio', requerido: true },
-      { key: 'nromes', label: 'Mes', tipo: 'numero', requerido: true },
+      { key: 'nromes', label: 'Mes', tipo: 'select', requerido: true, opciones: MESES_NUMEROS },
       {
         key: 'sn_abierto',
         label: 'Abierto',
         tipo: 'select',
+        pista: 'Se crea como Abierto. Cerrar un período se hace desde Cierre Contable, que genera la partida.',
         opciones: [
           { label: 'Sí', value: 'S' },
           { label: 'No', value: 'N' },
@@ -1543,7 +1765,11 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         key: 'tcogrupocontableId',
         label: 'Grupo Contable',
         tipo: 'select',
-        cargaOpciones: { url: '/contabilidad/grupocontable', labelCampo: 'descripcion', valueCampo: 'tcogrupocontableId' },
+        cargaOpciones: {
+          url: '/contabilidad/grupocontable',
+          labelCampo: 'descripcion',
+          valueCampo: 'tcogrupocontableId',
+        },
         requerido: true,
       },
       {
@@ -1571,8 +1797,8 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   },
   saldoscta: {
     ruta: '/contabilidad/saldoscta',
-    titulo: 'Saldos',
-    subtitulo: 'Saldos por cuenta y mes',
+    titulo: 'Saldos anuales',
+    subtitulo: 'Saldos acumulado por año',
     idKey: 'cosaldosctaId',
     icono: 'chart-line',
     sinEstado: true,
@@ -1594,20 +1820,27 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
       ],
     },
     campos: [
-      { key: 'ctacontable', label: 'Cuenta', tipo: 'texto', requerido: true, principal: true, frozen: true },
-      { key: 'saldoanterior', label: 'Saldo Acumulado', tipo: 'numero', decimales: 2 },
-      { key: 'enero', label: 'Enero', tipo: 'numero', decimales: 2 },
-      { key: 'febrero', label: 'Febrero', tipo: 'numero', decimales: 2 },
-      { key: 'marzo', label: 'Marzo', tipo: 'numero', decimales: 2 },
-      { key: 'abril', label: 'Abril', tipo: 'numero', decimales: 2 },
-      { key: 'mayo', label: 'Mayo', tipo: 'numero', decimales: 2 },
-      { key: 'junio', label: 'Junio', tipo: 'numero', decimales: 2 },
-      { key: 'julio', label: 'Julio', tipo: 'numero', decimales: 2 },
-      { key: 'agosto', label: 'Agosto', tipo: 'numero', decimales: 2 },
-      { key: 'septiembre', label: 'Septiembre', tipo: 'numero', decimales: 2 },
-      { key: 'octubre', label: 'Octubre', tipo: 'numero', decimales: 2 },
-      { key: 'noviembre', label: 'Noviembre', tipo: 'numero', decimales: 2 },
-      { key: 'diciembre', label: 'Diciembre', tipo: 'numero', decimales: 2 },
+      {
+        key: 'ctacontable',
+        label: 'Cuenta',
+        tipo: 'texto',
+        requerido: true,
+        principal: true,
+        frozen: true,
+      },
+      { key: 'saldoanterior', label: 'Saldo Acumulado', tipo: 'numero', decimales: 2, lado: true },
+      { key: 'enero', label: 'Enero', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'febrero', label: 'Febrero', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'marzo', label: 'Marzo', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'abril', label: 'Abril', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'mayo', label: 'Mayo', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'junio', label: 'Junio', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'julio', label: 'Julio', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'agosto', label: 'Agosto', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'septiembre', label: 'Septiembre', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'octubre', label: 'Octubre', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'noviembre', label: 'Noviembre', tipo: 'numero', decimales: 2, acumulado: true },
+      { key: 'diciembre', label: 'Diciembre', tipo: 'numero', decimales: 2, acumulado: true },
     ],
   },
   repliquidez: {
@@ -1652,12 +1885,28 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   movcta: {
     ruta: '/contabilidad/movcta',
     titulo: 'Movimientos de Cuentas',
-    subtitulo: 'Movimientos por cuenta contable',
+    subtitulo: 'Movimientos por periodos',
     idKey: 'movctascontablesId',
     icono: 'arrows-spin',
     soloLectura: true,
     sinEstado: true,
     preCargarPeriodoAbierto: true,
+    // Fila expandida: partidas del período de esa fila (cuenta + año + período)
+    // + Nro. Partida clickeable → drawer con la partida contable.
+    // 'sacum' = saldo acumulado ANTES de ese período → base de los bloques.
+    detalle: {
+      ruta: '/contabilidad/saldoscta-detalle',
+      params: ['ctacontable', 'anio', 'periodo'],
+      tituloKey: 'ctacontable',
+      saldoKey: 'sacum',
+      titulo: 'Estado de Cuenta',
+      columnas: [
+        { key: 'nropartida', label: 'Nro Partida', tipo: 'numero' },
+        { key: 'fecharegistro', label: 'Fecha Registro', tipo: 'fecha' },
+        { key: 'debito', label: 'Debe', tipo: 'numero', decimales: 2 },
+        { key: 'credito', label: 'Haber', tipo: 'numero', decimales: 2 },
+      ],
+    },
     filtros: [
       { key: 'anio', label: 'Año', tipo: 'select' },
       {
@@ -1679,19 +1928,17 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
           { label: 'Diciembre', value: 12 },
         ],
       },
-      { key: 'descripcion', label: 'Descripción', tipo: 'texto' },
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', fila: 2 },
     ],
     campos: [
       { key: 'ctacontable', label: 'Cuenta', tipo: 'texto', requerido: true, principal: true },
       { key: 'descripcion', label: 'Descripción', tipo: 'texto' },
       { key: 'anio', label: 'Año', tipo: 'numero', formato: 'anio' },
       { key: 'periodo', label: 'Periodo', tipo: 'numero', formato: 'entero' },
-      { key: 'sacum', label: 'Saldo Acum.', tipo: 'numero', formato: 'moneda' },
+      { key: 'sacum', label: 'Saldo Acum.', tipo: 'numero', formato: 'moneda', lado: true },
       { key: 'debe', label: 'Debe', tipo: 'numero', formato: 'moneda' },
       { key: 'haber', label: 'Haber', tipo: 'numero', formato: 'moneda' },
-      { key: 'saldo', label: 'Saldo', tipo: 'numero', formato: 'moneda' },
-      { key: 'fecultmov', label: 'Últ. Mov.', tipo: 'fecha', formato: 'dd/MM/yyyy' },
-      { key: 'ultnropda', label: 'Últ. PDA', tipo: 'numero', formato: 'entero' },
+      { key: 'saldo', label: 'Saldo', tipo: 'numero', formato: 'moneda', lado: true },
     ],
   },
 
@@ -1702,7 +1949,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Categorías de productos',
     idKey: 'categoriaId',
     icono: 'pi-tags',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   marcas: {
     ruta: '/inventario/marcas',
@@ -1710,7 +1959,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Marcas de productos',
     idKey: 'marcaId',
     icono: 'pi-bookmark',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   modelos: {
     ruta: '/inventario/modelos',
@@ -1718,7 +1969,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Modelos de productos',
     idKey: 'modeloId',
     icono: 'pi-box',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   colores: {
     ruta: '/inventario/colores',
@@ -1726,7 +1979,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Colores de productos',
     idKey: 'colorId',
     icono: 'pi-palette',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   'unidades-medida': {
     ruta: '/inventario/unidades-medida',
@@ -1734,7 +1989,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Unidades de medida',
     idKey: 'unidadmedidaId',
     icono: 'pi-arrows-h',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   embalajes: {
     ruta: '/inventario/embalajes',
@@ -1742,7 +1999,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tipos de embalaje',
     idKey: 'embalajeId',
     icono: 'pi-shopping-bag',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   bodegas: {
     ruta: '/inventario/bodegas',
@@ -1750,7 +2009,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Bodegas',
     idKey: 'bodegaId',
     icono: 'pi-building',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   ubicaciones: {
     ruta: '/inventario/ubicaciones',
@@ -1758,7 +2019,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Ubicaciones',
     idKey: 'ubicacionId',
     icono: 'pi-map-marker',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   pasillos: {
     ruta: '/inventario/pasillos',
@@ -1766,7 +2029,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Pasillos',
     idKey: 'pasilloId',
     icono: 'pi-directions',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   casas: {
     ruta: '/inventario/casas',
@@ -1774,7 +2039,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Casas',
     idKey: 'casaId',
     icono: 'pi-home',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   testantes: {
     ruta: '/inventario/testantes',
@@ -1782,7 +2049,9 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Testantes',
     idKey: 'testanteId',
     icono: 'pi-verified',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
   tags: {
     ruta: '/inventario/tags',
@@ -1790,9 +2059,12 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Tags de productos',
     idKey: 'tagsId',
     icono: 'pi-hashtag',
-    campos: [{ key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true }],
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
   },
 };
+
 ```
 
 ---
@@ -1936,14 +2208,27 @@ export interface MovCta {
 export interface LibroMayorItem {
   ctacontable: string;
   descripcion: string;
-  /** Naturaleza de la cuenta: D = deudora, C = acreedora. El saldo SIEMPRE es positivo. */
+  /**
+   * Naturaleza CONTABLE de la cuenta según el catálogo (coctacontables.naturaleza).
+   * D = cuenta deudora por naturaleza (Activo, Gasto), C = acreedora (Pasivo, Patrimonio, Ingreso).
+   * Es un atributo ESTÁTICO: NO describe el saldo. Solo informativo/para filtrados.
+   */
   naturaleza: 'D' | 'C';
+  /**
+   * Dirección REAL del saldo del período, calculada por operación contable:
+   * D si saldo >= 0, C si saldo < 0. Es lo que se muestra en pantalla como D/C.
+   */
+  tiposaldo: 'D' | 'C';
+  /** Dirección real del saldo acumulado del período anterior: D si >= 0, C si < 0. */
+  tiposaldoAcum: 'D' | 'C';
   nivel: number;
   padre: string | null;
   sn_operable: string;
   debe: number;
   haber: number;
+  /** Monto SIEMPRE en positivo; la dirección la indica `tiposaldo`. */
   saldo: number;
+  /** Monto SIEMPRE en positivo; la dirección la indica `tiposaldoAcum`. */
   saldoAcum: number;
 }
 
@@ -2007,6 +2292,8 @@ export interface CierreDet {
   periodo: number;
   ctacontable: string;
   saldo?: number;
+  /** D (deudor) / C (acreedor) */
+  tiposaldo?: string;
   Idsucursal: number;
   empresaId: number;
   usuarioCreated: string;
@@ -2224,6 +2511,19 @@ export interface LineaPartidaDto {
   credito: number;
 }
 
+/**
+ * Carga de la partida inicial de operaciones.
+ * El período NO viaja: lo define el backend con el período contable abierto.
+ */
+export interface CrearPartidaInicialRequest {
+  Idsucursal?: number;
+  /** Auxiliar / módulo de origen (default 7 = CONTABILIDAD) */
+  moduloId?: number;
+  descripcion?: string;
+  nroreferencia?: string;
+  lineas: LineaPartidaDto[];
+}
+
 export interface CierreContableRequest {
   empresaId?: number;
   periodo: number;
@@ -2287,6 +2587,189 @@ export interface BalanceDinamicoReporte {
   lineas: BalanceDinamicoLinea[];
   /** Totales por columna: key "0" (si aplica), "1".."7" */
   totales: Record<string, number>;
+}
+
+// ========== Reporte de Balance Financiero ==========
+
+export interface BalanceFinancieroRequest {
+  empresaId: number;
+  anio?: number;
+  periodo?: number;
+}
+
+export interface BalanceFinancieroFila {
+  ctacontable: string;
+  descripcion: string;
+  nivel: number;
+  /** No se muestra en la tabla (columna eliminada por decisión de diseño) */
+  padre: string;
+  /** 'S' operativa/detalle · 'N' mayor. Define qué columna (Parcial/Total) se llena */
+  sn_operable: string;
+  /** 'D' deudora · 'C' acreedora. NO se muestra en la tabla; gobierna los signos */
+  naturaleza: string;
+  /** Lado del acumulado anterior (cierre previo o signo/naturaleza) — columna eliminada */
+  tiposaldo: string;
+  /**
+   * Saldo acumulado de los períodos anteriores. **Positivo** cuando el lado
+   * anterior es acreedor (`tiposaldo = 'C'`), para que sume con su Parcial.
+   */
+  sacum: number;
+  /** Débitos del período (mayorizado) */
+  debe: number;
+  /** Créditos del período (mayorizado) */
+  haber: number;
+  /**
+   * PARCIAL — solo `sn_operable = 'S'` con saldo del período distinto de 0:
+   * `debe - haber`, **invertido** (`haber - debe`) en naturaleza C, de modo
+   * que `sacum + parcial` reproduzca el saldo del período.
+   */
+  parcial: number;
+  /**
+   * TOTAL — solo `sn_operable = 'N'`: `saldoAnterior + (debe - haber)`
+   * (el movimiento SIEMPRE se suma firmado) y `ABS(...)` en naturaleza C
+   * para expresarlo en el lado propio de la cuenta.
+   */
+  total: number;
+  /** Saldo del período en `coctamov` (solo cuentas con movimiento en el mes) */
+  saldo: number;
+}
+
+export interface BalanceFinancieroTotal {
+  saldo: number;
+  tiposaldo: string;
+}
+
+export interface BalanceFinancieroReporte {
+  empresaName: string;
+  anio: number;
+  periodo: number;
+  filas: BalanceFinancieroFila[];
+  totales: {
+    activos: BalanceFinancieroTotal;
+    pasivos: BalanceFinancieroTotal;
+    capital: BalanceFinancieroTotal;
+  };
+}
+
+// ===================== Estado de Resultado =====================
+
+/**
+ * Línea del Estado de Resultado (formato estándar multi-paso con subtotales):
+ *  - `seccion`  → cabecera de grupo (ej: "INGRESOS OPERACIONALES")
+ *  - `cuenta`   → cuenta individual con su valor firmado por naturaleza ER
+ *  - `total`    → subtotal de la sección
+ *  - `resultado`→ subtotal intermedio/final (Utilidad bruta, operativa, del período)
+ */
+export interface EstadoResultadoLinea {
+  tipo: 'seccion' | 'cuenta' | 'total' | 'resultado';
+  titulo?: string;
+  ctacontable?: string;
+  descripcion?: string;
+  valor?: number;
+}
+
+/** Request del reporte: UNA variante por vez (decisión 05/10/2026). */
+export interface EstadoResultadoRequest {
+  empresaId: number;
+  anio: number;
+  periodo: number;
+  /** P = Período (mes), A = Acumulado enero–mes, N = Año anterior (mismo mes) */
+  tipo: 'P' | 'A' | 'N';
+}
+
+/** Respuesta del reporte de Estado de Resultado. */
+export interface EstadoResultadoReporte {
+  tipo: 'P' | 'A' | 'N';
+  anio: number;
+  periodo: number;
+  /** Etiqueta legible del alcance (ej: "Acumulado: enero – octubre 2026"). */
+  etiqueta: string;
+  lineas: EstadoResultadoLinea[];
+  subtotales: {
+    ingresos: number;
+    costoVentas: number;
+    costoProduccion: number;
+    utilidadBruta: number;
+    gastos: number;
+    utilidadOperativa: number;
+    imputados: number;
+    cuentasOrden: number;
+    resultadoEjercicio: number;
+    utilidad: number;
+  };
+}
+
+// ===================== Dashboard Módulo 7 =====================
+
+/** Widget 1 — Composición patrimonial (pastel), saldos firmados del mes. */
+export interface DashboardResumen {
+  activos: number;
+  pasivos: number;
+  capital: number;
+}
+
+/**
+ * Widget 1b — Resultados del período (segmentos 4 Ingresos + 5/6/7 Gastos y
+ * Costos tras la reestructuración 05/10/2026), APARTE del pastel patrimonial
+ * (decisión 05/10/2026). `utilidad > 0` = ganancia, `< 0` = pérdida.
+ */
+export interface DashboardResultados {
+  ingresos: number;
+  gastos: number;
+  utilidad: number;
+}
+
+/** Widget 2 — Cuentas nivel 2 de Activos y Pasivos (barras). */
+export interface DashboardNivel2 {
+  ctacontable: string;
+  descripcion: string;
+  grupo: 'Activos' | 'Pasivos';
+  valor: number;
+}
+
+/** Widgets 3/4 — Comparativo Ingresos/Gastos: mes actual vs mes anterior. */
+export interface DashboardComparativo {
+  ctacontable: string;
+  descripcion: string;
+  actual: number;
+  anterior: number;
+}
+
+/** Widget 5 — CxC: facturado (D) vs recuperado (suma del haber, C). */
+export interface DashboardCxc {
+  facturado: number;
+  recuperado: number;
+  saldo: number;
+  docsPendientes: number;
+  docsPendientesSaldo: number;
+  clientesConSaldo: number;
+}
+
+/** Widget 6 — CxP: debitado (D) vs pagado (suma del haber, C) + compras sin pagar. */
+export interface DashboardCxp {
+  debitado: number;
+  pagado: number;
+  saldo: number;
+  docsPendientes: number;
+  docsPendientesSaldo: number;
+  comprasPendientes: number;
+  comprasPendientesTotal: number;
+}
+
+export interface DashboardData {
+  anio: number;
+  periodo: number;
+  periodoMax: number;
+  periodoAnterior: number;
+  etiquetaPeriodo: string;
+  etiquetaAnterior: string;
+  resumen: DashboardResumen;
+  resultados: DashboardResultados;
+  nivel2: DashboardNivel2[];
+  ingresos: DashboardComparativo[];
+  gastos: DashboardComparativo[];
+  cxc: DashboardCxc;
+  cxp: DashboardCxp;
 }
 
 ```
@@ -2473,8 +2956,21 @@ export interface EmpresaDet {
   empresaId: number;
 }
 
+/** CAI independiente (tabla tcai) */
+export interface Cai {
+  caiId: number;
+  cai: string;
+  sn_activo: string;
+  empresaId: number;
+  usuarioCreated?: string;
+  fechaCreated?: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
 export interface Correlativo {
-  poscorrelativosId: number;
+  caiAutorizadoId: number;
+  caiId?: number;
   nrofactura: number;
   TCPIP?: string;
   Idsucursal: number;
@@ -2512,7 +3008,7 @@ export interface Impresora {
 }
 
 export interface EstadoCorrelativo {
-  poscorrelativosId: number;
+  caiAutorizadoId: number;
   Idsucursal: number;
   rangoDesde: string;
   rangoHasta: string;
@@ -2653,7 +3149,19 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
           { label: 'No', value: 'N' },
         ],
       },
-      { key: 'nrocarnet', label: 'Nro. Carnet', tipo: 'texto' },
+      {
+        key: 'tipoconstancia',
+        label: 'Tipo Constancia',
+        tipo: 'select',
+        opciones: [
+          { label: 'OCE', value: 'OCE' },
+          { label: 'SAG', value: 'SAG' },
+          { label: 'CEA', value: 'CEA' },
+          { label: 'FNE', value: 'FNE' },
+        ],
+      },
+      { key: 'nroconstancia', label: 'Nro. Constancia', tipo: 'texto' },
+      { key: 'importe_excento', label: 'Importe Excento', tipo: 'numero' },
       {
         key: 'sn_pagada',
         label: 'Pagada',
@@ -3178,6 +3686,91 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
 
 ---
 
+## 📄 src\app\core\models\fec.models.ts
+
+```typescript
+/**
+ * Fechas autorizadas (tfecma / tfecdet).
+ *
+ * Define un rango de vigencia y los usuarios habilitados para registrar
+ * datos en períodos cerrados dentro de ese rango.
+ */
+
+/** Línea del detalle: usuario habilitado dentro de un rango. */
+export interface Fecdet {
+  fecdetId: number;
+  fecmaeId: number;
+  /** Login del usuario (tusuarios.usuario) */
+  usuario: string;
+  sn_permitido: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  fechaCreated: Date | string;
+  usuarioUpdate: string;
+  fechaUpdate: Date | string | null;
+}
+
+/** Maestro del rango de vigencia, con su detalle. */
+export interface Fecma {
+  tfecmaId: number;
+  fechasistema: Date | string;
+  fec_vig_desde: Date | string;
+  fec_vig_hasta: Date | string;
+  empresaId: number;
+  usuarioCreated: string;
+  fechaCreated: Date | string;
+  usuarioUpdate: string;
+  fechaUpdate: Date | string | null;
+  detalles: Fecdet[];
+}
+
+/** Payload de alta (maestro + detalle) — se guarda en una transacción. */
+export interface FecmaPayload {
+  /** Fecha contable del rango (`YYYY-MM-DD`). Opcional: si se omite el backend usa la Fecha del Sistema. */
+  fechasistema?: Date | string;
+  fec_vig_desde: Date | string;
+  fec_vig_hasta: Date | string;
+  empresaId?: number;
+  /** Solo en ALTA: el detalle se administra por separado (fechas-det) en la edición. */
+  detalles?: { usuario: string; sn_permitido?: 'S' | 'N' }[];
+}
+
+/** Payload de baja de una línea de detalle suelta. */
+export interface FecdetPayload {
+  fecmaeId: number;
+  usuario: string;
+  sn_permitido?: 'S' | 'N';
+  empresaId?: number;
+}
+
+/** Respuesta del chequeo de autorización para escribir en una fecha. */
+export interface AutorizacionFec {
+  autorizado: boolean;
+  motivo: string;
+  fecmaeId?: number;
+  fec_vig_desde?: Date | string;
+  fec_vig_hasta?: Date | string;
+}
+
+/**
+ * Estado de la Fecha del Sistema del ERP (`tempresas.fechasistema`)
+ * frente a la fecha del servidor (`CURDATE()` de MySQL).
+ *
+ * Mientras `coincide` sea `false` el backend bloquea toda escritura
+ * (409 con `code: 'FECHA_SISTEMA'`), salvo usuarios con rango vigente en tfecdet.
+ */
+export interface EstadoFechaSistema {
+  /** `YYYY-MM-DD`, o `null` si la empresa no existe en tempresas */
+  fechaSistema: string | null;
+  /** `YYYY-MM-DD` */
+  fechaServidor: string;
+  coincide: boolean;
+}
+
+```
+
+---
+
 ## 📄 src\app\core\models\inventario.models.ts
 
 ```typescript
@@ -3575,12 +4168,17 @@ export interface TipoImpuesto {
 ## 📄 src\app\core\models\parametro-unificado.model.ts
 
 ```typescript
+/** Grupos de ttipoparametros — debe coincidir EXACTAMENTE con el enum de la BD */
+export type GrupoTipoParametro = 'CORRELATIVO' | 'IMPUESTO' | 'INTERES' | 'IMPRESION' | 'ASIENTO' | 'CONTABLE';
+
 export interface TipoParametro {
   ttipoparametrosId: number;
   field: string;
+  descripcion: string;
   tipo: 'NUMBER' | 'STRING';
   valor: string;
   sn_activo: 'S' | 'N';
+  grupo: GrupoTipoParametro;
   moduloId: number;
   Idsucursal: number;
   empresaId: number;
@@ -3589,6 +4187,16 @@ export interface TipoParametro {
   usuarioUpdate: string;
   fechaUpdate: Date;
 }
+
+/** Opciones para el select de Grupo (readonly, usar en templates desde TS) */
+export const GRUPOS_TIPO_PARAMETRO: { label: string; value: GrupoTipoParametro }[] = [
+  { label: 'Correlativo', value: 'CORRELATIVO' },
+  { label: 'Impuesto', value: 'IMPUESTO' },
+  { label: 'Interés', value: 'INTERES' },
+  { label: 'Impresión', value: 'IMPRESION' },
+  { label: 'Asiento', value: 'ASIENTO' },
+  { label: 'Contable', value: 'CONTABLE' },
+];
 
 /** IDs de módulos (tmodulos) */
 export const MODULO_IDS = {
@@ -3921,6 +4529,7 @@ export interface UsuarioModAuth {
 export interface Modulo {
   moduloId: number;
   descripcion: string;
+  abreviatura?: string;
   descripcion_contable?: string;
   sn_auxiliar_contable?: 'S' | 'N';
   sn_activo: 'S' | 'N';
@@ -4073,6 +4682,7 @@ export class ApiService {
     '/contabilidad/ctacontables',
     '/contabilidad/cierrectable/realizar',
     '/contabilidad/cierredet',
+    '/contabilidad/partida-inicial',
     '/cxc/caja-mae',
     '/cxc/caja-det',
     '/cxc/carteras-cliente',
@@ -4191,11 +4801,12 @@ export class ApiService {
    * @param path - Ruta relativa del endpoint
    * @param body - Datos actualizados del registro
    * @param opts - Opciones de escritura
+   * @param params - Query params adicionales (ej: empresaId explícito; sobrescribe el auto-inyectado)
    * @returns Observable con la respuesta tipada
    */
-  putBase<T>(path: string, body: unknown, opts?: ApiWriteOpts): Observable<T> {
+  putBase<T>(path: string, body: unknown, opts?: ApiWriteOpts, params?: Record<string, string | number>): Observable<T> {
     return this.http.put<T>(`${environment.apiUrl}${path}`, this.withContexto(path, body, opts), {
-      params: this.withEmpresa(),
+      params: this.withEmpresa(params),
     });
   }
 
@@ -4248,6 +4859,9 @@ export interface AuthUser {
 /** Roles con permiso de administrar cuentas contables (sn_operable / cuentas con historial) */
 export const ROLES_CONTABILIDAD = ['admin', 'supervisor', 'contador'];
 
+/** Roles con permiso de administrar fechas autorizadas (tfecma/tfecdet) y de corregir la Fecha del Sistema del ERP */
+export const ROLES_FECHAS = ['admin', 'supervisor', 'contador'];
+
 /** Respuesta del endpoint de login */
 export interface LoginResponse {
   /** Token JWT de autenticación */
@@ -4276,6 +4890,14 @@ export class AuthService {
     if (!u) return false;
     const roles = u.roles ?? (u.rol ? [u.rol] : []);
     return roles.some((r) => ROLES_CONTABILIDAD.includes(r));
+  });
+
+  /** true si el usuario puede administrar fechas autorizadas y la Fecha del Sistema (admin/supervisor/contador) */
+  readonly esRolFechas = computed(() => {
+    const u = this.user();
+    if (!u) return false;
+    const roles = u.roles ?? (u.rol ? [u.rol] : []);
+    return roles.some((r) => ROLES_FECHAS.includes(r));
   });
 
   /**
@@ -4648,9 +5270,12 @@ import {
   TipoDocFiscal, FactorCambio, ReporteLiquidez, ReporteDiario,
   ReporteBalance, ImpuestoVecinal, NivelCta, NaturalezaCta,
   ContabilizarPartidaDto, CierreContableRequest, ReporteRequest,
+  CrearPartidaInicialRequest,
   BalanceComprobacion, PartidaDiario, LibroMayorItem,
   BalanceDinamicoRequest, BalanceDinamicoReporte,
-  Cartera, CierreDet,
+  BalanceFinancieroRequest, BalanceFinancieroReporte,
+  EstadoResultadoRequest, EstadoResultadoReporte,
+  Cartera, CierreDet, DashboardData,
 } from '../models/contabilidad.models';
 
 @Injectable({ providedIn: 'root' })
@@ -4777,6 +5402,14 @@ export class ContabilidadService {
     return this.api.post<CopdaMae>(`${this.R}/copdamae/contabilizar`, dto);
   }
 
+  /**
+   * Crea la partida inicial de operaciones en el período contable ABIERTO.
+   * El backend decide el período, la fecha documento y la referencia.
+   */
+  crearPartidaInicial(dto: CrearPartidaInicialRequest): Observable<CopdaMae> {
+    return this.api.post<CopdaMae>(`${this.R}/partida-inicial`, dto);
+  }
+
   // ========== Movimientos Contables ==========
 
   getMovimientos(): Observable<MovCta[]> {
@@ -4855,6 +5488,11 @@ export class ContabilidadService {
 
   realizarCierre(request: CierreContableRequest): Observable<any> {
     return this.api.post<any>(`${this.R}/cierrectable/realizar`, request);
+  }
+
+  /** Reversión de cierre: deshace el cierre y reabre el período contable */
+  revertirCierre(request: CierreContableRequest): Observable<any> {
+    return this.api.post<any>(`${this.R}/cierrectable/revertir`, request);
   }
 
   // ========== Detalle de Cierre Contable ==========
@@ -4999,6 +5637,20 @@ export class ContabilidadService {
     return this.api.post<BalanceDinamicoReporte>(`${this.R}/reportes/balance-dinamico`, request);
   }
 
+  /** Estado de Resultado — UNA variante por vez (P=período, A=acumulado, N=año anterior). */
+  generarEstadoResultado(request: EstadoResultadoRequest): Observable<EstadoResultadoReporte> {
+    return this.api.post<EstadoResultadoReporte>(`${this.R}/reportes/estado-resultado`, request);
+  }
+
+  generarBalanceFinanciero(
+    request: BalanceFinancieroRequest,
+  ): Observable<BalanceFinancieroReporte> {
+    return this.api.post<BalanceFinancieroReporte>(
+      `${this.R}/reportes/balance-financiero`,
+      request,
+    );
+  }
+
   // ========== Impuesto Vecinal ==========
 
   getImpuestosVecinales(): Observable<ImpuestoVecinal[]> {
@@ -5025,6 +5677,19 @@ export class ContabilidadService {
 
   eliminarCartera(id: number): Observable<any> {
     return this.api.put<any>(`${this.R}/carteras`, `${id}/remove`, {});
+  }
+
+  // ========== Dashboard Módulo 7 ==========
+
+  /**
+   * Payload completo del dashboard de Contabilidad (6 widgets).
+   * `empresaId` lo inyecta ApiService automáticamente en la query string.
+   */
+  getDashboard(anio?: number, periodo?: number): Observable<DashboardData> {
+    const params: Record<string, number> = {};
+    if (anio != null) params['anio'] = anio;
+    if (periodo != null) params['periodo'] = periodo;
+    return this.api.get<DashboardData>(`${this.R}/dashboard`, params);
   }
 
   // ========== Integración con otros módulos ==========
@@ -5152,6 +5817,15 @@ export class CxcService {
    */
   getMovimientosByCliente(clienteId: number): Observable<CxcMovimiento[]> {
     return this.api.get<CxcMovimiento[]>(`/cxc/movimientos/cliente/${clienteId}`);
+  }
+
+  /**
+   * Obtiene un movimiento de CxC por su identificador (clienteMovId).
+   * Usado para la trazabilidad de partidas contables (ver documento origen).
+   * @param id - Identificador del movimiento en cxcmovimientos
+   */
+  getMovimiento(id: number): Observable<CxcMovimiento> {
+    return this.api.get<CxcMovimiento>(`/cxc/movimientos/${id}`);
   }
 
   /**
@@ -5525,6 +6199,11 @@ export class CxpService {
     return this.api.get<any[]>(`/cxp/movimientos/proveedor/${proveedorId}`);
   }
 
+  /** Movimiento CxP por su id (cxpmovId) — trazabilidad de partidas contables. */
+  getMovimiento(id: number): Observable<any> {
+    return this.api.get<any>(`/cxp/movimientos/${id}`);
+  }
+
   createMovimiento(payload: unknown): Observable<any> {
     return this.api.post<any>('/cxp/movimientos', payload);
   }
@@ -5687,7 +6366,7 @@ export class EmbalajesService {
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Empresa, EmpresaDet, Correlativo, EmpresaLogo, Impresora, EstadoCorrelativo } from '../models/empresa.models';
+import { Empresa, EmpresaDet, Correlativo, Cai, EmpresaLogo, Impresora, EstadoCorrelativo } from '../models/empresa.models';
 import { Sucursal } from '../models/sucursal.models';
 
 @Injectable({ providedIn: 'root' })
@@ -5730,6 +6409,24 @@ export class EmpresasService {
 
   removeDet(id: number): Observable<any> {
     return this.api.delete<any>(`${this.path}/det`, id);
+  }
+
+  // ===== CAIs (tcai) =====
+
+  getAllCai(empresaId: number): Observable<Cai[]> {
+    return this.api.get<Cai[]>(`${this.path}/cais`, { empresaId });
+  }
+
+  createCai(dto: Partial<Cai>): Observable<Cai> {
+    return this.api.post<Cai>(`${this.path}/cais`, dto);
+  }
+
+  updateCai(id: number, dto: Partial<Cai>): Observable<Cai> {
+    return this.api.put<Cai>(`${this.path}/cais`, id, dto);
+  }
+
+  removeCai(id: number): Observable<any> {
+    return this.api.delete<any>(`${this.path}/cais`, id);
   }
 
   // ===== Correlativos (CAI) =====
@@ -5849,6 +6546,714 @@ export class ExistenciasService {
 
 ---
 
+## 📄 src\app\core\services\factura-impresion.service.ts
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { ApiService } from './api.service';
+import { AuthService } from './auth.service';
+import { EmpresasService } from './empresas.service';
+import { numeroALetras } from '../utils/numeros-a-letras';
+import { COURIER_OBLIQUE_AFM, COURIER_BOLD_OBLIQUE_AFM } from '../utils/courier-afm';
+
+// ===========================================================================
+// Impresión de facturas — FORMATO PARAMETRIZABLE (100% PDF)
+//   El formato (TICKET / CARTA) se resuelve desde `timpresoras.formato` vía
+//   GET /companies/impresoras. Ambos formatos se generan con pdfMake:
+//     TICKET → PDF de 80mm (bobina térmica, tipografía monoespaciada)
+//     CARTA  → PDF tamaño LETTER
+//   Imprimir / Descargar / Compartir comparten el mismo motor: no hay
+//   tamaños de hoja quemados en los componentes. Agregar un nuevo formato
+//   = agregar un caso aquí.
+// ===========================================================================
+
+/** Formatos soportados (deben coincidir con el enum de timpresoras.formato) */
+export type FormatoImpresion = 'TICKET' | 'CARTA';
+
+/** Formato usado cuando la empresa no tiene impresoras configuradas */
+const FORMATO_DEFAULT: FormatoImpresion = 'CARTA';
+
+/** Ancho de la bobina térmica en mm (solo aplica al formato TICKET) */
+const ANCHO_TICKET_MM = 80;
+
+/** 1 mm = 2.834645669 puntos PDF */
+const MM_A_PT = 2.834645669;
+
+/** Margen lateral del ticket en puntos (2mm) */
+const MARGEN_TICKET_PT = 5.67;
+
+/** Desglose fiscal por tasa que devuelve GET /facturas/:id/ticket */
+export interface FacturaImpuestos {
+  exonerado?: number;
+  excento?: number;
+  gravado15?: number;
+  gravado18?: number;
+}
+
+/** Datos necesarios para imprimir (salen de GET /facturacion/facturas/:id/ticket) */
+export interface FacturaImpresionData {
+  factura: any;
+  detalles: any[];
+  pagos: any[];
+  empresa: any;
+  correlativo?: any | null;
+  impuestos?: FacturaImpuestos | null;
+  /** Cajero que emitió la factura (tusuarios) y código de TPV (tusuarios_caja.codigo) */
+  cajero?: { usuario?: string; nombre?: string; apellidos?: string } | null;
+  tpv?: number | string | null;
+  /** Sucursal de la factura (tsucursal) */
+  sucursal?: { descripcion?: string; direccion?: string; telefono1?: string; telefono2?: string } | null;
+}
+
+@Injectable({ providedIn: 'root' })
+export class FacturaImpresionService {
+  private api = inject(ApiService);
+  private auth = inject(AuthService);
+  private empresas = inject(EmpresasService);
+
+  /** Cache del catálogo de formas de pago (etiquetas de pagos) */
+  private formasPago: Promise<{ label: string; value: number }[]> | null = null;
+
+  /** Cache de la inicialización de pdfmake (fuentes Roboto + Courier) — se hace una sola vez */
+  private pdfMakeInit: Promise<any> | null = null;
+  /** Catálogo ya resuelto (para uso síncrono al construir el PDF) */
+  private formasPagoList: { label: string; value: number }[] = [];
+
+  // =========================================================================
+  // RESOLUCIÓN DEL FORMATO
+  // =========================================================================
+
+  /**
+   * Resuelve el formato de impresión desde `timpresoras.formato`.
+   * Prioridad: impresora de la sucursal del documento → primera de la
+   * empresa → FORMATO_DEFAULT (nunca lanza error: imprimir no debe fallar
+   * por un problema de configuración, se cae al formato por defecto).
+   */
+  async getFormatoImpresion(idsucursal?: number): Promise<FormatoImpresion> {
+    try {
+      const empresaId = this.auth.currentUser()?.empresaId;
+      if (!empresaId) return FORMATO_DEFAULT;
+      const lista = await firstValueFrom(this.empresas.getAllImpresoras(empresaId));
+      if (!Array.isArray(lista) || lista.length === 0) return FORMATO_DEFAULT;
+      const suc = idsucursal ?? this.auth.currentUser()?.idsucursal;
+      const imp = lista.find((i) => i.Idsucursal === suc) ?? lista[0];
+      return imp?.formato === 'TICKET' ? 'TICKET' : 'CARTA';
+    } catch {
+      return FORMATO_DEFAULT;
+    }
+  }
+
+  // =========================================================================
+  // ACCIONES (todas respetan el formato parametrizado)
+  // =========================================================================
+
+  /**
+   * Imprime la factura en el formato configurado en `timpresoras`.
+   * Nota (pdfmake 0.3): `.print()` NO abre el diálogo de impresión del
+   * navegador — solo marca OpenAction en el PDF y muestra una pestaña con el
+   * blob. Para conservar el `window.print()` de antes se genera el blob y se
+   * imprime desde un iframe oculto (patrón estándar en Chrome/Edge/Firefox).
+   */
+  async imprimir(data: FacturaImpresionData, idsucursal?: number): Promise<void> {
+    const doc = await this.buildPdf(data, idsucursal);
+    const pdfMake = await this.cargarPdfMake();
+    const blob: Blob = await pdfMake.createPdf(doc).getBlob();
+    this.imprimirBlobEnIframe(blob);
+  }
+
+  /** Descarga la factura como PDF en el formato configurado */
+  async descargar(data: FacturaImpresionData, nombre?: string): Promise<void> {
+    const doc = await this.buildPdf(data);
+    const pdfMake = await this.cargarPdfMake();
+    const id = data?.factura?.nrofactura ?? data?.factura?.facturaId;
+    pdfMake.createPdf(doc).download(nombre || `factura-${id}.pdf`);
+  }
+
+  /** Devuelve el blob del PDF en el formato configurado (para compartir / adjuntar) */
+  async getBlob(data: FacturaImpresionData): Promise<Blob> {
+    const doc = await this.buildPdf(data);
+    const pdfMake = await this.cargarPdfMake();
+    // pdfmake 0.3: getBlob() devuelve una Promesa (el estilo callback de 0.2 ya no aplica)
+    return pdfMake.createPdf(doc).getBlob();
+  }
+
+  /**
+   * Abre el diálogo de impresión del navegador con un PDF en blob.
+   * Monta un iframe de 0×0 con el PDF y llama a `print()` en su contenido:
+   * es la forma confiable de disparar la impresión sin abrir pestañas
+   * visibles. Si `print()` falla, se respalda abriendo el PDF en pestaña.
+   */
+  private imprimirBlobEnIframe(blob: Blob): void {
+    const url = URL.createObjectURL(blob);
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.setAttribute('tabindex', '-1');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+
+    let limpio = false;
+    const limpiar = () => {
+      if (limpio) return;
+      limpio = true;
+      URL.revokeObjectURL(url);
+      iframe.remove();
+    };
+
+    iframe.addEventListener('load', () => {
+      // El visor PDF del navegador necesita un instante antes de aceptar print()
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.addEventListener('afterprint', limpiar, { once: true });
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch {
+          // Respaldo: abrir el PDF en pestaña para impresión manual
+          try {
+            window.open(url, '_blank');
+          } catch {
+            /* popup bloqueado: se limpia igual en el respaldo inferior */
+          }
+          setTimeout(limpiar, 60000);
+        }
+      }, 300);
+    });
+
+    // afterprint llega en la ventana principal o en la del iframe (varía según navegador)
+    window.addEventListener('afterprint', limpiar, { once: true });
+    // Respaldo por si afterprint nunca llega (5 min: el diálogo ya cerró)
+    setTimeout(limpiar, 300000);
+  }
+
+  /**
+   * Construye el PDF según el formato parametrizado.
+   * Precarga el catálogo de formas de pago (etiquetas en los pagos).
+   */
+  private async buildPdf(data: FacturaImpresionData, idsucursal?: number): Promise<any> {
+    const suc = idsucursal ?? data?.factura?.Idsucursal;
+    const formato = await this.getFormatoImpresion(suc);
+    this.formasPagoList = await this.cargarFormasPago();
+    return formato === 'TICKET' ? this.buildTicketPdf(data) : this.buildCartaPdf(data);
+  }
+
+  // =========================================================================
+  // FORMATO TICKET — PDF de 80mm (bobina térmica)
+  // =========================================================================
+
+  private buildTicketPdf(data: FacturaImpresionData): any {
+    const f = data?.factura;
+    const dets = data?.detalles ?? [];
+    const emp = data?.empresa ?? {};
+    const pagos = data?.pagos ?? [];
+    const corr = data?.correlativo ?? null;
+
+    const ancho = Math.round(ANCHO_TICKET_MM * MM_A_PT * 100) / 100; // 226.77pt
+    const anchoUtil = Math.round((ancho - 2 * MARGEN_TICKET_PT) * 100) / 100; // ~215pt
+
+    // Número de factura con prefijo del rango: 000-001-01-00120004
+    const nroBase = String(f?.nrofactura ?? '').padStart(8, '0');
+    let nroFmt = nroBase;
+    if (corr?.rangoDesde) {
+      const partes = corr.rangoDesde.split('-');
+      if (partes.length > 1) nroFmt = partes.slice(0, -1).join('-') + '-' + nroBase;
+    }
+
+    const fecha = f?.fecharegistro
+      ? new Date(f.fecharegistro).toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '-';
+    const hora = f?.fecharegistro
+      ? new Date(f.fecharegistro).toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' })
+      : '-';
+    const condicion = f?.tipofactura === 'C' ? 'CRÉDITO' : 'CONTADO';
+
+    // ----- Encabezado empresa -----
+    const suc = data?.sucursal ?? {};
+
+    // Teléfonos del encabezado: "Mobil: <suc.telefono1>, Telefonos: <empresa>"
+    const telParts: string[] = [];
+    if (suc.telefono1) telParts.push('Mobil: ' + suc.telefono1);
+    if (emp.telefono) telParts.push('Telefonos: ' + emp.telefono);
+    const lineaTelefonos = telParts.join(', ');
+
+    const content: any[] = [
+      { text: emp.nombre || 'EMPRESA', bold: true, fontSize: 12, alignment: 'center', margin: [0, 0, 0, 2] },
+      // Nombre de la sucursal centrado (nuevo)
+      ...(suc.descripcion ? [{ text: suc.descripcion, fontSize: 9, alignment: 'center', margin: [0, 0, 0, 1] }] : []),
+      ...(emp.rtn ? [{ text: 'RTN: ' + emp.rtn, bold: true, fontSize: 7.5, alignment: 'center' }] : []),
+      ...(emp.direccion ? [{ text: emp.direccion, fontSize: 7.5, alignment: 'center' }] : []),
+      ...(lineaTelefonos ? [{ text: lineaTelefonos, fontSize: 7.5, alignment: 'center' }] : []),
+      // Atención al cliente (nuevo) — tempresasdet tipo CORREO
+      ...(emp.correo ? [{ text: 'Atención al cliente: ' + emp.correo, fontSize: 7.5, alignment: 'center' }] : []),
+      this.sepTicket(anchoUtil),
+      // Bloque Sucursal (nuevo): tsucursal descripción / dirección / teléfonos
+      ...(data?.sucursal != null
+        ? [
+            { text: 'Sucursal', bold: true, fontSize: 7.5, alignment: 'center', margin: [0, 1, 0, 1] },
+            ...(suc.descripcion ? [{ text: suc.descripcion, fontSize: 7.5, alignment: 'center' }] : []),
+            ...(suc.direccion ? [{ text: suc.direccion, fontSize: 7.5, alignment: 'center' }] : []),
+            ...([suc.telefono1, suc.telefono2].filter(Boolean).length
+              ? [{ text: [suc.telefono1, suc.telefono2].filter(Boolean).join(', '), fontSize: 7.5, alignment: 'center' }]
+              : []),
+          ]
+        : []),
+      this.sepTicket(anchoUtil),
+    ];
+
+    // ----- Datos de la factura -----
+    content.push(
+      this.filaTicket('FACTURA No.:', nroFmt, true, 9),
+      this.filaTicket('Fecha Emi..:', `${fecha}  Hora Emi: ${hora}`),
+      this.filaTicket('Cliente:', String(f?.nombrecliente || 'N/A').substring(0, 30)),
+      this.filaTicket('Condición:', condicion),
+      this.filaTicket('RTN Cliente:', f?.rtn_cliente ? String(f.rtn_cliente) : ''),
+      ...(f?.direccion ? [this.filaTicket('Dir:', String(f.direccion).substring(0, 30))] : []),
+      this.sepTicket(anchoUtil),
+    );
+
+    // ----- Código CAI / Fecha límite / Rango autorizado -----
+    if (corr) {
+      const fechaLimiteFmt = corr.fechaLimite
+        ? new Date(corr.fechaLimite).toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '';
+      content.push(
+        { text: 'Código CAI', bold: true, fontSize: 6.5, alignment: 'center', margin: [0, 2, 0, 0] },
+        { text: corr.cai || '', fontSize: 6.5, alignment: 'center', characterSpacing: 0.5 },
+        ...(fechaLimiteFmt
+          ? [{ text: 'Fecha límite de emisión:  ' + fechaLimiteFmt, fontSize: 6.5, alignment: 'center', margin: [0, 1, 0, 0] }]
+          : []),
+        { text: 'Rango autorizado', bold: true, fontSize: 6.5, alignment: 'center', margin: [0, 2, 0, 0] },
+        { text: `del ${corr.rangoDesde} al ${corr.rangoHasta}`, fontSize: 6.5, alignment: 'center' },
+        this.sepTicket(anchoUtil),
+      );
+    }
+
+    // ----- Cajero / TPV (tusuarios nombre+apellidos + tusuarios_caja.codigo) -----
+    const nombreCajero = [data?.cajero?.nombre, data?.cajero?.apellidos].filter(Boolean).join(' ').trim();
+    const tpvTxt = data?.tpv != null && data?.tpv !== '' ? String(data.tpv) : '';
+    if (nombreCajero || tpvTxt) {
+      content.push(
+        ...(nombreCajero ? [{ text: 'Cajero: ' + nombreCajero, fontSize: 7.5, margin: [0, 1, 0, 1] }] : []),
+        ...(tpvTxt ? [{ text: '   TPV: #' + tpvTxt, fontSize: 7.5, margin: [0, 1, 0, 1] }] : []),
+        this.sepTicket(anchoUtil),
+      );
+    }
+
+    // ----- Detalle de artículos -----
+    const body: any[] = [
+      [
+        { text: 'ARTÍCULO', bold: true, fontSize: 7 },
+        { text: 'CANT × P.U.', bold: true, fontSize: 7, alignment: 'right' },
+        { text: 'TOTAL', bold: true, fontSize: 7, alignment: 'right' },
+      ],
+      ...dets.map((d: any) => {
+        const cant = Number(d.cantidad);
+        const precio = Number(d.precioventa);
+        const tot = Number(d.subTotal) || cant * precio;
+        const pDesc = Number(d.p_descuento) || 0;
+        const desc = d.descripcion || `#${d.productoId}`;
+        const cod = d.codbarra ? ` (${d.codbarra})` : '';
+        return [
+          { text: [
+            { text: desc + cod + '\n', fontSize: 7.5 },
+            ...(pDesc > 0 ? [{ text: `Desc: -${Number(pDesc.toFixed(0))}%`, fontSize: 6.5, color: '#555555' }] : []),
+          ] },
+          { text: `${cant} × ${this.formatNum(precio)}`, fontSize: 7.5, alignment: 'right' },
+          { text: this.formatNum(tot), fontSize: 7.5, alignment: 'right' },
+        ];
+      }),
+    ];
+    content.push(
+      { table: { widths: ['*', 58, 52], body }, layout: 'noBorders', margin: [0, 2, 0, 2] },
+      this.sepTicket(anchoUtil),
+    );
+
+    // ----- Totales (desglose fiscal por tasa) -----
+    const subtotal = Number(f?.subTotal) || 0;
+    const descuento = Number(f?.descuento) || 0;
+    const total = Number(f?.total) || 0;
+    const imp = this.desgloseFiscal(f, data);
+    const efectivoPagos = pagos.reduce((s: number, p: any) => s + (Number(p.importe_efectivo) || 0), 0);
+    const efectivo = Number(f?.efectivo_recibido) || efectivoPagos;
+    const cambio = Number(f?.importe_cambio) || 0;
+    const letras = this.totalEnLetras(total);
+
+    content.push(
+      this.filaTicket('Subtotal:', 'L ' + this.formatNum(subtotal)),
+      this.filaTicket('-Rebajas y Descuentos:', 'L ' + this.formatNum(descuento)),
+      this.filaTicket('Importe Exonerado:', 'L ' + this.formatNum(imp.exonerado)),
+      this.filaTicket('Importe Excento:', 'L ' + this.formatNum(imp.excento)),
+      this.filaTicket('Importe Gravado 15%:', 'L ' + this.formatNum(imp.gravado15)),
+      this.filaTicket('Importe Gravado 18%:', 'L ' + this.formatNum(imp.gravado18)),
+      this.filaTicket('Total a pagar:', 'L ' + this.formatNum(total), true, 10),
+      this.sepTicket(anchoUtil),
+    );
+
+    // ----- Pagos (otros medios: tarjeta, transferencia, etc.) -----
+    const otrosPagos = pagos.filter((p: any) => Number(p.importe_otros) > 0);
+    if (otrosPagos.length > 0) {
+      content.push({ text: 'PAGOS', bold: true, fontSize: 7, margin: [0, 2, 0, 0] });
+      for (const p of otrosPagos) {
+        let desc = this.etiquetaFormaPago(p.formapagoId);
+        if (desc.toLowerCase().includes('tarjeta') && p.nrotarjeta) {
+          desc += ' ****' + String(p.nrotarjeta).slice(-4);
+        }
+        if (p.nroautorizacion) desc += ' Aut: ' + p.nroautorizacion;
+        content.push(this.filaTicket(desc, this.formatNum(Number(p.importe_otros) || 0)));
+      }
+      content.push(this.sepTicket(anchoUtil));
+    }
+
+    // ----- Efectivo y cambio (siempre visibles) -----
+    content.push(
+      this.filaTicket('PAGO EN EFECTIVO:', this.formatNum(efectivo)),
+      this.sepTicket(anchoUtil),
+      this.filaTicket('Cambio:', this.formatNum(cambio)),
+      { text: 'Total en Letras:', fontSize: 7, margin: [0, 5, 0, 1] },
+      { text: letras, bold: true, fontSize: 7.5, margin: [0, 0, 0, 2] },
+    );
+
+    // ----- Constancias: siempre 3 líneas (OCE/CEA/SAG); número si coincide, FNE en blanco -----
+    const constancias = this.constanciasDe(f);
+
+    // ----- Pie legal -----
+    content.push(
+      { text: 'Original: OBLIGADO TRIBUTARIO', fontSize: 6.5, alignment: 'center', color: '#555555' },
+      { text: 'Copia al contribuyente emisor', fontSize: 6.5, alignment: 'center', color: '#555555' },
+      ...constancias.flatMap((c) => [
+        { text: c.titulo, fontSize: 7, margin: [0, 4, 0, 1] },
+        { text: c.numero || ' ', fontSize: 7, margin: [0, 0, 0, 1] },
+        this.sepTicket(anchoUtil),
+      ]),
+      { text: '¡Gracias por su compra!', fontSize: 7, alignment: 'center', bold: true, margin: [0, 3, 0, 0] },
+      ...(emp.mensajeDevolucion ? [{ text: emp.mensajeDevolucion, fontSize: 6.5, alignment: 'center', color: '#555555' }] : []),
+      ...(emp.mensajeFactura ? [{ text: emp.mensajeFactura, fontSize: 6.5, alignment: 'center', color: '#555555' }] : []),
+    );
+
+    const extrasTicket = (nombreCajero || tpvTxt ? 26 : 0) + constancias.length * 30;
+    const letrasLineas = 2 + Math.ceil(letras.length / 44);
+    return {
+      pageSize: { width: ancho, height: this.alturaTicketPdf(dets.length, otrosPagos.length, !!corr, letrasLineas, extrasTicket) },
+      pageMargins: [MARGEN_TICKET_PT, MARGEN_TICKET_PT, MARGEN_TICKET_PT, MARGEN_TICKET_PT],
+      content,
+      defaultStyle: { font: 'Courier', fontSize: 8 },
+    };
+  }
+
+  /**
+   * Altura estimada del ticket en puntos (el PDF es de una sola página;
+   * se calcula para que la bobina no sobre ni falte).
+   * Base: encabezado + datos + totales (8 líneas) + efectivo/cambio + pie legal.
+   * `extras`: bloque Cajero/TPV + bloques de constancia.
+   */
+  private alturaTicketPdf(items: number, pagos: number, corr: boolean, letrasLineas: number, extras = 0): number {
+    let alto = 370;
+    if (corr) alto += 62;
+    alto += extras;
+    alto += items * 26;
+    alto += pagos * 11;
+    alto += letrasLineas * 11; // "Total en Letras" + texto (con salto de línea)
+    return Math.max(420, Math.ceil(alto));
+  }
+
+  /**
+   * Bloques de constancia: SIEMPRE imprime las 3 líneas (OCE, CEA, SAG).
+   * Solo se llena el número cuando `tipoconstancia` coincide con la línea;
+   * en FNE (factura no exenta) las 3 quedan en blanco para llenar manual.
+   */
+  private constanciasDe(f: any): { titulo: string; numero: string }[] {
+    const lineas: { tipo: string; titulo: string }[] = [
+      { tipo: 'OCE', titulo: '# Correlativo orden de compra excenta' },
+      { tipo: 'CEA', titulo: '# Correlativo constancia registro exonerado' },
+      { tipo: 'SAG', titulo: '# Identifacion registro de SAG' },
+    ];
+    const tipo = String(f?.tipoconstancia || '').toUpperCase();
+    const nro = String(f?.nroconstancia || '').trim();
+    return lineas.map((l) => ({ titulo: l.titulo, numero: l.tipo === tipo ? nro : '' }));
+  }
+
+  /**
+   * Desglose fiscal por tasa. Viene del backend (GET /facturas/:id/ticket →
+   * `impuestos`); si falta (cache vieja / respuesta sin desglose), el ISV
+   * total se atribuye a la tasa 15% para no perderlo.
+   */
+  private desgloseFiscal(f: any, data: FacturaImpresionData): FacturaImpuestos {
+    const imp = data?.impuestos;
+    if (imp && (imp.gravado15 != null || imp.gravado18 != null)) {
+      return {
+        exonerado: Number(imp.exonerado) || 0,
+        excento: Number(imp.excento) || 0,
+        gravado15: Number(imp.gravado15) || 0,
+        gravado18: Number(imp.gravado18) || 0,
+      };
+    }
+    return { exonerado: 0, excento: 0, gravado15: Number(f?.impuesto) || 0, gravado18: 0 };
+  }
+
+  /**
+   * Total en letras formato ticket: "CINCUENTA Y NUEVE MIL OCHOCIENTOS CON 00/100"
+   * (usa el utilitario compartido y le quita la palabra LEMPIRAS / agrega CON).
+   */
+  private totalEnLetras(valor: number): string {
+    const base = numeroALetras(valor).replace(/\s*LEMPIRAS$/i, '').trim();
+    if (/\d{2}\/100$/.test(base)) return base.replace(/(\d{2}\/100)$/, 'CON $1');
+    return base + ' CON 00/100';
+  }
+
+  /** Fila etiqueta/valor del ticket (monoespaciada, valor a la derecha) */
+  private filaTicket(izq: string, der: string, bold = false, size = 8): any {
+    return {
+      columns: [
+        { text: izq, width: '*' },
+        { text: der, width: 'auto', alignment: 'right' },
+      ],
+      bold,
+      fontSize: size,
+      margin: [0, 1, 0, 1],
+    };
+  }
+
+  /** Separador punteado del ticket (dashed) */
+  private sepTicket(ancho: number): any {
+    return {
+      canvas: [{ type: 'line', x1: 0, y1: 0, x2: ancho, y2: 0, lineWidth: 0.5, lineColor: '#000000', dashPattern: [2, 2] }],
+      margin: [0, 3, 0, 3],
+    };
+  }
+
+  // =========================================================================
+  // FORMATO CARTA — PDF pdfMake (LETTER)
+  // =========================================================================
+
+  private buildCartaPdf(data: FacturaImpresionData): any {
+    const f = data?.factura;
+    const dets = data?.detalles ?? [];
+    const emp = data?.empresa ?? {};
+    const pagos = data?.pagos ?? [];
+    const corr = data?.correlativo ?? null;
+    const nombreCajero = [data?.cajero?.nombre, data?.cajero?.apellidos].filter(Boolean).join(' ').trim();
+    const tpvTxt = data?.tpv != null && data?.tpv !== '' ? String(data.tpv) : '';
+
+    // Totales / desglose fiscal (mismo bloque que el formato TICKET)
+    const subtotal = Number(f?.subTotal) || 0;
+    const descuento = Number(f?.descuento) || 0;
+    const total = Number(f?.total) || 0;
+    const imp = this.desgloseFiscal(f, data);
+    const efectivoPagos = pagos.reduce((s: number, p: any) => s + (Number(p.importe_efectivo) || 0), 0);
+    const efectivo = Number(f?.efectivo_recibido) || efectivoPagos;
+    const cambio = Number(f?.importe_cambio) || 0;
+    const letras = this.totalEnLetras(total);
+
+    const detRows = dets.map((d: any, i: number) => [
+      '' + (i + 1),
+      d.descripcion || d.codbarra || '',
+      '' + Number(d.cantidad),
+      'L ' + Number(d.precioventa).toFixed(2),
+      (Number(d.descuento) || 0) > 0 ? '-' + Number(d.descuento).toFixed(0) + '%' : '0%',
+      'L ' + Number(d.subTotal).toFixed(2),
+    ]);
+
+    return {
+      pageSize: 'LETTER',
+      pageMargins: [40, 60, 40, 60],
+      content: [
+        { text: emp.nombre || 'EMPRESA', style: 'header', alignment: 'center' },
+        { text: emp.rtn ? 'RTN: ' + emp.rtn : '', alignment: 'center', fontSize: 9 },
+        { text: emp.direccion || '', alignment: 'center', fontSize: 9 },
+        { text: emp.telefono ? 'Tel: ' + emp.telefono : '', alignment: 'center', fontSize: 9 },
+        { text: '\n' },
+        { columns: [
+          { text: '', width: '*' },
+          { text: [
+            { text: this.getEstadoLabel(f) + '\n', bold: true, fontSize: 12, color: '#10b981' },
+            { text: 'FACTURA ', bold: true, fontSize: 16 },
+            { text: '#' + (f?.nrofactura || ''), fontSize: 16 },
+            '\n',
+            { text: 'Fecha: ', bold: true }, this.fechaLarga(f?.fecharegistro) + '\n',
+            { text: 'Hora: ', bold: true }, this.horaCorta(f?.fecharegistro) + '\n',
+            { text: 'Tipo: ', bold: true }, (f?.tipofactura === 'C' ? 'Credito' : 'Contado'),
+            '\n',
+            ...(corr ? [
+              { text: 'RANGO AUTORIZADO: ', bold: true }, `del ${corr.rangoDesde} al ${corr.rangoHasta}`, '\n',
+              { text: 'CAI: ', bold: true }, corr.cai || '-',
+            ] : []),
+            ...(nombreCajero ? [
+              '\n', { text: 'Cajero: ', bold: true },
+              nombreCajero + (tpvTxt ? '   TPV: #' + tpvTxt : ''),
+            ] : []),
+          ], width: '*', alignment: 'right' },
+        ] },
+        { text: '\n' },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
+        { text: '\n' },
+        { columns: [
+          { text: [
+            { text: 'CLIENTE\n', bold: true, fontSize: 10 },
+            f?.nombrecliente || 'Sin cliente', '\n',
+            f?.direccion || '',
+          ], width: '*' },
+          { text: [
+            { text: 'DIRECCION DE ENTREGA\n', bold: true, fontSize: 10 },
+            f?.direccion || 'N/A',
+          ], width: '*' },
+        ] },
+        { text: '\n' },
+        {
+          table: {
+            headerRows: 1,
+            widths: [30, '*', 50, 70, 50, 70],
+            body: [
+              [
+                { text: '#', style: 'tableHeader' },
+                { text: 'Producto', style: 'tableHeader' },
+                { text: 'Cant.', style: 'tableHeader', alignment: 'right' },
+                { text: 'Precio', style: 'tableHeader', alignment: 'right' },
+                { text: 'Desc.', style: 'tableHeader', alignment: 'right' },
+                { text: 'Subtotal', style: 'tableHeader', alignment: 'right' },
+              ],
+              ...detRows,
+            ],
+          },
+          layout: 'lightHorizontalLines',
+        },
+        { text: '\n' },
+        {
+          alignment: 'right',
+          columns: [
+            { width: '*', text: '' },
+            { width: 250, text: [
+              { text: 'Subtotal: ', bold: true }, 'L ' + subtotal.toFixed(2),
+              '\n', { text: '-Rebajas y Descuentos: ', bold: true }, 'L ' + descuento.toFixed(2),
+              '\n', { text: 'Importe Exonerado: ', bold: true }, 'L ' + imp.exonerado.toFixed(2),
+              '\n', { text: 'Importe Excento: ', bold: true }, 'L ' + imp.excento.toFixed(2),
+              '\n', { text: 'Importe Gravado 15%: ', bold: true }, 'L ' + imp.gravado15.toFixed(2),
+              '\n', { text: 'Importe Gravado 18%: ', bold: true }, 'L ' + imp.gravado18.toFixed(2),
+              '\n', { text: 'Total a pagar: ', bold: true, fontSize: 14 }, { text: 'L ' + total.toFixed(2), bold: true, fontSize: 14, color: '#10b981' },
+            ] },
+          ],
+        },
+        { text: '\n' },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
+        { text: '\n' },
+        { text: 'PAGOS', bold: true, fontSize: 10 },
+        ...pagos.map((p: any) => ({
+          text: this.etiquetaFormaPago(p.formapagoId) + ': L ' +
+            (Number(p.importe_otros) > 0 ? Number(p.importe_otros).toFixed(2) : Number(p.importe_efectivo ?? 0).toFixed(2)),
+          fontSize: 9,
+        })),
+        { text: 'Pago en efectivo: L ' + efectivo.toFixed(2) + '    Cambio: L ' + cambio.toFixed(2), fontSize: 9 },
+        { text: '\n' },
+        { text: [
+          { text: 'Total en Letras: ', bold: true },
+          letras,
+        ], fontSize: 9 },
+        ...this.constanciasDe(f).flatMap((c) => [
+          { text: c.titulo, bold: true, fontSize: 9, alignment: 'center', margin: [0, 8, 0, 2] },
+          { text: c.numero || ' ', fontSize: 9, alignment: 'center' },
+          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: '#e2e8f0' }], margin: [0, 4, 0, 4] },
+        ]),
+        { text: 'Original: OBLIGADO TRIBUTARIO    Copia al contribuyente emisor', fontSize: 8, alignment: 'center', color: '#64748b', margin: [0, 6, 0, 0] },
+        { text: '\u00a1Gracias por su compra!', bold: true, fontSize: 11, alignment: 'center' },
+        { text: emp.mensajeDevolucion || '', alignment: 'center', fontSize: 8, italics: true, color: '#64748b' },
+        { text: emp.mensajeFactura || '', alignment: 'center', fontSize: 8, italics: true, color: '#64748b' },
+      ],
+      styles: {
+        header: { fontSize: 18, bold: true },
+        tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#10b981' },
+      },
+      defaultStyle: { fontSize: 10 },
+    };
+  }
+
+  // =========================================================================
+  // UTILIDADES
+  // =========================================================================
+
+  /**
+   * Inicializa pdfmake (v0.3) con sus fuentes oficiales.
+   * En pdfmake 0.3 la asignación `pdfMake.vfs = ...` ya NO funciona (propiedad
+   * de legado): el motor lee `virtualfs` y `fonts`, que se cargan con estos
+   * métodos. Sin ellos el ticket lanza "Font 'Courier' ... is not defined" y
+   * la carta "File 'Roboto-Regular.ttf' not found in virtual file system".
+   */
+  private cargarPdfMake(): Promise<any> {
+    if (!this.pdfMakeInit) {
+      this.pdfMakeInit = this.inicializarPdfMake();
+    }
+    return this.pdfMakeInit;
+  }
+
+  private async inicializarPdfMake(): Promise<any> {
+    const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
+
+    // Roboto (TTF en base64) — fuente por defecto del formato CARTA
+    const pdfFontsMod: any = await import('pdfmake/build/vfs_fonts');
+    const pdfFonts = pdfFontsMod.default ?? pdfFontsMod;
+    pdfMake.addVirtualFileSystem(pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts);
+
+    // Courier estándar (AFM) — tipografía monoespaciada del TICKET.
+    // El contenedor incluye Courier.afm + Courier-Bold.afm y el mapeo
+    // fonts.Courier (normal/bold/italics/bolditalics).
+    const courierMod: any = await import('pdfmake/build/standard-fonts/Courier');
+    pdfMake.addFontContainer(courierMod.default ?? courierMod);
+
+    // Courier-Oblique / Courier-BoldOblique: no vienen en el contenedor oficial
+    // y son necesarios para los mensajes en itálica del ticket.
+    pdfMake.addVirtualFileSystem({
+      'data/Courier-Oblique.afm': { data: COURIER_OBLIQUE_AFM, encoding: 'utf8' },
+      'data/Courier-BoldOblique.afm': { data: COURIER_BOLD_OBLIQUE_AFM, encoding: 'utf8' },
+    });
+
+    return pdfMake;
+  }
+
+  /** Etiqueta de la forma de pago (usa el catálogo precargado en buildPdf) */
+  private etiquetaFormaPago(formapagoId: number): string {
+    const fp = this.formasPagoList.find((f) => f.value === formapagoId);
+    return fp?.label || `Pago #${formapagoId}`;
+  }
+
+  private cargarFormasPago(): Promise<{ label: string; value: number }[]> {
+    if (!this.formasPago) {
+      this.formasPago = firstValueFrom(this.api.get<any[]>('/parametros/formas-pago'))
+        .then((items) => (items ?? []).map((i) => ({ label: i.descripcion, value: i.formapagoId })))
+        .catch(() => []);
+    }
+    return this.formasPago;
+  }
+
+  private getEstadoLabel(f: any): string {
+    if (f?.sn_anulada === 'S') return 'Anulada';
+    if (f?.sn_pagada === 'S') return 'Pagada';
+    return 'Pendiente';
+  }
+
+  private fechaLarga(fecha: string | Date): string {
+    if (!fecha) return '-';
+    const d = new Date(fecha);
+    return d.toLocaleDateString('es-HN', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+
+  private horaCorta(fecha: string | Date): string {
+    if (!fecha) return '-';
+    const d = new Date(fecha);
+    return d.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  private formatNum(n: number): string {
+    return Number(n).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\core\services\facturacion.service.ts
 
 ```typescript
@@ -5930,6 +7335,149 @@ export class FacturacionService {
    */
   updateDet<T>(ruta: string, id: number, payload: unknown): Observable<T> {
     return this.api.put<T>(ruta, id, payload);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\core\services\fec.service.ts
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ApiService } from './api.service';
+import { Fecma, Fecdet, FecmaPayload, FecdetPayload, AutorizacionFec, EstadoFechaSistema } from '../models/fec.models';
+
+/**
+ * CRUD de fechas autorizadas (tfecma / tfecdet).
+ *
+ * `empresaId` e `Idsucursal` los inyecta `ApiService` automáticamente.
+ * Los endpoints de escritura están restringidos en backend a los roles
+ * admin, supervisor y contador (ROLES_FECHAS).
+ */
+@Injectable({ providedIn: 'root' })
+export class FecService {
+  private api = inject(ApiService);
+
+  private path = '/parametros/fechas';
+  private pathDet = '/parametros/fechas-det';
+
+  // ── Maestro (tfecma) ────────────────────────────────────────────────
+
+  /**
+   * Lista los maestros con su detalle.
+   * @param empresaId Empresa a consultar. Si se omite, la del usuario autenticado.
+   */
+  getAll(empresaId?: number): Observable<Fecma[]> {
+    return this.api.get<Fecma[]>(this.path, empresaId != null ? { empresaId } : undefined);
+  }
+
+  /** Obtiene un maestro con su detalle. */
+  getOne(id: number): Observable<Fecma> {
+    return this.api.getOne<Fecma>(this.path, id);
+  }
+
+  /**
+   * Crea maestro + detalle en UNA transacción (si algo falla no persiste nada).
+   * @param payload Rango de vigencia y usuarios habilitados.
+   */
+  create(payload: FecmaPayload): Observable<Fecma> {
+    return this.api.post<Fecma>(this.path, payload);
+  }
+
+  /**
+   * Actualiza maestro y, si `payload.detalles` viene definido, REEMPLAZA
+   * el detalle completo (también en transacción).
+   */
+  update(id: number, payload: Partial<FecmaPayload>): Observable<Fecma> {
+    return this.api.put<Fecma>(this.path, id, payload);
+  }
+
+  /** Elimina el maestro (cascada sobre su detalle). */
+  delete(id: number): Observable<{ eliminado: boolean; tfecmaId: number }> {
+    return this.api.delete<{ eliminado: boolean; tfecmaId: number }>(this.path, id);
+  }
+
+  // ── Detalle (tfecdet) ───────────────────────────────────────────────
+
+  /** Lista líneas de detalle, opcionalmente filtradas por maestro. */
+  getAllDet(fecmaeId?: number): Observable<Fecdet[]> {
+    const params = fecmaeId != null ? { fecmaeId } : undefined;
+    return this.api.get<Fecdet[]>(this.pathDet, params);
+  }
+
+  /** Agrega un usuario al detalle de un maestro. */
+  createDet(payload: FecdetPayload): Observable<Fecdet> {
+    return this.api.post<Fecdet>(this.pathDet, payload);
+  }
+
+  /** Modifica una línea de detalle (usuario, sn_permitido o maestro). */
+  updateDet(id: number, payload: Partial<FecdetPayload>): Observable<Fecdet> {
+    return this.api.put<Fecdet>(this.pathDet, id, payload);
+  }
+
+  /** Elimina una línea de detalle. */
+  deleteDet(id: number): Observable<{ eliminado: boolean; fecdetId: number }> {
+    return this.api.delete<{ eliminado: boolean; fecdetId: number }>(this.pathDet, id);
+  }
+
+  // ── Regla de negocio ────────────────────────────────────────────────
+
+  /**
+   * ¿Puede `usuario` registrar datos en `fecha`?
+   *
+   * Devuelve `autorizado: true` si la fecha cae dentro del rango de un
+   * maestro de la empresa Y el usuario está en su detalle con
+   * `sn_permitido = 'S'`. Si `fecha` se omite usa la fecha del sistema.
+   *
+   * Es la consulta que deben invocar los demás módulos (facturación,
+   * contabilidad, inventario) antes de permitir una escritura sobre un
+   * período cerrado.
+   *
+   * @param usuario Login del usuario a consultar.
+   * @param fecha Fecha a validar (`YYYY-MM-DD` o Date). Opcional.
+   */
+  autorizar(usuario: string, fecha?: string | Date): Observable<AutorizacionFec> {
+    const params: Record<string, string | number> = { usuario };
+    if (fecha != null) params['fecha'] = typeof fecha === 'string'
+      ? fecha
+      : (fecha as Date).toISOString().slice(0, 10);
+    return this.api.get<AutorizacionFec>(`${this.path}/autorizar`, params);
+  }
+
+  // ══════════════════ Fecha del Sistema del ERP ══════════════════
+
+  /**
+   * Estado de `tempresas.fechasistema` vs la fecha del servidor.
+   *
+   * GET: siempre accesible (aunque el sistema esté desalineado), para que la
+   * pantalla pueda mostrar la discrepancia y ofrecer la corrección.
+   *
+   * @param empresaId Empresa a consultar. Si se omite, el backend usa la del
+   *                  usuario autenticado.
+   */
+  getEstadoFechaSistema(empresaId?: number): Observable<EstadoFechaSistema> {
+    return this.api.get<EstadoFechaSistema>(`${this.path}-sistema`, empresaId != null ? { empresaId } : undefined);
+  }
+
+  /**
+   * Corrige la Fecha del Sistema del ERP (`YYYY-MM-DD`).
+   *
+   * Única escritura exenta del bloqueo por fecha desalineada; requiere los
+   * roles admin / supervisor / contador **en la empresa indicada** (el
+   * backend valida el rol contra `tusuarios_rol` de esa empresa → 403).
+   *
+   * @param empresaId Empresa a corregir. Si se omite, la del usuario.
+   */
+  actualizarFechaSistema(fecha: string, empresaId?: number): Observable<EstadoFechaSistema> {
+    return this.api.putBase<EstadoFechaSistema>(
+      `${this.path}-sistema`,
+      { fechasistema: fecha },
+      undefined,
+      empresaId != null ? { empresaId } : undefined,
+    );
   }
 }
 
@@ -6062,7 +7610,8 @@ interface RawMnuItem {
 export interface MenuItemConfig {
   /** Texto visible del menú */
   label: string;
-  /** Clase del ícono (Font Awesome sin prefijo 'fa-') */
+  /** Clase(s) del ícono: nombre corto PrimeIcons (`home` → `pi pi-home`) o
+   *  clase completa Font Awesome (`fa-solid fa-box`) o PrimeIcons (`pi pi-home`) */
   icon: string;
   /** Ruta de navegación (si tiene ruta, es un enlace directo) */
   route?: string;
@@ -6427,8 +7976,15 @@ export class ParametroUnificadoService {
   }
 
   /** Upsert un parámetro (usa query params para moduloId) */
-  upsert(moduloId: number, field: string, valor: string, tipo: string = 'STRING'): Observable<any> {
-    return this.api.putBase(`${this.BASE}/upsert?moduloId=${moduloId}`, { field, valor, tipo });
+  upsert(
+    moduloId: number,
+    field: string,
+    valor: string,
+    tipo: string = 'STRING',
+    descripcion?: string,
+    grupo?: string,
+  ): Observable<any> {
+    return this.api.putBase(`${this.BASE}/upsert?moduloId=${moduloId}`, { field, valor, tipo, descripcion, grupo });
   }
 
   /** Upsert lote de parámetros de un módulo */
@@ -6707,6 +8263,1298 @@ export class ProveedoresService {
    */
   update(id: number, dto: Partial<Proveedor>): Observable<Proveedor> {
     return this.api.put<Proveedor>(this.path, id, dto);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\core\services\quick-nav.service.ts
+
+```typescript
+import { Injectable, DestroyRef, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { fromEvent, forkJoin, of, Observable } from 'rxjs';
+import { catchError, map, shareReplay } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ApiService } from './api.service';
+import { MenuConfigService, MenuItemConfig } from './menu-config.service';
+import { CxcCliente } from '../models/cxc.models';
+import { Proveedor, Producto } from '../models/inventario.models';
+import { CtaContable } from '../models/contabilidad.models';
+
+/** Destino navegable de la utilidad de navegación rápida */
+export interface QuickNavItem {
+  /** Etiqueta corta del chip derecho (Menú, Cliente, Producto, ...) */
+  tipo: string;
+  /** Texto principal */
+  label: string;
+  /** Línea secundaria: código, DNI, breadcrumb, etc. */
+  detalle?: string;
+  /** Ruta absoluta de destino */
+  ruta: string;
+  /** Clase de ícono PrimeNG (pi pi-xxx) */
+  icono: string;
+}
+
+/**
+ * Utilidad GLOBAL de navegación rápida.
+ *
+ * Se invoca con Ctrl+Alt+1 desde cualquier pantalla, formulario o control
+ * de la aplicación (escucha en `document`, por lo que funciona aunque el
+ * foco esté dentro de un input, textarea o tabla).
+ *
+ * Nota: Ctrl+1..8 está reservado por el navegador para cambiar de pestaña,
+ * por eso el atajo es Ctrl+Alt+1.
+ */
+@Injectable({ providedIn: 'root' })
+export class QuickNavService {
+  private api = inject(ApiService);
+  private router = inject(Router);
+  private menuConfig = inject(MenuConfigService);
+  private destroyRef = inject(DestroyRef);
+
+  /** Estado del diálogo (abierto/cerrado) */
+  readonly abierto = signal(false);
+
+  private cuentasCache: Observable<CtaContable[]> | null = null;
+
+  constructor() {
+    fromEvent<KeyboardEvent>(document, 'keydown')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => this.onKeyDown(event));
+  }
+
+  // ── Teclado global ──────────────────────────────────────────────
+  private onKeyDown(event: KeyboardEvent): void {
+    if (!event.ctrlKey || !event.altKey) return;
+    if (event.code !== 'Digit1' && event.code !== 'Numpad1') return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.alternar();
+  }
+
+  abrir(): void {
+    this.abierto.set(true);
+  }
+
+  cerrar(): void {
+    this.abierto.set(false);
+  }
+
+  alternar(): void {
+    this.abierto.update((v) => !v);
+  }
+
+  // ── Pestaña MENÚ (fuente local, árbol de tusuariomnuitem) ───────
+  /** Aplana el árbol del menú lateral en destinos navegables */
+  menuItems(): QuickNavItem[] {
+    const salida: QuickNavItem[] = [];
+    const vistos = new Set<string>();
+
+    const recorrer = (items: MenuItemConfig[], rutaPadre: string[]): void => {
+      for (const item of items) {
+        const ruta = [...rutaPadre, item.label];
+        if (item.route && !vistos.has(item.route)) {
+          vistos.add(item.route);
+          salida.push({
+            tipo: 'Menú',
+            label: item.label,
+            detalle: rutaPadre.length ? rutaPadre.join(' / ') : item.route,
+            ruta: this.normalizarRuta(item.route),
+            icono: item.icon ? `pi pi-${item.icon}` : 'pi pi-folder',
+          });
+        }
+        if (item.children?.length) recorrer(item.children, ruta);
+      }
+    };
+
+    recorrer(this.menuConfig.getMenuItems(), []);
+    return salida;
+  }
+
+  /** Filtra el menú local por texto (sin HTTP) */
+  filtrarMenu(termino: string): QuickNavItem[] {
+    const q = this.normalizar(termino);
+    const items = this.menuItems();
+    if (!q) return items;
+    return items.filter(
+      (i) => this.normalizar(i.label).includes(q) || this.normalizar(i.detalle ?? '').includes(q),
+    );
+  }
+
+  // ── Pestaña DATOS (búsqueda global en backend) ──────────────────
+  /**
+   * Busca en paralelo: clientes (CxC), proveedores (CxP),
+   * productos (Inventario) y cuentas contables (Contabilidad).
+   */
+  buscarDatos(termino: string): Observable<QuickNavItem[]> {
+    const q = termino.trim();
+    if (q.length < 2) return of([]);
+
+    const clientes$ = this.api
+      .get<{ data: CxcCliente[]; total: number }>('/cxc/clientes', { q, page: 1, limit: 6 })
+      .pipe(catchError(() => of({ data: [] as CxcCliente[], total: 0 })));
+
+    const proveedores$ = this.api
+      .get<{ data: Proveedor[]; total: number }>('/cxp/proveedores-pag', { q, page: 1, limit: 6 })
+      .pipe(catchError(() => of({ data: [] as Proveedor[], total: 0 })));
+
+    const productos$ = this.api
+      .get<Producto[]>('/inventario/productos/buscar', { q })
+      .pipe(catchError(() => of([] as Producto[])));
+
+    const cuentas$ = this.cuentas().pipe(
+      map((cs) =>
+        cs
+          .filter(
+            (c) =>
+              this.normalizar(c.ctacontable).includes(this.normalizar(q)) ||
+              this.normalizar(c.descripcion).includes(this.normalizar(q)),
+          )
+          .slice(0, 6),
+      ),
+    );
+
+    return forkJoin([clientes$, proveedores$, productos$, cuentas$]).pipe(
+      map(([cl, pr, pi, ct]) => [
+        ...cl.data.map((c) => this.itemCliente(c)),
+        ...pr.data.map((p) => this.itemProveedor(p)),
+        ...pi.map((p) => this.itemProducto(p)),
+        ...ct.map((c) => this.itemCuenta(c)),
+      ]),
+    );
+  }
+
+  // ── Navegación ──────────────────────────────────────────────────
+  navegar(item: QuickNavItem): boolean {
+    const cruda = (item?.ruta ?? '').trim();
+    if (!cruda) {
+      console.error('[QuickNav] destino sin ruta:', item);
+      return false;
+    }
+    const ruta = this.normalizarRuta(cruda);
+    this.cerrar();
+    this.router.navigateByUrl(ruta).then(
+      (ok) => {
+        if (!ok) console.warn('[QuickNav] navegación cancelada hacia:', ruta);
+      },
+      (err) => console.error('[QuickNav] error navegando a', ruta, err),
+    );
+    return true;
+  }
+
+  // ── Internos ────────────────────────────────────────────────────
+  /** Catálogo de cuentas contables: una sola petición, cacheada */
+  private cuentas(): Observable<CtaContable[]> {
+    if (!this.cuentasCache) {
+      this.cuentasCache = this.api.get<CtaContable[]>('/contabilidad/ctacontables').pipe(
+        catchError(() => of([] as CtaContable[])),
+        shareReplay(1),
+      );
+    }
+    return this.cuentasCache;
+  }
+
+  private itemCliente(c: CxcCliente): QuickNavItem {
+    const nombre = `${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim() || c.razonsocial || 'Cliente';
+    const ref = [c.nrocliente ? `#${c.nrocliente}` : '', c.dni || '', c.rtn || '']
+      .filter(Boolean)
+      .join(' · ');
+    return {
+      tipo: 'Cliente',
+      label: nombre,
+      detalle: ref || undefined,
+      ruta: `/cxc/clientes/editar/${c.clienteId}`,
+      icono: 'pi pi-user',
+    };
+  }
+
+  private itemProveedor(p: Proveedor): QuickNavItem {
+    const nombre = p.razonsocial?.trim() || `${p.nombres ?? ''} ${p.apellidos ?? ''}`.trim() || 'Proveedor';
+    const ref = [p.nroproveedor ? `#${p.nroproveedor}` : '', p.rtn || '', p.dni || '']
+      .filter(Boolean)
+      .join(' · ');
+    return {
+      tipo: 'Proveedor',
+      label: nombre,
+      detalle: ref || undefined,
+      ruta: `/cxp/proveedores/editar/${p.proveedorId}`,
+      icono: 'pi pi-truck',
+    };
+  }
+
+  private itemProducto(p: Producto): QuickNavItem {
+    return {
+      tipo: 'Producto',
+      label: p.descripcion,
+      detalle: p.codbarra || undefined,
+      ruta: `/inventario/productos/editar/${p.produtoId}`,
+      icono: 'pi pi-box',
+    };
+  }
+
+  private itemCuenta(c: CtaContable): QuickNavItem {
+    return {
+      tipo: 'Cuenta',
+      label: `${c.ctacontable} · ${c.descripcion}`,
+      detalle: `Nivel ${c.nivel} · ${c.naturaleza === 'D' ? 'Deudora' : 'Acreedora'}`,
+      ruta: '/contabilidad/ctacontables',
+      icono: 'pi pi-book',
+    };
+  }
+
+  private normalizarRuta(ruta: string): string {
+    const limpia = (ruta ?? '').trim();
+    if (!limpia) return '/dashboard';
+    return limpia.startsWith('/') ? limpia : `/${limpia}`;
+  }
+
+  private normalizar(texto: string): string {
+    return (texto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\core\services\reportes-print.service.ts
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+
+import jsPDF from 'jspdf';
+import autoTable, { UserOptions, CellHookData } from 'jspdf-autotable';
+import { Workbook, Worksheet } from 'exceljs';
+import {
+  AlignmentType,
+  BorderStyle,
+  Document,
+  Footer,
+  Header,
+  PageNumber,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  VerticalAlign,
+  WidthType,
+} from 'docx';
+
+import { AuthService } from './auth.service';
+import { EmpresasService } from './empresas.service';
+import { EmpresaDet } from '../models/empresa.models';
+
+// ===========================================================================
+// Reportes de contabilidad — diseño de impresión compartido
+// Estilo: MINIMALISTA SOLO TEXTO
+//   · Encabezado en 2 filas (elementos COMPARTIDOS en la misma línea):
+//       fila 1: empresa (izquierda, grande) + título del reporte (centrado)
+//       fila 2: RTN (izquierda) + criterio de filtro (centrado)
+//     y filete sólido de ancho completo debajo.
+//   · Fuente del encabezado: AUDIOWIDE (PDF: embebida desde assets;
+//     Excel/Word: nombre de familia)
+//   · Sin logo, sin dirección y sin teléfono
+//   · Cuerpo: sin relleno, sin cuadrícula; separadores en LÍNEA DISCONTINUA
+//     (debajo de la cabecera y encima de cada fila de totales)
+//   · Importes en 0.00 se SUPRIMEN (celda vacía) en PDF, Word y Excel
+//   · Totales: filete discontinuo superior + negrita
+//   · Pie: usuario | Página X de Y | fecha
+// Aplica a: Balance Dinámico, Balance Financiero, Libro Mayor, Libro Diario
+//           y Balance de Comprobación.
+// ===========================================================================
+
+export type Alineacion = 'left' | 'center' | 'right';
+
+export interface ColumnaPrint {
+  titulo: string;
+  alinear?: Alineacion;
+  /** Ancho en mm (PDF) */
+  pdf?: number;
+  /** Ancho en twips (Word): 1440 twips = 1 pulgada */
+  word?: number;
+  /** Ancho en caracteres (Excel) */
+  excel?: number;
+}
+
+export interface TablaPrint {
+  columnas: ColumnaPrint[];
+  /** Filas del cuerpo. Los números se formatean solos (1,234.56) en PDF/Word */
+  filas: (string | number | null)[][];
+  /** Índices (base 0) de filas intermedias que son de totales (filete + negrita) */
+  filasTotales?: number[];
+  /** Fila final de totales (filete superior + negrita) */
+  filaTotales?: (string | number | null)[];
+  /**
+   * Alineación por columna SOLO para las filas de totales (PDF y Word).
+   * Índice = columna; `undefined` = usa la alineación de la columna.
+   * Ej.: alinear "TOTALES" a la derecha en la columna Descripción.
+   */
+  alineacionesTotales?: (Alineacion | undefined)[];
+}
+
+export interface EncabezadoPrint {
+  titulo: string;
+  empresa: string;
+  /** RTN de la empresa (vacío si no lo tiene) — dirección y teléfono NO se imprimen */
+  rtn: string;
+  /** Período / rango / filtros aplicados */
+  meta: string;
+  usuario: string;
+  fecha: string;
+}
+
+/** Orientación de página de los reportes */
+export type Orientacion = 'portrait' | 'landscape';
+
+const GRIS_CLARO = 'FF94A3B8';
+const GRIS_OSCURO = 'FF475569';
+
+@Injectable({ providedIn: 'root' })
+export class ReportesPrintService {
+  private auth = inject(AuthService);
+  private empresas = inject(EmpresasService);
+
+  /** Cache por empresa: nombre y RTN */
+  private cacheBase = new Map<number, Promise<{ empresa: string; rtn: string }>>();
+
+  // =========================================================================
+  // Encabezado
+  // =========================================================================
+
+  /**
+   * Compone el encabezado estándar de todos los reportes.
+   * @param titulo Título del documento (ej. "LIBRO MAYOR")
+   * @param meta Filtros aplicados (ej. "Del: 01/10/2026 al 04/10/2026")
+   */
+  async encabezado(titulo: string, meta?: string): Promise<EncabezadoPrint> {
+    await this.prepararFuente(); // PDF: deja la fuente lista (se cachea)
+    const empresaId = this.auth.currentUser()?.empresaId ?? 0;
+    const base = await this.cargarBase(empresaId);
+    return {
+      titulo,
+      empresa: base.empresa,
+      rtn: base.rtn,
+      meta: meta ?? '',
+      usuario: this.usuario(),
+      fecha: this.fecha(),
+    };
+  }
+
+  private cargarBase(empresaId: number): Promise<{ empresa: string; rtn: string }> {
+    let pendiente = this.cacheBase.get(empresaId);
+    if (!pendiente) {
+      pendiente = this.resolverBase(empresaId);
+      this.cacheBase.set(empresaId, pendiente);
+    }
+    return pendiente;
+  }
+
+  private async resolverBase(empresaId: number): Promise<{ empresa: string; rtn: string }> {
+    if (!empresaId) return { empresa: 'Empresa', rtn: '' };
+
+    let empresa = 'Empresa';
+    let rtn = '';
+
+    const [resEmpresa, resDet] = await Promise.allSettled([
+      firstValueFrom(this.empresas.getOne(empresaId)),
+      firstValueFrom(this.empresas.getAllDet(empresaId)),
+    ]);
+
+    if (resEmpresa.status === 'fulfilled' && resEmpresa.value?.descripcion) {
+      empresa = resEmpresa.value.descripcion;
+    }
+
+    if (resDet.status === 'fulfilled' && Array.isArray(resDet.value)) {
+      rtn = this.rtnDe(resDet.value);
+    }
+
+    return { empresa, rtn };
+  }
+
+  /** Invalida el cache de nombre/RTN de la empresa */
+  invalidarCache(): void {
+    this.cacheBase.clear();
+  }
+
+  /** "RTN: 0801..." — solo el RTN activo (dirección y teléfono ya NO se imprimen) */
+  private rtnDe(dets: EmpresaDet[]): string {
+    const valor = dets.find((d) => d.tipo === 'RTN' && d.sn_activo === 'S')?.descripcion?.trim();
+    return valor ? `RTN: ${valor}` : '';
+  }
+
+  private usuario(): string {
+    const user = this.auth.currentUser();
+    return user?.nombre || user?.usuario || '';
+  }
+
+  private fecha(): string {
+    return new Date().toLocaleString('es-HN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  }
+
+  // =========================================================================
+  // Formato numérico compartido
+  // =========================================================================
+
+  /**
+   * 1234.5 → "1,234.50" · -1234.5 → "-1,234.50".
+   * Armado a mano para no depender del locale del navegador.
+   */
+  fmt(valor: number | string | null | undefined, decimales = 2): string {
+    const num = Number(valor);
+    if (valor == null || valor === '' || Number.isNaN(num)) return '';
+    const negativo = num < 0;
+    const [entero, dec] = Math.abs(num).toFixed(decimales).split('.');
+    const miles = entero.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return `${negativo ? '-' : ''}${miles}${dec ? `.${dec}` : ''}`;
+  }
+
+  /** Recorta el texto para que no desborde el ancho disponible */
+  private cortar(texto: string, max: number): string {
+    if (!texto) return '';
+    return texto.length > max ? `${texto.slice(0, max - 1)}…` : texto;
+  }
+
+  /**
+   * ¿El valor se muestra vacío por ser 0.00? — Regla de diseño: los importes
+   * en cero NO aparecen en PDF, Word ni Excel.
+   * Acepta números y textos numéricos ('0', '0.00'); los textos no numéricos
+   * ('1-1-10', 'N3', '03/10/2026') jamás se suprimen.
+   */
+  private esCero(valor: string | number | null | undefined): boolean {
+    if (valor == null || valor === '') return false;
+    const num = typeof valor === 'number' ? valor : Number(String(valor).trim());
+    if (Number.isNaN(num)) return false;
+    return Math.abs(num) < 0.005; // redondea a 0.00 con 2 decimales
+  }
+
+  // =========================================================================
+  // PDF
+  // =========================================================================
+
+  /** Base64 (VFS) de Audiowide-Regular.ttf — se carga una sola vez por sesión */
+  private fuenteB64: string | null = null;
+  /** Base64 (VFS) de Mukta-Regular.ttf — título, RTN y criterio del encabezado */
+  private muktaB64: string | null = null;
+  private fuenteCargando: Promise<void> | null = null;
+
+  /**
+   * Descarga las TTFs de assets (Audiowide para la empresa, Mukta para título/
+   * RTN/criterio) y las deja en base64 listas para embeber en cada documento.
+   * Si una falla, ese elemento usa helvetica.
+   */
+  private prepararFuente(): Promise<void> {
+    if (!this.fuenteCargando) {
+      this.fuenteCargando = Promise.all([
+        this.cargarTtf('/assets/fonts/Audiowide/Audiowide-Regular.ttf').then((b64) => {
+          if (b64) this.fuenteB64 = b64;
+        }),
+        this.cargarTtf('/assets/fonts/Mukta/Mukta-Regular.ttf').then((b64) => {
+          if (b64) this.muktaB64 = b64;
+        }),
+      ]).then(() => undefined);
+    }
+    return this.fuenteCargando;
+  }
+
+  /** Descarga una TTF y la convierte a base64; null si falla */
+  private async cargarTtf(url: string): Promise<string | null> {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) {
+        bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      }
+      return btoa(bin);
+    } catch {
+      /* sin la fuente el reporte sigue siendo válido (helvetica) */
+      return null;
+    }
+  }
+
+  /** Registra las fuentes del encabezado en el documento; indica cuáles quedaron */
+  private registrarFuente(doc: jsPDF): { audiowide: boolean; mukta: boolean } {
+    const reg = (b64: string | null, archivo: string, familia: string): boolean => {
+      if (!b64) return false;
+      try {
+        doc.addFileToVFS(archivo, b64);
+        doc.addFont(archivo, familia, 'normal');
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    return {
+      audiowide: reg(this.fuenteB64, 'Audiowide-Regular.ttf', 'Audiowide'),
+      mukta: reg(this.muktaB64, 'Mukta-Regular.ttf', 'Mukta'),
+    };
+  }
+
+  /**
+   * Dibuja el encabezado del reporte y devuelve el Y donde puede empezar el
+   * contenido. Todas las tablas deben usar ese Y y dejar margen superior igual
+   * para que las páginas nuevas no pisen el encabezado repetido.
+   *
+   * Diseño en 2 filas (elementos compartidos en la MISMA línea):
+   *   fila 1: empresa a la izquierda (16pt, Audiowide) + título centrado (12.7pt, Mukta)
+   *   fila 2: RTN a la izquierda (9pt, Mukta) + criterio de filtro centrado (9pt, Mukta)
+   *   filete sólido de ancho completo.
+   */
+  pdfEncabezado(doc: jsPDF, enc: EncabezadoPrint): number {
+    const pageW = doc.internal.pageSize.getWidth();
+    const cx = pageW / 2;
+    const margen = 10;
+    const fuentes = this.registrarFuente(doc);
+    const fontEmpresa = fuentes.audiowide ? 'Audiowide' : 'helvetica';
+    const fontTexto = fuentes.mukta ? 'Mukta' : 'helvetica';
+
+    // Fila 1 — empresa (izquierda, Audiowide) + título (centrado, Mukta)
+    const yFila1 = 12;
+    doc.setFont(fontEmpresa, 'normal');
+    doc.setFontSize(16);
+    doc.text(this.cortar(enc.empresa, 30), margen, yFila1);
+    doc.setFont(fontTexto, 'normal');
+    doc.setFontSize(12.7);
+    doc.text(this.cortar(enc.titulo.toUpperCase(), 40), cx, yFila1, { align: 'center' });
+
+    // Fila 2 — RTN (izquierda) + criterio de filtro (centrado), ambas en Mukta
+    const yFila2 = yFila1 + 7.5;
+    doc.setFontSize(9);
+    if (enc.rtn) doc.text(this.cortar(enc.rtn, 70), margen, yFila2);
+    const meta = this.cortar(enc.meta, 110);
+    if (meta) doc.text(meta, cx, yFila2, { align: 'center' });
+
+    // Filete inferior
+    const yFilete = yFila2 + 7;
+    doc.setDrawColor(90, 90, 90);
+    doc.setLineWidth(0.4);
+    doc.line(margen, yFilete, pageW - margen, yFilete);
+
+    return yFilete + 4;
+  }
+
+  /** Pie de página: filete + usuario + "Página X de Y" + fecha */
+  pdfPie(doc: jsPDF, enc: EncabezadoPrint, pagina: number, total: number): void {
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    doc.setDrawColor(160, 160, 160);
+    doc.setLineWidth(0.3);
+    doc.line(10, pageH - 12, pageW - 10, pageH - 12);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text(`Impreso por: ${enc.usuario}`, 10, pageH - 8);
+    if (total > 1) doc.text(`Página ${pagina} de ${total}`, pageW / 2, pageH - 8, { align: 'center' });
+    doc.text(enc.fecha, pageW - 10, pageH - 8, { align: 'right' });
+  }
+
+  /**
+   * Recorre todas las páginas y dibuja encabezado repetido + pie paginado.
+   * Llamar SIEMPRE al final, después de tablas y firmas.
+   */
+  pdfPaginar(doc: jsPDF, enc: EncabezadoPrint, altoEncabezado: number): void {
+    const total = doc.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i);
+      if (i > 1) this.pdfEncabezado(doc, enc);
+      void altoEncabezado;
+      this.pdfPie(doc, enc, i, total);
+    }
+  }
+
+  /**
+   * Tabla minimalista: cabecera con filete DISCONTINUO inferior, cuerpo sin
+   * cuadrícula y fila de totales con filete DISCONTINUO superior + negrita.
+   * Los importes en 0.00 salen vacíos (regla de diseño del ERP).
+   */
+  pdfTabla(doc: jsPDF, tab: TablaPrint, startY: number, altoEncabezado: number): void {
+    const pageW = doc.internal.pageSize.getWidth();
+    const margen = 10;
+    const anchos = this.pdfAnchos(tab.columnas, pageW, margen);
+    const alineaciones = tab.columnas.map((c) => c.alinear ?? this.alineacionPorDefecto(c));
+    const alineacionesTotales = tab.alineacionesTotales ?? [];
+
+    const filasTotales = new Set(tab.filasTotales ?? []);
+    const cuerpo = tab.filas.map((f) => this.filaATexto(f));
+    if (tab.filaTotales) {
+      filasTotales.add(cuerpo.length);
+      cuerpo.push(this.filaATexto(tab.filaTotales));
+    }
+
+    const opciones: UserOptions = {
+      startY,
+      head: [tab.columnas.map((c) => c.titulo)],
+      body: cuerpo,
+      theme: 'plain',
+      styles: {
+        font: 'helvetica',
+        fontSize: 8,
+        textColor: [35, 35, 35],
+        cellPadding: { top: 1.5, bottom: 1.5, left: 1.5, right: 1.5 },
+        lineWidth: 0,
+        lineColor: [255, 255, 255],
+        overflow: 'linebreak',
+      },
+      headStyles: {
+        fillColor: false,
+        textColor: [30, 30, 30],
+        fontStyle: 'bold',
+        cellPadding: { top: 2.2, bottom: 2.2, left: 1.5, right: 1.5 },
+        // El filete bajo la cabecera se dibuja discontinuo en didDrawCell
+        lineWidth: { top: 0, bottom: 0, left: 0, right: 0 },
+        lineColor: [90, 90, 90],
+      },
+      margin: { left: margen, right: margen, top: altoEncabezado, bottom: 16 },
+      columnStyles: anchos.reduce((acc: Record<number, any>, ancho, i) => {
+        acc[i] = { halign: alineaciones[i], cellWidth: ancho };
+        return acc;
+      }, {}),
+      didParseCell: (data: CellHookData) => {
+        if (data.section === 'head') {
+          data.cell.styles.halign = alineaciones[data.column.index] ?? 'left';
+          return;
+        }
+        if (data.section === 'body' && filasTotales.has(data.row.index)) {
+          data.cell.styles.fontStyle = 'bold';
+          const alin = alineacionesTotales[data.column.index];
+          if (alin) data.cell.styles.halign = alin;
+        }
+      },
+      didDrawCell: (data: CellHookData) => {
+        // Filetes DISCONTINUOS: bajo la cabecera y encima de cada fila de totales
+        const c = data.cell as unknown as { x: number; y: number; width: number; height: number };
+        if (data.section === 'head' && data.row.index === 0) {
+          this.pdfLineaDiscontinua(doc, c.x, c.y + c.height, c.width);
+        } else if (data.section === 'body' && filasTotales.has(data.row.index)) {
+          this.pdfLineaDiscontinua(doc, c.x, c.y, c.width);
+        }
+      },
+    };
+
+    autoTable(doc, opciones);
+  }
+
+  /** Línea discontinua de 1 celda (separador de cabecera/totales en el PDF) */
+  private pdfLineaDiscontinua(doc: jsPDF, x: number, y: number, ancho: number): void {
+    doc.setLineDashPattern([1.1, 1.1], 0);
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(90, 90, 90);
+    doc.line(x, y, x + ancho, y);
+    doc.setLineDashPattern([], 0);
+  }
+
+  /** Fila → texto (los números se formatean con 2 decimales; los 0.00 salen vacíos) */
+  private filaATexto(fila: (string | number | null)[]): string[] {
+    return fila.map((v) => (this.esCero(v) ? '' : typeof v === 'number' ? this.fmt(v) : v == null ? '' : String(v)));
+  }
+
+  private alineacionPorDefecto(col: ColumnaPrint): Alineacion {
+    const t = col.titulo.toLowerCase();
+    if (t === 'cuenta' || t.includes('descrip') || t === 'partida' || t === 'fecha' || t === 'nivel') {
+      return t === 'nivel' ? 'center' : 'left';
+    }
+    return 'right';
+  }
+
+  /** ¿La columna es de texto largo (Descripción)? — gana 30% del ancho libre */
+  private esColumnaDescripcion(col: ColumnaPrint | undefined): boolean {
+    return !!col && col.titulo.toLowerCase().includes('descrip');
+  }
+
+  /**
+   * Anchos de columna en mm que siempre caben en el ancho de página.
+   * Reglas: 1ª columna sin ancho fijo → 30 mm (cuenta/código) · columna
+   * "descripción" → 30% del resto · el resto se reparte en partes iguales.
+   */
+  private pdfAnchos(columnas: ColumnaPrint[], pageW: number, margen: number): number[] {
+    const disponibles = pageW - margen * 2;
+    const anchos: number[] = columnas.map((c) => c.pdf ?? 0);
+
+    let fijos = 0;
+    let libres: number[] = [];
+    anchos.forEach((a, i) => (a > 0 ? (fijos += a) : libres.push(i)));
+
+    if (libres.length > 0) {
+      let resto = Math.max(disponibles - fijos, 40);
+
+      if (libres.includes(0)) {
+        const anchoCta = Math.min(30, Math.max(resto - 14 * Math.max(libres.length - 1, 1), 20));
+        anchos[0] = anchoCta;
+        resto -= anchoCta;
+        libres = libres.filter((i) => i !== 0);
+      }
+
+      if (libres.includes(1) && this.esColumnaDescripcion(columnas[1])) {
+        const anchoDesc = Math.round(resto * 0.3);
+        anchos[1] = anchoDesc;
+        resto -= anchoDesc;
+        libres = libres.filter((i) => i !== 1);
+      }
+
+      if (libres.length > 0) {
+        const iguales = Math.max(Math.round(resto / libres.length), 14);
+        libres.forEach((i) => (anchos[i] = iguales));
+      }
+    }
+
+    // Si quedó ancho sin repartir (p.ej. Descripción es la única columna libre
+    // y las demás tienen ancho fijo), se le da a la columna de descripción para
+    // que la tabla ocupe SIEMPRE todo el ancho útil de la página.
+    const sobra = disponibles - anchos.reduce((s, a) => s + a, 0);
+    if (sobra > 0) {
+      const idxDesc = columnas.findIndex((c) => this.esColumnaDescripcion(c));
+      anchos[idxDesc >= 0 ? idxDesc : anchos.length - 1] += sobra;
+    }
+    return anchos;
+  }
+
+  // =========================================================================
+  // Excel (exceljs — xlsx CE ignora negritas, filetes y formatos)
+  // =========================================================================
+
+  nuevoLibro(): Workbook {
+    const wb = new Workbook();
+    wb.creator = this.usuario();
+    wb.created = new Date();
+    wb.modified = new Date();
+    return wb;
+  }
+
+  /**
+   * Encabezado de Excel en 2 filas con elementos COMPARTIDOS en la misma línea:
+   *   fila 1: empresa (izquierda, grande, Audiowide) + título (centrado, Mukta)
+   *   fila 2: RTN (izquierda, Mukta) + criterio de filtro (centrado, Mukta)
+   * Devuelve la fila donde empieza la cabecera de la tabla.
+   */
+  excelEncabezado(wb: Workbook, ws: Worksheet, enc: EncabezadoPrint, tab: TablaPrint): number {
+    void wb;
+    const ncols = tab.columnas.length;
+
+    // Anchos de columna (los re-aplica excelTabla, es idempotente)
+    tab.columnas.forEach((col, i) => {
+      ws.getColumn(i + 1).width =
+        col.excel ?? (this.alineacionPorDefecto(col) === 'right' ? 16 : 14);
+    });
+
+    let fila = 1;
+
+    const pintar = (
+      row: ReturnType<Worksheet['getRow']>,
+      col: number,
+      texto: string,
+      op: { font?: string; size: number; gris?: boolean; alinear: 'left' | 'center' | 'right' },
+    ): void => {
+      const cell = row.getCell(col);
+      cell.value = texto || null;
+      cell.font = {
+        name: op.font ?? 'Calibri',
+        size: op.size,
+        color: { argb: op.gris ? GRIS_OSCURO : 'FF1E293B' },
+      };
+      cell.alignment = { horizontal: op.alinear, vertical: 'middle' };
+      cell.fill = { type: 'pattern', pattern: 'none', fgColor: { argb: 'FFFFFFFF' } };
+    };
+
+    /** Fila con bloque izquierdo (columna 1) y bloque derecho centrado (columnas 2..N) */
+    const filaCompartida = (
+      izq: string,
+      der: string,
+      op: {
+        sizeIzq: number;
+        sizeDer?: number;
+        grisIzq?: boolean;
+        grisDer?: boolean;
+        height: number;
+        fontIzq?: string;
+        fontDer?: string;
+      },
+    ): void => {
+      const r = ws.getRow(fila);
+      r.height = op.height;
+      const sizeDer = op.sizeDer ?? op.sizeIzq;
+      const fontIzq = op.fontIzq ?? 'Audiowide';
+      const fontDer = op.fontDer ?? fontIzq;
+      if (ncols < 2) {
+        // Caso límite (una sola columna): ambos textos en la misma celda
+        pintar(r, 1, der ? `${izq}     ${der}` : izq, { font: fontIzq, size: op.sizeIzq, alinear: 'left' });
+      } else {
+        for (let c = 1; c <= ncols; c++) pintar(r, c, '', { size: sizeDer, alinear: 'center' });
+        pintar(r, 1, izq, { font: fontIzq, size: op.sizeIzq, gris: op.grisIzq, alinear: 'left' });
+        pintar(r, 2, der, { font: fontDer, size: sizeDer, gris: op.grisDer, alinear: 'center' });
+        ws.mergeCells(fila, 2, fila, ncols);
+      }
+      fila++;
+    };
+
+    /** Fila de texto único centrado en todas las columnas (ej. "Impreso por") */
+    const filaCentrada = (texto: string, op: { size: number; gris?: boolean; height: number }): void => {
+      const r = ws.getRow(fila);
+      r.height = op.height;
+      for (let c = 1; c <= ncols; c++) pintar(r, c, '', { size: op.size, alinear: 'center' });
+      pintar(r, 1, texto, { size: op.size, gris: op.gris, alinear: 'center' });
+      if (ncols > 1) ws.mergeCells(fila, 1, fila, ncols);
+      fila++;
+    };
+
+    // 1) Fila 1 — empresa (izquierda, 21pt, Audiowide) + título (centrado, 13pt, Mukta)
+    filaCompartida(enc.empresa, enc.titulo.toUpperCase(), { sizeIzq: 21, sizeDer: 13, height: 30, fontDer: 'Mukta' });
+
+    // 2) Fila 2 — RTN (izquierda, 9pt) + criterio de filtro (centrado, 9pt), ambas en Mukta
+    if (enc.rtn || enc.meta) {
+      filaCompartida(enc.rtn, enc.meta, {
+        sizeIzq: 9,
+        sizeDer: 9,
+        grisIzq: true,
+        grisDer: true,
+        height: 16,
+        fontIzq: 'Mukta',
+        fontDer: 'Mukta',
+      });
+    }
+
+    // Excel no tiene pie de página: quién imprimió y cuándo van aquí
+    filaCentrada(`Impreso por: ${enc.usuario} — ${enc.fecha}`, { size: 9, gris: true, height: 15 });
+
+    ws.getRow(fila).height = 6;
+    fila++;
+    return fila;
+  }
+
+  /**
+   * Tabla de Excel: cabecera con filete superior/inferior, cuerpo con formato
+   * numérico y fila de totales. Congela la cabecera y configura impresión.
+   * Devuelve la última fila usada.
+   */
+  excelTabla(ws: Worksheet, tab: TablaPrint, filaCabecera: number, orientacion: Orientacion = 'landscape'): number {
+    const ncols = tab.columnas.length;
+
+    // ---- Cabecera
+    const cabecera = ws.getRow(filaCabecera);
+    tab.columnas.forEach((col, i) => {
+      const cell = cabecera.getCell(i + 1);
+      cell.value = col.titulo;
+      cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: GRIS_OSCURO } };
+      cell.alignment = {
+        horizontal: col.alinear ?? this.alineacionPorDefecto(col),
+        vertical: 'middle',
+        wrapText: true,
+      };
+      // Filete DISCONTINUO bajo la cabecera (sin línea superior)
+      cell.border = {
+        bottom: { style: 'dashed', color: { argb: GRIS_CLARO } },
+      };
+      if (col.excel) ws.getColumn(i + 1).width = col.excel;
+      else ws.getColumn(i + 1).width = this.alineacionPorDefecto(col) === 'right' ? 16 : 14;
+    });
+    cabecera.height = 20;
+
+    // ---- Cuerpo
+    const filasTotales = new Set(tab.filasTotales ?? []);
+    let fila = filaCabecera + 1;
+    tab.filas.forEach((datos, idx) => {
+      const r = ws.getRow(fila);
+      const esTotal = filasTotales.has(idx);
+      this.escribirFilaExcel(r, datos, tab.columnas, esTotal, tab.alineacionesTotales);
+      fila++;
+    });
+
+    // ---- Fila final de totales
+    if (tab.filaTotales) {
+      this.escribirFilaExcel(ws.getRow(fila), tab.filaTotales, tab.columnas, true, tab.alineacionesTotales);
+      fila++;
+    }
+    const ultimaFila = fila - 1;
+
+    // ---- Congelar cabecera + impresión
+    ws.views = [
+      {
+        state: 'frozen',
+        ySplit: filaCabecera,
+        xSplit: 0,
+        activeCell: `A${filaCabecera + 1}`,
+      },
+    ];
+    ws.pageSetup = {
+      orientation: orientacion,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 },
+      printTitlesRow: `${filaCabecera}:${filaCabecera}`,
+    };
+
+    // Autofilter solo cuando no hay totales (evita ocultarlos al filtrar)
+    if (!tab.filaTotales && filasTotales.size === 0 && tab.filas.length > 0) {
+      ws.autoFilter = {
+        from: { row: filaCabecera, column: 1 },
+        to: { row: ultimaFila, column: ncols },
+      };
+    }
+
+    return ultimaFila;
+  }
+
+  private escribirFilaExcel(
+    row: ReturnType<Worksheet['getRow']>,
+    datos: (string | number | null)[],
+    columnas: ColumnaPrint[],
+    esTotal: boolean,
+    alineacionesTotales?: (Alineacion | undefined)[],
+  ): void {
+    columnas.forEach((col, i) => {
+      const cell = row.getCell(i + 1);
+      // Importes 0.00 → celda vacía (regla de diseño del ERP)
+      let valor: string | number | null = this.esCero(datos[i]) ? null : (datos[i] ?? null);
+      if (valor === '') valor = null;
+      cell.value = valor;
+      const alinear = alineacionesTotales?.[i] ?? col.alinear ?? this.alineacionPorDefecto(col);
+      cell.font = { name: 'Calibri', size: 10, bold: esTotal, color: { argb: GRIS_OSCURO } };
+      cell.alignment = { horizontal: alinear, vertical: 'middle' };
+      if (typeof valor === 'number') cell.numFmt = '#,##0.00;[Red]-#,##0.00';
+      if (esTotal) {
+        // Filete DISCONTINUO sobre los totales
+        cell.border = { top: { style: 'dashed', color: { argb: GRIS_CLARO } } };
+      }
+    });
+    row.commit?.();
+  }
+
+  /** Descarga el workbook como .xlsx */
+  async descargarExcel(wb: Workbook, nombreArchivo: string): Promise<void> {
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombreArchivo;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // =========================================================================
+  // Word (docx)
+  // =========================================================================
+
+  /**
+   * Encabezado de Word, repetido en cada página, en 2 filas con elementos
+   * COMPARTIDOS en la misma línea:
+   *   fila 1: empresa (izquierda, grande, Audiowide) + título (centrado, Mukta)
+   *   fila 2: RTN (izquierda, Mukta) + criterio de filtro (centrado, Mukta)
+   * Usa una tabla sin bordes de 3 columnas (izq / centro / der) con las
+   * columnas laterales del mismo ancho para que el bloque centrado quede en el
+   * centro exacto de la página. Sin logo, sin dirección y sin teléfono.
+   */
+  wordEncabezado(enc: EncabezadoPrint, orientacion: Orientacion = 'portrait'): (Paragraph | Table)[] {
+    const ancho = orientacion === 'landscape' ? 13840 : 10240;
+    const lateral = 3400;
+    const central = ancho - lateral * 2;
+
+    const sinBordes = {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+    };
+
+    const celda = (
+      texto: string,
+      anchoCelda: number,
+      alinear: (typeof AlignmentType)[keyof typeof AlignmentType],
+      size: number,
+      gris = false,
+      fuente = 'Audiowide',
+    ): TableCell =>
+      new TableCell({
+        borders: sinBordes,
+        verticalAlign: VerticalAlign.CENTER,
+        width: { size: anchoCelda, type: WidthType.DXA },
+        children: [
+          new Paragraph({
+            alignment: alinear,
+            spacing: { before: 0, after: 0 },
+            children: texto
+              ? [new TextRun({ text: texto, size, font: fuente, ...(gris ? { color: '475569' } : {}) })]
+              : [],
+          }),
+        ],
+      });
+
+    const filas: TableRow[] = [
+      // Fila 1 — empresa (izq. 42 = 21pt, Audiowide) + título (centrado, 26 = 13pt, Mukta)
+      new TableRow({
+        children: [
+          celda(enc.empresa, lateral, AlignmentType.LEFT, 42),
+          celda(enc.titulo.toUpperCase(), central, AlignmentType.CENTER, 26, false, 'Mukta'),
+          celda('', lateral, AlignmentType.RIGHT, 18),
+        ],
+      }),
+    ];
+
+    // Fila 2 — RTN (izq. 18 = 9pt) + criterio de filtro (centrado, 18 = 9pt), ambas en Mukta
+    if (enc.rtn || enc.meta) {
+      filas.push(
+        new TableRow({
+          children: [
+            celda(enc.rtn, lateral, AlignmentType.LEFT, 18, true, 'Mukta'),
+            celda(enc.meta, central, AlignmentType.CENTER, 18, true, 'Mukta'),
+            celda('', lateral, AlignmentType.RIGHT, 18),
+          ],
+        }),
+      );
+    }
+
+    const tabla = new Table({
+      width: { size: ancho, type: WidthType.DXA },
+      columnWidths: [lateral, central, lateral],
+      borders: {
+        top: { style: BorderStyle.NONE },
+        bottom: { style: BorderStyle.NONE },
+        left: { style: BorderStyle.NONE },
+        right: { style: BorderStyle.NONE },
+        insideHorizontal: { style: BorderStyle.NONE },
+        insideVertical: { style: BorderStyle.NONE },
+      },
+      rows: filas,
+    });
+
+    return [
+      tabla,
+      // Filete inferior del encabezado
+      new Paragraph({
+        spacing: { before: 60, after: 120 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '5A5A5A', space: 1 } },
+        children: [],
+      }),
+    ];
+  }
+
+  /** Pie con usuario, paginación y fecha */
+  wordPie(enc: EncabezadoPrint, orientacion: Orientacion): (Paragraph | Table)[] {
+    const ancho = orientacion === 'landscape' ? 13840 : 10240;
+    const tercio = Math.round(ancho / 3);
+
+    const celda = (texto: string, alinear: (typeof AlignmentType)[keyof typeof AlignmentType], conPagina = false): TableCell =>
+      new TableCell({
+        // docx exige color SIN alfa (6 dígitos) → '94A3B8' = GRIS_CLARO
+        borders: { top: { style: BorderStyle.SINGLE, size: 4, color: '94A3B8' } },
+        width: { size: tercio, type: WidthType.DXA },
+        children: [
+          new Paragraph({
+            alignment: alinear,
+            children: conPagina
+              ? [
+                  new TextRun({ text: 'Página ', size: 14, color: '64748B' }),
+                  new TextRun({ children: [PageNumber.CURRENT], size: 14, color: '64748B' }),
+                  new TextRun({ text: ' de ', size: 14, color: '64748B' }),
+                  new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 14, color: '64748B' }),
+                ]
+              : [new TextRun({ text: texto, size: 14, color: '64748B' })],
+          }),
+        ],
+      });
+
+    const tabla = new Table({
+      width: { size: ancho, type: WidthType.DXA },
+      columnWidths: [tercio, tercio, ancho - tercio * 2],
+      borders: {
+        top: { style: BorderStyle.NONE },
+        bottom: { style: BorderStyle.NONE },
+        left: { style: BorderStyle.NONE },
+        right: { style: BorderStyle.NONE },
+        insideHorizontal: { style: BorderStyle.NONE },
+        insideVertical: { style: BorderStyle.NONE },
+      },
+      rows: [
+        new TableRow({
+          children: [
+            celda(`Impreso por: ${enc.usuario}`, AlignmentType.LEFT),
+            celda('', AlignmentType.CENTER, true),
+            celda(enc.fecha, AlignmentType.RIGHT),
+          ],
+        }),
+      ],
+    });
+
+    return [tabla];
+  }
+
+  /**
+   * Tabla minimalista de Word: filete DISCONTINUO bajo la cabecera, filete
+   * DISCONTINUO sobre los totales y sin bordes en el cuerpo.
+   */
+  wordTabla(tab: TablaPrint, orientacion: Orientacion): Table {
+    // Ancho útil real = página − márgenes izq/der (1000 twips c/u)
+    const ancho = orientacion === 'landscape' ? 13840 : 10240;
+    const anchos = this.wordAnchos(tab.columnas, ancho);
+    const filasTotales = new Set(tab.filasTotales ?? []);
+
+    const celda = (
+      texto: string,
+      alinear: (typeof AlignmentType)[keyof typeof AlignmentType],
+      opts: { bold?: boolean; borde?: 'cabecera' | 'total' } = {},
+    ): TableCell => {
+      const bordes: any = {};
+      if (opts.borde === 'cabecera') {
+        bordes.bottom = { style: BorderStyle.DASHED, size: 6, color: '5A5A5A' };
+      } else if (opts.borde === 'total') {
+        bordes.top = { style: BorderStyle.DASHED, size: 6, color: '5A5A5A' };
+      }
+      return new TableCell({
+        borders: bordes,
+        children: [
+          new Paragraph({
+            alignment: alinear,
+            spacing: { before: 20, after: 20 },
+            children: [new TextRun({ text: texto, bold: opts.bold ?? false, size: 16 })],
+          }),
+        ],
+      });
+    };
+
+    const alinearCol = (col: ColumnaPrint): (typeof AlignmentType)[keyof typeof AlignmentType] => {
+      const a = col.alinear ?? this.alineacionPorDefecto(col);
+      return a === 'right' ? AlignmentType.RIGHT : a === 'center' ? AlignmentType.CENTER : AlignmentType.LEFT;
+    };
+
+    /** Alineación de una celda de la fila de totales (override por columna) */
+    const alinearTotal = (col: ColumnaPrint, i: number): (typeof AlignmentType)[keyof typeof AlignmentType] => {
+      const a = tab.alineacionesTotales?.[i];
+      if (!a) return alinearCol(col);
+      return a === 'right' ? AlignmentType.RIGHT : a === 'center' ? AlignmentType.CENTER : AlignmentType.LEFT;
+    };
+
+    const filas: TableRow[] = [
+      new TableRow({
+        tableHeader: true,
+        cantSplit: true,
+        children: tab.columnas.map((col) => celda(col.titulo, alinearCol(col), { bold: true, borde: 'cabecera' })),
+      }),
+    ];
+
+    tab.filas.forEach((datos, idx) => {
+      const esTotal = filasTotales.has(idx);
+      const texto = this.filaATexto(datos);
+      filas.push(
+        new TableRow({
+          cantSplit: true,
+          children: tab.columnas.map((col, i) =>
+            celda(texto[i], esTotal ? alinearTotal(col, i) : alinearCol(col), {
+              bold: esTotal,
+              borde: esTotal ? 'total' : undefined,
+            }),
+          ),
+        }),
+      );
+    });
+
+    if (tab.filaTotales) {
+      const texto = this.filaATexto(tab.filaTotales);
+      filas.push(
+        new TableRow({
+          cantSplit: true,
+          children: tab.columnas.map((col, i) =>
+            celda(texto[i], alinearTotal(col, i), { bold: true, borde: 'total' }),
+          ),
+        }),
+      );
+    }
+
+    return new Table({
+      rows: filas,
+      columnWidths: anchos,
+      width: { size: ancho, type: WidthType.DXA },
+      borders: {
+        top: { style: BorderStyle.NONE },
+        bottom: { style: BorderStyle.NONE },
+        left: { style: BorderStyle.NONE },
+        right: { style: BorderStyle.NONE },
+        insideHorizontal: { style: BorderStyle.NONE },
+        insideVertical: { style: BorderStyle.NONE },
+      },
+    });
+  }
+
+  private wordAnchos(columnas: ColumnaPrint[], total: number): number[] {
+    const anchos: number[] = columnas.map((c) => c.word ?? 0);
+
+    let fijos = 0;
+    let libres: number[] = [];
+    anchos.forEach((a, i) => (a > 0 ? (fijos += a) : libres.push(i)));
+
+    if (libres.length > 0) {
+      let resto = Math.max(total - fijos, 1000);
+
+      if (libres.includes(0)) {
+        const anchoCta = Math.min(1500, Math.max(resto - 700 * Math.max(libres.length - 1, 1), 900));
+        anchos[0] = anchoCta;
+        resto -= anchoCta;
+        libres = libres.filter((i) => i !== 0);
+      }
+
+      if (libres.includes(1) && this.esColumnaDescripcion(columnas[1])) {
+        const anchoDesc = Math.round(resto * 0.35);
+        anchos[1] = anchoDesc;
+        resto -= anchoDesc;
+        libres = libres.filter((i) => i !== 1);
+      }
+
+      if (libres.length > 0) {
+        const iguales = Math.max(Math.round(resto / libres.length), 700);
+        libres.forEach((i) => (anchos[i] = iguales));
+      }
+    }
+
+    // Ancho sin repartir → columna de descripción (la tabla ocupa todo el útil)
+    const sobra = total - anchos.reduce((s, a) => s + a, 0);
+    if (sobra > 0) {
+      const idxDesc = columnas.findIndex((c) => this.esColumnaDescripcion(c));
+      anchos[idxDesc >= 0 ? idxDesc : anchos.length - 1] += sobra;
+    }
+    return anchos;
+  }
+
+  /** Documento Word con encabezado, paginación y orientación configuradas */
+  wordDocumento(enc: EncabezadoPrint, orientacion: Orientacion, children: (Paragraph | Table)[]): Document {
+    const page =
+      orientacion === 'landscape'
+        ? { width: 15840, height: 12240, orientation: 'landscape' as const }
+        : { width: 12240, height: 15840, orientation: 'portrait' as const };
+
+    return new Document({
+      sections: [
+        {
+          properties: {
+            page: {
+              size: page,
+              margin: { top: 1000, right: 1000, bottom: 900, left: 1000 },
+            },
+          },
+          headers: { default: new Header({ children: this.wordEncabezado(enc, orientacion) }) },
+          footers: { default: new Footer({ children: this.wordPie(enc, orientacion) }) },
+          children,
+        },
+      ],
+    });
   }
 }
 
@@ -7486,6 +10334,712 @@ export class UsuariosService {
 
 ---
 
+## 📄 src\app\core\utils\courier-afm.ts
+
+```typescript
+// ===========================================================================
+// AFM de Courier estándar (fuentes base del PDF, no se embeben).
+// El contenedor oficial de pdfmake (build/standard-fonts/Courier.js) solo
+// incluye Courier.afm y Courier-Bold.afm. Estos dos archivos son necesarios
+// para el estilo itálico del ticket (msjdev / msjfact) y bold+itálico.
+// Fuente: pdfkit/js/data (Adobe AFM públicos, métricas solamente).
+// Generado por Temp\\opencode\\gen-courier-afm.js — NO editar a mano.
+// ===========================================================================
+
+/** Métricas de Courier-Oblique (pdfmake las lee de 'data/Courier-Oblique.afm' en el virtualfs) */
+export const COURIER_OBLIQUE_AFM = `StartFontMetrics 4.1
+Comment Copyright (c) 1989, 1990, 1991, 1992, 1993, 1997 Adobe Systems Incorporated.  All Rights Reserved.
+Comment Creation Date: Thu May  1 17:37:52 1997
+Comment UniqueID 43051
+Comment VMusage 16248 75829
+FontName Courier-Oblique
+FullName Courier Oblique
+FamilyName Courier
+Weight Medium
+ItalicAngle -12
+IsFixedPitch true
+CharacterSet ExtendedRoman
+FontBBox -27 -250 849 805 
+UnderlinePosition -100
+UnderlineThickness 50
+Version 003.000
+Notice Copyright (c) 1989, 1990, 1991, 1992, 1993, 1997 Adobe Systems Incorporated.  All Rights Reserved.
+EncodingScheme AdobeStandardEncoding
+CapHeight 562
+XHeight 426
+Ascender 629
+Descender -157
+StdHW 51
+StdVW 51
+StartCharMetrics 315
+C 32 ; WX 600 ; N space ; B 0 0 0 0 ;
+C 33 ; WX 600 ; N exclam ; B 243 -15 464 572 ;
+C 34 ; WX 600 ; N quotedbl ; B 273 328 532 562 ;
+C 35 ; WX 600 ; N numbersign ; B 133 -32 596 639 ;
+C 36 ; WX 600 ; N dollar ; B 108 -126 596 662 ;
+C 37 ; WX 600 ; N percent ; B 134 -15 599 622 ;
+C 38 ; WX 600 ; N ampersand ; B 87 -15 580 543 ;
+C 39 ; WX 600 ; N quoteright ; B 283 328 495 562 ;
+C 40 ; WX 600 ; N parenleft ; B 313 -108 572 622 ;
+C 41 ; WX 600 ; N parenright ; B 137 -108 396 622 ;
+C 42 ; WX 600 ; N asterisk ; B 212 257 580 607 ;
+C 43 ; WX 600 ; N plus ; B 129 44 580 470 ;
+C 44 ; WX 600 ; N comma ; B 157 -112 370 122 ;
+C 45 ; WX 600 ; N hyphen ; B 152 231 558 285 ;
+C 46 ; WX 600 ; N period ; B 238 -15 382 109 ;
+C 47 ; WX 600 ; N slash ; B 112 -80 604 629 ;
+C 48 ; WX 600 ; N zero ; B 154 -15 575 622 ;
+C 49 ; WX 600 ; N one ; B 98 0 515 622 ;
+C 50 ; WX 600 ; N two ; B 70 0 568 622 ;
+C 51 ; WX 600 ; N three ; B 82 -15 538 622 ;
+C 52 ; WX 600 ; N four ; B 108 0 541 622 ;
+C 53 ; WX 600 ; N five ; B 99 -15 589 607 ;
+C 54 ; WX 600 ; N six ; B 155 -15 629 622 ;
+C 55 ; WX 600 ; N seven ; B 182 0 612 607 ;
+C 56 ; WX 600 ; N eight ; B 132 -15 588 622 ;
+C 57 ; WX 600 ; N nine ; B 93 -15 574 622 ;
+C 58 ; WX 600 ; N colon ; B 238 -15 441 385 ;
+C 59 ; WX 600 ; N semicolon ; B 157 -112 441 385 ;
+C 60 ; WX 600 ; N less ; B 96 42 610 472 ;
+C 61 ; WX 600 ; N equal ; B 109 138 600 376 ;
+C 62 ; WX 600 ; N greater ; B 85 42 599 472 ;
+C 63 ; WX 600 ; N question ; B 222 -15 583 572 ;
+C 64 ; WX 600 ; N at ; B 127 -15 582 622 ;
+C 65 ; WX 600 ; N A ; B 3 0 607 562 ;
+C 66 ; WX 600 ; N B ; B 43 0 616 562 ;
+C 67 ; WX 600 ; N C ; B 93 -18 655 580 ;
+C 68 ; WX 600 ; N D ; B 43 0 645 562 ;
+C 69 ; WX 600 ; N E ; B 53 0 660 562 ;
+C 70 ; WX 600 ; N F ; B 53 0 660 562 ;
+C 71 ; WX 600 ; N G ; B 83 -18 645 580 ;
+C 72 ; WX 600 ; N H ; B 32 0 687 562 ;
+C 73 ; WX 600 ; N I ; B 96 0 623 562 ;
+C 74 ; WX 600 ; N J ; B 52 -18 685 562 ;
+C 75 ; WX 600 ; N K ; B 38 0 671 562 ;
+C 76 ; WX 600 ; N L ; B 47 0 607 562 ;
+C 77 ; WX 600 ; N M ; B 4 0 715 562 ;
+C 78 ; WX 600 ; N N ; B 7 -13 712 562 ;
+C 79 ; WX 600 ; N O ; B 94 -18 625 580 ;
+C 80 ; WX 600 ; N P ; B 79 0 644 562 ;
+C 81 ; WX 600 ; N Q ; B 95 -138 625 580 ;
+C 82 ; WX 600 ; N R ; B 38 0 598 562 ;
+C 83 ; WX 600 ; N S ; B 76 -20 650 580 ;
+C 84 ; WX 600 ; N T ; B 108 0 665 562 ;
+C 85 ; WX 600 ; N U ; B 125 -18 702 562 ;
+C 86 ; WX 600 ; N V ; B 105 -13 723 562 ;
+C 87 ; WX 600 ; N W ; B 106 -13 722 562 ;
+C 88 ; WX 600 ; N X ; B 23 0 675 562 ;
+C 89 ; WX 600 ; N Y ; B 133 0 695 562 ;
+C 90 ; WX 600 ; N Z ; B 86 0 610 562 ;
+C 91 ; WX 600 ; N bracketleft ; B 246 -108 574 622 ;
+C 92 ; WX 600 ; N backslash ; B 249 -80 468 629 ;
+C 93 ; WX 600 ; N bracketright ; B 135 -108 463 622 ;
+C 94 ; WX 600 ; N asciicircum ; B 175 354 587 622 ;
+C 95 ; WX 600 ; N underscore ; B -27 -125 584 -75 ;
+C 96 ; WX 600 ; N quoteleft ; B 343 328 457 562 ;
+C 97 ; WX 600 ; N a ; B 76 -15 569 441 ;
+C 98 ; WX 600 ; N b ; B 29 -15 625 629 ;
+C 99 ; WX 600 ; N c ; B 106 -15 608 441 ;
+C 100 ; WX 600 ; N d ; B 85 -15 640 629 ;
+C 101 ; WX 600 ; N e ; B 106 -15 598 441 ;
+C 102 ; WX 600 ; N f ; B 114 0 662 629 ; L i fi ; L l fl ;
+C 103 ; WX 600 ; N g ; B 61 -157 657 441 ;
+C 104 ; WX 600 ; N h ; B 33 0 592 629 ;
+C 105 ; WX 600 ; N i ; B 95 0 515 657 ;
+C 106 ; WX 600 ; N j ; B 52 -157 550 657 ;
+C 107 ; WX 600 ; N k ; B 58 0 633 629 ;
+C 108 ; WX 600 ; N l ; B 95 0 515 629 ;
+C 109 ; WX 600 ; N m ; B -5 0 615 441 ;
+C 110 ; WX 600 ; N n ; B 26 0 585 441 ;
+C 111 ; WX 600 ; N o ; B 102 -15 588 441 ;
+C 112 ; WX 600 ; N p ; B -24 -157 605 441 ;
+C 113 ; WX 600 ; N q ; B 85 -157 682 441 ;
+C 114 ; WX 600 ; N r ; B 60 0 636 441 ;
+C 115 ; WX 600 ; N s ; B 78 -15 584 441 ;
+C 116 ; WX 600 ; N t ; B 167 -15 561 561 ;
+C 117 ; WX 600 ; N u ; B 101 -15 572 426 ;
+C 118 ; WX 600 ; N v ; B 90 -10 681 426 ;
+C 119 ; WX 600 ; N w ; B 76 -10 695 426 ;
+C 120 ; WX 600 ; N x ; B 20 0 655 426 ;
+C 121 ; WX 600 ; N y ; B -4 -157 683 426 ;
+C 122 ; WX 600 ; N z ; B 99 0 593 426 ;
+C 123 ; WX 600 ; N braceleft ; B 233 -108 569 622 ;
+C 124 ; WX 600 ; N bar ; B 222 -250 485 750 ;
+C 125 ; WX 600 ; N braceright ; B 140 -108 477 622 ;
+C 126 ; WX 600 ; N asciitilde ; B 116 197 600 320 ;
+C 161 ; WX 600 ; N exclamdown ; B 225 -157 445 430 ;
+C 162 ; WX 600 ; N cent ; B 151 -49 588 614 ;
+C 163 ; WX 600 ; N sterling ; B 124 -21 621 611 ;
+C 164 ; WX 600 ; N fraction ; B 84 -57 646 665 ;
+C 165 ; WX 600 ; N yen ; B 120 0 693 562 ;
+C 166 ; WX 600 ; N florin ; B -26 -143 671 622 ;
+C 167 ; WX 600 ; N section ; B 104 -78 590 580 ;
+C 168 ; WX 600 ; N currency ; B 94 58 628 506 ;
+C 169 ; WX 600 ; N quotesingle ; B 345 328 460 562 ;
+C 170 ; WX 600 ; N quotedblleft ; B 262 328 541 562 ;
+C 171 ; WX 600 ; N guillemotleft ; B 92 70 652 446 ;
+C 172 ; WX 600 ; N guilsinglleft ; B 204 70 540 446 ;
+C 173 ; WX 600 ; N guilsinglright ; B 170 70 506 446 ;
+C 174 ; WX 600 ; N fi ; B 3 0 619 629 ;
+C 175 ; WX 600 ; N fl ; B 3 0 619 629 ;
+C 177 ; WX 600 ; N endash ; B 124 231 586 285 ;
+C 178 ; WX 600 ; N dagger ; B 217 -78 546 580 ;
+C 179 ; WX 600 ; N daggerdbl ; B 163 -78 546 580 ;
+C 180 ; WX 600 ; N periodcentered ; B 275 189 434 327 ;
+C 182 ; WX 600 ; N paragraph ; B 100 -78 630 562 ;
+C 183 ; WX 600 ; N bullet ; B 224 130 485 383 ;
+C 184 ; WX 600 ; N quotesinglbase ; B 185 -134 397 100 ;
+C 185 ; WX 600 ; N quotedblbase ; B 115 -134 478 100 ;
+C 186 ; WX 600 ; N quotedblright ; B 213 328 576 562 ;
+C 187 ; WX 600 ; N guillemotright ; B 58 70 618 446 ;
+C 188 ; WX 600 ; N ellipsis ; B 46 -15 575 111 ;
+C 189 ; WX 600 ; N perthousand ; B 59 -15 627 622 ;
+C 191 ; WX 600 ; N questiondown ; B 105 -157 466 430 ;
+C 193 ; WX 600 ; N grave ; B 294 497 484 672 ;
+C 194 ; WX 600 ; N acute ; B 348 497 612 672 ;
+C 195 ; WX 600 ; N circumflex ; B 229 477 581 654 ;
+C 196 ; WX 600 ; N tilde ; B 212 489 629 606 ;
+C 197 ; WX 600 ; N macron ; B 232 525 600 565 ;
+C 198 ; WX 600 ; N breve ; B 279 501 576 609 ;
+C 199 ; WX 600 ; N dotaccent ; B 373 537 478 640 ;
+C 200 ; WX 600 ; N dieresis ; B 272 537 579 640 ;
+C 202 ; WX 600 ; N ring ; B 332 463 500 627 ;
+C 203 ; WX 600 ; N cedilla ; B 197 -151 344 10 ;
+C 205 ; WX 600 ; N hungarumlaut ; B 239 497 683 672 ;
+C 206 ; WX 600 ; N ogonek ; B 189 -172 377 4 ;
+C 207 ; WX 600 ; N caron ; B 262 492 614 669 ;
+C 208 ; WX 600 ; N emdash ; B 49 231 661 285 ;
+C 225 ; WX 600 ; N AE ; B 3 0 655 562 ;
+C 227 ; WX 600 ; N ordfeminine ; B 209 249 512 580 ;
+C 232 ; WX 600 ; N Lslash ; B 47 0 607 562 ;
+C 233 ; WX 600 ; N Oslash ; B 94 -80 625 629 ;
+C 234 ; WX 600 ; N OE ; B 59 0 672 562 ;
+C 235 ; WX 600 ; N ordmasculine ; B 210 249 535 580 ;
+C 241 ; WX 600 ; N ae ; B 41 -15 626 441 ;
+C 245 ; WX 600 ; N dotlessi ; B 95 0 515 426 ;
+C 248 ; WX 600 ; N lslash ; B 95 0 587 629 ;
+C 249 ; WX 600 ; N oslash ; B 102 -80 588 506 ;
+C 250 ; WX 600 ; N oe ; B 54 -15 615 441 ;
+C 251 ; WX 600 ; N germandbls ; B 48 -15 617 629 ;
+C -1 ; WX 600 ; N Idieresis ; B 96 0 623 753 ;
+C -1 ; WX 600 ; N eacute ; B 106 -15 612 672 ;
+C -1 ; WX 600 ; N abreve ; B 76 -15 576 609 ;
+C -1 ; WX 600 ; N uhungarumlaut ; B 101 -15 723 672 ;
+C -1 ; WX 600 ; N ecaron ; B 106 -15 614 669 ;
+C -1 ; WX 600 ; N Ydieresis ; B 133 0 695 753 ;
+C -1 ; WX 600 ; N divide ; B 136 48 573 467 ;
+C -1 ; WX 600 ; N Yacute ; B 133 0 695 805 ;
+C -1 ; WX 600 ; N Acircumflex ; B 3 0 607 787 ;
+C -1 ; WX 600 ; N aacute ; B 76 -15 612 672 ;
+C -1 ; WX 600 ; N Ucircumflex ; B 125 -18 702 787 ;
+C -1 ; WX 600 ; N yacute ; B -4 -157 683 672 ;
+C -1 ; WX 600 ; N scommaaccent ; B 78 -250 584 441 ;
+C -1 ; WX 600 ; N ecircumflex ; B 106 -15 598 654 ;
+C -1 ; WX 600 ; N Uring ; B 125 -18 702 760 ;
+C -1 ; WX 600 ; N Udieresis ; B 125 -18 702 753 ;
+C -1 ; WX 600 ; N aogonek ; B 76 -172 569 441 ;
+C -1 ; WX 600 ; N Uacute ; B 125 -18 702 805 ;
+C -1 ; WX 600 ; N uogonek ; B 101 -172 572 426 ;
+C -1 ; WX 600 ; N Edieresis ; B 53 0 660 753 ;
+C -1 ; WX 600 ; N Dcroat ; B 43 0 645 562 ;
+C -1 ; WX 600 ; N commaaccent ; B 145 -250 323 -58 ;
+C -1 ; WX 600 ; N copyright ; B 53 -18 667 580 ;
+C -1 ; WX 600 ; N Emacron ; B 53 0 660 698 ;
+C -1 ; WX 600 ; N ccaron ; B 106 -15 614 669 ;
+C -1 ; WX 600 ; N aring ; B 76 -15 569 627 ;
+C -1 ; WX 600 ; N Ncommaaccent ; B 7 -250 712 562 ;
+C -1 ; WX 600 ; N lacute ; B 95 0 640 805 ;
+C -1 ; WX 600 ; N agrave ; B 76 -15 569 672 ;
+C -1 ; WX 600 ; N Tcommaaccent ; B 108 -250 665 562 ;
+C -1 ; WX 600 ; N Cacute ; B 93 -18 655 805 ;
+C -1 ; WX 600 ; N atilde ; B 76 -15 629 606 ;
+C -1 ; WX 600 ; N Edotaccent ; B 53 0 660 753 ;
+C -1 ; WX 600 ; N scaron ; B 78 -15 614 669 ;
+C -1 ; WX 600 ; N scedilla ; B 78 -151 584 441 ;
+C -1 ; WX 600 ; N iacute ; B 95 0 612 672 ;
+C -1 ; WX 600 ; N lozenge ; B 94 0 519 706 ;
+C -1 ; WX 600 ; N Rcaron ; B 38 0 642 802 ;
+C -1 ; WX 600 ; N Gcommaaccent ; B 83 -250 645 580 ;
+C -1 ; WX 600 ; N ucircumflex ; B 101 -15 572 654 ;
+C -1 ; WX 600 ; N acircumflex ; B 76 -15 581 654 ;
+C -1 ; WX 600 ; N Amacron ; B 3 0 607 698 ;
+C -1 ; WX 600 ; N rcaron ; B 60 0 636 669 ;
+C -1 ; WX 600 ; N ccedilla ; B 106 -151 614 441 ;
+C -1 ; WX 600 ; N Zdotaccent ; B 86 0 610 753 ;
+C -1 ; WX 600 ; N Thorn ; B 79 0 606 562 ;
+C -1 ; WX 600 ; N Omacron ; B 94 -18 628 698 ;
+C -1 ; WX 600 ; N Racute ; B 38 0 670 805 ;
+C -1 ; WX 600 ; N Sacute ; B 76 -20 650 805 ;
+C -1 ; WX 600 ; N dcaron ; B 85 -15 849 629 ;
+C -1 ; WX 600 ; N Umacron ; B 125 -18 702 698 ;
+C -1 ; WX 600 ; N uring ; B 101 -15 572 627 ;
+C -1 ; WX 600 ; N threesuperior ; B 213 240 501 622 ;
+C -1 ; WX 600 ; N Ograve ; B 94 -18 625 805 ;
+C -1 ; WX 600 ; N Agrave ; B 3 0 607 805 ;
+C -1 ; WX 600 ; N Abreve ; B 3 0 607 732 ;
+C -1 ; WX 600 ; N multiply ; B 103 43 607 470 ;
+C -1 ; WX 600 ; N uacute ; B 101 -15 602 672 ;
+C -1 ; WX 600 ; N Tcaron ; B 108 0 665 802 ;
+C -1 ; WX 600 ; N partialdiff ; B 45 -38 546 710 ;
+C -1 ; WX 600 ; N ydieresis ; B -4 -157 683 620 ;
+C -1 ; WX 600 ; N Nacute ; B 7 -13 712 805 ;
+C -1 ; WX 600 ; N icircumflex ; B 95 0 551 654 ;
+C -1 ; WX 600 ; N Ecircumflex ; B 53 0 660 787 ;
+C -1 ; WX 600 ; N adieresis ; B 76 -15 575 620 ;
+C -1 ; WX 600 ; N edieresis ; B 106 -15 598 620 ;
+C -1 ; WX 600 ; N cacute ; B 106 -15 612 672 ;
+C -1 ; WX 600 ; N nacute ; B 26 0 602 672 ;
+C -1 ; WX 600 ; N umacron ; B 101 -15 600 565 ;
+C -1 ; WX 600 ; N Ncaron ; B 7 -13 712 802 ;
+C -1 ; WX 600 ; N Iacute ; B 96 0 640 805 ;
+C -1 ; WX 600 ; N plusminus ; B 96 44 594 558 ;
+C -1 ; WX 600 ; N brokenbar ; B 238 -175 469 675 ;
+C -1 ; WX 600 ; N registered ; B 53 -18 667 580 ;
+C -1 ; WX 600 ; N Gbreve ; B 83 -18 645 732 ;
+C -1 ; WX 600 ; N Idotaccent ; B 96 0 623 753 ;
+C -1 ; WX 600 ; N summation ; B 15 -10 670 706 ;
+C -1 ; WX 600 ; N Egrave ; B 53 0 660 805 ;
+C -1 ; WX 600 ; N racute ; B 60 0 636 672 ;
+C -1 ; WX 600 ; N omacron ; B 102 -15 600 565 ;
+C -1 ; WX 600 ; N Zacute ; B 86 0 670 805 ;
+C -1 ; WX 600 ; N Zcaron ; B 86 0 642 802 ;
+C -1 ; WX 600 ; N greaterequal ; B 98 0 594 710 ;
+C -1 ; WX 600 ; N Eth ; B 43 0 645 562 ;
+C -1 ; WX 600 ; N Ccedilla ; B 93 -151 658 580 ;
+C -1 ; WX 600 ; N lcommaaccent ; B 95 -250 515 629 ;
+C -1 ; WX 600 ; N tcaron ; B 167 -15 587 717 ;
+C -1 ; WX 600 ; N eogonek ; B 106 -172 598 441 ;
+C -1 ; WX 600 ; N Uogonek ; B 124 -172 702 562 ;
+C -1 ; WX 600 ; N Aacute ; B 3 0 660 805 ;
+C -1 ; WX 600 ; N Adieresis ; B 3 0 607 753 ;
+C -1 ; WX 600 ; N egrave ; B 106 -15 598 672 ;
+C -1 ; WX 600 ; N zacute ; B 99 0 612 672 ;
+C -1 ; WX 600 ; N iogonek ; B 95 -172 515 657 ;
+C -1 ; WX 600 ; N Oacute ; B 94 -18 640 805 ;
+C -1 ; WX 600 ; N oacute ; B 102 -15 612 672 ;
+C -1 ; WX 600 ; N amacron ; B 76 -15 600 565 ;
+C -1 ; WX 600 ; N sacute ; B 78 -15 612 672 ;
+C -1 ; WX 600 ; N idieresis ; B 95 0 545 620 ;
+C -1 ; WX 600 ; N Ocircumflex ; B 94 -18 625 787 ;
+C -1 ; WX 600 ; N Ugrave ; B 125 -18 702 805 ;
+C -1 ; WX 600 ; N Delta ; B 6 0 598 688 ;
+C -1 ; WX 600 ; N thorn ; B -24 -157 605 629 ;
+C -1 ; WX 600 ; N twosuperior ; B 230 249 535 622 ;
+C -1 ; WX 600 ; N Odieresis ; B 94 -18 625 753 ;
+C -1 ; WX 600 ; N mu ; B 72 -157 572 426 ;
+C -1 ; WX 600 ; N igrave ; B 95 0 515 672 ;
+C -1 ; WX 600 ; N ohungarumlaut ; B 102 -15 723 672 ;
+C -1 ; WX 600 ; N Eogonek ; B 53 -172 660 562 ;
+C -1 ; WX 600 ; N dcroat ; B 85 -15 704 629 ;
+C -1 ; WX 600 ; N threequarters ; B 73 -56 659 666 ;
+C -1 ; WX 600 ; N Scedilla ; B 76 -151 650 580 ;
+C -1 ; WX 600 ; N lcaron ; B 95 0 667 629 ;
+C -1 ; WX 600 ; N Kcommaaccent ; B 38 -250 671 562 ;
+C -1 ; WX 600 ; N Lacute ; B 47 0 607 805 ;
+C -1 ; WX 600 ; N trademark ; B 75 263 742 562 ;
+C -1 ; WX 600 ; N edotaccent ; B 106 -15 598 620 ;
+C -1 ; WX 600 ; N Igrave ; B 96 0 623 805 ;
+C -1 ; WX 600 ; N Imacron ; B 96 0 628 698 ;
+C -1 ; WX 600 ; N Lcaron ; B 47 0 632 562 ;
+C -1 ; WX 600 ; N onehalf ; B 65 -57 669 665 ;
+C -1 ; WX 600 ; N lessequal ; B 98 0 645 710 ;
+C -1 ; WX 600 ; N ocircumflex ; B 102 -15 588 654 ;
+C -1 ; WX 600 ; N ntilde ; B 26 0 629 606 ;
+C -1 ; WX 600 ; N Uhungarumlaut ; B 125 -18 761 805 ;
+C -1 ; WX 600 ; N Eacute ; B 53 0 670 805 ;
+C -1 ; WX 600 ; N emacron ; B 106 -15 600 565 ;
+C -1 ; WX 600 ; N gbreve ; B 61 -157 657 609 ;
+C -1 ; WX 600 ; N onequarter ; B 65 -57 674 665 ;
+C -1 ; WX 600 ; N Scaron ; B 76 -20 672 802 ;
+C -1 ; WX 600 ; N Scommaaccent ; B 76 -250 650 580 ;
+C -1 ; WX 600 ; N Ohungarumlaut ; B 94 -18 751 805 ;
+C -1 ; WX 600 ; N degree ; B 214 269 576 622 ;
+C -1 ; WX 600 ; N ograve ; B 102 -15 588 672 ;
+C -1 ; WX 600 ; N Ccaron ; B 93 -18 672 802 ;
+C -1 ; WX 600 ; N ugrave ; B 101 -15 572 672 ;
+C -1 ; WX 600 ; N radical ; B 85 -15 765 792 ;
+C -1 ; WX 600 ; N Dcaron ; B 43 0 645 802 ;
+C -1 ; WX 600 ; N rcommaaccent ; B 60 -250 636 441 ;
+C -1 ; WX 600 ; N Ntilde ; B 7 -13 712 729 ;
+C -1 ; WX 600 ; N otilde ; B 102 -15 629 606 ;
+C -1 ; WX 600 ; N Rcommaaccent ; B 38 -250 598 562 ;
+C -1 ; WX 600 ; N Lcommaaccent ; B 47 -250 607 562 ;
+C -1 ; WX 600 ; N Atilde ; B 3 0 655 729 ;
+C -1 ; WX 600 ; N Aogonek ; B 3 -172 607 562 ;
+C -1 ; WX 600 ; N Aring ; B 3 0 607 750 ;
+C -1 ; WX 600 ; N Otilde ; B 94 -18 655 729 ;
+C -1 ; WX 600 ; N zdotaccent ; B 99 0 593 620 ;
+C -1 ; WX 600 ; N Ecaron ; B 53 0 660 802 ;
+C -1 ; WX 600 ; N Iogonek ; B 96 -172 623 562 ;
+C -1 ; WX 600 ; N kcommaaccent ; B 58 -250 633 629 ;
+C -1 ; WX 600 ; N minus ; B 129 232 580 283 ;
+C -1 ; WX 600 ; N Icircumflex ; B 96 0 623 787 ;
+C -1 ; WX 600 ; N ncaron ; B 26 0 614 669 ;
+C -1 ; WX 600 ; N tcommaaccent ; B 165 -250 561 561 ;
+C -1 ; WX 600 ; N logicalnot ; B 155 108 591 369 ;
+C -1 ; WX 600 ; N odieresis ; B 102 -15 588 620 ;
+C -1 ; WX 600 ; N udieresis ; B 101 -15 575 620 ;
+C -1 ; WX 600 ; N notequal ; B 43 -16 621 529 ;
+C -1 ; WX 600 ; N gcommaaccent ; B 61 -157 657 708 ;
+C -1 ; WX 600 ; N eth ; B 102 -15 639 629 ;
+C -1 ; WX 600 ; N zcaron ; B 99 0 624 669 ;
+C -1 ; WX 600 ; N ncommaaccent ; B 26 -250 585 441 ;
+C -1 ; WX 600 ; N onesuperior ; B 231 249 491 622 ;
+C -1 ; WX 600 ; N imacron ; B 95 0 543 565 ;
+C -1 ; WX 600 ; N Euro ; B 0 0 0 0 ;
+EndCharMetrics
+EndFontMetrics
+`;
+
+/** Métricas de Courier-BoldOblique (pdfmake las lee de 'data/Courier-BoldOblique.afm') */
+export const COURIER_BOLD_OBLIQUE_AFM = `StartFontMetrics 4.1
+Comment Copyright (c) 1989, 1990, 1991, 1993, 1997 Adobe Systems Incorporated.  All Rights Reserved.
+Comment Creation Date: Mon Jun 23 16:28:46 1997
+Comment UniqueID 43049
+Comment VMusage 17529 79244
+FontName Courier-BoldOblique
+FullName Courier Bold Oblique
+FamilyName Courier
+Weight Bold
+ItalicAngle -12
+IsFixedPitch true
+CharacterSet ExtendedRoman
+FontBBox -57 -250 869 801 
+UnderlinePosition -100
+UnderlineThickness 50
+Version 003.000
+Notice Copyright (c) 1989, 1990, 1991, 1993, 1997 Adobe Systems Incorporated.  All Rights Reserved.
+EncodingScheme AdobeStandardEncoding
+CapHeight 562
+XHeight 439
+Ascender 629
+Descender -157
+StdHW 84
+StdVW 106
+StartCharMetrics 315
+C 32 ; WX 600 ; N space ; B 0 0 0 0 ;
+C 33 ; WX 600 ; N exclam ; B 215 -15 495 572 ;
+C 34 ; WX 600 ; N quotedbl ; B 211 277 585 562 ;
+C 35 ; WX 600 ; N numbersign ; B 88 -45 641 651 ;
+C 36 ; WX 600 ; N dollar ; B 87 -126 630 666 ;
+C 37 ; WX 600 ; N percent ; B 101 -15 625 616 ;
+C 38 ; WX 600 ; N ampersand ; B 61 -15 595 543 ;
+C 39 ; WX 600 ; N quoteright ; B 229 277 543 562 ;
+C 40 ; WX 600 ; N parenleft ; B 265 -102 592 616 ;
+C 41 ; WX 600 ; N parenright ; B 117 -102 444 616 ;
+C 42 ; WX 600 ; N asterisk ; B 179 219 598 601 ;
+C 43 ; WX 600 ; N plus ; B 114 39 596 478 ;
+C 44 ; WX 600 ; N comma ; B 99 -111 430 174 ;
+C 45 ; WX 600 ; N hyphen ; B 143 203 567 313 ;
+C 46 ; WX 600 ; N period ; B 206 -15 427 171 ;
+C 47 ; WX 600 ; N slash ; B 90 -77 626 626 ;
+C 48 ; WX 600 ; N zero ; B 135 -15 593 616 ;
+C 49 ; WX 600 ; N one ; B 93 0 562 616 ;
+C 50 ; WX 600 ; N two ; B 61 0 594 616 ;
+C 51 ; WX 600 ; N three ; B 71 -15 571 616 ;
+C 52 ; WX 600 ; N four ; B 81 0 559 616 ;
+C 53 ; WX 600 ; N five ; B 77 -15 621 601 ;
+C 54 ; WX 600 ; N six ; B 135 -15 652 616 ;
+C 55 ; WX 600 ; N seven ; B 147 0 622 601 ;
+C 56 ; WX 600 ; N eight ; B 115 -15 604 616 ;
+C 57 ; WX 600 ; N nine ; B 75 -15 592 616 ;
+C 58 ; WX 600 ; N colon ; B 205 -15 480 425 ;
+C 59 ; WX 600 ; N semicolon ; B 99 -111 481 425 ;
+C 60 ; WX 600 ; N less ; B 120 15 613 501 ;
+C 61 ; WX 600 ; N equal ; B 96 118 614 398 ;
+C 62 ; WX 600 ; N greater ; B 97 15 589 501 ;
+C 63 ; WX 600 ; N question ; B 183 -14 592 580 ;
+C 64 ; WX 600 ; N at ; B 65 -15 642 616 ;
+C 65 ; WX 600 ; N A ; B -9 0 632 562 ;
+C 66 ; WX 600 ; N B ; B 30 0 630 562 ;
+C 67 ; WX 600 ; N C ; B 74 -18 675 580 ;
+C 68 ; WX 600 ; N D ; B 30 0 664 562 ;
+C 69 ; WX 600 ; N E ; B 25 0 670 562 ;
+C 70 ; WX 600 ; N F ; B 39 0 684 562 ;
+C 71 ; WX 600 ; N G ; B 74 -18 675 580 ;
+C 72 ; WX 600 ; N H ; B 20 0 700 562 ;
+C 73 ; WX 600 ; N I ; B 77 0 643 562 ;
+C 74 ; WX 600 ; N J ; B 58 -18 721 562 ;
+C 75 ; WX 600 ; N K ; B 21 0 692 562 ;
+C 76 ; WX 600 ; N L ; B 39 0 636 562 ;
+C 77 ; WX 600 ; N M ; B -2 0 722 562 ;
+C 78 ; WX 600 ; N N ; B 8 -12 730 562 ;
+C 79 ; WX 600 ; N O ; B 74 -18 645 580 ;
+C 80 ; WX 600 ; N P ; B 48 0 643 562 ;
+C 81 ; WX 600 ; N Q ; B 83 -138 636 580 ;
+C 82 ; WX 600 ; N R ; B 24 0 617 562 ;
+C 83 ; WX 600 ; N S ; B 54 -22 673 582 ;
+C 84 ; WX 600 ; N T ; B 86 0 679 562 ;
+C 85 ; WX 600 ; N U ; B 101 -18 716 562 ;
+C 86 ; WX 600 ; N V ; B 84 0 733 562 ;
+C 87 ; WX 600 ; N W ; B 79 0 738 562 ;
+C 88 ; WX 600 ; N X ; B 12 0 690 562 ;
+C 89 ; WX 600 ; N Y ; B 109 0 709 562 ;
+C 90 ; WX 600 ; N Z ; B 62 0 637 562 ;
+C 91 ; WX 600 ; N bracketleft ; B 223 -102 606 616 ;
+C 92 ; WX 600 ; N backslash ; B 222 -77 496 626 ;
+C 93 ; WX 600 ; N bracketright ; B 103 -102 486 616 ;
+C 94 ; WX 600 ; N asciicircum ; B 171 250 556 616 ;
+C 95 ; WX 600 ; N underscore ; B -27 -125 585 -75 ;
+C 96 ; WX 600 ; N quoteleft ; B 297 277 487 562 ;
+C 97 ; WX 600 ; N a ; B 61 -15 593 454 ;
+C 98 ; WX 600 ; N b ; B 13 -15 636 626 ;
+C 99 ; WX 600 ; N c ; B 81 -15 631 459 ;
+C 100 ; WX 600 ; N d ; B 60 -15 645 626 ;
+C 101 ; WX 600 ; N e ; B 81 -15 605 454 ;
+C 102 ; WX 600 ; N f ; B 83 0 677 626 ; L i fi ; L l fl ;
+C 103 ; WX 600 ; N g ; B 40 -146 674 454 ;
+C 104 ; WX 600 ; N h ; B 18 0 615 626 ;
+C 105 ; WX 600 ; N i ; B 77 0 546 658 ;
+C 106 ; WX 600 ; N j ; B 36 -146 580 658 ;
+C 107 ; WX 600 ; N k ; B 33 0 643 626 ;
+C 108 ; WX 600 ; N l ; B 77 0 546 626 ;
+C 109 ; WX 600 ; N m ; B -22 0 649 454 ;
+C 110 ; WX 600 ; N n ; B 18 0 615 454 ;
+C 111 ; WX 600 ; N o ; B 71 -15 622 454 ;
+C 112 ; WX 600 ; N p ; B -32 -142 622 454 ;
+C 113 ; WX 600 ; N q ; B 60 -142 685 454 ;
+C 114 ; WX 600 ; N r ; B 47 0 655 454 ;
+C 115 ; WX 600 ; N s ; B 66 -17 608 459 ;
+C 116 ; WX 600 ; N t ; B 118 -15 567 562 ;
+C 117 ; WX 600 ; N u ; B 70 -15 592 439 ;
+C 118 ; WX 600 ; N v ; B 70 0 695 439 ;
+C 119 ; WX 600 ; N w ; B 53 0 712 439 ;
+C 120 ; WX 600 ; N x ; B 6 0 671 439 ;
+C 121 ; WX 600 ; N y ; B -21 -142 695 439 ;
+C 122 ; WX 600 ; N z ; B 81 0 614 439 ;
+C 123 ; WX 600 ; N braceleft ; B 203 -102 595 616 ;
+C 124 ; WX 600 ; N bar ; B 201 -250 505 750 ;
+C 125 ; WX 600 ; N braceright ; B 114 -102 506 616 ;
+C 126 ; WX 600 ; N asciitilde ; B 120 153 590 356 ;
+C 161 ; WX 600 ; N exclamdown ; B 196 -146 477 449 ;
+C 162 ; WX 600 ; N cent ; B 121 -49 605 614 ;
+C 163 ; WX 600 ; N sterling ; B 106 -28 650 611 ;
+C 164 ; WX 600 ; N fraction ; B 22 -60 708 661 ;
+C 165 ; WX 600 ; N yen ; B 98 0 710 562 ;
+C 166 ; WX 600 ; N florin ; B -57 -131 702 616 ;
+C 167 ; WX 600 ; N section ; B 74 -70 620 580 ;
+C 168 ; WX 600 ; N currency ; B 77 49 644 517 ;
+C 169 ; WX 600 ; N quotesingle ; B 303 277 493 562 ;
+C 170 ; WX 600 ; N quotedblleft ; B 190 277 594 562 ;
+C 171 ; WX 600 ; N guillemotleft ; B 62 70 639 446 ;
+C 172 ; WX 600 ; N guilsinglleft ; B 195 70 545 446 ;
+C 173 ; WX 600 ; N guilsinglright ; B 165 70 514 446 ;
+C 174 ; WX 600 ; N fi ; B 12 0 644 626 ;
+C 175 ; WX 600 ; N fl ; B 12 0 644 626 ;
+C 177 ; WX 600 ; N endash ; B 108 203 602 313 ;
+C 178 ; WX 600 ; N dagger ; B 175 -70 586 580 ;
+C 179 ; WX 600 ; N daggerdbl ; B 121 -70 587 580 ;
+C 180 ; WX 600 ; N periodcentered ; B 248 165 461 351 ;
+C 182 ; WX 600 ; N paragraph ; B 61 -70 700 580 ;
+C 183 ; WX 600 ; N bullet ; B 196 132 523 430 ;
+C 184 ; WX 600 ; N quotesinglbase ; B 144 -142 458 143 ;
+C 185 ; WX 600 ; N quotedblbase ; B 34 -142 560 143 ;
+C 186 ; WX 600 ; N quotedblright ; B 119 277 645 562 ;
+C 187 ; WX 600 ; N guillemotright ; B 71 70 647 446 ;
+C 188 ; WX 600 ; N ellipsis ; B 35 -15 587 116 ;
+C 189 ; WX 600 ; N perthousand ; B -45 -15 743 616 ;
+C 191 ; WX 600 ; N questiondown ; B 100 -146 509 449 ;
+C 193 ; WX 600 ; N grave ; B 272 508 503 661 ;
+C 194 ; WX 600 ; N acute ; B 312 508 609 661 ;
+C 195 ; WX 600 ; N circumflex ; B 212 483 607 657 ;
+C 196 ; WX 600 ; N tilde ; B 199 493 643 636 ;
+C 197 ; WX 600 ; N macron ; B 195 505 637 585 ;
+C 198 ; WX 600 ; N breve ; B 217 468 652 631 ;
+C 199 ; WX 600 ; N dotaccent ; B 348 498 493 638 ;
+C 200 ; WX 600 ; N dieresis ; B 246 498 595 638 ;
+C 202 ; WX 600 ; N ring ; B 319 481 528 678 ;
+C 203 ; WX 600 ; N cedilla ; B 168 -206 368 0 ;
+C 205 ; WX 600 ; N hungarumlaut ; B 171 488 729 661 ;
+C 206 ; WX 600 ; N ogonek ; B 143 -199 367 0 ;
+C 207 ; WX 600 ; N caron ; B 238 493 633 667 ;
+C 208 ; WX 600 ; N emdash ; B 33 203 677 313 ;
+C 225 ; WX 600 ; N AE ; B -29 0 708 562 ;
+C 227 ; WX 600 ; N ordfeminine ; B 188 196 526 580 ;
+C 232 ; WX 600 ; N Lslash ; B 39 0 636 562 ;
+C 233 ; WX 600 ; N Oslash ; B 48 -22 673 584 ;
+C 234 ; WX 600 ; N OE ; B 26 0 701 562 ;
+C 235 ; WX 600 ; N ordmasculine ; B 188 196 543 580 ;
+C 241 ; WX 600 ; N ae ; B 21 -15 652 454 ;
+C 245 ; WX 600 ; N dotlessi ; B 77 0 546 439 ;
+C 248 ; WX 600 ; N lslash ; B 77 0 587 626 ;
+C 249 ; WX 600 ; N oslash ; B 54 -24 638 463 ;
+C 250 ; WX 600 ; N oe ; B 18 -15 662 454 ;
+C 251 ; WX 600 ; N germandbls ; B 22 -15 629 626 ;
+C -1 ; WX 600 ; N Idieresis ; B 77 0 643 761 ;
+C -1 ; WX 600 ; N eacute ; B 81 -15 609 661 ;
+C -1 ; WX 600 ; N abreve ; B 61 -15 658 661 ;
+C -1 ; WX 600 ; N uhungarumlaut ; B 70 -15 769 661 ;
+C -1 ; WX 600 ; N ecaron ; B 81 -15 633 667 ;
+C -1 ; WX 600 ; N Ydieresis ; B 109 0 709 761 ;
+C -1 ; WX 600 ; N divide ; B 114 16 596 500 ;
+C -1 ; WX 600 ; N Yacute ; B 109 0 709 784 ;
+C -1 ; WX 600 ; N Acircumflex ; B -9 0 632 780 ;
+C -1 ; WX 600 ; N aacute ; B 61 -15 609 661 ;
+C -1 ; WX 600 ; N Ucircumflex ; B 101 -18 716 780 ;
+C -1 ; WX 600 ; N yacute ; B -21 -142 695 661 ;
+C -1 ; WX 600 ; N scommaaccent ; B 66 -250 608 459 ;
+C -1 ; WX 600 ; N ecircumflex ; B 81 -15 607 657 ;
+C -1 ; WX 600 ; N Uring ; B 101 -18 716 801 ;
+C -1 ; WX 600 ; N Udieresis ; B 101 -18 716 761 ;
+C -1 ; WX 600 ; N aogonek ; B 61 -199 593 454 ;
+C -1 ; WX 600 ; N Uacute ; B 101 -18 716 784 ;
+C -1 ; WX 600 ; N uogonek ; B 70 -199 592 439 ;
+C -1 ; WX 600 ; N Edieresis ; B 25 0 670 761 ;
+C -1 ; WX 600 ; N Dcroat ; B 30 0 664 562 ;
+C -1 ; WX 600 ; N commaaccent ; B 151 -250 385 -57 ;
+C -1 ; WX 600 ; N copyright ; B 53 -18 667 580 ;
+C -1 ; WX 600 ; N Emacron ; B 25 0 670 708 ;
+C -1 ; WX 600 ; N ccaron ; B 81 -15 633 667 ;
+C -1 ; WX 600 ; N aring ; B 61 -15 593 678 ;
+C -1 ; WX 600 ; N Ncommaaccent ; B 8 -250 730 562 ;
+C -1 ; WX 600 ; N lacute ; B 77 0 639 801 ;
+C -1 ; WX 600 ; N agrave ; B 61 -15 593 661 ;
+C -1 ; WX 600 ; N Tcommaaccent ; B 86 -250 679 562 ;
+C -1 ; WX 600 ; N Cacute ; B 74 -18 675 784 ;
+C -1 ; WX 600 ; N atilde ; B 61 -15 643 636 ;
+C -1 ; WX 600 ; N Edotaccent ; B 25 0 670 761 ;
+C -1 ; WX 600 ; N scaron ; B 66 -17 633 667 ;
+C -1 ; WX 600 ; N scedilla ; B 66 -206 608 459 ;
+C -1 ; WX 600 ; N iacute ; B 77 0 609 661 ;
+C -1 ; WX 600 ; N lozenge ; B 145 0 614 740 ;
+C -1 ; WX 600 ; N Rcaron ; B 24 0 659 790 ;
+C -1 ; WX 600 ; N Gcommaaccent ; B 74 -250 675 580 ;
+C -1 ; WX 600 ; N ucircumflex ; B 70 -15 597 657 ;
+C -1 ; WX 600 ; N acircumflex ; B 61 -15 607 657 ;
+C -1 ; WX 600 ; N Amacron ; B -9 0 633 708 ;
+C -1 ; WX 600 ; N rcaron ; B 47 0 655 667 ;
+C -1 ; WX 600 ; N ccedilla ; B 81 -206 631 459 ;
+C -1 ; WX 600 ; N Zdotaccent ; B 62 0 637 761 ;
+C -1 ; WX 600 ; N Thorn ; B 48 0 620 562 ;
+C -1 ; WX 600 ; N Omacron ; B 74 -18 663 708 ;
+C -1 ; WX 600 ; N Racute ; B 24 0 665 784 ;
+C -1 ; WX 600 ; N Sacute ; B 54 -22 673 784 ;
+C -1 ; WX 600 ; N dcaron ; B 60 -15 861 626 ;
+C -1 ; WX 600 ; N Umacron ; B 101 -18 716 708 ;
+C -1 ; WX 600 ; N uring ; B 70 -15 592 678 ;
+C -1 ; WX 600 ; N threesuperior ; B 193 222 526 616 ;
+C -1 ; WX 600 ; N Ograve ; B 74 -18 645 784 ;
+C -1 ; WX 600 ; N Agrave ; B -9 0 632 784 ;
+C -1 ; WX 600 ; N Abreve ; B -9 0 684 784 ;
+C -1 ; WX 600 ; N multiply ; B 104 39 606 478 ;
+C -1 ; WX 600 ; N uacute ; B 70 -15 599 661 ;
+C -1 ; WX 600 ; N Tcaron ; B 86 0 679 790 ;
+C -1 ; WX 600 ; N partialdiff ; B 91 -38 627 728 ;
+C -1 ; WX 600 ; N ydieresis ; B -21 -142 695 638 ;
+C -1 ; WX 600 ; N Nacute ; B 8 -12 730 784 ;
+C -1 ; WX 600 ; N icircumflex ; B 77 0 577 657 ;
+C -1 ; WX 600 ; N Ecircumflex ; B 25 0 670 780 ;
+C -1 ; WX 600 ; N adieresis ; B 61 -15 595 638 ;
+C -1 ; WX 600 ; N edieresis ; B 81 -15 605 638 ;
+C -1 ; WX 600 ; N cacute ; B 81 -15 649 661 ;
+C -1 ; WX 600 ; N nacute ; B 18 0 639 661 ;
+C -1 ; WX 600 ; N umacron ; B 70 -15 637 585 ;
+C -1 ; WX 600 ; N Ncaron ; B 8 -12 730 790 ;
+C -1 ; WX 600 ; N Iacute ; B 77 0 643 784 ;
+C -1 ; WX 600 ; N plusminus ; B 76 24 614 515 ;
+C -1 ; WX 600 ; N brokenbar ; B 217 -175 489 675 ;
+C -1 ; WX 600 ; N registered ; B 53 -18 667 580 ;
+C -1 ; WX 600 ; N Gbreve ; B 74 -18 684 784 ;
+C -1 ; WX 600 ; N Idotaccent ; B 77 0 643 761 ;
+C -1 ; WX 600 ; N summation ; B 15 -10 672 706 ;
+C -1 ; WX 600 ; N Egrave ; B 25 0 670 784 ;
+C -1 ; WX 600 ; N racute ; B 47 0 655 661 ;
+C -1 ; WX 600 ; N omacron ; B 71 -15 637 585 ;
+C -1 ; WX 600 ; N Zacute ; B 62 0 665 784 ;
+C -1 ; WX 600 ; N Zcaron ; B 62 0 659 790 ;
+C -1 ; WX 600 ; N greaterequal ; B 26 0 627 696 ;
+C -1 ; WX 600 ; N Eth ; B 30 0 664 562 ;
+C -1 ; WX 600 ; N Ccedilla ; B 74 -206 675 580 ;
+C -1 ; WX 600 ; N lcommaaccent ; B 77 -250 546 626 ;
+C -1 ; WX 600 ; N tcaron ; B 118 -15 627 703 ;
+C -1 ; WX 600 ; N eogonek ; B 81 -199 605 454 ;
+C -1 ; WX 600 ; N Uogonek ; B 101 -199 716 562 ;
+C -1 ; WX 600 ; N Aacute ; B -9 0 655 784 ;
+C -1 ; WX 600 ; N Adieresis ; B -9 0 632 761 ;
+C -1 ; WX 600 ; N egrave ; B 81 -15 605 661 ;
+C -1 ; WX 600 ; N zacute ; B 81 0 614 661 ;
+C -1 ; WX 600 ; N iogonek ; B 77 -199 546 658 ;
+C -1 ; WX 600 ; N Oacute ; B 74 -18 645 784 ;
+C -1 ; WX 600 ; N oacute ; B 71 -15 649 661 ;
+C -1 ; WX 600 ; N amacron ; B 61 -15 637 585 ;
+C -1 ; WX 600 ; N sacute ; B 66 -17 609 661 ;
+C -1 ; WX 600 ; N idieresis ; B 77 0 561 618 ;
+C -1 ; WX 600 ; N Ocircumflex ; B 74 -18 645 780 ;
+C -1 ; WX 600 ; N Ugrave ; B 101 -18 716 784 ;
+C -1 ; WX 600 ; N Delta ; B 6 0 594 688 ;
+C -1 ; WX 600 ; N thorn ; B -32 -142 622 626 ;
+C -1 ; WX 600 ; N twosuperior ; B 191 230 542 616 ;
+C -1 ; WX 600 ; N Odieresis ; B 74 -18 645 761 ;
+C -1 ; WX 600 ; N mu ; B 49 -142 592 439 ;
+C -1 ; WX 600 ; N igrave ; B 77 0 546 661 ;
+C -1 ; WX 600 ; N ohungarumlaut ; B 71 -15 809 661 ;
+C -1 ; WX 600 ; N Eogonek ; B 25 -199 670 562 ;
+C -1 ; WX 600 ; N dcroat ; B 60 -15 712 626 ;
+C -1 ; WX 600 ; N threequarters ; B 8 -60 699 661 ;
+C -1 ; WX 600 ; N Scedilla ; B 54 -206 673 582 ;
+C -1 ; WX 600 ; N lcaron ; B 77 0 731 626 ;
+C -1 ; WX 600 ; N Kcommaaccent ; B 21 -250 692 562 ;
+C -1 ; WX 600 ; N Lacute ; B 39 0 636 784 ;
+C -1 ; WX 600 ; N trademark ; B 86 230 869 562 ;
+C -1 ; WX 600 ; N edotaccent ; B 81 -15 605 638 ;
+C -1 ; WX 600 ; N Igrave ; B 77 0 643 784 ;
+C -1 ; WX 600 ; N Imacron ; B 77 0 663 708 ;
+C -1 ; WX 600 ; N Lcaron ; B 39 0 757 562 ;
+C -1 ; WX 600 ; N onehalf ; B 22 -60 716 661 ;
+C -1 ; WX 600 ; N lessequal ; B 26 0 671 696 ;
+C -1 ; WX 600 ; N ocircumflex ; B 71 -15 622 657 ;
+C -1 ; WX 600 ; N ntilde ; B 18 0 643 636 ;
+C -1 ; WX 600 ; N Uhungarumlaut ; B 101 -18 805 784 ;
+C -1 ; WX 600 ; N Eacute ; B 25 0 670 784 ;
+C -1 ; WX 600 ; N emacron ; B 81 -15 637 585 ;
+C -1 ; WX 600 ; N gbreve ; B 40 -146 674 661 ;
+C -1 ; WX 600 ; N onequarter ; B 13 -60 707 661 ;
+C -1 ; WX 600 ; N Scaron ; B 54 -22 689 790 ;
+C -1 ; WX 600 ; N Scommaaccent ; B 54 -250 673 582 ;
+C -1 ; WX 600 ; N Ohungarumlaut ; B 74 -18 795 784 ;
+C -1 ; WX 600 ; N degree ; B 173 243 570 616 ;
+C -1 ; WX 600 ; N ograve ; B 71 -15 622 661 ;
+C -1 ; WX 600 ; N Ccaron ; B 74 -18 689 790 ;
+C -1 ; WX 600 ; N ugrave ; B 70 -15 592 661 ;
+C -1 ; WX 600 ; N radical ; B 67 -104 635 778 ;
+C -1 ; WX 600 ; N Dcaron ; B 30 0 664 790 ;
+C -1 ; WX 600 ; N rcommaaccent ; B 47 -250 655 454 ;
+C -1 ; WX 600 ; N Ntilde ; B 8 -12 730 759 ;
+C -1 ; WX 600 ; N otilde ; B 71 -15 643 636 ;
+C -1 ; WX 600 ; N Rcommaaccent ; B 24 -250 617 562 ;
+C -1 ; WX 600 ; N Lcommaaccent ; B 39 -250 636 562 ;
+C -1 ; WX 600 ; N Atilde ; B -9 0 669 759 ;
+C -1 ; WX 600 ; N Aogonek ; B -9 -199 632 562 ;
+C -1 ; WX 600 ; N Aring ; B -9 0 632 801 ;
+C -1 ; WX 600 ; N Otilde ; B 74 -18 669 759 ;
+C -1 ; WX 600 ; N zdotaccent ; B 81 0 614 638 ;
+C -1 ; WX 600 ; N Ecaron ; B 25 0 670 790 ;
+C -1 ; WX 600 ; N Iogonek ; B 77 -199 643 562 ;
+C -1 ; WX 600 ; N kcommaaccent ; B 33 -250 643 626 ;
+C -1 ; WX 600 ; N minus ; B 114 203 596 313 ;
+C -1 ; WX 600 ; N Icircumflex ; B 77 0 643 780 ;
+C -1 ; WX 600 ; N ncaron ; B 18 0 633 667 ;
+C -1 ; WX 600 ; N tcommaaccent ; B 118 -250 567 562 ;
+C -1 ; WX 600 ; N logicalnot ; B 135 103 617 413 ;
+C -1 ; WX 600 ; N odieresis ; B 71 -15 622 638 ;
+C -1 ; WX 600 ; N udieresis ; B 70 -15 595 638 ;
+C -1 ; WX 600 ; N notequal ; B 30 -47 626 563 ;
+C -1 ; WX 600 ; N gcommaaccent ; B 40 -146 674 714 ;
+C -1 ; WX 600 ; N eth ; B 93 -27 661 626 ;
+C -1 ; WX 600 ; N zcaron ; B 81 0 643 667 ;
+C -1 ; WX 600 ; N ncommaaccent ; B 18 -250 615 454 ;
+C -1 ; WX 600 ; N onesuperior ; B 212 230 514 616 ;
+C -1 ; WX 600 ; N imacron ; B 77 0 575 585 ;
+C -1 ; WX 600 ; N Euro ; B 0 0 0 0 ;
+EndCharMetrics
+EndFontMetrics
+`;
+
+```
+
+---
+
 ## 📄 src\app\core\utils\invoice-parser.ts
 
 ```typescript
@@ -7727,7 +11281,7 @@ export function numeroALetras(num: number): string {
   <div class="login-container">
     <div class="login-card">
       <div class="login-logo">
-        <img src="assets/images/arcas-logo.svg" alt="Arcas Software" class="login-logo-img" />
+        <img src="assets/images/logo1.png" alt="Arcas Software" class="login-logo-img" />
       </div>
 
       <div class="login-header">
@@ -7736,7 +11290,7 @@ export function numeroALetras(num: number): string {
       </div>
 
       @if (error()) {
-        <p-message severity="error" [text]="error()" styleClass="w-full mb-3" />
+      <p-message severity="error" [text]="error()" styleClass="w-full mb-3" />
       }
 
       <form class="login-form" (ngSubmit)="login()">
@@ -7752,6 +11306,7 @@ export function numeroALetras(num: number): string {
             placeholder="Ingrese su usuario"
             [disabled]="loading()"
             autofocus
+            style="background-color: var(--c-bg-login-inputtext)"
           />
         </div>
 
@@ -7767,6 +11322,7 @@ export function numeroALetras(num: number): string {
             autocomplete="current-password"
             placeholder="Ingrese su contraseña"
             [disabled]="loading()"
+            style="background-color: var(--c-bg-login-inputtext)"
           />
         </div>
 
@@ -7775,6 +11331,9 @@ export function numeroALetras(num: number): string {
           label="Iniciar Sesión"
           icon="pi pi-sign-in"
           size="small"
+          rounded="true"
+          variant="outlined"
+          severity="success"
           [loading]="loading()"
           styleClass="w-full mt-2"
         />
@@ -7782,6 +11341,7 @@ export function numeroALetras(num: number): string {
     </div>
   </div>
 </div>
+
 ```
 
 ---
@@ -7797,7 +11357,7 @@ export function numeroALetras(num: number): string {
   position: relative;
   overflow: hidden;
   padding: 1rem;
-  background: #0c1636;
+  background: var(--c-bg-login);
 }
 
 // Orbes de fondo animados
@@ -7838,6 +11398,7 @@ export function numeroALetras(num: number): string {
   from {
     transform: translate(0, 0) scale(1);
   }
+
   to {
     transform: translate(2.5rem, 1.5rem) scale(1.12);
   }
@@ -7851,7 +11412,7 @@ export function numeroALetras(num: number): string {
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--c-bg-login);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-radius: 1.5rem;
@@ -7867,6 +11428,7 @@ export function numeroALetras(num: number): string {
     opacity: 0;
     transform: translateY(24px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -7883,7 +11445,7 @@ export function numeroALetras(num: number): string {
     width: 6rem;
     height: 6rem;
     object-fit: contain;
-    filter: drop-shadow(0 10px 18px rgba(30, 64, 175, 0.35));
+    filter: drop-shadow(0 10px 18px rgba(1, 5, 17, 0.35));
   }
 }
 
@@ -7926,6 +11488,7 @@ export function numeroALetras(num: number): string {
     }
 
     ::ng-deep {
+
       .p-inputtext,
       .p-password,
       .p-password-input {
@@ -7942,6 +11505,7 @@ export function numeroALetras(num: number): string {
         transition:
           border-color var(--tr-fast),
           box-shadow var(--tr-fast);
+        background-color: var(--c-bg-login-inputtext);
 
         &:focus,
         &.p-focus {
@@ -7958,6 +11522,7 @@ export function numeroALetras(num: number): string {
     height: 2.75rem;
   }
 }
+
 ```
 
 ---
@@ -11686,6 +15251,16 @@ export class ConciliacionBancaria implements OnInit {
       <h1 class="page-title">Historial de Movimientos</h1>
       <p class="page-subtitle">Consulta de movimientos bancarios</p>
     </div>
+    @if (partidaId()) {
+      <div class="origen-vuelta">
+        <span class="origen-vuelta__texto">
+          <i class="pi pi-file-edit"></i>
+          Abierto desde una partida contable
+        </span>
+        <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+          variant="text" [rounded]="true" (onClick)="volverAPartida()" />
+      </div>
+    }
   </header>
 
   <!-- ═══ Filtros ═══ -->
@@ -11695,7 +15270,8 @@ export class ConciliacionBancaria implements OnInit {
         <div class="p-col-12 p-col-6">
           <div class="campo">
             <label>Cuenta Bancaria</label>
-            <p-select [options]="cuentas()" [(ngModel)]="cuentaFiltro"
+            <p-select [options]="cuentas()" [ngModel]="cuentaFiltro()"
+              (ngModelChange)="cuentaFiltro.set($event)"
               optionValue="bcoctasId" placeholder="Todas las cuentas"
               pSize="small" styleClass="w-full" appendTo="body" [showClear]="true"
               (onChange)="onFiltroChange()">
@@ -11715,7 +15291,8 @@ export class ConciliacionBancaria implements OnInit {
   <!-- ═══ Tabla de movimientos ═══ -->
   <div class="card mb-3">
     <p-table [value]="movimientos()" [loading]="cargando()" size="small"
-      [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15, 25, 50]"
+      [paginator]="true" [rows]="15" [first]="primeraFila()" (onPage)="primeraFila.set($event.first)"
+      [rowsPerPageOptions]="[15, 25, 50]"
       [showCurrentPageReport]="true"
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
       <ng-template pTemplate="header">
@@ -11730,7 +15307,8 @@ export class ConciliacionBancaria implements OnInit {
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-mov>
-        <tr [class.row-anulada]="mov.sn_doc_anulado === 'S'">
+        <tr [class.row-anulada]="mov.sn_doc_anulado === 'S'"
+          [class.row-origen]="movOrigenId() === mov.bcomovimientosId">
           <td>{{ formatFecha(mov.fecharegistro) }}</td>
           <td><p-tag [value]="tipoMovLabel(mov.tipomov)" [severity]="tipoMovSeverity(mov.tipomov)" styleClass="tag-sm" /></td>
           <td><p-tag [value]="dcLabel(mov.dc_debitocredito)" [severity]="dcSeverity(mov.dc_debitocredito)" styleClass="tag-sm" /></td>
@@ -11787,6 +15365,26 @@ export class ConciliacionBancaria implements OnInit {
   margin: 0.25rem 0 0 0;
 }
 
+/* Retorno a la partida contable de origen */
+.origen-vuelta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  align-self: center;
+
+  &__texto {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+}
+
 .campo {
   margin-bottom: 0.75rem;
 
@@ -11816,6 +15414,13 @@ export class ConciliacionBancaria implements OnInit {
   text-decoration: line-through;
 }
 
+// Fila resaltada: movimiento de origen (trazabilidad desde partida contable)
+:host ::ng-deep tr.row-origen {
+  background: color-mix(in srgb, var(--c-primary) 16%, var(--c-surface)) !important;
+  box-shadow: inset 3px 0 0 var(--c-primary);
+  font-weight: 600;
+}
+
 :host ::ng-deep .tag-sm {
   font-size: 0.65rem !important;
   padding: 0.125rem 0.4rem !important;
@@ -11831,7 +15436,9 @@ export class ConciliacionBancaria implements OnInit {
 import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, of } from 'rxjs';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -11859,6 +15466,11 @@ export class HistorialBancos implements OnInit {
   private api = inject(ApiService);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
+  partidaId = signal<number | null>(null);
 
   // Datos
   bancos = signal<any[]>([]);
@@ -11866,6 +15478,13 @@ export class HistorialBancos implements OnInit {
   movimientos = signal<BcoMovimiento[]>([]);
   cuentaFiltro = signal<number | null>(null);
   cargando = signal(false);
+
+  /** Trazabilidad: id del movimiento origen (llega desde partida en copdamae) */
+  movOrigenId = signal<number | null>(null);
+  /** Primera fila del paginador para dejar visible el movimiento origen */
+  primeraFila = signal(0);
+
+  private readonly rowsPagina = 15;
 
   readonly TIPO_MOV_OPTIONS = [
     { label: 'Depósito', value: 'DEPOSITO' },
@@ -11877,7 +15496,45 @@ export class HistorialBancos implements OnInit {
   ngOnInit() {
     this.cargarBancos();
     this.cargarCuentas();
+
+    // Partida contable de origen (botón "Volver a la partida")
+    const partidaParam = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partidaParam) && partidaParam > 0) this.partidaId.set(partidaParam);
+
+    // Trazabilidad contable: ?movimientoId=<bcomovimientosId>
+    const movId = Number(this.route.snapshot.queryParamMap.get('movimientoId'));
+    if (!isNaN(movId) && movId > 0) {
+      this.movOrigenId.set(movId);
+      this.api.get<BcoMovimiento>(`/bancos/movimientos/${movId}`).pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError(() => {
+          this.movOrigenId.set(null);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el movimiento de origen' });
+          this.cargarTodos();
+          return of(null);
+        }),
+      ).subscribe({
+        next: (mov) => {
+          if (mov?.bcoctasId) {
+            this.cuentaFiltro.set(Number(mov.bcoctasId));
+            this.onFiltroChange();
+          } else {
+            this.cargarTodos();
+          }
+        },
+      });
+      return;
+    }
+
     this.cargarTodos();
+  }
+
+  /** Regresa a la partida contable de origen desde la que se abrió este movimiento. */
+  volverAPartida(): void {
+    if (!this.partidaId()) return;
+    this.router.navigate(['/contabilidad/copdamae'], {
+      queryParams: { partidaId: this.partidaId() },
+    });
   }
 
   cargarBancos() {
@@ -11904,6 +15561,7 @@ export class HistorialBancos implements OnInit {
           importe: Number(m.importe),
         })));
         this.cargando.set(false);
+        this.aplicarPaginaOrigen();
       },
       error: () => {
         this.cargando.set(false);
@@ -11927,12 +15585,39 @@ export class HistorialBancos implements OnInit {
             importe: Number(m.importe),
           })));
           this.cargando.set(false);
+          this.aplicarPaginaOrigen();
         },
         error: () => {
           this.cargando.set(false);
           this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los movimientos' });
         },
       });
+  }
+
+  /**
+   * Posiciona el paginador en la página que contiene el movimiento origen
+   * y desplaza la vista hasta la fila resaltada.
+   */
+  private aplicarPaginaOrigen(): void {
+    const id = this.movOrigenId();
+    if (!id) {
+      this.primeraFila.set(0);
+      return;
+    }
+    const idx = this.movimientos().findIndex(m => Number(m.bcomovimientosId) === id);
+    if (idx < 0) {
+      this.primeraFila.set(0);
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Movimiento no encontrado',
+        detail: `El movimiento #${id} no se encuentra en la cuenta seleccionada`,
+      });
+      return;
+    }
+    this.primeraFila.set(Math.floor(idx / this.rowsPagina) * this.rowsPagina);
+    setTimeout(() => {
+      document.querySelector('.row-origen')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 300);
   }
 
   // ── Helpers ─────────────────────────────────────────────
@@ -12053,10 +15738,14 @@ export class HistorialBancos implements OnInit {
         <div class="col-der-header">
           <div class="flex align-items-center gap-2">
             <p-button icon="pi pi-arrow-left" text size="small" rounded (click)="volver()" />
-            <div>
-              <h3 class="page-title" style="font-size: 1rem; margin: 0">Cuenta: {{ cuentaSeleccionada()!.nrocuenta }} - {{ bancoNombre(cuentaSeleccionada()!.bancoId) }} - {{ monedaNombre(cuentaSeleccionada()!.monedaId) }}</h3>
-              <p class="page-subtitle" style="margin: 0">Movimientos registrados</p>
+            <div class="cuenta-info">
+              <h3 class="cuenta-titulo">Cuenta: {{ cuentaSeleccionada()!.nrocuenta }} - {{ bancoNombre(cuentaSeleccionada()!.bancoId) }} - {{ monedaNombre(cuentaSeleccionada()!.monedaId) }}</h3>
+              <p class="cuenta-subtitulo">Movimientos registrados</p>
             </div>
+          </div>
+          <div class="saldo-badge">
+            <span class="saldo-label">Saldo actual</span>
+            <span class="saldo-valor">{{ saldoTexto() }}</span>
           </div>
         </div>
 
@@ -12074,9 +15763,10 @@ export class HistorialBancos implements OnInit {
               </div>
               <div class="p-col-12 p-col-4">
                 <div class="campo">
-                  <label>D/C <span class="req">*</span></label>
+                  <label>D/C <span class="hint">(según tipo)</span></label>
                   <p-select formControlName="dc_debitocredito" [options]="DC_OPTIONS"
-                    optionLabel="label" optionValue="value" size="small" styleClass="w-full" appendTo="body" />
+                    optionLabel="label" optionValue="value" size="small" styleClass="w-full" appendTo="body"
+                    [disabled]="true" />
                 </div>
               </div>
               <div class="p-col-12">
@@ -12197,6 +15887,7 @@ export class HistorialBancos implements OnInit {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
     margin-bottom: 0.75rem;
     margin-top: 3px;
     padding: 0.75rem 1rem;
@@ -12204,6 +15895,54 @@ export class HistorialBancos implements OnInit {
     border: 1px solid var(--c-border);
     border-radius: 0.5rem;
   }
+}
+
+/* ═══════════════ Header de cuenta seleccionada ═══════════════ */
+.cuenta-info {
+  min-width: 0;
+}
+
+.cuenta-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cuenta-subtitulo {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  margin: 0;
+}
+
+.saldo-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  flex-shrink: 0;
+
+  .saldo-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+  }
+
+  .saldo-valor {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+}
+
+.hint {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
 }
 
 .card {
@@ -12276,7 +16015,7 @@ export class HistorialBancos implements OnInit {
 ## 📄 src\app\features\bancos\movimientos\movimientos.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12350,6 +16089,13 @@ export class MovimientosBancos implements OnInit {
       concepto: [''],
       factordecambio: [1],
     });
+    // El tipo de movimiento determina la naturaleza D/C:
+    // depósito (entrada) → 'D'; retiro/transferencia/pago (salida) → 'C'
+    this.form.get('tipomov')!.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((tipo) => {
+        this.form.patchValue({ dc_debitocredito: this.dcPorTipo(tipo) }, { emitEvent: false });
+      });
     this.cargarBancos();
     this.cargarMonedas();
     this.cargarFactoresCambio();
@@ -12452,7 +16198,7 @@ export class MovimientosBancos implements OnInit {
     this.editId.set(mov.bcomovimientosId);
     this.form.reset({
       tipomov: mov.tipomov,
-      dc_debitocredito: mov.dc_debitocredito,
+      dc_debitocredito: this.dcPorTipo(mov.tipomov),
       nroreferencia: mov.nroreferencia || '',
       importe: mov.importe,
       concepto: mov.concepto || '',
@@ -12464,6 +16210,22 @@ export class MovimientosBancos implements OnInit {
     if (this.form.invalid || !this.cuentaSeleccionada()) return;
     const raw = this.form.getRawValue();
     const cuenta = this.cuentaSeleccionada()!;
+
+    // Validación de saldo: las salidas (retiro/transferencia/pago) exigen saldo suficiente.
+    // En edición, saldoCuenta ya excluye el movimiento que se está editando.
+    const dc = this.dcPorTipo(raw.tipomov);
+    if (dc === 'C') {
+      const saldo = this.saldoCuenta();
+      if (saldo < raw.importe) {
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Saldo insuficiente',
+          detail: `Saldo actual ${this.formatCurrency(saldo)} — importe solicitado ${this.formatCurrency(raw.importe)}`,
+        });
+        return;
+      }
+    }
+
     this.guardando.set(true);
 
     const payload = {
@@ -12471,7 +16233,7 @@ export class MovimientosBancos implements OnInit {
       bcoctasId: cuenta.bcoctasId,
       moduloId: 1,
       tipomov: raw.tipomov,
-      dc_debitocredito: raw.dc_debitocredito,
+      dc_debitocredito: dc,
       nroreferencia: raw.nroreferencia || null,
       factordecambio: raw.factordecambio || 1,
       importe: raw.importe,
@@ -12511,7 +16273,8 @@ export class MovimientosBancos implements OnInit {
       rejectButtonProps: { severity: 'secondary', variant: 'text', size: 'small', rounded: true },
       acceptButtonProps: { severity: 'danger', variant: 'text', size: 'small', rounded: true },
       accept: () => {
-        this.api.putBase(`/bancos/movimientos/${mov.bcomovimientosId}?empresaId=${mov.empresaId}`, { sn_doc_anulado: 'S' })
+        // Endpoint dedicado /anular: marca fec_anulacion y revierte efectos de cheques (CxP)
+        this.api.putBase(`/bancos/movimientos/${mov.bcomovimientosId}/anular?empresaId=${mov.empresaId}`, {})
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: () => {
@@ -12527,6 +16290,30 @@ export class MovimientosBancos implements OnInit {
   }
 
   // ── Helpers ─────────────────────────────────────────────
+
+  /**
+   * Naturaleza derivada del tipo de movimiento:
+   * depósito (entrada) → 'D'; retiro/transferencia/pago (salida) → 'C'
+   */
+  dcPorTipo(tipomov: string): 'D' | 'C' {
+    return tipomov === 'DEPOSITO' ? 'D' : 'C';
+  }
+
+  /**
+   * Saldo de la cuenta seleccionada: Σ Débitos − Σ Créditos,
+   * excluyendo anulados y (en edición) el movimiento que se está editando.
+   */
+  readonly saldoCuenta = computed(() => {
+    const excluirId = this.editando() ? this.editId() : null;
+    return this.movimientos()
+      .filter(m => m.sn_doc_anulado !== 'S' && m.bcomovimientosId !== excluirId)
+      .reduce((suma, m) => suma + (m.dc_debitocredito === 'D' ? Number(m.importe) : -Number(m.importe)), 0);
+  });
+
+  saldoTexto(): string {
+    if (this.cargandoMovimientos()) return 'Cargando…';
+    return this.formatCurrency(this.saldoCuenta());
+  }
 
   tipoMovLabel(tipo: string): string {
     return this.TIPO_MOV_OPTIONS.find(o => o.value === tipo)?.label || tipo;
@@ -13339,6 +17126,1229 @@ export class ReimpresionChq implements OnInit {
 
 ---
 
+## 📄 src\app\features\configuracion\cai\cai-manager.html
+
+```typescript
+<div class="cai-manager">
+  <div class="page-header">
+    <div>
+      <h2>CAI y Correlativos</h2>
+      <span class="subtitulo">Autorizaciones de impresión y rangos de facturación</span>
+    </div>
+  </div>
+
+  <div class="split-layout">
+    <!-- ============ COLUMNA IZQUIERDA: DETALLE / FORMULARIO ============ -->
+    <div class="left-column">
+      @if (formMode() !== 'none') {
+      <!-- ===== Formulario CAI (nuevo / editar) ===== -->
+      <div class="cai-detail">
+        <div class="tab-header">
+          <h4>{{ formMode() === 'editar' ? 'Editar CAI' : 'Nuevo CAI' }}</h4>
+          <span class="tab-subtitulo">Código de Autorización de Impresión (SAT)</span>
+        </div>
+
+        <div class="card">
+          <div class="prestamo-form-columns" [formGroup]="caiForm">
+            <div class="form-col">
+              <h5 class="form-col-title">Código CAI</h5>
+              <div class="p-field">
+                <label>Código <span class="req">*</span> <small class="text-muted">(mínimo 35 caracteres, letras/números/guiones)</small></label>
+                <input pInputText pSize="small" formControlName="cai" placeholder="Ejemplo: A1B2FF-C3D4FF-E5F6BB-G7H8GG-I9J0TT-K1" class="cai-input-mono" />
+                @if (caiForm.get('cai')?.touched && caiForm.get('cai')?.invalid) {
+                <small class="err">
+                  @if (caiForm.get('cai')?.errors?.['minlength']) {
+                  Mínimo 35 caracteres (actual: {{ caiForm.get('cai')?.value?.length || 0 }})
+                  } @else {
+                  Este campo es requerido
+                  }
+                </small>
+                }
+              </div>
+            </div>
+            <div class="form-col">
+              <h5 class="form-col-title">Estado</h5>
+              <div class="p-field">
+                <label>Estado del CAI</label>
+                <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione estado" />
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarForm()" />
+            <p-button [label]="formMode() === 'editar' ? 'Actualizar CAI' : 'Crear CAI'" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingCai()" (onClick)="guardarCai()" />
+          </div>
+        </div>
+      </div>
+      } @else if (!selected()) {
+      <!-- ===== Empty state ===== -->
+      <div class="empty-state">
+        <i class="pi pi-arrow-left empty-icon"></i>
+        <h3>Pulse un CAI</h3>
+        <p>Seleccione un CAI de la lista para ver sus rangos de facturación</p>
+        <p-button label="Nuevo CAI" icon="pi pi-plus" severity="success" [rounded]="true" size="small" (onClick)="nuevo()" />
+      </div>
+      } @else {
+      <!-- ===== Detalle del CAI seleccionado ===== -->
+      <div class="cai-detail">
+        <div class="detail-header">
+          <div class="detail-codigo">
+            <span class="codigo-label">Código CAI</span>
+            <h3 class="cai-mono">{{ selected()!.cai }}</h3>
+            <p-tag [value]="getEstadoLabel(selected()!.sn_activo)" [severity]="getEstadoSeverity(selected()!.sn_activo)" styleClass="tag-sm" />
+          </div>
+          <div class="detail-actions">
+            <p-button label="Editar" icon="pi pi-pencil" variant="text" severity="warn" [rounded]="true" size="small" (onClick)="editarCai(selected()!)" />
+            <p-button label="Eliminar" icon="pi pi-trash" variant="text" severity="danger" [rounded]="true" size="small" (onClick)="eliminarCai(selected()!)" />
+          </div>
+        </div>
+
+        <!-- Formulario nuevo/editar correlativo -->
+        <div class="card mb-3" [formGroup]="corrForm">
+          <!-- Sucursal full-width -->
+          <div class="corr-sucursal">
+            <div class="p-field">
+              <label>Sucursal <span class="req">*</span></label>
+              <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar sucursal" (onChange)="onSucursalChange()" />
+            </div>
+          </div>
+
+          <!-- Rango de facturación: título + 2 columnas -->
+          <div class="corr-rango">
+            <h5 class="form-col-title">Rango de facturación</h5>
+            <div class="corr-rango-cols">
+              <div class="form-col">
+                <div class="p-field">
+                  <label>Rango Desde <span class="req">*</span></label>
+                  <input pInputText pSize="small" formControlName="rangoDesde" placeholder="000-001-01-00120001" />
+                </div>
+                <div class="p-field">
+                  <label>Rango Hasta <span class="req">*</span></label>
+                  <input pInputText pSize="small" formControlName="rangoHasta" placeholder="000-001-01-00127000" />
+                </div>
+              </div>
+              <div class="form-col">
+                <div class="p-field">
+                  <label>Fecha Límite <span class="req">*</span></label>
+                  <p-datepicker formControlName="fechaLimite" size="small" dateFormat="dd/mm/yy" [showIcon]="true" [appendTo]="'body'" styleClass="w-full" placeholder="Fecha de vencimiento" />
+                </div>
+                <div class="p-field">
+                  <label>Nro. Factura Actual <span class="req">*</span></label>
+                  <p-inputNumber formControlName="nrofactura" [min]="0" size="small" styleClass="w-full" [inputStyle]="{ 'width': '100%' }" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            @if (corrEditando()) {
+            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarCorr()" />
+            }
+            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingCorr()" (onClick)="guardarCorrelativo()" />
+          </div>
+        </div>
+
+        <!-- Lista de correlativos -->
+        <p-table
+          [value]="correlativos()"
+          [loading]="loadingCorr()"
+          showGridlines
+          styleClass="tabla-card"
+          [tableStyle]="{ 'min-width': '50rem' }"
+          size="small"
+          [paginator]="true"
+          [rows]="10"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+          [rowsPerPageOptions]="[10, 25, 50]"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Sucursal</th>
+              <th>Rango</th>
+              <th class="col-estado">Nro. Factura</th>
+              <th>Disponibles</th>
+              <th class="col-estado">Estado</th>
+              <th>Fecha Límite</th>
+              <th class="col-acciones"></th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-corr>
+            <tr [class.row-agotado]="getRangoEstado(corr.Idsucursal) === 'AGOTADO'" [class.row-critico]="getRangoEstado(corr.Idsucursal) === 'CRITICO'" [class.row-alerta]="getRangoEstado(corr.Idsucursal) === 'ALERTA'">
+              <td>{{ getSucursalNombre(corr.Idsucursal) }}</td>
+              <td>
+                <div class="rango-info">
+                  <span class="rango-text">{{ corr.rangoDesde }} → {{ corr.rangoHasta }}</span>
+                  <div class="rango-progress-container">
+                    <div class="rango-progress-bar" [style.width.%]="getRangoPorcentaje(corr.Idsucursal)" [class.progress-ok]="getRangoEstado(corr.Idsucursal) === 'OK'" [class.progress-alerta]="getRangoEstado(corr.Idsucursal) === 'ALERTA'" [class.progress-critico]="getRangoEstado(corr.Idsucursal) === 'CRITICO' || getRangoEstado(corr.Idsucursal) === 'AGOTADO'"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="col-estado text-center">{{ corr.nrofactura }}</td>
+              <td>
+                <span class="disponibles-text">{{ getRangoDisponible(corr.Idsucursal) }}</span>
+                <span class="porcentaje-text">({{ getRangoPorcentaje(corr.Idsucursal) }}%)</span>
+              </td>
+              <td class="col-estado"><p-tag [value]="getRangoLabel(corr.Idsucursal)" [severity]="getRangoEstadoSeverity(corr.Idsucursal)" styleClass="tag-sm" /></td>
+              <td>{{ formatFecha(corr.fechaLimite) }}</td>
+              <td class="col-acciones">
+                <p-button icon="pi pi-pencil" (click)="editarCorr(corr)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                <p-button icon="pi pi-trash" (click)="eliminarCorr(corr)" [rounded]="true" size="small" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="7" class="text-center text-muted">No hay correlativos registrados para este CAI</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+      }
+    </div>
+
+    <!-- ============ COLUMNA DERECHA: LISTA DE CAIs ============ -->
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input pInputText pSize="small" [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Buscar CAI..." />
+          @if (q()) {
+          <button class="search-clear" (click)="limpiarFiltros()">×</button>
+          }
+        </div>
+        <p-button label="Nuevo" icon="pi pi-plus" severity="success" [rounded]="true" size="small" (onClick)="nuevo()" />
+      </div>
+
+      @if (cargando()) {
+      @for (s of [1, 2, 3]; track s) {
+      <div class="ficha-skeleton">
+        <p-skeleton height="4.5rem" />
+      </div>
+      }
+      } @else if (filtrados().length === 0) {
+      <div class="lista-empty">
+        <i class="pi pi-inbox"></i>
+        <p>No hay CAIs registrados</p>
+        <p-button label="Crear el primero" icon="pi pi-plus" severity="success" variant="text" [rounded]="true" size="small" (onClick)="nuevo()" />
+      </div>
+      } @else {
+      <div class="cai-lista">
+        @for (cai of filtrados(); track cai.caiId) {
+        <div class="cai-item-ficha" [class.selected]="selected()?.caiId === cai.caiId" (click)="seleccionar(cai)">
+          <div class="item-ficha-header">
+            <p-tag [value]="getEstadoLabel(cai.sn_activo)" [severity]="getEstadoSeverity(cai.sn_activo)" styleClass="tag-sm" />
+            <div class="item-ficha-actions">
+              <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (click)="editarCai(cai); $event.stopPropagation()" />
+              <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (click)="eliminarCai(cai); $event.stopPropagation()" />
+            </div>
+          </div>
+          <div class="ficha-codigo">{{ cai.cai }}</div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\cai\cai-manager.scss
+
+```typescript
+// ==================================================
+//  CAI Manager — layout split estilo clientes-manager
+//  Izquierda: detalle / formulario  ·  Derecha: lista
+// ==================================================
+
+.cai-manager {
+  height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+}
+
+// ===== Page header =====
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .subtitulo {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+  }
+}
+
+// ===== Split layout =====
+
+.split-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg);
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+.right-column {
+  width: 380px;
+  min-width: 350px;
+  max-width: 450px;
+  border-left: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+}
+
+// ===== Search bar (lista) =====
+
+.search-bar {
+  padding: 1rem;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .pi-search {
+      position: absolute;
+      left: 0.75rem;
+      color: var(--c-text-muted);
+      z-index: 1;
+      font-size: 0.85rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.5rem 2rem 0.5rem 2.25rem;
+      border: 1px solid var(--for-border-color-alls);
+      border-radius: 6px;
+      background: var(--c-bg);
+      color: var(--c-text);
+      font-size: 0.85rem;
+    }
+  }
+
+  .search-clear {
+    position: absolute;
+    right: 0.35rem;
+    border: none;
+    background: transparent;
+    color: var(--c-text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0.15rem 0.35rem;
+
+    &:hover {
+      color: var(--c-error);
+    }
+  }
+}
+
+// ===== Lista de CAIs (fichas) =====
+
+.cai-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cai-item-ficha {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    border-color: var(--c-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &.selected {
+    border-color: var(--for-border-color-alls);
+    background: var(--master-background);
+  }
+}
+
+.item-ficha-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.375rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.item-ficha-actions {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.ficha-codigo {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  color: var(--c-text);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.ficha-skeleton {
+  padding: 0 0.5rem;
+}
+
+.lista-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--c-text-muted);
+  padding: 2rem;
+  text-align: center;
+
+  .pi-inbox {
+    font-size: 2rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+}
+
+// ===== Empty state (columna izquierda) =====
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--c-text-muted);
+  padding: 2rem;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--c-primary);
+    opacity: 0.5;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--c-text-secondary, #6c757d);
+  }
+}
+
+// ===== Detalle del CAI (columna izquierda) =====
+
+.cai-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.detail-codigo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  align-items: flex-start;
+  min-width: 0;
+
+  .codigo-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+  }
+
+  .cai-mono {
+    margin: 0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--c-text);
+    word-break: break-all;
+  }
+}
+
+.detail-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+// ===== Tab header (formularios) =====
+
+.tab-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+
+  h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+}
+
+.tab-subtitulo {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+}
+
+// ===== Formularios 2 columnas =====
+
+.prestamo-form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-col-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.form-col .p-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-col label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+
+  .req {
+    color: var(--c-error);
+  }
+
+  small.text-muted {
+    font-weight: 400;
+  }
+}
+
+.form-col input.p-inputtext,
+.form-col .p-select,
+.form-col .p-inputnumber,
+.form-col .p-datepicker {
+  width: 100%;
+}
+
+.form-col .err {
+  font-size: 0.75rem;
+  color: var(--c-error);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+}
+
+// ===== Formulario correlativo: sucursal full-width + sección rango 2 cols =====
+
+.corr-sucursal {
+  margin-bottom: 1rem;
+
+  .p-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--c-text-muted);
+
+    .req {
+      color: var(--c-error);
+    }
+  }
+}
+
+.corr-rango {
+  .form-col-title {
+    margin-bottom: 0.75rem;
+  }
+}
+
+.corr-rango-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+// ===== Código CAI mono =====
+
+.cai-input-mono {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+// ===== Tabla de correlativos =====
+
+.tabla-card {
+  padding: 0.05rem;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.col-estado {
+  width: 110px;
+  text-align: center;
+}
+
+.col-acciones {
+  width: 110px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+// ===== Rango / barra de progreso correlativos =====
+
+.rango-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 180px;
+}
+
+.rango-text {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.75rem;
+  color: var(--c-text);
+}
+
+.rango-progress-container {
+  width: 100%;
+  height: 6px;
+  background: var(--c-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rango-progress-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+
+  &.progress-ok {
+    background: var(--c-success, #10b981);
+  }
+
+  &.progress-alerta {
+    background: var(--c-warning, #f59e0b);
+  }
+
+  &.progress-critico {
+    background: var(--c-error, #ef4444);
+  }
+}
+
+.disponibles-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text);
+}
+
+.porcentaje-text {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  margin-left: 0.25rem;
+}
+
+// Filas con estado de alerta
+.row-agotado {
+  background: color-mix(in srgb, var(--c-error, #ef4444) 8%, transparent) !important;
+}
+
+.row-critico {
+  background: color-mix(in srgb, var(--c-error, #ef4444) 5%, transparent) !important;
+}
+
+.row-alerta {
+  background: color-mix(in srgb, var(--c-warning, #f59e0b) 5%, transparent) !important;
+}
+
+// ===== Responsive =====
+
+@media (max-width: 1024px) {
+  .right-column {
+    width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .split-layout {
+    flex-direction: column;
+  }
+
+  .left-column {
+    order: 2;
+  }
+
+  .right-column {
+    order: 1;
+    width: 100%;
+    max-width: none;
+    border-left: none;
+    border-bottom: 1px solid var(--c-border);
+    max-height: 40vh;
+  }
+
+  .prestamo-form-columns,
+  .corr-rango-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\cai\cai-manager.ts
+
+```typescript
+import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { SkeletonModule } from 'primeng/skeleton';
+import { TableModule } from 'primeng/table';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { forkJoin, of } from 'rxjs';
+import { EmpresasService } from '../../../core/services/empresas.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { Cai, Correlativo, EstadoCorrelativo } from '../../../core/models/empresa.models';
+import { Sucursal } from '../../../core/models/sucursal.models';
+
+/**
+ * CAI Manager — control independiente de CAIs (tcai) y sus rangos (tcai_autorizado).
+ * Layout split estilo clientes-manager: detalle a la izquierda, lista a la derecha.
+ * Opera sobre la empresa activa del usuario logueado.
+ */
+@Component({
+  selector: 'app-cai-manager',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    TagModule,
+    TooltipModule,
+    SkeletonModule,
+    TableModule,
+    SelectModule,
+    DatePickerModule,
+    InputNumberModule,
+    IconFieldModule,
+    InputIconModule,
+  ],
+  templateUrl: './cai-manager.html',
+  styleUrl: './cai-manager.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class CaiManager implements OnInit {
+  private service = inject(EmpresasService);
+  private auth = inject(AuthService);
+  private fb = inject(FormBuilder);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+
+  private empresaId: number | null = this.auth.currentUser()?.empresaId ?? null;
+
+  // ===== LISTA =====
+  cais = signal<Cai[]>([]);
+  cargando = signal(false);
+  q = signal('');
+
+  /** CAI seleccionado para ver detalle (rangos) */
+  selected = signal<Cai | null>(null);
+  /** Modo del formulario maestro: 'none' = ver detalle */
+  formMode = signal<'none' | 'nuevo' | 'editar'>('none');
+  savingCai = signal(false);
+  /** Id del CAI que se está editando (null = creando) */
+  private editandoId: number | null = null;
+
+  readonly SN_ACTIVO_OPTIONS = [
+    { label: 'Activo', value: 'S' },
+    { label: 'Inactivo', value: 'N' },
+  ];
+
+  filtrados = computed(() => {
+    const texto = this.q().toLowerCase().trim();
+    const list = this.cais();
+    if (!texto) return list;
+    return list.filter(c => c.cai.toLowerCase().includes(texto));
+  });
+
+  caiForm = this.fb.group({
+    cai: ['', [Validators.required, Validators.minLength(35)]],
+    sn_activo: ['N'],
+  });
+
+  // ===== CORRELATIVOS (rangos del CAI seleccionado) =====
+  correlativos = signal<Correlativo[]>([]);
+  loadingCorr = signal(false);
+  savingCorr = signal(false);
+  corrEditando = signal<Correlativo | null>(null);
+  sucursales = signal<Sucursal[]>([]);
+  estadoCorrelativos = signal<EstadoCorrelativo[]>([]);
+
+  corrForm = this.fb.group({
+    Idsucursal: [null as number | null, Validators.required],
+    rangoDesde: ['', Validators.required],
+    rangoHasta: ['', Validators.required],
+    nrofactura: [0, Validators.required],
+    fechaLimite: [null as Date | null, Validators.required],
+  });
+
+  ngOnInit() {
+    if (this.empresaId != null) {
+      this.loadCais();
+      this.loadSucursales();
+      this.loadEstadoCorrelativos();
+    }
+  }
+
+  // ==================================================
+  //  CAI — MAESTRO
+  // ==================================================
+
+  loadCais() {
+    this.cargando.set(true);
+    this.service.getAllCai(this.empresaId!).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const list = data ?? [];
+        this.cais.set(list);
+        this.cargando.set(false);
+        if (list.length > 0 && !this.selected() && this.formMode() === 'none') {
+          this.seleccionar(list[0]);
+        } else if (list.length === 0) {
+          this.selected.set(null);
+          this.correlativos.set([]);
+        }
+      },
+      error: () => {
+        this.cais.set([]);
+        this.cargando.set(false);
+      },
+    });
+  }
+
+  seleccionar(cai: Cai) {
+    this.formMode.set('none');
+    this.selected.set(cai);
+    this.caiForm.reset({ cai: cai.cai, sn_activo: cai.sn_activo });
+    this.loadCorrelativos();
+  }
+
+  nuevo() {
+    this.selected.set(null);
+    this.correlativos.set([]);
+    this.editandoId = null;
+    this.formMode.set('nuevo');
+    this.caiForm.reset({ cai: '', sn_activo: 'S' });
+  }
+
+  editarCai(cai: Cai) {
+    this.selected.set(null);
+    this.correlativos.set([]);
+    this.editandoId = cai.caiId;
+    this.formMode.set('editar');
+    this.caiForm.reset({ cai: cai.cai, sn_activo: cai.sn_activo });
+  }
+
+  cancelarForm() {
+    this.formMode.set('none');
+    this.editandoId = null;
+    this.caiForm.reset({ cai: '', sn_activo: 'N' });
+    // Volver al primer CAI si había datos
+    const list = this.cais();
+    if (list.length > 0) {
+      this.seleccionar(list[0]);
+    }
+  }
+
+  guardarCai() {
+    if (this.caiForm.invalid || this.empresaId == null) {
+      this.caiForm.markAllAsTouched();
+      return;
+    }
+
+    const codigo = this.caiForm.value.cai || '';
+    if (codigo.length < 35) {
+      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'El CAI debe tener al menos 35 caracteres' });
+      return;
+    }
+
+    this.savingCai.set(true);
+    const dto: Partial<Cai> = {
+      cai: codigo.toUpperCase(),
+      sn_activo: this.caiForm.value.sn_activo || 'N',
+      empresaId: this.empresaId!,
+    };
+
+    const esEdicion = this.formMode() === 'editar';
+    const obs = esEdicion && this.editandoId != null
+      ? this.service.updateCai(this.editandoId, dto)
+      : this.service.createCai(dto);
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'CAI guardado correctamente' });
+        this.savingCai.set(false);
+        this.formMode.set('none');
+        this.editandoId = null;
+        this.caiForm.reset({ cai: '', sn_activo: 'N' });
+        this.selected.set(null);
+        this.correlativos.set([]);
+        this.loadCais();
+      },
+      error: (err: any) => {
+        this.savingCai.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
+      },
+    });
+  }
+
+  eliminarCai(cai: Cai) {
+    this.confirm.confirm({
+      message: '¿Eliminar este CAI y todos sus correlativos?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        // Cascada: primero los correlativos del CAI, luego el CAI
+        this.service.getAllCorr(this.empresaId!).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: (corrs) => {
+            const dels = (corrs ?? [])
+              .filter(c => c.caiId === cai.caiId)
+              .map(c => this.service.removeCorr(c.caiAutorizadoId, c.empresaId));
+            (dels.length > 0 ? forkJoin(dels) : of([])).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+              next: () => this.procesarEliminacionCai(cai),
+              error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudieron eliminar los correlativos' }),
+            });
+          },
+          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudieron leer los correlativos' }),
+        });
+      },
+    });
+  }
+
+  private procesarEliminacionCai(cai: Cai) {
+    this.service.removeCai(cai.caiId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'CAI eliminado' });
+        this.selected.set(null);
+        this.correlativos.set([]);
+        this.loadCais();
+      },
+      error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
+    });
+  }
+
+  // ==================================================
+  //  CORRELATIVOS (detalle del CAI)
+  // ==================================================
+
+  loadCorrelativos() {
+    const caiId = this.selected()?.caiId;
+    if (caiId == null || this.empresaId == null) {
+      this.correlativos.set([]);
+      return;
+    }
+    this.loadingCorr.set(true);
+    this.service.getAllCorr(this.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.correlativos.set((data ?? []).filter(c => c.caiId === caiId));
+        this.loadingCorr.set(false);
+      },
+      error: () => {
+        this.correlativos.set([]);
+        this.loadingCorr.set(false);
+      },
+    });
+  }
+
+  guardarCorrelativo() {
+    if (this.corrForm.invalid || this.empresaId == null) {
+      this.corrForm.markAllAsTouched();
+      return;
+    }
+    const caiId = this.selected()?.caiId;
+    if (caiId == null) return;
+
+    this.savingCorr.set(true);
+    const formVal = this.corrForm.value;
+    const fechaLimite = formVal.fechaLimite instanceof Date
+      ? formVal.fechaLimite.toISOString()
+      : formVal.fechaLimite;
+
+    const dto: Partial<Correlativo> = {
+      caiId,
+      Idsucursal: formVal.Idsucursal!,
+      rangoDesde: formVal.rangoDesde!,
+      rangoHasta: formVal.rangoHasta!,
+      nrofactura: formVal.nrofactura!,
+      fechaLimite: fechaLimite!,
+      empresaId: this.empresaId!,
+    };
+
+    const editando = this.corrEditando();
+    const obs = editando
+      ? this.service.updateCorr(editando.caiAutorizadoId, dto)
+      : this.service.createCorr(dto);
+
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Correlativo guardado correctamente' });
+        this.savingCorr.set(false);
+        this.resetCorrForm();
+        this.corrEditando.set(null);
+        this.loadCorrelativos();
+        this.loadEstadoCorrelativos();
+      },
+      error: (err: any) => {
+        this.savingCorr.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
+      },
+    });
+  }
+
+  editarCorr(corr: Correlativo) {
+    this.corrEditando.set(corr);
+    const fechaCorr = corr.fechaLimite ? new Date(corr.fechaLimite) : null;
+    this.corrForm.patchValue({
+      Idsucursal: corr.Idsucursal,
+      rangoDesde: corr.rangoDesde,
+      rangoHasta: corr.rangoHasta,
+      nrofactura: corr.nrofactura,
+      fechaLimite: fechaCorr,
+    });
+  }
+
+  eliminarCorr(corr: Correlativo) {
+    this.confirm.confirm({
+      message: '¿Eliminar este correlativo?',
+      header: 'Confirmar',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.service.removeCorr(corr.caiAutorizadoId, corr.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Correlativo eliminado' });
+            this.loadCorrelativos();
+            this.loadEstadoCorrelativos();
+          },
+          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
+        });
+      },
+    });
+  }
+
+  cancelarCorr() {
+    this.corrEditando.set(null);
+    this.resetCorrForm();
+  }
+
+  resetCorrForm() {
+    this.corrForm.reset({
+      Idsucursal: null,
+      rangoDesde: '',
+      rangoHasta: '',
+      nrofactura: 0,
+      fechaLimite: null,
+    });
+  }
+
+  cargarNroFacturaSiguiente() {
+    const idsucursal = this.corrForm.value.Idsucursal;
+    if (!idsucursal || this.empresaId == null) return;
+
+    this.service.getNextNroFactura(this.empresaId, idsucursal)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => this.corrForm.patchValue({ nrofactura: res.nrofactura }),
+        error: () => { /* sin correlativo previo: contador en 0 */ },
+      });
+  }
+
+  onSucursalChange() {
+    if (!this.corrEditando()) {
+      this.cargarNroFacturaSiguiente();
+    }
+  }
+
+  // ==================================================
+  //  SUCURSALES + ESTADO (alertas de rangos)
+  // ==================================================
+
+  private loadSucursales() {
+    this.service.getAllSucursales(this.empresaId!).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.sucursales.set(data ?? []),
+      error: () => this.sucursales.set([]),
+    });
+  }
+
+  loadEstadoCorrelativos() {
+    this.service.getEstadoCorrelativo(this.empresaId!).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.estadoCorrelativos.set(data ?? []),
+      error: () => this.estadoCorrelativos.set([]),
+    });
+  }
+
+  getEstadoCorr(idsucursal: number): EstadoCorrelativo | undefined {
+    return this.estadoCorrelativos().find(e => e.Idsucursal === idsucursal);
+  }
+
+  getRangoDisponible(idsucursal: number): string {
+    const e = this.getEstadoCorr(idsucursal);
+    if (!e) return '-';
+    return `${e.disponible} de ${e.total}`;
+  }
+
+  getRangoPorcentaje(idsucursal: number): number {
+    const e = this.getEstadoCorr(idsucursal);
+    return e?.porcentaje ?? 0;
+  }
+
+  getRangoEstado(idsucursal: number): string {
+    const e = this.getEstadoCorr(idsucursal);
+    return e?.estado ?? 'OK';
+  }
+
+  getRangoEstadoSeverity(idsucursal: number): string {
+    const estado = this.getRangoEstado(idsucursal);
+    switch (estado) {
+      case 'AGOTADO': return 'danger';
+      case 'CRITICO': return 'danger';
+      case 'ALERTA': return 'warn';
+      default: return 'success';
+    }
+  }
+
+  getRangoLabel(idsucursal: number): string {
+    const estado = this.getRangoEstado(idsucursal);
+    switch (estado) {
+      case 'AGOTADO': return 'Rango agotado';
+      case 'CRITICO': return 'Crítico (<10%)';
+      case 'ALERTA': return 'Alerta (<20%)';
+      default: return 'OK';
+    }
+  }
+
+  // ==================================================
+  //  HELPERS
+  // ==================================================
+
+  getEstadoLabel(activo: string): string {
+    return activo === 'S' ? 'Activo' : 'Inactivo';
+  }
+
+  getEstadoSeverity(activo: string): string {
+    return activo === 'S' ? 'success' : 'danger';
+  }
+
+  formatFecha(fecha: string | Date | undefined): string {
+    if (!fecha) return '-';
+    return new Date(fecha).toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  getSucursalNombre(idsucursal: number): string {
+    return this.sucursales().find(s => s.idsucursal === idsucursal)?.descripcion || `Suc. ${idsucursal}`;
+  }
+
+  limpiarFiltros() {
+    this.q.set('');
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\features\configuracion\configuracion.routes.ts
 
 ```typescript
@@ -13352,6 +18362,13 @@ export const CONFIGURACION_ROUTES: Routes = [
     path: 'empresas',
     loadComponent: () =>
       import('./empresas/empresas-manager').then((m) => m.EmpresasManager),
+  },
+
+  // CAI y Correlativos (tcai / tcai_autorizado) — control independiente
+  {
+    path: 'cai',
+    loadComponent: () =>
+      import('./cai/cai-manager').then((m) => m.CaiManager),
   },
 
   // Usuarios
@@ -13455,6 +18472,19 @@ export const CONFIGURACION_ROUTES: Routes = [
     loadComponent: () =>
       import('../usuarios/usuario-roles/usuario-roles-form').then((m) => m.UsuarioRolesForm),
   },
+  {
+    // Catálogo genérico: Usuarios de Caja (tusuarios_caja) — menú "Caja por Usuario"
+    path: 'usuarios/usuarios-caja',
+    data: { nombre: 'usuarios-caja' },
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+  },
+  {
+    path: 'usuarios/usuarios-caja/editar/:id',
+    data: { nombre: 'usuarios-caja' },
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+  },
 
   // Parámetros (catálogos genéricos configurables)
   {
@@ -13482,6 +18512,20 @@ export const CONFIGURACION_ROUTES: Routes = [
       import('../parametros/param-manager-modulos/param-manager-modulos').then((m) => m.ParamManagerModulos),
   },
 
+  // Fechas autorizadas (tfecma / tfecdet) — solo admin/supervisor
+  {
+    path: 'fechas',
+    loadComponent: () =>
+      import('./fechas/manager-fechas').then((m) => m.ManagerFechas),
+  },
+
+  // Fechas autorizadas — réplica (separación de funciones pendiente)
+  {
+    path: 'fechasautorizadas',
+    loadComponent: () =>
+      import('./fechasautorizadas/fechasautorizadas').then((m) => m.FechasAutorizadas),
+  },
+
   { path: '**', redirectTo: 'empresas' },
 ];
 
@@ -13503,10 +18547,47 @@ export const CONFIGURACION_ROUTES: Routes = [
       <!-- Empty state -->
       @if (!empresaSeleccionada()) {
       <div class="empty-state">
-        <i class="pi pi-building empty-icon"></i>
-        <h3>Seleccione una empresa</h3>
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Pulse una empresa</h3>
         <p>Haga clic en una empresa de la lista para ver su información</p>
-        <p-button label="Nueva Empresa" icon="pi pi-plus" (click)="nueva()" severity="success" variant="text" [rounded]="true" size="small" />
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input
+                type="text"
+                pSize="small"
+                pInputText
+                [ngModel]="q()"
+                (ngModelChange)="q.set($event); filtrar()"
+                placeholder="Buscar por nombre o código..."
+                class="mr-1"
+              />
+              @if (q()) {
+              <p-button
+                icon="pi pi-times"
+                (click)="limpiarFiltros()"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                size="small"
+              />
+              }
+            </p-iconField>
+          </div>
+        </div>
+
+        <p-button
+          label="Agregar nueva empresa"
+          icon="pi pi-plus"
+          (click)="nueva()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          size="small"
+          class="mr-2"
+        />
       </div>
       }
 
@@ -13527,10 +18608,6 @@ export const CONFIGURACION_ROUTES: Routes = [
               <i class="pi pi-map-marker"></i>
               <span>Sucursales</span>
             </p-tab>
-            <p-tab value="3">
-              <i class="pi pi-file-edit"></i>
-              <span>CAI</span>
-            </p-tab>
             <p-tab value="4">
               <i class="pi pi-image"></i>
               <span>Logo</span>
@@ -13545,41 +18622,44 @@ export const CONFIGURACION_ROUTES: Routes = [
             <!-- TAB 0: Empresa - Formulario 2 columnas -->
             <p-tabpanel value="0">
               <div class="tab-content">
-                <div class="prestamo-form-columns">
-                  <!-- Columna 1 -->
-                  <div class="form-col">
-                    <h4 class="form-col-title">Información General</h4>
-                    <div class="p-fluid" [formGroup]="empresaForm">
-                      <div class="campo">
+                <div class="tab-header">
+                  <h4>Empresa</h4>
+                  <span class="tab-subtitulo">Datos generales y mensajes al pie de documento</span>
+                </div>
+
+                <div class="card mb-3">
+                  <div class="prestamo-form-columns" [formGroup]="empresaForm">
+                    <!-- Columna 1 -->
+                    <div class="form-col">
+                      <h5 class="form-col-title">Información General</h5>
+                      <div class="p-field">
                         <label for="descripcion">Descripción <span class="req">*</span></label>
-                        <input pInputText id="descripcion" formControlName="descripcion" pSize="small" placeholder="Nombre de la empresa" />
+                        <input pInputText pSize="small" id="descripcion" formControlName="descripcion" placeholder="Nombre de la empresa" />
                         @if (empresaForm.get('descripcion')?.invalid && empresaForm.get('descripcion')?.touched) {
                         <small class="err">Ingrese la descripción</small>
                         }
                       </div>
-                      <div class="campo">
+                      <div class="p-field">
                         <label for="sn_activo">Estado</label>
-                        <p-select id="sn_activo" formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
+                        <p-select id="sn_activo" formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione estado" />
                       </div>
                     </div>
-                  </div>
-                  <!-- Columna 2 -->
-                  <div class="form-col">
-                    <h4 class="form-col-title">Mensajes</h4>
-                    <div class="p-fluid" [formGroup]="empresaForm">
-                      <div class="campo">
+                    <!-- Columna 2 -->
+                    <div class="form-col">
+                      <h5 class="form-col-title">Mensajes</h5>
+                      <div class="p-field">
                         <label for="msjfactura">Mensaje Factura</label>
                         <textarea pTextarea id="msjfactura" formControlName="msjfactura" [rows]="3" pSize="small" placeholder="Mensaje al pie de factura"></textarea>
                       </div>
-                      <div class="campo">
+                      <div class="p-field">
                         <label for="msjdevfactura">Mensaje Devolución</label>
                         <textarea pTextarea id="msjdevfactura" formControlName="msjdevfactura" [rows]="3" pSize="small" placeholder="Mensaje de política de devolución"></textarea>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div class="form-actions">
-                  <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="saving()" (onClick)="guardarEmpresa()" />
+                  <div class="form-actions">
+                    <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="saving()" (onClick)="guardarEmpresa()" />
+                  </div>
                 </div>
               </div>
             </p-tabpanel>
@@ -13587,286 +18667,173 @@ export const CONFIGURACION_ROUTES: Routes = [
             <!-- TAB 1: Datos Específicos -->
             <p-tabpanel value="1">
               <div class="tab-content">
-                <!-- Formulario agregar/editar -->
-                <div class="card mb-3">
-                  <div class="p-fluid" [formGroup]="detForm">
-                    <div class="p-grid">
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Tipo</label>
-                          <p-select formControlName="tipo" [options]="TIPO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Valor <span class="req">*</span></label>
-                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Valor" />
-                        </div>
-                      </div>
-                      <div class="p-col-12">
-                        <div class="form-actions">
-                          @if (detEditando()) {
-                          <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarDet()" />
-                          }
-                          <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingDet()" (onClick)="guardarDet()" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                <div class="tab-header">
+                  <h4>Datos Específicos</h4>
+                  <span class="tab-subtitulo">RTN, teléfono, dirección, correo y otros datos de la empresa</span>
                 </div>
 
-                <!-- Lista -->
-                @if (empresaDet().length > 0) {
-                <p-table [value]="empresaDet()" size="small" [tableStyle]="{ 'min-width': '40rem' }">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th>Tipo</th>
-                      <th>Valor</th>
-                      <th style="width: 8rem;">Acciones</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-det>
-                    <tr>
-                      <td><p-tag [value]="det.tipo" severity="info" styleClass="tag-sm" /></td>
-                      <td>{{ det.descripcion }}</td>
-                      <td>
-                        <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarDet(det)" />
-                        <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarDet(det)" />
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-                } @else {
-                <div class="text-center text-muted py-3">No hay datos registrados</div>
-                }
+                <div class="info-adicional-grid">
+                  <!-- Formulario alta / edicion -->
+                  <div class="info-panel info-panel-form">
+                    <div class="form-col" [formGroup]="detForm">
+                      <div class="p-field">
+                        <label>Tipo</label>
+                        <p-select formControlName="tipo" [options]="TIPO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione tipo" />
+                      </div>
+                      <div class="p-field">
+                        <label>Valor <span class="req">*</span></label>
+                        <input pInputText pSize="small" formControlName="descripcion" placeholder="Valor del dato" />
+                      </div>
+                    </div>
+
+                    <div class="form-actions info-form-actions">
+                      @if (detEditando()) {
+                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarDet()" />
+                      } @else {
+                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarDet()" />
+                      }
+                      <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingDet()" (click)="guardarDet()" />
+                    </div>
+                  </div>
+
+                  <!-- Listado -->
+                  <div class="info-panel info-panel-list">
+                    <div class="detalle-header">
+                      <span>DETALLE</span>
+                    </div>
+                    <!-- test-hmr -->
+
+                    <p-table
+                      [value]="empresaDet()"
+                      [loading]="loadingDet()"
+                      showGridlines
+                      styleClass="tabla-card"
+                      [tableStyle]="{ 'min-width': '15rem' }"
+                      size="small"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th class="col-tipo">Tipo</th>
+                          <th>Valor</th>
+                          <th class="col-estado">Estado</th>
+                          <th class="col-acciones"></th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-det>
+                        <tr>
+                          <td class="col-tipo">{{ det.tipo }}</td>
+                          <td>{{ det.descripcion }}</td>
+                          <td class="col-estado text-center">
+                            <p-tag [value]="getEstadoLabel(det.sn_activo)" [severity]="getEstadoSeverity(det.sn_activo)" styleClass="tag-sm" />
+                          </td>
+                          <td class="col-acciones">
+                            <p-button icon="pi pi-pencil" (click)="editarDet(det)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                            <p-button icon="pi pi-trash" (click)="eliminarDet(det)" [rounded]="true" size="small" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
+                          </td>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="emptymessage">
+                        <tr>
+                          <td colspan="4" class="text-center text-muted">No hay datos registrados</td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+                </div>
               </div>
             </p-tabpanel>
 
             <!-- TAB 2: Sucursales -->
             <p-tabpanel value="2">
               <div class="tab-content">
-                <div class="card mb-3">
-                  <div class="p-fluid" [formGroup]="sucForm">
-                    <div class="p-grid">
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Descripción <span class="req">*</span></label>
-                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Nombre sucursal" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-3">
-                        <div class="campo">
-                          <label>Estado</label>
-                          <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-3">
-                        <div class="campo">
-                          <label>&nbsp;</label>
-                          <div class="d-flex gap-2">
-                            @if (sucEditando()) {
-                            <p-button size="small" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarSuc()" />
-                            }
-                            <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingSuc()" (onClick)="guardarSucursal()" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                <div class="tab-header">
+                  <h4>Sucursales</h4>
+                  <span class="tab-subtitulo">Plazas habilitadas de la empresa</span>
                 </div>
 
-                @if (sucursales().length > 0) {
-                <p-table [value]="sucursales()" size="small" [tableStyle]="{ 'min-width': '30rem' }">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th>ID</th>
-                      <th>Descripción</th>
-                      <th>Estado</th>
-                      <th style="width: 5rem;">Acciones</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-suc>
-                    <tr>
-                      <td class="text-center">{{ suc.idsucursal }}</td>
-                      <td>{{ suc.descripcion }}</td>
-                      <td><p-tag [value]="getEstadoLabel(suc.sn_activo)" [severity]="getEstadoSeverity(suc.sn_activo)" styleClass="tag-sm" /></td>
-                      <td>
-                        <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarSuc(suc)" />
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-                } @else {
-                <div class="text-center text-muted py-3">No hay sucursales registradas</div>
-                }
-              </div>
-            </p-tabpanel>
+                <div class="info-adicional-grid">
+                  <!-- Formulario -->
+                  <div class="info-panel info-panel-form">
+                    <h5 class="form-col-title">
+                      {{ sucEditando() ? 'Editar sucursal' : 'Nueva sucursal' }}
+                    </h5>
 
-            <!-- TAB 3: CAI - Maestro/Detalle -->
-            <p-tabpanel value="3">
-              <div class="tab-content">
-                <!-- Maestro: Lista de CAIs -->
-                <p-fieldset legend="CAI Registrados" [toggleable]="true">
-                  @if (caiRecords().length > 0) {
-                  <div class="cai-list">
-                    @for (cai of caiRecords(); track cai.empresasdetId) {
-                    <div class="cai-item" [class.selected]="caiSeleccionado()?.empresasdetId === cai.empresasdetId" (click)="seleccionarCai(cai)">
-                      <div class="cai-item-header">
-                        <p-tag [value]="getEstadoLabel(cai.sn_activo)" [severity]="getEstadoSeverity(cai.sn_activo)" styleClass="tag-sm" />
-                        <div class="cai-item-actions">
-                          <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (click)="editarCai(cai); $event.stopPropagation()" />
-                          <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (click)="eliminarCai(cai); $event.stopPropagation()" />
-                        </div>
+                    <div class="form-col" [formGroup]="sucForm">
+                      <div class="p-field">
+                        <label>Descripción <span class="req">*</span></label>
+                        <input pInputText pSize="small" formControlName="descripcion" placeholder="Nombre sucursal" />
                       </div>
-                      <div class="cai-item-code">{{ getCaiDescripcion(cai) }}</div>
-                    </div>
-                    }
-                  </div>
-                  } @else {
-                  <div class="text-center text-muted py-3">No hay CAIs registrados</div>
-                  }
-
-                  <!-- Formulario nuevo/editar CAI -->
-                  <div class="card mt-3">
-                    <h5 class="mb-3">{{ caiEditando() ? 'Editar CAI' : 'Nuevo CAI' }}</h5>
-                    <div class="p-fluid" [formGroup]="caiForm">
-                      <div class="p-grid">
-                        <div class="p-col-12 p-col-8">
-                          <div class="campo">
-                            <label>Código CAI <span class="req">*</span> <small class="text-muted">(mínimo 35 caracteres, letras/números/guiones)</small></label>
-                            <input pInputText formControlName="descripcion" pSize="small" placeholder="Ejemplo: A1B2FF-C3D4FF-E5F6BB-G7H8GG-I9J0TT-K1" [style]="{ 'font-family': 'monospace' }" />
-                            @if (caiForm.get('descripcion')?.touched && caiForm.get('descripcion')?.invalid) {
-                            <small class="err">
-                              @if (caiForm.get('descripcion')?.errors?.['minlength']) {
-                              Mínimo 35 caracteres (actual: {{ caiForm.get('descripcion')?.value?.length || 0 }})
-                              } @else {
-                              Solo letras, números y guiones
-                              }
-                            </small>
-                            }
-                          </div>
-                        </div>
-                        <div class="p-col-12 p-col-4">
-                          <div class="campo">
-                            <label>Estado</label>
-                            <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
-                          </div>
-                        </div>
-                      </div>
-                      <div class="form-actions">
-                        @if (caiEditando()) {
-                        <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarCai()" />
-                        }
-                        <p-button size="small" [label]="caiEditando() ? 'Actualizar CAI' : 'Crear CAI'" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingCai()" (onClick)="guardarCai()" />
+                      <div class="p-field">
+                        <label>Estado</label>
+                        <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione estado" />
                       </div>
                     </div>
-                  </div>
-                </p-fieldset>
 
-                <!-- Detalle: Correlativos del CAI seleccionado -->
-                @if (caiSeleccionado()) {
-                <p-fieldset legend="Correlativos (Rangos de Factura)" [toggleable]="true" styleClass="mt-3">
-                  <!-- Formulario nuevo/editar correlativo -->
-                  <div class="card mb-3">
-                    <h5 class="mb-3">{{ corrEditando() ? 'Editar Correlativo' : 'Nuevo Correlativo' }}</h5>
-                    <div class="p-fluid" [formGroup]="corrForm">
-                      <div class="p-grid">
-                        <div class="p-col-12 p-col-6">
-                          <div class="campo">
-                            <label>Sucursal <span class="req">*</span></label>
-                            <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" pSize="small" styleClass="w-full" appendTo="body" placeholder="Seleccionar sucursal" (onChange)="onSucursalChange()" />
-                          </div>
-                        </div>
-                        <div class="p-col-12 p-col-6">
-                          <div class="campo">
-                            <label>Nro. Factura Actual <span class="req">*</span></label>
-                            <p-inputNumber formControlName="nrofactura" [min]="0" pSize="small" styleClass="w-full" [inputStyle]="{ 'width': '100%' }" />
-                          </div>
-                        </div>
-                        <div class="p-col-12 p-col-4">
-                          <div class="campo">
-                            <label>Rango Desde <span class="req">*</span></label>
-                            <input pInputText formControlName="rangoDesde" pSize="small" placeholder="001-001-01000001" />
-                          </div>
-                        </div>
-                        <div class="p-col-12 p-col-4">
-                          <div class="campo">
-                            <label>Rango Hasta <span class="req">*</span></label>
-                            <input pInputText formControlName="rangoHasta" pSize="small" placeholder="001-001-01000500" />
-                          </div>
-                        </div>
-                        <div class="p-col-12 p-col-4">
-                          <div class="campo">
-                            <label>Fecha Límite <span class="req">*</span></label>
-                            <p-datepicker formControlName="fechaLimite" pSize="small" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" placeholder="Fecha de vencimiento" />
-                          </div>
-                        </div>
-                        <div class="p-col-12">
-                          <div class="form-actions">
-                            @if (corrEditando()) {
-                            <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarCorr()" />
-                            }
-                            <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingCorr()" (onClick)="guardarCorrelativo()" />
-                          </div>
-                        </div>
-                      </div>
+                    <div class="form-actions info-form-actions">
+                      @if (sucEditando()) {
+                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarSuc()" />
+                      } @else {
+                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarSuc()" />
+                      }
+                      <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingSuc()" (click)="guardarSucursal()" />
                     </div>
                   </div>
 
-                  <!-- Lista de correlativos -->
-                  @if (correlativos().length > 0) {
-                  <p-table [value]="correlativos()" size="small" [tableStyle]="{ 'min-width': '55rem' }">
-                    <ng-template pTemplate="header">
-                      <tr>
-                        <th>Sucursal</th>
-                        <th>Rango</th>
-                        <th>Nro. Factura</th>
-                        <th>Disponibles</th>
-                        <th>Estado</th>
-                        <th>Fecha Límite</th>
-                        <th style="width: 8rem;">Acciones</th>
-                      </tr>
-                    </ng-template>
-                    <ng-template pTemplate="body" let-corr>
-                      <tr [class.row-agotado]="getRangoEstado(corr.Idsucursal) === 'AGOTADO'" [class.row-critico]="getRangoEstado(corr.Idsucursal) === 'CRITICO'" [class.row-alerta]="getRangoEstado(corr.Idsucursal) === 'ALERTA'">
-                        <td>{{ getSucursalNombre(corr.Idsucursal) }}</td>
-                        <td>
-                          <div class="rango-info">
-                            <span class="rango-text">{{ corr.rangoDesde }} → {{ corr.rangoHasta }}</span>
-                            <div class="rango-progress-container">
-                              <div class="rango-progress-bar" [style.width.%]="getRangoPorcentaje(corr.Idsucursal)" [class.progress-ok]="getRangoEstado(corr.Idsucursal) === 'OK'" [class.progress-alerta]="getRangoEstado(corr.Idsucursal) === 'ALERTA'" [class.progress-critico]="getRangoEstado(corr.Idsucursal) === 'CRITICO' || getRangoEstado(corr.Idsucursal) === 'AGOTADO'"></div>
-                            </div>
-                          </div>
-                        </td>
-                        <td class="text-center">{{ corr.nrofactura }}</td>
-                        <td>
-                          <span class="disponibles-text">{{ getRangoDisponible(corr.Idsucursal) }}</span>
-                          <span class="porcentaje-text">({{ getRangoPorcentaje(corr.Idsucursal) }}%)</span>
-                        </td>
-                        <td><p-tag [value]="getRangoLabel(corr.Idsucursal)" [severity]="getRangoEstadoSeverity(corr.Idsucursal)" styleClass="tag-sm" /></td>
-                        <td>{{ formatFecha(corr.fechaLimite) }}</td>
-                        <td>
-                          <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarCorr(corr)" />
-                          <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarCorr(corr)" />
-                        </td>
-                      </tr>
-                    </ng-template>
-                  </p-table>
-                  } @else {
-                  <div class="text-center text-muted py-3">No hay correlativos registrados para este CAI</div>
-                  }
-                </p-fieldset>
-                }
+                  <!-- Listado -->
+                  <div class="info-panel info-panel-list">
+                    <div class="info-list-header">
+                      <h5 class="form-col-title">Sucursales registradas</h5>
+                      <span class="info-list-total">{{ sucursales().length }} registro(s)</span>
+                    </div>
+
+                    <p-table
+                      [value]="sucursales()"
+                      [loading]="loadingSuc()"
+                      showGridlines
+                      styleClass="tabla-card"
+                      [tableStyle]="{ 'min-width': '15rem' }"
+                      size="small"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th class="col-tipo">ID</th>
+                          <th>Descripción</th>
+                          <th class="col-estado">Estado</th>
+                          <th class="col-acciones"></th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-suc>
+                        <tr>
+                          <td class="col-tipo">{{ suc.idsucursal }}</td>
+                          <td>{{ suc.descripcion }}</td>
+                          <td class="col-estado text-center">
+                            <p-tag [value]="getEstadoLabel(suc.sn_activo)" [severity]="getEstadoSeverity(suc.sn_activo)" styleClass="tag-sm" />
+                          </td>
+                          <td class="col-acciones">
+                            <p-button icon="pi pi-pencil" (click)="editarSuc(suc)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                          </td>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="emptymessage">
+                        <tr>
+                          <td colspan="4" class="text-center text-muted">No hay sucursales registradas</td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+                </div>
               </div>
             </p-tabpanel>
 
             <!-- TAB 4: Logo -->
             <p-tabpanel value="4">
               <div class="tab-content">
-                <div class="card mb-3">
-                  <h5 class="mb-3">Logotipo de la Empresa</h5>
-                  <p class="text-muted mb-3">Se mostrará en facturas, reportes y tickets térmicos.</p>
+                <div class="tab-header">
+                  <h4>Logo</h4>
+                  <span class="tab-subtitulo">Se mostrará en facturas, reportes y tickets térmicos</span>
+                </div>
 
+                <div class="card mb-3">
                   <!-- Preview del logo -->
                   @if (logoPreview()) {
                   <div class="logo-preview-container">
@@ -13874,21 +18841,21 @@ export const CONFIGURACION_ROUTES: Routes = [
                   </div>
                   } @else {
                   <div class="logo-empty">
-                    <i class="pi pi-image" style="font-size: 3rem; color: var(--c-text-muted);"></i>
+                    <i class="pi pi-image logo-empty-icon"></i>
                     <p class="text-muted mt-2">No hay logo configurado</p>
                   </div>
                   }
 
                   <!-- Upload -->
-                  <div class="d-flex gap-2 mt-3 align-items-center">
-                    <label class="p-button p-button-sm p-button-outlined p-button-secondary" style="cursor: pointer;">
+                  <div class="form-actions logo-actions">
+                    <label class="upload-btn">
                       <i class="pi pi-upload mr-2"></i>
                       <span>{{ logoPreview() ? 'Cambiar imagen' : 'Seleccionar imagen' }}</span>
-                      <input type="file" accept="image/png,image/jpeg,image/jpg" (change)="onLogoSelect($event)" style="display: none;" />
+                      <input type="file" accept="image/png,image/jpeg,image/jpg" (change)="onLogoSelect($event)" />
                     </label>
                     @if (logoPreview()) {
-                    <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingLogo()" (onClick)="guardarLogo()" />
-                    <p-button size="small" label="Eliminar" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" (onClick)="eliminarLogo()" />
+                    <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingLogo()" (onClick)="guardarLogo()" />
+                    <p-button label="Eliminar" icon="pi pi-trash" variant="text" severity="danger" [rounded]="true" size="small" (onClick)="eliminarLogo()" />
                     }
                   </div>
                 </div>
@@ -13898,91 +18865,103 @@ export const CONFIGURACION_ROUTES: Routes = [
             <!-- TAB 5: Impresoras -->
             <p-tabpanel value="5">
               <div class="tab-content">
-                <!-- Formulario agregar/editar -->
-                <div class="card mb-3">
-                  <h5 class="mb-3">{{ impEditando() ? 'Editar Impresora' : 'Nueva Impresora' }}</h5>
-                  <div class="p-fluid" [formGroup]="impForm">
-                    <div class="p-grid">
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Descripción</label>
-                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Nombre de la impresora" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-3">
-                        <div class="campo">
-                          <label>Formato</label>
-                          <p-select formControlName="formato" [options]="FORMATO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-3">
-                        <div class="campo">
-                          <label>Modo Correlativo</label>
-                          <p-select formControlName="modo_correlativo" [options]="MODO_CORRELATIVO_OPTIONS" optionLabel="label" optionValue="value" pSize="small" styleClass="w-full" appendTo="body" pTooltip="Automático: usa rangos CAI. Manual: ingresa número manually." />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-3">
-                        <div class="campo">
-                          <label>Sucursal <span class="req">*</span></label>
-                          <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" pSize="small" styleClass="w-full" appendTo="body" placeholder="Seleccionar" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Driver</label>
-                          <input pInputText formControlName="driver" pSize="small" placeholder="Ej: EPSON, BIXOLON" />
-                        </div>
-                      </div>
-                      <div class="p-col-12 p-col-6">
-                        <div class="campo">
-                          <label>Puerto</label>
-                          <input pInputText formControlName="puerto" pSize="small" placeholder="Ej: USB, LPT1, COM1" />
-                        </div>
-                      </div>
-                      <div class="p-col-12">
-                        <div class="form-actions">
-                          @if (impEditando()) {
-                          <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" (onClick)="cancelarImp()" />
-                          }
-                          <p-button size="small" [label]="impEditando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check" severity="success" variant="text" [raised]="true" [rounded]="true" [loading]="savingImp()" (onClick)="guardarImpresora()" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                <div class="tab-header">
+                  <h4>Impresoras</h4>
+                  <span class="tab-subtitulo">Equipos habilitados para impresión de tickets y cartas</span>
                 </div>
 
-                <!-- Lista -->
-                @if (impresoras().length > 0) {
-                <p-table [value]="impresoras()" size="small" [tableStyle]="{ 'min-width': '45rem' }">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th>Descripción</th>
-                      <th>Formato</th>
-                      <th>Modo</th>
-                      <th>Sucursal</th>
-                      <th>Driver</th>
-                      <th>Puerto</th>
-                      <th style="width: 8rem;">Acciones</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-imp>
-                    <tr>
-                      <td>{{ imp.descripcion || '-' }}</td>
-                      <td><p-tag [value]="imp.formato" [severity]="imp.formato === 'TICKET' ? 'info' : 'warn'" styleClass="tag-sm" /></td>
-                      <td><p-tag [value]="imp.modo_correlativo === 'A' ? 'Automático' : 'Manual'" [severity]="imp.modo_correlativo === 'A' ? 'success' : 'secondary'" styleClass="tag-sm" /></td>
-                      <td>{{ getSucursalNombre(imp.Idsucursal) }}</td>
-                      <td>{{ imp.driver || '-' }}</td>
-                      <td>{{ imp.puerto || '-' }}</td>
-                      <td>
-                        <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (onClick)="editarImp(imp)" />
-                        <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (onClick)="eliminarImp(imp)" />
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-                } @else {
-                <div class="text-center text-muted py-3">No hay impresoras configuradas</div>
-                }
+                <div class="info-adicional-grid">
+                  <!-- Formulario -->
+                  <div class="info-panel info-panel-form">
+                    <h5 class="form-col-title">
+                      {{ impEditando() ? 'Editar impresora' : 'Nueva impresora' }}
+                    </h5>
+
+                    <div class="form-col" [formGroup]="impForm">
+                      <div class="p-field">
+                        <label>Descripción</label>
+                        <input pInputText pSize="small" formControlName="descripcion" placeholder="Nombre de la impresora" />
+                      </div>
+                      <div class="p-field">
+                        <label>Formato</label>
+                        <p-select formControlName="formato" [options]="FORMATO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione formato" />
+                      </div>
+                      <div class="p-field">
+                        <label>Modo Correlativo</label>
+                        <p-select formControlName="modo_correlativo" [options]="MODO_CORRELATIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" pTooltip="Automático: usa rangos CAI. Manual: ingresa el número manualmente." />
+                      </div>
+                      <div class="p-field">
+                        <label>Sucursal <span class="req">*</span></label>
+                        <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar" />
+                      </div>
+                      <div class="p-field">
+                        <label>Driver</label>
+                        <input pInputText pSize="small" formControlName="driver" placeholder="Ej: EPSON, BIXOLON" />
+                      </div>
+                      <div class="p-field">
+                        <label>Puerto</label>
+                        <input pInputText pSize="small" formControlName="puerto" placeholder="Ej: USB, LPT1, COM1" />
+                      </div>
+                    </div>
+
+                    <div class="form-actions info-form-actions">
+                      @if (impEditando()) {
+                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarImp()" />
+                      } @else {
+                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarImp()" />
+                      }
+                      <p-button [label]="impEditando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingImp()" (onClick)="guardarImpresora()" />
+                    </div>
+                  </div>
+
+                  <!-- Listado -->
+                  <div class="info-panel info-panel-list">
+                    <div class="info-list-header">
+                      <h5 class="form-col-title">Impresoras configuradas</h5>
+                      <span class="info-list-total">{{ impresoras().length }} registro(s)</span>
+                    </div>
+
+                    <p-table
+                      [value]="impresoras()"
+                      [loading]="loadingImp()"
+                      showGridlines
+                      styleClass="tabla-card"
+                      [tableStyle]="{ 'min-width': '30rem' }"
+                      size="small"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th>Descripción</th>
+                          <th class="col-tipo">Formato</th>
+                          <th class="col-tipo">Modo</th>
+                          <th>Sucursal</th>
+                          <th>Driver</th>
+                          <th>Puerto</th>
+                          <th class="col-acciones"></th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-imp>
+                        <tr>
+                          <td>{{ imp.descripcion || '-' }}</td>
+                          <td class="col-tipo"><p-tag [value]="imp.formato" [severity]="imp.formato === 'TICKET' ? 'info' : 'warn'" styleClass="tag-sm" /></td>
+                          <td class="col-tipo"><p-tag [value]="imp.modo_correlativo === 'A' ? 'Automático' : 'Manual'" [severity]="imp.modo_correlativo === 'A' ? 'success' : 'secondary'" styleClass="tag-sm" /></td>
+                          <td>{{ getSucursalNombre(imp.Idsucursal) }}</td>
+                          <td>{{ imp.driver || '-' }}</td>
+                          <td>{{ imp.puerto || '-' }}</td>
+                          <td class="col-acciones">
+                            <p-button icon="pi pi-pencil" (click)="editarImp(imp)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                            <p-button icon="pi pi-trash" (click)="eliminarImp(imp)" [rounded]="true" size="small" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
+                          </td>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="emptymessage">
+                        <tr>
+                          <td colspan="7" class="text-center text-muted">No hay impresoras configuradas</td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+                </div>
               </div>
             </p-tabpanel>
           </p-tabpanels>
@@ -13995,21 +18974,46 @@ export const CONFIGURACION_ROUTES: Routes = [
     <div class="right-column">
       <div class="search-bar">
         <div class="search-input-wrapper">
-          <p-iconField>
-            <p-inputIcon class="pi pi-search" />
-            <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event); filtrar()" placeholder="Buscar empresa..." class="search-input" />
-            @if (q()) {
-            <p-button icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text" [rounded]="true" size="small" />
-            }
-          </p-iconField>
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            pInputText
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event); filtrar()"
+            placeholder="Buscar por nombre o código..."
+            class="search-input"
+          />
+          @if (q()) {
+          <p-button
+            label="Limpiar"
+            icon="pi pi-times"
+            (click)="limpiarFiltros()"
+            severity="secondary"
+            [rounded]="true"
+            size="small"
+            class="clear-btn"
+          />
+          }
         </div>
-        <p-button size="small" icon="pi pi-plus" severity="success" variant="text" [rounded]="true" pTooltip="Nueva empresa" (onClick)="nueva()" />
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nueva()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        />
       </div>
 
       @if (cargando()) {
       <div class="loading-skeleton">
         @for (i of [1,2,3,4,5]; track i) {
-        <div class="skeleton-item"><p-skeleton styleClass="mb-2" /><p-skeleton width="60%" styleClass="mb-2" /><p-skeleton width="40%" /></div>
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
         }
       </div>
       } @else if (empresasFiltradas().length === 0) {
@@ -14017,23 +19021,48 @@ export const CONFIGURACION_ROUTES: Routes = [
         <i class="pi pi-building empty-icon"></i>
         <h3>No hay empresas</h3>
         <p>Registre una empresa para comenzar</p>
+        <p-button label="Nuevo" icon="pi pi-plus" (click)="nueva()" severity="success" [rounded]="true" size="small" />
       </div>
       } @else {
-      <div class="empresa-list">
-        @for (emp of empresasFiltradas(); track emp.empresaId) {
+      <div class="empresas-lista">
+        @for (emp of empresasPaginadas(); track emp.empresaId) {
         <div class="empresa-item-ficha" [class.selected]="empresaSeleccionada()?.empresaId === emp.empresaId" (click)="seleccionar(emp)">
-          <div class="ficha-header">
-            <span class="ficha-id">#{{ emp.empresaId }}</span>
-            <p-tag [value]="getEstadoLabel(emp.sn_activo)" [severity]="getEstadoSeverity(emp.sn_activo)" styleClass="tag-sm" />
+          <div class="item-ficha-header">
+            <span class="ficha-label">Código:</span>
+            <span class="ficha-value">#{{ emp.empresaId }}</span>
+            <p-tag [value]="getEstadoLabel(emp.sn_activo)" [severity]="getEstadoSeverity(emp.sn_activo)" styleClass="tag-ficha" />
           </div>
-          <div class="ficha-name">{{ emp.descripcion }}</div>
-          <div class="ficha-meta-row">
-            <span class="ficha-meta-label">Creada:</span>
-            <span class="ficha-meta-value">{{ formatFecha(emp.fechasistema) }}</span>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombre:</span>
+            <span class="ficha-value">{{ emp.descripcion }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Mensaje factura:</span>
+            <span class="ficha-value">{{ emp.msjfactura || '—' }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Creada:</span>
+            <span class="ficha-value">{{ formatFecha(emp.fechasistema) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Registrado por:</span>
+            <span class="ficha-value">{{ emp.usuarioCreated || '—' }}</span>
+          </div>
+          <div class="item-ficha-actions">
+            <p-button icon="pi pi-pencil" (click)="editarEmpresa(emp, $event)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
           </div>
         </div>
         }
       </div>
+
+      <p-paginator
+        [first]="(page() - 1) * limit()"
+        [rows]="limit()"
+        [totalRecords]="totalEmpresas()"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"
+      ></p-paginator>
       }
     </div>
 
@@ -14053,6 +19082,12 @@ export const CONFIGURACION_ROUTES: Routes = [
   flex-direction: column;
 }
 
+.p-tabpanels {
+  background: var(--p-tabs-tabpanel-background);
+  color: var(--p-tabs-tabpanel-color);
+  padding: 0.875rem 1.125rem 1.125rem 0;
+  outline: 0 none;
+}
 .split-layout {
   display: flex;
   flex: 1;
@@ -14065,7 +19100,6 @@ export const CONFIGURACION_ROUTES: Routes = [
   flex-direction: column;
   background: var(--c-bg);
   overflow: hidden;
-  order: 1;
 }
 
 .right-column {
@@ -14076,7 +19110,50 @@ export const CONFIGURACION_ROUTES: Routes = [
   display: flex;
   flex-direction: column;
   background: var(--c-surface);
-  order: 0;
+}
+
+// ===== Search bar =====
+
+.search-bar {
+  padding: 1rem;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+}
+
+.search-input-wrapper .pi-search {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--c-text-muted);
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: 6px;
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+
+.clear-btn {
+  position: absolute;
+  right: 0.25rem;
+}
+
+.tabla-card {
+  padding: 0.05rem;
+  overflow: hidden;
+  border-radius: 12px;
 }
 
 // ===== Empty states =====
@@ -14092,15 +19169,44 @@ export const CONFIGURACION_ROUTES: Routes = [
   padding: 2rem;
   text-align: center;
 
-  .empty-icon { font-size: 3rem; color: var(--c-primary); opacity: 0.5; }
-  h3 { margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--c-text); }
-  p { margin: 0; font-size: 0.85rem; color: var(--c-text-secondary, #6c757d); }
+  &.inline {
+      height: 100%;
+      flex: unset;
+    }
+  
+    .empty-icon {
+      font-size: 3rem;
+      color: var(--c-primary);
+      opacity: 0.5;
+    }
+  
+    h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--c-text);
+    }
+  
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--c-text-secondary, #6c757d);
+    }
 }
 
 // ===== Skeleton =====
 
-.loading-skeleton { padding: 20px; }
-.skeleton-item { border: 1px solid var(--c-border); padding: 15px; margin: 10px; border-radius: 4px; background: var(--c-bg); }
+.loading-skeleton {
+  padding: 20px;
+}
+
+.skeleton-item {
+  border: 1px solid var(--c-border);
+  padding: 15px;
+  margin: 10px;
+  border-radius: 4px;
+  background: var(--c-bg);
+}
 
 // ===== Empresa detail (left column) =====
 
@@ -14117,89 +19223,33 @@ export const CONFIGURACION_ROUTES: Routes = [
   padding: 1.5rem;
 }
 
-// ===== Search bar =====
-
-.search-bar {
-  padding: 1rem;
-  border-bottom: 1px solid var(--c-border);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-
-  .search-input-wrapper { flex: 1; position: relative; display: flex; align-items: center; }
-}
-
-.search-input { width: 100%; padding: 0.5rem 0.75rem 0.5rem 2.5rem; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-bg); color: var(--c-text); }
-
-// ===== Empresa list (right column) =====
-
-.empresa-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem;
-}
-
-.empresa-item-ficha {
-  padding: 0.75rem 1rem;
-  margin: 0.25rem 0;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s;
-  border: 1px solid transparent;
-
-  &:hover { background: color-mix(in srgb, var(--c-primary) 6%, transparent); }
-  &.selected { background: color-mix(in srgb, var(--c-primary) 10%, transparent); border-color: var(--c-primary); }
-}
-
-.ficha-header {
+.tab-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.25rem;
+  margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+.tab-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
-.ficha-id { font-size: 0.75rem; color: var(--c-text-muted); font-weight: 500; }
-.ficha-name { font-size: 0.95rem; font-weight: 600; color: var(--c-text); margin-bottom: 0.15rem; }
-
-.ficha-meta-row {
-  display: flex;
-  gap: 0.35rem;
+.tab-subtitulo {
   font-size: 0.8rem;
   color: var(--c-text-muted);
 }
 
-.ficha-meta-label { font-weight: 500; }
-.ficha-meta-value { color: var(--c-text-secondary, #6c757d); }
-
-// ===== Forms =====
-
-.campo {
-  margin-bottom: 1rem;
-
-  label { display: block; margin-bottom: 0.35rem; font-weight: 500; font-size: 0.85rem; color: var(--c-text); }
-  .req { color: var(--c-error); }
-  .err { color: var(--c-error); font-size: 0.75rem; margin-top: 0.25rem; display: block; }
-}
-
-.form-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+// ===== Card =====
 
 .card {
-  background: var(--c-surface);
-  border-radius: 8px;
-  padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.tag-sm { font-size: 0.7rem; padding: 0.15rem 0.5rem; }
-
-::ng-deep .p-datatable-tbody > tr > td { padding: 0.35rem 0.75rem; }
-::ng-deep .p-datatable-thead > tr > th { padding: 0.5rem 0.75rem; font-size: 0.8rem; color: var(--c-text-muted); }
-
-.p-tabpanels {
-  background: var(--p-tabs-tabpanel-background);
-  color: var(--p-tabs-tabpanel-color);
-  padding: 0.875rem 1.125rem 1.125rem 0;
-  outline: 0 none;
+  background: var(--c-bg);
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
 }
 
 // ===== Formulario 2 columnas =====
@@ -14208,16 +19258,18 @@ export const CONFIGURACION_ROUTES: Routes = [
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 1.25rem;
 }
 
 .form-col {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+    gap: 0.75rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
 }
 
 .form-col-title {
@@ -14233,10 +19285,10 @@ export const CONFIGURACION_ROUTES: Routes = [
 .form-col .campo {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-}
-
-.form-col label {
+    gap: 0.375rem;
+  }
+  
+  .form-col label {
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--c-text-muted);
@@ -14250,15 +19302,196 @@ export const CONFIGURACION_ROUTES: Routes = [
   width: 100%;
 }
 
-// ===== CAI List =====
+.req {
+  color: var(--c-error);
+}
 
-.cai-list {
+.err {
+  color: var(--c-error);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+// ===== Acciones de formulario =====
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+}
+
+// Dentro de una card = barra inferior (estilo formulario de cliente)
+.card>.form-actions {
+  border: none;
+  border-top: 1px solid var(--c-border);
+  border-radius: 0;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+}
+
+// ===== Inf. Adicional / sub-listados: 1 sola columna (formulario arriba, listado abajo) =====
+
+.info-adicional-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.info-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.info-panel-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  // Campos en fila (ej: Tipo | Valor), apilados en pantallas angostas
+  .form-col {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.75rem 1.25rem;
+  }
+}
+
+.info-panel-list {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.info-form-actions {
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0 0;
+}
+
+.info-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  .form-col-title {
+    margin: 0;
+      flex: 1;
+    }
+    }
+    
+    .info-list-total {
+      font-size: 0.75rem;
+      color: var(--c-text-muted);
+      background: var(--c-bg);
+      padding: 0.125rem 0.5rem;
+      border-radius: 4px;
+    }
+    
+    // ===== Encabezado DETALLE (línea — texto — línea) =====
+    
+    .detalle-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    
+      &::before,
+      &::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--c-border);
+      }
+    
+      span {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: var(--c-text-muted);
+        text-align: center;
+      }
+    }
+    
+    // ===== Tablas estándar p-table dentro del detalle =====
+    
+    .tab-content ::ng-deep .p-datatable {
+      .p-datatable-thead>tr>th {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+    text-transform: uppercase;
+      letter-spacing: 0.03em;
+    color: var(--c-text-muted);
+    background: var(--c-bg);
+      border-color: var(--c-border);
+      white-space: nowrap;
+    }
+
+        .p-datatable-tbody>tr>td {
+          padding: 0.4rem 0.75rem;
+          font-size: 0.82rem;
+          color: var(--c-text);
+          border-color: var(--c-border);
+          vertical-align: middle;
+        }
+    
+        .p-datatable-tbody>tr:hover>td {
+          background: color-mix(in srgb, var(--c-primary) 6%, transparent);
+        }
+    
+        .p-datatable-emptymessage td {
+          color: var(--c-text-muted);
+          font-style: italic;
+          text-align: center;
+          padding: 0.75rem;
+        }
+    
+        .col-tipo {
+          width: 6.5rem;
+        }
+    
+        .col-estado {
+          width: 5.5rem;
+          text-align: center;
+        }
+    
+        .col-acciones {
+          width: 5.5rem;
+          text-align: right;
+          white-space: nowrap;
+        }
+        }
+    
+        // ===== Tags =====
+    
+        .empresas-lista ::ng-deep .tag-ficha {
+          font-size: 0.65rem;
+          margin-left: auto;
+        }
+    
+        .tab-content ::ng-deep .tag-sm {
+          font-size: 0.7rem;
+          padding: 0.15rem 0.5rem;
+        }
+    
+        // ===== Lista de empresas (fichas) =====
+    
+        .empresas-lista {
+          flex: 1;
+          overflow-y: auto;
+          padding: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.cai-item {
+.empresa-item-ficha {
   padding: 0.75rem 1rem;
   border: 1px solid var(--c-border);
   border-radius: 8px;
@@ -14277,46 +19510,103 @@ export const CONFIGURACION_ROUTES: Routes = [
   }
 }
 
-.cai-item-header {
+.item-ficha-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
   margin-bottom: 0.375rem;
+  border-bottom: 1px solid var(--c-border);
 }
 
-.cai-item-actions {
+.item-ficha-row {
   display: flex;
-  gap: 0.25rem;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  line-height: 1.3;
 }
 
-.cai-item-code {
-  font-family: 'Courier New', Courier, monospace;
+.item-ficha-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.375rem;
+  margin-top: 0.375rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.ficha-label {
   font-size: 0.8rem;
-  color: var(--c-text);
-  word-break: break-all;
-}
-
-// ===== Fieldset styling =====
-
-::ng-deep .p-fieldset {
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  margin-bottom: 1rem;
-
-  .p-fieldset-legend {
-    font-size: 0.9rem;
-    font-weight: 600;
+  font-weight: 600;
+    color: var(--c-text-muted);
+    min-width: 120px;
+    flex-shrink: 0;
+  }
+  
+  .ficha-value {
+    font-size: 0.85rem;
     color: var(--c-text);
-    padding: 0.5rem 1rem;
-    background: var(--c-bg);
-    border-radius: 6px;
-    border: 1px solid var(--c-border);
+  font-weight: 500;
+  min-width: 0;
+    overflow-wrap: anywhere;
   }
+  
+  // Ficha seleccionada con tema oscuro (master-background)
+  .empresa-item-ficha.selected {
+  
+    .item-ficha-header,
+    .item-ficha-actions {
+      border-color: var(--for-border-color-alls);
+    }
+  
+    .ficha-label {
+      color: color-mix(in srgb, var(--c-text) 70%, transparent);
+    }
+  }
+  
+  // ===== Paginador compacto =====
+  
+  .paginator-compact {
+    display: flex;
+    justify-content: center;
+  
+    ::ng-deep .p-paginator {
+      background: transparent;
+      padding: 0.25rem;
+      gap: 0.25rem;
+  
+      .p-paginator-content {
+        gap: 0.15rem;
+      }
+  
+      .p-paginator-page,
+      .p-paginator-prev,
+      .p-paginator-next,
+      .p-paginator-first,
+      .p-paginator-last {
+        min-width: 1.6rem;
+        height: 1.6rem;
+        font-size: 0.7rem;
+        border-radius: 50%;
+      }
+  
+      .p-paginator-current {
+        font-size: 0.7rem;
+      color: var(--c-text-muted);
+      }
 
-  .p-fieldset-content {
-    padding: 1rem;
-  }
+                .p-paginator-page-options {
+                  height: 1.6rem;
+                  font-size: 0.7rem;
+        
+                  .p-select-label {
+                    font-size: 0.7rem;
+                  }
+                }
+                }
 }
+
+// ===== CAI List =====
 
 // ===== Logo preview =====
 
@@ -14326,7 +19616,7 @@ export const CONFIGURACION_ROUTES: Routes = [
   padding: 1.5rem;
   border: 2px dashed var(--c-border);
   border-radius: 8px;
-  background: var(--c-bg);
+  background: var(--c-surface);
   margin-bottom: 0.5rem;
 }
 
@@ -14345,69 +19635,78 @@ export const CONFIGURACION_ROUTES: Routes = [
   padding: 2rem;
   border: 2px dashed var(--c-border);
   border-radius: 8px;
-  background: var(--c-bg);
+  background: var(--c-surface);
   margin-bottom: 0.5rem;
 }
 
-.mr-2 { margin-right: 0.5rem; }
-.mt-2 { margin-top: 0.5rem; }
-.mt-3 { margin-top: 0.75rem; }
-.mb-3 { margin-bottom: 0.75rem; }
-.text-center { text-align: center; }
-.text-muted { color: var(--c-text-muted); font-size: 0.85rem; }
-.d-flex { display: flex; }
-.gap-2 { gap: 0.5rem; }
-.align-items-center { align-items: center; }
-
-// ===== Rango / Barra de progreso correlativos =====
-
-.rango-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 180px;
-}
-
-.rango-text {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 0.75rem;
-  color: var(--c-text);
-}
-
-.rango-progress-container {
-  width: 100%;
-  height: 6px;
-  background: var(--c-border);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.rango-progress-bar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s ease;
-
-  &.progress-ok { background: var(--c-success, #10b981); }
-  &.progress-alerta { background: var(--c-warning, #f59e0b); }
-  &.progress-critico { background: var(--c-error, #ef4444); }
-}
-
-.disponibles-text {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--c-text);
-}
-
-.porcentaje-text {
-  font-size: 0.75rem;
+.logo-empty-icon {
+  font-size: 3rem;
   color: var(--c-text-muted);
-  margin-left: 0.25rem;
 }
 
-// Filas con estado de alerta
-.row-agotado { background: color-mix(in srgb, var(--c-error, #ef4444) 8%, transparent) !important; }
-.row-critico { background: color-mix(in srgb, var(--c-error, #ef4444) 5%, transparent) !important; }
-.row-alerta { background: color-mix(in srgb, var(--c-warning, #f59e0b) 5%, transparent) !important; }
+.logo-actions {
+  align-items: center;
+
+  .upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--c-text);
+    background: transparent;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover {
+      background: color-mix(in srgb, var(--c-primary) 8%, transparent);
+      border-color: var(--c-primary);
+    }
+
+    input[type='file'] {
+      display: none;
+    }
+  }
+}
+
+// ===== Utilidades =====
+
+.mr-1 {
+  margin-right: 0.25rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-3 {
+  margin-top: 0.75rem;
+}
+
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-muted {
+  color: var(--c-text-muted);
+  font-size: 0.85rem;
+}
+
+.py-3 {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
 
 // ===== Responsive =====
 
@@ -14422,6 +19721,9 @@ export const CONFIGURACION_ROUTES: Routes = [
     flex-direction: column;
   }
 
+        .info-adicional-grid {
+          grid-template-columns: 1fr;
+        }
   .left-column {
     order: 2;
   }
@@ -14476,13 +19778,10 @@ export const CONFIGURACION_ROUTES: Routes = [
     padding: 1rem;
   }
 
-  .p-grid {
-    .p-col-4,
-    .p-col-6,
-    .p-col-3 {
-      flex: 0 0 100%;
-      max-width: 100%;
-    }
+        .tab-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.25rem;
   }
 }
 
@@ -14493,7 +19792,7 @@ export const CONFIGURACION_ROUTES: Routes = [
 ## 📄 src\app\features\configuracion\empresas\empresas-manager.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
@@ -14509,12 +19808,11 @@ import { ToastModule } from 'primeng/toast';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { ConfirmDialog } from 'primeng/confirmdialog';
-import { FieldsetModule } from 'primeng/fieldset';
-import { DatePickerModule } from 'primeng/datepicker';
-import { InputNumberModule } from 'primeng/inputnumber';
+import { SkeletonModule } from 'primeng/skeleton';
+import { PaginatorModule } from 'primeng/paginator';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { EmpresasService } from '../../../core/services/empresas.service';
-import { Empresa, EmpresaDet, Correlativo, EmpresaLogo, Impresora, EstadoCorrelativo } from '../../../core/models/empresa.models';
+import { Empresa, EmpresaDet, EmpresaLogo, Impresora } from '../../../core/models/empresa.models';
 import { Sucursal } from '../../../core/models/sucursal.models';
 
 @Component({
@@ -14525,7 +19823,7 @@ import { Sucursal } from '../../../core/models/sucursal.models';
     ButtonModule, InputTextModule, TextareaModule, SelectModule,
     TagModule, TooltipModule, TabsModule, TableModule,
     ToastModule, IconFieldModule, InputIconModule, ConfirmDialog,
-    FieldsetModule, DatePickerModule, InputNumberModule,
+    SkeletonModule, PaginatorModule,
   ],
   templateUrl: './empresas-manager.html',
   styleUrl: './empresas-manager.scss',
@@ -14564,6 +19862,7 @@ export class EmpresasManager implements OnInit {
   // ===== Datos específicos (EmpresaDet) =====
   empresaDet = signal<EmpresaDet[]>([]);
   savingDet = signal(false);
+  loadingDet = signal(false);
   detForm = this.fb.group({
     tipo: ['RTN', Validators.required],
     descripcion: ['', Validators.required],
@@ -14584,36 +19883,12 @@ export class EmpresasManager implements OnInit {
   // ===== Sucursales =====
   sucursales = signal<Sucursal[]>([]);
   savingSuc = signal(false);
+  loadingSuc = signal(false);
   sucForm = this.fb.group({
     descripcion: ['', Validators.required],
     sn_activo: ['S'],
   });
   sucEditando = signal<Sucursal | null>(null);
-
-  // ===== Correlativos (CAI) - Maestro/Detalle =====
-  caiRecords = signal<EmpresaDet[]>([]);
-  correlativos = signal<Correlativo[]>([]);
-  savingCai = signal(false);
-  savingCorr = signal(false);
-
-  // Formulario maestro CAI (EmpresaDet tipo='CAI')
-  caiForm = this.fb.group({
-    descripcion: ['', [Validators.required, Validators.minLength(35)]],
-    sn_activo: ['N'],
-  });
-
-  // Formulario detalle correlativo
-  corrForm = this.fb.group({
-    Idsucursal: [null as number | null, Validators.required],
-    rangoDesde: ['', Validators.required],
-    rangoHasta: ['', Validators.required],
-    nrofactura: [0, Validators.required],
-    fechaLimite: [null as Date | null, Validators.required],
-  });
-
-  caiEditando = signal<EmpresaDet | null>(null);
-  corrEditando = signal<Correlativo | null>(null);
-  caiSeleccionado = signal<EmpresaDet | null>(null);
 
   // ===== Logo =====
   logo = signal<EmpresaLogo | null>(null);
@@ -14624,6 +19899,7 @@ export class EmpresasManager implements OnInit {
   // ===== Impresoras =====
   impresoras = signal<Impresora[]>([]);
   savingImp = signal(false);
+  loadingImp = signal(false);
   impEditando = signal<Impresora | null>(null);
   impForm = this.fb.group({
     descripcion: [''],
@@ -14644,11 +19920,17 @@ export class EmpresasManager implements OnInit {
     { label: 'Manual', value: 'M' },
   ];
 
-  // ===== Estado correlativos (alertas) =====
-  estadoCorrelativos = signal<EstadoCorrelativo[]>([]);
-
   // ===== Filtros =====
   empresasFiltradas = signal<Empresa[]>([]);
+
+  // ===== Paginación (client-side) =====
+  page = signal(1);
+  limit = signal(10);
+  totalEmpresas = computed(() => this.empresasFiltradas().length);
+  empresasPaginadas = computed(() => {
+    const start = (this.page() - 1) * this.limit();
+    return this.empresasFiltradas().slice(start, start + this.limit());
+  });
 
   // ===== Datos para selects =====
   rtnTelefono = signal('');
@@ -14670,6 +19952,7 @@ export class EmpresasManager implements OnInit {
       next: (data) => {
         this.empresas.set(data ?? []);
         this.empresasFiltradas.set(data ?? []);
+        this.page.set(1);
         this.cargando.set(false);
       },
       error: () => {
@@ -14690,10 +19973,19 @@ export class EmpresasManager implements OnInit {
     });
     this.loadDet(emp.empresaId);
     this.loadSucursales(emp.empresaId);
-    this.loadCaiRecords(emp.empresaId);
     this.loadLogo(emp.empresaId);
     this.loadImpresoras(emp.empresaId);
-    this.loadEstadoCorrelativos(emp.empresaId);
+  }
+
+  /** Botón lápiz de la ficha: evita que el click burbujee a la tarjeta */
+  editarEmpresa(emp: Empresa, event: Event) {
+    event.stopPropagation();
+    this.seleccionar(emp);
+  }
+
+  onPageChange(event: { page: number; rows: number }) {
+    this.page.set(event.page + 1);
+    this.limit.set(event.rows);
   }
 
   nueva() {
@@ -14707,9 +19999,6 @@ export class EmpresasManager implements OnInit {
     });
     this.empresaDet.set([]);
     this.sucursales.set([]);
-    this.caiRecords.set([]);
-    this.correlativos.set([]);
-    this.caiSeleccionado.set(null);
     this.limpiarDatosEmpresa();
     this.logo.set(null);
     this.logoPreview.set(null);
@@ -14718,6 +20007,7 @@ export class EmpresasManager implements OnInit {
   }
 
   filtrar() {
+    this.page.set(1);
     const texto = this.q().toLowerCase();
     if (!texto) {
       this.empresasFiltradas.set(this.empresas());
@@ -14733,7 +20023,8 @@ export class EmpresasManager implements OnInit {
 
   limpiarFiltros() {
     this.q.set('');
-    this.filtrar();
+    this.page.set(1);
+    this.empresasFiltradas.set(this.empresas());
   }
 
   guardarEmpresa() {
@@ -14772,15 +20063,18 @@ export class EmpresasManager implements OnInit {
   // ==================================================
 
   loadDet(empresaId: number) {
+    this.loadingDet.set(true);
     this.empresasService.getAllDet(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         const todos = data ?? [];
         this.empresaDet.set(todos.filter(d => d.tipo !== 'CAI'));
         this.extraerDatosEmpresa(todos);
+        this.loadingDet.set(false);
       },
       error: () => {
         this.empresaDet.set([]);
         this.limpiarDatosEmpresa();
+        this.loadingDet.set(false);
       },
     });
   }
@@ -14859,9 +20153,16 @@ export class EmpresasManager implements OnInit {
   // ==================================================
 
   loadSucursales(empresaId: number) {
+    this.loadingSuc.set(true);
     this.empresasService.getAllSucursales(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => this.sucursales.set(data ?? []),
-      error: () => this.sucursales.set([]),
+      next: (data) => {
+        this.sucursales.set(data ?? []);
+        this.loadingSuc.set(false);
+      },
+      error: () => {
+        this.sucursales.set([]);
+        this.loadingSuc.set(false);
+      },
     });
   }
 
@@ -14898,218 +20199,6 @@ export class EmpresasManager implements OnInit {
   cancelarSuc() {
     this.sucEditando.set(null);
     this.sucForm.reset({ descripcion: '', sn_activo: 'S' });
-  }
-
-  // ==================================================
-  //  CAI - MAESTRO (EmpresaDet tipo='CAI')
-  // ==================================================
-
-  loadCaiRecords(empresaId: number) {
-    this.empresasService.getAllDet(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => {
-        const caiList = (data ?? []).filter(d => d.tipo === 'CAI');
-        this.caiRecords.set(caiList);
-        if (caiList.length > 0 && !this.caiSeleccionado()) {
-          this.seleccionarCai(caiList[0]);
-        } else if (caiList.length === 0) {
-          this.caiSeleccionado.set(null);
-          this.correlativos.set([]);
-        }
-      },
-      error: () => {
-        this.caiRecords.set([]);
-        this.correlativos.set([]);
-      },
-    });
-  }
-
-  seleccionarCai(cai: EmpresaDet) {
-    this.caiSeleccionado.set(cai);
-    this.caiEditando.set(null);
-    this.caiForm.reset({ descripcion: cai.descripcion });
-    this.loadCorrelativos(cai.empresaId);
-  }
-
-  guardarCai() {
-    if (this.caiForm.invalid || !this.empresaSeleccionada()) return;
-
-    const desc = this.caiForm.value.descripcion || '';
-    if (desc.length < 35) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'El CAI debe tener al menos 35 caracteres' });
-      return;
-    }
-
-    this.savingCai.set(true);
-    const dto: Partial<EmpresaDet> = {
-      tipo: 'CAI',
-      descripcion: desc.toUpperCase(),
-      sn_activo: this.caiForm.value.sn_activo || 'N',
-      empresaId: this.empresaSeleccionada()!.empresaId,
-    };
-    const editando = this.caiEditando();
-
-    const obs = editando
-      ? this.empresasService.updateDet(editando.empresasdetId, dto)
-      : this.empresasService.createDet(dto);
-
-    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'CAI guardado correctamente' });
-        this.savingCai.set(false);
-        this.caiForm.reset({ descripcion: '', sn_activo: 'N' });
-        this.caiEditando.set(null);
-        this.loadCaiRecords(this.empresaSeleccionada()!.empresaId);
-      },
-      error: (err: any) => {
-        this.savingCai.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
-      },
-    });
-  }
-
-  editarCai(cai: EmpresaDet) {
-    this.caiEditando.set(cai);
-    this.caiForm.reset({ descripcion: cai.descripcion, sn_activo: cai.sn_activo });
-  }
-
-  eliminarCai(cai: EmpresaDet) {
-    this.confirm.confirm({
-      message: '¿Eliminar este CAI y todos sus correlativos?',
-      header: 'Confirmar',
-      icon: 'pi pi-exclamation-triangle',
-      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
-      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
-      accept: () => {
-        this.empresasService.removeDet(cai.empresasdetId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: () => {
-            this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'CAI eliminado' });
-            this.caiSeleccionado.set(null);
-            this.correlativos.set([]);
-            this.loadCaiRecords(this.empresaSeleccionada()!.empresaId);
-          },
-          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
-        });
-      },
-    });
-  }
-
-  cancelarCai() {
-    this.caiEditando.set(null);
-    this.caiForm.reset({ descripcion: '', sn_activo: 'N' });
-  }
-
-  // ==================================================
-  //  CAI - DETALLE (Correlativos)
-  // ==================================================
-
-  loadCorrelativos(empresaId: number) {
-    this.empresasService.getAllCorr(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => this.correlativos.set(data ?? []),
-      error: () => this.correlativos.set([]),
-    });
-  }
-
-  guardarCorrelativo() {
-    if (this.corrForm.invalid || !this.empresaSeleccionada()) return;
-    this.savingCorr.set(true);
-
-    const formVal = this.corrForm.value;
-    const fechaLimite = formVal.fechaLimite instanceof Date
-      ? formVal.fechaLimite.toISOString()
-      : formVal.fechaLimite;
-
-    const dto: Partial<Correlativo> = {
-      Idsucursal: formVal.Idsucursal!,
-      rangoDesde: formVal.rangoDesde!,
-      rangoHasta: formVal.rangoHasta!,
-      nrofactura: formVal.nrofactura!,
-      fechaLimite: fechaLimite!,
-      empresaId: this.empresaSeleccionada()!.empresaId,
-    };
-
-    const editando = this.corrEditando();
-
-    const obs = editando
-      ? this.empresasService.updateCorr(editando.poscorrelativosId, dto)
-      : this.empresasService.createCorr(dto);
-
-    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Correlativo guardado correctamente' });
-        this.savingCorr.set(false);
-        this.resetCorrForm();
-        this.corrEditando.set(null);
-        this.loadCorrelativos(this.empresaSeleccionada()!.empresaId);
-      },
-      error: (err: any) => {
-        this.savingCorr.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
-      },
-    });
-  }
-
-  editarCorr(corr: Correlativo) {
-    this.corrEditando.set(corr);
-    const fechaCorr = corr.fechaLimite ? new Date(corr.fechaLimite) : null;
-    this.corrForm.patchValue({
-      Idsucursal: corr.Idsucursal,
-      rangoDesde: corr.rangoDesde,
-      rangoHasta: corr.rangoHasta,
-      nrofactura: corr.nrofactura,
-      fechaLimite: fechaCorr,
-    });
-  }
-
-  eliminarCorr(corr: Correlativo) {
-    this.confirm.confirm({
-      message: '¿Eliminar este correlativo?',
-      header: 'Confirmar',
-      icon: 'pi pi-exclamation-triangle',
-      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
-      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
-      accept: () => {
-        this.empresasService.removeCorr(corr.poscorrelativosId, corr.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: () => {
-            this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Correlativo eliminado' });
-            this.loadCorrelativos(this.empresaSeleccionada()!.empresaId);
-          },
-          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
-        });
-      },
-    });
-  }
-
-  cancelarCorr() {
-    this.corrEditando.set(null);
-    this.resetCorrForm();
-  }
-
-  resetCorrForm() {
-    this.corrForm.reset({
-      Idsucursal: null,
-      rangoDesde: '',
-      rangoHasta: '',
-      nrofactura: 0,
-      fechaLimite: null,
-    });
-  }
-
-  cargarNroFacturaSiguiente() {
-    const idsucursal = this.corrForm.value.Idsucursal;
-    if (!idsucursal || !this.empresaSeleccionada()) return;
-
-    this.empresasService.getNextNroFactura(this.empresaSeleccionada()!.empresaId, idsucursal)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => this.corrForm.patchValue({ nrofactura: res.nrofactura }),
-        error: () => {},
-      });
-  }
-
-  onSucursalChange() {
-    if (!this.corrEditando()) {
-      this.cargarNroFacturaSiguiente();
-    }
   }
 
   // ==================================================
@@ -15195,9 +20284,16 @@ export class EmpresasManager implements OnInit {
   // ==================================================
 
   loadImpresoras(empresaId: number) {
+    this.loadingImp.set(true);
     this.empresasService.getAllImpresoras(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => this.impresoras.set(data ?? []),
-      error: () => this.impresoras.set([]),
+      next: (data) => {
+        this.impresoras.set(data ?? []);
+        this.loadingImp.set(false);
+      },
+      error: () => {
+        this.impresoras.set([]);
+        this.loadingImp.set(false);
+      },
     });
   }
 
@@ -15263,57 +20359,6 @@ export class EmpresasManager implements OnInit {
   }
 
   // ==================================================
-  //  ESTADO CORRELATIVOS (alertas)
-  // ==================================================
-
-  loadEstadoCorrelativos(empresaId: number) {
-    this.empresasService.getEstadoCorrelativo(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => this.estadoCorrelativos.set(data ?? []),
-      error: () => this.estadoCorrelativos.set([]),
-    });
-  }
-
-  getEstadoCorr(idsucursal: number): EstadoCorrelativo | undefined {
-    return this.estadoCorrelativos().find(e => e.Idsucursal === idsucursal);
-  }
-
-  getRangoDisponible(idsucursal: number): string {
-    const e = this.getEstadoCorr(idsucursal);
-    if (!e) return '-';
-    return `${e.disponible} de ${e.total}`;
-  }
-
-  getRangoPorcentaje(idsucursal: number): number {
-    const e = this.getEstadoCorr(idsucursal);
-    return e?.porcentaje ?? 0;
-  }
-
-  getRangoEstado(idsucursal: number): string {
-    const e = this.getEstadoCorr(idsucursal);
-    return e?.estado ?? 'OK';
-  }
-
-  getRangoEstadoSeverity(idsucursal: number): string {
-    const estado = this.getRangoEstado(idsucursal);
-    switch (estado) {
-      case 'AGOTADO': return 'danger';
-      case 'CRITICO': return 'danger';
-      case 'ALERTA': return 'warn';
-      default: return 'success';
-    }
-  }
-
-  getRangoLabel(idsucursal: number): string {
-    const estado = this.getRangoEstado(idsucursal);
-    switch (estado) {
-      case 'AGOTADO': return 'Rango agotado';
-      case 'CRITICO': return 'Crítico (<10%)';
-      case 'ALERTA': return 'Alerta (<20%)';
-      default: return 'OK';
-    }
-  }
-
-  // ==================================================
   //  HELPERS
   // ==================================================
 
@@ -15338,22 +20383,8 @@ export class EmpresasManager implements OnInit {
     return this.empresaDet().find(d => d.tipo === 'TELEFONO')?.descripcion || '-';
   }
 
-  getCaiDescripcion(cai: EmpresaDet): string {
-    return cai.descripcion.length > 50
-      ? cai.descripcion.substring(0, 50) + '...'
-      : cai.descripcion;
-  }
-
   getSucursalNombre(idsucursal: number): string {
     return this.sucursales().find(s => s.idsucursal === idsucursal)?.descripcion || `Suc. ${idsucursal}`;
-  }
-
-  validarCai(control: AbstractControl): ValidationErrors | null {
-    const val = control.value;
-    if (!val) return null;
-    if (val.length < 40) return { minLength: true };
-    if (!/^[A-Z0-9\-]+$/.test(val.toUpperCase())) return { pattern: true };
-    return null;
   }
 
   // Validación de RTN hondureño (14 dígitos)
@@ -15362,6 +20393,1455 @@ export class EmpresasManager implements OnInit {
     if (!val) return null;
     if (!/^\d{14}$/.test(val)) return { rtnInvalido: true };
     return null;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\fechas\manager-fechas.html
+
+```typescript
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Fecha del sistema</h1>
+      <p class="page-subtitle">Sincroniza la fecha del sistema con el servidor.</p>
+    </div>
+  </header>
+
+  <!-- Panel centrado: 800 x 400 -->
+  <div class="fs-panel">
+    <!-- Empresa -->
+    <div class="empresa-bloque">
+      <label>Empresa</label>
+      <p-select
+        [options]="empresas()"
+        optionLabel="descripcion"
+        optionValue="empresaId"
+        placeholder="Seleccione una empresa"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        [disabled]="!puedeEscribir()"
+        [ngModel]="empresaSel()"
+        (ngModelChange)="onEmpresaChange($event)"
+      />
+    </div>
+
+    <!-- Fecha del Sistema -->
+    <div class="card fecha-sistema" [class.desalineada]="desalineada()">
+      <div class="fs-cabecera">
+        <div class="fs-titulo">
+          <i class="pi pi-calendar"></i>
+          <div>
+            <strong>Fecha del Sistema</strong>
+            <span>
+              Mientras no coincida con la fecha del servidor, todas las
+              operaciones serán bloqueadas (409).
+            </span>
+          </div>
+        </div>
+
+        @if (cargandoFecha()) {
+          <p-tag value="Verificando..." severity="secondary" />
+        } @else if (desalineada()) {
+          <p-tag value="DESACTUALIZADA" severity="danger" />
+        } @else {
+          <p-tag value="Actualizada" severity="success" />
+        }
+      </div>
+
+      <div class="fs-vals">
+        <div class="fs-val">
+          <label>ERP · tempresas.fechasistema</label>
+          <span class="fs-valor" [class.rojo]="desalineada()">
+            {{ fechaTexto(estadoFecha()?.fechaSistema, 'sin registro') }}
+          </span>
+        </div>
+
+        <div class="fs-flecha"><i class="pi pi-arrow-right"></i></div>
+
+        <div class="fs-val">
+          <label>Servidor · MySQL CURDATE()</label>
+          <span class="fs-valor">{{ fechaTexto(estadoFecha()?.fechaServidor) }}</span>
+        </div>
+      </div>
+
+      <div class="fs-accion">
+        @if (desalineada() && puedeEscribir()) {
+          <p-button
+            label="Actualizar a la fecha del servidor"
+            icon="pi pi-refresh"
+            severity="danger"
+            size="small"
+            rounded
+            [loading]="actualizandoFecha()"
+            (onClick)="actualizarFechaSistema()"
+          />
+        } @else if (desalineada() && !puedeEscribir()) {
+          <small class="fs-aviso">
+            Un <code>admin</code>, <code>supervisor</code> o <code>contador</code> debe
+            actualizar la fecha para desbloquear el ERP.
+          </small>
+        }
+        <p-button
+          label="Verificar"
+          icon="pi pi-sync"
+          severity="secondary"
+          variant="text"
+          size="small"
+          rounded
+          [loading]="cargandoFecha()"
+          (onClick)="cargarEstadoFecha()"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<p-toast />
+<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\fechas\manager-fechas.scss
+
+```typescript
+/* ===== Fecha del sistema — panel centrado 800 x 400 ===== */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.page {
+  flex: 1;
+  justify-content: center;
+}
+
+/* Título + subtítulo centrados */
+.page-header {
+  justify-content: center;
+  text-align: center;
+}
+
+/* Panel: centrado horizontal (margin auto) + contenido centrado en su alto */
+.fs-panel {
+  width: 800px;
+  max-width: 100%;
+  height: 400px;
+  margin: 0.75rem auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.25rem;
+}
+
+/* ── Bloque Empresa ─────────────────────────────────────────────────── */
+
+.empresa-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+  }
+
+  ::ng-deep .p-select {
+    width: 100%;
+  }
+}
+
+/* ── Tarjeta Fecha del Sistema ──────────────────────────────────────── */
+
+.fecha-sistema {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-success, #10b981);
+  border-radius: 4px;
+  padding: 1rem 1.5rem;
+
+  &.desalineada {
+    border-color: var(--c-error, #ef4444);
+    border-left-color: var(--c-error, #ef4444);
+    background: rgba(239, 68, 68, 0.05);
+  }
+}
+
+.fs-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fs-titulo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+
+  > i {
+    font-size: 1.15rem;
+    color: var(--c-primary, #10b981);
+    margin-top: 0.1rem;
+  }
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  strong {
+    font-size: 0.95rem;
+    color: var(--c-text);
+  }
+
+  span {
+    font-size: 0.82rem;
+    color: var(--c-text-muted);
+    line-height: 1.35;
+  }
+}
+
+/* Valores: ERP --> Servidor, centrados */
+.fs-vals {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.fs-val {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 11rem;
+
+  label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--c-text-secondary, #6c757d);
+  }
+
+  .fs-valor {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--c-text);
+    line-height: 1.1;
+
+    &.rojo {
+      color: var(--c-error, #ef4444);
+    }
+  }
+}
+
+.fs-flecha {
+  padding-bottom: 0.25rem;
+
+  i {
+    font-size: 1.1rem;
+    color: var(--c-text-muted);
+    opacity: 0.6;
+  }
+}
+
+/* Acciones: centradas bajo los valores */
+.fs-accion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.fs-aviso {
+  font-size: 0.78rem;
+  color: var(--c-text-muted);
+  max-width: 22rem;
+  text-align: center;
+
+  code {
+    background: var(--c-surface-ground, #f8fafc);
+    padding: 0 0.3rem;
+    border-radius: 3px;
+  }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .fs-panel {
+    height: auto;
+  }
+
+  .fs-vals {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .fs-flecha i {
+    transform: rotate(90deg);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\fechas\manager-fechas.ts
+
+```typescript
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { FecService } from '../../../core/services/fec.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { EmpresasService } from '../../../core/services/empresas.service';
+import { EstadoFechaSistema } from '../../../core/models/fec.models';
+import { Empresa } from '../../../core/models/empresa.models';
+
+@Component({
+  selector: 'app-manager-fechas',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ButtonModule, SelectModule, TagModule, ToastModule, ConfirmDialogModule],
+  providers: [MessageService, ConfirmationService],
+  templateUrl: './manager-fechas.html',
+  styleUrl: './manager-fechas.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ManagerFechas implements OnInit {
+  private fecService = inject(FecService);
+  private auth = inject(AuthService);
+  private empresasSvc = inject(EmpresasService);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+
+  /** Solo admin/supervisor pueden escribir (igual que en backend). */
+  readonly puedeEscribir = this.auth.esRolFechas;
+
+  // ── Selección de empresa ────────────────────────────────────────────
+  empresas = signal<Empresa[]>([]);
+  /** Empresa cuya Fecha del Sistema se está consultando/modificando. */
+  empresaSel = signal<number | null>(null);
+
+  // ── Fecha del Sistema del ERP ───────────────────────────────────────
+  estadoFecha = signal<EstadoFechaSistema | null>(null);
+  cargandoFecha = signal(false);
+  actualizandoFecha = signal(false);
+
+  /** ¿La Fecha del Sistema no coincide con la del servidor? → ERP bloqueado. */
+  desalineada = computed(() => {
+    const e = this.estadoFecha();
+    return !!e && !e.coincide;
+  });
+
+  ngOnInit(): void {
+    // Preselecciona la empresa del usuario y carga su estado + catálogo.
+    this.empresaSel.set(this.auth.currentUser()?.empresaId ?? null);
+    this.cargarEstadoFecha();
+
+    this.empresasSvc
+      .getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (rows) => this.empresas.set(rows ?? []),
+        error: () =>
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Aviso',
+            detail: 'No se pudo cargar el catálogo de empresas',
+          }),
+      });
+  }
+
+  /** Cambia la empresa consultada y recarga su Fecha del Sistema. */
+  onEmpresaChange(id: number): void {
+    this.empresaSel.set(id);
+    this.cargarEstadoFecha();
+  }
+
+  // ── Fecha del Sistema del ERP ───────────────────────────────────────
+
+  /**
+   * Consulta `tempresas.fechasistema` vs `CURDATE()`.
+   * Es un GET: siempre responde, incluso con el ERP bloqueado.
+   */
+  cargarEstadoFecha(): void {
+    this.cargandoFecha.set(true);
+    this.fecService
+      .getEstadoFechaSistema(this.empresaSel() ?? undefined)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (e) => {
+          this.estadoFecha.set(e);
+          this.cargandoFecha.set(false);
+        },
+        error: () => this.cargandoFecha.set(false),
+      });
+  }
+
+  /** Sincroniza la Fecha del Sistema con la del servidor (exige confirmación). */
+  actualizarFechaSistema(): void {
+    const destino = this.estadoFecha()?.fechaServidor;
+    if (!destino) return;
+
+    this.confirm.confirm({
+      message:
+        `¿Establecer la Fecha del Sistema del ERP en ${this.fmtCorta(destino)}? ` +
+        'Se desbloquearán todas las operaciones del sistema.',
+      header: 'Actualizar Fecha del Sistema',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Sí, actualizar',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.actualizandoFecha.set(true);
+        this.fecService
+          .actualizarFechaSistema(destino, this.empresaSel() ?? undefined)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (e) => {
+              this.actualizandoFecha.set(false);
+              this.estadoFecha.set(e);
+              this.msgs.add({
+                severity: 'success',
+                summary: 'Fecha actualizada',
+                detail: `La Fecha del Sistema del ERP ahora es ${this.fmtCorta(e.fechaServidor)}`,
+              });
+            },
+            error: (err) => {
+              this.actualizandoFecha.set(false);
+              this.msgs.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err?.error?.message || 'No se pudo actualizar la Fecha del Sistema',
+              });
+            },
+          });
+      },
+    });
+  }
+
+  /** `dd/mm/aaaa` a partir de un string `YYYY-MM-DD` (sin `new Date()`). */
+  fmtCorta(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+  }
+
+  /** Igual que `fmtCorta`, con texto por defecto si no hay valor. */
+  fechaTexto(iso: string | null | undefined, vacio = '—'): string {
+    return iso ? this.fmtCorta(iso) : vacio;
+  }
+
+}
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\fechasautorizadas\fechasautorizadas.html
+
+```typescript
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Fechas Contables Autorizadas</h1>
+      <p class="page-subtitle">
+        Esta opción permite gestionar los rangos contables especiales para períodos cerrados
+      </p>
+    </div>
+  </header>
+
+  @if (!puedeEscribir()) {
+  <div class="permiso-restringido card">
+    <i class="pi pi-lock"></i>
+    <div>
+      <strong>Solo lectura</strong>
+      <span>
+        La administración de fechas autorizadas está restringida a los roles
+        <code>admin</code>, <code>supervisor</code> y <code>contador</code>. Su perfil solo puede
+        consultar.
+      </span>
+    </div>
+  </div>
+  }
+
+  <!-- ══════════ 1. Rango contable autorizado ══════════ -->
+  <div class="card mb-3">
+    <div class="sec-cabecera">
+      <h2 class="sec-titulo">Rango contable autorizado</h2>
+      @if (puedeEscribir()) {
+      <p-button
+        label="Nuevo rango"
+        icon="pi pi-plus"
+        size="small"
+        rounded
+        [raised]="true"
+        severity="success"
+        variant="text"
+        (onClick)="nuevo()"
+      />
+      }
+    </div>
+
+    <div class="p-fluid">
+      <div class="p-grid">
+        <!-- Empresa / Fecha contable -->
+        <div class="mt-1 p-col-12 p-col-6">
+          <div class="p-field">
+            <label>Empresa <span class="req">*</span></label>
+            <p-select
+              [options]="empresas()"
+              optionLabel="descripcion"
+              optionValue="empresaId"
+              placeholder="Seleccione una empresa"
+              styleClass="w-full"
+              [appendTo]="'body'"
+              [disabled]="!puedeEscribir()"
+              [ngModel]="empresaSel()"
+              (ngModelChange)="onEmpresaChange($event)"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="formgrid grid">
+    <div class="field col">
+      <!-- Tabla de rangos -->
+      <div class="p-col-12">
+        <p-table
+          [value]="items()"
+          dataKey="tfecmaId"
+          size="small"
+          [tableStyle]="{ 'min-width': '36rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Vigente desde</th>
+              <th>Vigente hasta</th>
+              <th>Fecha contable</th>
+              <th style="width: 15rem">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-item>
+            <tr>
+              <td>{{ item.fec_vig_desde | date: 'dd/MM/yyyy' }}</td>
+              <td>{{ item.fec_vig_hasta | date: 'dd/MM/yyyy' }}</td>
+              <td>{{ item.fechasistema | date: 'dd/MM/yyyy' }}</td>
+              <td>
+                <p-button
+                  label="Seleccionar"
+                  icon="pi pi-check"
+                  size="small"
+                  rounded
+                  variant="text"
+                  severity="success"
+                  (onClick)="seleccionar(item)"
+                />
+                @if (puedeEscribir()) {
+                <p-button
+                  label="Borrar"
+                  icon="pi pi-trash"
+                  size="small"
+                  rounded
+                  variant="text"
+                  severity="danger"
+                  (onClick)="eliminarRango(item)"
+                />
+                }
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="4" class="text-center p-3">No hay rangos registrados.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+
+      <!-- Vigencia -->
+      <div class="mt-1 p-col-12 p-col-6">
+        <div class="mt-2 p-field">
+          <label>Vigente desde <span class="req">*</span></label>
+          <p-datepicker
+            size="small"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            placeholder="Desde"
+            [disabled]="!puedeEscribir()"
+            [ngModel]="fechaDesde()"
+            (ngModelChange)="fechaDesde.set($event)"
+          />
+        </div>
+      </div>
+
+      <div class="mt-1 p-col-12 p-col-6">
+        <div class="p-field">
+          <label>Vigente hasta <span class="req">*</span></label>
+          <p-datepicker
+            size="small"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            placeholder="Hasta"
+            [disabled]="!puedeEscribir()"
+            [ngModel]="fechaHasta()"
+            (ngModelChange)="fechaHasta.set($event)"
+          />
+        </div>
+      </div>
+
+      <div class="p-col-12 p-col-6">
+        <div class="p-field">
+          <label>Fecha autorizada <span class="req">*</span></label>
+          <p-datepicker
+            size="small"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [appendTo]="'body'"
+            styleClass="w-full"
+            placeholder="Seleccione fecha"
+            [disabled]="!puedeEscribir()"
+            [ngModel]="fechaContable()"
+            (ngModelChange)="fechaContable.set($event)"
+          />
+        </div>
+      </div>
+
+
+      <!-- Acciones -->
+      <div class="p-col-12">
+        <div class="acciones-form">
+          @if (seleccion() != null && puedeEscribir()) {
+          <p-button
+            label="Eliminar"
+            icon="pi pi-trash"
+            severity="danger"
+            variant="text"
+            rounded
+            size="small"
+            class="accion-izq"
+            (onClick)="eliminarRango()"
+          />
+          }
+          <p-button
+            label="Cancelar"
+            size="small"
+            rounded
+            variant="text"
+            severity="secondary"
+            (onClick)="cancelar()"
+          />
+          @if (puedeEscribir()) {
+          <p-button
+            label="Guardar"
+            icon="pi pi-check"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            rounded
+            size="small"
+            [loading]="guardando()"
+            (onClick)="guardar()"
+          />
+          }
+        </div>
+      </div>
+
+      <!-- ══════════ 2. Item ══════════ -->
+      <div class="card mb-3">
+        <div class="sec-cabecera">
+          <h2 class="sec-titulo">Item</h2>
+        </div>
+
+        <div class="p-fluid">
+          <div class="p-grid">
+            <div class="p-col-12 p-col-6 p-col-md-8">
+              <div class="p-field">
+                <label>Usuario <span class="req">*</span></label>
+                <p-select
+                  [options]="usuariosDisponibles()"
+                  optionLabel="nombre"
+                  optionValue="usuario"
+                  [filter]="true"
+                  filterBy="nombre,usuario"
+                  filterPlaceholder="Buscar usuario..."
+                  placeholder="Seleccione usuario"
+                  styleClass="w-full"
+                  [appendTo]="'body'"
+                  [disabled]="seleccion() == null || !puedeEscribir()"
+                  [ngModel]="nuevoUsuario()"
+                  (ngModelChange)="nuevoUsuario.set($event)"
+                />
+              </div>
+            </div>
+
+            <div class="p-col-12 p-col-6 p-col-md-4">
+              <div class="p-field">
+                <label class="label-acc">&nbsp;</label>
+                <div class="item-accion">
+                  <p-button
+                    label="Guardar"
+                    icon="pi pi-check"
+                    severity="success"
+                    variant="text"
+                    [raised]="true"
+                    rounded
+                    size="small"
+                    [disabled]="!nuevoUsuario() || seleccion() == null || !puedeEscribir()"
+                    [loading]="guardandoItem()"
+                    (onClick)="agregarItem()"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        @if (seleccion() == null) {
+        <small class="hint">Primero guarde el rango para poder agregar usuarios al detalle.</small>
+        }
+      </div>
+    </div>
+    <div class="field col">
+      <!-- ══════════ 3. DETALLE ══════════ -->
+      <div class="card mb-3">
+        <div class="sec-cabecera">
+          <h2 class="sec-titulo">Detalle</h2>
+          <span class="detalle-count">{{ detalles().length }} usuario(s)</span>
+        </div>
+
+        <p-table
+          [value]="detalles()"
+          dataKey="fecdetId"
+          size="small"
+          [tableStyle]="{ 'min-width': '32rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Usuario</th>
+              <th style="width: 11rem">Fecha contable</th>
+              <th style="width: 9rem">Permitido</th>
+              <th style="width: 4rem"></th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td class="font-bold">{{ row.usuario }}</td>
+              <td>{{ fechaContableTexto() }}</td>
+              <td>
+                <p-select
+                  size="small"
+                  [options]="permitidoOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  styleClass="w-full"
+                  [appendTo]="'body'"
+                  [disabled]="!puedeEscribir()"
+                  [ngModel]="row.sn_permitido"
+                  (ngModelChange)="setPermitido(row, $event)"
+                />
+              </td>
+              <td class="text-center">
+                @if (puedeEscribir()) {
+                <p-button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  variant="text"
+                  size="small"
+                  rounded
+                  pTooltip="Quitar"
+                  (onClick)="quitarItem(row)"
+                />
+                }
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="4" class="text-center p-3">
+                Sin usuarios en el detalle. Agréguelos en la tarjeta "Item".
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\fechasautorizadas\fechasautorizadas.scss
+
+```typescript
+/* ===== Fechas Contables Autorizadas ===== */
+
+.req {
+  color: var(--c-error, #ef4444);
+  margin-left: 0.15rem;
+}
+
+/* Aviso de rol restringido */
+.permiso-restringido {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-warning, #f59e0b);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+
+  i {
+    font-size: 1.25rem;
+    color: var(--c-warning, #f59e0b);
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+  }
+
+  strong {
+    color: var(--c-text);
+    font-size: 0.9rem;
+  }
+
+  code {
+    background: var(--c-surface-ground, #f8fafc);
+    padding: 0 0.3rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ===== Cabeceras de sección (cards) ===== */
+
+.sec-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.sec-titulo {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.detalle-count {
+  font-size: 0.78rem;
+  color: var(--c-text-muted);
+}
+
+/* ===== Acciones del form (Cancelar / Guardar / Eliminar) ===== */
+
+.acciones-form {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+
+  .accion-izq {
+    margin-right: auto;
+  }
+}
+
+/* ===== Card "Item" ===== */
+
+.label-acc {
+  visibility: hidden;
+}
+
+.item-accion {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 2rem;
+}
+
+.hint {
+  display: block;
+  margin-top: 0.7rem;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--c-text-muted);
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 640px) {
+  .acciones-form {
+    flex-wrap: wrap;
+
+    .accion-izq {
+      margin-right: 0;
+      margin-bottom: 0.25rem;
+    }
+  }
+}
+
+/* Los p-select anidados en el body (tooltips/overlays) mantienen ancho total */
+::ng-deep .p-select {
+  width: 100%;
+}
+
+```
+
+---
+
+## 📄 src\app\features\configuracion\fechasautorizadas\fechasautorizadas.ts
+
+```typescript
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
+import { TooltipModule } from 'primeng/tooltip';
+import { DatePickerModule } from 'primeng/datepicker';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { FecService } from '../../../core/services/fec.service';
+import { UsuariosService } from '../../../core/services/usuarios.service';
+import { EmpresasService } from '../../../core/services/empresas.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { Fecma, Fecdet, FecmaPayload } from '../../../core/models/fec.models';
+import { Usuario } from '../../../core/models/usuario.models';
+import { Empresa } from '../../../core/models/empresa.models';
+
+/**
+ * Fechas Contables Autorizadas — gestión de rangos contables especiales
+ * para períodos cerrados (tfecma + tfecdet).
+ *
+ * Sección 1: form del rango (empresa, fecha contable, vigencia).
+ * Sección 2: card "Item" para agregar un usuario al detalle (fechas-det).
+ * Sección 3: tabla DETALLE con usuario / fecha contable / permitido.
+ */
+@Component({
+  selector: 'app-fechas-autorizadas',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, TableModule, ButtonModule,
+    SelectModule, TooltipModule, DatePickerModule,
+  ],
+  templateUrl: './fechasautorizadas.html',
+  styleUrl: './fechasautorizadas.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class FechasAutorizadas implements OnInit {
+  private fecService = inject(FecService);
+  private usuariosService = inject(UsuariosService);
+  private empresasSvc = inject(EmpresasService);
+  private auth = inject(AuthService);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+
+  // ── Opciones (siempre en TS, nunca inline en HTML) ──────────────────
+  readonly permitidoOptions: readonly { label: string; value: 'S' | 'N' }[] = [
+    { label: 'Sí', value: 'S' },
+    { label: 'No', value: 'N' },
+  ];
+
+  /** Solo admin/supervisor/contador pueden escribir (ROLES_FECHAS). */
+  readonly puedeEscribir = this.auth.esRolFechas;
+
+  // ── Catálogos y listas ──────────────────────────────────────────────
+  items = signal<Fecma[]>([]);
+  usuarios = signal<Usuario[]>([]);
+  empresas = signal<Empresa[]>([]);
+  cargando = signal(false);
+
+  // ── Estado de escritura ─────────────────────────────────────────────
+  guardando = signal(false);
+  guardandoItem = signal(false);
+
+  // ── Form: rango contable autorizado ─────────────────────────────────
+  /** Empresa cuyo catálogo de rangos se está listando/editando. */
+  empresaSel = signal<number | null>(null);
+  /** Rango seleccionado (fila de la tabla de rangos); `null` = nuevo (sin guardar). */
+  seleccion = signal<number | null>(null);
+  /** Fecha contable (`tfecma.fechasistema`). */
+  fechaContable = signal<Date | null>(null);
+  fechaDesde = signal<Date | null>(null);
+  fechaHasta = signal<Date | null>(null);
+  /** Detalle persistido (tfecdet) del rango seleccionado. */
+  detalles = signal<Fecdet[]>([]);
+
+  // ── Card "Item": alta de detalle ────────────────────────────────────
+  nuevoUsuario = signal<string | null>(null);
+
+  // ── Computed ────────────────────────────────────────────────────────
+
+  /** Fecha contable formateada para la columna del DETALLE. */
+  fechaContableTexto = computed(() => {
+    const fc = this.fechaContable();
+    return fc ? this.fmtCorta(this.fmtFecha(fc)) : '—';
+  });
+
+  /** Usuarios aún no agregados al detalle del rango seleccionado. */
+  usuariosDisponibles = computed(() => {
+    const usados = new Set(this.detalles().map((d) => d.usuario));
+    return this.usuarios().filter((u) => !usados.has(u.usuario));
+  });
+
+  ngOnInit(): void {
+    this.empresaSel.set(this.auth.currentUser()?.empresaId ?? null);
+    this.load();
+    this.cargarCatalogos();
+  }
+
+  // ── Carga inicial ───────────────────────────────────────────────────
+
+  private cargarCatalogos(): void {
+    this.usuariosService
+      .getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (rows) => this.usuarios.set(rows ?? []),
+        error: () =>
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Aviso',
+            detail: 'No se pudo cargar el catálogo de usuarios',
+          }),
+      });
+
+    this.empresasSvc
+      .getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (rows) => this.empresas.set(rows ?? []),
+        error: () =>
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Aviso',
+            detail: 'No se pudo cargar el catálogo de empresas',
+          }),
+      });
+  }
+
+  /** Carga los rangos de la empresa y preselecciona el vigente (o el primero). */
+  load(): void {
+    this.cargando.set(true);
+    this.fecService
+      .getAll(this.empresaSel() ?? undefined)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (rows) => {
+          const lista = rows ?? [];
+          this.items.set(lista);
+          this.cargando.set(false);
+
+          const sel = this.seleccion();
+          const actual = sel != null ? lista.find((m) => m.tfecmaId === sel) : null;
+          if (actual) {
+            this.cargarRango(actual);
+          } else if (lista.length) {
+            this.cargarRango(lista.find((m) => this.esVigente(m)) ?? lista[0]);
+          } else {
+            this.limpiarForm();
+          }
+        },
+        error: () => {
+          this.cargando.set(false);
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudieron cargar los rangos contables autorizados',
+          });
+        },
+      });
+  }
+
+  // ── Navegación entre rangos / nuevo ─────────────────────────────────
+
+  /** Botón "Nuevo rango": deja el form vacío para dar de alta. */
+  nuevo(): void {
+    this.limpiarForm();
+  }
+
+  /** Cambio del select "Empresa": recarga los rangos de esa empresa. */
+  onEmpresaChange(id: number): void {
+    this.empresaSel.set(id);
+    this.limpiarForm();
+    this.load();
+  }
+
+  /** Cancelar: revierte el form a los datos guardados del rango (o limpia si es nuevo). */
+  cancelar(): void {
+    const id = this.seleccion();
+    if (id == null) {
+      this.limpiarForm();
+      return;
+    }
+    const m = this.items().find((x) => x.tfecmaId === id);
+    if (m) this.cargarRango(m);
+    else this.limpiarForm();
+  }
+
+  private cargarRango(m: Fecma): void {
+    this.seleccion.set(m.tfecmaId);
+    this.fechaContable.set(this.aDate(m.fechasistema));
+    this.fechaDesde.set(this.aDate(m.fec_vig_desde));
+    this.fechaHasta.set(this.aDate(m.fec_vig_hasta));
+    this.detalles.set(m.detalles ?? []);
+    this.nuevoUsuario.set(null);
+  }
+
+  private limpiarForm(): void {
+    this.seleccion.set(null);
+    this.fechaContable.set(null);
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.detalles.set([]);
+    this.nuevoUsuario.set(null);
+  }
+
+  // ── Guardar rango (maestro) ─────────────────────────────────────────
+
+  guardar(): void {
+    const fechaContable = this.fechaContable();
+    const desde = this.fechaDesde();
+    const hasta = this.fechaHasta();
+
+    if (!fechaContable) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Fecha contable requerida',
+        detail: 'Debe indicar la fecha contable del rango',
+      });
+      return;
+    }
+    if (!desde || !hasta) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Fechas requeridas',
+        detail: 'Debe indicar las fechas "Vigente desde" y "Vigente hasta"',
+      });
+      return;
+    }
+    if (this.fmtFecha(desde) > this.fmtFecha(hasta)) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Rango inválido',
+        detail: 'La fecha "Vigente desde" no puede ser mayor que "Vigente hasta"',
+      });
+      return;
+    }
+
+    const id = this.seleccion();
+    this.guardando.set(true);
+
+    const payload: FecmaPayload = {
+      fechasistema: this.fmtFecha(fechaContable),
+      fec_vig_desde: this.fmtFecha(desde),
+      fec_vig_hasta: this.fmtFecha(hasta),
+      empresaId: this.empresaSel() ?? undefined,
+    };
+    // En ALTA el maestro se crea vacío: sus líneas se agregan en la card "Item".
+    // (Si se enviara `detalles: []` en UPDATE, el backend lo interpretaría como
+    //  reemplazo total y borraría las líneas existentes.)
+    if (id == null) payload.detalles = [];
+
+    const req$ = id != null ? this.fecService.update(id, payload) : this.fecService.create(payload);
+
+    req$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.guardando.set(false);
+        this.seleccion.set(res.tfecmaId);
+        this.msgs.add({
+          severity: 'success',
+          summary: id != null ? 'Actualizado' : 'Rango creado',
+          detail:
+            id != null
+              ? 'El rango contable autorizado se actualizó correctamente'
+              : 'Ahora agregue los usuarios habilitados en la tarjeta "Item"',
+        });
+        this.load();
+      },
+      error: (err) => {
+        this.guardando.set(false);
+        this.msgs.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: err?.error?.message || 'No se pudo guardar el rango contable autorizado',
+        });
+      },
+    });
+  }
+
+  // ── Detalle (tfecdet): alta / permitido / baja ──────────────────────
+
+  /** Card "Item": agrega el usuario seleccionado al detalle (POST fechas-det). */
+  agregarItem(): void {
+    const id = this.seleccion();
+    if (id == null) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Rango sin guardar',
+        detail: 'Primero guarde el rango para poder agregar usuarios al detalle',
+      });
+      return;
+    }
+    const usuario = this.nuevoUsuario();
+    if (!usuario) return;
+    if (this.detalles().some((d) => d.usuario === usuario)) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Usuario duplicado',
+        detail: `${usuario} ya está en el detalle de este rango`,
+      });
+      return;
+    }
+
+    this.guardandoItem.set(true);
+    this.fecService
+      .createDet({ fecmaeId: id, usuario, sn_permitido: 'S' })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.guardandoItem.set(false);
+          this.nuevoUsuario.set(null);
+          this.detalles.update((lista) => [...lista, res]);
+          this.syncItemsDetalle();
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Agregado',
+            detail: `${usuario} quedó habilitado en este rango`,
+          });
+        },
+        error: (err) => {
+          this.guardandoItem.set(false);
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err?.error?.message || 'No se pudo agregar el usuario al detalle',
+          });
+        },
+      });
+  }
+
+  /** Cambia sn_permitido de una línea (PUT fechas-det). */
+  setPermitido(row: Fecdet, valor: 'S' | 'N'): void {
+    this.fecService
+      .updateDet(row.fecdetId, { sn_permitido: valor })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.detalles.update((lista) =>
+            lista.map((d) => (d.fecdetId === row.fecdetId ? { ...d, sn_permitido: valor } : d)),
+          );
+          this.syncItemsDetalle();
+        },
+        error: (err) => {
+          // Nueva referencia para que OnPush repinte el valor original
+          this.detalles.update((lista) => [...lista]);
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err?.error?.message || 'No se pudo actualizar el permiso',
+          });
+        },
+      });
+  }
+
+  /** Elimina una línea del detalle (DELETE fechas-det), con confirmación. */
+  quitarItem(row: Fecdet): void {
+    this.confirm.confirm({
+      message: `¿Quitar a ${row.usuario} del detalle de este rango?`,
+      header: 'Quitar usuario',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: {
+        label: 'Cancelar',
+        severity: 'secondary',
+        variant: 'text',
+        size: 'small',
+        rounded: true,
+      },
+      acceptButtonProps: {
+        label: 'Quitar',
+        severity: 'danger',
+        variant: 'text',
+        size: 'small',
+        rounded: true,
+      },
+      accept: () => {
+        this.fecService
+          .deleteDet(row.fecdetId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.detalles.update((lista) => lista.filter((d) => d.fecdetId !== row.fecdetId));
+              this.syncItemsDetalle();
+              this.msgs.add({
+                severity: 'success',
+                summary: 'Eliminado',
+                detail: `${row.usuario} fue quitado del detalle`,
+              });
+            },
+            error: (err) => {
+              this.msgs.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err?.error?.message || 'No se pudo eliminar la línea de detalle',
+              });
+            },
+          });
+      },
+    });
+  }
+
+  /** Mantiene `items()` sincronizado con `detalles()` (para no perder datos al cancelar). */
+  private syncItemsDetalle(): void {
+    const id = this.seleccion();
+    if (id == null) return;
+    const det = this.detalles();
+    this.items.update((lista) =>
+      lista.map((m) => (m.tfecmaId === id ? { ...m, detalles: det } : m)),
+    );
+  }
+
+  // ── Baja del rango ──────────────────────────────────────────────────
+
+  /** Acción "Seleccionar" de la tabla: carga el rango en el form. */
+  seleccionar(item: Fecma): void {
+    this.cargarRango(item);
+  }
+
+  /** Elimina un rango (fila de la tabla o botón del form), con confirmación. */
+  eliminarRango(item?: Fecma): void {
+    const objetivo = item ?? this.items().find((x) => x.tfecmaId === this.seleccion());
+    if (!objetivo) return;
+    const id = objetivo.tfecmaId;
+
+    this.confirm.confirm({
+      message:
+        `¿Eliminar el rango ${this.fmtFecha(objetivo.fec_vig_desde)} – ${this.fmtFecha(objetivo.fec_vig_hasta)}? ` +
+        `Sus ${objetivo.detalles?.length ?? 0} línea(s) de detalle también se eliminarán. Esta acción no se puede deshacer.`,
+      header: 'Eliminar rango contable',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: {
+        label: 'Cancelar',
+        severity: 'secondary',
+        variant: 'text',
+        size: 'small',
+        rounded: true,
+      },
+      acceptButtonProps: {
+        label: 'Eliminar',
+        severity: 'danger',
+        variant: 'text',
+        size: 'small',
+        rounded: true,
+      },
+      accept: () => {
+        this.fecService
+          .delete(id)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.msgs.add({
+                severity: 'success',
+                summary: 'Eliminado',
+                detail: 'El rango contable autorizado fue eliminado',
+              });
+              if (this.seleccion() === id) this.limpiarForm();
+              this.load();
+            },
+            error: (err) => {
+              this.msgs.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err?.error?.message || 'No se pudo eliminar el rango',
+              });
+            },
+          });
+      },
+    });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────
+
+  /** ¿El rango contiene la fecha de hoy? */
+  esVigente(item: Fecma): boolean {
+    const hoy = this.fmtFecha(new Date());
+    return hoy >= this.fmtFecha(item.fec_vig_desde) && hoy <= this.fmtFecha(item.fec_vig_hasta);
+  }
+
+  /** `dd/mm/aaaa` a partir de un string `YYYY-MM-DD` (sin `new Date()` en template). */
+  fmtCorta(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+  }
+
+  /** `YYYY-MM-DD` local (sin desplazar el día por la zona horaria). */
+  fmtFecha(valor: Date | string | null | undefined): string {
+    if (valor == null) return '';
+    const d = this.aDate(valor);
+    if (isNaN(d.getTime())) return '';
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${mes}-${dia}`;
+  }
+
+  /** Convierte un valor del backend (string o Date) a Date local a medianoche. */
+  private aDate(valor: Date | string): Date {
+    if (valor instanceof Date) return new Date(valor.getFullYear(), valor.getMonth(), valor.getDate());
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(valor);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const d = new Date(valor);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
 }
 
@@ -15738,21 +22218,7 @@ export class Settings implements OnInit {
     </div>
   </div>
 
-  <!-- Encabezado del reporte -->
-  @if (reporte(); as rep) {
-  <div class="reporte-header mb-3">
-    <div class="reporte-empresa">{{ rep.empresaName }}</div>
-    <div class="reporte-titulo">{{ rep.balancename }}</div>
-    <div class="reporte-periodo">
-      Período: {{ getMesLabel() }} {{ rep.anio }} @if (rep.nivelDetalle != null) {
-      <span class="nivel-tag">Nivel {{ rep.nivelDetalle }}</span>
-      }
-      <span class="tipo-tag" [class.tipo-balance]="rep.esBalance">
-        {{ rep.esBalance ? 'Balance' : 'Estado de Resultado' }}
-      </span>
-    </div>
-  </div>
-
+  @if (reporte()) {
   <!-- Tabla única: Cuenta | Descripción | [Col0] | Col1..Col7 -->
   <div class="card">
     <p-table [value]="lineasOrdenadas()" size="small" styleClass="p-table-sm tabla-balances">
@@ -15961,61 +22427,6 @@ export class Settings implements OnInit {
   }
 }
 
-// Encabezado del reporte
-.reporte-header {
-  text-align: center;
-  padding: 1.25rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-}
-
-.reporte-empresa {
-  font-size: 0.85rem;
-  color: var(--c-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.reporte-titulo {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--c-text);
-  margin: 0.25rem 0;
-}
-
-.reporte-periodo {
-  font-size: 0.9rem;
-  color: var(--c-text-muted);
-
-  .nivel-tag {
-    display: inline-block;
-    margin-left: 0.75rem;
-    padding: 0.15rem 0.6rem;
-    background: var(--c-primary);
-    color: white;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .tipo-tag {
-    display: inline-block;
-    margin-left: 0.5rem;
-    padding: 0.15rem 0.6rem;
-    background: #fee2e2;
-    color: #b91c1c;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-
-    &.tipo-balance {
-      background: #dbeafe;
-      color: #1d4ed8;
-    }
-  }
-}
-
 // Tabla única de balances
 .tabla-balances {
   :host ::ng-deep .p-datatable-thead > tr > th {
@@ -16184,8 +22595,12 @@ import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { EmpresasService } from '../../../core/services/empresas.service';
-import { EmpresaDet } from '../../../core/models/empresa.models';
+import {
+  ReportesPrintService,
+  EncabezadoPrint,
+  TablaPrint,
+  ColumnaPrint,
+} from '../../../core/services/reportes-print.service';
 import {
   PlantillaBalancesMae,
   NivelCta,
@@ -16194,19 +22609,7 @@ import {
 } from '../../../core/models/contabilidad.models';
 
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  Table,
-  TableRow,
-  TableCell,
-  WidthType,
-  AlignmentType,
-} from 'docx';
+import { Packer } from 'docx';
 
 @Component({
   selector: 'app-balance-dinamico',
@@ -16230,7 +22633,7 @@ import {
 export class BalanceDinamicoComponent implements OnInit {
   private contabilidad = inject(ContabilidadService);
   private auth = inject(AuthService);
-  private empresas = inject(EmpresasService);
+  private print = inject(ReportesPrintService);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private sanitizer = inject(DomSanitizer);
@@ -16242,8 +22645,6 @@ export class BalanceDinamicoComponent implements OnInit {
   // Catálogos
   plantillas = signal<PlantillaBalancesMae[]>([]);
   niveles = signal<NivelCta[]>([]);
-  // Datos fiscales de la empresa (tempresasdet): RTN, dirección, teléfono
-  empresaDet = signal<EmpresaDet[]>([]);
 
   // Filtros
   plantillaId = signal<number | null>(null);
@@ -16327,15 +22728,6 @@ export class BalanceDinamicoComponent implements OnInit {
         next: (niveles) => this.niveles.set(niveles),
         error: () => {},
       });
-
-    // Datos fiscales (RTN / dirección / teléfono) para el encabezado de impresión
-    this.empresas
-      .getAllDet()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (det) => this.empresaDet.set(det ?? []),
-        error: () => {}, // opcionales: el reporte se imprime aunque falten
-      });
   }
 
   generar(): void {
@@ -16409,26 +22801,6 @@ export class BalanceDinamicoComponent implements OnInit {
 
   // ========== UTILIDADES DE IMPRESIÓN ==========
 
-  private getNombreEmpresa(): string {
-    return this.reporte()?.empresaName || 'Empresa';
-  }
-
-  private getUsuarioImpresion(): string {
-    const user = this.auth.currentUser();
-    return user?.nombre || user?.usuario || '';
-  }
-
-  private getFechaHoraImpresion(): string {
-    return new Date().toLocaleString('es-HN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  }
-
   /** Título del reporte: plantilla + período + nivel */
   private getTituloReporte(): string {
     const rep = this.reporte();
@@ -16438,55 +22810,20 @@ export class BalanceDinamicoComponent implements OnInit {
     return titulo;
   }
 
-  /** Dato fiscal activo de la empresa por tipo (RTN, DIRECCION, TELEFONO…) */
-  private datoEmpresa(tipo: EmpresaDet['tipo']): string {
-    return (
-      this.empresaDet()
-        .find((d) => d.tipo === tipo && d.sn_activo === 'S')
-        ?.descripcion?.trim() ?? ''
-    );
+  /**
+   * Encabezado de los archivos exportados (logo + empresa + datos fiscales +
+   * nombre del libro + meta): PDF, Excel y Word.
+   */
+  private async encabezadoImpresion(): Promise<EncabezadoPrint> {
+    const rep = this.reporte();
+    return this.print.encabezado(rep?.balancename || 'BALANCE DINÁMICO', this.getTituloReporte());
   }
 
-  /** Línea de datos fiscales para el encabezado de impresión */
-  private lineaFiscal(): string {
-    const partes: string[] = [];
-    const rtn = this.datoEmpresa('RTN');
-    if (rtn) partes.push(`RTN: ${rtn}`);
-    const dir = this.datoEmpresa('DIRECCION');
-    if (dir) partes.push(`Dir: ${dir}`);
-    const tel = this.datoEmpresa('TELEFONO');
-    if (tel) partes.push(`Tel: ${tel}`);
-    return partes.join('   |   ');
-  }
-
-  /** Recorta el texto para que no desborde el ancho de la página */
-  private cortar(texto: string, max: number): string {
-    if (!texto) return '';
-    return texto.length > max ? `${texto.slice(0, max - 1)}…` : texto;
-  }
-
-  /** Formato numérico es-HN con 2 decimales */
-  private fmt(valor: number | null | undefined): string {
-    if (valor == null) return '';
-    return (Number(valor) || 0).toLocaleString('es-HN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-
-  /** Encabezado de columnas de los documentos exportados: Cuenta | Descripción | Saldo. Acum | Parcial | Total */
-  private encabezadoColumnas(): string[] {
-    const cols = ['Cuenta', 'Descripción'];
-    if (this.mostrarCol0()) cols.push(this.etiquetaColumna(0));
-    for (const c of this.columnasVisibles()) cols.push(this.etiquetaColumna(c));
-    return cols;
-  }
-
-  /** Etiqueta de cada columna del balance en el output: Saldo. Acum / Parcial / Total */
+  /** Etiqueta de cada columna del balance en el output: Saldo Acum. / Parcial / Total */
   private etiquetaColumna(col: number): string {
     switch (col) {
       case 0:
-        return 'Saldo. Acum';
+        return 'Saldo Acum.';
       case 1:
         return 'Parcial';
       case 2:
@@ -16500,35 +22837,50 @@ export class BalanceDinamicoComponent implements OnInit {
     }
   }
 
-  private filasCuerpo(): string[][] {
+  /**
+   * Tabla imprimible compartida por PDF, Excel y Word (ReportesPrintService).
+   * Los importes van como `number` para que el service los formatee igual en
+   * los tres formatos (1,234.56) y en Excel queden como valores, no texto.
+   */
+  private tablaPrint(): TablaPrint {
     const rep = this.reporte();
-    if (!rep) return [];
-    const columnas = this.columnasVisibles();
-    const conCol0 = this.mostrarCol0();
+    const columnas: ColumnaPrint[] = [
+      { titulo: 'Cuenta', alinear: 'left' },
+      { titulo: 'Descripción', alinear: 'left' },
+    ];
+    if (this.mostrarCol0()) columnas.push({ titulo: this.etiquetaColumna(0), alinear: 'right' });
+    for (const col of this.columnasVisibles()) {
+      columnas.push({ titulo: this.etiquetaColumna(col), alinear: 'right' });
+    }
 
-    return rep.lineas.map((l: BalanceDinamicoLinea) => {
-      const fila = [l.ctacontable ?? '', l.descripcion ?? ''];
-      if (conCol0) fila.push(this.fmt(l.col0 ?? 0));
-      for (const col of columnas) {
-        fila.push(l.columna === col ? this.fmt(l.valor) : '');
-      }
-      return fila;
-    });
-  }
+    const filas: (string | number | null)[][] = (rep?.lineas ?? []).map(
+      (l: BalanceDinamicoLinea) => {
+        const fila: (string | number | null)[] = [l.ctacontable ?? '', l.descripcion ?? ''];
+        if (this.mostrarCol0()) fila.push(Number(l.col0) || 0);
+        for (const col of this.columnasVisibles()) {
+          fila.push(l.columna === col ? Number(l.valor) : null);
+        }
+        return fila;
+      },
+    );
 
-  private filaTotales(): string[] {
-    const fila = ['', 'TOTALES'];
-    if (this.mostrarCol0()) fila.push(this.fmt(this.totalCol(0)));
-    for (const col of this.columnasVisibles()) fila.push(this.fmt(this.totalCol(col)));
-    return fila;
+    const tab: TablaPrint = { columnas, filas };
+    // La fila de TOTALES solo se muestra en Estado de Resultado (no en Balance)
+    if (rep && !rep.esBalance) {
+      const totales: (string | number | null)[] = ['', 'TOTALES'];
+      if (this.mostrarCol0()) totales.push(Number(this.totalCol(0)) || 0);
+      for (const col of this.columnasVisibles()) totales.push(Number(this.totalCol(col)) || 0);
+      tab.filaTotales = totales;
+    }
+    return tab;
   }
 
   // ========== EXPORTACIONES ==========
 
   /** Genera el PDF y lo muestra en pantalla (visor) */
-  exportPDF(): void {
+  async exportPDF(): Promise<void> {
     if (!this.reporte()) return;
-    const doc = this.construirPDF();
+    const doc = await this.construirPDF();
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
@@ -16544,9 +22896,10 @@ export class BalanceDinamicoComponent implements OnInit {
   }
 
   /** Descarga el PDF generado desde el visor */
-  descargarPDF(): void {
+  async descargarPDF(): Promise<void> {
     if (!this.reporte()) return;
-    this.construirPDF().save('balance-dinamico.pdf');
+    const doc = await this.construirPDF();
+    doc.save('balance-dinamico.pdf');
     this.messageService.add({
       severity: 'success',
       summary: 'PDF descargado',
@@ -16554,147 +22907,28 @@ export class BalanceDinamicoComponent implements OnInit {
     });
   }
 
-  private construirPDF(): jsPDF {
+  /**
+   * PDF: letterhead con logo + tabla minimalista + firmas + encabezado
+   * repetido y pie paginado en TODAS las páginas.
+   */
+  private async construirPDF(): Promise<jsPDF> {
+    const enc = await this.encabezadoImpresion();
     const doc = new jsPDF('l', 'mm', 'letter'); // horizontal
-    const pageW = doc.internal.pageSize.getWidth();
-    const fecha = this.getFechaHoraImpresion();
-    const altoEnc = this.altoEncabezadoPDF();
+    const altoEnc = this.print.pdfEncabezado(doc, enc);
 
-    const encabezado = this.encabezadoColumnas();
-    const body = this.filasCuerpo();
-    // La fila de TOTALES solo se muestra en Estado de Resultado (no en Balance)
-    if (!this.reporte()?.esBalance) body.push(this.filaTotales());
-
-    autoTable(doc, {
-      startY: altoEnc,
-      head: [encabezado],
-      body,
-      theme: 'plain',
-      // Sin cuadrícula: se eliminan los bordes de celdas (antes gris 150,150,150
-      // y cabecera gris oscuro 100,100,100)
-      styles: {
-        fontSize: 7,
-        cellPadding: 1.2,
-        lineWidth: 0,
-        overflow: 'linebreak',
-      },
-      headStyles: {
-        fillColor: false,
-        textColor: [50, 50, 50],
-        fontStyle: 'bold',
-        lineWidth: 0,
-      },
-      // Alineación de títulos: Cuenta y Descripción a la izquierda;
-      // Saldo. Acum, Parcial y Totales a la derecha.
-      // (columnStyles NO aplica a la cabecera en autoTable → se usa didParseCell)
-      didParseCell: (data) => {
-        if (data.section === 'head') {
-          data.cell.styles.halign = data.column.index <= 1 ? 'left' : 'right';
-        }
-      },
-      // top deja espacio para el encabezado repetido; bottom para el pie
-      margin: { left: 10, right: 10, top: altoEnc, bottom: 16 },
-      columnStyles: this.columnStylesPDF(pageW, encabezado.length),
-      // El encabezado y el pie se dibujan después, en todas las páginas
-    });
+    this.print.pdfTabla(doc, this.tablaPrint(), altoEnc, altoEnc);
 
     // Bloque de firmas al final del contenido (agrega página si no cabe)
     const finalY = Number((doc as any).lastAutoTable?.finalY ?? altoEnc);
-    this.agregarFirmasPDF(doc, finalY + 10);
+    this.agregarFirmasPDF(doc, finalY + 10, altoEnc);
 
-    // Encabezado repetido + pie con "Página X de Y" en TODAS las páginas
-    const total = doc.getNumberOfPages();
-    for (let i = 1; i <= total; i++) {
-      doc.setPage(i);
-      this.encabezadoPaginaPDF(doc, fecha);
-      this.piePaginaPDF(doc, i, total, fecha);
-    }
+    // Encabezado repetido (páginas 2+) + pie "Página X de Y"
+    this.print.pdfPaginar(doc, enc, altoEnc);
     return doc;
   }
 
-  /** Anchos de columna calculados para que siempre quepan en horizontal Letter */
-  private columnStylesPDF(pageW: number, totalCols: number): Record<number, any> {
-    const margenIzq = 10;
-    const margenDer = 10;
-    const anchoFijoCuenta = 30;
-
-    // Columnas de valores = total − (Cuenta, Descripción)
-    const ncolsVal = totalCols - 2;
-    const fijo = anchoFijoCuenta + margenIzq + margenDer;
-    const disponible = Math.max(pageW - fijo, 60);
-    const anchoDesc = Math.round(disponible * 0.3);
-    const anchoVal = Math.max((disponible - anchoDesc) / Math.max(ncolsVal, 1), 12);
-
-    // Cuenta y Descripción a la izquierda; columnas de valor a la derecha
-    const styles: Record<number, any> = {
-      0: { halign: 'left', cellWidth: anchoFijoCuenta },
-      1: { halign: 'left', cellWidth: anchoDesc },
-    };
-    for (let i = 2; i < totalCols; i++) {
-      styles[i] = { halign: 'right', cellWidth: anchoVal };
-    }
-    return styles;
-  }
-
-  /** Altura del encabezado repetido (crece si hay línea de datos fiscales) */
-  private altoEncabezadoPDF(): number {
-    return this.lineaFiscal() ? 31 : 26.5;
-  }
-
-  /** Encabezado que se repite en cada página del PDF */
-  private encabezadoPaginaPDF(doc: jsPDF, fecha: string): void {
-    const pageW = doc.internal.pageSize.getWidth();
-    const rep = this.reporte()!;
-    let y = 11;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.text((rep.balancename || 'BALANCE DINÁMICO').toUpperCase(), pageW / 2, y, {
-      align: 'center',
-    });
-
-    y += 5.5;
-    doc.setFontSize(9.5);
-    doc.text(this.getNombreEmpresa(), pageW / 2, y, { align: 'center' });
-
-    const fiscal = this.lineaFiscal();
-    if (fiscal) {
-      y += 4.5;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.text(this.cortar(fiscal, 170), pageW / 2, y, { align: 'center' });
-    }
-
-    y += 4.5;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.text(this.cortar(this.getTituloReporte(), 95), 12, y);
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}   —   ${fecha}`, pageW - 12, y, {
-      align: 'right',
-    });
-
-    y += 3;
-    doc.setDrawColor(120, 120, 120);
-    doc.setLineWidth(0.4);
-    doc.line(12, y, pageW - 12, y);
-  }
-
-  /** Pie con usuario, fecha y paginación "Página X de Y" */
-  private piePaginaPDF(doc: jsPDF, pagina: number, total: number, fecha: string): void {
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(10, pageH - 12, pageW - 10, pageH - 12);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 10, pageH - 8);
-    doc.text(`Página ${pagina} de ${total}`, pageW / 2, pageH - 8, { align: 'center' });
-    doc.text(fecha, pageW - 10, pageH - 8, { align: 'right' });
-  }
-
   /** Bloque de firmas al final del reporte (agrega página cuando no cabe) */
-  private agregarFirmasPDF(doc: jsPDF, startY: number): void {
+  private agregarFirmasPDF(doc: jsPDF, startY: number, altoEnc: number): void {
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const altoBloque = 22;
@@ -16702,7 +22936,7 @@ export class BalanceDinamicoComponent implements OnInit {
 
     if (y + altoBloque > pageH - 16) {
       doc.addPage();
-      y = 40; // el encabezado de esta página se dibuja en el bucle final
+      y = altoEnc + 6; // el encabezado de esta página lo dibuja pdfPaginar
     }
 
     const firmas = ['Elaborado por', 'Revisado por', 'Aprobado por'];
@@ -16719,51 +22953,19 @@ export class BalanceDinamicoComponent implements OnInit {
     });
   }
 
-  exportExcel(): void {
+  /** Excel con letterhead (logo, empresa, datos fiscales) vía exceljs */
+  async exportExcel(): Promise<void> {
     const rep = this.reporte();
     if (!rep) return;
 
-    const rows: any[][] = [];
-    rows.push([this.getNombreEmpresa()]);
-    rows.push([(rep.balancename || 'BALANCE DINÁMICO').toUpperCase()]);
-    rows.push([this.getTituloReporte()]);
-    rows.push([
-      `Impreso por: ${this.getUsuarioImpresion()}   |   Fecha: ${this.getFechaHoraImpresion()}`,
-    ]);
-    rows.push([]);
-    rows.push(this.encabezadoColumnas());
+    const enc = await this.encabezadoImpresion();
+    const tab = this.tablaPrint();
+    const wb = this.print.nuevoLibro();
+    const ws = wb.addWorksheet('Balance Dinámico');
+    const filaCabecera = this.print.excelEncabezado(wb, ws, enc, tab);
+    this.print.excelTabla(ws, tab, filaCabecera, 'landscape');
+    await this.print.descargarExcel(wb, 'balance-dinamico.xlsx');
 
-    const columnas = this.columnasVisibles();
-    const conCol0 = this.mostrarCol0();
-
-    for (const l of rep.lineas) {
-      const fila: any[] = [l.ctacontable ?? '', l.descripcion ?? ''];
-      if (conCol0) fila.push(Number(l.col0) || 0);
-      for (const col of columnas) {
-        fila.push(l.columna === col ? Number(l.valor) || 0 : null);
-      }
-      rows.push(fila);
-    }
-
-    // La fila de TOTALES solo se muestra en Estado de Resultado (no en Balance)
-    if (!rep.esBalance) {
-      rows.push([]);
-      const totales: any[] = ['', 'TOTALES'];
-      if (conCol0) totales.push(Number(this.totalCol(0)) || 0);
-      for (const col of columnas) totales.push(Number(this.totalCol(col)) || 0);
-      rows.push(totales);
-    }
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Balance Dinámico');
-
-    const anchos = [{ wch: 15 }, { wch: 42 }];
-    if (conCol0) anchos.push({ wch: 20 });
-    for (let i = 0; i < columnas.length; i++) anchos.push({ wch: 17 });
-    ws['!cols'] = anchos;
-
-    XLSX.writeFile(wb, 'balance-dinamico.xlsx');
     this.messageService.add({
       severity: 'success',
       summary: 'Excel generado',
@@ -16771,146 +22973,815 @@ export class BalanceDinamicoComponent implements OnInit {
     });
   }
 
-  exportWord(): void {
+  /** Word con letterhead repetido en cada página (header) vía docx */
+  async exportWord(): Promise<void> {
     const rep = this.reporte();
     if (!rep) return;
 
-    const children: any[] = [];
+    const enc = await this.encabezadoImpresion();
+    const documento = this.print.wordDocumento(enc, 'landscape', [
+      this.print.wordTabla(this.tablaPrint(), 'landscape'),
+    ]);
 
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [
-          new TextRun({
-            text: (rep.balancename || 'BALANCE DINÁMICO').toUpperCase(),
-            bold: true,
-            size: 28,
-          }),
-        ],
-      }),
-    );
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: this.getNombreEmpresa(), bold: true, size: 22 })],
-      }),
-    );
-    children.push(
-      new Paragraph({ children: [new TextRun({ text: this.getTituloReporte(), size: 18 })] }),
-    );
-    children.push(
-      new Paragraph({
-        children: [new TextRun({ text: `Impreso por: ${this.getUsuarioImpresion()}`, size: 18 })],
-      }),
-    );
-    children.push(
-      new Paragraph({
-        children: [
-          new TextRun({ text: `Fecha impresión: ${this.getFechaHoraImpresion()}`, size: 18 }),
-        ],
-      }),
-    );
-    children.push(new Paragraph({ text: '' }));
+    const blob = await Packer.toBlob(documento);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'balance-dinamico.docx';
+    a.click();
+    URL.revokeObjectURL(url);
 
-    const encabezado = this.encabezadoColumnas();
-    const columnas = this.columnasVisibles();
-    const conCol0 = this.mostrarCol0();
-
-    const headerRow = new TableRow({
-      tableHeader: true,
-      children: encabezado.map((h, i) =>
-        this.celdaWord(h, {
-          bold: true,
-          // Cuenta y Descripción a la izquierda; Saldo. Acum / Parcial / Totales a la derecha
-          align: i <= 1 ? AlignmentType.LEFT : AlignmentType.RIGHT,
-        }),
-      ),
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Word generado',
+      detail: 'Balance dinámico exportado en Word',
     });
+  }
+}
 
-    const dataRows = rep.lineas.map((l: BalanceDinamicoLinea) => {
-      const celdas: TableCell[] = [
-        this.celdaWord(l.ctacontable ?? ''),
-        this.celdaWord(l.descripcion ?? ''),
-      ];
-      if (conCol0)
-        celdas.push(this.celdaWord(this.fmt(l.col0 ?? 0), { align: AlignmentType.RIGHT }));
-      for (const col of columnas) {
-        celdas.push(
-          this.celdaWord(l.columna === col ? this.fmt(l.valor) : '', {
-            align: AlignmentType.RIGHT,
-          }),
-        );
-      }
-      return new TableRow({ children: celdas });
-    });
+```
 
-    // Fila totales — solo en Estado de Resultado (no en Balance)
-    if (!rep.esBalance) {
-      const celdasTot: TableCell[] = [
-        this.celdaWord('', {}),
-        this.celdaWord('TOTALES', { bold: true }),
-      ];
-      if (conCol0)
-        celdasTot.push(
-          this.celdaWord(this.fmt(this.totalCol(0)), { bold: true, align: AlignmentType.RIGHT }),
-        );
-      for (const col of columnas) {
-        celdasTot.push(
-          this.celdaWord(this.fmt(this.totalCol(col)), { bold: true, align: AlignmentType.RIGHT }),
-        );
-      }
-      dataRows.push(new TableRow({ children: celdasTot }));
+---
+
+## 📄 src\app\features\contabilidad\balance-financiero\balance-financiero.html
+
+```typescript
+<p-toast />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-chart-line"></i> Balance Financiero</h2>
+    <div class="header-actions">
+      <p-button
+        size="small"
+        label="PDF"
+        icon="pi pi-file-pdf"
+        severity="danger"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportPDF()"
+        [disabled]="!reporte()"
+        pTooltip="Ver PDF"
+      />
+      <p-button
+        size="small"
+        label="Excel"
+        icon="pi pi-file-excel"
+        severity="success"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportExcel()"
+        [disabled]="!reporte()"
+        pTooltip="Descargar Excel"
+      />
+      <p-button
+        size="small"
+        label="Word"
+        icon="pi pi-file-word"
+        severity="info"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportWord()"
+        [disabled]="!reporte()"
+        pTooltip="Descargar Word"
+      />
+      <p-button
+        size="small"
+        label="Imprimir"
+        icon="pi pi-print"
+        severity="secondary"
+        variant="text"
+        [rounded]="true"
+        (onClick)="imprimir()"
+        [disabled]="!reporte()"
+        pTooltip="Imprimir reporte"
+      />
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Período</label>
+            <p-select
+              [options]="meses"
+              [(ngModel)]="periodo"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Mes"
+              styleClass="w-full"
+              size="small"
+              appendTo="body"
+            />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Año</label>
+            <p-inputNumber
+              [(ngModel)]="anio"
+              [min]="2020"
+              [max]="2030"
+              [useGrouping]="false"
+              styleClass="w-full"
+              size="small"
+            />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-3">
+          <div class="p-field">
+            <label>Nivel máximo</label>
+            <p-select
+              [options]="niveles"
+              [(ngModel)]="nivelMaximo"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              size="small"
+              appendTo="body"
+            />
+          </div>
+        </div>
+        <div class="mt-3 p-col-12 p-col-5 d-flex align-items-end gap-2">
+          <p-button
+            size="small"
+            label="Buscar"
+            icon="pi pi-search"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            [rounded]="true"
+            [loading]="cargando()"
+            (onClick)="buscar()"
+          />
+          <p-button
+            size="small"
+            label="Limpiar"
+            icon="pi pi-times"
+            severity="secondary"
+            variant="text"
+            [rounded]="true"
+            (onClick)="limpiar()"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen por grupo -->
+  @if (reporte(); as rep) {
+  <div class="resumen-bar mb-3">
+    <div class="resumen-item">
+      <span class="resumen-label">Activos</span>
+      <span class="resumen-value" [class.haber]="esAcreedor(rep.totales.activos.saldo)">
+        {{ formatNumber(rep.totales.activos.saldo) }}
+      </span>
+    </div>
+    <div class="resumen-item">
+      <span class="resumen-label">Pasivos</span>
+      <span class="resumen-value" [class.haber]="esAcreedor(rep.totales.pasivos.saldo)">
+        {{ formatNumber(rep.totales.pasivos.saldo) }}
+      </span>
+    </div>
+    <div class="resumen-item">
+      <span class="resumen-label">Capital</span>
+      <span class="resumen-value" [class.haber]="esAcreedor(rep.totales.capital.saldo)">
+        {{ formatNumber(rep.totales.capital.saldo) }}
+      </span>
+    </div>
+    <div class="resumen-item">
+      <span class="resumen-label">Cuentas</span>
+      <span class="resumen-value">{{ filas().length }}</span>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card">
+    <p-table
+      [value]="filas()"
+      [paginator]="true"
+      [rows]="50"
+      size="small"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[25, 50, 100]"
+      [sortField]="'ctacontable'"
+      [sortOrder]="1"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 15%">Cuenta</th>
+          <th style="width: 36%">Descripción</th>
+          <th style="width: 14%" class="text-right">Saldo Acum.</th>
+          <th style="width: 12%" class="text-right">Parcial</th>
+          <th style="width: 12%" class="text-right">Total</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr class="mono" [ngClass]="getNivelClass(row.nivel)">
+          <td>
+            <span [style.marginLeft]="getIndentacion(row.nivel)">
+              <strong>{{ row.ctacontable }}</strong>
+            </span>
+          </td>
+          <td>
+            <span [style.marginLeft]="getIndentacion(row.nivel)">{{ row.descripcion }}</span>
+          </td>
+          <td class="text-right" [class.haber]="esAcreedor(row.sacum)">
+            {{ formatNumber(row.sacum) }}
+          </td>
+          <td class="text-right" [class.haber]="esAcreedor(row.parcial)">
+            {{ row.parcial ? formatNumber(row.parcial) : '-' }}
+          </td>
+          <td class="text-right" [class.haber]="esAcreedor(row.total)">
+            <strong>{{ row.total ? formatNumber(row.total) : '-' }}</strong>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center text-muted">
+            No hay cuentas de balance para el período seleccionado.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+
+  <!-- Estado vacío -->
+  @if (!reporte() && !cargando()) {
+  <div class="card empty-state">
+    <i class="pi pi-chart-line" style="font-size: 3rem; color: var(--c-text-muted)"></i>
+    <h3 style="color: var(--c-text-muted); margin-top: 1rem">Balance Financiero</h3>
+    <p style="color: var(--c-text-muted)">
+      Seleccione el período y haga clic en "Buscar" para generar el reporte.
+    </p>
+  </div>
+  }
+</div>
+
+<!-- Visor PDF -->
+<p-dialog
+  [(visible)]="mostrarVisor"
+  [header]="'Balance Financiero — ' + getMesLabel() + ' ' + anio()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', height: '85vh' }"
+  [breakpoints]="{ '960px': '95vw', '640px': '98vw' }"
+>
+  <div class="pdf-viewer-container">
+    @if (pdfUrl()) {
+    <iframe [src]="pdfUrl()" class="pdf-iframe"></iframe>
     }
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button
+      size="small"
+      label="Descargar PDF"
+      icon="pi pi-download"
+      severity="danger"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      (onClick)="descargarPDF()"
+    />
+    <p-button
+      size="small"
+      label="Cerrar"
+      icon="pi pi-times"
+      severity="secondary"
+      variant="text"
+      [rounded]="true"
+      (onClick)="cerrarVisor()"
+    />
+  </ng-template>
+</p-dialog>
 
-    children.push(
-      new Table({
-        rows: [headerRow, ...dataRows],
-        width: { size: 100, type: WidthType.PERCENTAGE },
-      }),
-    );
+```
 
-    children.push(new Paragraph({ text: '' }));
-    children.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `Impreso por: ${this.getUsuarioImpresion()} | Fecha: ${this.getFechaHoraImpresion()}`,
-            size: 16,
-            color: '666666',
-          }),
-        ],
-      }),
-    );
+---
 
-    const doc = new Document({ sections: [{ children }] });
+## 📄 src\app\features\contabilidad\balance-financiero\balance-financiero.scss
 
-    Packer.toBlob(doc).then((blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'balance-dinamico.docx';
-      a.click();
-      URL.revokeObjectURL(url);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Word generado',
-        detail: 'Balance dinámico exportado en Word',
+```typescript
+.page-container {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+}
+
+// ── Resumen por grupo ──
+.resumen-bar {
+  display: flex;
+  gap: 2rem;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.resumen-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumen-label {
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.resumen-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+// ── Tabla ──
+::ng-deep .p-datatable {
+  .p-datatable-thead > tr > th {
+    background: var(--c-surface-ground);
+    color: var(--c-text);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  .p-datatable-tbody > tr > td {
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--c-border);
+    font-size: 0.85rem;
+  }
+}
+
+.mono {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+// ── Filas por nivel ──
+.nivel-1 {
+  background: var(--c-surface-ground);
+  font-weight: 700;
+}
+
+.nivel-2 {
+  font-weight: 600;
+}
+
+.nivel-3 {
+  font-weight: 500;
+}
+
+// ── Badge de nivel ──
+.nivel-badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.nivel-badge-1 {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.nivel-badge-2 {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.nivel-badge-3 {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.nivel-badge-4 {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.nivel-badge-5 {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.nivel-badge-6 {
+  background: #ffe4e6;
+  color: #9f1239;
+}
+
+// ── Montos ──
+.haber {
+  color: var(--c-error);
+}
+
+// ── Estado vacío ──
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+}
+
+// ── Responsive ──
+@media (max-width: 768px) {
+  .resumen-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+}
+
+// ── Visor PDF ──
+.pdf-viewer-container {
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+}
+
+.pdf-iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+  border: none;
+  border-radius: 4px;
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\balance-financiero\balance-financiero.ts
+
+```typescript
+import {
+  Component,
+  OnInit,
+  inject,
+  signal,
+  computed,
+  DestroyRef,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { ToastModule } from 'primeng/toast';
+import { DialogModule } from 'primeng/dialog';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService } from 'primeng/api';
+import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import { AuthService } from '../../../core/services/auth.service';
+import {
+  ReportesPrintService,
+  EncabezadoPrint,
+  TablaPrint,
+  ColumnaPrint,
+} from '../../../core/services/reportes-print.service';
+import {
+  BalanceFinancieroReporte,
+  BalanceFinancieroFila,
+} from '../../../core/models/contabilidad.models';
+
+import jsPDF from 'jspdf';
+import { Packer } from 'docx';
+
+@Component({
+  selector: 'app-balance-financiero',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    InputNumberModule,
+    SelectModule,
+    ToastModule,
+    DialogModule,
+    TooltipModule,
+  ],
+  providers: [MessageService],
+  templateUrl: './balance-financiero.html',
+  styleUrl: './balance-financiero.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class BalanceFinancieroComponent implements OnInit {
+  private contabilidad = inject(ContabilidadService);
+  private auth = inject(AuthService);
+  private print = inject(ReportesPrintService);
+  private messageService = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+  private sanitizer = inject(DomSanitizer);
+
+  // Visor PDF
+  mostrarVisor = signal(false);
+  pdfUrl = signal<SafeResourceUrl | null>(null);
+
+  // Filtros
+  periodo = signal(new Date().getMonth() + 1);
+  anio = signal(new Date().getFullYear());
+  nivelMaximo = signal<number>(99);
+
+  // Estado
+  cargando = signal(false);
+  reporte = signal<BalanceFinancieroReporte | null>(null);
+
+  // Meses
+  readonly meses = [
+    { label: 'Enero', value: 1 },
+    { label: 'Febrero', value: 2 },
+    { label: 'Marzo', value: 3 },
+    { label: 'Abril', value: 4 },
+    { label: 'Mayo', value: 5 },
+    { label: 'Junio', value: 6 },
+    { label: 'Julio', value: 7 },
+    { label: 'Agosto', value: 8 },
+    { label: 'Septiembre', value: 9 },
+    { label: 'Octubre', value: 10 },
+    { label: 'Noviembre', value: 11 },
+    { label: 'Diciembre', value: 12 },
+  ];
+
+  // Niveles (hasta 6, el máximo del catálogo)
+  readonly niveles: { label: string; value: number }[] = [
+    { label: 'Todos los niveles', value: 99 },
+    { label: 'Nivel 1', value: 1 },
+    { label: 'Nivel 2', value: 2 },
+    { label: 'Nivel 3', value: 3 },
+    { label: 'Nivel 4', value: 4 },
+    { label: 'Nivel 5', value: 5 },
+    { label: 'Nivel 6', value: 6 },
+  ];
+
+  // Filas del reporte (con filtro de nivel)
+  filas = computed<BalanceFinancieroFila[]>(() => {
+    const rep = this.reporte();
+    if (!rep) return [];
+    const max = this.nivelMaximo();
+    return max === 99 ? rep.filas : rep.filas.filter((f) => (Number(f.nivel) || 0) <= max);
+  });
+
+  ngOnInit(): void {
+    this.buscar();
+  }
+
+  buscar(): void {
+    const empresaId = this.auth.currentUser()?.empresaId;
+    if (!empresaId) return;
+    this.cargando.set(true);
+    this.contabilidad
+      .generarBalanceFinanciero({
+        empresaId,
+        anio: this.anio(),
+        periodo: this.periodo(),
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.reporte.set(data);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Generado',
+            detail: `Balance Financiero: ${data.filas.length} cuentas`,
+          });
+          this.cargando.set(false);
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err.error?.message || 'Error al generar balance financiero',
+          });
+          this.cargando.set(false);
+        },
       });
+  }
+
+  limpiar(): void {
+    this.reporte.set(null);
+  }
+
+  getMesLabel(): string {
+    return this.meses.find((m) => m.value === this.periodo())?.label ?? '';
+  }
+
+  /** Indentación visual según nivel de cuenta */
+  getIndentacion(nivel: number): string {
+    return `${Math.max((Number(nivel) || 1) - 1, 0) * 1.5}rem`;
+  }
+
+  /** Clase CSS según nivel */
+  getNivelClass(nivel: number): string {
+    return `nivel-${nivel}`;
+  }
+
+  /**
+   * Formateo de número **con signo**. Al no existir la columna D/C, el signo
+   * (negativo = acreedor) es la única forma de leer la dirección del saldo.
+   */
+  formatNumber(value: number): string {
+    const num = Number(value) || 0;
+    const abs = Math.abs(num).toLocaleString('es-HN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return num < 0 ? `-${abs}` : abs;
+  }
+
+  /** Indica si el saldo firmado es acreedor (negativo) para marcarlo */
+  esAcreedor(saldo: number): boolean {
+    return Number(saldo || 0) < 0;
+  }
+
+  // ========== UTILIDADES DE IMPRESIÓN ==========
+
+  /** Período y nivel aplicados (línea meta de la impresión) */
+  private metaImpresion(): string {
+    let meta = `Período: ${this.getMesLabel()} ${this.anio()}`;
+    if (this.nivelMaximo() !== 99) meta += ` — Nivel ${this.nivelMaximo()}`;
+    return meta;
+  }
+
+  /** Encabezado de los archivos exportados (PDF, Excel y Word) */
+  private async encabezadoImpresion(): Promise<EncabezadoPrint> {
+    return this.print.encabezado('BALANCE FINANCIERO', this.metaImpresion());
+  }
+
+  /** Encabezado de columnas del reporte (Padre y D/C fuera por decisión) */
+  private readonly columnas: ColumnaPrint[] = [
+    { titulo: 'Cuenta', alinear: 'left' },
+    { titulo: 'Descripción', alinear: 'left' },
+    { titulo: 'Nivel', alinear: 'center' },
+    { titulo: 'Saldo Acum.', alinear: 'right' },
+    { titulo: 'Parcial', alinear: 'right' },
+    { titulo: 'Total', alinear: 'right' },
+  ];
+
+  /**
+   * Tabla imprimible compartida por PDF, Excel y Word. Los importes van como
+   * `number` (formato y numFmt los aplica el service) y los totales
+   * Activos/Pasivos/Capital se agregan como filas finales resaltadas.
+   */
+  private tablaPrint(): TablaPrint {
+    const filas: (string | number | null)[][] = this.filas().map((f) => [
+      f.ctacontable ?? '',
+      f.descripcion ?? '',
+      `N${f.nivel ?? ''}`,
+      Number(f.sacum) || 0,
+      Number(f.parcial) || 0,
+      Number(f.total) || 0,
+    ]);
+
+    const tab: TablaPrint = { columnas: this.columnas, filas };
+
+    const t = this.reporte()?.totales;
+    if (t) {
+      const grupos: [string, number][] = [
+        ['ACTIVOS', Number(t.activos.saldo) || 0],
+        ['PASIVOS', Number(t.pasivos.saldo) || 0],
+        ['CAPITAL', Number(t.capital.saldo) || 0],
+      ];
+      tab.filasTotales = [];
+      for (const [label, saldo] of grupos) {
+        tab.filasTotales.push(filas.length);
+        filas.push([label, '', '', '', '', saldo]);
+      }
+    }
+    return tab;
+  }
+
+  /** Genera el PDF y lo muestra en pantalla (visor) */
+  async exportPDF(): Promise<void> {
+    if (!this.reporte()) return;
+    const doc = await this.construirPDF();
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+    this.mostrarVisor.set(true);
+  }
+
+  cerrarVisor(): void {
+    if (this.pdfUrl()) {
+      URL.revokeObjectURL(this.pdfUrl() as any);
+    }
+    this.pdfUrl.set(null);
+    this.mostrarVisor.set(false);
+  }
+
+  async descargarPDF(): Promise<void> {
+    if (!this.reporte()) return;
+    const doc = await this.construirPDF();
+    doc.save('balance-financiero.pdf');
+    this.messageService.add({
+      severity: 'success',
+      summary: 'PDF descargado',
+      detail: 'Balance Financiero descargado',
     });
   }
 
-  private celdaWord(
-    texto: string,
-    opts: { bold?: boolean; align?: (typeof AlignmentType)[keyof typeof AlignmentType] } = {},
-  ): TableCell {
-    return new TableCell({
-      children: [
-        new Paragraph({
-          alignment: opts.align ?? AlignmentType.LEFT,
-          children: [new TextRun({ text: texto, bold: opts.bold ?? false, size: 16 })],
-        }),
-      ],
+  /** PDF: letterhead con logo + tabla minimalista + encabezado/pie por página */
+  private async construirPDF(): Promise<jsPDF> {
+    const enc = await this.encabezadoImpresion();
+    const doc = new jsPDF('l', 'mm', 'letter');
+    const altoEnc = this.print.pdfEncabezado(doc, enc);
+
+    this.print.pdfTabla(doc, this.tablaPrint(), altoEnc, altoEnc);
+    this.print.pdfPaginar(doc, enc, altoEnc);
+    return doc;
+  }
+
+  /** Excel con letterhead (logo, empresa, datos fiscales) vía exceljs */
+  async exportExcel(): Promise<void> {
+    const rep = this.reporte();
+    if (!rep) return;
+
+    const enc = await this.encabezadoImpresion();
+    const tab = this.tablaPrint();
+    const wb = this.print.nuevoLibro();
+    const ws = wb.addWorksheet('Balance Financiero');
+    const filaCabecera = this.print.excelEncabezado(wb, ws, enc, tab);
+    this.print.excelTabla(ws, tab, filaCabecera, 'landscape');
+    await this.print.descargarExcel(wb, 'balance-financiero.xlsx');
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Excel generado',
+      detail: 'Balance Financiero exportado en Excel',
     });
+  }
+
+  /** Word con letterhead repetido en cada página (header) vía docx */
+  async exportWord(): Promise<void> {
+    const rep = this.reporte();
+    if (!rep) return;
+
+    const enc = await this.encabezadoImpresion();
+    const documento = this.print.wordDocumento(enc, 'landscape', [
+      this.print.wordTabla(this.tablaPrint(), 'landscape'),
+    ]);
+
+    const blob = await Packer.toBlob(documento);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'balance-financiero.docx';
+    a.click();
+    URL.revokeObjectURL(url);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Word generado',
+      detail: 'Balance Financiero exportado en Word',
+    });
+  }
+
+  imprimir(): void {
+    window.print();
   }
 }
 
@@ -18306,6 +25177,16 @@ export class BalancesManager implements OnInit {
   <!-- Header -->
   <div class="page-header">
     <h2><i class="pi pi-lock"></i> Cierre Contable</h2>
+    @if (partidaId()) {
+      <div class="origen-vuelta">
+        <span class="origen-vuelta__texto">
+          <i class="pi pi-file-edit"></i>
+          Abierto desde una partida contable
+        </span>
+        <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+          variant="text" [rounded]="true" (onClick)="volverAPartida()" />
+      </div>
+    }
   </div>
 
   <div class="cierre-layout">
@@ -18318,18 +25199,20 @@ export class BalancesManager implements OnInit {
         <div class="p-fluid">
           <div class="p-field mb-3">
             <label>Período (Mes)</label>
-            <p-select [options]="meses" [(ngModel)]="periodoSeleccionado" optionLabel="label" optionValue="value"
+            <p-select [options]="meses" [ngModel]="periodoSeleccionado()" (ngModelChange)="periodoSeleccionado.set($event)"
+                      optionLabel="label" optionValue="value"
                       placeholder="Seleccionar mes" styleClass="w-full" size="small" appendTo="body" />
           </div>
 
           <div class="p-field mb-3">
             <label>Año</label>
-            <p-inputNumber [(ngModel)]="anioSeleccionado" [min]="2020" [max]="2030" [useGrouping]="false" styleClass="w-full" size="small" />
+            <p-inputNumber [ngModel]="anioSeleccionado()" (ngModelChange)="anioSeleccionado.set($event)"
+                           [min]="2020" [max]="2030" [useGrouping]="false" styleClass="w-full" size="small" />
           </div>
 
           <div class="p-field mb-3">
             <label>Observación (opcional)</label>
-            <input pInputText [(ngModel)]="observacion" class="w-full" pSize="small" placeholder="Motivo del cierre" />
+            <input pInputText [ngModel]="observacion()" (ngModelChange)="observacion.set($event)" class="w-full" pSize="small" placeholder="Motivo del cierre" />
           </div>
 
           <p-button size="small" label="Realizar Cierre" icon="pi pi-lock" severity="danger" variant="text" [raised]="true" [rounded]="true"
@@ -18366,7 +25249,8 @@ export class BalancesManager implements OnInit {
             </tr>
           </ng-template>
             <ng-template pTemplate="body" let-periodo>
-            <tr [class.fila-cerrada]="periodo.sn_abierto === 'N'" [class.fila-actual]="isPeriodoActual(periodo.nromes, periodo.nroanio)">
+            <tr [class.fila-cerrada]="periodo.sn_abierto === 'N'" [class.fila-actual]="isPeriodoActual(periodo.nromes, periodo.nroanio)"
+              [class.fila-origen]="esOrigen(periodo)">
               <td class="text-center"><strong>{{ periodo.nroanio }}</strong></td>
               <td>{{ getMesLabel(periodo.nromes) }}</td>
               <td class="text-center">
@@ -18376,8 +25260,6 @@ export class BalancesManager implements OnInit {
                 @if (periodo.sn_abierto === 'S') {
                   <p-button size="small" icon="pi pi-lock-open" severity="success" variant="text" [rounded]="true"
                             pTooltip="Cerrar período" (onClick)="periodoSeleccionado.set(periodo.nromes); anioSeleccionado.set(periodo.nroanio)" />
-                } @else {
-                  <i class="pi pi-lock text-warning" pTooltip="Período cerrado — protegido (no modificable)" tooltipPosition="left"></i>
                 }
               </td>
             </tr>
@@ -18522,6 +25404,13 @@ export class BalancesManager implements OnInit {
   background: var(--c-card-background);
 }
 
+// Período de origen de la partida contable (trazabilidad)
+:host ::ng-deep tr.fila-origen {
+  background: color-mix(in srgb, var(--c-primary) 16%, var(--c-surface)) !important;
+  box-shadow: inset 3px 0 0 var(--c-primary);
+  font-weight: 600;
+}
+
 .text-muted {
   color: var(--c-text-muted);
 }
@@ -18550,6 +25439,26 @@ export class BalancesManager implements OnInit {
   }
 }
 
+
+/* Retorno a la partida contable de origen */
+.origen-vuelta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  &__texto {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+}
+
 ```
 
 ---
@@ -18571,6 +25480,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { PeriodoContable, CierreContable } from '../../../core/models/contabilidad.models';
 
@@ -18591,6 +25501,11 @@ export class CierreContableComponent implements OnInit {
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
+  partidaId = signal<number | null>(null);
 
   // Estado
   periodos = signal<PeriodoContable[]>([]);
@@ -18602,6 +25517,10 @@ export class CierreContableComponent implements OnInit {
   anioSeleccionado = signal<number>(new Date().getFullYear());
   observacion = signal('');
 
+  /** Período/año marcado como origen (llega desde partida en copdamae) */
+  origenPeriodo = signal<number | null>(null);
+  origenAnio = signal<number | null>(null);
+
   // Meses
   readonly meses = [
     { label: 'Enero', value: 1 }, { label: 'Febrero', value: 2 }, { label: 'Marzo', value: 3 },
@@ -18611,7 +25530,37 @@ export class CierreContableComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    // Partida contable de origen (botón "Volver a la partida")
+    const partida = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partida) && partida > 0) this.partidaId.set(partida);
+
+    // Trazabilidad contable: ?periodo=&anio= (llega desde partida de cierre en copdamae)
+    const periodo = Number(this.route.snapshot.queryParamMap.get('periodo'));
+    const anio = Number(this.route.snapshot.queryParamMap.get('anio'));
+    if (periodo >= 1 && periodo <= 12) {
+      this.periodoSeleccionado.set(periodo);
+      this.origenPeriodo.set(periodo);
+    }
+    if (anio >= 2000 && anio <= 2100) {
+      this.anioSeleccionado.set(anio);
+      this.origenAnio.set(anio);
+    }
     this.cargarDatos();
+  }
+
+  /** Marca la fila del período que originó la partida contable. */
+  esOrigen(periodo: PeriodoContable): boolean {
+    const p = this.origenPeriodo();
+    const a = this.origenAnio();
+    return p != null && a != null && periodo.nromes === p && periodo.nroanio === a;
+  }
+
+  /** Regresa a la partida contable de origen desde la que se abrió este cierre. */
+  volverAPartida(): void {
+    if (!this.partidaId()) return;
+    this.router.navigate(['/contabilidad/copdamae'], {
+      queryParams: { partidaId: this.partidaId() },
+    });
   }
 
   private cargarDatos(): void {
@@ -18714,9 +25663,13 @@ export const CONTABILIDAD_ROUTES: Routes = [
   { path: '', redirectTo: 'ctacontables', pathMatch: 'full' },
 
   // ===== Componentes especializados =====
+  { path: 'dashboardId7', loadComponent: () => import('./dashboard-id7/dashboard-id7').then((m) => m.DashboardId7Component) },
   { path: 'reportes', loadComponent: () => import('./reportes/reportes-contables').then((m) => m.ReportesContablesComponent) },
   { path: 'balance-dinamico', loadComponent: () => import('./balance-dinamico/balance-dinamico').then((m) => m.BalanceDinamicoComponent) },
+  { path: 'balance-financiero', loadComponent: () => import('./balance-financiero/balance-financiero').then((m) => m.BalanceFinancieroComponent) },
+  { path: 'estado-resultado', loadComponent: () => import('./estado-resultado/estado-resultado').then((m) => m.EstadoResultadoComponent) },
   { path: 'cierre-contable', loadComponent: () => import('./cierre-contable/cierre-contable').then((m) => m.CierreContableComponent) },
+  { path: 'reversar-cierre', loadComponent: () => import('./reversar-cierre/reversar-cierre').then((m) => m.ReversarCierreComponent) },
 
   // ===== Cuentas Contables (componente dedicado) =====
   { path: 'ctacontables', loadComponent: () => import('./ctacontables/ctacontables-list').then((m) => m.CtacontablesListComponent) },
@@ -19179,9 +26132,25 @@ export const CONTABILIDAD_ROUTES: Routes = [
                   [icon]="partida.sn_cerrada === 'S' ? 'pi pi-lock' : 'pi pi-lock-open'"
                 />
               </div>
-              <div class="info-item">
-                <span class="info-label">+ Información:</span>
-                <span class="info-value"> ver movimiento</span>
+              <div class="info-item info-item--origen">
+                <span class="info-label">Origen del documento:</span>
+                <span class="info-value origen-doc">
+                  <span class="origen-doc-texto">
+                    {{ origenTipoLabel(partida) }}{{ partida.nroreferencia ? ' · ' +
+                    partida.nroreferencia : '' }}
+                  </span>
+                  @let origen = enlaceOrigen(partida); @if (origen) {
+                  <p-button
+                    size="small"
+                    label="Ver documento"
+                    icon="pi pi-external-link"
+                    severity="info"
+                    variant="text"
+                    [rounded]="true"
+                    (onClick)="irAOrigen(partida)"
+                  />
+                  }
+                </span>
               </div>
             </div>
           </div>
@@ -19266,16 +26235,28 @@ export const CONTABILIDAD_ROUTES: Routes = [
     <div class="left-column">
       <div class="left-header">
         <h3><i class="pi pi-book"></i> Partidas de Diario</h3>
-        <p-button
-          size="small"
-          label="Nueva"
-          icon="pi pi-plus"
-          severity="success"
-          variant="text"
-          [raised]="true"
-          [rounded]="true"
-          (onClick)="nuevaPartida()"
-        />
+        <div class="left-header-actions">
+          <p-button
+            size="small"
+            label="Inicial"
+            icon="pi pi-file-excel"
+            severity="info"
+            variant="text"
+            [rounded]="true"
+            pTooltip="Cargar partida inicial desde un archivo Excel"
+            (onClick)="abrePartidaInicial()"
+          />
+          <p-button
+            size="small"
+            label="Nueva"
+            icon="pi pi-plus"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            [rounded]="true"
+            (onClick)="nuevaPartida()"
+          />
+        </div>
       </div>
 
       <!-- Filtros -->
@@ -19442,6 +26423,171 @@ export const CONTABILIDAD_ROUTES: Routes = [
     </div>
   </div>
 </div>
+
+<!-- ===== Diálogo: cargar partida inicial desde Excel ===== -->
+<p-dialog
+  header="Cargar partida inicial"
+  [visible]="dialogInicial()"
+  (visibleChange)="cierraPartidaInicial($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!inicialCargando()"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: '700px' }"
+>
+  <div class="inicial-body">
+    <!-- Período de destino -->
+    @if (!inicialPeriodo()) {
+    <div class="inicial-aviso aviso-error">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>
+        No hay ningún período contable abierto para esta empresa. Abra un período antes de cargar la
+        partida inicial.
+      </span>
+    </div>
+    } @else {
+    <div class="inicial-aviso aviso-info">
+      <i class="pi pi-calendar"></i>
+      <span>
+        Se cargará en el período
+        <strong>{{ inicialPeriodo()!.periodo }}/{{ inicialPeriodo()!.anio }}</strong>
+        · Auxiliar <strong>Contabilidad</strong> · Referencia automática
+        <strong>INICIAL-{{ inicialPeriodo()!.periodo }}-{{ inicialPeriodo()!.anio }}</strong>
+        · Fecha de documento: último día del período.
+      </span>
+    </div>
+    }
+
+    <!-- Selector de archivo -->
+    <div class="inicial-archivo">
+      <input
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        [disabled]="inicialCargando() || !inicialPeriodo()"
+        (change)="onArchivoInicial($event)"
+      />
+      @if (inicialNombreArchivo()) {
+      <span class="archivo-nombre">
+        <i class="pi pi-file-excel"></i> {{ inicialNombreArchivo() }}
+      </span>
+      }
+    </div>
+    <!-- Errores de lectura del archivo -->
+    @if (inicialErrores().length) {
+    <div class="inicial-aviso aviso-error">
+      <i class="pi pi-times-circle"></i>
+      <div>
+        <strong>
+          No se puede leer el archivo ({{ inicialErrores().length }}
+          observación(es)):
+        </strong>
+        <ul>
+          @for (e of inicialErrores(); track e) {
+          <li>{{ e }}</li>
+          }
+        </ul>
+      </div>
+    </div>
+    }
+
+    <!-- Cuentas fuera del plan de cuentas: advertencia (igual bloquea la carga) -->
+    @if (inicialCuentasInvalidas().length) {
+    <div class="inicial-aviso aviso-warning">
+      <i class="pi pi-exclamation-triangle"></i>
+      <div>
+        <strong>El archivo no se puede cargar:</strong>
+        <ul>
+          @for (e of inicialCuentasInvalidas(); track e) {
+          <li>{{ e }}</li>
+          }
+        </ul>
+      </div>
+    </div>
+    }
+
+    <!-- Resumen + preview de líneas -->
+    @if (inicialLineas().length) {
+    <div class="inicial-resumen" [class.res-cuadrada]="inicialLista()">
+      <div class="res-item">
+        <span>Líneas</span>
+        <strong>{{ inicialLineas().length }}</strong>
+      </div>
+      <div class="res-item">
+        <span>Débitos</span>
+        <strong>L {{ formatearMoneda(inicialTotalDebe()) }}</strong>
+      </div>
+      <div class="res-item">
+        <span>Créditos</span>
+        <strong>L {{ formatearMoneda(inicialTotalHaber()) }}</strong>
+      </div>
+      <div class="res-item" [class.res-error]="inicialDiferencia() !== 0">
+        <span>Diferencia</span>
+        <strong>L {{ formatearMoneda(inicialDiferencia()) }}</strong>
+      </div>
+    </div>
+
+    <p-table
+      [value]="inicialLineas()"
+      [paginator]="true"
+      [rows]="25"
+      [showCurrentPageReport]="true"
+      [scrollable]="true"
+      scrollHeight="200px"
+      [virtualScroll]="true"
+      [virtualScrollItemSize]="60"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[25, 50, 100]"
+      size="small"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 7rem">Cuenta</th>
+          <th>Descripción</th>
+          <th style="width: 8rem" class="t-right">Débito</th>
+          <th style="width: 8rem" class="t-right">Crédito</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-l>
+        <tr>
+          <td>{{ l.ctacontable }}</td>
+          <td>{{ l.descripcion || getCuentaNombre(l.ctacontable) }}</td>
+          <td class="t-right">{{ l.debito > 0 ? formatearMoneda(l.debito) : '' }}</td>
+          <td class="t-right">{{ l.credito > 0 ? formatearMoneda(l.credito) : '' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="t-center text-muted">Seleccione un archivo para ver las líneas</td>
+        </tr>
+      </ng-template>
+    </p-table>
+    }
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      size="small"
+      label="Cancelar"
+      rounded
+      variant="text"
+      severity="secondary"
+      [disabled]="inicialCargando()"
+      (onClick)="cierraPartidaInicial(false)"
+    />
+    <p-button
+      size="small"
+      label="Cargar partida"
+      icon="pi pi-check"
+      [raised]="true"
+      [rounded]="true"
+      severity="success"
+      [loading]="inicialCargando()"
+      [disabled]="!inicialLista()"
+      (onClick)="confirmarPartidaInicial()"
+    />
+  </ng-template>
+</p-dialog>
 
 ```
 
@@ -19888,6 +27034,32 @@ export const CONTABILIDAD_ROUTES: Routes = [
   font-weight: 500;
 }
 
+// ===== Origen del documento (trazabilidad) =====
+.info-item--origen {
+  grid-column: 1 / -1;
+  align-items: center;
+
+  .info-label {
+    min-width: 135px;
+    white-space: nowrap;
+  }
+}
+
+.origen-doc {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.125rem 0.5rem;
+  min-width: 0;
+}
+
+.origen-doc-texto {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--c-text);
+  word-break: break-word;
+}
+
 // ===== Clases de utilidad (reemplazan Tailwind) =====
 .w-full {
   width: 100%;
@@ -19967,6 +27139,147 @@ export const CONTABILIDAD_ROUTES: Routes = [
   }
 }
 
+/* ===== Partida inicial: acciones del header de la lista ===== */
+.left-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ===== Diálogo: partida inicial ===== */
+.inicial-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.inicial-archivo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  input[type='file'] {
+    font-size: 0.85rem;
+    color: var(--c-text);
+
+    &::file-selector-button {
+      margin-right: 0.6rem;
+      padding: 0.3rem 0.75rem;
+      border: 1px solid var(--c-border);
+      border-radius: 4px;
+      background: var(--c-surface);
+      color: var(--c-text);
+      font-size: 0.8rem;
+      cursor: pointer;
+
+      &:hover {
+        background: var(--c-surface-ground);
+      }
+    }
+  }
+
+  .archivo-nombre {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+}
+
+.inicial-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+
+  i {
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+  }
+
+  ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.1rem;
+  }
+
+  li {
+    margin-bottom: 0.15rem;
+  }
+}
+
+.aviso-info {
+  background: color-mix(in srgb, var(--c-primary) 10%, var(--c-surface));
+  border: 1px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
+  color: var(--c-text);
+
+  i {
+    color: var(--c-primary);
+  }
+}
+
+.aviso-error {
+  background: color-mix(in srgb, var(--c-error) 10%, var(--c-surface));
+  border: 1px solid color-mix(in srgb, var(--c-error) 35%, transparent);
+  color: var(--c-text);
+
+  i {
+    color: var(--c-error);
+  }
+}
+
+.aviso-warning {
+  // Sin caja: solo el texto y el icono en color de advertencia
+  background: none;
+  border: none;
+  color: var(--c-warning);
+
+  i {
+    color: var(--c-warning);
+  }
+}
+
+.inicial-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  background: var(--c-surface-ground);
+
+  .res-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+
+    span {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--c-text-muted);
+    }
+
+    strong {
+      font-size: 0.9rem;
+      color: var(--c-text);
+    }
+  }
+
+  .res-error strong {
+    color: var(--c-error);
+  }
+
+  &.res-cuadrada {
+    border-color: color-mix(in srgb, var(--c-success) 45%, transparent);
+  }
+}
+
 ```
 
 ---
@@ -19991,15 +27304,18 @@ import { DatePicker } from 'primeng/datepicker';
 import { Button } from 'primeng/button';
 import { Tag } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
+import { Router, ActivatedRoute } from '@angular/router';
+import * as XLSX from 'xlsx';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModulosService } from '../../../core/services/modulos.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
-import { CtaContable, CopdaMae, CopdaDet, PeriodoContable, PlantillaPdaMae } from '../../../core/models/contabilidad.models';
+import { CtaContable, CopdaMae, CopdaDet, PeriodoContable, PlantillaPdaMae, LineaPartidaDto } from '../../../core/models/contabilidad.models';
 import { Modulo } from '../../../core/models/usuario.models';
 
 /** Registro de ttipomes desde la API */
@@ -20027,7 +27343,7 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
   imports: [
     DecimalPipe, DatePipe, FormsModule, ReactiveFormsModule,
     TableModule, AutoComplete, InputNumber, InputText, Textarea,
-    Select, DatePicker, Button, Tag, TooltipModule,
+    Select, DatePicker, Button, Tag, TooltipModule, DialogModule,
     ToastModule, ConfirmDialogModule,
   ],
   providers: [MessageService, ConfirmationService],
@@ -20046,6 +27362,8 @@ export class CopdamaeManager implements OnInit {
   private destroyRef = inject(DestroyRef);
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   private injector = inject(Injector);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private buscadorEl = viewChild('buscador', { read: ElementRef });
   private siguienteId = 1;
 
@@ -20059,6 +27377,13 @@ export class CopdamaeManager implements OnInit {
   partidaSeleccionada = signal<CopdaMae | null>(null);
   vista = signal<VistaTipo>('lista');
   cargando = signal(false);
+
+  // ===== PARTIDA INICIAL (carga desde archivo Excel) =====
+  dialogInicial = signal(false);
+  inicialCargando = signal(false);
+  inicialNombreArchivo = signal<string | null>(null);
+  inicialLineas = signal<LineaPartidaDto[]>([]);
+  inicialErrores = signal<string[]>([]);
 
   // ===== FILTROS =====
   filtroPeriodo = signal<number | null>(null);
@@ -20164,6 +27489,93 @@ export class CopdamaeManager implements OnInit {
   /** Evita recrear la fila y perder foco mientras se edita un monto */
   trackById = (_: number, l: LineaDetalle) => l.id;
 
+  // ===== COMPUTED: PARTIDA INICIAL =====
+
+  inicialTotalDebe = computed(() => r2(this.inicialLineas().reduce((acc, l) => acc + l.debito, 0)));
+  inicialTotalHaber = computed(() => r2(this.inicialLineas().reduce((acc, l) => acc + l.credito, 0)));
+  inicialDiferencia = computed(() => r2(this.inicialTotalDebe() - this.inicialTotalHaber()));
+
+  /**
+   * Cuentas del archivo que no están en el plan de cuentas de la empresa
+   * (o están inactivas / no operables). Si hay al menos una, la carga de la
+   * partida inicial queda bloqueada: el archivo no se envía al backend.
+   */
+  inicialCuentasInvalidas = computed(() => {
+    const lineas = this.inicialLineas();
+    const catalogo = this.cuentas();
+    if (lineas.length === 0 || catalogo.length === 0) return [];
+
+    const mapa = new Map<string, CtaContable>();
+    for (const c of catalogo) mapa.set(String(c.ctacontable).trim().toUpperCase(), c);
+
+    const inexistentes: string[] = [];
+    const inactivas: string[] = [];
+    const noOperables: string[] = [];
+    const naturalezas: string[] = [];
+    for (const l of lineas) {
+      const clave = String(l.ctacontable).trim().toUpperCase();
+      const cuenta = mapa.get(clave);
+      if (!cuenta) {
+        if (!inexistentes.includes(clave)) inexistentes.push(clave);
+        continue;
+      }
+      if (cuenta.sn_activo !== 'S') {
+        if (!inactivas.includes(clave)) inactivas.push(clave);
+        continue;
+      }
+      if (cuenta.sn_operable !== 'S') {
+        if (!noOperables.includes(clave)) noOperables.push(clave);
+        continue;
+      }
+      // La naturaleza del archivo (D/C) debe coincidir con la del plan de cuentas
+      const nat = l.debito > 0 && l.credito <= 0 ? 'D' : l.credito > 0 && l.debito <= 0 ? 'C' : null;
+      if (nat && cuenta.naturaleza && nat !== cuenta.naturaleza) {
+        const detalle = `${clave} (archivo ${nat} / plan ${cuenta.naturaleza})`;
+        if (!naturalezas.some(n => n.startsWith(`${clave} `))) naturalezas.push(detalle);
+      }
+    }
+
+    const resumir = (lista: string[], max = 10): string =>
+      lista.length <= max ? lista.join(', ') : `${lista.slice(0, max).join(', ')} … y ${lista.length - max} más`;
+
+    const msgs: string[] = [];
+    if (inexistentes.length > 0) {
+      msgs.push(`No existen en el plan de cuentas (${inexistentes.length}): ${resumir(inexistentes)}`);
+    }
+    if (inactivas.length > 0) {
+      msgs.push(`Cuentas inactivas (${inactivas.length}): ${resumir(inactivas)}`);
+    }
+    if (noOperables.length > 0) {
+      msgs.push(`Cuentas no operables (${noOperables.length}): ${resumir(noOperables)}`);
+    }
+    if (naturalezas.length > 0) {
+      msgs.push(`Naturaleza distinta a la del plan de cuentas (${naturalezas.length}): ${resumir(naturalezas)}`);
+    }
+    return msgs;
+  });
+
+  /** Todo lo que impide cargar: errores de lectura + cuentas fuera del plan */
+  inicialProblemas = computed(() => [...this.inicialErrores(), ...this.inicialCuentasInvalidas()]);
+
+  /** Habilita "Cargar": sin problemas, ≥2 líneas y débitos = créditos */
+  inicialLista = computed(() =>
+    this.inicialProblemas().length === 0 &&
+    this.inicialLineas().length >= 2 &&
+    this.inicialTotalDebe() > 0 &&
+    this.inicialDiferencia() === 0,
+  );
+
+  /**
+   * Período contable abierto donde caerá la partida (el más antiguo).
+   * Es la misma regla que aplica el backend; aquí solo sirve para previsualizar.
+   */
+  inicialPeriodo = computed(() => {
+    const abierto = this.periodos()
+      .filter(p => p.sn_abierto === 'S')
+      .sort((a, b) => a.nroanio - b.nroanio || a.nromes - b.nromes)[0];
+    return abierto ? { anio: abierto.nroanio, periodo: abierto.nromes } : null;
+  });
+
   // ===== CICLO DE VIDA =====
   ngOnInit(): void {
     this.cargarDatos();
@@ -20194,9 +27606,52 @@ export class CopdamaeManager implements OnInit {
             this.filtroPeriodo.set(abierto.nromes);
           }
           this.cargando.set(false);
+          this.restaurarPartidaDesdeUrl();
         },
         error: () => { this.mostrarError('Error cargando datos'); this.cargando.set(false); },
       });
+  }
+
+  /**
+   * Restaura el detalle de partida al volver (atrás/forward) desde un documento
+   * de origen. La partida queda marcada en la URL como ?partidaId=.
+   */
+  private restaurarPartidaDesdeUrl(): void {
+    const raw = this.route.snapshot.queryParamMap.get('partidaId');
+    if (!raw) return;
+    const id = Number(raw);
+    if (isNaN(id) || id <= 0) return;
+    const partida = this.partidas().find(p => Number(p.partidaId) === id);
+    if (!partida) return;
+    this.filtroPeriodo.set(partida.periodo);
+    this.filtroAnio.set(partida.anio);
+    this.verPartida(partida);
+  }
+
+  /**
+   * Escribe (o limpia) ?partidaId= en la URL actual SIN crear una entrada de
+   * historial nueva, de modo que "atrás" regrese al detalle de la partida.
+   * Devuelve la promesa de la navegación, o `null` si la URL ya estaba así.
+   */
+  private marcarPartidaEnUrl(partidaId: number | null): Promise<boolean> | null {
+    const actual = this.route.snapshot.queryParamMap.get('partidaId');
+    const nuevo = partidaId != null ? String(partidaId) : null;
+    if (actual === nuevo) return null;
+    return this.router.navigate([], {
+      queryParams: this.queryParamsConPartida(partidaId),
+      replaceUrl: true,
+    });
+  }
+
+  /** Query params actuales con `partidaId` actualizado (los demás se conservan). */
+  private queryParamsConPartida(partidaId: number | null): Record<string, string> {
+    const qpm = this.route.snapshot.queryParamMap;
+    const params: Record<string, string> = {};
+    qpm.keys.forEach(k => {
+      if (k !== 'partidaId' && qpm.get(k) != null) params[k] = qpm.get(k)!;
+    });
+    if (partidaId != null) params['partidaId'] = String(partidaId);
+    return params;
   }
 
   // ===== NAVEGACIÓN =====
@@ -20211,6 +27666,7 @@ export class CopdamaeManager implements OnInit {
     this.seleccionada.set(null);
     this.siguienteId = 1;
     this.vista.set('crear');
+    this.marcarPartidaEnUrl(null);
   }
 
   editarPartida(partida: CopdaMae): void {
@@ -20224,6 +27680,7 @@ export class CopdamaeManager implements OnInit {
       return;
     }
     this.partidaSeleccionada.set(partida);
+    this.marcarPartidaEnUrl(partida.partidaId);
     this.form.reset({
       moduloId: partida.moduloId,
       plantillaId: partida.documentoId || null,
@@ -20239,6 +27696,7 @@ export class CopdamaeManager implements OnInit {
 
   verPartida(partida: CopdaMae): void {
     this.partidaSeleccionada.set(partida);
+    this.marcarPartidaEnUrl(partida.partidaId);
     this.cargarDetalles(partida.partidaId, 'ver');
   }
 
@@ -20268,6 +27726,95 @@ export class CopdamaeManager implements OnInit {
     this.vista.set('lista');
     this.partidaSeleccionada.set(null);
     this.lineas.set([]);
+    this.marcarPartidaEnUrl(null);
+  }
+
+  // ===== ORIGEN DEL DOCUMENTO (trazabilidad) =====
+
+  /**
+   * Etiqueta legible del tipo de documento de origen, derivada del prefijo de
+   * `nroreferencia`. Si el prefijo no se reconoce, cae en el nombre del módulo.
+   */
+  origenTipoLabel(partida: CopdaMae): string {
+    const prefijo = (partida.nroreferencia || '').trim().toUpperCase().split('-')[0];
+    const mapa: Record<string, string> = {
+      FAC: 'Factura',
+      NCF: 'Factura',
+      NDB: 'Nota débito',
+      ND: 'Nota débito',
+      NC: 'Nota crédito',
+      NCR: 'Nota crédito',
+      CXC: 'Cobro CxC',
+      CXP: 'Pago CxP',
+      BCO: 'Movimiento bancario',
+      CAJA: 'Caja',
+      CHEQ: 'Cheque',
+      CIERRE: 'Cierre contable',
+    };
+    return mapa[prefijo] || this.getModuloLabel(partida.moduloId);
+  }
+
+  /**
+   * Resuelve a qué pantalla navegar para ver el documento que originó la partida.
+   * Devuelve `null` cuando no existe una ruta que aterrice en el registro exacto.
+   */
+  enlaceOrigen(partida: CopdaMae): { ruta: string; params?: Record<string, string | number> } | null {
+    const doc = Number(partida.documentoId) || 0;
+    switch (Number(partida.moduloId)) {
+      case 1: {
+        // Referencia: CIERRE-{periodo}-{anio}
+        const m = /CIERRE-(\d{1,2})-(\d{4})/i.exec(partida.nroreferencia || '');
+        return {
+          ruta: '/contabilidad/cierre-contable',
+          params: m ? { periodo: Number(m[1]), anio: Number(m[2]) } : undefined,
+        };
+      }
+      case 2:
+        // Inventarios: cuando el origen es una factura, documentoId = posfacmae.facturaId
+        if (doc > 0 && /^FAC-/i.test(partida.nroreferencia || '')) {
+          return { ruta: `/facturacion/consultas/${doc}` };
+        }
+        return null;
+      case 3:
+        // facturaId en posfacmae
+        return doc > 0 ? { ruta: `/facturacion/consultas/${doc}` } : null;
+      case 4:
+        // clienteMovId en cxcmovimientos
+        return doc > 0 ? { ruta: '/cxc/movimientos', params: { movimientoId: doc } } : null;
+      case 5:
+        // cxpmovId en cxpmovimientos
+        return doc > 0 ? { ruta: '/cxp/movimientos', params: { movimientoId: doc } } : null;
+      case 6:
+        // bcomovimientosId en bcosmovimientos
+        return doc > 0 ? { ruta: '/bancos/historial', params: { movimientoId: doc } } : null;
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Navega al documento de origen.
+   *
+   * Antes de salir, escribe la partida en la entrada de historial actual
+   * (replaceUrl) para que "atrás" regrese al detalle de la partida y no a la
+   * lista. Se encadenan las dos navegaciones para evitar que se cancelen entre sí.
+   */
+  irAOrigen(partida: CopdaMae): void {
+    const link = this.enlaceOrigen(partida);
+    if (!link) return;
+
+    const navegar = () => this.router.navigate([link.ruta], {
+      // partidaId viaja junto al documento para que el destino pueda regresar
+      queryParams: { ...link.params, partidaId: partida.partidaId },
+    });
+
+    const marcada = this.marcarPartidaEnUrl(partida.partidaId);
+    if (marcada) {
+      // esperar a que la navegación de reemplazo termine (resuelta o cancelada)
+      marcada.then(navegar, navegar);
+    } else {
+      navegar();
+    }
   }
 
   // ===== BÚSQUEDA DE CUENTAS (autocomplete) =====
@@ -20451,6 +27998,295 @@ export class CopdamaeManager implements OnInit {
     });
   }
 
+  // ===== PARTIDA INICIAL (carga desde archivo Excel) =====
+
+  /** Abre el diálogo de carga de la partida inicial (estado limpio). */
+  abrePartidaInicial(): void {
+    this.inicialNombreArchivo.set(null);
+    this.inicialLineas.set([]);
+    this.inicialErrores.set([]);
+    this.inicialCargando.set(false);
+    this.dialogInicial.set(true);
+  }
+
+  cierraPartidaInicial(valor: boolean): void {
+    if (this.inicialCargando()) return;
+    this.dialogInicial.set(valor);
+  }
+
+  /**
+   * Lee el archivo Excel elegido y extrae las líneas de la partida.
+   * Columnas buscadas: `ctacontable`, `D/C` e `importe` (con alias tolerados).
+   * La fila de encabezados se localiza por la columna `ctacontable`, así que
+   * el archivo puede llevar columnas extra (ej: `fila`) antes o después.
+   */
+  onArchivoInicial(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ''; // permite volver a elegir el mismo archivo
+    if (!file) return;
+
+    this.inicialNombreArchivo.set(file.name);
+    this.inicialLineas.set([]);
+    this.inicialErrores.set([]);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const wb = XLSX.read(new Uint8Array(reader.result as ArrayBuffer), { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        if (!ws) throw new Error('el archivo no tiene hojas');
+        const filas = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+          header: 1, raw: true, defval: null, blankrows: false,
+        });
+        this.procesarFilasExcel(filas);
+      } catch (e) {
+        this.inicialErrores.set([`No se pudo leer el archivo Excel: ${(e as Error).message}`]);
+      }
+    };
+    reader.onerror = () => this.inicialErrores.set(['No se pudo leer el archivo.']);
+    reader.readAsArrayBuffer(file);
+  }
+
+  /** Convierte las filas crudas del Excel en líneas de partida, con validaciones. */
+  private procesarFilasExcel(filas: unknown[][]): void {
+    const norm = (v: unknown) => String(v ?? '').trim().toLowerCase().replace(/\s+/g, '');
+
+    // 1) Los encabezados deben ser exactamente los esperados
+    const errorEncabezado = this.validarEncabezados(filas);
+    if (errorEncabezado) {
+      this.inicialLineas.set([]);
+      this.inicialErrores.set([errorEncabezado]);
+      return;
+    }
+
+    const col = this.detectarColumnas(filas);
+    if (!col) {
+      this.inicialErrores.set([
+        'No se pudieron identificar las columnas del archivo. Se necesitan: cuenta contable, naturaleza D/C e importe.',
+      ]);
+      return;
+    }
+
+    const errores: string[] = [];
+    const lineas: LineaPartidaDto[] = [];
+    const vistos = new Set<string>();
+    const repetidas = new Set<string>();
+
+    for (let i = col.iDesde; i < filas.length; i++) {
+      const fila = filas[i];
+      if (!Array.isArray(fila)) continue;
+      if (fila.every(c => norm(c) === '')) continue;             // fila vacía
+      if (norm(fila[col.iCta]) === 'ctacontable') continue;       // encabezado repetido
+
+      const nroFila = i + 1; // 1-based, para que coincida con el Excel
+      const cta = String(fila[col.iCta] ?? '').trim();
+      const dc = String(fila[col.iDC] ?? '').trim().toUpperCase().replace(/\s+/g, '');
+      const bruto = fila[col.iImp];
+      const importe = Number(String(bruto ?? '').replace(/[^\d.-]/g, ''));
+      const desc = col.iDesc != null ? String(fila[col.iDesc] ?? '').trim() : '';
+
+      if (!cta) { errores.push(`Fila ${nroFila}: falta el código de cuenta contable.`); continue; }
+      if (dc !== 'D' && dc !== 'C') { errores.push(`Fila ${nroFila}: la naturaleza debe ser D o C (valor "${dc}").`); continue; }
+      if (!Number.isFinite(importe)) { errores.push(`Fila ${nroFila}: importe inválido (${bruto ?? 'vacío'}).`); continue; }
+      if (importe < 0) { errores.push(`Fila ${nroFila}: el importe no puede ser negativo (${String(bruto).trim()}).`); continue; }
+      if (importe === 0) { errores.push(`Fila ${nroFila}: el importe debe ser mayor que cero.`); continue; }
+
+      if (vistos.has(cta)) repetidas.add(cta); else vistos.add(cta);
+
+      lineas.push({
+        ctacontable: cta,
+        descripcion: desc || undefined,
+        debito: dc === 'D' ? importe : 0,
+        credito: dc === 'C' ? importe : 0,
+      });
+    }
+
+    if (repetidas.size > 0) {
+      errores.push(
+        `Cuenta(s) repetida(s) — una partida admite una sola línea por cuenta: ${[...repetidas].join(', ')}`,
+      );
+    }
+    if (lineas.length === 0 && errores.length === 0) {
+      errores.push('No se encontraron líneas con datos en el archivo.');
+    }
+
+    this.inicialLineas.set(lineas);
+    this.inicialErrores.set(errores.slice(0, 15));
+  }
+
+  /**
+   * Encabezados obligatorios del archivo de partida inicial (fila 1).
+   * Se comparan sin distinguir mayúsculas, acentos ni espacios sobrantes.
+   */
+  private static readonly ENCABEZADOS_PARTIDA = ['No', 'Cuenta', 'Descripcion', 'Naturaleza', 'Importe'];
+
+  /**
+   * Valida que la primera fila contenga exactamente los encabezados
+   * `No | Cuenta | Descripcion | Naturaleza | Importe`.
+   * Devuelve un mensaje de error, o `null` si los encabezados son correctos.
+   */
+  private validarEncabezados(filas: unknown[][]): string | null {
+    const esperados = CopdamaeManager.ENCABEZADOS_PARTIDA;
+    const norm = (v: unknown) =>
+      String(v ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    const esperadosNorm = esperados.map(e => norm(e));
+
+    const fila0 = Array.isArray(filas[0]) ? (filas[0] as unknown[]) : [];
+    const leidos = fila0.map(norm).filter(v => v !== '');
+    const texto = esperados.join(', ');
+
+    // ¿Existe fila de encabezados en absoluto?
+    if (!leidos.some(v => esperadosNorm.includes(v))) {
+      return `Falta la fila de encabezados. En la primera fila debe ir: ${texto}.`;
+    }
+
+    const encontrados = new Set(leidos);
+    const faltantes = esperados.filter((e, i) => !encontrados.has(esperadosNorm[i]));
+    const inesperados = leidos.filter(v => !esperadosNorm.includes(v));
+
+    if (faltantes.length > 0 || inesperados.length > 0) {
+      const partes: string[] = [];
+      if (faltantes.length > 0) {
+        partes.push(`faltan: ${faltantes.map(f => `"${f}"`).join(', ')}`);
+      }
+      if (inesperados.length > 0) {
+        partes.push(`inesperados: ${inesperados.map(f => `"${f}"`).join(', ')}`);
+      }
+      return `Los encabezados del archivo no son los correctos (${partes.join('; ')}). Se espera: ${texto}.`;
+    }
+
+    return null;
+  }
+
+  /**
+   * Identifica los índices de columna del archivo.
+   *
+   * La fila de encabezados (validada antes) se salta; los índices de las
+   * columnas de datos se infieren por contenido:
+   *   - cuenta: valores con guiones (`1-1-10-1-001`)
+   *   - naturaleza: valores exactamente `D` o `C`
+   *   - importe: última columna numérica que no es cuenta ni naturaleza
+   *   - descripción: primera columna de texto restante
+   */
+  private detectarColumnas(filas: unknown[][]): {
+    iDesde: number; iCta: number; iDesc: number | null; iDC: number; iImp: number;
+  } | null {
+    const norm = (v: unknown) => String(v ?? '').trim().toLowerCase().replace(/\s+/g, '');
+    const esCta = (v: unknown) => /^\s*\d+(\s*-\s*\d+)+\s*$/.test(String(v ?? ''));
+    const esDC = (v: unknown) => ['D', 'C'].includes(String(v ?? '').trim().toUpperCase());
+    const esNum = (v: unknown) =>
+      v !== null && v !== undefined && v !== '' &&
+      !/[a-z]/i.test(String(v).trim()) &&
+      Number.isFinite(Number(String(v).replace(/[^\d.-]/g, '')));
+
+    // ¿Hay fila de encabezados? Si existe, la saltamos (los datos empiezan después)
+    let iHdr = -1;
+    for (let i = 0; i < filas.length; i++) {
+      const f = filas[i];
+      if (Array.isArray(f) && f.some(c => ['ctacontable', 'cuenta', 'cta'].includes(norm(c)))) {
+        iHdr = i;
+        break;
+      }
+    }
+    const iDesde = iHdr >= 0 ? iHdr + 1 : 0;
+
+    const datos = filas.slice(iDesde).filter(f => Array.isArray(f) && f.some(c => norm(c) !== ''));
+    if (datos.length === 0) return null;
+
+    const ancho = Math.max(...datos.map(f => f.length));
+    const pct = (fn: (v: unknown) => boolean, c: number): number => {
+      let hit = 0;
+      let n = 0;
+      for (const f of datos) {
+        const v = f[c];
+        if (norm(v) === '') continue;
+        n++;
+        if (fn(v)) hit++;
+      }
+      return n > 0 ? hit / n : 0;
+    };
+    const cols = Array.from({ length: ancho }, (_, c) => c);
+    const mejor = (fn: (v: unknown) => boolean): number | undefined =>
+      cols
+        .filter(c => pct(fn, c) >= 0.5)
+        .sort((a, b) => pct(fn, b) - pct(fn, a))[0];
+
+    const iDC = mejor(esDC);
+    const iCta = mejor(esCta);
+    if (iCta == null || iDC == null || iCta === iDC) return null;
+
+    const candidatos = cols.filter(c => c !== iCta && c !== iDC && pct(esNum, c) >= 0.5);
+    const iImp = candidatos.length > 0 ? candidatos[candidatos.length - 1] : undefined;
+    if (iImp == null) return null;
+
+    const iDesc =
+      cols.find(c => c !== iCta && c !== iDC && c !== iImp && pct(esNum, c) < 0.5 && pct(v => norm(v) !== '', c) >= 0.5) ?? null;
+
+    return { iDesde, iCta, iDesc, iDC, iImp };
+  }
+
+  confirmarPartidaInicial(): void {
+    const periodo = this.inicialPeriodo();
+    if (!periodo) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Sin período abierto',
+        detail: 'No hay ningún período contable abierto para esta empresa.',
+      });
+      return;
+    }
+    if (!this.inicialLista()) return;
+
+    this.confirmationService.confirm({
+      message:
+        `Se cargará la partida inicial con ${this.inicialLineas().length} líneas por ` +
+        `L ${this.formatearMoneda(this.inicialTotalDebe())} en el período ` +
+        `${periodo.periodo}/${periodo.anio}. ¿Continuar?`,
+      header: 'Partida inicial',
+      icon: 'pi pi-exclamation-triangle',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Cargar partida', severity: 'success', variant: 'text', size: 'small', rounded: true },
+      accept: () => this.ejecutarPartidaInicial(),
+    });
+  }
+
+  /**
+   * Envía las líneas al backend. El servidor decide el período (abierto),
+   * la fecha documento (último día del período) y la referencia
+   * (INICIAL-{periodo}-{año}), y rechaza con 409 si ya fue cargada.
+   */
+  private ejecutarPartidaInicial(): void {
+    this.inicialCargando.set(true);
+    this.contabilidad.crearPartidaInicial({
+      moduloId: 7,
+      descripcion: 'balances inicial de operaciones mercantiles',
+      lineas: this.inicialLineas(),
+    }).pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (partida) => {
+          this.inicialCargando.set(false);
+          this.dialogInicial.set(false);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Partida inicial creada',
+            detail: `Partida #${partida.nropartida} · ${this.inicialLineas().length} líneas · período ${partida.periodo}/${partida.anio}`,
+          });
+          this.inicialNombreArchivo.set(null);
+          this.inicialLineas.set([]);
+          this.inicialErrores.set([]);
+          this.cargarDatos();
+        },
+        // El interceptor ya muestra el toast con el mensaje del backend
+        error: () => this.inicialCargando.set(false),
+      });
+  }
+
   // ===== HELPERS =====
 
   /** Cuentas contables que aparecen más de una vez en el detalle (debe venir vacío) */
@@ -20511,7 +28347,6 @@ export class CopdamaeManager implements OnInit {
 ## 📄 src\app\features\contabilidad\ctacontables\ctacontable-form.html
 
 ```typescript
-<p-toast />
 <div class="ctacontable-form" [formGroup]="form">
   @if (bloqueada()) {
   <div class="mensaje-bloqueo">
@@ -20572,9 +28407,8 @@ export class CopdamaeManager implements OnInit {
           placeholder="Seleccionar"
           styleClass="w-full"
           size="small"
-          [disabled]="form.get('tcogrupocontableId')?.value != null"
         />
-        <small class="field-hint">Se asigna según grupo contable</small>
+        <small class="field-hint">Se sugiere según grupo contable; puede cambiarlo</small>
       </div>
 
       <!-- Tipo de cuenta -->
@@ -20872,7 +28706,6 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -20889,9 +28722,7 @@ import { CtaContable, GrupoContable, NivelCta } from '../../../core/models/conta
     InputTextModule,
     InputNumberModule,
     SelectModule,
-    ToastModule,
   ],
-  providers: [MessageService],
   templateUrl: './ctacontable-form.html',
   styleUrl: './ctacontable-form.scss',
 })
@@ -20906,6 +28737,8 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
   cuenta = input<CtaContable | null>(null);
   esEdicion = input(false);
   todasLasCuentas = input<CtaContable[]>([]);
+  /** Se incrementa en cada apertura del drawer → fuerza reset/patch del form */
+  apertura = input(0);
   guardado = output<void>();
   cancelar = output<void>();
 
@@ -20939,28 +28772,18 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
 
   form!: FormGroup;
 
-  // Effect reactivo: cuando cambia el input cuenta, actualizar formulario
+  // Effect reactivo: al abrir el drawer (cambio de `apertura` o de `cuenta`)
+  // se parchea si hay cuenta seleccionada, o se limpia el formulario si es alta.
+  // Sin `apertura`, un alta tras un alta no disparaba el effect (señales sin
+  // cambio) y el formulario conservaba los valores del registro anterior.
   private cuentaEffect = effect(() => {
     const c = this.cuenta();
+    this.apertura(); // debe leerse para que el effect reaccione a cada apertura
     if (!this.form) return;
     if (c) {
       this.patchForm();
-    } else if (this.esEdicion() === false) {
-      this.form.reset({
-        ctacontable: '',
-        descripcion: '',
-        tcogrupocontableId: null,
-        naturaleza: 'D',
-        nivel: null,
-        padre: null,
-        sn_operable: 'S',
-        sn_activo: 'S',
-        zorden: 0,
-      });
-      this.grupoId.set(null);
-      this.nivelSeleccionado.set(null);
-      this.codigoCuenta.set('');
-      this.aplicarBloqueo();
+    } else {
+      this.resetForm();
     }
   });
 
@@ -20988,13 +28811,14 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
       }));
   }
 
-  /** Mapa de grupo → naturaleza automática */
+  /** Mapa de grupo → naturaleza automática (sugerencia editable por el usuario) */
   private readonly NATURALEZA_POR_GRUPO: Record<string, 'D' | 'C'> = {
     activo: 'D',
     pasivo: 'C',
     capital: 'C',
     ingresos: 'C',
     gastos: 'D',
+    costo: 'D',
   };
 
   ngOnInit(): void {
@@ -21055,6 +28879,25 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
       this.codigoCuenta.set(c.ctacontable);
       this.aplicarBloqueo();
     }
+  }
+
+  /** Limpia el formulario a los valores por defecto de una alta nueva */
+  private resetForm(): void {
+    this.form.reset({
+      ctacontable: '',
+      descripcion: '',
+      tcogrupocontableId: null,
+      naturaleza: 'D',
+      nivel: null,
+      padre: null,
+      sn_operable: 'S',
+      sn_activo: 'S',
+      zorden: 0,
+    });
+    this.grupoId.set(null);
+    this.nivelSeleccionado.set(null);
+    this.codigoCuenta.set('');
+    this.aplicarBloqueo();
   }
 
   /** Bloquea/desbloquea todos los controles según historial y rol del usuario */
@@ -21271,8 +29114,10 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
         this.guardando.set(false);
         this.messageService.add({
           severity: 'success',
-          summary: 'Guardado',
-          detail: this.esEdicion() ? 'Cuenta actualizada' : 'Cuenta creada correctamente',
+          summary: this.esEdicion() ? 'Cuenta actualizada' : 'Cuenta registrada',
+          detail: this.esEdicion()
+            ? 'Los cambios se guardaron con éxito'
+            : 'La cuenta contable se guardó con éxito',
         });
         this.guardado.emit();
       },
@@ -21280,8 +29125,8 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
         this.guardando.set(false);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: err.error?.message || 'No se pudo guardar la cuenta',
+          summary: 'Error al guardar',
+          detail: err.error?.message || 'No se pudo guardar la cuenta contable',
         });
       },
     });
@@ -21501,6 +29346,7 @@ export class CtacontableFormComponent implements OnInit, OnChanges {
     [cuenta]="cuentaSeleccionada()"
     [esEdicion]="esEdicion()"
     [todasLasCuentas]="cuentas()"
+    [apertura]="apertura()"
     (guardado)="onGuardado()"
     (cancelar)="onCancelar()"
   />
@@ -21610,6 +29456,8 @@ export class CtacontablesListComponent implements OnInit {
   dialogFormVisible = signal(false);
   cuentaSeleccionada = signal<CtaContable | null>(null);
   esEdicion = signal(false);
+  /** Se incrementa en cada apertura del drawer para refrescar el formulario */
+  apertura = signal(0);
 
   readonly naturalezasOpts = [
     { label: 'Débito', value: 'D' },
@@ -21690,12 +29538,14 @@ export class CtacontablesListComponent implements OnInit {
   nuevaCuenta(): void {
     this.cuentaSeleccionada.set(null);
     this.esEdicion.set(false);
+    this.apertura.update((v) => v + 1);
     this.dialogFormVisible.set(true);
   }
 
   editarCuenta(cuenta: CtaContable): void {
     this.cuentaSeleccionada.set(cuenta);
     this.esEdicion.set(true);
+    this.apertura.update((v) => v + 1);
     this.dialogFormVisible.set(true);
   }
 
@@ -21757,6 +29607,1716 @@ export class CtacontablesListComponent implements OnInit {
     this.filtroBuscar.set('');
     this.filtroGrupo.set(null);
     this.filtroNivel.set(null);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\dashboard-id7\dashboard-id7.html
+
+```typescript
+<div class="page-header">
+  <div class="ph-txt">
+    <h2>Dashboard Contable</h2>
+    <span class="ph-sub">Módulo 7 · Resumen ejecutivo de cuentas por cobrar, por pagar y balance</span>
+  </div>
+  <div class="ph-filtros">
+    <div class="campo-filter campo-filter--anio">
+      <label for="dashAnio">Año</label>
+      <p-select
+        inputId="dashAnio"
+        [options]="aniosOps()"
+        [ngModel]="anioSel()"
+        (ngModelChange)="cambiarAnio($event)"
+        placeholder="Año"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        size="small"
+      />
+    </div>
+    <div class="campo-filter campo-filter--periodo">
+      <label for="dashPeriodo">Período</label>
+      <p-select
+        inputId="dashPeriodo"
+        [options]="periodosOps()"
+        [ngModel]="periodoSel()"
+        (ngModelChange)="cambiarPeriodo($event)"
+        placeholder="Período"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        size="small"
+      />
+    </div>
+    <p-button
+      label="Actualizar"
+      icon="pi pi-refresh"
+      [loading]="cargando()"
+      (onClick)="cargar()"
+      pTooltip="Recarga los 6 widgets con el período seleccionado"
+      tooltipPosition="bottom"
+    />
+  </div>
+</div>
+
+@if (cargando()) {
+  <div class="estado-carga">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Cargando dashboard…</span>
+  </div>
+} @else if (datos(); as d) {
+  <div class="dash-grid">
+    <!-- ===== Widget 1 · Composición patrimonial ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Composición Patrimonial</h3>
+        <span class="chip">{{ d.etiquetaPeriodo }}</span>
+      </header>
+      <div class="chart-box">
+        <canvas id="chartPatrimonio"></canvas>
+      </div>
+      <div class="leyenda-pat">
+        <div>
+          <span class="pto pto--activos"></span>Activos <b>{{ abs(d.resumen.activos) | number: '1.2-2' }}</b>
+        </div>
+        <div>
+          <span class="pto pto--pasivos"></span>Pasivos <b>{{ abs(d.resumen.pasivos) | number: '1.2-2' }}</b>
+        </div>
+        <div>
+          <span class="pto pto--capital"></span>Capital <b>{{ abs(d.resumen.capital) | number: '1.2-2' }}</b>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Widget 1b · Resultados del período (segmentos 4+5, aparte del pastel) ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Resultados del Período</h3>
+        <span class="chip">{{ d.etiquetaPeriodo }}</span>
+      </header>
+      @if (d.resultados.ingresos !== 0 || d.resultados.gastos !== 0) {
+        <div class="chart-box chart-box--chico">
+          <canvas id="chartResultados"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin ingresos ni gastos (grupos 4 a 7) en el período</span>
+        </div>
+      }
+      <div class="stats">
+        <div class="stat stat--ok">
+          <span>Ingresos (grupo 4)</span>
+          <b>{{ fmt(d.resultados.ingresos) }}</b>
+        </div>
+        <div class="stat stat--err">
+          <span>Gastos y Costos (grupos 5-7)</span>
+          <b>{{ fmt(d.resultados.gastos) }}</b>
+        </div>
+        <div
+          [class.stat--ok]="d.resultados.utilidad >= 0"
+          [class.stat--err]="d.resultados.utilidad < 0"
+          class="stat"
+        >
+          <span>{{ d.resultados.utilidad >= 0 ? 'Utilidad' : 'Pérdida' }}</span>
+          <b>{{ fmt(abs(d.resultados.utilidad)) }}</b>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Widget 2 · Cuentas nivel 2 ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Cuentas Nivel 2 — Activos y Pasivos</h3>
+        <span class="chip">{{ d.etiquetaPeriodo }}</span>
+      </header>
+      @if (d.nivel2.length) {
+        <div class="chart-box">
+          <canvas id="chartNivel2"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin saldos registrados en el período</span>
+        </div>
+      }
+    </section>
+
+    <!-- ===== Widget 3 · Ingresos ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Comparativo de Ingresos</h3>
+        <span class="chip">{{ d.etiquetaPeriodo }} vs {{ d.etiquetaAnterior }}</span>
+      </header>
+      @if (d.ingresos.length) {
+        <div class="chart-box">
+          <canvas id="chartIngresos"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin partidas de ingresos (grupo 4) contabilizadas en el período</span>
+        </div>
+      }
+    </section>
+
+    <!-- ===== Widget 4 · Gastos ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Comparativo de Gastos y Costos</h3>
+        <span class="chip">{{ d.etiquetaPeriodo }} vs {{ d.etiquetaAnterior }}</span>
+      </header>
+      @if (d.gastos.length) {
+        <div class="chart-box">
+          <canvas id="chartGastos"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin partidas de gastos y costos (grupos 5-7) contabilizadas en el período</span>
+        </div>
+      }
+    </section>
+
+    <!-- ===== Widget 5 · CxC ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Cuentas por Cobrar</h3>
+        <span class="chip" title="Acumulado del ejercicio">{{ d.anio }}</span>
+      </header>
+      @if (d.cxc.recuperado !== 0 || d.cxc.saldo > 0) {
+        <div class="chart-box chart-box--chico">
+          <canvas id="chartCxc"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin movimientos de CxC registrados</span>
+        </div>
+      }
+      <div class="stats">
+        <div class="stat">
+          <span>Facturado (D)</span>
+          <b>{{ fmt(d.cxc.facturado) }}</b>
+        </div>
+        <div class="stat stat--ok">
+          <span>Recuperado (H)</span>
+          <b>{{ fmt(d.cxc.recuperado) }}</b>
+        </div>
+        <div class="stat stat--warn">
+          <span>Saldo por cobrar</span>
+          <b>{{ fmt(d.cxc.saldo) }}</b>
+        </div>
+        <div class="stat" [pTooltip]="d.cxc.docsPendientesSaldo | number: '1.2-2'">
+          <span>Docs. con saldo</span>
+          <b>{{ d.cxc.docsPendientes }}</b>
+        </div>
+        <div class="stat">
+          <span>Clientes con saldo</span>
+          <b>{{ d.cxc.clientesConSaldo }}</b>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Widget 6 · CxP ===== -->
+    <section class="dash-card">
+      <header class="dash-card__head">
+        <h3>Cuentas por Pagar</h3>
+        <span class="chip" title="Acumulado del ejercicio">{{ d.anio }}</span>
+      </header>
+      @if (d.cxp.pagado !== 0 || d.cxp.saldo > 0) {
+        <div class="chart-box chart-box--chico">
+          <canvas id="chartCxp"></canvas>
+        </div>
+      } @else {
+        <div class="sin-datos">
+          <i class="pi pi-inbox"></i>
+          <span>Sin movimientos de CxP registrados</span>
+        </div>
+      }
+      <div class="stats">
+        <div class="stat">
+          <span>Debitado (D)</span>
+          <b>{{ fmt(d.cxp.debitado) }}</b>
+        </div>
+        <div class="stat stat--ok">
+          <span>Pagado (H)</span>
+          <b>{{ fmt(d.cxp.pagado) }}</b>
+        </div>
+        <div class="stat stat--err">
+          <span>Saldo pendiente</span>
+          <b>{{ fmt(d.cxp.saldo) }}</b>
+        </div>
+        <div class="stat" [pTooltip]="d.cxp.docsPendientesSaldo | number: '1.2-2'">
+          <span>Docs. con saldo</span>
+          <b>{{ d.cxp.docsPendientes }}</b>
+        </div>
+        <div class="stat" [pTooltip]="d.cxp.comprasPendientesTotal | number: '1.2-2'">
+          <span>Compras sin pagar</span>
+          <b>{{ d.cxp.comprasPendientes }}</b>
+        </div>
+      </div>
+    </section>
+  </div>
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\dashboard-id7\dashboard-id7.scss
+
+```typescript
+// Dashboard Módulo 7 (Contabilidad) — /contabilidad/dashboardId7
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+}
+
+.ph-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  .ph-sub {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+  }
+}
+
+.ph-filtros {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.campo-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+  }
+
+  .p-select {
+    width: 100%;
+  }
+
+  &--anio {
+    width: 6.5rem;
+  }
+
+  &--periodo {
+    width: 13rem;
+  }
+}
+
+// ===== Estado de carga =====
+
+.estado-carga {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 3.5rem 0;
+  color: var(--c-text-muted);
+  font-size: 0.95rem;
+
+  i {
+    font-size: 1.4rem;
+  }
+}
+
+// ===== Grid de widgets =====
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (max-width: 1100px) {
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dash-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.75rem;
+  padding: 1rem 1.1rem 1.1rem;
+  min-width: 0;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+
+    h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--c-text);
+    }
+  }
+}
+
+.chip {
+  font-size: 0.72rem;
+  white-space: nowrap;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+}
+
+.chart-box {
+  position: relative;
+  height: 280px;
+  min-width: 0;
+
+  &--chico {
+    height: 220px;
+  }
+}
+
+.sin-datos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 240px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  background: var(--c-surface-ground);
+  border: 1px dashed var(--c-border);
+  border-radius: 0.5rem;
+  padding: 0 1rem;
+
+  i {
+    font-size: 1.6rem;
+    opacity: 0.5;
+  }
+}
+
+// ===== Leyenda del pastel patrimonial =====
+
+.leyenda-pat {
+  display: flex;
+  gap: 1.1rem;
+  flex-wrap: wrap;
+  font-size: 0.83rem;
+  color: var(--c-text-muted);
+
+  b {
+    margin-left: 0.3rem;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pto {
+    display: inline-block;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 2px;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+
+    &--activos {
+      background: #10b981;
+    }
+
+    &--pasivos {
+      background: #f59e0b;
+    }
+
+    &--capital {
+      background: #3b82f6;
+    }
+  }
+}
+
+// ===== Mini-stats de CxC / CxP =====
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 0.6rem;
+}
+
+.stat {
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  min-width: 0;
+
+  span {
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  b {
+    font-size: 0.95rem;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &--ok b {
+    color: var(--c-success);
+  }
+
+  &--warn b {
+    color: var(--c-warning);
+  }
+
+  &--err b {
+    color: var(--c-error);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\dashboard-id7\dashboard-id7.ts
+
+```typescript
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  DestroyRef,
+  Injector,
+  inject,
+  signal,
+  effect,
+  afterNextRender,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Chart, registerables, ChartConfiguration } from 'chart.js';
+import { SelectModule } from 'primeng/select';
+import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
+import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import {
+  DashboardData,
+  DashboardComparativo,
+} from '../../../core/models/contabilidad.models';
+
+Chart.register(...registerables);
+
+const MESES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+/** Colores de las series (coherentes con los tokens --c-* del tema). */
+const C = {
+  activos: '#10b981',
+  activosSuave: '#6ee7b7',
+  pasivos: '#f59e0b',
+  capital: '#3b82f6',
+  ingreso: '#10b981',
+  ingresoAnt: '#6ee7b7',
+  gasto: '#ef4444',
+  gastoAnt: '#fca5a5',
+  cobrado: '#10b981',
+  porCobrar: '#f59e0b',
+  pagado: '#10b981',
+  pendiente: '#ef4444',
+  eje: '#64748b',
+  rejilla: '#e2e8f0',
+};
+
+interface Opcion {
+  label: string;
+  value: number;
+}
+
+/**
+ * Dashboard del Módulo 7 (Contabilidad) — ruta `/contabilidad/dashboardId7`.
+ *
+ * 7 widgets (chart.js puro, sin ng2-charts):
+ *  1. Pastel: Activos / Pasivos / Capital del período seleccionado (segmentos 1+2+3)
+ *  1b. Doughnut: Resultados del período (segmentos 4+5) — APARTE del pastel
+ *  2. Barras: cuentas nivel 2 de Activos y Pasivos
+ *  3. Comparativo de Ingresos: mes actual vs mes anterior
+ *  4. Comparativo de Gastos: mes actual vs mes anterior
+ *  5. CxC: recuperado (suma del haber) vs por cobrar
+ *  6. CxP: pagado (suma del haber) vs pendiente + compras sin pagar
+ */
+@Component({
+  selector: 'app-dashboard-id7',
+  standalone: true,
+  imports: [CommonModule, FormsModule, SelectModule, ButtonModule, TooltipModule],
+  templateUrl: './dashboard-id7.html',
+  styleUrl: './dashboard-id7.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class DashboardId7Component implements OnInit, OnDestroy {
+  private contabilidad = inject(ContabilidadService);
+  private destroyRef = inject(DestroyRef);
+  private injector = inject(Injector);
+
+  readonly datos = signal<DashboardData | null>(null);
+  readonly cargando = signal(false);
+  readonly anioSel = signal<number | null>(null);
+  readonly periodoSel = signal<number | null>(null);
+  readonly aniosOps = signal<Opcion[]>([]);
+  readonly periodosOps = signal<Opcion[]>([]);
+
+  private charts: Chart[] = [];
+
+  /** Tras cada carga: pinta los canvas y (re)crea los 6 charts. */
+  private _render = effect(() => {
+    const d = this.datos();
+    if (!d) return;
+    afterNextRender(() => this.renderizar(d), { injector: this.injector });
+  });
+
+  ngOnInit(): void {
+    this.cargar();
+  }
+
+  ngOnDestroy(): void {
+    this.destruirCharts();
+  }
+
+  cargar(): void {
+    this.cargando.set(true);
+    const anio = this.anioSel() ?? undefined;
+    const periodo = this.periodoSel() ?? undefined;
+    this.contabilidad
+      .getDashboard(anio, periodo)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (d) => this.aplicar(d),
+        error: () => this.cargando.set(false),
+      });
+  }
+
+  cambiarAnio(anio: number | null): void {
+    if (anio == null || anio === this.anioSel()) return;
+    this.anioSel.set(anio);
+    this.periodoSel.set(null); // el período vuelve al default del backend
+    this.cargar();
+  }
+
+  cambiarPeriodo(periodo: number | null): void {
+    if (periodo == null || periodo === this.periodoSel()) return;
+    this.periodoSel.set(periodo);
+    this.cargar();
+  }
+
+  /** Valor absoluto para la leyenda del pastel (las magnitudes suman el balance). */
+  abs(n: number): number {
+    return Math.abs(Number(n) || 0);
+  }
+
+  /** Formato 1,234.56 en es-HN. */
+  fmt(n: number): string {
+    return new Intl.NumberFormat('es-HN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(n) || 0);
+  }
+
+  private aplicar(d: DashboardData): void {
+    this.datos.set(d);
+    this.anioSel.set(d.anio);
+    this.periodoSel.set(d.periodo);
+
+    const anios: Opcion[] = [];
+    for (let a = d.anio - 3; a <= d.anio + 1; a++) anios.push({ label: String(a), value: a });
+    this.aniosOps.set(anios);
+
+    const periodos: Opcion[] = [];
+    for (let p = 1; p <= d.periodoMax; p++) {
+      periodos.push({ label: `${MESES[p - 1]} ${d.anio}`, value: p });
+    }
+    this.periodosOps.set(periodos);
+
+    this.cargando.set(false);
+  }
+
+  // ===================== Charts =====================
+
+  private canvas(id: string): HTMLCanvasElement | null {
+    return document.getElementById(id) as HTMLCanvasElement | null;
+  }
+
+  private baseOptions(): ChartConfiguration['options'] {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { boxWidth: 12, font: { size: 11 }, color: C.eje },
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${this.fmt(Number(ctx.parsed.y ?? ctx.parsed.x ?? ctx.parsed))}`,
+          },
+        },
+      },
+    };
+  }
+
+  private renderizar(d: DashboardData): void {
+    this.destruirCharts();
+    this.graficoPatrimonio(d);
+    this.graficoResultados(d);
+    this.graficoNivel2(d);
+    this.graficoComparativo('chartIngresos', d.ingresos, d.etiquetaPeriodo, d.etiquetaAnterior, C.ingreso, C.ingresoAnt);
+    this.graficoComparativo('chartGastos', d.gastos, d.etiquetaPeriodo, d.etiquetaAnterior, C.gasto, C.gastoAnt);
+    this.graficoCxc(d);
+    this.graficoCxp(d);
+  }
+
+  /** Widget 1 — pastel de composición patrimonial. */
+  private graficoPatrimonio(d: DashboardData): void {
+    const el = this.canvas('chartPatrimonio');
+    if (!el) return;
+    const data = [this.abs(d.resumen.activos), this.abs(d.resumen.pasivos), this.abs(d.resumen.capital)];
+    if (data.every((v) => v === 0)) return;
+    this.charts.push(
+      new Chart(el, {
+        type: 'pie',
+        data: {
+          labels: ['Activos', 'Pasivos', 'Capital'],
+          datasets: [
+            {
+              data,
+              backgroundColor: [C.activos, C.pasivos, C.capital],
+              borderColor: '#ffffff',
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: C.eje } },
+            tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${this.fmt(Number(ctx.parsed))}` } },
+          },
+        },
+      }),
+    );
+  }
+
+  /**
+   * Widget 1b — doughnut de Resultados del período (Ingresos vs Gastos y Costos,
+   * segmentos 4-7 tras la reestructuración del plan de cuentas 05/10/2026), aparte
+   * del pastel patrimonial. Si no hay actividad de resultado en el mes, el card
+   * muestra el estado "sin datos" (el HTML decide; aquí no se pinta).
+   */
+  private graficoResultados(d: DashboardData): void {
+    const el = this.canvas('chartResultados');
+    if (!el) return;
+    const data = [this.abs(d.resultados.ingresos), this.abs(d.resultados.gastos)];
+    if (data.every((v) => v === 0)) return;
+    this.charts.push(
+      new Chart(el, {
+        type: 'doughnut',
+        data: {
+          labels: ['Ingresos', 'Gastos y Costos'],
+          datasets: [
+            {
+              data,
+              backgroundColor: [C.ingreso, C.gasto],
+              borderColor: '#ffffff',
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '55%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: C.eje } },
+            tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${this.fmt(Number(ctx.parsed))}` } },
+          },
+        },
+      }),
+    );
+  }
+
+  /** Widget 2 — barras verticales de cuentas nivel 2 (Activos vs Pasivos). */
+  private graficoNivel2(d: DashboardData): void {
+    const el = this.canvas('chartNivel2');
+    if (!el || !d.nivel2.length) return;
+    this.charts.push(
+      new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: d.nivel2.map((n) => n.ctacontable),
+          datasets: [
+            {
+              label: 'Saldo del período',
+              data: d.nivel2.map((n) => n.valor),
+              backgroundColor: d.nivel2.map((n) => (n.grupo === 'Activos' ? C.activos : C.pasivos)),
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          ...this.baseOptions(),
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => {
+                  const n = d.nivel2[items[0].dataIndex];
+                  return `${n.ctacontable} · ${n.descripcion}`;
+                },
+                label: (ctx) => ` ${this.fmt(Number(ctx.parsed.y))}`,
+              },
+            },
+          },
+          scales: {
+            x: { ticks: { color: C.eje, font: { size: 11 } }, grid: { display: false } },
+            y: {
+              ticks: { color: C.eje, font: { size: 10 }, callback: (v) => this.compacto(Number(v)) },
+              grid: { color: C.rejilla },
+            },
+          },
+        },
+      }),
+    );
+  }
+
+  /** Widgets 3/4 — barras horizontales agrupadas: mes actual vs mes anterior. */
+  private graficoComparativo(
+    id: string,
+    filas: DashboardComparativo[],
+    etiquetaActual: string,
+    etiquetaAnterior: string,
+    colorActual: string,
+    colorAnterior: string,
+  ): void {
+    const el = this.canvas(id);
+    if (!el || !filas.length) return;
+    this.charts.push(
+      new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: filas.map((f) => f.ctacontable),
+          datasets: [
+            {
+              label: etiquetaActual,
+              data: filas.map((f) => f.actual),
+              backgroundColor: colorActual,
+              borderRadius: 3,
+            },
+            {
+              label: etiquetaAnterior,
+              data: filas.map((f) => f.anterior),
+              backgroundColor: colorAnterior,
+              borderRadius: 3,
+            },
+          ],
+        },
+        options: {
+          ...this.baseOptions(),
+          indexAxis: 'y',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: C.eje } },
+            tooltip: {
+              callbacks: {
+                title: (items) => {
+                  const f = filas[items[0].dataIndex];
+                  return `${f.ctacontable} · ${f.descripcion}`;
+                },
+                label: (ctx) => ` ${ctx.dataset.label}: ${this.fmt(Number(ctx.parsed.x))}`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: C.eje, font: { size: 10 }, callback: (v) => this.compacto(Number(v)) },
+              grid: { color: C.rejilla },
+            },
+            y: { ticks: { color: C.eje, font: { size: 11 } }, grid: { display: false } },
+          },
+        },
+      }),
+    );
+  }
+
+  /** Widget 5 — CxC: recuperado vs por cobrar (doughnut). */
+  private graficoCxc(d: DashboardData): void {
+    const el = this.canvas('chartCxc');
+    if (!el) return;
+    const porCobrar = Math.max(d.cxc.saldo, 0);
+    if (d.cxc.recuperado === 0 && porCobrar === 0) return;
+    this.charts.push(
+      new Chart(el, {
+        type: 'doughnut',
+        data: {
+          labels: ['Recuperado (haber)', 'Por cobrar'],
+          datasets: [
+            {
+              data: [d.cxc.recuperado, porCobrar],
+              backgroundColor: [C.cobrado, C.porCobrar],
+              borderColor: '#ffffff',
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '58%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: C.eje } },
+            tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${this.fmt(Number(ctx.parsed))}` } },
+          },
+        },
+      }),
+    );
+  }
+
+  /** Widget 6 — CxP: pagado vs pendiente (doughnut). */
+  private graficoCxp(d: DashboardData): void {
+    const el = this.canvas('chartCxp');
+    if (!el) return;
+    const pendiente = Math.max(d.cxp.saldo, 0);
+    if (d.cxp.pagado === 0 && pendiente === 0) return;
+    this.charts.push(
+      new Chart(el, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pagado (haber)', 'Pendiente de pago'],
+          datasets: [
+            {
+              data: [d.cxp.pagado, pendiente],
+              backgroundColor: [C.pagado, C.pendiente],
+              borderColor: '#ffffff',
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '58%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: C.eje } },
+            tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${this.fmt(Number(ctx.parsed))}` } },
+          },
+        },
+      }),
+    );
+  }
+
+  /** Formato compacto para ejes (1.2M, 345K). */
+  private compacto(n: number): string {
+    return new Intl.NumberFormat('es-HN', {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(n);
+  }
+
+  private destruirCharts(): void {
+    for (const chart of this.charts) chart.destroy();
+    this.charts = [];
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\estado-resultado\estado-resultado.html
+
+```typescript
+<p-toast />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-chart-line"></i> Estado de Resultado</h2>
+    <div class="header-actions">
+      <p-button
+        size="small"
+        label="PDF"
+        icon="pi pi-file-pdf"
+        severity="danger"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportPDF()"
+        [disabled]="!reporte()"
+        pTooltip="Ver PDF en pantalla"
+      />
+      <p-button
+        size="small"
+        label="Excel"
+        icon="pi pi-file-excel"
+        severity="success"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportExcel()"
+        [disabled]="!reporte()"
+        pTooltip="Descargar Excel"
+      />
+      <p-button
+        size="small"
+        label="Word"
+        icon="pi pi-file-word"
+        severity="info"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportWord()"
+        [disabled]="!reporte()"
+        pTooltip="Descargar Word"
+      />
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-col-4">
+          <div class="p-field">
+            <label>Variante del reporte</label>
+            <p-select
+              [options]="tipoOptions"
+              [(ngModel)]="tipo"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar variante"
+              styleClass="w-full"
+              size="small"
+              appendTo="body"
+            />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-3">
+          <div class="p-field">
+            <label>Período (mes de referencia)</label>
+            <p-select
+              [options]="meses"
+              [(ngModel)]="periodo"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Mes"
+              styleClass="w-full"
+              size="small"
+              appendTo="body"
+            />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-2">
+          <div class="p-field">
+            <label>Año</label>
+            <p-inputNumber
+              [(ngModel)]="anio"
+              [min]="2020"
+              [max]="2030"
+              [useGrouping]="false"
+              styleClass="w-full"
+              size="small"
+            />
+          </div>
+        </div>
+        <div class="p-col-12 p-col-3 d-flex align-items-end">
+          <p-button
+            size="small"
+            label="Generar"
+            icon="pi pi-play"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            [rounded]="true"
+            [loading]="cargando()"
+            (onClick)="generar()"
+            styleClass="w-full"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (reporte(); as rep) {
+  <!-- Reporte -->
+  <div class="card">
+    <div class="er-head">
+      <h3>ESTADO DE RESULTADO</h3>
+      <span class="er-meta">{{ rep.etiqueta }}</span>
+    </div>
+
+    <table class="er-tabla">
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th class="er-col-cta">Cuenta</th>
+          <th class="text-right">Importe</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (l of rep.lineas; track $index) {
+        <tr [ngClass]="'er-' + l.tipo">
+          <td>
+            @if (l.tipo === 'cuenta') {
+            <span class="er-desc">{{ l.descripcion }}</span>
+            } @else {
+            <strong>{{ l.titulo }}</strong>
+            }
+          </td>
+          <td class="er-cta">{{ l.tipo === 'cuenta' ? l.ctacontable : '' }}</td>
+          <td class="text-right er-val">
+            @if (l.tipo !== 'seccion') { {{ l.valor ?? 0 | number: '1.2-2' }} }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  } @else {
+  <div class="card text-center p-4 text-muted">
+    <i class="pi pi-chart-line" style="font-size: 2rem; opacity: 0.4"></i>
+    <p class="mt-2 mb-0">
+      Seleccione la variante (Período / Acumulado / Año anterior) y haga clic en
+      "Generar" para ver el Estado de Resultado.
+    </p>
+  </div>
+  }
+</div>
+
+<!-- Visor PDF (pantalla completa) -->
+<p-dialog
+  [(visible)]="mostrarVisor"
+  [header]="'Estado de Resultado — ' + (reporte()?.etiqueta ?? '')"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="pdf-viewer-dialog"
+>
+  <div class="pdf-viewer-container">
+    @if (pdfUrl()) {
+    <iframe [src]="pdfUrl()" class="pdf-iframe"></iframe>
+    }
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button
+      size="small"
+      label="Descargar PDF"
+      icon="pi pi-download"
+      severity="danger"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      (onClick)="descargarPDF()"
+    />
+    <p-button
+      size="small"
+      label="Cerrar"
+      icon="pi pi-times"
+      severity="secondary"
+      variant="text"
+      [rounded]="true"
+      (onClick)="cerrarVisor()"
+    />
+  </ng-template>
+</p-dialog>
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\estado-resultado\estado-resultado.scss
+
+```typescript
+.page-container {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i { color: var(--c-primary); }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}
+
+// ── Visor PDF ──
+.pdf-viewer-container {
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+}
+
+.pdf-iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+  border: none;
+  border-radius: 4px;
+}
+
+// Diálogo del visor a pantalla completa (gana a los estilos inline de PrimeNG)
+:host ::ng-deep .pdf-viewer-dialog {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  display: flex;
+  flex-direction: column;
+
+  .p-dialog-header {
+    flex: 0 0 auto;
+    padding: 0.7rem 1.25rem;
+  }
+
+  .p-dialog-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    padding: 0;
+  }
+
+  .p-dialog-footer {
+    flex: 0 0 auto;
+    padding: 0.6rem 1.25rem;
+  }
+
+  .pdf-viewer-container {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .pdf-iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+  }
+}
+
+// ── Encabezado del reporte en pantalla ──
+.er-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--c-border);
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--c-text);
+  }
+
+  .er-meta {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-primary);
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 12px;
+    padding: 0.15rem 0.7rem;
+    white-space: nowrap;
+  }
+}
+
+// ── Tabla del Estado de Resultado (formato multi-paso) ──
+.er-tabla {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead th {
+    background: var(--c-surface-ground);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--c-text-muted);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  .er-col-cta {
+    width: 8rem;
+  }
+
+  tbody td {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid var(--c-border);
+    vertical-align: middle;
+  }
+
+  .er-cta {
+    color: var(--c-text-muted);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .er-val {
+    font-variant-numeric: tabular-nums;
+    font-family: 'Mukta', monospace;
+    white-space: nowrap;
+    font-weight: 600;
+    width: 10rem;
+  }
+
+  // sección: cabecera de grupo (INGRESOS, COSTOS, GASTOS…)
+  .er-seccion td {
+    background: var(--c-surface-ground);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  // cuenta individual
+  .er-cuenta {
+    .er-desc {
+      padding-left: 1rem;
+      display: inline-block;
+    }
+  }
+
+  // subtotal de sección
+  .er-total td {
+    background: rgba(100, 116, 139, 0.06);
+    font-weight: 700;
+    border-top: 1px solid var(--c-border);
+    color: var(--c-text);
+  }
+
+  // subtotales intermedios y final (utilidad bruta / operativa / del período)
+  .er-resultado td {
+    background: rgba(16, 185, 129, 0.07);
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--c-text);
+    border-top: 2px solid var(--c-primary);
+    border-bottom: 2px solid var(--c-primary);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .er-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .er-tabla {
+    thead th,
+    tbody td {
+      padding: 0.3rem 0.4rem;
+      font-size: 0.75rem;
+    }
+
+    .er-val {
+      width: 7.5rem;
+    }
+
+    .er-cuenta .er-desc {
+      padding-left: 0.5rem;
+    }
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\estado-resultado\estado-resultado.ts
+
+```typescript
+import {
+  Component,
+  inject,
+  signal,
+  DestroyRef,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { ToastModule } from 'primeng/toast';
+import { DialogModule } from 'primeng/dialog';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService } from 'primeng/api';
+import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import { AuthService } from '../../../core/services/auth.service';
+import {
+  ReportesPrintService,
+  EncabezadoPrint,
+  TablaPrint,
+  ColumnaPrint,
+} from '../../../core/services/reportes-print.service';
+import {
+  EstadoResultadoReporte,
+  EstadoResultadoLinea,
+} from '../../../core/models/contabilidad.models';
+
+import jsPDF from 'jspdf';
+import { Packer } from 'docx';
+
+/**
+ * Estado de Resultado (`/contabilidad/estado-resultado`).
+ *
+ * Genera UNA variante por vez (decisión usuario 05/10/2026, no columnas juntas):
+ *   P = Período (mes) · A = Acumulado enero–mes · N = Año anterior (mismo mes).
+ * Formato estándar multi-paso con subtotales (ver JSDoc de `generarEstadoResultado`
+ * en el backend). Exporta PDF (visor + descarga), Excel y Word con membrete.
+ */
+@Component({
+  selector: 'app-estado-resultado',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    InputNumberModule,
+    SelectModule,
+    ToastModule,
+    DialogModule,
+    TooltipModule,
+  ],
+  providers: [MessageService],
+  templateUrl: './estado-resultado.html',
+  styleUrl: './estado-resultado.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class EstadoResultadoComponent {
+  private contabilidad = inject(ContabilidadService);
+  private auth = inject(AuthService);
+  private print = inject(ReportesPrintService);
+  private messageService = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+  private sanitizer = inject(DomSanitizer);
+
+  // Visor PDF en pantalla
+  mostrarVisor = signal(false);
+  pdfUrl = signal<SafeResourceUrl | null>(null);
+
+  // Filtros
+  tipo = signal<'P' | 'A' | 'N'>('P');
+  periodo = signal(new Date().getMonth() + 1);
+  anio = signal(new Date().getFullYear());
+
+  // Resultado
+  reporte = signal<EstadoResultadoReporte | null>(null);
+  cargando = signal(false);
+
+  /** Variantes del reporte — se generan POR SEPARADO, una por vez. */
+  readonly tipoOptions = [
+    { label: 'Período (mes)', value: 'P' as const },
+    { label: 'Acumulado (enero–mes)', value: 'A' as const },
+    { label: 'Año anterior (mismo mes)', value: 'N' as const },
+  ];
+
+  readonly meses = [
+    { label: 'Enero', value: 1 },
+    { label: 'Febrero', value: 2 },
+    { label: 'Marzo', value: 3 },
+    { label: 'Abril', value: 4 },
+    { label: 'Mayo', value: 5 },
+    { label: 'Junio', value: 6 },
+    { label: 'Julio', value: 7 },
+    { label: 'Agosto', value: 8 },
+    { label: 'Septiembre', value: 9 },
+    { label: 'Octubre', value: 10 },
+    { label: 'Noviembre', value: 11 },
+    { label: 'Diciembre', value: 12 },
+  ];
+
+  generar(): void {
+    const empresaId = this.auth.currentUser()?.empresaId;
+    if (!empresaId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo identificar la empresa',
+      });
+      return;
+    }
+
+    this.cargando.set(true);
+    this.contabilidad
+      .generarEstadoResultado({
+        empresaId,
+        anio: this.anio(),
+        periodo: this.periodo(),
+        tipo: this.tipo(),
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (reporte) => {
+          this.reporte.set(reporte);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Generado',
+            detail: `Estado de Resultado — ${reporte.etiqueta}`,
+          });
+          this.cargando.set(false);
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err.error?.message || 'No se pudo generar el Estado de Resultado',
+          });
+          this.cargando.set(false);
+        },
+      });
+  }
+
+  trackByRenglon = (_: number, l: EstadoResultadoLinea, i: number) =>
+    `${l.tipo}-${l.ctacontable ?? l.titulo ?? ''}-${i}`;
+
+  // ========== UTILIDADES DE IMPRESIÓN ==========
+
+  private getTituloReporte(): string {
+    return this.reporte()?.etiqueta || 'Estado de Resultado';
+  }
+
+  /**
+   * Encabezado de los archivos exportados (logo + empresa + datos fiscales +
+   * título + meta): PDF, Excel y Word.
+   */
+  private async encabezadoImpresion(): Promise<EncabezadoPrint> {
+    return this.print.encabezado('ESTADO DE RESULTADO', this.getTituloReporte());
+  }
+
+  /**
+   * Tabla imprimible compartida por PDF, Excel y Word (ReportesPrintService).
+   * Los importes van como `number` para que el service los formatee igual en
+   * los tres formatos (1,234.56) y en Excel queden como valores, no texto.
+   */
+  private tablaPrint(): TablaPrint {
+    const rep = this.reporte();
+    // Anchos explícitos: los títulos de sección ("INGRESOS OPERACIONALES",
+    // "(+) IMPUTADOS…") deben caber en UNA línea en PDF/Word/Excel.
+    // "Importe" queda SIN ancho fijo para absorber el resto del ancho de
+    // página (portrait) en PDF y Word según el tamaño de papel.
+    const columnas: ColumnaPrint[] = [
+      { titulo: 'Concepto', alinear: 'left', pdf: 118, word: 5600, excel: 45 },
+      { titulo: 'Cuenta', alinear: 'left', pdf: 30, word: 1700 },
+      { titulo: 'Importe', alinear: 'right' },
+    ];
+
+    const filas: (string | number | null)[][] = (rep?.lineas ?? []).map((l) => {
+      if (l.tipo === 'cuenta') {
+        return [l.descripcion ?? '', l.ctacontable ?? '', Number(l.valor) || 0];
+      }
+      if (l.tipo === 'seccion') {
+        return [l.titulo ?? '', '', null];
+      }
+      // total | resultado
+      return [l.titulo ?? '', '', Number(l.valor) || 0];
+    });
+
+    return { columnas, filas };
+  }
+
+  // ========== EXPORTACIONES ==========
+
+  /** Genera el PDF y lo muestra en pantalla (visor) */
+  async exportPDF(): Promise<void> {
+    if (!this.reporte()) return;
+    const doc = await this.construirPDF();
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+    this.mostrarVisor.set(true);
+  }
+
+  cerrarVisor(): void {
+    if (this.pdfUrl()) {
+      URL.revokeObjectURL(this.pdfUrl() as any);
+    }
+    this.pdfUrl.set(null);
+    this.mostrarVisor.set(false);
+  }
+
+  /** Descarga el PDF generado desde el visor */
+  async descargarPDF(): Promise<void> {
+    if (!this.reporte()) return;
+    const doc = await this.construirPDF();
+    doc.save('estado-resultado.pdf');
+    this.messageService.add({
+      severity: 'success',
+      summary: 'PDF descargado',
+      detail: 'Estado de Resultado descargado',
+    });
+  }
+
+  /**
+   * PDF: letterhead con logo + tabla + firmas + encabezado repetido y pie
+   * paginado en TODAS las páginas. Retrato (formato vertical del ER).
+   */
+  private async construirPDF(): Promise<jsPDF> {
+    const enc = await this.encabezadoImpresion();
+    const doc = new jsPDF('p', 'mm', 'letter'); // retrato
+    const altoEnc = this.print.pdfEncabezado(doc, enc);
+
+    this.print.pdfTabla(doc, this.tablaPrint(), altoEnc, altoEnc);
+
+    // Bloque de firmas al final del contenido (agrega página si no cabe)
+    const finalY = Number((doc as any).lastAutoTable?.finalY ?? altoEnc);
+    this.agregarFirmasPDF(doc, finalY + 10, altoEnc);
+
+    // Encabezado repetido (páginas 2+) + pie "Página X de Y"
+    this.print.pdfPaginar(doc, enc, altoEnc);
+    return doc;
+  }
+
+  /** Bloque de firmas al final del reporte (agrega página cuando no cabe) */
+  private agregarFirmasPDF(doc: jsPDF, startY: number, altoEnc: number): void {
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const altoBloque = 22;
+    let y = startY;
+
+    if (y + altoBloque > pageH - 16) {
+      doc.addPage();
+      y = altoEnc + 6; // el encabezado de esta página lo dibuja pdfPaginar
+    }
+
+    const firmas = ['Elaborado por', 'Revisado por', 'Aprobado por'];
+    const ancho = (pageW - 24) / firmas.length;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.4);
+    firmas.forEach((label, i) => {
+      const centro = 12 + ancho * i + ancho / 2;
+      const anchoLinea = Math.min(ancho - 30, 70);
+      doc.line(centro - anchoLinea / 2, y + 12, centro + anchoLinea / 2, y + 12);
+      doc.text(label, centro, y + 17, { align: 'center' });
+    });
+  }
+
+  /** Excel con letterhead (logo, empresa, datos fiscales) vía exceljs */
+  async exportExcel(): Promise<void> {
+    const rep = this.reporte();
+    if (!rep) return;
+
+    const enc = await this.encabezadoImpresion();
+    const tab = this.tablaPrint();
+    const wb = this.print.nuevoLibro();
+    const ws = wb.addWorksheet('Estado de Resultado');
+    const filaCabecera = this.print.excelEncabezado(wb, ws, enc, tab);
+    this.print.excelTabla(ws, tab, filaCabecera, 'portrait');
+    await this.print.descargarExcel(wb, 'estado-resultado.xlsx');
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Excel generado',
+      detail: 'Estado de Resultado exportado en Excel',
+    });
+  }
+
+  /** Word con letterhead repetido en cada página (header) vía docx */
+  async exportWord(): Promise<void> {
+    const rep = this.reporte();
+    if (!rep) return;
+
+    const enc = await this.encabezadoImpresion();
+    const documento = this.print.wordDocumento(enc, 'portrait', [
+      this.print.wordTabla(this.tablaPrint(), 'portrait'),
+    ]);
+
+    const blob = await Packer.toBlob(documento);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'estado-resultado.docx';
+    a.click();
+    URL.revokeObjectURL(url);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Word generado',
+      detail: 'Estado de Resultado exportado en Word',
+    });
   }
 }
 
@@ -22236,15 +31796,15 @@ import { MessageService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { PartidaDiario } from '../../../core/models/contabilidad.models';
 import { AuthService } from '../../../core/services/auth.service';
-import { EmpresasService } from '../../../core/services/empresas.service';
+import {
+  ReportesPrintService,
+  EncabezadoPrint,
+  TablaPrint,
+  ColumnaPrint,
+} from '../../../core/services/reportes-print.service';
 
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-import {
-  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-  WidthType, AlignmentType, HeadingLevel,
-} from 'docx';
+import { Packer, Paragraph, TextRun, Table } from 'docx';
 
 @Component({
   selector: 'app-libro-diario',
@@ -22261,7 +31821,7 @@ import {
 export class LibroDiarioComponent implements OnInit {
   private contabilidad = inject(ContabilidadService);
   private auth = inject(AuthService);
-  private empresas = inject(EmpresasService);
+  private print = inject(ReportesPrintService);
   private sanitizer = inject(DomSanitizer);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
@@ -22270,7 +31830,6 @@ export class LibroDiarioComponent implements OnInit {
   partidas = signal<PartidaDiario[]>([]);
   cargando = signal(false);
   expandido = signal<Set<number>>(new Set());
-  nombreEmpresa = signal('');
 
   // Visor PDF
   mostrarVisor = signal(false);
@@ -22285,14 +31844,6 @@ export class LibroDiarioComponent implements OnInit {
     const hoy = new Date();
     this.fechaDesde.set(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
     this.fechaHasta.set(hoy);
-
-    // Cargar nombre de empresa
-    const empresaId = this.auth.currentUser()?.empresaId;
-    if (empresaId) {
-      this.empresas.getOne(empresaId)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({ next: (e) => this.nombreEmpresa.set(e.descripcion) });
-    }
 
     this.buscar();
   }
@@ -22354,102 +31905,100 @@ export class LibroDiarioComponent implements OnInit {
 
   // ========== UTILIDADES DE IMPRESIÓN ==========
 
-  private getNombreEmpresa(): string {
-    return this.nombreEmpresa() || 'Empresa';
+  /** Rango de fechas y auxiliar aplicados (línea meta de la impresión) */
+  private metaImpresion(): string {
+    let meta = `Del: ${this.getRangoFechas()}`;
+    if (this.auxiliar()) meta += ` — Auxiliar: ${this.auxiliar()}`;
+    return meta;
   }
 
-  private getUsuarioImpresion(): string {
-    const user = this.auth.currentUser();
-    return user?.nombre || user?.usuario || '';
+  /** Encabezado de los archivos exportados (PDF, Excel y Word) */
+  private async encabezadoImpresion(): Promise<EncabezadoPrint> {
+    return this.print.encabezado('LIBRO DIARIO', this.metaImpresion());
   }
 
-  private getFechaHoraImpresion(): string {
-    return new Date().toLocaleString('es-HN', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
+  /** Columnas PDF/Word: una tabla por partida (Cta, Descripción, Débito, Crédito) */
+  private readonly columnas: ColumnaPrint[] = [
+    { titulo: 'Cta Contable', alinear: 'left', pdf: 30, word: 1700 },
+    { titulo: 'Descripción', alinear: 'left' },
+    { titulo: 'Débito', alinear: 'right', pdf: 34, word: 1750 },
+    { titulo: 'Crédito', alinear: 'right', pdf: 34, word: 1750 },
+  ];
+
+  /** Columnas Excel: plano con Partida y Fecha por línea */
+  private readonly columnasExcel: ColumnaPrint[] = [
+    { titulo: 'Partida', alinear: 'left', excel: 10 },
+    { titulo: 'Fecha', alinear: 'left', excel: 13 },
+    { titulo: 'Cta Contable', alinear: 'left', excel: 15 },
+    { titulo: 'Descripción', alinear: 'left', excel: 40 },
+    { titulo: 'Débito', alinear: 'right', excel: 15 },
+    { titulo: 'Crédito', alinear: 'right', excel: 15 },
+  ];
+
+  /** Tabla de UNA partida (PDF y Word): líneas + totales de la partida */
+  private tablaPartida(partida: PartidaDiario): TablaPrint {
+    return {
+      columnas: this.columnas,
+      filas: partida.lineas.map((l) => [
+        l.ctacontable,
+        l.descripcionCta || l.descripcion || '',
+        Number(l.debito) || 0,
+        Number(l.credito) || 0,
+      ]),
+      filaTotales: [
+        '',
+        'TOTALES',
+        Number(partida.totalDebito) || 0,
+        Number(partida.totalCredito) || 0,
+      ],
+      // "TOTALES" a la derecha de Descripción, pegado a los importes
+      alineacionesTotales: [undefined, 'right', undefined, undefined],
+    };
+  }
+
+  /** Tabla única de Excel: todas las partidas con sus líneas */
+  private tablaExcel(): TablaPrint {
+    const filas: (string | number | null)[][] = [];
+    const filasTotales: number[] = [];
+
+    this.partidas().forEach((p, i) => {
+      if (i > 0) filas.push(['', '', '', '', '', '']);
+      for (const l of p.lineas) {
+        filas.push([
+          p.nropartida,
+          this.formatFechaCorta(p.fecha),
+          l.ctacontable,
+          l.descripcionCta || l.descripcion || '',
+          Number(l.debito) || 0,
+          Number(l.credito) || 0,
+        ]);
+      }
+      filasTotales.push(filas.length);
+      filas.push([
+        '',
+        '',
+        '',
+        'TOTALES',
+        Number(p.totalDebito) || 0,
+        Number(p.totalCredito) || 0,
+      ]);
     });
+
+    return {
+      columnas: this.columnasExcel,
+      filas,
+      filasTotales,
+      // "TOTALES" a la derecha de Descripción, pegado a los importes
+      alineacionesTotales: [undefined, undefined, undefined, 'right', undefined, undefined],
+    };
   }
 
   // ========== EXPORTACIONES ==========
 
-  exportPDF(): void {
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageW = doc.internal.pageSize.getWidth();
-
-    // Encabezado
-    doc.setFontSize(14);
-    doc.text('LIBRO DIARIO', pageW / 2, 12, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.text(this.getNombreEmpresa(), pageW / 2, 19, { align: 'center' });
-
-    doc.setFontSize(9);
-    doc.text(`Rango: ${this.getRangoFechas()}`, 14, 26);
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 14, 31);
-    doc.text(`Fecha impresión: ${this.getFechaHoraImpresion()}`, pageW - 14, 31, { align: 'right' });
-
-    // Línea separadora gris
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(14, 33, pageW - 14, 33);
-
-    let y = 38;
-    for (const partida of this.partidas()) {
-      if (y > 250) {
-        this.agregarPiePDF(doc);
-        doc.addPage();
-        y = 15;
-      }
-
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Partida #${partida.nropartida}  |  ${this.formatFechaCorta(partida.fecha)}  |  ${partida.descripcion}`, 14, y);
-      y += 5;
-
-      const body = partida.lineas.map(l => [
-        l.ctacontable,
-        l.descripcionCta || l.descripcion || '',
-        l.debito.toFixed(2),
-        l.credito.toFixed(2),
-      ]);
-
-      body.push(['', 'TOTALES', (partida.totalDebito || 0).toFixed(2), (partida.totalCredito || 0).toFixed(2)]);
-
-      autoTable(doc, {
-        startY: y,
-        head: [['Cta Contable', 'Descripción', 'Débito', 'Crédito']],
-        body,
-        theme: 'plain',
-        styles: {
-          fontSize: 8,
-          lineWidth: 0.1,
-          lineColor: [150, 150, 150],
-        },
-        headStyles: {
-          fillColor: false,
-          textColor: [50, 50, 50],
-          fontStyle: 'bold',
-          lineWidth: 0.3,
-          lineColor: [100, 100, 100],
-        },
-        margin: { left: 14, right: 14 },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: 'auto' },
-          2: { halign: 'right', cellWidth: 30 },
-          3: { halign: 'right', cellWidth: 30 },
-        },
-        didDrawPage: () => {
-          this.agregarPiePDF(doc);
-        },
-      });
-
-      y = (doc as any).lastAutoTable.finalY + 8;
-    }
-
-    this.agregarPiePDF(doc);
-
-    // Generar blob y mostrar en visor
+  /** Genera el PDF y lo muestra en pantalla (visor) */
+  async exportPDF(): Promise<void> {
+    if (!this.partidas().length) return;
+    const doc = await this.construirPDF();
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
@@ -22464,215 +32013,114 @@ export class LibroDiarioComponent implements OnInit {
     this.mostrarVisor.set(false);
   }
 
-  descargarPDF(): void {
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageW = doc.internal.pageSize.getWidth();
-
-    doc.setFontSize(14);
-    doc.text('LIBRO DIARIO', pageW / 2, 12, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text(this.getNombreEmpresa(), pageW / 2, 19, { align: 'center' });
-    doc.setFontSize(9);
-    doc.text(`Rango: ${this.getRangoFechas()}`, 14, 26);
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 14, 31);
-    doc.text(`Fecha impresión: ${this.getFechaHoraImpresion()}`, pageW - 14, 31, { align: 'right' });
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(14, 33, pageW - 14, 33);
-
-    let y = 38;
-    for (const partida of this.partidas()) {
-      if (y > 250) {
-        this.agregarPiePDF(doc);
-        doc.addPage();
-        y = 15;
-      }
-
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Partida #${partida.nropartida}  |  ${this.formatFechaCorta(partida.fecha)}  |  ${partida.descripcion}`, 14, y);
-      y += 5;
-
-      const body = partida.lineas.map(l => [
-        l.ctacontable,
-        l.descripcionCta || l.descripcion || '',
-        l.debito.toFixed(2),
-        l.credito.toFixed(2),
-      ]);
-
-      body.push(['', 'TOTALES', (partida.totalDebito || 0).toFixed(2), (partida.totalCredito || 0).toFixed(2)]);
-
-      autoTable(doc, {
-        startY: y,
-        head: [['Cta Contable', 'Descripción', 'Débito', 'Crédito']],
-        body,
-        theme: 'plain',
-        styles: { fontSize: 8, lineWidth: 0.1, lineColor: [150, 150, 150] },
-        headStyles: { fillColor: false, textColor: [50, 50, 50], fontStyle: 'bold', lineWidth: 0.3, lineColor: [100, 100, 100] },
-        margin: { left: 14, right: 14 },
-        columnStyles: { 0: { cellWidth: 30 }, 1: { cellWidth: 'auto' }, 2: { halign: 'right', cellWidth: 30 }, 3: { halign: 'right', cellWidth: 30 } },
-        didDrawPage: () => { this.agregarPiePDF(doc); },
-      });
-
-      y = (doc as any).lastAutoTable.finalY + 8;
-    }
-
-    this.agregarPiePDF(doc);
+  async descargarPDF(): Promise<void> {
+    if (!this.partidas().length) return;
+    const doc = await this.construirPDF();
     doc.save('libro-diario.pdf');
     this.messageService.add({ severity: 'success', summary: 'PDF descargado', detail: 'Libro Diario descargado' });
   }
 
-  private agregarPiePDF(doc: jsPDF): void {
-    const pageH = doc.internal.pageSize.getHeight();
-    const pageW = doc.internal.pageSize.getWidth();
+  /**
+   * PDF: encabezado compartido + bloque de partida con etiquetas alineadas
+   * (`Partida No.:` / `Fecha......:` / `Concepto...:`) + tabla por partida
+   * (filetes discontinuos, importes en 0.00 suprimidos y totales de la
+   * partida) + encabezado/pie paginados.
+   */
+  private async construirPDF(): Promise<jsPDF> {
+    const enc = await this.encabezadoImpresion();
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const altoEnc = this.print.pdfEncabezado(doc, enc);
+    const limite = doc.internal.pageSize.getHeight() - 22;
+    const anchoUtil = doc.internal.pageSize.getWidth() - 20;
 
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(14, pageH - 12, pageW - 14, pageH - 12);
-
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 14, pageH - 8);
-    doc.text(`${this.getFechaHoraImpresion()}`, pageW - 14, pageH - 8, { align: 'right' });
-  }
-
-  exportExcel(): void {
-    const rows: any[][] = [];
-
-    // Encabezado
-    rows.push([this.getNombreEmpresa()]);
-    rows.push(['LIBRO DIARIO']);
-    rows.push([`Rango: ${this.getRangoFechas()}`]);
-    rows.push([`Impreso por: ${this.getUsuarioImpresion()}   |   Fecha: ${this.getFechaHoraImpresion()}`]);
-    rows.push([]);
-
-    // Columnas
-    rows.push(['Partida', 'Fecha', 'Cta Contable', 'Descripción', 'Débito', 'Crédito']);
-
+    let y = altoEnc;
     for (const partida of this.partidas()) {
-      for (const l of partida.lineas) {
-        rows.push([
-          partida.nropartida,
-          this.formatFechaCorta(partida.fecha),
-          l.ctacontable,
-          l.descripcionCta || l.descripcion || '',
-          l.debito,
-          l.credito,
-        ]);
+      const concepto = doc.splitTextToSize(`Concepto...: ${partida.descripcion}`, anchoUtil) as string[];
+
+      // Reserva: 2 líneas fijas + concepto + línea en blanco + cabecera + 1 fila
+      const altoBloque = 4.5 * (2 + concepto.length) + 2 + 16;
+      if (y + altoBloque > limite) {
+        doc.addPage();
+        y = altoEnc;
       }
-      rows.push(['', '', '', 'TOTALES', partida.totalDebito || 0, partida.totalCredito || 0]);
-      rows.push([]);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(`Partida No.: ${String(partida.nropartida).padStart(10, '0')}`, 10, y);
+      y += 4.5;
+      doc.text(`Fecha......: ${this.formatFechaCorta(partida.fecha)}`, 10, y);
+      y += 4.5;
+      for (const linea of concepto) {
+        doc.text(linea, 10, y);
+        y += 4.5;
+      }
+      y += 2; // línea en blanco antes de la tabla
+
+      this.print.pdfTabla(doc, this.tablaPartida(partida), y, altoEnc);
+      y = ((doc as any).lastAutoTable?.finalY ?? y) + 9;
     }
 
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Libro Diario');
+    this.print.pdfPaginar(doc, enc, altoEnc);
+    return doc;
+  }
 
-    ws['!cols'] = [
-      { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 40 }, { wch: 15 }, { wch: 15 },
-    ];
+  /** Excel con letterhead (logo, empresa, datos fiscales) vía exceljs */
+  async exportExcel(): Promise<void> {
+    if (!this.partidas().length) return;
 
-    XLSX.writeFile(wb, 'libro-diario.xlsx');
+    const enc = await this.encabezadoImpresion();
+    const tab = this.tablaExcel();
+    const wb = this.print.nuevoLibro();
+    const ws = wb.addWorksheet('Libro Diario');
+    const filaCabecera = this.print.excelEncabezado(wb, ws, enc, tab);
+    this.print.excelTabla(ws, tab, filaCabecera, 'landscape');
+    await this.print.descargarExcel(wb, 'libro-diario.xlsx');
+
     this.messageService.add({ severity: 'success', summary: 'Excel generado', detail: 'Libro Diario exportado en Excel' });
   }
 
-  exportWord(): void {
-    const children: any[] = [];
+  /** Word: encabezado compartido repetido en cada página + bloque de partida */
+  async exportWord(): Promise<void> {
+    if (!this.partidas().length) return;
 
-    // Encabezado
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: 'LIBRO DIARIO', bold: true, size: 28 })],
-    }));
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: this.getNombreEmpresa(), bold: true, size: 22 })],
-    }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Rango: ${this.getRangoFechas()}`, size: 18 })],
-    }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Impreso por: ${this.getUsuarioImpresion()}`, size: 18 })],
-    }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Fecha impresión: ${this.getFechaHoraImpresion()}`, size: 18 })],
-    }));
-    children.push(new Paragraph({ text: '' }));
+    const enc = await this.encabezadoImpresion();
+    const children: (Paragraph | Table)[] = [];
 
     for (const partida of this.partidas()) {
-      children.push(new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        children: [new TextRun({
-          text: `Partida #${partida.nropartida} - ${this.formatFechaCorta(partida.fecha)} - ${partida.descripcion}`,
-          bold: true, size: 20,
-        })],
-      }));
-
-      const headerRow = new TableRow({
-        tableHeader: true,
-        children: ['Cta Contable', 'Descripción', 'Débito', 'Crédito'].map(h =>
-          new TableCell({
-            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 18 })] })],
-          })
-        ),
-      });
-
-      const rows = partida.lineas.map(l =>
-        new TableRow({
+      children.push(
+        new Paragraph({
+          spacing: { before: 280, after: 0 },
           children: [
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: l.ctacontable, size: 18 })] })] }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: l.descripcionCta || l.descripcion || '', size: 18 })] })] }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: l.debito.toFixed(2), size: 18 })], alignment: AlignmentType.RIGHT })],
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: l.credito.toFixed(2), size: 18 })], alignment: AlignmentType.RIGHT })],
+            new TextRun({
+              text: `Partida No.: ${String(partida.nropartida).padStart(10, '0')}`,
+              bold: true,
+              size: 20,
             }),
           ],
-        })
+        }),
+        new Paragraph({
+          spacing: { after: 0 },
+          children: [new TextRun({ text: `Fecha......: ${this.formatFechaCorta(partida.fecha)}`, size: 20 })],
+        }),
+        new Paragraph({
+          spacing: { after: 120 },
+          children: [new TextRun({ text: `Concepto...: ${partida.descripcion}`, size: 20 })],
+        }),
       );
-
-      rows.push(new TableRow({
-        children: [
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '', size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'TOTALES', bold: true, size: 18 })] })] }),
-          new TableCell({
-            children: [new Paragraph({ children: [new TextRun({ text: (partida.totalDebito || 0).toFixed(2), bold: true, size: 18 })], alignment: AlignmentType.RIGHT })],
-          }),
-          new TableCell({
-            children: [new Paragraph({ children: [new TextRun({ text: (partida.totalCredito || 0).toFixed(2), bold: true, size: 18 })], alignment: AlignmentType.RIGHT })],
-          }),
-        ],
-      }));
-
-      const table = new Table({
-        rows: [headerRow, ...rows],
-        width: { size: 100, type: WidthType.PERCENTAGE },
-      });
-
-      children.push(table);
-      children.push(new Paragraph({ text: '' }));
+      children.push(this.print.wordTabla(this.tablaPartida(partida), 'portrait'));
     }
 
-    // Pie
-    children.push(new Paragraph({ text: '' }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Impreso por: ${this.getUsuarioImpresion()} | Fecha: ${this.getFechaHoraImpresion()}`, size: 16, color: '666666' })],
-    }));
+    const documento = this.print.wordDocumento(enc, 'portrait', children);
 
-    const doc = new Document({
-      sections: [{ children }],
-    });
+    const blob = await Packer.toBlob(documento);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'libro-diario.docx';
+    a.click();
+    URL.revokeObjectURL(url);
 
-    Packer.toBlob(doc).then(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'libro-diario.docx';
-      a.click();
-      URL.revokeObjectURL(url);
-      this.messageService.add({ severity: 'success', summary: 'Word generado', detail: 'Libro Diario exportado en Word' });
-    });
+    this.messageService.add({ severity: 'success', summary: 'Word generado', detail: 'Libro Diario exportado en Word' });
   }
 
   // ========== UTILIDADES ==========
@@ -22686,10 +32134,16 @@ export class LibroDiarioComponent implements OnInit {
     return d.toLocaleDateString('es-HN');
   }
 
+  /** Rango de fechas del criterio: "1/10/2026 al 4/10/2026" (sin ceros a la izquierda) */
   getRangoFechas(): string {
-    const desde = this.fechaDesde() ? this.formatFechaCorta(this.fechaDesde()!) : 'Inicio';
-    const hasta = this.fechaHasta() ? this.formatFechaCorta(this.fechaHasta()!) : 'Hoy';
+    const desde = this.fechaDesde() ? this.fechaSinCero(this.fechaDesde()!) : 'Inicio';
+    const hasta = this.fechaHasta() ? this.fechaSinCero(this.fechaHasta()!) : 'Hoy';
     return `${desde} al ${hasta}`;
+  }
+
+  /** Fecha d/m/aaaa SIN ceros a la izquierda (formato del criterio del encabezado) */
+  private fechaSinCero(fecha: Date): string {
+    return `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
   }
 
   get granTotalDebito(): number {
@@ -22719,14 +32173,50 @@ export class LibroDiarioComponent implements OnInit {
   <div class="page-header">
     <h2><i class="pi pi-book"></i> Libro Mayor</h2>
     <div class="header-actions">
-      <p-button size="small" label="PDF" icon="pi pi-file-pdf" severity="danger" variant="text" [rounded]="true"
-                (onClick)="exportPDF()" [disabled]="datos().length === 0" pTooltip="Ver PDF" />
-      <p-button size="small" label="Excel" icon="pi pi-file-excel" severity="success" variant="text" [rounded]="true"
-                (onClick)="exportExcel()" [disabled]="datos().length === 0" pTooltip="Descargar Excel" />
-      <p-button size="small" label="Word" icon="pi pi-file-word" severity="info" variant="text" [rounded]="true"
-                (onClick)="exportWord()" [disabled]="datos().length === 0" pTooltip="Descargar Word" />
-      <p-button size="small" label="Imprimir" icon="pi pi-print" severity="secondary" variant="text" [rounded]="true"
-                (onClick)="imprimir()" [disabled]="datos().length === 0" pTooltip="Imprimir reporte" />
+      <p-button
+        size="small"
+        label="PDF"
+        icon="pi pi-file-pdf"
+        severity="danger"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportPDF()"
+        [disabled]="datos().length === 0"
+        pTooltip="Ver PDF"
+      />
+      <p-button
+        size="small"
+        label="Excel"
+        icon="pi pi-file-excel"
+        severity="success"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportExcel()"
+        [disabled]="datos().length === 0"
+        pTooltip="Descargar Excel"
+      />
+      <p-button
+        size="small"
+        label="Word"
+        icon="pi pi-file-word"
+        severity="info"
+        variant="text"
+        [rounded]="true"
+        (onClick)="exportWord()"
+        [disabled]="datos().length === 0"
+        pTooltip="Descargar Word"
+      />
+      <p-button
+        size="small"
+        label="Imprimir"
+        icon="pi pi-print"
+        severity="secondary"
+        variant="text"
+        [rounded]="true"
+        (onClick)="imprimir()"
+        [disabled]="datos().length === 0"
+        pTooltip="Imprimir reporte"
+      />
     </div>
   </div>
 
@@ -22737,28 +32227,66 @@ export class LibroDiarioComponent implements OnInit {
         <div class="p-col-12 p-col-2">
           <div class="p-field">
             <label>Período</label>
-            <p-select [options]="meses" [(ngModel)]="periodo" optionLabel="label" optionValue="value"
-                      placeholder="Mes" styleClass="w-full" size="small" appendTo="body" />
+            <p-select
+              [options]="meses"
+              [(ngModel)]="periodo"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Mes"
+              styleClass="w-full"
+              size="small"
+              appendTo="body"
+            />
           </div>
         </div>
         <div class="p-col-12 p-col-2">
           <div class="p-field">
             <label>Año</label>
-            <p-inputNumber [(ngModel)]="anio" [min]="2020" [max]="2030" [useGrouping]="false" styleClass="w-full" size="small" />
+            <p-inputNumber
+              [(ngModel)]="anio"
+              [min]="2020"
+              [max]="2030"
+              [useGrouping]="false"
+              styleClass="w-full"
+              size="small"
+            />
           </div>
         </div>
         <div class="p-col-12 p-col-2">
           <div class="p-field">
             <label>Nivel Máximo</label>
-            <p-select [options]="niveles()" [(ngModel)]="nivelMaximo" optionLabel="label" optionValue="value"
-                      styleClass="w-full" size="small" appendTo="body" />
+            <p-select
+              [options]="niveles()"
+              [(ngModel)]="nivelMaximo"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              size="small"
+              appendTo="body"
+            />
           </div>
         </div>
-        <div class="p-col-12 p-col-5 d-flex align-items-end gap-2">
-          <p-button size="small" label="Buscar" icon="pi pi-search" severity="success" variant="text" [raised]="true" [rounded]="true"
-                    [loading]="cargando()" (onClick)="buscar()" />
-          <p-button size="small" label="Limpiar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
-                    (onClick)="limpiar()" />
+        <div class="mt-3 p-col-12 p-col-5 d-flex align-items-end gap-2">
+          <p-button
+            size="small"
+            label="Buscar"
+            icon="pi pi-search"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            [rounded]="true"
+            [loading]="cargando()"
+            (onClick)="buscar()"
+          />
+          <p-button
+            size="small"
+            label="Limpiar"
+            icon="pi pi-times"
+            severity="secondary"
+            variant="text"
+            [rounded]="true"
+            (onClick)="limpiar()"
+          />
         </div>
       </div>
     </div>
@@ -22766,94 +32294,131 @@ export class LibroDiarioComponent implements OnInit {
 
   <!-- Tabla Libro Mayor -->
   @if (datos().length > 0) {
-    <div class="card">
-      <h4 class="mb-2">Libro Mayor — {{ getMesLabel() }} {{ anio() }}</h4>
-      <p-table [value]="datosFiltrados()" [paginator]="true" [rows]="50" size="small"
-               [showCurrentPageReport]="true"
-               currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-               [rowsPerPageOptions]="[25, 50, 100]"
-               [sortField]="'ctacontable'" [sortOrder]="1">
-        <ng-template pTemplate="header">
-          <tr>
-            <th style="width: 15%">Cuenta</th>
-            <th style="width: 25%">Descripción</th>
-            <th style="width: 8%" class="text-center">Nivel</th>
-            <th style="width: 15%" class="text-right">Saldo Acum.</th>
-            <th style="width: 15%" class="text-right">Debe</th>
-            <th style="width: 15%" class="text-right">Haber</th>
-            <th style="width: 15%" class="text-right">Saldo (D/C)</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-row>
-          <tr [class]="getNivelClass(row.nivel)" [class.fila-operable]="row.sn_operable === 'S'"
-              [class.fila-sumaria]="row.sn_operable === 'N'">
-            <td>
-              <span [style.marginLeft]="getIndentacion(row.nivel)">
-                <strong>{{ row.ctacontable }}</strong>
-              </span>
-            </td>
-            <td>
-              <span [style.marginLeft]="getIndentacion(row.nivel)">
-                {{ row.descripcion }}
-              </span>
-            </td>
-            <td class="text-center">
-              <span class="nivel-badge" [class]="'nivel-badge-' + row.nivel">N{{ row.nivel }}</span>
-            </td>
-            <td class="text-right">{{ formatNumber(row.saldoAcum) }}</td>
-            <td class="text-right">{{ row.debe > 0 ? formatNumber(row.debe) : '-' }}</td>
-            <td class="text-right">{{ row.haber > 0 ? formatNumber(row.haber) : '-' }}</td>
-            <td class="text-right" [class.debe]="row.naturaleza === 'D'" [class.haber]="row.naturaleza === 'C'">
-              {{ formatNumber(row.saldo) }}
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="footer">
-          <tr class="totales-row">
-            <td colspan="3"><strong>TOTALES</strong></td>
-            <td class="text-right"><strong>{{ formatNumber(totalSaldoAcum()) }}</strong></td>
-            <td class="text-right"><strong>{{ formatNumber(totalDebe()) }}</strong></td>
-            <td class="text-right"><strong>{{ formatNumber(totalHaber()) }}</strong></td>
-            <td class="text-right">
-              <strong>{{ formatNumber(totalSaldo()) }}</strong>
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="7" class="text-center text-muted">
-              No hay datos. Seleccione período y haga clic en "Buscar".
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </div>
+  <div class="card">
+    <p-table
+      [value]="datosFiltrados()"
+      [paginator]="true"
+      [rows]="50"
+      size="small"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[25, 50, 100]"
+      [sortField]="'ctacontable'"
+      [sortOrder]="1"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 15%">Cuenta</th>
+          <th style="width: 25%">Descripción</th>
+          <th style="width: 8%" class="text-center">Nivel</th>
+          <th style="width: 12%" class="text-right">Saldo Acum.</th>
+          <th style="width: 10%" class="text-right">Debe</th>
+          <th style="width: 10%" class="text-right">Haber</th>
+          <th style="width: 14%" class="text-right">Saldo (D/C)</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr
+          class="mono"
+          [ngClass]="getNivelClass(row.nivel)"
+          [class.fila-operable]="row.sn_operable === 'S'"
+          [class.fila-sumaria]="row.sn_operable === 'N'"
+        >
+          <td>
+            <span [style.marginLeft]="getIndentacion(row.nivel)">
+              <strong>{{ row.ctacontable }}</strong>
+            </span>
+          </td>
+          <td>
+            <span [style.marginLeft]="getIndentacion(row.nivel)"> {{ row.descripcion }} </span>
+          </td>
+          <td class="text-center">
+            <span class="nivel-badge" [class]="'nivel-badge-' + row.nivel">N{{ row.nivel }}</span>
+          </td>
+          <td class="text-right">{{ formatNumber(row.saldoAcum) }} ({{ row.tiposaldoAcum }})</td>
+          <td class="text-right">{{ row.debe > 0 ? formatNumber(row.debe) : '-' }}</td>
+          <td class="text-right">{{ row.haber > 0 ? formatNumber(row.haber) : '-' }}</td>
+          <td
+            class="text-right"
+            [class.debe]="row.tiposaldo === 'D'"
+            [class.haber]="row.tiposaldo === 'C'"
+            [title]="'Naturaleza de la cuenta: ' + (row.naturaleza === 'D' ? 'Deudora' : 'Acreedora') + ' (catálogo)'"
+          >
+            {{ formatNumber(row.saldo) }} ({{ row.tiposaldo }})
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="footer">
+        <tr class="totales-row mono">
+          <td colspan="3"><strong>TOTALES</strong></td>
+          <td class="text-right">
+            <strong>{{ formatNumber(totalSaldoAcum()) }} ({{ esDeudor() ? 'D' : 'C' }})</strong>
+          </td>
+          <td class="text-right"><strong>{{ formatNumber(totalDebe()) }}</strong></td>
+          <td class="text-right"><strong>{{ formatNumber(totalHaber()) }}</strong></td>
+          <td class="text-right">
+            <strong>{{ formatNumber(totalSaldo()) }} ({{ esDeudor() ? 'D' : 'C' }})</strong>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center text-muted">
+            No hay datos. Seleccione período y haga clic en "Buscar".
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
   }
 
   <!-- Estado vacío -->
   @if (datos().length === 0 && !cargando()) {
-    <div class="card empty-state">
-      <i class="pi pi-book" style="font-size: 3rem; color: var(--c-text-muted);"></i>
-      <h3 style="color: var(--c-text-muted); margin-top: 1rem;">Libro Mayor</h3>
-      <p style="color: var(--c-text-muted);">Seleccione el período y haga clic en "Buscar" para generar el reporte.</p>
-    </div>
+  <div class="card empty-state">
+    <i class="pi pi-book" style="font-size: 3rem; color: var(--c-text-muted)"></i>
+    <h3 style="color: var(--c-text-muted); margin-top: 1rem">Libro Mayor</h3>
+    <p style="color: var(--c-text-muted)">
+      Seleccione el período y haga clic en "Buscar" para generar el reporte.
+    </p>
+  </div>
   }
 </div>
 
 <!-- Visor PDF -->
-<p-dialog [(visible)]="mostrarVisor" [header]="'Libro Mayor — ' + getMesLabel() + ' ' + anio()"
-          [modal]="true" [draggable]="false" [resizable]="false" [style]="{ width: '90vw', height: '85vh' }"
-          [breakpoints]="{ '960px': '95vw', '640px': '98vw' }">
+<p-dialog
+  [(visible)]="mostrarVisor"
+  [header]="'Libro Mayor — ' + getMesLabel() + ' ' + anio()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', height: '85vh' }"
+  [breakpoints]="{ '960px': '95vw', '640px': '98vw' }"
+>
   <div class="pdf-viewer-container">
     @if (pdfUrl()) {
-      <iframe [src]="pdfUrl()" class="pdf-iframe"></iframe>
+    <iframe [src]="pdfUrl()" class="pdf-iframe"></iframe>
     }
   </div>
   <ng-template pTemplate="footer">
-    <p-button size="small" label="Descargar PDF" icon="pi pi-download" severity="danger" variant="text" [raised]="true" [rounded]="true"
-              (onClick)="descargarPDF()" />
-    <p-button size="small" label="Cerrar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
-              (onClick)="cerrarVisor()" />
+    <p-button
+      size="small"
+      label="Descargar PDF"
+      icon="pi pi-download"
+      severity="danger"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      (onClick)="descargarPDF()"
+    />
+    <p-button
+      size="small"
+      label="Cerrar"
+      icon="pi pi-times"
+      severity="secondary"
+      variant="text"
+      [rounded]="true"
+      (onClick)="cerrarVisor()"
+    />
   </ng-template>
 </p-dialog>
 
@@ -22915,9 +32480,6 @@ export class LibroDiarioComponent implements OnInit {
   font-size: 1rem;
   font-weight: 700;
   color: var(--c-text);
-
-  &.debe { color: var(--c-primary); }
-  &.haber { color: #ef4444; }
 }
 
 // ── Tabla ──
@@ -22938,6 +32500,12 @@ export class LibroDiarioComponent implements OnInit {
     border-bottom: 1px solid var(--c-border);
     font-size: 0.85rem;
   }
+}
+
+// ── Filas en monoespaciada (mismo estilo que saldoscta / libro-diario) ──
+.mono {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
 }
 
 // ── Filas por nivel ──
@@ -22994,12 +32562,10 @@ export class LibroDiarioComponent implements OnInit {
 
 // ── Montos ──
 .debe {
-  color: var(--c-primary);
   font-weight: 600;
 }
 
 .haber {
-  color: #ef4444;
   font-weight: 600;
 }
 
@@ -23093,24 +32659,32 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { EmpresasService } from '../../../core/services/empresas.service';
+import {
+  ReportesPrintService,
+  EncabezadoPrint,
+  TablaPrint,
+  ColumnaPrint,
+} from '../../../core/services/reportes-print.service';
 import { LibroMayorItem } from '../../../core/models/contabilidad.models';
 
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-import {
-  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-  WidthType, AlignmentType, HeadingLevel,
-} from 'docx';
+import { Packer } from 'docx';
 
 @Component({
   selector: 'app-libro-mayor',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, TableModule, ButtonModule,
-    InputNumberModule, InputTextModule, SelectModule, ToastModule,
-    CardModule, TooltipModule, DialogModule,
+    CommonModule,
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    InputNumberModule,
+    InputTextModule,
+    SelectModule,
+    ToastModule,
+    CardModule,
+    TooltipModule,
+    DialogModule,
   ],
   providers: [MessageService],
   templateUrl: './libro-mayor.html',
@@ -23119,7 +32693,7 @@ import {
 export class LibroMayorComponent implements OnInit {
   private contabilidad = inject(ContabilidadService);
   private auth = inject(AuthService);
-  private empresas = inject(EmpresasService);
+  private print = inject(ReportesPrintService);
   private sanitizer = inject(DomSanitizer);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
@@ -23139,21 +32713,28 @@ export class LibroMayorComponent implements OnInit {
   // Estado
   cargando = signal(false);
   datos = signal<LibroMayorItem[]>([]);
-  nombreEmpresa = signal('');
   expandido = signal<Set<string>>(new Set());
 
   // Meses
   readonly meses = [
-    { label: 'Enero', value: 1 }, { label: 'Febrero', value: 2 }, { label: 'Marzo', value: 3 },
-    { label: 'Abril', value: 4 }, { label: 'Mayo', value: 5 }, { label: 'Junio', value: 6 },
-    { label: 'Julio', value: 7 }, { label: 'Agosto', value: 8 }, { label: 'Septiembre', value: 9 },
-    { label: 'Octubre', value: 10 }, { label: 'Noviembre', value: 11 }, { label: 'Diciembre', value: 12 },
+    { label: 'Enero', value: 1 },
+    { label: 'Febrero', value: 2 },
+    { label: 'Marzo', value: 3 },
+    { label: 'Abril', value: 4 },
+    { label: 'Mayo', value: 5 },
+    { label: 'Junio', value: 6 },
+    { label: 'Julio', value: 7 },
+    { label: 'Agosto', value: 8 },
+    { label: 'Septiembre', value: 9 },
+    { label: 'Octubre', value: 10 },
+    { label: 'Noviembre', value: 11 },
+    { label: 'Diciembre', value: 12 },
   ];
 
   // Datos filtrados
   datosFiltrados = computed(() => {
     const maxNivel = this.nivelMaximo();
-    return this.datos().filter(d => {
+    return this.datos().filter((d) => {
       if (maxNivel !== 99 && (Number(d.nivel) || 0) > maxNivel) return false;
       return true;
     });
@@ -23165,18 +32746,33 @@ export class LibroMayorComponent implements OnInit {
    * (sin esto, el total salía exactamente doble).
    */
   private filasFinalesDe(filas: LibroMayorItem[]): LibroMayorItem[] {
-    const conHijas = new Set(filas.map(f => f.padre).filter(p => p != null));
-    return filas.filter(f => !conHijas.has(f.ctacontable));
+    const conHijas = new Set(filas.map((f) => f.padre).filter((p) => p != null));
+    return filas.filter((f) => !conHijas.has(f.ctacontable));
   }
 
   // Totales — solo cuentas finales (jerarquía sin duplicar)
   finales = computed(() => this.filasFinalesDe(this.datosFiltrados()));
-  totalDebe = computed(() => this.finales().reduce((sum, r) => sum + Math.abs(Number(r.debe) || 0), 0));
-  totalHaber = computed(() => this.finales().reduce((sum, r) => sum + Math.abs(Number(r.haber) || 0), 0));
+  totalDebe = computed(() =>
+    this.finales().reduce((sum, r) => sum + Math.abs(Number(r.debe) || 0), 0),
+  );
+  totalHaber = computed(() =>
+    this.finales().reduce((sum, r) => sum + Math.abs(Number(r.haber) || 0), 0),
+  );
 
-  /** Acumulado neto: cuentas deudoras (D) menos acreedoras (C). */
+  /**
+   * Acumulado neto firmado.
+   * El signo sale de `tiposaldoAcum` (dirección real calculada por operación
+   * contable), NO de `naturaleza` (atributo estático del catálogo): una cuenta
+   * de activo con saldo acreedor debe restar, no sumar.
+   */
   acumFirmado = computed(() =>
-    this.finales().reduce((sum, r) => sum + (r.naturaleza === 'C' ? -1 : 1) * Math.abs(Number(r.saldoAcum) || 0), 0));
+    this.finales().reduce(
+      (sum, r) =>
+        sum +
+        ((r.tiposaldoAcum ?? r.naturaleza) === 'C' ? -1 : 1) * Math.abs(Number(r.saldoAcum) || 0),
+      0,
+    ),
+  );
 
   /** Saldo acumulado del total (siempre positivo). */
   totalSaldoAcum = computed(() => Math.abs(this.acumFirmado()));
@@ -23203,23 +32799,19 @@ export class LibroMayorComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    const empresaId = this.auth.currentUser()?.empresaId;
-    if (empresaId) {
-      this.empresas.getOne(empresaId).pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(e => this.nombreEmpresa.set(e.descripcion));
-    }
-
     // Cargar niveles contables desde API
-    this.contabilidad.getNiveles().pipe(takeUntilDestroyed(this.destroyRef))
+    this.contabilidad
+      .getNiveles()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (niveles) => {
           const activos = niveles
-            .filter(n => n.sn_activo === 'S')
+            .filter((n) => n.sn_activo === 'S')
             .sort((a, b) => Number(a.nivel) - Number(b.nivel));
           const maxNivel = activos.length > 0 ? Number(activos[activos.length - 1].nivel) : 6;
           const opciones = [
             { label: `Todos (N1–N${maxNivel})`, value: 99 },
-            ...activos.map(n => ({ label: `Nivel ${n.nivel}`, value: Number(n.nivel) })),
+            ...activos.map((n) => ({ label: `Nivel ${n.nivel}`, value: Number(n.nivel) })),
           ];
           this.niveles.set(opciones);
           this.nivelMaximo.set(99);
@@ -23228,9 +32820,12 @@ export class LibroMayorComponent implements OnInit {
           // Fallback si falla la API
           this.niveles.set([
             { label: 'Todos', value: 99 },
-            { label: 'Nivel 1', value: 1 }, { label: 'Nivel 2', value: 2 },
-            { label: 'Nivel 3', value: 3 }, { label: 'Nivel 4', value: 4 },
-            { label: 'Nivel 5', value: 5 }, { label: 'Nivel 6', value: 6 },
+            { label: 'Nivel 1', value: 1 },
+            { label: 'Nivel 2', value: 2 },
+            { label: 'Nivel 3', value: 3 },
+            { label: 'Nivel 4', value: 4 },
+            { label: 'Nivel 5', value: 5 },
+            { label: 'Nivel 6', value: 6 },
           ]);
         },
       });
@@ -23238,31 +32833,33 @@ export class LibroMayorComponent implements OnInit {
 
   buscar(): void {
     this.cargando.set(true);
-    this.contabilidad.generarLibroMayor({
-      empresaId: this.auth.currentUser()?.empresaId ?? 0,
-      periodo: this.periodo(),
-      anio: this.anio(),
-    }).pipe(takeUntilDestroyed(this.destroyRef))
-    .subscribe({
-      next: (data) => {
-        this.datos.set(data);
-        this.expandido.set(new Set());
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Generado',
-          detail: `Libro Mayor: ${data.length} cuentas`,
-        });
-        this.cargando.set(false);
-      },
-      error: (err) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: err.error?.message || 'Error al generar libro mayor',
-        });
-        this.cargando.set(false);
-      },
-    });
+    this.contabilidad
+      .generarLibroMayor({
+        empresaId: this.auth.currentUser()?.empresaId ?? 0,
+        periodo: this.periodo(),
+        anio: this.anio(),
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.datos.set(data);
+          this.expandido.set(new Set());
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Generado',
+            detail: `Libro Mayor: ${data.length} cuentas`,
+          });
+          this.cargando.set(false);
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err.error?.message || 'Error al generar libro mayor',
+          });
+          this.cargando.set(false);
+        },
+      });
   }
 
   limpiar(): void {
@@ -23270,7 +32867,7 @@ export class LibroMayorComponent implements OnInit {
   }
 
   getMesLabel(): string {
-    return this.meses.find(m => m.value === this.periodo())?.label ?? '';
+    return this.meses.find((m) => m.value === this.periodo())?.label ?? '';
   }
 
   /** Indentación visual según nivel de cuenta */
@@ -23291,102 +32888,127 @@ export class LibroMayorComponent implements OnInit {
 
   // ========== UTILIDADES DE IMPRESIÓN ==========
 
-  private getNombreEmpresa(): string {
-    return this.nombreEmpresa() || 'Empresa';
+  /** Período y nivel aplicados (línea meta de la impresión) */
+  private metaImpresion(): string {
+    let meta = `Período: ${this.getMesLabel()} ${this.anio()}`;
+    if (this.nivelMaximo() !== 99) meta += ` — Nivel ${this.nivelMaximo()}`;
+    return meta;
   }
 
-  private getUsuarioImpresion(): string {
-    const user = this.auth.currentUser();
-    return user?.nombre || user?.usuario || '';
+  /** Encabezado de los archivos exportados (PDF, Excel y Word) */
+  private async encabezadoImpresion(): Promise<EncabezadoPrint> {
+    return this.print.encabezado('LIBRO MAYOR', this.metaImpresion());
   }
 
-  private getFechaHoraImpresion(): string {
-    return new Date().toLocaleString('es-HN', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    });
+  /**
+   * Importe para PDF/Word: separador de miles con coma y 2 decimales con punto
+   * (ej. 999,999,999.99). Se arma a mano en vez de usar `toLocaleString`
+   * para que el formato no dependa del locale del navegador.
+   * Siempre en positivo: la dirección (D/C) se informa en la misma celda.
+   */
+  private fmt(valor: number): string {
+    const [entero, dec] = Math.abs(Number(valor) || 0).toFixed(2).split('.');
+    return `${entero.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${dec}`;
   }
 
-  private getTituloPeriodo(): string {
-    return `Libro Mayor — ${this.getMesLabel()} ${this.anio()}`;
+  /** Celda combinada "importe (D/C)" — PDF y Word. El importe 0.00 se suprime (celda vacía) */
+  private dc(valor: number, tipo: string | null | undefined): string {
+    if (Math.abs(Number(valor) || 0) < 0.005) return '';
+    return `${this.fmt(valor)} (${tipo ?? ''})`;
   }
 
-  private getBodyRows(): string[][] {
-    return this.datosFiltrados().map(d => [
+  /** Columnas PDF/Word (7): importe y D/C combinados en la misma celda */
+  private readonly columnasPdf: ColumnaPrint[] = [
+    { titulo: 'Cuenta', alinear: 'left' },
+    { titulo: 'Descripción', alinear: 'left' },
+    { titulo: 'Nivel', alinear: 'center', pdf: 15, word: 700 },
+    { titulo: 'Saldo Acum. (D/C)', alinear: 'right', pdf: 32, word: 1900 },
+    { titulo: 'Debe', alinear: 'right', pdf: 28, word: 1450 },
+    { titulo: 'Haber', alinear: 'right', pdf: 28, word: 1450 },
+    { titulo: 'Saldo (D/C)', alinear: 'right', pdf: 32, word: 1900 },
+  ];
+
+  /**
+   * Columnas Excel (9): D/C en columna aparte y saldos numéricos puros
+   * (se conserva el comportamiento numérico con el que siempre se exportó).
+   */
+  private readonly columnasExcel: ColumnaPrint[] = [
+    { titulo: 'Cuenta', alinear: 'left', excel: 15 },
+    { titulo: 'Descripción', alinear: 'left', excel: 35 },
+    { titulo: 'Nivel', alinear: 'center', excel: 8 },
+    { titulo: 'Saldo Acum.', alinear: 'right', excel: 18 },
+    { titulo: 'D/C', alinear: 'center', excel: 6 },
+    { titulo: 'Debe', alinear: 'right', excel: 18 },
+    { titulo: 'Haber', alinear: 'right', excel: 18 },
+    { titulo: 'Saldo', alinear: 'right', excel: 18 },
+    { titulo: 'D/C', alinear: 'center', excel: 6 },
+  ];
+
+  /** Tabla imprimible para PDF y Word (variantes con "(D)"/"(C)" combinados) */
+  private tablaPdfWord(): TablaPrint {
+    const filas: (string | number | null)[][] = this.datosFiltrados().map((d) => [
       d.ctacontable ?? '',
       d.descripcion ?? '',
       `N${d.nivel ?? ''}`,
-      (Number(d.saldoAcum) || 0).toFixed(2),
-      d.debe > 0 ? (Number(d.debe) || 0).toFixed(2) : '-',
-      d.haber > 0 ? (Number(d.haber) || 0).toFixed(2) : '-',
-      (Number(d.saldo) || 0).toFixed(2),
+      this.dc(d.saldoAcum, d.tiposaldoAcum ?? d.naturaleza),
+      // Importes en 0.00 → celda vacía (regla de diseño de los reportes)
+      d.debe > 0 ? this.fmt(d.debe) : '',
+      d.haber > 0 ? this.fmt(d.haber) : '',
+      this.dc(d.saldo, d.tiposaldo ?? d.naturaleza),
     ]);
+
+    return {
+      columnas: this.columnasPdf,
+      filas,
+      filaTotales: [
+        'TOTALES',
+        '',
+        '',
+        this.dc(this.totalSaldoAcum(), this.esDeudor() ? 'D' : 'C'),
+        this.fmt(this.totalDebe()),
+        this.fmt(this.totalHaber()),
+        this.dc(this.totalSaldo(), this.esDeudor() ? 'D' : 'C'),
+      ],
+    };
   }
 
-  private getTotalesRow(): string[] {
-    return [
-      'TOTALES', '', '',
-      (Number(this.totalSaldoAcum()) || 0).toFixed(2),
-      (Number(this.totalDebe()) || 0).toFixed(2),
-      (Number(this.totalHaber()) || 0).toFixed(2),
-      (Number(this.totalSaldo()) || 0).toFixed(2),
-    ];
+  /** Tabla para Excel (variantes numéricas + D/C en columna aparte) */
+  private tablaExcel(): TablaPrint {
+    const filas: (string | number | null)[][] = this.datosFiltrados().map((d) => [
+      d.ctacontable ?? '',
+      d.descripcion ?? '',
+      `N${d.nivel ?? ''}`,
+      Number(d.saldoAcum) || 0,
+      d.tiposaldoAcum ?? d.naturaleza ?? '',
+      Number(d.debe) || 0,
+      Number(d.haber) || 0,
+      Number(d.saldo) || 0,
+      d.tiposaldo ?? d.naturaleza ?? '',
+    ]);
+
+    return {
+      columnas: this.columnasExcel,
+      filas,
+      filaTotales: [
+        'TOTALES',
+        '',
+        '',
+        Number(this.totalSaldoAcum()) || 0,
+        this.esDeudor() ? 'D' : 'C',
+        Number(this.totalDebe()) || 0,
+        Number(this.totalHaber()) || 0,
+        Number(this.totalSaldo()) || 0,
+        this.esDeudor() ? 'D' : 'C',
+      ],
+    };
   }
 
   // ========== EXPORTACIONES ==========
 
-  exportPDF(): void {
-    const doc = new jsPDF('l', 'mm', 'letter'); // landscape
-    const pageW = doc.internal.pageSize.getWidth();
-
-    // Encabezado
-    doc.setFontSize(14);
-    doc.text('LIBRO MAYOR', pageW / 2, 12, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text(this.getNombreEmpresa(), pageW / 2, 18, { align: 'center' });
-    doc.setFontSize(9);
-    doc.text(this.getTituloPeriodo(), 14, 25);
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 14, 30);
-    doc.text(`Fecha impresión: ${this.getFechaHoraImpresion()}`, pageW - 14, 30, { align: 'right' });
-
-    // Línea separadora
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(14, 33, pageW - 14, 33);
-
-    const head = [['Cuenta', 'Descripción', 'Nivel', 'Saldo Acum.', 'Debe', 'Haber', 'Saldo (D/C)']];
-    const body = this.getBodyRows();
-    body.push(this.getTotalesRow());
-
-    autoTable(doc, {
-      startY: 36,
-      head,
-      body,
-      theme: 'plain',
-      styles: { fontSize: 8, lineWidth: 0.1, lineColor: [150, 150, 150] },
-      headStyles: {
-        fillColor: false,
-        textColor: [50, 50, 50],
-        fontStyle: 'bold',
-        lineWidth: 0.3,
-        lineColor: [100, 100, 100],
-      },
-      margin: { left: 14, right: 14 },
-      columnStyles: {
-        0: { cellWidth: 25 },
-        1: { cellWidth: 'auto' },
-        2: { halign: 'center', cellWidth: 15 },
-        3: { halign: 'right', cellWidth: 30 },
-        4: { halign: 'right', cellWidth: 30 },
-        5: { halign: 'right', cellWidth: 30 },
-        6: { halign: 'right', cellWidth: 30 },
-      },
-      didDrawPage: () => { this.agregarPiePDF(doc); },
-    });
-
-    this.agregarPiePDF(doc);
-
-    // Visor
+  /** Genera el PDF y lo muestra en pantalla (visor) */
+  async exportPDF(): Promise<void> {
+    if (!this.datosFiltrados().length) return;
+    const doc = await this.construirPDF();
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
@@ -23401,183 +33023,68 @@ export class LibroMayorComponent implements OnInit {
     this.mostrarVisor.set(false);
   }
 
-  descargarPDF(): void {
-    const doc = new jsPDF('l', 'mm', 'letter');
-    const pageW = doc.internal.pageSize.getWidth();
-
-    doc.setFontSize(14);
-    doc.text('LIBRO MAYOR', pageW / 2, 12, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text(this.getNombreEmpresa(), pageW / 2, 18, { align: 'center' });
-    doc.setFontSize(9);
-    doc.text(this.getTituloPeriodo(), 14, 25);
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 14, 30);
-    doc.text(`Fecha impresión: ${this.getFechaHoraImpresion()}`, pageW - 14, 30, { align: 'right' });
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(14, 33, pageW - 14, 33);
-
-    const head = [['Cuenta', 'Descripción', 'Nivel', 'Saldo Acum.', 'Debe', 'Haber', 'Saldo (D/C)']];
-    const body = this.getBodyRows();
-    body.push(this.getTotalesRow());
-
-    autoTable(doc, {
-      startY: 36,
-      head,
-      body,
-      theme: 'plain',
-      styles: { fontSize: 8, lineWidth: 0.1, lineColor: [150, 150, 150] },
-      headStyles: { fillColor: false, textColor: [50, 50, 50], fontStyle: 'bold', lineWidth: 0.3, lineColor: [100, 100, 100] },
-      margin: { left: 14, right: 14 },
-      columnStyles: {
-        0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { halign: 'center', cellWidth: 15 },
-        3: { halign: 'right', cellWidth: 30 }, 4: { halign: 'right', cellWidth: 30 },
-        5: { halign: 'right', cellWidth: 30 }, 6: { halign: 'right', cellWidth: 30 },
-      },
-      didDrawPage: () => { this.agregarPiePDF(doc); },
-    });
-
-    this.agregarPiePDF(doc);
+  async descargarPDF(): Promise<void> {
+    if (!this.datosFiltrados().length) return;
+    const doc = await this.construirPDF();
     doc.save('libro-mayor.pdf');
-    this.messageService.add({ severity: 'success', summary: 'PDF descargado', detail: 'Libro Mayor descargado' });
+    this.messageService.add({
+      severity: 'success',
+      summary: 'PDF descargado',
+      detail: 'Libro Mayor descargado',
+    });
   }
 
-  private agregarPiePDF(doc: jsPDF): void {
-    const pageH = doc.internal.pageSize.getHeight();
-    const pageW = doc.internal.pageSize.getWidth();
-    doc.setDrawColor(150, 150, 150);
-    doc.setLineWidth(0.3);
-    doc.line(14, pageH - 12, pageW - 14, pageH - 12);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Impreso por: ${this.getUsuarioImpresion()}`, 14, pageH - 8);
-    doc.text(`${this.getFechaHoraImpresion()}`, pageW - 14, pageH - 8, { align: 'right' });
+  /** PDF: letterhead con logo + tabla minimalista + encabezado/pie por página */
+  private async construirPDF(): Promise<jsPDF> {
+    const enc = await this.encabezadoImpresion();
+    const doc = new jsPDF('l', 'mm', 'letter');
+    const altoEnc = this.print.pdfEncabezado(doc, enc);
+
+    this.print.pdfTabla(doc, this.tablaPdfWord(), altoEnc, altoEnc);
+    this.print.pdfPaginar(doc, enc, altoEnc);
+    return doc;
   }
 
-  exportExcel(): void {
-    const rows: any[][] = [];
+  /** Excel con letterhead (logo, empresa, datos fiscales) vía exceljs */
+  async exportExcel(): Promise<void> {
+    if (!this.datosFiltrados().length) return;
 
-    rows.push([this.getNombreEmpresa()]);
-    rows.push(['LIBRO MAYOR']);
-    rows.push([this.getTituloPeriodo()]);
-    rows.push([`Impreso por: ${this.getUsuarioImpresion()}   |   Fecha: ${this.getFechaHoraImpresion()}`]);
-    rows.push([]);
-    rows.push(['Cuenta', 'Descripción', 'Nivel', 'Saldo Acum.', 'Debe', 'Haber', 'Saldo (D/C)']);
+    const enc = await this.encabezadoImpresion();
+    const tab = this.tablaExcel();
+    const wb = this.print.nuevoLibro();
+    const ws = wb.addWorksheet('Libro Mayor');
+    const filaCabecera = this.print.excelEncabezado(wb, ws, enc, tab);
+    this.print.excelTabla(ws, tab, filaCabecera, 'landscape');
+    await this.print.descargarExcel(wb, 'libro-mayor.xlsx');
 
-    for (const d of this.datosFiltrados()) {
-      rows.push([
-        d.ctacontable ?? '',
-        d.descripcion ?? '',
-        `N${d.nivel ?? ''}`,
-        Number(d.saldoAcum) || 0,
-        Number(d.debe) || 0,
-        Number(d.haber) || 0,
-        Number(d.saldo) || 0,
-      ]);
-    }
-
-    rows.push([]);
-    const t = this.getTotalesRow();
-    rows.push([t[0], t[1], t[2], Number(t[3]) || 0, Number(t[4]) || 0, Number(t[5]) || 0, Number(t[6]) || 0]);
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Libro Mayor');
-
-    ws['!cols'] = [
-      { wch: 15 }, { wch: 35 }, { wch: 8 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
-    ];
-
-    XLSX.writeFile(wb, 'libro-mayor.xlsx');
-    this.messageService.add({ severity: 'success', summary: 'Excel generado', detail: 'Libro Mayor exportado en Excel' });
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Excel generado',
+      detail: 'Libro Mayor exportado en Excel',
+    });
   }
 
-  exportWord(): void {
-    const children: any[] = [];
+  /** Word con letterhead repetido en cada página (header) vía docx */
+  async exportWord(): Promise<void> {
+    if (!this.datosFiltrados().length) return;
 
-    // Encabezado
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: 'LIBRO MAYOR', bold: true, size: 28 })],
-    }));
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: this.getNombreEmpresa(), bold: true, size: 22 })],
-    }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: this.getTituloPeriodo(), size: 18 })],
-    }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Impreso por: ${this.getUsuarioImpresion()}`, size: 18 })],
-    }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Fecha impresión: ${this.getFechaHoraImpresion()}`, size: 18 })],
-    }));
-    children.push(new Paragraph({ text: '' }));
+    const enc = await this.encabezadoImpresion();
+    const documento = this.print.wordDocumento(enc, 'landscape', [
+      this.print.wordTabla(this.tablaPdfWord(), 'landscape'),
+    ]);
 
-    // Tabla
-    const headerRow = new TableRow({
-      tableHeader: true,
-      children: ['Cuenta', 'Descripción', 'Nivel', 'Saldo Acum.', 'Debe', 'Haber', 'Saldo (D/C)'].map(h =>
-        new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 18 })] })],
-        })
-      ),
-    });
+    const blob = await Packer.toBlob(documento);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'libro-mayor.docx';
+    a.click();
+    URL.revokeObjectURL(url);
 
-    const dataRows = this.datosFiltrados().map(d =>
-      new TableRow({
-        children: [
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: d.ctacontable ?? '', size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: d.descripcion ?? '', size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `N${d.nivel ?? ''}`, size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: (Number(d.saldoAcum) || 0).toFixed(2), size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: d.debe > 0 ? (Number(d.debe) || 0).toFixed(2) : '-', size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: d.haber > 0 ? (Number(d.haber) || 0).toFixed(2) : '-', size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: (Number(d.saldo) || 0).toFixed(2), size: 18 })] })] }),
-        ],
-      })
-    );
-
-    // Fila totales
-    const t = this.getTotalesRow();
-    dataRows.push(new TableRow({
-      children: [
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'TOTALES', bold: true, size: 18 })] })] }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '', size: 18 })] })] }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '', size: 18 })] })] }),
-        new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: t[3], bold: true, size: 18 })] })] }),
-        new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: t[4], bold: true, size: 18 })] })] }),
-        new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: t[5], bold: true, size: 18 })] })] }),
-        new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: t[6], bold: true, size: 18 })] })] }),
-      ],
-    }));
-
-    const table = new Table({
-      rows: [headerRow, ...dataRows],
-      width: { size: 100, type: WidthType.PERCENTAGE },
-    });
-
-    children.push(table);
-
-    // Pie
-    children.push(new Paragraph({ text: '' }));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Impreso por: ${this.getUsuarioImpresion()} | Fecha: ${this.getFechaHoraImpresion()}`, size: 16, color: '666666' })],
-    }));
-
-    const doc = new Document({
-      sections: [{ children }],
-    });
-
-    Packer.toBlob(doc).then(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'libro-mayor.docx';
-      a.click();
-      URL.revokeObjectURL(url);
-      this.messageService.add({ severity: 'success', summary: 'Word generado', detail: 'Libro Mayor exportado en Word' });
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Word generado',
+      detail: 'Libro Mayor exportado en Word',
     });
   }
 
@@ -24144,6 +33651,16 @@ export class PartidaContable {
                   <span style="color: var(--color-texto-label)" class="section-title"
                     >Líneas de la Plantilla</span
                   >
+                  <span class="detalle-balance">
+                    <p-tag
+                      [value]="'Debe: ' + lineasDebe()"
+                      [severity]="lineasDebe() > 0 ? 'success' : 'danger'"
+                    />
+                    <p-tag
+                      [value]="'Haber: ' + lineasHaber()"
+                      [severity]="lineasHaber() > 0 ? 'success' : 'danger'"
+                    />
+                  </span>
                 </div>
               </ng-template>
               <ng-template pTemplate="header">
@@ -24814,6 +34331,14 @@ export class PartidaContable {
   border-bottom: 1px solid var(--c-border);
 }
 
+// ===== Contador Debe / Haber del detalle =====
+.detalle-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-left: 0.75rem;
+}
+
 // ===== Grid 2 columnas =====
 .form-grid-2 {
   display: grid;
@@ -25085,9 +34610,24 @@ export class PlantillaPdaManager implements OnInit {
   /** Solo cuentas de movimiento (sn_operable === 'S') */
   cuentasMovimiento = computed(() => this.cuentas().filter(c => c.sn_operable === 'S'));
 
+  /** Conteo de líneas por naturaleza */
+  lineasDebe = computed(() => this.lineas().filter(l => l.naturaleza === 'D').length);
+  lineasHaber = computed(() => this.lineas().filter(l => l.naturaleza === 'C').length);
+
+  /**
+   * REGLAS para guardar la plantilla:
+   *  1. Formulario válido
+   *  2. Al menos 1 línea
+   *  3. Al menos 1 cuenta en Debe (D)
+   *  4. Al menos 1 cuenta en Haber (C)
+   *  5. Ninguna cuenta repetida en el detalle
+   */
   puedeGuardar = computed(() =>
     this.estadoForm() === 'VALID' &&
-    this.lineas().length >= 1
+    this.lineas().length >= 1 &&
+    this.lineasDebe() >= 1 &&
+    this.lineasHaber() >= 1 &&
+    this.ctasRepetidas().length === 0
   );
 
   trackById = (_: number, l: LineaPlantilla) => l.id;
@@ -25227,8 +34767,19 @@ export class PlantillaPdaManager implements OnInit {
 
   // ===== GUARDAR =====
   guardar(): void {
-    if (!this.puedeGuardar()) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Verifique el formulario y que haya al menos 1 línea' });
+    if (this.estadoForm() !== 'VALID') {
+      this.messageService.add({
+        severity: 'warn', summary: 'Campos incompletos',
+        detail: 'Complete el auxiliar contable y la descripción de la plantilla',
+      });
+      return;
+    }
+
+    if (this.lineas().length === 0) {
+      this.messageService.add({
+        severity: 'warn', summary: 'Sin detalle',
+        detail: 'La plantilla debe tener al menos 1 cuenta en el detalle',
+      });
       return;
     }
 
@@ -25240,6 +34791,27 @@ export class PlantillaPdaManager implements OnInit {
         summary: 'Cuentas duplicadas',
         detail: `Cuenta(s) repetida(s) en el detalle: ${duplicadas.join(', ')}`,
       });
+      return;
+    }
+
+    // REGLA: el detalle debe equilibrar Debe y Haber
+    if (this.lineasDebe() === 0) {
+      this.messageService.add({
+        severity: 'warn', summary: 'Falta cuenta en Debe',
+        detail: 'El detalle debe tener al menos 1 cuenta con naturaleza Débito (D)',
+      });
+      return;
+    }
+    if (this.lineasHaber() === 0) {
+      this.messageService.add({
+        severity: 'warn', summary: 'Falta cuenta en Haber',
+        detail: 'El detalle debe tener al menos 1 cuenta con naturaleza Crédito (C)',
+      });
+      return;
+    }
+
+    if (!this.puedeGuardar()) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Verifique el formulario y las reglas del detalle' });
       return;
     }
 
@@ -25333,6 +34905,8 @@ export class PlantillaPdaManager implements OnInit {
         descripcion: l.descripcion,
         naturaleza: l.naturaleza,
         moduloId,
+        // REGLA: la línea siempre se guarda habilitada
+        sn_activo: 'S' as const,
       };
 
       this.contabilidad.createPlantillaPdaDet(detPayload)
@@ -25713,8 +35287,8 @@ export class PlantillaPdaManager implements OnInit {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: #fef3c7;
-  border: 1px solid #fbbf24;
+  background: var(--c-bg);
+  border: 1px solid var(--c-warning);
   border-radius: 8px;
   font-size: 0.9rem;
   line-height: 1.5;
@@ -25733,7 +35307,6 @@ export class PlantillaPdaManager implements OnInit {
     font-weight: 600;
   }
 }
-
 ```
 
 ---
@@ -26061,9 +35634,9 @@ export class ReclasificacionCuentasComponent implements OnInit {
               <td>{{ mov.descripcion }}</td>
               <td class="text-right">{{ mov.debe | number:'1.2-2' }}</td>
               <td class="text-right">{{ mov.haber | number:'1.2-2' }}</td>
-              <td class="text-right" [class.text-danger]="mov.naturaleza === 'D'" [class.text-success]="mov.naturaleza === 'C'">
+              <td class="text-right" [class.text-danger]="mov.tiposaldo === 'D'" [class.text-success]="mov.tiposaldo === 'C'">
                 {{ mov.saldo | number:'1.2-2' }}
-                <small>{{ mov.naturaleza === 'D' ? 'D' : 'C' }}</small>
+                <small>{{ mov.tiposaldo === 'D' ? 'D' : 'C' }}</small>
               </td>
               <td>-</td>
             </tr>
@@ -26360,6 +35933,508 @@ export class ReportesContablesComponent implements OnInit {
 
   getMesLabel(): string {
     return this.meses.find(m => m.value === this.periodo())?.label ?? '';
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\reversar-cierre\reversar-cierre.html
+
+```typescript
+<p-toast />
+<p-confirm-dialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '480px' }" />
+
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h2><i class="pi pi-replay"></i> Revertir Cierre / Reabrir Período</h2>
+    <p-button size="small" label="Volver al cierre" icon="pi pi-arrow-left" severity="secondary" variant="text" [rounded]="true"
+              (onClick)="volver()" />
+  </div>
+
+  <div class="cierre-layout">
+    <!-- Panel izquierdo: Formulario de reversión -->
+    <div class="cierre-form-panel">
+      <div class="card">
+        <h4><i class="pi pi-replay"></i> Revertir Cierre de Período</h4>
+        <p class="text-muted mb-3">
+          Deshace el cierre seleccionado y devuelve el período a estado abierto.
+          Solo puede revertirse el cierre <strong>más reciente</strong>.
+        </p>
+
+        <div class="p-fluid">
+          <div class="p-field mb-3">
+            <label>Período (Mes)</label>
+            <p-select [options]="meses" [(ngModel)]="periodoSeleccionado" optionLabel="label" optionValue="value"
+                      placeholder="Seleccionar mes" styleClass="w-full" size="small" appendTo="body" />
+          </div>
+
+          <div class="p-field mb-3">
+            <label>Año</label>
+            <p-inputNumber [(ngModel)]="anioSeleccionado" [min]="2020" [max]="2030" [useGrouping]="false" styleClass="w-full" size="small" />
+          </div>
+
+          <div class="p-field mb-3">
+            <label>Motivo de la reversión (opcional)</label>
+            <input pInputText [(ngModel)]="motivo" class="w-full" pSize="small" placeholder="Motivo de la reapertura" />
+          </div>
+
+          <p-button size="small" label="Revertir Cierre" icon="pi pi-replay" severity="danger" variant="text" [raised]="true" [rounded]="true"
+                    [loading]="cargando()" (onClick)="revertir()" styleClass="w-full" />
+        </div>
+      </div>
+
+      <!-- Info card -->
+      <div class="card info-card mt-3">
+        <h5><i class="pi pi-info-circle"></i> ¿Qué hace la reversión?</h5>
+        <ul>
+          <li>Elimina la <strong>partida de cierre</strong> del período</li>
+          <li>Revierte los <strong>movimientos</strong> (coctamov) y <strong>saldos mensuales</strong> (coctasaldos) que generó</li>
+          <li>Elimina el <strong>espejo de saldos</strong> (cocierredet / cocierremae)</li>
+          <li>Quita el candado <strong>Cerrada</strong> a todas las partidas del período</li>
+          <li>Reabre el período para volver a registrar</li>
+        </ul>
+        <p class="aviso mt-2">
+          <i class="pi pi-exclamation-triangle"></i>
+          No se puede revertir si existen cierres o partidas en períodos posteriores:
+          revierta primero los más recientes.
+        </p>
+      </div>
+    </div>
+
+    <!-- Panel derecho: Períodos cerrados -->
+    <div class="cierre-status-panel">
+      <!-- Períodos cerrados -->
+      <div class="card mb-3">
+        <h4><i class="pi pi-lock"></i> Períodos Cerrados</h4>
+        <p-table [value]="cerrados()" [paginator]="true" [rows]="12" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[6, 12, 24]">
+          <ng-template pTemplate="header">
+            <tr>
+              <th class="col-anio">Año</th>
+              <th>Mes</th>
+              <th class="col-estado">Estado</th>
+              <th class="col-accion">Acción</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-periodo>
+            <tr class="fila-cerrada">
+              <td class="text-center"><strong>{{ periodo.nroanio }}</strong></td>
+              <td>{{ getMesLabel(periodo.nromes) }}</td>
+              <td class="text-center">
+                <p-tag value="Cerrado" severity="warning" styleClass="tag-sm" />
+              </td>
+              <td class="text-center">
+                @if (esUltimoCerrado(periodo)) {
+                  <p-button size="small" icon="pi pi-replay" severity="danger" variant="text" [rounded]="true"
+                            pTooltip="Revertir este cierre" (onClick)="seleccionarYRevertir(periodo)" />
+                } @else {
+                  <i class="pi pi-lock text-warning" pTooltip="Cierre no reversible: existen cierres más recientes" tooltipPosition="left"></i>
+                }
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-muted">No hay períodos cerrados</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Historial de cierres -->
+      <div class="card">
+        <h4><i class="pi pi-history"></i> Historial de Cierres</h4>
+        <p-table [value]="cierres()" [paginator]="true" [rows]="10" size="small"
+                 [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                 [rowsPerPageOptions]="[5, 10, 25]">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Período</th>
+              <th>Fecha Cierre</th>
+              <th>Observación</th>
+              <th>Usuario</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-cierre>
+            <tr>
+              <td><strong>{{ cierre.periodo }}/{{ cierre.anio }}</strong></td>
+              <td>{{ cierre.fechacierre | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ cierre.observacion }}</td>
+              <td>{{ cierre.usuarioCreated }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-muted">No hay cierres registrados</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\reversar-cierre\reversar-cierre.scss
+
+```typescript
+.page-container {
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      color: var(--c-warning);
+    }
+  }
+}
+
+.cierre-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 1rem;
+}
+
+.cierre-form-panel {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      color: var(--c-warning);
+    }
+  }
+}
+
+.cierre-status-panel {
+  h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.1rem;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      color: var(--c-warning);
+    }
+  }
+}
+
+.info-card {
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-warning);
+
+  h5 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.95rem;
+    color: var(--c-warning);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    line-height: 1.8;
+  }
+
+  .aviso {
+    margin: 0.75rem 0 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--c-warning);
+    background: var(--c-surface);
+    border-left: 3px solid var(--c-warning);
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    line-height: 1.5;
+
+    i {
+      margin-top: 0.15rem;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.col-anio {
+  width: 80px;
+}
+
+.col-estado {
+  width: 110px;
+}
+
+.col-accion {
+  width: 90px;
+}
+
+.fila-cerrada {
+  opacity: 0.75;
+  background: var(--c-surface-ground);
+}
+
+.text-muted {
+  color: var(--c-text-muted);
+}
+
+.text-warning {
+  color: var(--c-warning);
+}
+
+.tag-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+}
+
+// Responsive
+@media (max-width: 960px) {
+  .cierre-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cierre-form-panel {
+    position: static;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\contabilidad\reversar-cierre\reversar-cierre.ts
+
+```typescript
+import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import { PeriodoContable, CierreContable } from '../../../core/models/contabilidad.models';
+
+/**
+ * Reversión de cierre contable / reapertura de período.
+ * Proceso SEPARADO del cierre: deshace la partida de cierre, revierte
+ * coctamov/coctasaldos, elimina el espejo de saldos (cocierredet/cocierremae),
+ * libera el candado sn_cerrada de las partidas y reabre el período.
+ */
+@Component({
+  selector: 'app-reversar-cierre',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, TableModule, ButtonModule,
+    InputNumberModule, InputTextModule, SelectModule, ToastModule,
+    ConfirmDialogModule, TagModule, TooltipModule,
+  ],
+  providers: [MessageService, ConfirmationService],
+  templateUrl: './reversar-cierre.html',
+  styleUrl: './reversar-cierre.scss',
+})
+export class ReversarCierreComponent implements OnInit {
+  private contabilidad = inject(ContabilidadService);
+  private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
+  private destroyRef = inject(DestroyRef);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+
+  // Estado
+  periodos = signal<PeriodoContable[]>([]);
+  cierres = signal<CierreContable[]>([]);
+  cargando = signal(false);
+
+  // Formulario
+  periodoSeleccionado = signal<number>(new Date().getMonth() + 1);
+  anioSeleccionado = signal<number>(new Date().getFullYear());
+  motivo = signal('');
+
+  // Meses
+  readonly meses = [
+    { label: 'Enero', value: 1 }, { label: 'Febrero', value: 2 }, { label: 'Marzo', value: 3 },
+    { label: 'Abril', value: 4 }, { label: 'Mayo', value: 5 }, { label: 'Junio', value: 6 },
+    { label: 'Julio', value: 7 }, { label: 'Agosto', value: 8 }, { label: 'Septiembre', value: 9 },
+    { label: 'Octubre', value: 10 }, { label: 'Noviembre', value: 11 }, { label: 'Diciembre', value: 12 },
+  ];
+
+  ngOnInit(): void {
+    // Preselección cuando se llega desde Cierre Contable (?periodo=X&anio=Y)
+    const p = this.route.snapshot.queryParamMap.get('periodo');
+    const a = this.route.snapshot.queryParamMap.get('anio');
+    if (p) this.periodoSeleccionado.set(Number(p));
+    if (a) this.anioSeleccionado.set(Number(a));
+
+    this.cargarDatos();
+  }
+
+  private cargarDatos(): void {
+    this.cargando.set(true);
+
+    this.contabilidad.getPeriodos()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.periodos.set(data); this.cargando.set(false); },
+        error: () => { this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error cargando períodos' }); this.cargando.set(false); },
+      });
+
+    this.contabilidad.getCierres()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (data) => this.cierres.set(data) });
+  }
+
+  revertir(): void {
+    const periodo = this.periodoSeleccionado();
+    const anio = this.anioSeleccionado();
+
+    // 1. El período debe existir y estar cerrado
+    const per = this.periodos().find(p => p.nroanio === anio && p.nromes === periodo);
+    if (!per) {
+      this.messageService.add({ severity: 'warn', summary: 'Período inexistente', detail: `No existe el período ${periodo}/${anio}` });
+      return;
+    }
+    if (per.sn_abierto !== 'N') {
+      this.messageService.add({ severity: 'warn', summary: 'Período abierto', detail: `El período ${periodo}/${anio} no está cerrado: no hay cierre que revertir` });
+      return;
+    }
+
+    // 2. Secuencia inversa: no reabrir si quedan períodos posteriores cerrados
+    const posterioresCerrados = this.periodos()
+      .filter(p => p.sn_abierto === 'N' && (p.nroanio > anio || (p.nroanio === anio && p.nromes > periodo)))
+      .sort((a, b) => a.nroanio - b.nroanio || a.nromes - b.nromes);
+    if (posterioresCerrados.length > 0) {
+      const lista = posterioresCerrados.map(p => `${p.nromes}/${p.nroanio}`).join(', ');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Reversión no permitida',
+        detail: `Primero deben revertirse los cierres de los períodos posteriores: ${lista}`,
+      });
+      return;
+    }
+
+    this.confirmationService.confirm({
+      message:
+        `¿Está seguro de REVERTIR el cierre de <strong>${this.getMesLabel(periodo)} ${anio}</strong>?<br><br>` +
+        'Esta acción:<br>' +
+        '· Eliminará la partida de cierre<br>' +
+        '· Revertirá los movimientos y salidos contables de este período<br>' +
+        '· Liberará el candado de todas las partidas del período<br>' +
+        '· Reabrirá el período para nuevo registro',
+      header: 'Confirmar reversión de cierre',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Revertir cierre',
+      rejectLabel: 'Cancelar',
+      acceptButtonProps: {
+        label: 'Revertir cierre',
+        severity: 'danger',
+        variant: 'text',
+        size: 'small',
+        rounded: true,
+      },
+      rejectButtonProps: {
+        label: 'Cancelar',
+        severity: 'secondary',
+        variant: 'text',
+        size: 'small',
+        rounded: true,
+      },
+      accept: () => {
+        this.cargando.set(true);
+        this.contabilidad.revertirCierre({
+          periodo,
+          anio,
+          observacion: this.motivo() || `Reversión de cierre ${periodo}/${anio}`,
+        }).pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Cierre revertido',
+              detail: `Período ${periodo}/${anio} reabierto. Movimientos revertidos: ${res.movimientosRevertidos ?? 0}`,
+            });
+            this.motivo.set('');
+            this.cargarDatos();
+            this.cargando.set(false);
+          },
+          error: (err) => {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al revertir el cierre' });
+            this.cargando.set(false);
+          },
+        });
+      },
+    });
+  }
+
+  /** Selecciona el período desde la tabla y dispara la reversión */
+  seleccionarYRevertir(periodo: PeriodoContable): void {
+    this.periodoSeleccionado.set(periodo.nromes);
+    this.anioSeleccionado.set(periodo.nroanio);
+    this.revertir();
+  }
+
+  cerrados(): PeriodoContable[] {
+    return this.periodos()
+      .filter(p => p.sn_abierto === 'N')
+      .sort((a, b) => b.nroanio - a.nroanio || b.nromes - a.nromes);
+  }
+
+  /** El último cerrado es el único reversible (los posteriores bloquean) */
+  esUltimoCerrado(p: PeriodoContable): boolean {
+    const lista = this.cerrados();
+    return lista.length > 0 && lista[0].nroanio === p.nroanio && lista[0].nromes === p.nromes;
+  }
+
+  getMesLabel(mes: number): string {
+    return this.meses.find(m => m.value === mes)?.label ?? '';
+  }
+
+  volver(): void {
+    this.router.navigate(['/contabilidad/cierre-contable']);
   }
 }
 
@@ -31706,6 +41781,18 @@ export class HistoricoManager implements OnInit {
 
 ```typescript
 <div class="movimientos-manager">
+  <!-- Origen: esta pantalla se abrió desde una partida contable -->
+  @if (partidaId()) {
+    <div class="barra-origen">
+      <span class="barra-origen__texto">
+        <i class="pi pi-file-edit"></i>
+        Movimiento abierto desde una partida contable
+      </span>
+      <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+        variant="text" [rounded]="true" (onClick)="volverAPartida()" />
+    </div>
+  }
+
   <div class="split-layout">
 
     <!-- Columna izquierda: detalle / formulario -->
@@ -32438,6 +42525,31 @@ export class HistoricoManager implements OnInit {
   }
 }
 
+
+/* Barra de retorno a la partida contable de origen */
+.barra-origen {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+
+  &__texto {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+}
+
 ```
 
 ---
@@ -32446,7 +42558,7 @@ export class HistoricoManager implements OnInit {
 
 ```typescript
 import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -32503,6 +42615,10 @@ export class MovimientosManager implements OnInit {
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
+  partidaId = signal<number | null>(null);
 
   // ===== CLIENTES =====
   data = signal<CxcCliente[]>([]);
@@ -32597,6 +42713,38 @@ export class MovimientosManager implements OnInit {
     this.loadDocumentos();
     this.loadCarteras();
 
+    // Partida contable de origen (botón "Volver a la partida")
+    const partidaParam = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partidaParam) && partidaParam > 0) this.partidaId.set(partidaParam);
+
+    // Trazabilidad contable: ?movimientoId=<clienteMovId> (llega desde partida en copdamae)
+    const movIdParam = this.route.snapshot.queryParamMap.get('movimientoId');
+    if (movIdParam) {
+      const movId = Number(movIdParam);
+      if (!isNaN(movId) && movId > 0) {
+        this.service.getMovimiento(movId).pipe(
+          takeUntilDestroyed(this.destroyRef),
+          timeout(10000),
+          catchError(() => {
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el movimiento de origen' });
+            this.loadClientes();
+            return of(null);
+          }),
+        ).subscribe({
+          next: (mov) => {
+            const clienteId = mov ? Number(mov['clienteId']) : 0;
+            if (clienteId > 0) {
+              this.vieneDeHistorico = true;
+              this.autoSelectCliente(clienteId, mov);
+            } else {
+              this.loadClientes();
+            }
+          },
+        });
+        return;
+      }
+    }
+
     // Leer clienteId de query params y movimiento completo de router state
     const clienteIdParam = this.route.snapshot.queryParamMap.get('clienteId');
     const movimientoState = (history.state as any)?.movimiento ?? null;
@@ -32613,6 +42761,14 @@ export class MovimientosManager implements OnInit {
 
     // Carga normal: cargar lista completa de clientes
     this.loadClientes();
+  }
+
+  /** Regresa a la partida contable de origen desde la que se abrió este movimiento. */
+  volverAPartida(): void {
+    if (!this.partidaId()) return;
+    this.router.navigate(['/contabilidad/copdamae'], {
+      queryParams: { partidaId: this.partidaId() },
+    });
   }
 
   /**
@@ -34861,6 +45017,8 @@ import { BodegasService } from '../../../core/services/bodegas.service';
 import { ProductosService } from '../../../core/services/productos.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { EmpresasService } from '../../../core/services/empresas.service';
+import { firstValueFrom } from 'rxjs';
 import { CompraMae, CompraDet, Proveedor, Producto, Bodega } from '../../../core/models/inventario.models';
 import { OcrDialog } from './ocr-dialog';
 import { FacturaData } from '../../../core/utils/invoice-parser';
@@ -34903,6 +45061,7 @@ export class ComprasManager implements OnInit {
   private productosService = inject(ProductosService);
   private catalogService = inject(CatalogoParametrosService);
   private auth = inject(AuthService);
+  private empresasService = inject(EmpresasService);
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
@@ -35399,14 +45558,62 @@ export class ComprasManager implements OnInit {
       rejectLabel: 'Cancelar',
       accept: () => {
         this.confirm.close();
-        this.service.procesarCompra(mae.compraId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: (res: any) => {
-            this.msgs.add({ severity: 'success', summary: 'Procesada', detail: res?.message || 'Compra procesada' });
-            this.seleccionado.update(s => s ? { ...s, sn_procesada: 'S' } : null);
+        this.ejecutarProcesar(mae);
+      },
+      reject: () => {
+        this.confirm.close();
+      },
+    });
+  }
+
+  /** Llama al backend; si responde 400 por saldo insuficiente, sugiere crédito */
+  private ejecutarProcesar(mae: CompraMae): void {
+    this.service.procesarCompra(mae.compraId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res: any) => {
+        this.msgs.add({ severity: 'success', summary: 'Procesada', detail: res?.message || 'Compra procesada' });
+        this.seleccionado.update(s => s ? { ...s, sn_procesada: 'S' } : null);
+        this.cargarCompras();
+        this.cargarDetalles(mae.compraId);
+      },
+      error: (err) => this.manejarErrorProcesar(err, mae),
+    });
+  }
+
+  /**
+   * Saldo insuficiente en la cuenta de HABER (Caja) para comprar de contado:
+   * muestra la alerta del backend y ofrece registrar la compra al crédito (FCC).
+   */
+  private manejarErrorProcesar(err: any, mae: CompraMae): void {
+    const msgRaw: string = err?.error?.message || 'No se pudo procesar';
+    const esSaldoInsuficiente = err?.status === 400 && /saldo insuficiente/i.test(msgRaw);
+
+    if (!esSaldoInsuficiente) {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: msgRaw });
+      return;
+    }
+
+    // El backend envía el mensaje con saltos de línea; se convierten a <br>
+    const msg = msgRaw.replace(/\n/g, '<br>');
+    this.confirm.confirm({
+      message: `${msg}<br><br><b>¿Desea registrarla como compra al crédito y procesarla?</b>`,
+      header: 'Saldo insuficiente en Caja',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, al crédito',
+      rejectLabel: 'Cancelar',
+      acceptButtonProps: { label: 'Sí, al crédito', severity: 'warn', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.confirm.close();
+        this.service.updateCompra(mae.compraId, { TipoCompra: 'FCC' }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.seleccionado.update(s => s ? { ...s, TipoCompra: 'FCC' } : null);
+            this.msgs.add({ severity: 'info', summary: 'Cambiada a crédito', detail: `Compra #${mae.compraId} ahora es al crédito (FCC)` });
             this.cargarCompras();
-            this.cargarDetalles(mae.compraId);
+            this.ejecutarProcesar(mae);
           },
-          error: (err) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo procesar' }),
+          error: (e2: any) => this.msgs.add({
+            severity: 'error', summary: 'Error', detail: e2.error?.message || 'No se pudo cambiar a crédito',
+          }),
         });
       },
       reject: () => {
@@ -35454,8 +45661,10 @@ export class ComprasManager implements OnInit {
   }
 
   moneda(val: number): string {
-    if (val == null || isNaN(val)) return 'L 0.00';
-    return val.toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
+    // TypeORM lee los decimal como string ('1250.00'); sin Number() no agrupa millares
+    const n = Number(val);
+    if (val == null || isNaN(n)) return 'L 0.00';
+    return n.toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
   }
 
   actualizarTotales() {
@@ -35493,7 +45702,24 @@ export class ComprasManager implements OnInit {
     return true;
   }
 
-  imprimir() {
+  /** Logo de la empresa: tempresaslogo.img (base64) por empresaId. Fallback al asset local. */
+  private async cargarLogo(): Promise<string> {
+    const fallback = `${window.location.origin}/assets/images/logo1.png`;
+    try {
+      const empresaId = this.auth.currentUser()?.empresaId;
+      if (!empresaId) return fallback;
+      const res = await firstValueFrom(this.empresasService.getLogo(empresaId));
+      const img = res?.img;
+      if (!img) return fallback;
+      if (img.startsWith('data:')) return img;
+      const mime = img.startsWith('/9j/') ? 'image/jpeg' : img.startsWith('R0lGOD') ? 'image/gif' : 'image/png';
+      return `data:${mime};base64,${img}`;
+    } catch {
+      return fallback;
+    }
+  }
+
+  async imprimir() {
     const mae = this.seleccionado();
     if (!mae) return;
     const dets = this.detalles();
@@ -35502,7 +45728,12 @@ export class ComprasManager implements OnInit {
     const tipoMap: Record<string, string> = { FCO: 'Factura Contado', FCC: 'Factura Crédito', ORC: 'Orden de Compra' };
     const tipo = tipoMap[mae.TipoCompra] || mae.TipoCompra;
     const fecha = mae.fecharegistro ? new Date(mae.fecharegistro).toLocaleDateString('es-HN') : '-';
-    const estado = mae.sn_anulada === 'S' ? 'ANULADA' : mae.sn_pagada === 'S' ? 'PAGADA' : 'PENDIENTE';
+    const nro = mae.nroreferencia || String(mae.compraId);
+    const logo = await this.cargarLogo();
+    const fechaImpresion = new Date().toLocaleString('es-HN');
+    const pagada = mae.sn_pagada === 'S' ? 'Sí' : 'No';
+    const anulada = mae.sn_anulada === 'S' ? 'Sí' : 'No';
+    const totalLineas = dets.reduce((s, d) => s + Number(d.subtotal || 0), 0);
 
     const lineas = dets.map(d => `
       <tr>
@@ -35517,19 +45748,22 @@ export class ComprasManager implements OnInit {
 
     const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
-<title>Compra #${mae.compraId}</title>
+<title>${tipo} : ${nro}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; color: #1e293b; }
-  .header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #1e2e3b; padding-bottom: 12px; }
-  .header h2 { color: #1e2e3b; font-size: 18px; }
-  .header .subtitle { color: #64748b; font-size: 11px; }
+  .header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 16px; border-bottom: 2px solid #1e2e3b; padding-bottom: 12px; }
+  .header .header-logo { height: 56px; width: auto; }
+  .header .header-num { text-align: right; }
+  .header .header-num .doc-tipo { color: #64748b; font-size: 12px; }
+  .header .header-num .doc-num { color: #1e2e3b; font-size: 18px; font-weight: 700; }
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 2rem; margin-bottom: 16px; padding: 10px; background: #f0f4f7; border-radius: 6px; }
   .info-grid .label { font-weight: 600; color: #64748b; }
   .info-grid .value { color: #1e293b; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
   th { background: #1e2e3b; color: white; padding: 6px 8px; text-align: left; font-size: 11px; }
   td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
+  tfoot td { border-top: 2px solid #1e2e3b; border-bottom: none; padding-top: 8px; font-size: 12px; }
   tbody tr:nth-child(even) { background: #f0f4f7; }
   .text-right { text-align: right; }
   .font-bold { font-weight: 700; }
@@ -35541,25 +45775,31 @@ export class ComprasManager implements OnInit {
   .estado-pagada { background: #d1fae5; color: #065f46; }
   .estado-pendiente { background: #fef3c7; color: #92400e; }
   .estado-anulada { background: #fee2e2; color: #991b1b; }
-  .footer { text-align: center; margin-top: 20px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 10px; }
+  .footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; text-align: left; margin-top: 20px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 10px; }
   @media print { body { padding: 10px; } }
 </style></head><body>
   <div class="header">
-    <h2>${tipo} #${mae.compraId}</h2>
-    <div class="subtitle">Impreso: ${new Date().toLocaleString('es-HN')}</div>
+    <img class="header-logo" src="${logo}" alt="Logo" />
+    <div class="header-num">
+      <div class="doc-tipo">${tipo}</div>
+      <div class="doc-num">${nro}</div>
+    </div>
   </div>
   <div class="info-grid">
     <div><span class="label">Proveedor: </span><span class="value">${prov}</span></div>
     <div><span class="label">Bodega: </span><span class="value">${bodega}</span></div>
     <div><span class="label">Fecha: </span><span class="value">${fecha}</span></div>
     <div><span class="label">Referencia: </span><span class="value">${mae.nroreferencia || '-'}</span></div>
-    <div><span class="label">Estado: </span>
-      <span class="estado ${mae.sn_anulada === 'S' ? 'estado-anulada' : mae.sn_pagada === 'S' ? 'estado-pagada' : 'estado-pendiente'}">${estado}</span>
-    </div>
+    <div><span class="label">Pagada: </span><span class="value">${pagada}</span></div>
+    <div><span class="label">Anulada: </span><span class="value">${anulada}</span></div>
   </div>
   <table>
     <thead><tr><th>#</th><th>Código</th><th>Producto</th><th class="text-right">Cant.</th><th class="text-right">P.U.</th><th class="text-right">Subtotal</th></tr></thead>
     <tbody>${lineas || '<tr><td colspan="6" style="text-align:center;color:#64748b;">Sin items</td></tr>'}</tbody>
+    ${dets.length ? `<tfoot><tr>
+      <td colspan="5" class="text-right font-bold">TOTAL</td>
+      <td class="text-right font-bold">${this.moneda(totalLineas)}</td>
+    </tr></tfoot>` : ''}
   </table>
   <div class="totales">
     <div class="total-item">
@@ -35567,7 +45807,10 @@ export class ComprasManager implements OnInit {
       <div class="total-value">${this.moneda(mae.total)}</div>
     </div>
   </div>
-  <div class="footer">ARCAS Software ERP &mdash; Documento generado automáticamente</div>
+  <div class="footer">
+    <span>ARCAS Software ERP &mdash; Documento generado automáticamente</span>
+    <span class="footer-fecha">Fecha de impresión: ${fechaImpresion}</span>
+  </div>
 </body></html>`;
 
     const win = window.open('', '_blank', 'width=800,height=600');
@@ -36125,10 +46368,10 @@ import { Consulta } from '../cxc/consulta/consulta';
 export const CXP_ROUTES: Routes = [
   { path: '', redirectTo: 'proveedores', pathMatch: 'full' },
 
-  // Proveedores
+  // Proveedores (maestro/detalle, igual que Clientes CxC)
   {
     path: 'proveedores',
-    loadComponent: () => import('./proveedores/proveedores').then((m) => m.CxpProveedores),
+    loadComponent: () => import('./proveedores/proveedores-manager').then((m) => m.ProveedoresManager),
   },
   {
     path: 'proveedores/nuevo',
@@ -36572,6 +46815,18 @@ export class CxpHistoricoManager implements OnInit {
 
 ```typescript
 <div class="movimientos-manager">
+  <!-- Origen: esta pantalla se abrió desde una partida contable -->
+  @if (partidaId()) {
+    <div class="barra-origen">
+      <span class="barra-origen__texto">
+        <i class="pi pi-file-edit"></i>
+        Movimiento abierto desde una partida contable
+      </span>
+      <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+        variant="text" [rounded]="true" (onClick)="volverAPartida()" />
+    </div>
+  }
+
   <div class="split-layout">
 
     <!-- Columna izquierda: detalle / formulario -->
@@ -37210,6 +47465,31 @@ export class CxpHistoricoManager implements OnInit {
   }
 }
 
+
+/* Barra de retorno a la partida contable de origen */
+.barra-origen {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+
+  &__texto {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+}
+
 ```
 
 ---
@@ -37221,7 +47501,7 @@ import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, D
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { timeout, catchError, of } from 'rxjs';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
@@ -37271,6 +47551,10 @@ export class CxpMovimientosManager implements OnInit {
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
+  partidaId = signal<number | null>(null);
 
   // ===== PROVEEDORES =====
   data = signal<Proveedor[]>([]);
@@ -37358,6 +47642,38 @@ export class CxpMovimientosManager implements OnInit {
     this.loadDocumentos();
     this.loadCarteras();
 
+    // Partida contable de origen (botón "Volver a la partida")
+    const partidaParam = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partidaParam) && partidaParam > 0) this.partidaId.set(partidaParam);
+
+    // Trazabilidad contable: ?movimientoId=<cxpmovId> (llega desde partida en copdamae)
+    const movIdParam = this.route.snapshot.queryParamMap.get('movimientoId');
+    if (movIdParam) {
+      const movId = Number(movIdParam);
+      if (!isNaN(movId) && movId > 0) {
+        this.service.getMovimiento(movId).pipe(
+          takeUntilDestroyed(this.destroyRef),
+          timeout(10000),
+          catchError(() => {
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el movimiento de origen' });
+            this.loadProveedores();
+            return of(null);
+          }),
+        ).subscribe({
+          next: (mov) => {
+            const proveedorId = mov ? Number(mov['proveedorId']) : 0;
+            if (proveedorId > 0) {
+              this.vieneDeHistorico = true;
+              this.autoSelectProveedor(proveedorId, mov);
+            } else {
+              this.loadProveedores();
+            }
+          },
+        });
+        return;
+      }
+    }
+
     // Leer proveedorId de query params y movimiento completo de router state
     const proveedorIdParam = this.route.snapshot.queryParamMap.get('proveedorId');
     const movimientoState = (history.state as any)?.movimiento ?? null;
@@ -37374,6 +47690,14 @@ export class CxpMovimientosManager implements OnInit {
 
     // Carga normal: cargar lista completa de proveedores
     this.loadProveedores();
+  }
+
+  /** Regresa a la partida contable de origen desde la que se abrió este movimiento. */
+  volverAPartida(): void {
+    if (!this.partidaId()) return;
+    this.router.navigate(['/contabilidad/copdamae'], {
+      queryParams: { partidaId: this.partidaId() },
+    });
   }
 
   // ===== PROVEEDORES =====
@@ -37664,7 +47988,7 @@ export class CxpMovimientosManager implements OnInit {
 ## 📄 src\app\features\cxp\proveedores\proveedor-form.html
 
 ```typescript
-<section class="page">
+@if (!modoInline()) {
   <header class="page-header">
     <div>
       <h1 class="page-title">{{ titulo() }}</h1>
@@ -37677,462 +48001,233 @@ export class CxpMovimientosManager implements OnInit {
       text
       size="small"
       rounded
-      (onClick)="volver()"
+      (onClick)="cancelar()"
     />
   </header>
+}
 
-  @if (cargando()) {
-    <div class="card">Cargando datos...</div>
-  } @else {
-    <p-tabs [value]="activeTabValue()" (valueChange)="activeTabValue.set($event)">
-      <p-tablist>
-        <p-tab value="0">
-          <i class="pi pi-user"></i>
-          <span>Datos</span>
-        </p-tab>
-        <p-tab value="1" [disabled]="!esEdicion()">
-          <i class="pi pi-info-circle"></i>
-          <span>Inf. Adicional</span>
-        </p-tab>
-        <p-tab value="2" [disabled]="!esEdicion()">
-          <i class="pi pi-wallet"></i>
-          <span>Carteras</span>
-        </p-tab>
-      </p-tablist>
+@if (cargando()) {
+  <div class="card mb-3">Cargando datos...</div>
+} @else {
+  <div class="card mb-3">
+    <div class="prestamo-form-columns" [formGroup]="form">
+      <div class="form-col">
+        <h5 class="form-col-title">Datos del Proveedor</h5>
 
-      <p-tabpanels>
-        <!-- ===== Tab 0: Datos del proveedor ===== -->
-        <p-tabpanel value="0">
-          <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
-            <div class="campo">
-              <label for="nroproveedor">Nro. proveedor <span class="req">*</span></label>
-              <input
-                pInputText
-                id="nroproveedor"
-                formControlName="nroproveedor"
-                maxlength="20"
-                placeholder="Número de proveedor"
-                [ngClass]="{ 'ng-invalid': invalid('nroproveedor') }"
-              />
-              @if (invalid('nroproveedor')) {
-                <small class="err">El número de proveedor es obligatorio</small>
-              }
-            </div>
+        <div class="p-field">
+          <label>Nro. proveedor <span class="req">*</span></label>
+          <input
+            #primerCampo
+            pInputText
+            pSize="small"
+            [formControl]="form.get('nroproveedor')"
+            maxlength="20"
+            placeholder="Número de proveedor"
+          />
+          @if (form.get('nroproveedor')?.invalid && form.get('nroproveedor')?.touched) {
+            <small class="p-error">El número de proveedor es obligatorio</small>
+          }
+        </div>
 
-            <div class="campo">
-              <label for="nombres">Nombres <span class="req">*</span></label>
-              <input
-                pInputText
-                id="nombres"
-                formControlName="nombres"
-                maxlength="50"
-                placeholder="Nombres"
-                [ngClass]="{ 'ng-invalid': invalid('nombres') }"
-              />
-              @if (invalid('nombres')) {
-                <small class="err">Los nombres son obligatorios</small>
-              }
-            </div>
+        <div class="p-field">
+          <label>Nombres <span class="req">*</span></label>
+          <input
+            pInputText
+            pSize="small"
+            [formControl]="form.get('nombres')"
+            maxlength="50"
+            placeholder="Nombres"
+          />
+          @if (form.get('nombres')?.invalid && form.get('nombres')?.touched) {
+            <small class="p-error">Los nombres son obligatorios</small>
+          }
+        </div>
 
-            <div class="campo">
-              <label for="apellidos">Apellidos <span class="req">*</span></label>
-              <input
-                pInputText
-                id="apellidos"
-                formControlName="apellidos"
-                maxlength="50"
-                placeholder="Apellidos"
-                [ngClass]="{ 'ng-invalid': invalid('apellidos') }"
-              />
-              @if (invalid('apellidos')) {
-                <small class="err">Los apellidos son obligatorios</small>
-              }
-            </div>
+        <div class="p-field">
+          <label>Apellidos <span class="req">*</span></label>
+          <input
+            pInputText
+            pSize="small"
+            [formControl]="form.get('apellidos')"
+            maxlength="50"
+            placeholder="Apellidos"
+          />
+          @if (form.get('apellidos')?.invalid && form.get('apellidos')?.touched) {
+            <small class="p-error">Los apellidos son obligatorios</small>
+          }
+        </div>
 
-            <div class="campo">
-              <label for="razonsocial">Razón social</label>
-              <input
-                pInputText
-                id="razonsocial"
-                formControlName="razonsocial"
-                maxlength="120"
-                placeholder="Razón social"
-              />
-            </div>
+        <div class="p-field">
+          <label>Razón social</label>
+          <input
+            pInputText
+            pSize="small"
+            [formControl]="form.get('razonsocial')"
+            maxlength="120"
+            placeholder="Razón social"
+          />
+        </div>
 
-            <div class="campo">
-              <label for="rtn">RTN</label>
-              <input pInputText id="rtn" formControlName="rtn" maxlength="50" placeholder="RTN" />
-            </div>
+        <div class="p-field">
+          <label>DNI</label>
+          <input pInputText pSize="small" [formControl]="form.get('dni')" maxlength="20" placeholder="DNI" />
+        </div>
 
-            <div class="campo">
-              <label for="dni">DNI</label>
-              <input pInputText id="dni" formControlName="dni" maxlength="20" placeholder="DNI" />
-            </div>
+        <div class="p-field">
+          <label>RTN</label>
+          <input pInputText pSize="small" [formControl]="form.get('rtn')" maxlength="50" placeholder="RTN" />
+        </div>
 
-            <div class="campo">
-              <label for="sexo">Sexo</label>
-              <p-select
-                size="small"
-                id="sexo"
-                formControlName="sexo"
-                [options]="sexoOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Seleccione sexo"
-                [fluid]="true"
-                [showClear]="true"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="estadocivil">Estado civil</label>
-              <p-select
-                size="small"
-                id="estadocivil"
-                formControlName="estadocivil"
-                [options]="estadoCivilOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Seleccione estado civil"
-                [fluid]="true"
-                [showClear]="true"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="limiteCredito">Límite de crédito</label>
-              <p-inputnumber
-                size="small"
-                id="limiteCredito"
-                formControlName="limiteCredito"
-                [mode]="'currency'"
-                currency="HNL"
-                [minFractionDigits]="2"
-                [maxFractionDigits]="2"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="diasplazo">Días de plazo</label>
-              <p-inputnumber
-                size="small"
-                id="diasplazo"
-                formControlName="diasplazo"
-                [min]="0"
-                [max]="999"
-                [useGrouping]="false"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="interes">Interés (%)</label>
-              <p-inputnumber
-                size="small"
-                id="interes"
-                formControlName="interes"
-                [minFractionDigits]="2"
-                [maxFractionDigits]="2"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="moratorio">Moratorio (%)</label>
-              <p-inputnumber
-                size="small"
-                id="moratorio"
-                formControlName="moratorio"
-                [minFractionDigits]="2"
-                [maxFractionDigits]="2"
-              />
-            </div>
-
-            <div class="campo">
-              <label for="categoria">Categoría</label>
-              <p-select
-                size="small"
-                id="categoria"
-                formControlName="categoria"
-                [options]="categoriaOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Seleccione categoría"
-                [fluid]="true"
-                [showClear]="true"
-              />
-            </div>
-
-            @if (esEdicion()) {
-              <div class="campo">
-                <label>Estado <span class="req">*</span></label>
-                <p-selectbutton
-                  size="small"
-                  [options]="snOptions"
-                  formControlName="sn_activo"
-                  optionLabel="label"
-                  optionValue="value"
-                />
-              </div>
-            }
-
-            <div class="acciones-form">
-              <p-button
-                type="button"
-                label="Cancelar"
-                icon="pi pi-times"
-                severity="secondary"
-                size="small"
-                rounded
-                (onClick)="volver()"
-              />
-              <p-button
-                type="submit"
-                label="Guardar"
-                icon="pi pi-check"
-                rounded
-                size="small"
-                [loading]="guardando()"
-              />
-            </div>
-          </form>
-        </p-tabpanel>
-
-        <!-- ===== Tab 1: Inf. Adicional (proveedorinfo) ===== -->
-        <p-tabpanel value="1">
-          <div class="tab-content">
-            <div class="tab-header">
-              <h4>Información Adicional</h4>
-              <span class="tab-subtitulo">Correo, celular y dirección del proveedor</span>
-            </div>
-
-            <div class="info-adicional-grid">
-              <!-- Columna izquierda: formulario alta / edición -->
-              <div class="info-panel info-panel-form">
-                <h5 class="form-col-title">
-                  {{ infoModel().id != null ? 'Editar registro' : 'Nuevo registro' }}
-                </h5>
-
-                <div class="campo">
-                  <label>Tipo</label>
-                  <p-select
-                    size="small"
-                    [options]="infoTipoOptions"
-                    [ngModel]="infoModel().tipo"
-                    (ngModelChange)="infoModel.set({ ...infoModel(), tipo: $event })"
-                    placeholder="Seleccione tipo"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                  />
-                </div>
-
-                <div class="campo">
-                  <label>Descripción</label>
-                  <input
-                    pInputText
-                    size="small"
-                    maxlength="50"
-                    [ngModel]="infoModel().descripcion"
-                    (ngModelChange)="infoModel.set({ ...infoModel(), descripcion: $event })"
-                    placeholder="Valor del contacto"
-                  />
-                </div>
-
-                <div class="campo">
-                  <label>Estado</label>
-                  <p-select
-                    size="small"
-                    [options]="infoEstadoOptions"
-                    [ngModel]="infoModel().sn_activo"
-                    (ngModelChange)="infoModel.set({ ...infoModel(), sn_activo: $event })"
-                    placeholder="Seleccione estado"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                  />
-                </div>
-
-                <div class="acciones-form acciones-info">
-                  @if (infoModel().id != null) {
-                    <p-button
-                      label="Cancelar"
-                      icon="pi pi-times"
-                      variant="text"
-                      severity="secondary"
-                      (click)="cancelarInfo()"
-                      [rounded]="true"
-                      size="small"
-                    />
-                  }
-                  <p-button
-                    [label]="infoModel().id != null ? 'Actualizar' : 'Agregar'"
-                    [icon]="infoModel().id != null ? 'pi pi-check' : 'pi pi-plus'"
-                    variant="text"
-                    severity="success"
-                    [raised]="true"
-                    [rounded]="true"
-                    size="small"
-                    [loading]="infoSaving()"
-                    (click)="guardarInfo()"
-                  />
-                </div>
-              </div>
-
-              <!-- Columna derecha: listado -->
-              <div class="info-panel info-panel-list">
-                <div class="info-list-header">
-                  <h5 class="form-col-title">Registros</h5>
-                  <span class="info-list-total">{{ infoData().length }} registro(s)</span>
-                </div>
-
-                <p-table [value]="infoData()" [loading]="infoLoading()" size="small">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th class="col-tipo">Tipo</th>
-                      <th>Descripción</th>
-                      <th class="col-estado">Estado</th>
-                      <th class="col-acciones"></th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-info>
-                    <tr>
-                      <td class="col-tipo">{{ infoTipoLabel(info.tipo) }}</td>
-                      <td>{{ info.descripcion || '—' }}</td>
-                      <td class="col-estado text-center">
-                        <p-tag
-                          [value]="info.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
-                          [severity]="info.sn_activo === 'S' ? 'success' : 'danger'"
-                        />
-                      </td>
-                      <td class="col-acciones">
-                        <p-button
-                          icon="pi pi-pencil"
-                          (click)="editarInfo(info)"
-                          [rounded]="true"
-                          size="small"
-                          text
-                          severity="secondary"
-                          pTooltip="Editar"
-                          tooltipPosition="left"
-                        />
-                        <p-button
-                          icon="pi pi-trash"
-                          (click)="eliminarInfo(info)"
-                          [rounded]="true"
-                          size="small"
-                          text
-                          severity="danger"
-                          pTooltip="Desactivar"
-                          tooltipPosition="left"
-                        />
-                      </td>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="emptymessage">
-                    <tr>
-                      <td colspan="4" class="text-center text-muted">
-                        No tiene información registrada
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-              </div>
-            </div>
+        <div class="form-row">
+          <div class="p-field">
+            <label>Sexo</label>
+            <p-select
+              size="small"
+              [formControl]="form.get('sexo')"
+              [options]="sexoOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccione sexo"
+              [showClear]="true"
+              styleClass="w-full"
+              [appendTo]="'body'"
+            />
           </div>
-        </p-tabpanel>
-
-        <!-- ===== Tab 2: Carteras contables (cxpcarteracta) ===== -->
-        <p-tabpanel value="2">
-          <div class="tab-content">
-            <div class="tab-header">
-              <h4>Carteras contables</h4>
-              <div class="saldo-total">
-                Asignadas:
-                <strong>{{ carterasProveedor().length }}</strong>
-              </div>
-            </div>
-
-            <div class="info-panel">
-              <div class="carteras-toolbar">
-                <div class="campo campo-cartera">
-                  <label>Cartera</label>
-                  <p-select
-                    size="small"
-                    [options]="carterasDisponibles()"
-                    [ngModel]="carteraSeleccionada()"
-                    (ngModelChange)="carteraSeleccionada.set($event)"
-                    placeholder="Seleccione cartera"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                    [showClear]="true"
-                  />
-                  @if (carterasDisponibles().length === 0) {
-                    <small class="hint">No hay carteras disponibles para asignar</small>
-                  }
-                </div>
-                <div class="campo campo-btn">
-                  <label>&nbsp;</label>
-                  <p-button
-                    label="Asignar"
-                    icon="pi pi-plus"
-                    severity="success"
-                    variant="text"
-                    [raised]="true"
-                    [rounded]="true"
-                    size="small"
-                    [loading]="carteraSaving()"
-                    (click)="agregarCartera()"
-                  />
-                </div>
-              </div>
-
-              <p-table
-                [value]="carterasProveedor()"
-                [loading]="carteraLoading()"
-                size="small"
-              >
-                <ng-template pTemplate="header">
-                  <tr>
-                    <th>Cartera</th>
-                    <th class="col-cta">Cuenta</th>
-                    <th>Cuenta contable</th>
-                    <th class="col-acciones"></th>
-                  </tr>
-                </ng-template>
-                <ng-template pTemplate="body" let-cartera>
-                  <tr>
-                    <td class="celda-cartera">{{ nombreCartera(cartera.carteractaId) }}</td>
-                    <td class="col-cta">{{ ctaCartera(cartera.carteractaId) || '—' }}</td>
-                    <td class="celda-cta-desc">
-                      {{ descripcionCtaCartera(cartera.carteractaId) || '—' }}
-                    </td>
-                    <td class="col-acciones">
-                      <p-button
-                        icon="pi pi-trash"
-                        [rounded]="true"
-                        size="small"
-                        text
-                        severity="danger"
-                        pTooltip="Quitar"
-                        tooltipPosition="left"
-                        (click)="eliminarCartera(cartera)"
-                      />
-                    </td>
-                  </tr>
-                </ng-template>
-                <ng-template pTemplate="emptymessage">
-                  <tr>
-                    <td colspan="4" class="text-center text-muted">
-                      No tiene carteras contables asignadas
-                    </td>
-                  </tr>
-                </ng-template>
-              </p-table>
-            </div>
+          <div class="p-field">
+            <label>Estado civil</label>
+            <p-select
+              size="small"
+              [formControl]="form.get('estadocivil')"
+              [options]="estadoCivilOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccione estado civil"
+              [showClear]="true"
+              styleClass="w-full"
+              [appendTo]="'body'"
+            />
           </div>
-        </p-tabpanel>
-      </p-tabpanels>
-    </p-tabs>
-  }
-</section>
+        </div>
+      </div>
+
+      <div class="form-col">
+        <h5 class="form-col-title">Clasificación y Crédito</h5>
+
+        <div class="p-field">
+          <label>Categoría</label>
+          <p-select
+            size="small"
+            [formControl]="form.get('categoria')"
+            [options]="categoriaOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccione categoría"
+            [showClear]="true"
+            styleClass="w-full"
+            [appendTo]="'body'"
+          />
+        </div>
+
+        <div class="p-field">
+          <label>Límite de crédito</label>
+          <p-inputNumber
+            size="small"
+            [formControl]="form.get('limiteCredito')"
+            mode="currency"
+            currency="HNL"
+            [locale]="'es-HN'"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [useGrouping]="true"
+            [inputStyle]="{ 'width': '100%' }"
+          />
+        </div>
+
+        <div class="p-field">
+          <label>Días de plazo</label>
+          <p-inputNumber
+            size="small"
+            [formControl]="form.get('diasplazo')"
+            [min]="0"
+            [max]="999"
+            [useGrouping]="false"
+          />
+        </div>
+
+        <div class="p-field">
+          <label>Interés (%)</label>
+          <p-inputNumber
+            size="small"
+            [formControl]="form.get('interes')"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [inputStyle]="{ 'width': '100%' }"
+          />
+        </div>
+
+        <div class="p-field">
+          <label>Moratorio (%)</label>
+          <p-inputNumber
+            size="small"
+            [formControl]="form.get('moratorio')"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [inputStyle]="{ 'width': '100%' }"
+          />
+        </div>
+
+        @if (esEdicion()) {
+          <div class="p-field">
+            <label>Estado <span class="req">*</span></label>
+            <p-selectButton
+              size="small"
+              [formControl]="form.get('sn_activo')"
+              [options]="snOptions"
+              optionLabel="label"
+              optionValue="value"
+            />
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="form-actions">
+      @if (modoInline()) {
+        <p-button
+          label="Cancelar"
+          icon="pi pi-times"
+          size="small"
+          variant="text"
+          severity="secondary"
+          [rounded]="true"
+          (onClick)="cancelar()"
+        />
+      } @else {
+        <p-button
+          label="Limpiar"
+          icon="pi pi-times"
+          size="small"
+          variant="text"
+          severity="secondary"
+          [rounded]="true"
+          (onClick)="cancelar()"
+        />
+      }
+      <p-button
+        label="Guardar"
+        icon="pi pi-check"
+        size="small"
+        variant="text"
+        severity="success"
+        [rounded]="true"
+        [loading]="guardando()"
+        (onClick)="guardar()"
+      />
+    </div>
+  </div>
+}
 
 ```
 
@@ -38141,84 +48236,1189 @@ export class CxpMovimientosManager implements OnInit {
 ## 📄 src\app\features\cxp\proveedores\proveedor-form.scss
 
 ```typescript
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem 1.25rem;
+:host {
+  display: block;
+}
 
-  @media (max-width: 640px) {
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.page-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+}
+
+.card {
+  background: var(--c-bg);
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+
+.prestamo-form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+
+.form-col-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.form-col .p-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-col label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+}
+
+.req {
+  color: var(--c-danger, #ef4444);
+}
+
+:host ::ng-deep {
+  .p-inputtext,
+  .p-select,
+  .p-inputnumber,
+  .p-datepicker {
+    width: 100%;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-border);
+  margin-top: 1rem;
+}
+
+.p-error {
+  font-size: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .prestamo-form-columns {
     grid-template-columns: 1fr;
   }
 }
 
-.campo {
+```
+
+---
+
+## 📄 src\app\features\cxp\proveedores\proveedor-form.ts
+
+```typescript
+import {
+  Component,
+  inject,
+  signal,
+  OnInit,
+  input,
+  output,
+  effect,
+  Injector,
+  ViewChild,
+  ElementRef,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { MessageService } from 'primeng/api';
+import { CxpService } from '../../../core/services/cxp.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
+
+/**
+ * Formulario de proveedor (solo datos del maestro).
+ *
+ * Soporta dos modos:
+ *  - INLINE: se usa dentro de ProveedoresManager (tab "Proveedor") mediante
+ *    `[proveedorIdInput]` + outputs `saved` / `cancelled`.
+ *  - RUTA: se usa en `/cxp/proveedores/editar/:id` (quick-nav) sin bindings.
+ *
+ * La Inf. Adicional (proveedorinfo) y las Carteras contables viven en el manager,
+ * igual que en Clientes (CxC).
+ */
+@Component({
+  selector: 'app-cxp-proveedor-form',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    InputNumberModule,
+    SelectModule,
+    SelectButtonModule,
+  ],
+  templateUrl: './proveedor-form.html',
+  styleUrl: './proveedor-form.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class CxpProveedorForm implements OnInit {
+  private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private service = inject(CxpService);
+  private auth = inject(AuthService);
+  private nav = inject(NavegacionService);
+  private msgs = inject(MessageService);
+  private injector = inject(Injector);
+
+  // ===== MODO INLINE (manager) =====
+  /** null = nuevo, >0 = editar, undefined = modo ruta (no se usa el input) */
+  proveedorIdInput = input<number | null | undefined>(undefined);
+  saved = output<void>();
+  cancelled = output<void>();
+
+  // ===== MODO RUTA =====
+  private proveedorId = 0;
+  private modoRuta = false;
+  /** Último id aplicado — evita recargas duplicadas entre ngOnInit y el effect */
+  private ultimoIdAplicado: number | null | undefined = undefined;
+
+  esEdicion = signal(false);
+  cargando = signal(false);
+  guardando = signal(false);
+  titulo = signal('Nuevo proveedor');
+  /** true cuando cuelga del manager (la cabecera "Volver" solo aplica en modo ruta) */
+  modoInline = signal(false);
+
+  @ViewChild('primerCampo') primerCampo?: ElementRef<HTMLInputElement>;
+
+  focusPrimerCampo() {
+    setTimeout(() => this.primerCampo?.nativeElement?.focus(), 100);
+  }
+
+  // Reacciona a cambios de proveedorIdInput (selección en la lista del manager)
+  private _proveedorEffect = effect(() => {
+    const id = this.proveedorIdInput();
+    if (id === undefined) return; // modo ruta
+    this.modoInline.set(true);
+    this.aplicarId(id ?? null);
+  }, { injector: this.injector });
+
+  readonly snOptions = [
+    { label: 'Activo', value: 'S' },
+    { label: 'Inactivo', value: 'N' },
+  ];
+
+  readonly sexoOptions = [
+    { label: 'Masculino', value: 'M' },
+    { label: 'Femenino', value: 'F' },
+  ];
+
+  readonly estadoCivilOptions = [
+    { label: 'Soltero', value: 'S' },
+    { label: 'Casado', value: 'C' },
+    { label: 'Divorciado', value: 'D' },
+    { label: 'Viudo', value: 'V' },
+    { label: 'Unión libre', value: 'U' },
+  ];
+
+  readonly categoriaOptions = [
+    { label: 'A', value: 'A' },
+    { label: 'B', value: 'B' },
+    { label: 'C', value: 'C' },
+    { label: 'D', value: 'D' },
+    { label: 'E', value: 'E' },
+  ];
+
+  form!: FormGroup;
+
+  ngOnInit() {
+    this.form = this.fb.group({
+      nroproveedor: ['', Validators.required],
+      nombres: ['', Validators.required],
+      apellidos: ['', Validators.required],
+      razonsocial: [''],
+      dni: [''],
+      sexo: ['M' as 'M' | 'F'],
+      estadocivil: ['S' as 'S' | 'C' | 'D' | 'V' | 'U'],
+      rtn: [''],
+      limiteCredito: [0],
+      diasplazo: [0],
+      interes: [0],
+      moratorio: [0],
+      categoria: ['A' as 'A' | 'B' | 'C' | 'D' | 'E'],
+      sn_activo: ['S' as 'S' | 'N'],
+    });
+
+    const inlineId = this.proveedorIdInput();
+    if (inlineId !== undefined) {
+      // Modo inline: la carga/reset la resuelve el effect (sin doble petición)
+      this.modoInline.set(true);
+      this.aplicarId(inlineId ?? null);
+    } else {
+      // Modo ruta (/cxp/proveedores/editar/:id)
+      this.modoRuta = true;
+      const id = this.route.snapshot.paramMap.get('id');
+      if (id) {
+        this.esEdicion.set(true);
+        this.titulo.set('Editar proveedor');
+        this.proveedorId = Number(id);
+        this.cargarProveedor(this.proveedorId);
+      }
+    }
+  }
+
+  /** Aplica el id seleccionado (inline): carga el proveedor o limpia el formulario */
+  private aplicarId(id: number | null) {
+    if (this.ultimoIdAplicado === id && this.form) return;
+    this.ultimoIdAplicado = id;
+
+    this.proveedorId = id ?? 0;
+    this.esEdicion.set(!!id);
+    this.titulo.set(id ? 'Editar proveedor' : 'Nuevo proveedor');
+
+    if (id) {
+      this.cargarProveedor(id);
+    } else if (this.form) {
+      this.form.reset({
+        nroproveedor: '',
+        nombres: '',
+        apellidos: '',
+        razonsocial: '',
+        dni: '',
+        sexo: 'M',
+        estadocivil: 'S',
+        rtn: '',
+        limiteCredito: 0,
+        diasplazo: 0,
+        interes: 0,
+        moratorio: 0,
+        categoria: 'A',
+        sn_activo: 'S',
+      });
+      this.cargando.set(false);
+    }
+  }
+
+  private cargarProveedor(id: number) {
+    this.cargando.set(true);
+    this.service.getProveedor(id).subscribe({
+      next: (p) => {
+        this.form.patchValue({
+          nroproveedor: p.nroproveedor,
+          nombres: p.nombres,
+          apellidos: p.apellidos,
+          razonsocial: p.razonsocial,
+          dni: p.dni,
+          sexo: p.sexo,
+          estadocivil: p.estadocivil,
+          rtn: p.rtn,
+          limiteCredito: Number(p.limiteCredito),
+          diasplazo: Number(p.diasplazo),
+          interes: Number(p.interes),
+          moratorio: Number(p.moratorio),
+          categoria: p.categoria,
+          sn_activo: p.sn_activo === 'S' ? 'S' : 'N',
+        });
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'Proveedor no encontrado' });
+        if (this.modoRuta) this.nav.volver(['/cxp/proveedores']);
+        else this.cancelar();
+      },
+    });
+  }
+
+  invalid(ctrl: string): boolean {
+    const c = this.form.get(ctrl);
+    return !!c && c.invalid && (c.dirty || c.touched);
+  }
+
+  cancelar() {
+    if (this.modoInline()) {
+      this.cancelled.emit();
+    } else {
+      this.nav.volver(['/cxp/proveedores']);
+    }
+  }
+
+  guardar() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.form.getRawValue();
+
+    const payload: any = this.esEdicion()
+      ? { ...raw }
+      : {
+          ...raw,
+          empresaId: this.auth.currentUser()?.empresaId,
+          sn_activo: 'S',
+        };
+
+    this.guardando.set(true);
+    const op = this.esEdicion()
+      ? this.service.updateProveedor(this.proveedorId, payload)
+      : this.service.createProveedor(payload);
+
+    op.subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.msgs.add({
+          severity: 'success',
+          summary: 'Guardado',
+          detail: this.esEdicion() ? 'Proveedor actualizado' : 'Proveedor creado correctamente',
+        });
+        if (this.modoInline()) {
+          this.saved.emit();
+        } else {
+          this.nav.volver(['/cxp/proveedores']);
+        }
+      },
+      error: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el proveedor' });
+      },
+    });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\cxp\proveedores\proveedores-manager.html
+
+```typescript
+<div class="proveedores-manager">
+  <div class="split-layout">
+    <div class="left-column">
+      <!-- Empty state -->
+      @if (!selectedProveedor() && !nuevoProveedor()) {
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Pulse un proveedor</h3>
+        <p>Haga clic en un proveedor de la lista para ver su información</p>
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input
+                type="text"
+                pSize="small"
+                pInputText
+                [ngModel]="q()"
+                (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. proveedor..."
+                class="mr-1"
+              />
+              @if (q()) {
+              <p-button
+                icon="pi pi-times"
+                (click)="limpiarFiltros()"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                size="small"
+              ></p-button>
+              }
+            </p-iconField>
+          </div>
+        </div>
+
+        <p-button
+          label="Agregar nuevo proveedor"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          class="mr-2"
+          size="small"
+        ></p-button>
+      </div>
+      }
+
+      <!-- Tabs detalle -->
+      @if ((selectedProveedor() || nuevoProveedor())) {
+      <div class="proveedor-detail">
+        <p-tabs [value]="activeTabValue()" (valueChange)="activeTabValue.set($event)">
+          <p-tablist>
+            <p-tab value="0">
+              <i class="pi pi-building"></i>
+              <span>Proveedor</span>
+            </p-tab>
+            <p-tab value="1" [disabled]="nuevoProveedor()">
+              <i class="pi pi-info-circle"></i>
+              <span>Inf. Adicional</span>
+            </p-tab>
+            <p-tab value="2" [disabled]="nuevoProveedor()">
+              <i class="pi pi-wallet"></i>
+              <span>Estado de Cuenta</span>
+            </p-tab>
+          </p-tablist>
+
+          <p-tabpanels>
+            <!-- ===== Tab 0: Datos del proveedor ===== -->
+            <p-tabpanel value="0">
+              <div class="tab-content">
+                <app-cxp-proveedor-form
+                  #proveedorFormRef
+                  [proveedorIdInput]="nuevoProveedor() ? null : (selectedProveedor()?.proveedorId ?? null)"
+                  (saved)="onFormSaved()"
+                  (cancelled)="onFormCancelled()"
+                />
+              </div>
+            </p-tabpanel>
+
+            <!-- ===== Tab 1: Inf. Adicional + Carteras ===== -->
+            <p-tabpanel value="1">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Información Adicional</h4>
+                  <span class="tab-subtitulo">Correo, celular y dirección del proveedor</span>
+                </div>
+
+                <div class="info-adicional-grid">
+                  <!-- Columna izquierda: formulario alta / edición -->
+                  <div class="info-panel info-panel-form">
+                    <h5 class="form-col-title">
+                      {{ infoModel().id != null ? 'Editar información de contacto' : 'Nueva
+                      información de contacto' }}
+                    </h5>
+
+                    <div class="form-col">
+                      <div class="p-field">
+                        <label>Tipo</label>
+                        <p-select
+                          size="small"
+                          [options]="infoTipoOptions"
+                          [ngModel]="infoModel().tipo"
+                          (ngModelChange)="infoModel.set({...infoModel(), tipo: $event})"
+                          placeholder="Seleccione tipo"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                      <div class="p-field">
+                        <label>Descripción</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="infoModel().descripcion"
+                          (ngModelChange)="infoModel.set({...infoModel(), descripcion: $event})"
+                          placeholder="Valor del contacto"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Estado</label>
+                        <p-select
+                          size="small"
+                          [options]="infoEstadoOptions"
+                          [ngModel]="infoModel().sn_activo"
+                          (ngModelChange)="infoModel.set({...infoModel(), sn_activo: $event})"
+                          placeholder="Seleccione estado"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                    </div>
+
+                    <div class="form-actions info-form-actions">
+                      @if (infoModel().id != null) {
+                      <p-button
+                        label="Cancelar edición"
+                        icon="pi pi-times"
+                        variant="text"
+                        severity="secondary"
+                        (click)="cancelarInfo()"
+                        [rounded]="true"
+                        size="small"
+                      ></p-button>
+                      } @else {
+                      <p-button
+                        label="Limpiar"
+                        icon="pi pi-times"
+                        variant="text"
+                        severity="secondary"
+                        (click)="cancelarInfo()"
+                        [rounded]="true"
+                        size="small"
+                      ></p-button>
+                      }
+                      <p-button
+                        label="Guardar"
+                        icon="pi pi-check"
+                        variant="text"
+                        severity="success"
+                        [loading]="infoSaving()"
+                        (click)="guardarInfo()"
+                        [rounded]="true"
+                        size="small"
+                      ></p-button>
+                    </div>
+
+                    <!-- Cartera contable -->
+                    <h4>Cartera contable</h4>
+
+                    <div class="form-col">
+                      <div class="p-field">
+                        <label>Cartera</label>
+                        <p-select
+                          size="small"
+                          [options]="carterasDisponibles()"
+                          [ngModel]="carteraSeleccionada()"
+                          (ngModelChange)="carteraSeleccionada.set($event)"
+                          placeholder="Seleccione cartera"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                          [showClear]="true"
+                        ></p-select>
+                        @if (carterasDisponibles().length === 0) {
+                        <small class="carteras-sin-opciones">
+                          No hay carteras disponibles para asignar
+                        </small>
+                        }
+                      </div>
+                    </div>
+
+                    <div class="carteras-actions">
+                      <p-button
+                        label="Asignar"
+                        icon="pi pi-plus"
+                        variant="text"
+                        severity="success"
+                        [rounded]="true"
+                        size="small"
+                        [loading]="carteraSaving()"
+                        (click)="agregarCartera()"
+                      ></p-button>
+                    </div>
+
+                    <p-table
+                      [value]="carterasProveedor()"
+                      showGridlines
+                      styleClass="tabla-card"
+                      [tableStyle]="{ 'min-width': '15rem' }"
+                      [loading]="carteraLoading()"
+                      size="small"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th>Cartera</th>
+                          <th class="col-cta">Cuenta</th>
+                          <th class="col-acciones"></th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-cartera>
+                        <tr>
+                          <td class="celda-cartera">{{ nombreCartera(cartera.carteractaId) }}</td>
+                          <td class="col-cta">{{ ctaCartera(cartera.carteractaId) || '—' }}</td>
+                          <td class="col-acciones">
+                            <p-button
+                              icon="pi pi-trash"
+                              [rounded]="true"
+                              size="small"
+                              text
+                              severity="danger"
+                              pTooltip="Quitar"
+                              tooltipPosition="left"
+                              (click)="eliminarCartera(cartera)"
+                            />
+                          </td>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="emptymessage">
+                        <tr>
+                          <td colspan="3" class="text-center text-muted">
+                            No tiene carteras contables asignadas
+                          </td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+
+                  <!-- Columna derecha: listado -->
+                  <div class="info-panel info-panel-list">
+                    <div class="info-list-header">
+                      <h5 class="form-col-title">Información de contacto</h5>
+                      <span class="info-list-total">{{ infoData().length }} registro(s)</span>
+                    </div>
+
+                    <div class="detalle-estado-cuenta">
+                      <p-table
+                        [value]="infoData()"
+                        [loading]="infoLoading()"
+                        showGridlines
+                        styleClass="tabla-card"
+                        [tableStyle]="{ 'min-width': '15rem' }"
+                        size="small"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th></th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-info>
+                          <tr>
+                            <td class="col-tipo">{{ infoTipoLabel(info.tipo) }}</td>
+                            <td>{{ info.descripcion || '—' }}</td>
+                            <td class="col-estado text-center">
+                              <p-tag
+                                [value]="info.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+                                [severity]="info.sn_activo === 'S' ? 'success' : 'danger'"
+                              />
+                            </td>
+                            <td class="col-acciones">
+                              <p-button
+                                icon="pi pi-pencil"
+                                (click)="editarInfo(info)"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="secondary"
+                                pTooltip="Editar"
+                                tooltipPosition="left"
+                              />
+                              <p-button
+                                icon="pi pi-trash"
+                                (click)="eliminarInfo(info)"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="danger"
+                                pTooltip="Desactivar"
+                                tooltipPosition="left"
+                              />
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                          <tr>
+                            <td colspan="4" class="text-center text-muted">
+                              No tiene información registrada
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
+                    </div>
+
+                    <!-- Carteras contables asignadas -->
+                    <div class="carteras-asignadas">
+                      <div class="info-list-header">
+                        <h5 class="form-col-title">Carteras contables asignadas</h5>
+                        <span class="info-list-total"
+                          >{{ carterasProveedor().length }} asignada(s)</span
+                        >
+                      </div>
+
+                      <p-table
+                        [value]="carterasProveedor()"
+                        [loading]="carteraLoading()"
+                        showGridlines
+                        styleClass="tabla-card"
+                        [tableStyle]="{ 'min-width': '15rem' }"
+                        size="small"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Cartera</th>
+                            <th class="col-cta">Cuenta</th>
+                            <th>Cuenta contable</th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-cartera>
+                          <tr>
+                            <td class="celda-cartera">{{ nombreCartera(cartera.carteractaId) }}</td>
+                            <td class="col-cta">{{ ctaCartera(cartera.carteractaId) || '—' }}</td>
+                            <td class="celda-cta-desc">
+                              {{ descripcionCtaCartera(cartera.carteractaId) || '—' }}
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                          <tr>
+                            <td colspan="3" class="text-center text-muted">
+                              No tiene carteras contables asignadas
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
+                    </div>
+                  </div>
+                  <!-- Fin Columna derecha: listado -->
+                </div>
+              </div>
+            </p-tabpanel>
+
+            <!-- ===== Tab 2: Estado de Cuenta ===== -->
+            <p-tabpanel value="2">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Estado de Cuenta</h4>
+                  <div class="saldo-total">
+                    Saldo: <strong>{{ moneda(saldoPendiente()) }}</strong>
+                  </div>
+                </div>
+
+                @if (estadoCuentaLoading()) {
+                <div class="loading-skeleton">
+                  @for (i of [1,2,3,4,5]; track i) {
+                  <div class="skeleton-row">
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                    <div class="skeleton-col"></div>
+                  </div>
+                  }
+                </div>
+                } @else {
+                <div class="detalle-estado-cuenta">
+                  <div class="table-responsive">
+                    <table class="table table-striped">
+                      <thead>
+                        <tr>
+                          <th class="col-fila">Fila</th>
+                          <th>Fecha</th>
+                          <th>D/C</th>
+                          <th class="col-ref">Referencia</th>
+                          <th>Concepto</th>
+                          <th class="col-importe">Importe</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (mov of estadoCuentaData(); track mov.bcomovId) {
+                        <tr>
+                          <td class="col-fila">{{ mov.bcomovId }}</td>
+                          <td>{{ mov.fecharegistro | date:'dd/MM/yyyy' }}</td>
+                          <td>
+                            <span class="badge" [ngClass]="getTipoMovSeverity(mov.tipomov)">
+                              {{ getTipoMovLabel(mov.tipomov) }}
+                            </span>
+                          </td>
+                          <td class="col-ref">{{ mov.nroreferencia || '—' }}</td>
+                          <td>{{ mov.concepto }}</td>
+                          <td
+                            class="col-importe"
+                            [ngClass]="{'text-success': mov.tipomov === 'D', 'text-danger': mov.tipomov !== 'D'}"
+                          >
+                            {{ mov.tipomov === 'D' ? '+' : '-' }}{{ moneda(mov.importe) }}
+                          </td>
+                        </tr>
+                        } @empty {
+                        <tr>
+                          <td colspan="6" class="text-center text-muted">
+                            No tiene movimientos el proveedor
+                          </td>
+                        </tr>
+                        }
+                      </tbody>
+                      <tfoot>
+                        <tr class="fw-bold">
+                          <td colspan="5" class="text-end">Saldo Total:</td>
+                          <td class="col-importe">{{ moneda(saldoPendiente()) }}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+                }
+              </div>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+      </div>
+      }
+    </div>
+
+    <!-- Columna derecha: lista de proveedores -->
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            pInputText
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event)"
+            placeholder="Buscar por nombre, DNI, RTN o Nro. proveedor..."
+            class="search-input"
+          />
+          @if (q()) {
+          <p-button
+            label="Limpiar"
+            icon="pi pi-times"
+            (click)="limpiarFiltros()"
+            severity="secondary"
+            [rounded]="true"
+            size="small"
+            class="clear-btn"
+          ></p-button>
+          }
+        </div>
+
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        ></p-button>
+      </div>
+
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay proveedores</h3>
+        <p>No se encontraron proveedores registrados.</p>
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        ></p-button>
+      </div>
+      } @else {
+      <div class="proveedores-lista">
+        @for (proveedor of data(); track proveedor.proveedorId) {
+        <div
+          class="proveedor-item-ficha"
+          [class.selected]="selectedProveedor()?.proveedorId === proveedor.proveedorId"
+          (click)="seleccionarProveedor(proveedor)"
+        >
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ proveedor.nroproveedor }}</span>
+            <p-tag
+              [value]="activoLbl(proveedor.sn_activo)"
+              [severity]="activoSev(proveedor.sn_activo)"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}"
+            />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ proveedor.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ proveedor.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ proveedor.dni || '—' }}</span>
+          </div>
+          @if (proveedor.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ proveedor.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ proveedor.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(proveedor.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa interes:</span>
+            <span class="ficha-value">{{ proveedor.interes }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa moratoria:</span>
+            <span class="ficha-value">{{ proveedor.moratorio }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ proveedor.categoria }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Estado:</span>
+            <span class="ficha-value">{{ activoLbl(proveedor.sn_activo) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Razon social:</span>
+            <span class="ficha-value">{{ proveedor.razonsocial || '—' }}</span>
+          </div>
+          <div class="item-ficha-actions">
+            <p-button
+              icon="pi pi-pencil"
+              (click)="editarProveedor(proveedor, $event)"
+              [rounded]="true"
+              size="small"
+              text
+              pTooltip="Editar"
+              tooltipPosition="left"
+            />
+          </div>
+        </div>
+        }
+      </div>
+
+      <p-paginator
+        [first]="(page() - 1) * limit()"
+        [rows]="limit()"
+        [totalRecords]="totalProveedores()"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"
+      ></p-paginator>
+      }
+    </div>
+  </div>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\cxp\proveedores\proveedores-manager.scss
+
+```typescript
+.proveedores-manager {
+  height: calc(100vh - 4rem);
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-
-  label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #334155;
-  }
-
-  .req {
-    color: #ef4444;
-  }
-
-  &.campo-wide {
-    grid-column: 1 / -1;
-  }
-
-  .err {
-    color: #ef4444;
-    font-size: 0.75rem;
-  }
-
-  .hint {
-    color: #64748b;
-    font-size: 0.78rem;
-  }
-
-  ::ng-deep {
-    .p-select {
-      width: 100%;
-    }
-
-    .p-inputnumber {
-      width: 100%;
-    }
-  }
 }
 
-.acciones-form {
-  grid-column: 1 / -1;
+.p-tabpanels {
+  background: var(--p-tabs-tabpanel-background);
+  color: var(--p-tabs-tabpanel-color);
+  padding: 0.875rem 1.125rem 1.125rem 0.0rem;
+  outline: 0 none;
+}
+
+.split-layout {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
+  flex: 1;
+  overflow: hidden;
 }
 
-// ===== Tabs (Datos | Inf. Adicional | Carteras) =====
+.left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg);
+  overflow: hidden;
+}
+
+.right-column {
+  width: 380px;
+  min-width: 350px;
+  max-width: 450px;
+  border-left: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+}
+
+.search-bar {
+  padding: 1rem;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+}
+
+.search-input-wrapper .pi-search {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--c-text-muted);
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: 6px;
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+
+.clear-btn {
+  position: absolute;
+  right: 0.25rem;
+}
+
+.tabla-card {
+  padding: 0.05rem;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+// ===== Empty states =====
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--c-text-muted);
+  padding: 2rem;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--c-primary);
+    opacity: 0.5;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--c-text-secondary, #6c757d);
+  }
+}
+
+// ===== Skeleton =====
+
+.loading-skeleton {
+  padding: 20px;
+}
+
+.skeleton-item {
+  border: 1px solid var(--c-border);
+  padding: 15px;
+  margin: 10px;
+  border-radius: 4px;
+  background: var(--c-bg);
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--c-border);
+
+  .skeleton-col {
+    flex: 1;
+    height: 0.85rem;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--c-border) 25%, var(--c-bg) 50%, var(--c-border) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease infinite;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// ===== Proveedor detail (left column) =====
+
+.proveedor-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
 .tab-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  overflow-y: auto;
+  max-height: 70vh;
+  padding: 1.5rem;
 }
 
 .tab-header {
   display: flex;
-  align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--c-border);
+}
 
-  h4 {
-    margin: 0;
-    font-size: 1.05rem;
-    font-weight: 600;
+.tab-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.saldo-total {
+  font-size: 1rem;
+  color: var(--c-text-muted);
+
+  strong {
+    font-size: 1.25rem;
     color: var(--c-text);
   }
 }
@@ -38228,20 +49428,105 @@ export class CxpMovimientosManager implements OnInit {
   color: var(--c-text-muted);
 }
 
-.form-col-title {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--c-text);
+// ===== Estado de cuenta =====
+
+.detalle-estado-cuenta {
+  .table {
+    width: 100%;
+
+    th,
+    td {
+      padding: 0.5rem 0.75rem;
+    }
+
+    .col-fila {
+      width: 50px;
+      text-align: right;
+    }
+
+    .col-ref {
+      width: 100px;
+      text-align: right;
+    }
+
+    .col-importe {
+      width: 150px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    // Columnas del listado de información adicional
+    .col-tipo {
+      width: 120px;
+    }
+
+    .col-estado {
+      width: 110px;
+      text-align: center;
+    }
+
+    .col-acciones {
+      width: 110px;
+      text-align: right;
+      white-space: nowrap;
+    }
+  }
 }
 
-.saldo-total {
-  font-size: 0.9rem;
-  color: var(--c-text-muted);
+// ===== Formulario 2 columnas =====
 
-  strong {
-    color: var(--c-text);
-  }
+.prestamo-form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-col-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.form-col .p-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-col label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+}
+
+.form-col input.p-inputtext,
+.form-col .p-select,
+.form-col .p-inputnumber,
+.form-col .p-datepicker {
+  width: 100%;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
 }
 
 // ===== Inf. Adicional: 2 columnas (formulario | listado) =====
@@ -38251,10 +49536,6 @@ export class CxpMovimientosManager implements OnInit {
   grid-template-columns: minmax(260px, 340px) 1fr;
   gap: 1.25rem;
   align-items: start;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
 }
 
 .info-panel {
@@ -38268,17 +49549,16 @@ export class CxpMovimientosManager implements OnInit {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-
-  h4 {
-    margin: 0;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--c-text);
-  }
 }
 
 .info-panel-list {
   padding: 1rem 1.25rem 1.25rem;
+}
+
+.info-form-actions {
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0 0;
 }
 
 .info-list-header {
@@ -38286,7 +49566,6 @@ export class CxpMovimientosManager implements OnInit {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
 
   .form-col-title {
     margin: 0;
@@ -38302,32 +49581,42 @@ export class CxpMovimientosManager implements OnInit {
   border-radius: 4px;
 }
 
-.acciones-info {
-  margin-top: 0.5rem;
+// ===== Cartera contable por proveedor =====
+
+.info-panel-form h4 {
+  margin: 0;
   padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--c-text);
 }
 
-// ===== Tabla Carteras contables =====
-
-.carteras-toolbar {
+.carteras-actions {
   display: flex;
-  align-items: flex-end;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-
-  .campo-cartera {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .campo-btn {
-    flex-shrink: 0;
-  }
+  justify-content: flex-end;
+  padding-top: 0.25rem;
 }
 
-// ===== Estándar p-table (tablas del formulario) =====
+.carteras-sin-opciones {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  font-style: italic;
+  margin-top: 0.25rem;
+}
 
-.page ::ng-deep .p-datatable {
+// Bloque de solo-lectura (columna derecha del tab Inf. Adicional)
+
+.carteras-asignadas {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--c-border);
+}
+
+// ===== Tablas estándar p-table (tab Inf. Adicional) =====
+
+.info-adicional-grid ::ng-deep .p-datatable {
   .p-datatable-thead > tr > th {
     padding: 0.4rem 0.75rem;
     font-size: 0.7rem;
@@ -38359,7 +49648,7 @@ export class CxpMovimientosManager implements OnInit {
     padding: 0.75rem;
   }
 
-  // Columnas compartidas por los bloques del formulario
+  // Columnas compartidas por los bloques del tab
   .col-tipo {
     width: 6.5rem;
   }
@@ -38399,11 +49688,185 @@ export class CxpMovimientosManager implements OnInit {
   }
 }
 
+// ===== Lista de proveedores (fichas) =====
+
+.proveedores-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.proveedor-item-ficha {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    border-color: var(--c-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &.selected {
+    border-color: var(--for-border-color-alls);
+    background: var(--master-background);
+  }
+}
+
+.item-ficha-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.375rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.item-ficha-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  line-height: 1.3;
+}
+
+.item-ficha-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.375rem;
+  margin-top: 0.375rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.ficha-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  min-width: 140px;
+  flex-shrink: 0;
+}
+
+.ficha-value {
+  font-size: 0.85rem;
+  color: var(--c-text);
+  font-weight: 500;
+}
+
+// ===== Paginador compacto =====
+
+.paginator-compact {
+  display: flex;
+  justify-content: center;
+
+  ::ng-deep .p-paginator {
+    background: transparent;
+    padding: 0.25rem;
+    gap: 0.25rem;
+
+    .p-paginator-content {
+      gap: 0.15rem;
+    }
+
+    .p-paginator-page,
+    .p-paginator-prev,
+    .p-paginator-next,
+    .p-paginator-first,
+    .p-paginator-last {
+      min-width: 1.6rem;
+      height: 1.6rem;
+      font-size: 0.7rem;
+      border-radius: 50%;
+    }
+
+    .p-paginator-current {
+      font-size: 0.7rem;
+      color: var(--c-text-muted);
+    }
+
+    .p-paginator-page-options {
+      height: 1.6rem;
+      font-size: 0.7rem;
+
+      .p-select-label {
+        font-size: 0.7rem;
+      }
+    }
+  }
+}
+
+// ===== Responsive =====
+
+@media (max-width: 1024px) {
+  .right-column {
+    width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .split-layout {
+    flex-direction: column;
+  }
+
+  .info-adicional-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .left-column {
+    order: 2;
+  }
+
+  .right-column {
+    order: 1;
+    width: 100%;
+    max-width: none;
+    border-left: none;
+    border-bottom: 1px solid var(--c-border);
+    max-height: 40vh;
+  }
+
+  .proveedor-detail {
+    .p-tablist-content {
+      overflow-x: visible;
+    }
+
+    .p-tablist-tab-list {
+      flex-wrap: wrap;
+      row-gap: 0.25rem;
+    }
+
+    .p-tab {
+      flex: 1 1 45%;
+      min-width: 45%;
+      justify-content: center;
+      font-size: 0.8rem;
+      padding: 0.5rem 0.35rem;
+
+      span {
+        white-space: nowrap;
+      }
+    }
+
+    .p-tablist-prev-button,
+    .p-tablist-next-button {
+      display: none;
+    }
+
+    .p-tablist-active-bar {
+      display: none;
+    }
+  }
+}
+
 ```
 
 ---
 
-## 📄 src\app\features\cxp\proveedores\proveedor-form.ts
+## 📄 src\app\features\cxp\proveedores\proveedores-manager.ts
 
 ```typescript
 import {
@@ -38414,98 +49877,81 @@ import {
   computed,
   ChangeDetectionStrategy,
   DestroyRef,
+  effect,
+  untracked,
+  ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { timeout, catchError, of } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
-import { SelectButtonModule } from 'primeng/selectbutton';
-import { TabsModule } from 'primeng/tabs';
-import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { TabsModule } from 'primeng/tabs';
+import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { PaginatorModule } from 'primeng/paginator';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { CxpService } from '../../../core/services/cxp.service';
-import { AuthService } from '../../../core/services/auth.service';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
-import {
-  ProveedorInfo,
-  ProveedorCartera,
-  TipoInfoProveedor,
-} from '../../../core/models/cxp.models';
+import { AuthService } from '../../../core/services/auth.service';
+import { Proveedor } from '../../../core/models/inventario.models';
+import { ProveedorInfo, ProveedorCartera, TipoInfoProveedor } from '../../../core/models/cxp.models';
+import { CxpProveedorForm } from './proveedor-form';
 
+/** Movimiento CxP (cxpmovimientos) — estado de cuenta del proveedor */
+interface CxPMovimiento {
+  bcomovId: number;
+  fecharegistro: string;
+  tipomov: 'D' | 'C';
+  nroreferencia: string;
+  concepto?: string;
+  importe: number | string;
+  sn_doc_anulado?: 'S' | 'N';
+}
+
+/**
+ * Proveedores (CxP) — layout Maestro/Detalle idéntico a Clientes (CxC):
+ * columna izquierda con el detalle en tabs, columna derecha con la lista
+ * paginada y el buscador.
+ */
 @Component({
-  selector: 'app-cxp-proveedor-form',
+  selector: 'app-proveedores-manager',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
     ButtonModule,
     InputTextModule,
-    InputNumberModule,
-    SelectModule,
-    SelectButtonModule,
-    TabsModule,
-    TableModule,
     TagModule,
     TooltipModule,
+    TabsModule,
+    SkeletonModule,
+    SelectModule,
+    TableModule,
+    PaginatorModule,
+    IconFieldModule,
+    InputIconModule,
+    CxpProveedorForm,
   ],
-  templateUrl: './proveedor-form.html',
-  styleUrl: './proveedor-form.scss',
+  templateUrl: './proveedores-manager.html',
+  styleUrl: './proveedores-manager.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CxpProveedorForm implements OnInit {
-  private fb = inject(FormBuilder);
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
+export class ProveedoresManager implements OnInit {
   private service = inject(CxpService);
-  private auth = inject(AuthService);
+  private contabilidad = inject(ContabilidadService);
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
-  private contabilidad = inject(ContabilidadService);
+  private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
 
-  esEdicion = signal(false);
-  cargando = signal(false);
-  guardando = signal(false);
-  titulo = signal('Nuevo proveedor');
-  /** Tab activa: '0' Datos | '1' Inf. Adicional | '2' Carteras */
-  activeTabValue = signal<string>('0');
-
-  readonly snOptions = [
-    { label: 'Activo', value: 'S' },
-    { label: 'Inactivo', value: 'N' },
-  ];
-
-  readonly sexoOptions = [
-    { label: 'Masculino', value: 'M' },
-    { label: 'Femenino', value: 'F' },
-  ];
-
-  readonly estadoCivilOptions = [
-    { label: 'Soltero', value: 'S' },
-    { label: 'Casado', value: 'C' },
-    { label: 'Divorciado', value: 'D' },
-    { label: 'Viudo', value: 'V' },
-    { label: 'Unión libre', value: 'U' },
-  ];
-
-  readonly categoriaOptions = [
-    { label: 'A', value: 'A' },
-    { label: 'B', value: 'B' },
-    { label: 'C', value: 'C' },
-    { label: 'D', value: 'D' },
-    { label: 'E', value: 'E' },
-  ];
-
-  // ===== INFO DE PROVEEDOR (proveedorinfo) =====
-
+  // ===== INFORMACIÓN ADICIONAL (proveedorinfo) =====
   readonly infoTipoOptions = [
     { label: 'Correo', value: 'CORREO' as TipoInfoProveedor },
     { label: 'Celular', value: 'CELULAR' as TipoInfoProveedor },
@@ -38520,6 +49966,7 @@ export class CxpProveedorForm implements OnInit {
   infoData = signal<ProveedorInfo[]>([]);
   infoLoading = signal(false);
   infoSaving = signal(false);
+
   infoModel = signal<{
     id: number | null;
     tipo: TipoInfoProveedor | '';
@@ -38553,139 +50000,199 @@ export class CxpProveedorForm implements OnInit {
     return this.carterasCatalogo().filter((o) => !asignadas.has(o.value));
   });
 
-  private proveedorId = 0;
+  // ===== LISTA / PAGINACIÓN =====
+  data = signal<Proveedor[]>([]);
+  totalProveedores = signal(0);
+  page = signal(1);
+  limit = signal(10);
+  cargando = signal(false);
 
-  form!: FormGroup;
+  q = signal('');
+
+  // Effect: resetea página y recarga cuando cambia el filtro (q)
+  private _searchEffect = effect(() => {
+    this.q();
+    this.page.set(1);
+    untracked(() => this.loadProveedores());
+  });
+
+  // ===== SELECCIÓN / TABS =====
+  selectedProveedor = signal<Proveedor | null>(null);
+  nuevoProveedor = signal(false);
+  activeTabValue = signal<string>('0');
+
+  @ViewChild('proveedorFormRef') proveedorFormRef?: CxpProveedorForm;
+
+  estadoCuentaData = signal<CxPMovimiento[]>([]);
+  estadoCuentaLoading = signal(false);
+
+  /** Saldo pendiente: D (débito) suma, C (crédito) resta */
+  saldoPendiente = computed(() =>
+    this.estadoCuentaData().reduce((sum, m) => {
+      if (m.sn_doc_anulado === 'S') return sum;
+      const importe = Number(m.importe || 0);
+      return m.tipomov === 'D' ? sum + importe : sum - importe;
+    }, 0),
+  );
 
   ngOnInit() {
-    this.form = this.fb.group({
-      nroproveedor: ['', Validators.required],
-      nombres: ['', Validators.required],
-      apellidos: ['', Validators.required],
-      razonsocial: [''],
-      dni: [''],
-      sexo: ['M' as 'M' | 'F'],
-      estadocivil: ['S' as 'S' | 'C' | 'D' | 'V' | 'U'],
-      rtn: [''],
-      limiteCredito: [0],
-      diasplazo: [0],
-      interes: [0],
-      moratorio: [0],
-      categoria: ['A' as 'A' | 'B' | 'C' | 'D' | 'E'],
-      sn_activo: ['S' as 'S' | 'N'],
-    });
-
-    // Catálogos independientes del proveedor (se cargan una sola vez)
+    // Sin loadProveedores() aquí: el _searchEffect lo ejecuta automáticamente
     this.cargarCatalogoCarteras();
     this.cargarCuentasContables();
-
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.esEdicion.set(true);
-      this.titulo.set('Editar proveedor');
-      this.proveedorId = Number(id);
-      this.cargando.set(true);
-      this.service.getProveedor(this.proveedorId).subscribe({
-        next: (p) => {
-          this.form.patchValue({
-            nroproveedor: p.nroproveedor,
-            nombres: p.nombres,
-            apellidos: p.apellidos,
-            razonsocial: p.razonsocial,
-            dni: p.dni,
-            sexo: p.sexo,
-            estadocivil: p.estadocivil,
-            rtn: p.rtn,
-            limiteCredito: Number(p.limiteCredito),
-            diasplazo: Number(p.diasplazo),
-            interes: Number(p.interes),
-            moratorio: Number(p.moratorio),
-            categoria: p.categoria,
-            sn_activo: p.sn_activo === 'S' ? 'S' : 'N',
-          });
-          this.cargando.set(false);
-          // Tabs de detalle solo disponibles con proveedor guardado
-          this.cargarInfoProveedor();
-          this.cargarCarterasProveedor();
-        },
-        error: () => {
-          this.cargando.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'Proveedor no encontrado' });
-          this.volver();
-        },
-      });
-    }
   }
 
-  invalid(ctrl: string): boolean {
-    const c = this.form.get(ctrl);
-    return !!c && c.invalid && (c.dirty || c.touched);
-  }
+  // ===== LISTA =====
 
-  volver() {
-    this.router.navigate(['../'], { relativeTo: this.route });
-  }
-
-  guardar() {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    const raw = this.form.getRawValue();
-
-    const payload = this.esEdicion()
-      ? { ...raw }
-      : {
-          ...raw,
-          empresaId: this.auth.currentUser()?.empresaId,
-          sn_activo: 'S',
-        };
-
-    this.guardando.set(true);
-    const op = this.esEdicion()
-      ? this.service.updateProveedor(this.proveedorId, payload as any)
-      : this.service.createProveedor(payload as any);
-
-    op.subscribe({
-      next: () => {
-        this.guardando.set(false);
-        this.msgs.add({
-          severity: 'success',
-          summary: 'Guardado',
-          detail: this.esEdicion() ? 'Proveedor actualizado' : 'Proveedor creado correctamente',
-        });
-        this.volver();
-      },
-      error: () => {
-        this.guardando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el proveedor' });
-      },
-    });
-  }
-
-  // ===== INFO DE PROVEEDOR (proveedorinfo) =====
-
-  private cargarInfoProveedor() {
-    this.infoLoading.set(true);
+  loadProveedores() {
+    this.cargando.set(true);
     this.service
-      .getProveedorInfo(this.proveedorId)
+      .getProveedoresPag(this.page(), this.limit(), this.q())
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        timeout(10000),
+        catchError(() => of({ data: [], total: 0 })),
+      )
+      .subscribe({
+        next: (res) => {
+          this.data.set(res.data);
+          this.totalProveedores.set(res.total);
+          this.cargando.set(false);
+        },
+        error: () => this.cargando.set(false),
+      });
+  }
+
+  onPageChange(event: any) {
+    this.page.set(event.page + 1);
+    this.limit.set(event.rows);
+    this.loadProveedores();
+  }
+
+  limpiarFiltros() {
+    this.q.set('');
+    this.resetSeleccion();
+  }
+
+  nuevo() {
+    this.selectedProveedor.set(null);
+    this.nuevoProveedor.set(true);
+    this.resetTabs();
+
+    setTimeout(() => {
+      this.proveedorFormRef?.focusPrimerCampo();
+    }, 200);
+  }
+
+  onFormSaved() {
+    this.nuevoProveedor.set(false);
+    this.selectedProveedor.set(null);
+    this.resetSeleccion();
+    this.loadProveedores();
+  }
+
+  onFormCancelled() {
+    this.nuevoProveedor.set(false);
+    this.resetSeleccion();
+  }
+
+  editarProveedor(proveedor: Proveedor, event: Event) {
+    event.stopPropagation();
+    this.seleccionarProveedor(proveedor);
+  }
+
+  seleccionarProveedor(proveedor: Proveedor) {
+    this.nuevoProveedor.set(false);
+    this.selectedProveedor.set(proveedor);
+    this.resetTabs();
+    this.cargarDatosProveedor(proveedor.proveedorId);
+  }
+
+  private resetSeleccion() {
+    this.selectedProveedor.set(null);
+    this.nuevoProveedor.set(false);
+    this.resetTabs();
+  }
+
+  private resetTabs() {
+    this.activeTabValue.set('0');
+    this.estadoCuentaData.set([]);
+    this.infoData.set([]);
+    this.limpiarModelInfo();
+    this.carterasProveedor.set([]);
+    this.carteraSeleccionada.set(null);
+  }
+
+  private cargarDatosProveedor(proveedorId: number) {
+    this.cargarInfoProveedor(proveedorId);
+    this.cargarCarterasProveedor(proveedorId);
+
+    this.estadoCuentaLoading.set(true);
+    this.service
+      .getMovimientosByProveedor(proveedorId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
-          this.infoData.set(res ?? []);
-          this.infoLoading.set(false);
+          this.estadoCuentaData.set((res ?? []) as CxPMovimiento[]);
+          this.estadoCuentaLoading.set(false);
         },
-        error: () => {
-          this.infoData.set([]);
-          this.infoLoading.set(false);
-        },
+        error: () => this.estadoCuentaLoading.set(false),
       });
   }
 
-  infoTipoLabel(tipo: TipoInfoProveedor | ''): string {
-    if (!tipo) return '—';
-    return this.infoTipoOptions.find((o) => o.value === tipo)?.label ?? tipo;
+  // ===== CATÁLOGOS =====
+
+  /** Catálogo de carteras contables (una sola vez), filtrado por módulo CxP */
+  private cargarCatalogoCarteras() {
+    this.contabilidad.getCarteras().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        // En Proveedores (CxP) solo aplican carteras con moduloId = 5.
+        // sn_activo !== 'N' descarta carteras dadas de baja (softDelete).
+        const opts = (res ?? [])
+          .filter((c) => c.moduloId === this.MODULO_CXP && c.sn_activo !== 'N')
+          .map((c) => ({
+            label: c.descripcion || `Cartera ${c.tcocarteraId}`,
+            value: c.tcocarteraId,
+            ctacontable: c.ctacontable ?? null,
+          }));
+        this.carterasCatalogo.set(opts);
+      },
+      error: () => this.carterasCatalogo.set([]),
+    });
+  }
+
+  /** Catálogo de cuentas contables (coctacontables) para mostrar descripciones */
+  private cargarCuentasContables() {
+    this.contabilidad.getCuentas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const mapa = new Map<string, string>();
+        for (const c of res ?? []) {
+          if (c?.ctacontable) mapa.set(c.ctacontable, c.descripcion || '');
+        }
+        this.cuentasContables.set(mapa);
+      },
+      error: () => this.cuentasContables.set(new Map()),
+    });
+  }
+
+  // ===== INFORMACIÓN ADICIONAL (proveedorinfo) =====
+
+  private limpiarModelInfo() {
+    this.infoModel.set({ id: null, tipo: '', descripcion: '', sn_activo: 'S' });
+  }
+
+  private cargarInfoProveedor(proveedorId: number) {
+    this.limpiarModelInfo();
+    this.infoLoading.set(true);
+    this.service.getProveedorInfo(proveedorId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.infoData.set(res ?? []);
+        this.infoLoading.set(false);
+      },
+      error: () => {
+        this.infoData.set([]);
+        this.infoLoading.set(false);
+      },
+    });
   }
 
   editarInfo(row: ProveedorInfo) {
@@ -38693,7 +50200,7 @@ export class CxpProveedorForm implements OnInit {
       id: row.id,
       tipo: row.tipo,
       descripcion: row.descripcion ?? '',
-      sn_activo: row.sn_activo,
+      sn_activo: row.sn_activo === 'N' ? 'N' : 'S',
     });
   }
 
@@ -38701,80 +50208,65 @@ export class CxpProveedorForm implements OnInit {
     this.limpiarModelInfo();
   }
 
-  limpiarModelInfo() {
-    this.infoModel.set({ id: null, tipo: '', descripcion: '', sn_activo: 'S' });
-  }
-
   guardarInfo() {
-    if (!this.esEdicion()) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Proveedor',
-        detail: 'Guarde el proveedor antes de agregar información de contacto',
-      });
+    const proveedor = this.selectedProveedor();
+    if (!proveedor) {
+      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un proveedor antes de guardar' });
       return;
     }
 
-    const model = this.infoModel();
-    if (!model.tipo) {
+    const raw = this.infoModel();
+    if (!raw.tipo) {
       this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Seleccione el tipo de información' });
       return;
     }
 
-    this.infoSaving.set(true);
-
-    if (model.id != null) {
-      this.service
-        .updateProveedorInfo(model.id, {
-          tipo: model.tipo,
-          descripcion: model.descripcion || null,
-          sn_activo: model.sn_activo,
-        })
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => {
-            this.infoSaving.set(false);
-            this.limpiarModelInfo();
-            this.msgs.add({
-              severity: 'success',
-              summary: 'Actualizado',
-              detail: 'Registro de información actualizado',
-            });
-            this.cargarInfoProveedor();
-          },
-          error: (err) => {
-            this.infoSaving.set(false);
-            this.msgs.add({ severity: 'error', summary: 'Error', detail: this.mensajeError(err, 'No se pudo actualizar') });
-          },
-        });
+    const descripcion = (raw.descripcion ?? '').trim();
+    if (!descripcion) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Escriba el valor de la información' });
       return;
     }
 
-    this.service
-      .createProveedorInfo({
-        proveedorId: this.proveedorId,
-        tipo: model.tipo,
-        descripcion: model.descripcion || undefined,
-        sn_activo: model.sn_activo,
-      })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.infoSaving.set(false);
-          this.limpiarModelInfo();
-          this.msgs.add({ severity: 'success', summary: 'Creado', detail: 'Registro de información creado' });
-          this.cargarInfoProveedor();
-        },
-        error: (err) => {
-          this.infoSaving.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: this.mensajeError(err, 'No se pudo crear el registro') });
-        },
+    // La BD tiene UNIQUE (proveedorId, tipo, empresaId): un solo registro por tipo
+    const duplicado = this.infoData().find((r) => r.tipo === raw.tipo && r.id !== raw.id);
+    if (duplicado) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Tipo duplicado',
+        detail: `El proveedor ya tiene un registro de tipo ${this.infoTipoLabel(raw.tipo)}`,
       });
+      return;
+    }
+
+    const payload = {
+      tipo: raw.tipo,
+      descripcion,
+      sn_activo: raw.sn_activo,
+    };
+
+    this.infoSaving.set(true);
+    const op =
+      raw.id != null
+        ? this.service.updateProveedorInfo(raw.id, payload)
+        : this.service.createProveedorInfo({ ...payload, proveedorId: proveedor.proveedorId });
+
+    op.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.infoSaving.set(false);
+        this.limpiarModelInfo();
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Información guardada correctamente' });
+        this.cargarInfoProveedor(proveedor.proveedorId);
+      },
+      error: (err) => {
+        this.infoSaving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: this.mensajeError(err, 'No se pudo guardar la información') });
+      },
+    });
   }
 
   eliminarInfo(row: ProveedorInfo) {
     this.confirm.confirm({
-      message: `¿Está seguro de desactivar el registro de tipo "${this.infoTipoLabel(row.tipo)}"?`,
+      message: '¿Está seguro de desactivar este registro de información?',
       header: 'Confirmación',
       icon: 'pi pi-exclamation-triangle',
       rejectButtonProps: {
@@ -38792,86 +50284,47 @@ export class CxpProveedorForm implements OnInit {
         rounded: true,
       },
       accept: () => {
-        this.service
-          .removeProveedorInfo(row.id)
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe({
-            next: () => {
-              this.msgs.add({
-                severity: 'success',
-                summary: 'Desactivado',
-                detail: 'Registro de información desactivado',
-              });
-              this.cargarInfoProveedor();
-            },
-            error: (err) => {
-              this.msgs.add({ severity: 'error', summary: 'Error', detail: this.mensajeError(err, 'No se pudo desactivar') });
-            },
-          });
+        const proveedor = this.selectedProveedor();
+        this.service.removeProveedorInfo(row.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Registro desactivado correctamente' });
+            if (this.infoModel().id === row.id) this.limpiarModelInfo();
+            if (proveedor) this.cargarInfoProveedor(proveedor.proveedorId);
+          },
+          error: (err) => {
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: this.mensajeError(err, 'No se pudo eliminar el registro') });
+          },
+        });
       },
     });
+  }
+
+  infoTipoLabel(tipo: TipoInfoProveedor | ''): string {
+    if (!tipo) return '—';
+    return this.infoTipoOptions.find((o) => o.value === tipo)?.label ?? tipo;
   }
 
   // ===== CARTERA CONTABLE POR PROVEEDOR (cxpcarteracta) =====
 
-  /** Carga el catálogo de carteras contables (una sola vez), filtrado por módulo CxP */
-  private cargarCatalogoCarteras() {
-    this.contabilidad.getCarteras().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        // En Proveedores (CxP) solo aplican carteras con moduloId = 5 (CxP es módulo 5).
-        // sn_activo !== 'N' descarta carteras dadas de baja (softDelete).
-        const opts = (res ?? [])
-          .filter((c) => c.moduloId === this.MODULO_CXP && c.sn_activo !== 'N')
-          .map((c) => ({
-            label: c.descripcion || `Cartera ${c.tcocarteraId}`,
-            value: c.tcocarteraId,
-            ctacontable: c.ctacontable ?? null,
-          }));
-        this.carterasCatalogo.set(opts);
-      },
-      error: () => this.carterasCatalogo.set([]),
-    });
-  }
-
-  /** Carga el catálogo de cuentas contables (coctacontables) para mostrar descripciones */
-  private cargarCuentasContables() {
-    this.contabilidad.getCuentas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        const mapa = new Map<string, string>();
-        for (const c of res ?? []) {
-          if (c?.ctacontable) mapa.set(c.ctacontable, c.descripcion || '');
-        }
-        this.cuentasContables.set(mapa);
-      },
-      error: () => this.cuentasContables.set(new Map()),
-    });
-  }
-
-  private cargarCarterasProveedor() {
+  private cargarCarterasProveedor(proveedorId: number) {
     this.carteraSeleccionada.set(null);
     this.carteraLoading.set(true);
-    this.service
-      .getCarterasProveedor()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          this.carterasProveedor.set((res ?? []).filter((c) => c.proveedorId === this.proveedorId));
-          this.carteraLoading.set(false);
-        },
-        error: () => {
-          this.carterasProveedor.set([]);
-          this.carteraLoading.set(false);
-        },
-      });
+    this.service.getCarterasProveedor().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.carterasProveedor.set((res ?? []).filter((c) => c.proveedorId === proveedorId));
+        this.carteraLoading.set(false);
+      },
+      error: () => {
+        this.carterasProveedor.set([]);
+        this.carteraLoading.set(false);
+      },
+    });
   }
 
   agregarCartera() {
-    if (!this.esEdicion()) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Proveedor',
-        detail: 'Guarde el proveedor antes de asignar una cartera contable',
-      });
+    const proveedor = this.selectedProveedor();
+    if (!proveedor) {
+      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un proveedor antes de asignar una cartera' });
       return;
     }
 
@@ -38881,40 +50334,27 @@ export class CxpProveedorForm implements OnInit {
       return;
     }
 
-    // Unicidad en BD: (proveedorId, carteractaId, Idsucusal, empresaId)
+    // Unicidad en BD: (proveedorId, carteractaId, Idsucursal, empresaId)
     if (this.carterasProveedor().some((c) => c.carteractaId === carteractaId)) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Duplicada',
-        detail: 'El proveedor ya tiene asignada esta cartera contable',
-      });
+      this.msgs.add({ severity: 'warn', summary: 'Duplicada', detail: 'El proveedor ya tiene asignada esta cartera contable' });
       return;
     }
 
     this.carteraSaving.set(true);
-    this.service
-      .createCarteraProveedor({ proveedorId: this.proveedorId, carteractaId })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.carteraSaving.set(false);
-          this.carteraSeleccionada.set(null);
-          this.msgs.add({
-            severity: 'success',
-            summary: 'Asignada',
-            detail: 'Cartera contable asignada correctamente',
-          });
-          this.cargarCarterasProveedor();
-        },
-        error: (err) => {
-          this.carteraSaving.set(false);
-          this.msgs.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: this.mensajeError(err, 'No se pudo asignar la cartera contable'),
-          });
-        },
-      });
+    this.service.createCarteraProveedor({ proveedorId: proveedor.proveedorId, carteractaId }).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: () => {
+        this.carteraSaving.set(false);
+        this.carteraSeleccionada.set(null);
+        this.msgs.add({ severity: 'success', summary: 'Asignada', detail: 'Cartera contable asignada correctamente' });
+        this.cargarCarterasProveedor(proveedor.proveedorId);
+      },
+      error: (err) => {
+        this.carteraSaving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: this.mensajeError(err, 'No se pudo asignar la cartera contable') });
+      },
+    });
   }
 
   eliminarCartera(row: ProveedorCartera) {
@@ -38937,26 +50377,16 @@ export class CxpProveedorForm implements OnInit {
         rounded: true,
       },
       accept: () => {
-        this.service
-          .removeCarteraProveedor(row.id)
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe({
-            next: () => {
-              this.msgs.add({
-                severity: 'success',
-                summary: 'Eliminada',
-                detail: 'Cartera contable quitada del proveedor',
-              });
-              this.cargarCarterasProveedor();
-            },
-            error: (err) => {
-              this.msgs.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: this.mensajeError(err, 'No se pudo quitar la cartera contable'),
-              });
-            },
-          });
+        const proveedor = this.selectedProveedor();
+        this.service.removeCarteraProveedor(row.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            this.msgs.add({ severity: 'success', summary: 'Eliminada', detail: 'Cartera contable quitada del proveedor' });
+            if (proveedor) this.cargarCarterasProveedor(proveedor.proveedorId);
+          },
+          error: (err) => {
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: this.mensajeError(err, 'No se pudo quitar la cartera contable') });
+          },
+        });
       },
     });
   }
@@ -38980,249 +50410,38 @@ export class CxpProveedorForm implements OnInit {
     return this.cuentasContables().get(cta) ?? null;
   }
 
-  /** Extrae el mensaje de error del backend (o uno genérico) */
-  private mensajeError(err: any, fallback: string): string {
-    if (err?.error?.message) return err.error.message;
-    if (typeof err?.error === 'string') return err.error;
-    if (err?.message) return err.message;
-    return fallback;
-  }
-}
+  // ===== ESTADO DE CUENTA =====
 
-```
-
----
-
-## 📄 src\app\features\cxp\proveedores\proveedores.html
-
-```typescript
-<section class="page">
-  <header class="page-header">
-    <div>
-      <h1 class="page-title">Proveedores</h1>
-      <p class="page-subtitle">Administración de proveedores (CXP)</p>
-    </div>
-    <p-button label="Nuevo proveedor" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
-  </header>
-
-  <div class="filtros card">
-    <div class="campo">
-      <label>Buscar</label>
-      <input
-        pInputText
-        type="text"
-        placeholder="Nombre, RTN, nro. proveedor..."
-        [ngModel]="q()"
-        (ngModelChange)="q.set($event)"
-        (keyup.enter)="buscar()"
-      />
-    </div>
-    <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
-      <p-button
-        label="Limpiar"
-        icon="pi pi-times"
-        severity="secondary"
-        text
-        size="small"
-        (onClick)="limpiarFiltros()"
-      />
-    </div>
-  </div>
-
-  <p-table
-    [value]="filtered()"
-    [loading]="cargando()"
-    dataKey="proveedorId"
-    [paginator]="true"
-    [rows]="20"
-    [rowsPerPageOptions]="[10, 20, 50]"
-    [showCurrentPageReport]="true"
-    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-    size="small"
-    styleClass="p-datatable-striped">
-
-    <ng-template pTemplate="header">
-      <tr>
-        <th style="width: 4rem">#</th>
-        <th>Nombre</th>
-        <th>Nro. Proveedor</th>
-        <th>RTN</th>
-        <th style="width: 8rem">Lím. Crédito</th>
-        <th style="width: 8rem">Días Plazo</th>
-        <th style="width: 7rem" class="text-center">Estado</th>
-        <th style="width: 4rem" class="text-center"></th>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="body" let-p>
-      <tr (click)="editar(p.proveedorId)" style="cursor: pointer">
-        <td>{{ p.proveedorId }}</td>
-        <td class="font-bold">{{ p.nombres }} {{ p.apellidos }}</td>
-        <td>{{ p.nroproveedor }}</td>
-        <td>{{ p.rtn || '-' }}</td>
-        <td class="text-right">{{ moneda(p.limiteCredito) }}</td>
-        <td class="text-right">{{ p.diasplazo }}</td>
-        <td class="text-center">
-          <p-tag [value]="activoLbl(p.sn_activo)" [severity]="activoSev(p.sn_activo)" />
-        </td>
-        <td class="text-center">
-          <p-button
-            icon="pi pi-pencil"
-            size="small"
-            variant="text"
-            [rounded]="true"
-            severity="secondary"
-            (onClick)="$event.stopPropagation(); editar(p.proveedorId)" />
-        </td>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="empty">
-      <tr>
-        <td colspan="8" class="text-center p-4">No hay proveedores que coincidan con los filtros.</td>
-      </tr>
-    </ng-template>
-  </p-table>
-</section>
-
-```
-
----
-
-## 📄 src\app\features\cxp\proveedores\proveedores.scss
-
-```typescript
-.filtros {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-end;
-  margin-bottom: 1rem;
-
-  .campo {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-
-    label {
-      font-weight: 500;
-      font-size: 0.85rem;
-      color: var(--c-text-muted, #64748b);
-    }
+  getTipoMovLabel(tipo: string): string {
+    const tipos: Record<string, string> = {
+      'C': 'Credito',
+      'A': 'Abono',
+      'D': 'Debito',
+    };
+    return tipos[tipo] || tipo;
   }
 
-  .acciones {
-    flex: 0;
-    flex-direction: row;
-    gap: 0.5rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .filtros {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-
-```
-
----
-
-## 📄 src\app\features\cxp\proveedores\proveedores.ts
-
-```typescript
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
-import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
-import { MessageService } from 'primeng/api';
-import { CxpService } from '../../../core/services/cxp.service';
-import { Proveedor } from '../../../core/models/inventario.models';
-
-@Component({
-  selector: 'app-cxp-proveedores',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    TagModule,
-    TooltipModule,
-  ],
-  templateUrl: './proveedores.html',
-  styleUrl: './proveedores.scss',
-})
-export class CxpProveedores implements OnInit {
-  private service = inject(CxpService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private msgs = inject(MessageService);
-
-  data = signal<Proveedor[]>([]);
-  filtered = signal<Proveedor[]>([]);
-  cargando = signal(false);
-
-  q = signal('');
-
-  ngOnInit() {
-    this.load();
+  getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'warning' | 'info' {
+    if (tipo === 'A') return 'success';
+    if (tipo === 'C') return 'info';
+    return 'danger';
   }
 
-  load() {
-    this.cargando.set(true);
-    this.service.getProveedores().subscribe({
-      next: (res) => {
-        this.data.set(res);
-        this.filtrar();
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.cargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los proveedores' });
-      },
-    });
+  // ===== UTILIDADES =====
+
+  getProveedorNombre(p: Proveedor): string {
+    const nombres = p.nombres || '';
+    const apellidos = p.apellidos || '';
+    const full = `${nombres} ${apellidos}`.trim();
+    return full || p.razonsocial || p.nroproveedor || 'Sin nombre';
   }
 
-  filtrar() {
-    const q = this.q().toLowerCase();
-    this.filtered.set(
-      this.data().filter((p) => {
-        if (!q) return true;
-        return (
-          p.nombres?.toLowerCase().includes(q) ||
-          p.apellidos?.toLowerCase().includes(q) ||
-          p.nroproveedor?.toLowerCase().includes(q) ||
-          p.rtn?.toLowerCase().includes(q) ||
-          p.dni?.toLowerCase().includes(q)
-        );
-      }),
-    );
-  }
-
-  buscar() {
-    this.filtrar();
-  }
-
-  limpiarFiltros() {
-    this.q.set('');
-    this.filtrar();
-  }
-
-  nuevo() {
-    this.router.navigate(['nuevo'], { relativeTo: this.route });
-  }
-
-  editar(id: number) {
-    this.router.navigate(['editar', id], { relativeTo: this.route });
+  moneda(n: number | string | undefined): string {
+    const val = Number(n) || 0;
+    if (isNaN(val)) return '0.00';
+    const partes = val.toFixed(2).split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return partes.join('.');
   }
 
   activoLbl(sn: string): string {
@@ -39233,8 +50452,12 @@ export class CxpProveedores implements OnInit {
     return sn === 'S' ? 'success' : 'danger';
   }
 
-  moneda(n: number | undefined): string {
-    return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
+  /** Extrae el mensaje de error del backend (o uno genérico) */
+  private mensajeError(err: any, fallback: string): string {
+    if (err?.error?.message) return err.error.message;
+    if (typeof err?.error === 'string') return err.error;
+    if (err?.message) return err.message;
+    return fallback;
   }
 }
 
@@ -41649,17 +52872,22 @@ export class CombosList implements OnInit {
 <section class="page">
   <header class="page-header">
     <div class="header-left">
-      <p-button icon="pi pi-arrow-left" severity="secondary" text rounded size="small" (onClick)="volver()" pTooltip="Volver a la lista" />
+      <p-button icon="pi pi-arrow-left" severity="secondary" text rounded size="small" (onClick)="volver()"
+        [pTooltip]="partidaId() ? 'Volver a la partida' : 'Volver a la lista'" />
       <div>
         <h1 class="page-title">Factura #{{ factura()?.nrofactura }}</h1>
         <p class="page-subtitle">{{ fechaLarga(factura()?.fecharegistro) }}</p>
       </div>
     </div>
     <div class="header-actions">
-      <p-button icon="pi pi-print" label="Imprimir" size="small" (onClick)="imprimir()" pTooltip="Imprimir factura" />
-      <p-button icon="pi pi-download" label="PDF" severity="secondary" size="small" (onClick)="descargarPdf()" pTooltip="Descargar PDF" />
-      <p-button icon="pi pi-envelope" label="Correo" severity="info" size="small" (onClick)="abrirDialogCorreo()" pTooltip="Enviar por correo" />
-      <p-button icon="pi pi-whatsapp" label="WhatsApp" severity="success" size="small" (onClick)="compartir()" styleClass="btn-whatsapp" pTooltip="Compartir por WhatsApp" />
+      <p-button icon="pi pi-print" [rounded]="true"
+      rainsed="true" label="Imprimir" size="small" (onClick)="imprimir()" pTooltip="Imprimir factura" severity="contrast" />
+      <p-button icon="pi pi-download" 
+      rainsed="true" [rounded]="true" label="PDF" severity="secondary" size="small" (onClick)="descargarPdf()" pTooltip="Descargar PDF" />
+      <p-button icon="pi pi-envelope" 
+      rainsed="true" [rounded]="true" label="Correo" severity="info" size="small" (onClick)="abrirDialogCorreo()" pTooltip="Enviar por correo" />
+      <p-button icon="pi pi-whatsapp" 
+      rainsed="true" [rounded]="true" label="WhatsApp" severity="success" size="small" (onClick)="compartir()" styleClass="btn-whatsapp" pTooltip="Compartir por WhatsApp" />
     </div>
   </header>
 
@@ -41751,7 +52979,7 @@ export class CombosList implements OnInit {
         </tbody>
       </table>
 
-      <!-- Totales -->
+      <!-- Totales (desglose fiscal por tasa) -->
       <div class="invoice-totals">
         <div class="totals-group">
           <div class="totals-row">
@@ -41759,18 +52987,32 @@ export class CombosList implements OnInit {
             <span class="totals-value">{{ moneda(factura()?.subTotal) }}</span>
           </div>
           <div class="totals-row">
-            <span class="totals-label">ISV 15%</span>
-            <span class="totals-value">{{ moneda(factura()?.impuesto) }}</span>
+            <span class="totals-label">-Rebajas y Descuentos</span>
+            <span class="totals-value">{{ moneda(factura()?.descuento ?? 0) }}</span>
           </div>
-          @if (descuentoVisible()) {
-            <div class="totals-row">
-              <span class="totals-label">Descuento</span>
-              <span class="totals-value totals-descuento">- {{ moneda(factura()?.descuento) }}</span>
-            </div>
-          }
+          <div class="totals-row">
+            <span class="totals-label">Importe Exonerado</span>
+            <span class="totals-value">{{ moneda(desglose().exonerado) }}</span>
+          </div>
+          <div class="totals-row">
+            <span class="totals-label">Importe Excento</span>
+            <span class="totals-value">{{ moneda(desglose().excento) }}</span>
+          </div>
+          <div class="totals-row">
+            <span class="totals-label">Importe Gravado 15%</span>
+            <span class="totals-value">{{ moneda(desglose().gravado15) }}</span>
+          </div>
+          <div class="totals-row">
+            <span class="totals-label">Importe Gravado 18%</span>
+            <span class="totals-value">{{ moneda(desglose().gravado18) }}</span>
+          </div>
           <div class="totals-row totals-grand">
-            <span class="totals-label">Total</span>
+            <span class="totals-label">Total a pagar</span>
             <span class="totals-value">{{ moneda(factura()?.total) }}</span>
+          </div>
+          <div class="totals-letras">
+            <span class="totals-letras-label">Total en Letras</span>
+            <span class="totals-letras-texto">{{ totalEnLetrasTexto() }}</span>
           </div>
         </div>
       </div>
@@ -41803,6 +53045,38 @@ export class CombosList implements OnInit {
               </div>
             </div>
           }
+        </div>
+      }
+
+      <!-- Trazabilidad CAI: correlativo del que proviene el número de factura -->
+      @if (correlativo()) {
+        <div class="invoice-cai-block">
+          <div class="cai-row">
+            <span class="cai-label">CAI</span>
+            <span class="cai-valor cai-mono">{{ correlativo().cai || '—' }}</span>
+          </div>
+          @if (correlativo().rangoDesde) {
+            <div class="cai-row">
+              <span class="cai-label">Rango autorizado</span>
+              <span class="cai-valor cai-mono">{{ correlativo().rangoDesde }} al {{ correlativo().rangoHasta }}</span>
+            </div>
+          }
+          @if (correlativo().fechaLimite) {
+            <div class="cai-row">
+              <span class="cai-label">Fecha limite de emision</span>
+              <span class="cai-valor">{{ fechaLarga(correlativo().fechaLimite) }}</span>
+            </div>
+          }
+          <div class="cai-row">
+            <span class="cai-label">Correlativo</span>
+            <span class="cai-valor">
+              @if (factura()?.caiAutorizadoId) {
+                <span class="cai-tag">#{{ factura()?.caiAutorizadoId }}</span>
+              } @else {
+                <span class="cai-tag cai-tag--legacy">sin asignar</span>
+              }
+            </span>
+          </div>
         </div>
       }
 
@@ -42069,7 +53343,7 @@ export class CombosList implements OnInit {
 }
 
 .totals-group {
-  width: 280px;
+  width: 320px;
 }
 
 .totals-row {
@@ -42108,6 +53382,30 @@ export class CombosList implements OnInit {
     font-size: 1.2rem;
     font-weight: 700;
     color: var(--c-primary);
+  }
+}
+
+.totals-letras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--c-border);
+
+  .totals-letras-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--c-text-muted);
+  }
+
+  .totals-letras-texto {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-text);
+    line-height: 1.35;
   }
 }
 
@@ -42158,6 +53456,56 @@ export class CombosList implements OnInit {
 
 .pago-cambio {
   color: var(--c-success);
+}
+
+// ==================== TRAZABILIDAD CAI ====================
+
+.invoice-cai-block {
+  margin-top: 1.25rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px dashed var(--c-border);
+  border-radius: 6px;
+  background: var(--c-surface-ground, #f8fafc);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.35rem 1.25rem;
+}
+
+.cai-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.78rem;
+}
+
+.cai-label {
+  color: var(--c-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cai-valor {
+  color: var(--c-text);
+}
+
+.cai-mono {
+  font-family: 'Courier New', ui-monospace, monospace;
+  letter-spacing: 0.04em;
+  word-break: break-all;
+}
+
+.cai-tag {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--c-primary);
+  color: #fff;
+}
+
+.cai-tag--legacy {
+  background: var(--c-text-muted);
 }
 
 // ==================== FOOTER MSG ====================
@@ -42273,7 +53621,7 @@ export class CombosList implements OnInit {
 ## 📄 src\app\features\facturacion\consulta-facturas\consulta-factura-detalle.ts
 
 ```typescript
-﻿import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+﻿import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -42286,6 +53634,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { FacturaImpresionService, FacturaImpresionData } from '../../../core/services/factura-impresion.service';
+import { numeroALetras } from '../../../core/utils/numeros-a-letras';
 
 @Component({
   selector: 'app-consulta-factura-detalle',
@@ -42301,11 +53651,19 @@ export class ConsultaFacturaDetalle implements OnInit {
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
+  private impresion = inject(FacturaImpresionService);
+
+  /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
+  partidaId = signal<number | null>(null);
 
   factura = signal<any>(null);
   detalles = signal<any[]>([]);
   pagos = signal<any[]>([]);
   empresa = signal<any>({});
+  correlativo = signal<any>(null);
+  impuestos = signal<any>(null);
+  cajero = signal<{ usuario?: string; nombre?: string; apellidos?: string } | null>(null);
+  tpv = signal<number | string | null>(null);
   cargando = signal(false);
   facturaId: number = 0;
 
@@ -42314,6 +53672,10 @@ export class ConsultaFacturaDetalle implements OnInit {
   enviando = signal(false);
 
   ngOnInit() {
+    // Partida contable de origen: viaja en la URL al abrir desde copdamae
+    const partida = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partida) && partida > 0) this.partidaId.set(partida);
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.facturaId = Number(id);
@@ -42329,6 +53691,10 @@ export class ConsultaFacturaDetalle implements OnInit {
         this.detalles.set(data.detalles ?? []);
         this.pagos.set(data.pagos ?? []);
         this.empresa.set(data.empresa ?? {});
+        this.correlativo.set(data.correlativo ?? null);
+        this.impuestos.set(data.impuestos ?? null);
+        this.cajero.set(data.cajero ?? null);
+        this.tpv.set(data.tpv ?? null);
         this.cargando.set(false);
       },
       error: () => {
@@ -42340,6 +53706,12 @@ export class ConsultaFacturaDetalle implements OnInit {
   }
 
   volver() {
+    // Si vino de una partida contable, regresa al detalle de esa partida
+    const partida = this.partidaId();
+    if (partida) {
+      this.router.navigate(['/contabilidad/copdamae'], { queryParams: { partidaId: partida } });
+      return;
+    }
     this.router.navigate(['/facturacion/consultas']);
   }
 
@@ -42383,134 +53755,58 @@ export class ConsultaFacturaDetalle implements OnInit {
     return 'warn';
   }
 
-  descuentoVisible(): boolean {
-    const f = this.factura();
-    return f ? Number(f.descuento ?? 0) > 0 : false;
+  /** Desglose fiscal por tasa (viene del backend; fallback: ISV total → 15%) */
+  desglose = computed(() => {
+    const imp = this.impuestos();
+    if (imp && (imp.gravado15 != null || imp.gravado18 != null)) {
+      return {
+        exonerado: Number(imp.exonerado) || 0,
+        excento: Number(imp.excento) || 0,
+        gravado15: Number(imp.gravado15) || 0,
+        gravado18: Number(imp.gravado18) || 0,
+      };
+    }
+    return { exonerado: 0, excento: 0, gravado15: Number(this.factura()?.impuesto) || 0, gravado18: 0 };
+  });
+
+  /** Total en letras formato ticket: "... OCHOCIENTOS CON 00/100" */
+  totalEnLetrasTexto(): string {
+    const base = numeroALetras(Number(this.factura()?.total) || 0).replace(/\s*LEMPIRAS$/i, '').trim();
+    if (/\d{2}\/100$/.test(base)) return base.replace(/(\d{2}\/100)$/, 'CON $1');
+    return base + ' CON 00/100';
   }
 
-  // ==================== PDF ====================
+  // ==================== IMPRESIÓN / PDF ====================
 
-  async buildPdfAndDo(action: 'print' | 'download'): Promise<void> {
-    const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-    const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-    pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-
-    const doc = this.buildPdfDefinition();
-    if (action === 'print') {
-      (pdfMake as any).createPdf(doc).print();
-    } else {
-      const id = this.factura()?.nrofactura ?? this.facturaId;
-      (pdfMake as any).createPdf(doc).download('factura-' + id + '.pdf');
-    }
+  /** Payload para el servicio de impresión (formato TICKET/CARTA desde timpresoras) */
+  private datosImpresion(): FacturaImpresionData {
+    return {
+      factura: this.factura(),
+      detalles: this.detalles(),
+      pagos: this.pagos(),
+      empresa: this.empresa(),
+      correlativo: this.correlativo(),
+      impuestos: this.impuestos() ?? undefined,
+      cajero: this.cajero(),
+      tpv: this.tpv(),
+    };
   }
 
   async imprimir() {
-    await this.buildPdfAndDo('print');
+    try {
+      await this.impresion.imprimir(this.datosImpresion());
+    } catch {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar la impresión' });
+    }
   }
 
   async descargarPdf() {
-    await this.buildPdfAndDo('download');
-  }
-
-  private buildPdfDefinition(): any {
-    const f = this.factura();
-    const dets = this.detalles();
-    const emp = this.empresa();
-
-    const detRows = dets.map((d: any, i: number) => [
-      '' + (i + 1),
-      d.descripcion || d.codbarra || '',
-      '' + Number(d.cantidad),
-      'L ' + Number(d.precioventa).toFixed(2),
-      (Number(d.descuento) || 0) > 0 ? '-' + Number(d.descuento).toFixed(0) + '%' : '0%',
-      'L ' + Number(d.subTotal).toFixed(2),
-    ]);
-
-    return {
-      pageSize: 'LETTER',
-      pageMargins: [40, 60, 40, 60],
-      content: [
-        { text: emp.nombre || 'EMPRESA', style: 'header', alignment: 'center' },
-        { text: emp.rtn ? 'RTN: ' + emp.rtn : '', alignment: 'center', fontSize: 9 },
-        { text: emp.direccion || '', alignment: 'center', fontSize: 9 },
-        { text: emp.telefono ? 'Tel: ' + emp.telefono : '', alignment: 'center', fontSize: 9 },
-        { text: '\n' },
-        { columns: [
-          { text: '', width: '*' },
-          { text: [
-            { text: this.getEstado() + '\n', bold: true, fontSize: 12, color: '#10b981' },
-            { text: 'FACTURA ', bold: true, fontSize: 16 },
-            { text: '#' + (f?.nrofactura || this.facturaId), fontSize: 16 },
-            '\n',
-            { text: 'Fecha: ', bold: true }, this.fechaLarga(f?.fecharegistro) + '\n',
-            { text: 'Hora: ', bold: true }, this.horaCorta(f?.fecharegistro) + '\n',
-            { text: 'Tipo: ', bold: true }, this.getTipoFactura(f?.tipofactura),
-          ], width: '*', alignment: 'right' },
-        ] },
-        { text: '\n' },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
-        { text: '\n' },
-        { columns: [
-          { text: [
-            { text: 'CLIENTE\n', bold: true, fontSize: 10 },
-            f?.nombrecliente || 'Sin cliente', '\n',
-            f?.direccion || '',
-          ], width: '*' },
-          { text: [
-            { text: 'DIRECCION DE ENTREGA\n', bold: true, fontSize: 10 },
-            f?.direccion || 'N/A',
-          ], width: '*' },
-        ] },
-        { text: '\n' },
-        {
-          table: {
-            headerRows: 1,
-            widths: [30, '*', 50, 70, 50, 70],
-            body: [
-              [
-                { text: '#', style: 'tableHeader' },
-                { text: 'Producto', style: 'tableHeader' },
-                { text: 'Cant.', style: 'tableHeader', alignment: 'right' },
-                { text: 'Precio', style: 'tableHeader', alignment: 'right' },
-                { text: 'Desc.', style: 'tableHeader', alignment: 'right' },
-                { text: 'Subtotal', style: 'tableHeader', alignment: 'right' },
-              ],
-              ...detRows,
-            ],
-          },
-          layout: 'lightHorizontalLines',
-        },
-        { text: '\n' },
-        {
-          alignment: 'right',
-          columns: [
-            { width: '*', text: '' },
-            { width: 200, text: [
-              { text: 'Subtotal: ', bold: true }, 'L ' + Number(f?.subTotal ?? 0).toFixed(2),
-              '\n', { text: 'ISV 15%: ', bold: true }, 'L ' + Number(f?.impuesto ?? 0).toFixed(2),
-              '\n', { text: 'Descuento: ', bold: true }, 'L ' + Number(f?.descuento ?? 0).toFixed(2),
-              '\n', { text: 'TOTAL: ', bold: true, fontSize: 14 }, { text: 'L ' + Number(f?.total ?? 0).toFixed(2), bold: true, fontSize: 14, color: '#10b981' },
-            ] },
-          ],
-        },
-        { text: '\n' },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
-        { text: '\n' },
-        { text: 'PAGOS', bold: true, fontSize: 10 },
-        ...this.pagos().map((p: any) => ({
-          text: `Forma de pago: Efectivo L ${Number(p.importe_efectivo ?? 0).toFixed(2)} / Otros L ${Number(p.importe_otros ?? 0).toFixed(2)}`,
-          fontSize: 9,
-        })),
-        f?.tipofactura === 'E' ? { text: 'Efectivo recibido: L ' + Number(f?.efectivo_recibido ?? 0).toFixed(2) + '  Cambio: L ' + Number(f?.importe_cambio ?? 0).toFixed(2), fontSize: 9 } : { text: '' },
-        { text: '\n' },
-        { text: emp.mensajeFactura || '', alignment: 'center', fontSize: 8, italics: true, color: '#64748b' },
-      ],
-      styles: {
-        header: { fontSize: 18, bold: true },
-        tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#10b981' },
-      },
-      defaultStyle: { fontSize: 10 },
-    };
+    try {
+      const id = this.factura()?.nrofactura ?? this.facturaId;
+      await this.impresion.descargar(this.datosImpresion(), 'factura-' + id + '.pdf');
+    } catch {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar el PDF' });
+    }
   }
 
   // ==================== CORREO ====================
@@ -42545,17 +53841,13 @@ export class ConsultaFacturaDetalle implements OnInit {
 
   async compartir() {
     try {
-      const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-      const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
       const id = this.factura()?.nrofactura ?? this.facturaId;
       const total = this.moneda(this.factura()?.total);
       const nombre = this.factura()?.nombrecliente || 'Cliente';
       const texto = encodeURIComponent(`Factura #${id} - ${nombre} - Total: ${total}`);
 
-      const blob = await new Promise<Blob>((resolve) => {
-        (pdfMake.createPdf(this.buildPdfDefinition()) as any).getBlob(resolve);
-      });
+      // PDF en el formato parametrizado (TICKET 80mm o CARTA LETTER)
+      const blob = await this.impresion.getBlob(this.datosImpresion());
       const file = new File([blob], 'factura-' + id + '.pdf', { type: 'application/pdf' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
@@ -43053,6 +54345,7 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 
 @Component({
   selector: 'app-consulta-facturas',
@@ -43067,6 +54360,7 @@ export class ConsultaFacturas implements OnInit {
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
+  private impresion = inject(FacturaImpresionService);
 
   facturas = signal<any[]>([]);
   filtered = signal<any[]>([]);
@@ -43164,132 +54458,13 @@ export class ConsultaFacturas implements OnInit {
   async reimprimir(f: any, $event?: Event) {
     $event?.stopPropagation();
     try {
-      const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-      const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-
       const data = await this.api.get<any>(`/facturacion/facturas/${f.facturaId}/ticket`).toPromise();
       if (!data) return;
-
-      const doc = this.buildPdfDefinition(data);
-      (pdfMake as any).createPdf(doc).print();
+      // El formato (TICKET/CARTA) lo resuelve el servicio desde timpresoras
+      await this.impresion.imprimir(data);
     } catch {
-      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el PDF' });
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar la impresión' });
     }
-  }
-
-  private buildPdfDefinition(data: any): any {
-    const f = data.factura;
-    const dets = data.detalles ?? [];
-    const emp = data.empresa ?? {};
-    const pagos = data.pagos ?? [];
-
-    const detRows = dets.map((d: any, i: number) => [
-      '' + (i + 1),
-      d.descripcion || d.codbarra || '',
-      '' + Number(d.cantidad),
-      'L ' + Number(d.precioventa).toFixed(2),
-      (Number(d.descuento) || 0) > 0 ? '-' + Number(d.descuento).toFixed(0) + '%' : '0%',
-      'L ' + Number(d.subTotal).toFixed(2),
-    ]);
-
-    return {
-      pageSize: 'LETTER',
-      pageMargins: [40, 60, 40, 60],
-      content: [
-        { text: emp.nombre || 'EMPRESA', style: 'header', alignment: 'center' },
-        { text: emp.rtn ? 'RTN: ' + emp.rtn : '', alignment: 'center', fontSize: 9 },
-        { text: emp.direccion || '', alignment: 'center', fontSize: 9 },
-        { text: emp.telefono ? 'Tel: ' + emp.telefono : '', alignment: 'center', fontSize: 9 },
-        { text: '\n' },
-        { columns: [
-          { text: '', width: '*' },
-          { text: [
-            { text: this.getEstadoLabel(f) + '\n', bold: true, fontSize: 12, color: '#10b981' },
-            { text: 'FACTURA ', bold: true, fontSize: 16 },
-            { text: '#' + (f?.nrofactura || ''), fontSize: 16 },
-            '\n',
-            { text: 'Fecha: ', bold: true }, this.fechaLarga(f?.fecharegistro) + '\n',
-            { text: 'Hora: ', bold: true }, this.horaCorta(f?.fecharegistro) + '\n',
-            { text: 'Tipo: ', bold: true }, (f?.tipofactura === 'C' ? 'Credito' : 'Contado'),
-          ], width: '*', alignment: 'right' },
-        ] },
-        { text: '\n' },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
-        { text: '\n' },
-        { columns: [
-          { text: [
-            { text: 'CLIENTE\n', bold: true, fontSize: 10 },
-            f?.nombrecliente || 'Sin cliente', '\n',
-            f?.direccion || '',
-          ], width: '*' },
-          { text: [
-            { text: 'DIRECCION DE ENTREGA\n', bold: true, fontSize: 10 },
-            f?.direccion || 'N/A',
-          ], width: '*' },
-        ] },
-        { text: '\n' },
-        {
-          table: {
-            headerRows: 1,
-            widths: [30, '*', 50, 70, 50, 70],
-            body: [
-              [
-                { text: '#', style: 'tableHeader' },
-                { text: 'Producto', style: 'tableHeader' },
-                { text: 'Cant.', style: 'tableHeader', alignment: 'right' },
-                { text: 'Precio', style: 'tableHeader', alignment: 'right' },
-                { text: 'Desc.', style: 'tableHeader', alignment: 'right' },
-                { text: 'Subtotal', style: 'tableHeader', alignment: 'right' },
-              ],
-              ...detRows,
-            ],
-          },
-          layout: 'lightHorizontalLines',
-        },
-        { text: '\n' },
-        {
-          alignment: 'right',
-          columns: [
-            { width: '*', text: '' },
-            { width: 200, text: [
-              { text: 'Subtotal: ', bold: true }, 'L ' + Number(f?.subTotal ?? 0).toFixed(2),
-              '\n', { text: 'ISV 15%: ', bold: true }, 'L ' + Number(f?.impuesto ?? 0).toFixed(2),
-              '\n', { text: 'Descuento: ', bold: true }, 'L ' + Number(f?.descuento ?? 0).toFixed(2),
-              '\n', { text: 'TOTAL: ', bold: true, fontSize: 14 }, { text: 'L ' + Number(f?.total ?? 0).toFixed(2), bold: true, fontSize: 14, color: '#10b981' },
-            ] },
-          ],
-        },
-        { text: '\n' },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
-        { text: '\n' },
-        { text: 'PAGOS', bold: true, fontSize: 10 },
-        ...pagos.map((p: any) => ({
-          text: `Forma de pago: Efectivo L ${Number(p.importe_efectivo ?? 0).toFixed(2)} / Otros L ${Number(p.importe_otros ?? 0).toFixed(2)}`,
-          fontSize: 9,
-        })),
-        f?.tipofactura === 'E' ? { text: 'Efectivo recibido: L ' + Number(f?.efectivo_recibido ?? 0).toFixed(2) + '  Cambio: L ' + Number(f?.importe_cambio ?? 0).toFixed(2), fontSize: 9 } : { text: '' },
-        { text: '\n' },
-        { text: emp.mensajeFactura || '', alignment: 'center', fontSize: 8, italics: true, color: '#64748b' },
-      ],
-      styles: {
-        header: { fontSize: 18, bold: true },
-        tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#10b981' },
-      },
-      defaultStyle: { fontSize: 10 },
-    };
-  }
-
-  private fechaLarga(fecha: string | Date): string {
-    if (!fecha) return '-';
-    const d = new Date(fecha);
-    return d.toLocaleDateString('es-HN', { day: '2-digit', month: 'long', year: 'numeric' });
-  }
-
-  private getEstadoLabel(f: any): string {
-    if (f?.sn_anulada === 'S') return 'Anulada';
-    if (f?.sn_pagada === 'S') return 'Pagada';
-    return 'Pendiente';
   }
 
   // ==================== CORREO ====================
@@ -43329,10 +54504,6 @@ export class ConsultaFacturas implements OnInit {
   async compartirWhatsapp(f: any, $event?: Event) {
     $event?.stopPropagation();
     try {
-      const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-      const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-
       const data = await this.api.get<any>(`/facturacion/facturas/${f.facturaId}/ticket`).toPromise();
       if (!data) return;
 
@@ -43341,9 +54512,8 @@ export class ConsultaFacturas implements OnInit {
       const nombre = f.nombrecliente || 'Cliente';
       const texto = encodeURIComponent(`Factura #${id} - ${nombre} - Total: ${total}`);
 
-      const blob = await new Promise<Blob>((resolve) => {
-        (pdfMake.createPdf(this.buildPdfDefinition(data)) as any).getBlob(resolve);
-      });
+      // PDF en el formato parametrizado (TICKET 80mm o CARTA LETTER)
+      const blob = await this.impresion.getBlob(data);
       const file = new File([blob], 'factura-' + id + '.pdf', { type: 'application/pdf' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
@@ -46105,13 +57275,35 @@ export class MaestroDetalle implements OnInit {
 
             <div class="field">
               <div class="campo ml-campo">
-                <label for="nrocarnet">Nro. Carnet</label>
-                <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet"
+                <label for="tipoconstancia">Tipo Constancia</label>
+                <p-select id="tipoconstancia" formControlName="tipoconstancia" [options]="tipoConstanciaOpciones"
+                  optionLabel="label" optionValue="value" placeholder="Seleccionar..." size="small"
+                  styleClass="w-full" [appendTo]="'body'"
+                  [disabled]="form.get('sn_excenta')?.value !== 'S'" />
+                @if (form.get('sn_excenta')?.value === 'S' && invalid('tipoconstancia')) {
+                <small class="err">Seleccione el tipo de constancia</small>
+                }
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="campo ml-campo">
+                <label for="nroconstancia">Nro. Constancia</label>
+                <input pInputText id="nroconstancia" formControlName="nroconstancia" pSize="small" placeholder="Constancia"
                   [attr.readonly]="form.get('sn_excenta')?.value !== 'S' || null"
                   [class.p-inputtext-disabled]="form.get('sn_excenta')?.value !== 'S'" />
-                @if (form.get('sn_excenta')?.value === 'S' && invalid('nrocarnet')) {
-                <small class="err">Ingrese el número de carnet</small>
+                @if (form.get('sn_excenta')?.value === 'S' && invalid('nroconstancia')) {
+                <small class="err">Ingrese el número de constancia</small>
                 }
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="campo ml-campo">
+                <label for="importe_excento">Importe Excento</label>
+                <p-inputNumber id="importe_excento" formControlName="importe_excento" mode="currency" currency="HNL"
+                  [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+                  size="small" styleClass="w-full" [inputStyle]="{ width: '100%' }" [readonly]="true" />
               </div>
             </div>
 
@@ -46346,13 +57538,13 @@ export class MaestroDetalle implements OnInit {
 
 ```typescript
 .field {
-    margin-bottom: 0.2rem;
+  margin-bottom: 0.2rem;
 }
 
 .col-5 {
-    flex: 0 0 auto;
-    padding: 0.2rem;
-    width: 41.6667%;
+  flex: 0 0 auto;
+  padding: 0.2rem;
+  width: 41.6667%;
 }
 
 .nf-side-panel {
@@ -46382,6 +57574,7 @@ export class MaestroDetalle implements OnInit {
 }
 
 .nf-toolbar {
+
   ::ng-deep .p-toolbar-group-start,
   ::ng-deep .p-toolbar-group-center,
   ::ng-deep .p-toolbar-group-end {
@@ -46426,7 +57619,7 @@ export class MaestroDetalle implements OnInit {
 
   ::ng-deep .p-inputicon {
     top: 50%;
-    left:97%;
+    left: 97%;
     transform: translateY(calc(-50% + 7px));
   }
 }
@@ -46518,7 +57711,10 @@ export class MaestroDetalle implements OnInit {
 }
 
 .pago-table {
-  p-select, p-inputnumber, input[pinputtext] {
+
+  p-select,
+  p-inputnumber,
+  input[pinputtext] {
     width: 100%;
   }
 }
@@ -46631,16 +57827,17 @@ export class MaestroDetalle implements OnInit {
     width: 100%;
   }
 
-  ::ng-deep .p-datatable-tbody > tr > td {
+  ::ng-deep .p-datatable-tbody>tr>td {
     padding: 0.25rem 0.75rem;
   }
 
-  ::ng-deep .p-datatable-thead > tr > th {
+  ::ng-deep .p-datatable-thead>tr>th {
     padding: 0.4rem 0.75rem;
   }
 }
 
 .nf-totales {
+
   .p-card-body,
   .card-body {
     padding: 0;
@@ -46680,12 +57877,13 @@ export class MaestroDetalle implements OnInit {
   flex-direction: column;
   gap: 0.25rem;
   min-width: 120px;
+
   .font-bold {
     font-size: 0.8rem;
     color: var(--text-muted-color);
   }
 
-  > div:last-child {
+  >div:last-child {
     font-size: 1.05rem;
     color: var(--text-color);
   }
@@ -46695,7 +57893,7 @@ export class MaestroDetalle implements OnInit {
   border-left: 1px solid var(--c-border);
   padding-left: 1rem;
 
-  > div:last-child {
+  >div:last-child {
     font-size: 1.35rem;
     color: var(--primary-color);
   }
@@ -46752,23 +57950,27 @@ export class MaestroDetalle implements OnInit {
   }
 }
 
-  .alt9 {
-    display: block;
-    font-weight: 300;
-    margin-left: 5px;
-    font-size: 1.05rem;
-    color: var(--c-warning);
-  }
+.alt9 {
+  display: block;
+  font-weight: 300;
+  margin-left: 5px;
+  font-size: 1.05rem;
+  color: var(--c-warning);
+}
 
 .img-producto {
   mix-blend-mode: multiply;
   background: transparent;
-  border-radius: 8px;
-  object-fit: contain; /* Asegura que la imagen no se deforme */
-  width: 50px; /* Ajusta según el tamaño en tu tabla */
+  border-radius: 7px;
+  object-fit: contain;
+  /* Asegura que la imagen no se deforme */
+  width: 50px;
+  /* Ajusta según el tamaño en tu tabla */
   height: 50px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Separa la imagen del fondo oscuro */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0);
+  /* Separa la imagen del fondo oscuro */
 }
+
 .campo-full {
   grid-column: 1 / -1;
 }
@@ -46778,7 +57980,7 @@ export class MaestroDetalle implements OnInit {
   width: 250px;
   height: 250px;
   object-fit: contain;
-  background: var(--surface-card);
+  background: var(--c-bg-white);
   border: 2px solid var(--surface-border);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
@@ -46863,10 +58065,9 @@ export class MaestroDetalle implements OnInit {
 
 }
 
- .surface-border{
+.surface-border {
   color: var(--for-border-color-alls);
- }
-
+}
 ```
 
 ---
@@ -46897,6 +58098,8 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { FooterHelper } from '../../helpers/footer';
 import { Producto } from '../../../core/models/inventario.models';
 import { AuthService } from '../../../core/services/auth.service';
+import { QuickNavService } from '../../../core/services/quick-nav.service';
+import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { DividerModule } from 'primeng/divider';
@@ -46920,6 +58123,7 @@ interface FilaDet {
   precioventa: number;
   descuento: number;
   impuesto: number;
+  impuestoExcento?: number;
   subTotal: number;
 }
 
@@ -46966,6 +58170,8 @@ export class NuevaFactura implements OnInit {
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
+  private quickNav = inject(QuickNavService);
+  private impresion = inject(FacturaImpresionService);
 
   ref: DynamicDialogRef | undefined;
 
@@ -47053,6 +58259,13 @@ export class NuevaFactura implements OnInit {
   readonly snOptions = [
     { label: 'No', value: 'N' },
     { label: 'Sí', value: 'S' }
+  ];
+
+  readonly tipoConstanciaOpciones = [
+    { label: 'OCE', value: 'OCE' },
+    { label: 'SAG', value: 'SAG' },
+    { label: 'CEA', value: 'CEA' },
+    { label: 'FNE', value: 'FNE' },
   ];
 
   constructor(public dialogService: DialogService) {}
@@ -47184,7 +58397,9 @@ export class NuevaFactura implements OnInit {
       tarjetacreditoId: [null as number | null],
       nrotarjeta: [''],
       nroreferencia: [''],
-      nrocarnet: [''],
+      tipoconstancia: ['FNE'],
+      nroconstancia: [''],
+      importe_excento: [0],
       diascredito: [0],
       fechavencimiento: [null as Date | null],
       sn_excenta: ['N'],
@@ -47362,6 +58577,10 @@ export class NuevaFactura implements OnInit {
     const tag = el?.tagName?.toLowerCase();
     if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
     if (this.dialogProductos() || this.dialogAtajos()) return;
+    // Ctrl+Alt+1 = navegación rápida global (QuickNav) → no capturar combos con Ctrl
+    if (event.ctrlKey || event.metaKey) return;
+    // Cuadro de navegación rápido abierto → Escape lo cierra él, no resetear la factura
+    if (this.quickNav.abierto()) return;
 
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -47436,7 +58655,9 @@ export class NuevaFactura implements OnInit {
       nrocliente: raw.nrocliente,
       nombreClienteManual: this.nombreClienteManual(),
       sn_excenta: raw.sn_excenta,
-      nrocarnet: raw.nrocarnet,
+      tipoconstancia: raw.tipoconstancia,
+      nroconstancia: raw.nroconstancia,
+      importe_excento: raw.importe_excento,
       filas: filas.map(f => ({ ...f })),
       totales: { ...this.totales() },
     };
@@ -47469,7 +58690,9 @@ export class NuevaFactura implements OnInit {
       clienteId: venta.clienteId,
       nrocliente: venta.nrocliente ?? '',
       sn_excenta: venta.sn_excenta ?? 'N',
-      nrocarnet: venta.nrocarnet ?? '',
+      tipoconstancia: venta.tipoconstancia ?? 'FNE',
+      nroconstancia: venta.nroconstancia ?? '',
+      importe_excento: venta.importe_excento ?? 0,
     });
     this.nombreClienteManual.set(venta.nombreClienteManual ?? '');
     this.filas.set((venta.filas ?? []).map((f: any) => ({ ...f })));
@@ -47709,10 +58932,15 @@ export class NuevaFactura implements OnInit {
 
     if (this.impuestoIncluido) {
       const subConImp = bruto * (1 + this.tasaImpuesto) * (1 - descuento / 100);
-      row.impuesto = exenta ? 0 : Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
+      // ISV que se dejó de cobrar (15%) — se guarda en importe_excento cuando la venta es exenta
+      const isvCalculado = Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
+      row.impuesto = exenta ? 0 : isvCalculado;
+      row.impuestoExcento = exenta ? isvCalculado : 0;
       row.subTotal = Math.round(subConImp * 100) / 100;
     } else {
-      row.impuesto = exenta ? 0 : Math.round(brutoDesc * this.tasaImpuesto * 100) / 100;
+      const isvCalculado = Math.round(brutoDesc * this.tasaImpuesto * 100) / 100;
+      row.impuesto = exenta ? 0 : isvCalculado;
+      row.impuestoExcento = exenta ? isvCalculado : 0;
       row.subTotal = Math.round((brutoDesc + row.impuesto) * 100) / 100;
     }
 
@@ -47722,14 +58950,21 @@ export class NuevaFactura implements OnInit {
 
   recalcularExenta() {
     const exenta = this.form.get('sn_excenta')?.value === 'S';
-    const ctrl = this.form.get('nrocarnet')!;
+    const ctrl = this.form.get('nroconstancia')!;
+    const tipoCtrl = this.form.get('tipoconstancia')!;
+    const exentoCtrl = this.form.get('importe_excento')!;
     if (exenta) {
       ctrl.setValidators([Validators.required]);
+      tipoCtrl.setValidators([Validators.required]);
     } else {
       ctrl.clearValidators();
       ctrl.setValue('');
+      tipoCtrl.clearValidators();
+      tipoCtrl.setValue('FNE');
+      exentoCtrl.setValue(0);
     }
     ctrl.updateValueAndValidity();
+    tipoCtrl.updateValueAndValidity();
     for (const r of this.filas()) {
       this.recalcularFila(r);
     }
@@ -47759,13 +58994,17 @@ export class NuevaFactura implements OnInit {
     let bruto = 0;
     let descuento = 0;
     let impuesto = 0;
+    let impuestoExcento = 0;
     for (const r of this.filas()) {
       bruto += (r.cantidad ?? 0) * (r.precioventa ?? 0);
       descuento += (r.cantidad ?? 0) * (r.precioventa ?? 0) * ((r.descuento ?? 0) / 100);
       impuesto += r.impuesto ?? 0;
+      impuestoExcento += r.impuestoExcento ?? 0;
     }
     const total = bruto - descuento + impuesto;
     const efectivo = this.form?.get('efectivo_recibido')?.value ?? 0;
+    // Importe exento: ISV 15% que se dejó de cobrar — se llena automáticamente (campo no editable)
+    this.form?.get('importe_excento')?.setValue(Math.round(impuestoExcento * 100) / 100);
     this.totales.set({
       subTotal: Math.round(bruto * 100) / 100,
       descuento: Math.round(descuento * 100) / 100,
@@ -47912,7 +59151,9 @@ export class NuevaFactura implements OnInit {
       cajaId: raw.cajaId,
       gestorId: raw.gestorId || null,
       sn_excenta: raw.sn_excenta,
-      nrocarnet: raw.nrocarnet || null,
+      tipoconstancia: raw.tipoconstancia || 'FNE',
+      nroconstancia: raw.nroconstancia || null,
+      importe_excento: raw.importe_excento || 0,
       sn_pagada: esCredito ? 'N' : 'S',
       sn_anulada: 'N',
       sn_contabilizada: 'N',
@@ -48032,162 +59273,14 @@ export class NuevaFactura implements OnInit {
     this.api.get<any>(`/facturacion/facturas/${facturaId}/ticket`)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (data) => this.abrirTicket(data),
+        // El formato (TICKET/CARTA) lo resuelve el servicio desde timpresoras
+        next: (data) => this.impresion.imprimir(data).catch(() => {
+          this.msgs.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudo imprimir la factura' });
+        }),
         error: () => {
           this.msgs.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudieron cargar los datos del ticket' });
         },
       });
-  }
-
-  private abrirTicket(data: any) {
-    const { factura: fac, detalles, pagos, empresa, correlativo } = data;
-    const fecha = new Date(fac.fecharegistro).toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const hora = new Date(fac.fecharegistro).toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
-    const condicion = fac.tipofactura === 'C' ? 'CRÉDITO' : 'CONTADO';
-    const nroFactura = String(fac.nrofactura).padStart(8, '0');
-    // Formatear número con prefijo del rango: 000-001-01-00120004
-    let nroFacturaFmt = nroFactura;
-    if (correlativo?.rangoDesde) {
-      const partes = correlativo.rangoDesde.split('-');
-      if (partes.length > 1) {
-        const prefijo = partes.slice(0, -1).join('-') + '-';
-        nroFacturaFmt = prefijo + nroFactura;
-      }
-    }
-
-    const lineasHtml = (detalles || []).map((d: any) => {
-      const desc = d.descripcion || `#${d.productoId}`;
-      const cod = d.codbarra || '';
-      const cant = Number(d.cantidad);
-      const precio = Number(d.precioventa);
-      const tot = Number(d.subTotal) || (cant * precio);
-      const descuento = Number(d.descuento) || 0;
-      const pDescuento = Number(d.p_descuento) || 0;
-      const descLinea = pDescuento > 0 ? `<div class="linea-desc">Desc: -${Number(pDescuento.toFixed(0))}%</div>` : `<div class="linea-desc">Desc: 0%</div>`;
-      return `<div class="linea-item"><div class="linea-desc">${desc}</div>${cod ? `<div class="linea-cod">Cod. ${cod}</div>` : ''}${descLinea}<div class="linea"><span>Cant. ${cant}</span><span>${this.formatNum(precio)}</span><span class="right">${this.formatNum(tot)}</span></div></div>`;
-    }).join('');
-
-    const pagosHtml = (pagos || []).filter((p: any) => Number(p.importe_otros) > 0 || Number(p.importe_efectivo) > 0).map((p: any) => {
-      const importe = Number(p.importe_otros) || Number(p.importe_efectivo) || 0;
-      const formaPago = this.formaspago().find((f) => f.value === p.formapagoId);
-      let desc = formaPago?.label || `Pago #${p.formapagoId}`;
-
-      if (desc.toLowerCase().includes('tarjeta') && p.nrotarjeta) {
-        const last4 = p.nrotarjeta.toString().slice(-4);
-        desc += ` ****${last4}`;
-      }
-
-      if (p.nroautorizacion) {
-        desc += ` Aut: ${p.nroautorizacion}`;
-      }
-
-      return `<div class="linea"><span>${desc}</span><span class="right">${this.formatNum(importe)}</span></div>`;
-    }).join('');
-
-    const subtotal = Number(fac.subTotal) || 0;
-    const impuesto = Number(fac.impuesto) || 0;
-    const descuento = Number(fac.descuento) || 0;
-    const total = Number(fac.total) || 0;
-    const efectivo = Number(fac.efectivo_recibido) || 0;
-    const cambio = Number(fac.importe_cambio) || 0;
-
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Factura ${nroFacturaFmt}</title>
-<style>
-  @page { size: 80mm auto; margin: 2mm; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Courier New', Courier, monospace; font-size: 11px; width: 76mm; color: #000; }
-  .center { text-align: center; }
-  .bold { font-weight: bold; }
-  .linea { display: flex; justify-content: space-between; padding: 1px 0; }
-  .linea-item { margin-bottom: 4px; padding-bottom: 4px; }
-  .linea-desc { font-size: 9px; }
-  .linea-cod { font-size: 7px; color: #555; }
-  .right { text-align: right; }
-  .sep { border-top: 1px dashed #000; margin: 3px 0; }
-  .header { text-align: center; margin-bottom: 4px; }
-  .header .nombre { font-size: 14px; font-weight: bold; }
-  .header .info { font-size: 9px; }
-  .factura-info { margin: 4px 0; }
-  .factura-info .row { display: flex; justify-content: space-between; }
-  .items { margin: 4px 0; }
-  .totales { margin: 4px 0; }
-  .footer { text-align: center; margin-top: 6px; font-size: 9px; }
-</style>
-</head>
-<body>
-  <div class="header">
-    <div class="nombre">${empresa.nombre}</div>
-    ${empresa.rtn ? `<div class="info">RTN: ${empresa.rtn}</div>` : ''}
-    ${empresa.direccion ? `<div class="info">${empresa.direccion}</div>` : ''}
-    ${empresa.telefono ? `<div class="info">Tel: ${empresa.telefono}</div>` : ''}
-  </div>
-
-  <div class="sep"></div>
-
-  <div class="factura-info">
-    <div class="row bold"><span>FACTURA # ${nroFacturaFmt}</span></div>
-    <div class="row"><span>Fecha:</span><span>${fecha} ${hora}</span></div>
-    <div class="row"><span>Cliente:</span><span>${(fac.nombrecliente || 'N/A').substring(0, 25)}</span></div>
-    <div class="row"><span>Condición:</span><span>${condicion}</span></div>
-    ${fac.direccion ? `<div class="row"><span>Dir:</span><span>${fac.direccion.substring(0, 25)}</span></div>` : ''}
-  </div>
-
-  ${correlativo ? `
-  <div class="sep"></div>
-  <div class="cai-info">
-    <div class="center bold" style="font-size: 8px;">RANGO AUTORIZADO</div>
-    <div style="font-size: 8px; text-align: center;">del ${correlativo.rangoDesde}</div>
-    <div style="font-size: 8px; text-align: center;">al ${correlativo.rangoHasta}</div>
-    <div class="center bold" style="font-size: 8px; margin-top: 2px;">CODIGO CAI</div>
-    <div class="center" style="font-size: 7px; letter-spacing: 0.5px;">${correlativo.cai}</div>
-  </div>
-  ` : ''}
-
-  <div class="sep"></div>
-
-  <div class="items">
-    <div class="linea bold"><span>ARTICULO</span><span>P.U.</span><span>TOTAL</span></div>
-    ${lineasHtml}
-  </div>
-
-  <div class="sep"></div>
-
-  <div class="totales">
-    <div class="linea"><span>Subtotal:</span><span class="right">${this.formatNum(subtotal)}</span></div>
-    ${descuento > 0 ? `<div class="linea"><span>Descuento:</span><span class="right">-${this.formatNum(descuento)}</span></div>` : ''}
-    ${impuesto > 0 ? `<div class="linea"><span>ISV 15%:</span><span class="right">${this.formatNum(impuesto)}</span></div>` : ''}
-    <div class="linea bold"><span>TOTAL:</span><span class="right">${this.formatNum(total)}</span></div>
-  </div>
-
-  <div class="sep"></div>
-
-  ${pagosHtml ? `<div>${pagosHtml}</div><div class="sep"></div>` : ''}
-  ${efectivo > 0 ? `<div class="linea"><span>Efectivo:</span><span class="right">${this.formatNum(efectivo)}</span></div>` : ''}
-  ${cambio > 0 ? `<div class="linea"><span>Cambio:</span><span class="right">${this.formatNum(cambio)}</span></div>` : ''}
-
-  <div class="footer">
-    ${empresa.mensajeDevolucion ? `<div>${empresa.mensajeDevolucion}</div>` : ''}
-    ${empresa.mensajeFactura ? `<div>${empresa.mensajeFactura}</div>` : ''}
-    <div>Gracias por su compra</div>
-  </div>
-</body>
-</html>`;
-
-    const ventana = window.open('', '_blank', 'width=320,height=600');
-    if (ventana) {
-      ventana.document.write(html);
-      ventana.document.close();
-      ventana.focus();
-      setTimeout(() => ventana.print(), 300);
-    }
-  }
-
-  private formatNum(n: number): string {
-    return n.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   showHelperProductos() {
@@ -65735,6 +76828,8 @@ export class UnidadesMedida implements OnInit {
                   [showButtons]="true"
                   [locale]="'es-HN'"
                   [useGrouping]="c.formato !== 'anio'"
+                  [min]="c.formato === 'anio' ? 1990 : undefined"
+                  [max]="c.formato === 'anio' ? 2200 : undefined"
                   [minFractionDigits]="c.decimales ?? (c.formato === 'moneda' ? 2 : undefined)"
                   [maxFractionDigits]="c.decimales ?? (c.formato === 'moneda' ? 2 : undefined)"
                   [ngClass]="{ 'ng-invalid': invalid(c.key) }"
@@ -65763,6 +76858,8 @@ export class UnidadesMedida implements OnInit {
 
               @if (invalid(c.key)) {
                 <small class="err">{{ mensajeError(c) }}</small>
+              } @else if (c.pista) {
+                <small class="pista">{{ c.pista }}</small>
               }
             </div>
           }
@@ -65883,6 +76980,12 @@ export class UnidadesMedida implements OnInit {
   font-size: 0.75rem;
 }
 
+.pista {
+  color: var(--c-text-muted, #64748b);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
 :host ::ng-deep .p-inputnumber {
   width: 100%;
 
@@ -65966,6 +77069,8 @@ export class CatalogoForm implements OnInit, OnChanges {
   ];
 
   private itemId = 0;
+  /** true cuando la ruta es "nuevo" (o id embebido vacío) — controla los valores por defecto */
+  private nuevoRegistro = false;
 
   form!: FormGroup;
 
@@ -65993,7 +77098,9 @@ export class CatalogoForm implements OnInit, OnChanges {
     }
     this.campos = this.config.campos;
     this.protegido.set(false);
-    this.titulo.set(this.esNuevo(id) ? `Nuevo ${this.config.titulo.slice(0, -1)}` : `Editar ${this.config.titulo.slice(0, -1)}`);
+    this.nuevoRegistro = this.esNuevo(id);
+    const singular = this.config.tituloSingular ?? this.config.titulo.slice(0, -1);
+    this.titulo.set(this.nuevoRegistro ? `Nuevo ${singular}` : `Editar ${singular}`);
     this.buildForm();
 
     // Catálogo protegido: sn_abierto nunca se toca desde aquí
@@ -66046,13 +77153,17 @@ export class CatalogoForm implements OnInit, OnChanges {
   }
 
   /**
-   * Solo al crear: prellena los campos tipo 'fecha' que estén vacíos
-   * con la fecha del sistema de la empresa (tempresas.fechasistema).
-   * En edición nunca se toca (conserva la fecha guardada).
+   * Solo al crear:
+   *  - campos tipo 'fecha' vacíos  → tempresas.fechasistema
+   *  - campos formato 'anio'        → año de tempresas.fechasistema
+   *  - campo 'nromes'               → mes de tempresas.fechasistema
+   * En edición nunca se toca (conserva lo guardado).
    */
   private precargarFechaSistema() {
     const camposFecha = this.campos.filter((c) => c.tipo === 'fecha');
-    if (!camposFecha.length) return;
+    const camposAnio = this.campos.filter((c) => c.formato === 'anio');
+    const campoMes = this.campos.find((c) => c.key === 'nromes');
+    if (!camposFecha.length && !camposAnio.length && !campoMes) return;
     const empresaId = this.auth.currentUser()?.empresaId;
     if (!empresaId) return;
     this.api
@@ -66067,6 +77178,13 @@ export class CatalogoForm implements OnInit, OnChanges {
           for (const c of camposFecha) {
             // Solo si está vacío (un valor por queryParams tiene prioridad)
             if (!this.form.get(c.key)?.value) patch[c.key] = d;
+          }
+          // Año y mes desde la fecha de sistema (solo si siguen vacíos)
+          for (const c of camposAnio) {
+            if (!this.form.get(c.key)?.value) patch[c.key] = d.getFullYear();
+          }
+          if (campoMes && !this.form.get(campoMes.key)?.value) {
+            patch[campoMes.key] = d.getMonth() + 1;
           }
           if (Object.keys(patch).length) this.form.patchValue(patch);
         },
@@ -66109,10 +77227,14 @@ export class CatalogoForm implements OnInit, OnChanges {
   private buildForm() {
     const group: Record<string, any> = {};
     for (const c of this.campos) {
-      group[c.key] = [
-        c.tipo === 'numero' ? 0 : '',
-        c.requerido ? Validators.required : [],
-      ];
+      // Valores por defecto al crear. Sin esto un campo numérico nace en 0 y un
+      // select en '' — ambos inválidos para el backend (ej: año/mes del período).
+      let inicial: any = c.tipo === 'numero' ? 0 : '';
+      if (this.nuevoRegistro && c.key === 'sn_abierto' && this.config.protegerCerrados) {
+        // Período contable: siempre se crea ABIERTO (el cierre es de Cierre Contable)
+        inicial = 'S';
+      }
+      group[c.key] = [inicial, c.requerido ? Validators.required : []];
     }
     if (!this.config.sinEstado) group['sn_activo'] = ['S'];
     this.form = this.fb.group(group);
@@ -66201,9 +77323,17 @@ export class CatalogoForm implements OnInit, OnChanges {
         });
         this.volver();
       },
-      error: () => {
+      error: (err: any) => {
         this.guardando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el registro' });
+        // El backend da mensajes específicos (período protegido, duplicado, validación):
+        // se muestran tal cual en vez de un genérico que oculta la causa.
+        const msg = err?.error?.message;
+        const detalle =
+          (Array.isArray(msg) ? msg.join(' · ') : msg) ||
+          err?.error?.error ||
+          err?.message ||
+          'No se pudo guardar el registro';
+        this.msgs.add({ severity: 'error', summary: 'No se pudo guardar', detail: detalle });
       },
     });
   }
@@ -66223,192 +77353,340 @@ export class CatalogoForm implements OnInit, OnChanges {
     </div>
     <div>
       @if (config() && !config()!.soloLectura) {
-      <p-button label="Nuevo" icon="pi pi-plus" size="small" (onClick)="nuevo()"
-      variant="text"
-      [raised]="true" severity="success" [rounded]="true" />
+      <p-button
+        label="Nuevo"
+        icon="pi pi-plus"
+        size="small"
+        (onClick)="nuevo()"
+        variant="text"
+        [raised]="true"
+        severity="success"
+        [rounded]="true"
+      />
       }
     </div>
   </header>
 
+  <!-- Campo de filtro compartido por las dos filas de la barra -->
+  <ng-template #campoFiltro let-f>
+    <div class="campo" [class.campo-fila2]="f.fila === 2">
+      <label>{{ f.label }}</label>
+      @if (f.tipo === 'select') {
+      <p-select
+        [options]="opcionesFiltro(f.key)"
+        [ngModel]="filtrosValores()[f.key] ?? null"
+        (ngModelChange)="setFiltro(f.key, $event)"
+        optionLabel="label"
+        optionValue="value"
+        [showClear]="true"
+        placeholder="Todos"
+        styleClass="w-full"
+        size="small"
+        [appendTo]="'body'"
+      />
+      } @else {
+      <input
+        pInputText
+        type="text"
+        pSize="small"
+        [placeholder]="'Filtrar ' + f.label.toLowerCase() + '...'"
+        [ngModel]="filtrosValores()[f.key] ?? ''"
+        (ngModelChange)="setFiltro(f.key, $event)"
+        (keyup.enter)="buscar()"
+      />
+      }
+    </div>
+  </ng-template>
+
   <div class="filtros card">
+    <!-- Fila 1: filtros + acciones -->
     @for (f of config()?.filtros || []; track f.key) {
-      <div class="campo">
-        <label>{{ f.label }}</label>
-        @if (f.tipo === 'select') {
-          <p-select
-            [options]="opcionesFiltro(f.key)"
-            [ngModel]="filtrosValores()[f.key] ?? null"
-            (ngModelChange)="setFiltro(f.key, $event)"
-            optionLabel="label"
-            optionValue="value"
-            [showClear]="true"
-            placeholder="Todos"
-            styleClass="w-full"
-            size="small"
-            [appendTo]="'body'" />
-        } @else {
-          <input
-            pInputText
-            type="text"
-            pSize="small"
-            [placeholder]="'Filtrar ' + f.label.toLowerCase() + '...'"
-            [ngModel]="filtrosValores()[f.key] ?? ''"
-            (ngModelChange)="setFiltro(f.key, $event)"
-            (keyup.enter)="buscar()" />
-        }
-      </div>
+    @if (f.fila !== 2) {
+    <ng-container *ngTemplateOutlet="campoFiltro; context: { $implicit: f }" />
     }
-    <div class="campo campo-buscar">
-      <label>Buscar</label>
-      <input pInputText type="text"
-       pSize="small"
-       placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)"
-        (keyup.enter)="buscar()" />
-    </div>
+    }
     <div class="campo acciones">
-      <p-button label="Buscar"
-      size="small"
-      severity="info"
-      variant="text"
-      icon="pi pi-search" size="small" (onClick)="buscar()"
-      [rounded]="true" />
-      <p-button label="Limpiar"
-       [rounded]="true"
-        icon="pi pi-times" severity="secondary" text size="small"
-        (onClick)="limpiarFiltros()" />
+      <p-button
+        label="Buscar"
+        size="small"
+        severity="info"
+        variant="text"
+        icon="pi pi-search"
+        size="small"
+        (onClick)="buscar()"
+        [rounded]="true"
+      />
+      <p-button
+        label="Limpiar"
+        [rounded]="true"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        size="small"
+        (onClick)="limpiarFiltros()"
+      />
     </div>
+    <!-- Fila 2: filtros anchos (ej: Descripción de movcta) -->
+    @for (f of config()?.filtros || []; track f.key) {
+    @if (f.fila === 2) {
+    <ng-container *ngTemplateOutlet="campoFiltro; context: { $implicit: f }" />
+    }
+    }
   </div>
 
   <div class="tabla-responsive">
-  <p-table
-    [value]="filtered()"
-    [loading]="cargando()"
-    [paginator]="true"
-    [rows]="20"
-    [rowsPerPageOptions]="[10, 20, 50]"
-    [tableStyle]="{ 'min-width': '20rem' }"
-    [showCurrentPageReport]="true"
-    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-    size="small">
-
-    <ng-template pTemplate="header">
-      <tr>
-        @if (config()?.detalle) {
+    <p-table
+      [value]="filtered()"
+      [loading]="cargando()"
+      [paginator]="true"
+      [rows]="20"
+      [rowsPerPageOptions]="[10, 20, 50]"
+      [tableStyle]="{ 'min-width': '20rem' }"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      size="small"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          @if (config()?.detalle) {
           <th style="width: 2.5rem"></th>
-        }
-        @for (col of campos(); track col.key) {
-          @if (col.frozen) {
-            <th pFrozenColumn alignFrozen="left" [class.text-right]="col.tipo === 'numero'">{{ col.label }}</th>
+          } @for (col of campos(); track col.key) { @if (col.frozen) {
+          <th pFrozenColumn alignFrozen="left" [class.text-right]="col.tipo === 'numero'">
+            {{ col.label }}
+          </th>
           } @else {
-            <th [class.text-right]="col.tipo === 'numero'">{{ col.label }}</th>
-          }
-        }
-        @if (config() && config()!.sinEstado !== true) {
+          <th [class.text-right]="col.tipo === 'numero'">{{ col.label }}</th>
+          } } @if (config() && config()!.sinEstado !== true) {
           <th style="width: 8rem" class="text-center">Estado</th>
-        }
-        @if (config() && !config()!.soloLectura) {
-        <th style="width: 4rem" class="text-center"></th>
-        }
-      </tr>
-    </ng-template>
+          } @if (config() && !config()!.soloLectura) {
+          <th style="width: 4rem" class="text-center"></th>
+          }
+        </tr>
+      </ng-template>
 
-    <ng-template pTemplate="body" let-item>
-      <tr class="mono"
+      <ng-template pTemplate="body" let-item>
+        <tr
+          class="mono"
           [class.fila-expandida]="expandida(item)"
           [style.cursor]="esClickeable(item) ? 'pointer' : 'default'"
-          (click)="onFilaClick(item)">
-        @if (config()?.detalle) {
+          (click)="onFilaClick(item)"
+        >
+          @if (config()?.detalle) {
           <td class="ec-chevron">
             <i class="pi" [ngClass]="expandida(item) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
           </td>
-        }
-        @for (col of campos(); track col.key) {
-          @if (col.frozen) {
-            <td pFrozenColumn alignFrozen="left" [class.text-right]="col.tipo === 'numero'">{{ formatValor(item, col) }}</td>
+          } @for (col of campos(); track col.key) { @if (col.frozen) {
+          <td pFrozenColumn alignFrozen="left" [class.text-right]="col.tipo === 'numero'">
+            {{ formatValor(item, col) }}
+          </td>
           } @else {
-            <td [class.text-right]="col.tipo === 'numero'">{{ formatValor(item, col) }}</td>
-          }
-        }
-        @if (config() && config()!.sinEstado !== true) {
+          <td [class.text-right]="col.tipo === 'numero'">{{ formatValor(item, col) }}</td>
+          } } @if (config() && config()!.sinEstado !== true) {
           <td class="text-center">
             <p-tag [value]="activoLbl(item.sn_activo)" [severity]="activoSev(item.sn_activo)" />
           </td>
-        }
-        @if (config() && !config()!.soloLectura) {
-        <td class="text-center">
-          @if (esProtegido(item)) {
+          } @if (config() && !config()!.soloLectura) {
+          <td class="text-center">
+            @if (esProtegido(item)) {
             <i
               class="pi pi-lock fila-protegida"
               pTooltip="Período cerrado — registro protegido (no modificable)"
-              tooltipPosition="left"></i>
-          } @else {
+              tooltipPosition="left"
+            ></i>
+            } @else {
             <p-button
               icon="pi pi-pencil"
               size="small"
               variant="text"
               [rounded]="true"
               severity="secondary"
-              (click)="$event.stopPropagation(); config() && editar(item[config()!.idKey])" />
+              (click)="$event.stopPropagation(); config() && editar(item[config()!.idKey])"
+            />
+            }
+          </td>
           }
-        </td>
-        }
-      </tr>
+        </tr>
 
-      <!-- Fila expandida: estado de cuenta (mismo estilo que libro-diario / repdiarios) -->
-      @if (config()?.detalle && expandida(item)) {
+        <!-- Fila expandida: estado de cuenta (mismo estilo que libro-diario / repdiarios) -->
+        @if (config()?.detalle && expandida(item)) {
         <tr class="ec-detalle-row">
           <td [attr.colspan]="colspanTabla()">
             <div class="ec-detalle">
               <div class="ec-encabezado mono">
                 <div>Cuenta: {{ ecCuenta(item) }}</div>
                 <div>{{ ecDescripcion(item) }}</div>
-                <div class="ec-negrita">Saldo Acum: {{ ecSaldoAcum(item) }}</div>
               </div>
 
               @if (cargandoDetalle(item)) {
-                <div class="ec-cargando"><i class="pi pi-spin pi-spinner"></i> Cargando movimientos...</div>
-              } @else {
-                <table class="ec-detalle-table mono">
-                  <thead>
-                    <tr>
-                      @for (col of config()!.detalle!.columnas; track col.key) {
-                        <th [class.text-right]="col.tipo === 'numero' || col.tipo === 'fecha'">{{ col.label }}</th>
-                      }
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (mov of detalleDe(item)?.movimientos || []; track $index) {
-                      <tr>
-                        @for (col of config()!.detalle!.columnas; track col.key) {
-                          <td [class.text-right]="col.tipo === 'numero' || col.tipo === 'fecha'">{{ formatValor(mov, col) }}</td>
-                        }
-                      </tr>
-                    }
-                    @if ((detalleDe(item)?.movimientos || []).length === 0) {
-                      <tr>
-                        <td [attr.colspan]="config()!.detalle!.columnas.length" class="text-center">Sin movimientos.</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
+              <div class="ec-cargando">
+                <i class="pi pi-spin pi-spinner"></i> Cargando movimientos...
+              </div>
+              } @else { @let bloques = bloquesMes(item); @for (b of bloques; track b.periodo) {
+              <div class="ec-mes mono">
+                <div class="ec-negrita">{{ b.mes }}</div>
+                <div>Saldo Acum: {{ b.saldoAcum }}</div>
+              </div>
 
-                <div class="ec-separador"></div>
-                <div class="ec-pie mono">Saldo actual: {{ ecSaldoActual(item) }}</div>
+              <table class="ec-detalle-table mono">
+                <thead>
+                  <tr>
+                    @for (col of config()!.detalle!.columnas; track col.key) {
+                    <th [class.text-right]="col.tipo === 'numero' || col.tipo === 'fecha'">
+                      {{ col.label }}
+                    </th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (mov of b.movimientos; track $index) {
+                  <tr>
+                    @for (col of config()!.detalle!.columnas; track col.key) {
+                    <td [class.text-right]="col.tipo === 'numero' || col.tipo === 'fecha'">
+                      @if (col.key === 'nropartida' && mov['partidaId']) {
+                      <button
+                        type="button"
+                        class="partida-link mono"
+                        (click)="$event.stopPropagation(); abrirPartida(mov)"
+                        pTooltip="Ver partida contable"
+                        tooltipPosition="top"
+                      >
+                        {{ formatValor(mov, col) }}
+                      </button>
+                      } @else {
+                      {{ formatValor(mov, col) }}
+                      }
+                    </td>
+                    }
+                  </tr>
+                  }
+                </tbody>
+              </table>
+
+              <div class="ec-pie mono">Movimiento mes: {{ b.movimientoMes }}</div>
+              <div class="ec-pie mono ec-negrita">Saldo actual: {{ b.saldoActual }}</div>
+              <div class="ec-separador"></div>
+              } @if (bloques.length === 0) {
+              <div class="text-center mono">Sin movimientos.</div>
+              }
+
+              <div class="ec-pie mono">Saldo actual: {{ ecSaldoActual(item) }}</div>
               }
             </div>
           </td>
         </tr>
-      }
-    </ng-template>
+        }
+      </ng-template>
 
-    <ng-template pTemplate="empty">
-      <tr>
-        <td colspan="10" class="text-center p-4">No hay registros.</td>
-      </tr>
-    </ng-template>
-  </p-table>
+      <ng-template pTemplate="empty">
+        <tr>
+          <td colspan="10" class="text-center p-4">No hay registros.</td>
+        </tr>
+      </ng-template>
+    </p-table>
   </div>
 </section>
+
+<!-- Drawer: partida contable (cabecera + líneas)
+     IMPORTANTE: al RAÍZ del template, fuera de <section class="page"> —
+     la animación .page>* (fill: both) deja un transform residual que
+     rompe el position:fixed del panel/máscara del drawer. -->
+<p-drawer
+  [(visible)]="drawerPartida"
+  [header]="'Partida Contable' + (partida() ? ' #' + partida()!.nropartida : '')"
+  [style]="{ width: '45%' }"
+  position="right"
+  (onHide)="cerrarPartida()"
+>
+  @if (partidaCargando()) {
+  <div class="text-center p-4">
+    <i class="pi pi-spin pi-spinner"></i> Cargando partida...
+  </div>
+  } @else if (partida(); as p) {
+  <div class="partida-drawer mono">
+    <div class="partida-cabecera">
+      <div class="partida-campo">
+        <span class="partida-label">Partida</span>
+        <span class="partida-valor">#{{ p.nropartida }}</span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Fecha</span>
+        <span class="partida-valor">{{ p.fecharegistro | date: 'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Período</span>
+        <span class="partida-valor">{{ p.periodo }}/{{ p.anio }}</span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Referencia</span>
+        <span class="partida-valor">{{ p.nroreferencia || '-' }}</span>
+      </div>
+      <div class="partida-campo partida-campo-ancho">
+        <span class="partida-label">Descripción</span>
+        <span class="partida-valor">{{ p.descripcion || '-' }}</span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Contabilizada</span>
+        <span class="partida-valor">
+          <p-tag
+            [value]="p.sn_contabilizada === 'S' ? 'Sí' : 'No'"
+            [severity]="p.sn_contabilizada === 'S' ? 'success' : 'warn'"
+          />
+        </span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Cerrada</span>
+        <span class="partida-valor">
+          <p-tag
+            [value]="p.sn_cerrada === 'S' ? 'Cerrada 🔒' : 'Abierta 🔓'"
+            [severity]="p.sn_cerrada === 'S' ? 'danger' : 'success'"
+          />
+        </span>
+      </div>
+      <div class="partida-campo">
+        <span class="partida-label">Anulada</span>
+        <span class="partida-valor">
+          <p-tag
+            [value]="p.sn_anulada === 'S' ? 'Sí' : 'No'"
+            [severity]="p.sn_anulada === 'S' ? 'danger' : 'success'"
+          />
+        </span>
+      </div>
+    </div>
+
+    <table class="partida-lineas">
+      <thead>
+        <tr>
+          <th>Cuenta</th>
+          <th>Descripción</th>
+          <th class="text-right">Debe</th>
+          <th class="text-right">Haber</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (l of partidaLineas(); track l.copdadetId) {
+        <tr>
+          <td>{{ l.ctacontable }}</td>
+          <td>{{ l.descripcion }}</td>
+          <td class="text-right">{{ formatValor(l, colDebe()) }}</td>
+          <td class="text-right">{{ formatValor(l, colHaber()) }}</td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="4" class="text-center">Sin líneas.</td>
+        </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" class="text-right">Totales</td>
+          <td class="text-right">{{ formatNumero(partidaTotales().debito) }}</td>
+          <td class="text-right">{{ formatNumero(partidaTotales().credito) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  }
+</p-drawer>
 
 ```
 
@@ -66443,11 +77721,9 @@ export class CatalogoForm implements OnInit, OnChanges {
     }
   }
 
-  // Campo Buscar: 80% del ancho de la barra de filtros
-  .campo-buscar {
-    flex: 0 0 80%;
-    width: 80%;
-    max-width: 80%;
+  // Filtro de fila 2 (ej: Descripción): ocupa el ancho completo y baja de línea
+  .campo-fila2 {
+    flex: 1 1 100%;
     min-width: 0;
   }
 
@@ -66514,6 +77790,12 @@ export class CatalogoForm implements OnInit, OnChanges {
   text-align: right;
 }
 
+.ec-mes {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.75rem 0 0.25rem;
+}
+
 .ec-cargando {
   display: flex;
   align-items: center;
@@ -66577,6 +77859,102 @@ export class CatalogoForm implements OnInit, OnChanges {
   }
 }
 
+// ===== Drawer: partida contable =====
+
+// Nro. Partida clickeable dentro del detalle del estado de cuenta
+.partida-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-family: 'Courier New', monospace;
+  color: var(--c-primary, #10b981);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: var(--c-primary-hover, #059669);
+  }
+}
+
+.partida-drawer {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.partida-cabecera {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dashed var(--c-border-strong, #2c4d6f);
+  margin-bottom: 0.75rem;
+}
+
+.partida-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+
+  &.partida-campo-ancho {
+    grid-column: span 3;
+  }
+}
+
+.partida-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--c-text-muted, #64748b);
+  font-weight: 600;
+}
+
+.partida-valor {
+  font-size: 0.85rem;
+  color: var(--c-text, #1e293b);
+  word-break: break-word;
+}
+
+.partida-lineas {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead th {
+    background: var(--c-bg);
+    color: var(--c-text-muted, #64748b);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--c-border-strong, #2c4d6f);
+
+    &.text-right {
+      text-align: right;
+    }
+  }
+
+  tbody td {
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid var(--c-border, #e2e8f0);
+
+    &.text-right {
+      text-align: right;
+    }
+  }
+
+  tfoot td {
+    padding: 0.5rem;
+    font-weight: 600;
+    border-top: 2px solid var(--c-primary, #10b981);
+
+    &.text-right {
+      text-align: right;
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
@@ -66603,7 +77981,7 @@ export class CatalogoForm implements OnInit, OnChanges {
   }
 
   // En columna, flex-basis sería alto → reset a ancho completo
-  .filtros .campo-buscar {
+  .filtros .campo-fila2 {
     flex: none;
     width: 100%;
     max-width: 100%;
@@ -66626,7 +78004,7 @@ import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
-import { filter, Subscription, switchMap, of, tap, catchError } from 'rxjs';
+import { filter, Subscription, switchMap, of, tap, catchError, forkJoin } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
 import { TableModule } from 'primeng/table';
@@ -66635,16 +78013,32 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { DrawerModule } from 'primeng/drawer';
 import { MessageService } from 'primeng/api';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 import { ContabilidadService } from '../../../core/services/contabilidad.service';
 import { ApiService } from '../../../core/services/api.service';
 import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo, DetalleEstadoCuenta } from '../../../core/models/catalogo-parametros.models';
+import { CopdaMae, CopdaDet } from '../../../core/models/contabilidad.models';
+
+interface BloqueMes {
+  periodo: number;
+  mes: string;
+  saldoAcum: string;
+  movimientos: Record<string, any>[];
+  movimientoMes: string;
+  saldoActual: string;
+}
+
+const MESES_NOMBRE = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
 
 @Component({
   selector: 'app-catalogo-generico',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, SelectModule, TagModule, TooltipModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, SelectModule, TagModule, TooltipModule, DrawerModule],
   templateUrl: './catalogo-generico.html',
   styleUrl: './catalogo-generico.scss',
 })
@@ -66674,6 +78068,12 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
   detalleCache = signal<Record<string, DetalleEstadoCuenta>>({});
   /** Filas con detalle en carga: { '5': true } */
   detalleCargando = signal<Record<string, boolean>>({});
+
+  // ===== Drawer: partida contable desde el detalle del estado de cuenta =====
+  drawerPartida = signal(false);
+  partidaCargando = signal(false);
+  partida = signal<CopdaMae | null>(null);
+  partidaLineas = signal<CopdaDet[]>([]);
 
   private routeSub?: Subscription;
   private navSub?: Subscription;
@@ -66940,6 +78340,73 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
 
   // ===== Encabezado / pie del estado de cuenta (fila expandida) =====
 
+  /**
+   * Abre el drawer con la partida contable (copdamae + copdadet) al hacer
+   * click en el Nro. Partida dentro del detalle del estado de cuenta.
+   */
+  abrirPartida(mov: Record<string, any>): void {
+    const partidaId = Number(mov?.['partidaId']);
+    if (!partidaId) {
+      this.msgs.add({ severity: 'warn', summary: 'Partida', detail: 'No se encontró el ID de la partida' });
+      return;
+    }
+    this.partidaCargando.set(true);
+    this.drawerPartida.set(true);
+    forkJoin({
+      mae: this.contabilidad.getPartida(partidaId),
+      det: this.contabilidad.getDetallesPartida(partidaId),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ mae, det }) => {
+          this.partida.set(mae);
+          this.partidaLineas.set(det || []);
+          this.partidaCargando.set(false);
+        },
+        error: (err) => {
+          this.partidaCargando.set(false);
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err?.error?.message || 'No se pudo cargar la partida contable',
+          });
+        },
+      });
+  }
+
+  cerrarPartida(): void {
+    this.drawerPartida.set(false);
+    this.partida.set(null);
+    this.partidaLineas.set([]);
+  }
+
+  /** Total Debe / Haber de las líneas del drawer (para el pie) */
+  partidaTotales(): { debito: number; credito: number } {
+    let debito = 0;
+    let credito = 0;
+    for (const l of this.partidaLineas()) {
+      debito += Number(l.debito) || 0;
+      credito += Number(l.credito) || 0;
+    }
+    return { debito, credito };
+  }
+
+  /** Columnas dummy para reutilizar formatValor() en las líneas del drawer */
+  colDebe(): CampoCatalogo {
+    return { key: 'debito', label: 'Debe', tipo: 'numero', decimales: 2 };
+  }
+
+  colHaber(): CampoCatalogo {
+    return { key: 'credito', label: 'Haber', tipo: 'numero', decimales: 2 };
+  }
+
+  /** Formato numérico simple (2 decimales) para los totales del drawer */
+  formatNumero(v: any): string {
+    const n = Number(v);
+    if (isNaN(n)) return '-';
+    return new Intl.NumberFormat('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  }
+
   /** Total de columnas de la tabla (para el colspan de la fila expandida) */
   colspanTabla(): number {
     const c = this.config();
@@ -66958,21 +78425,71 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
     return this.detalleDe(item)?.descripcion ?? '';
   }
 
+  /**
+   * Base del acumulado. Prefiere `saldoAcumulado` del backend (cierre del año
+   * anterior + netos de los períodos anteriores al filtro) y solo cae al
+   * `saldoKey` de la fila si el endpoint no lo devolvió.
+   */
+  private saldoBase(item: any): number {
+    const det = this.config()?.detalle;
+    const data = this.detalleDe(item);
+    if (data && data.saldoAcumulado != null) return Number(data.saldoAcumulado) || 0;
+    return Number(item?.[det?.saldoKey ?? '']) || 0;
+  }
+
   /** Saldo acumulado inicial: 15,781.00 (C) */
   ecSaldoAcum(item: any): string {
     const det = this.config()?.detalle;
     if (!det) return '-';
+    const data = this.detalleDe(item);
+    if (data && data.saldoAcumulado != null) return this.saldoTexto(data.saldoAcumulado);
     return this.saldoTexto(item?.[det.saldoKey]);
   }
 
-  /** Saldo actual: saldoanterior + Σ(debe) - Σ(haber) → 52,430.00 (C) */
+  /** Saldo actual: saldoAcumulado + Σ(debe) - Σ(haber) → 52,430.00 (C) */
   ecSaldoActual(item: any): string {
     const det = this.config()?.detalle;
     const data = this.detalleDe(item);
     if (!det || !data) return '-';
-    const acum = Number(item?.[det.saldoKey]) || 0;
+    const acum = this.saldoBase(item);
     const total = acum + (Number(data.totales?.debito) || 0) - (Number(data.totales?.credito) || 0);
     return this.saldoTexto(total);
+  }
+
+  /** Estado de cuenta por mes: Saldo Acum + partidas + Movimiento mes + Saldo actual */
+  bloquesMes(item: any): BloqueMes[] {
+    const det = this.config()?.detalle;
+    const data = this.detalleDe(item);
+    if (!det || !data) return [];
+
+    const r2 = (n: number) => Math.round(n * 100) / 100;
+    let acum = this.saldoBase(item);
+
+    const porPeriodo = new Map<number, Record<string, any>[]>();
+    for (const m of data.movimientos) {
+      const p = Number(m['periodo']);
+      if (!porPeriodo.has(p)) porPeriodo.set(p, []);
+      porPeriodo.get(p)!.push(m);
+    }
+
+    const bloques: BloqueMes[] = [];
+    for (const p of [...porPeriodo.keys()].sort((a, b) => a - b)) {
+      const movs = porPeriodo.get(p)!;
+      const debito = movs.reduce((s, m) => s + (Number(m['debito']) || 0), 0);
+      const credito = movs.reduce((s, m) => s + (Number(m['credito']) || 0), 0);
+      const neto = r2(debito - credito);
+
+      bloques.push({
+        periodo: p,
+        mes: MESES_NOMBRE[p - 1] ?? `Período ${p}`,
+        saldoAcum: this.saldoTexto(acum),
+        movimientos: movs,
+        movimientoMes: this.saldoTexto(neto),
+        saldoActual: this.saldoTexto(r2(acum + neto)),
+      });
+      acum = r2(acum + neto);
+    }
+    return bloques;
   }
 
   /**
@@ -67001,6 +78518,16 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
       }
       return '-';
     }
+    // Columna de mes marcada `acumulado` (saldoscta): la celda YA guarda el
+    // SALDO FINAL del mes según el estándar de saldos acumulados
+    // (saldoanterior + neto acumulado con arrastre), calculado en el backend.
+    // Se muestra tal cual, con su lado contable D/C — NO se vuelve a sumar
+    // (hacía doble conteo: 2,200 en DB salía 3,400/5,600 en pantalla) y NO se
+    // fuerza a 0.00 en meses sin cierre registrado (ocultaba agosto/septiembre).
+    if (col.acumulado) return this.saldoTexto(val);
+    // Columna marcada `lado` → es un saldo: 12,247.00 (C) / 63,042.00 (D)
+    // (el backend entrega el signo, acá se deriva el lado contable).
+    if (col.lado) return this.saldoTexto(val);
     if (col.tipo === 'numero') {
       // REGLA CONTABLE: siempre en positivo (la dirección D/C la da la naturaleza, no el signo)
       const n = Math.abs(Number(val));
@@ -67034,14 +78561,59 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
   <header class="page-header">
     <div>
       <h1 class="page-title">Parámetros por Módulo</h1>
-      <p class="page-subtitle">Configuración de parámetros del sistema por empresa, sucursal y módulo</p>
+      <p class="page-subtitle">Configuración de parámetros del sistema por tipo, módulo y empresa</p>
     </div>
+    <p-button
+      label="Nuevo Parámetro"
+      icon="pi pi-plus"
+      size="small"
+      severity="success"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      (onClick)="abrirNuevo()"
+    />
   </header>
 
   <!-- ── Encabezado ──────────────────────────────────── -->
   <p-fieldset legend="Seleccionar Contexto" [toggleable]="true">
     <div class="ctx-grid">
-      <!-- Empresa -->
+      <!-- 1. Tipo de Configuración (Grupo) — selección múltiple -->
+      <div class="ctx-field">
+        <label>Tipo de Configuración</label>
+        <p-multiSelect
+          [options]="grupoOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Todos los tipos"
+          styleClass="w-full"
+          [ngModel]="grupoFiltro()"
+          (ngModelChange)="grupoFiltro.set($event || [])"
+          size="small"
+          [appendTo]="'body'"
+          [maxSelectedLabels]="6"
+          [showClear]="true"
+        />
+      </div>
+
+      <!-- 2. Módulo de Configuración -->
+      <div class="ctx-field">
+        <label>Módulo de Configuración</label>
+        <p-select
+          [options]="modulos()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Todos los módulos"
+          styleClass="w-full"
+          [ngModel]="moduloId()"
+          (ngModelChange)="onModuloChange($event)"
+          size="small"
+          [appendTo]="'body'"
+          [showClear]="true"
+        />
+      </div>
+
+      <!-- 3. Empresa -->
       <div class="ctx-field">
         <label>Empresa</label>
         <p-select
@@ -67056,210 +78628,206 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
           [appendTo]="'body'"
         />
       </div>
-
-      <!-- Sucursal -->
-      <div class="ctx-field">
-        <label>Sucursal</label>
-        <p-select
-          [options]="sucursales()"
-          optionLabel="descripcion"
-          optionValue="idsucursal"
-          placeholder="Seleccionar..."
-          styleClass="w-full"
-          [ngModel]="sucursalId()"
-          (ngModelChange)="sucursalId.set($event)"
-          size="small"
-          [appendTo]="'body'"
-        />
-      </div>
-
-      <!-- Módulo -->
-      <div class="ctx-field">
-        <label>Módulo</label>
-        <p-select
-          [options]="modulos()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Todos los módulos"
-          styleClass="w-full"
-          [ngModel]="moduloId()"
-          (ngModelChange)="onModuloChange($event)"
-          size="small"
-          [appendTo]="'body'"
-        />
-      </div>
     </div>
   </p-fieldset>
 
-  <!-- ── Contenido: 2 columnas ──────────────────────── -->
-  <div class="content-2col">
-    <!-- Columna izquierda: Tabla -->
-    <div class="col-left">
-      <p-table
-        [value]="parametros()"
-        [loading]="cargando()"
-        [paginator]="true"
-        [rows]="15"
-        [rowsPerPageOptions]="[10, 25, 50]"
-        [showCurrentPageReport]="true"
-        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-        size="small"
-        [tableStyle]="{ 'min-width': '100%' }"
+  <!-- ── Tabla (pantalla completa) ───────────────────── -->
+  <p-table
+    [value]="parametrosVista()"
+    [loading]="cargando()"
+    [paginator]="true"
+    [rows]="15"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    size="small"
+    [scrollable]="true"
+    scrollHeight="65vh"
+    [tableStyle]="{ 'min-width': '100%' }"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Descripción</th>
+        <th>Campo</th>
+        <th style="width: 7rem">Grupo</th>
+        <th style="width: 6rem">Tipo</th>
+        <th style="width: 16rem">Valor</th>
+        <th style="width: 6rem" class="text-center">Estado</th>
+        <th style="width: 3rem" class="text-center"></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-param>
+      <tr
+        (click)="onRowClick(param)"
+        [class.row-selected]="selectedParam()?.ttipoparametrosId === param.ttipoparametrosId"
       >
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Campo</th>
-            <th style="width: 6rem">Tipo</th>
-            <th>Valor</th>
-            <th style="width: 5rem" class="text-center">Estado</th>
-            <th style="width: 3rem" class="text-center"></th>
-          </tr>
-        </ng-template>
+        <td class="cell-desc">{{ param.descripcion || '-' }}</td>
+        <td class="font-bold">{{ param.field }}</td>
+        <td>
+          <p-tag [value]="grupoLabel(param.grupo)" [severity]="grupoSeverity(param.grupo)" styleClass="tag-sm" />
+        </td>
+        <td>
+          <p-tag [value]="tipoLabel(param.tipo)" [severity]="tipoSeverity(param.tipo)" styleClass="tag-sm" />
+        </td>
+        <td class="cell-valor">
+          <input
+            pInputText
+            pSize="small"
+            class="w-full valor-input"
+            [ngModel]="param.valor"
+            (ngModelChange)="param.valor = $event"
+            (focus)="onValorFocus(param)"
+            (blur)="guardarValorInline(param)"
+            (keydown.enter)="onValorEnter($event)"
+            (click)="$event.stopPropagation()"
+          />
+        </td>
+        <td class="text-center">
+          <p-tag [value]="estadoLabel(param.sn_activo)" [severity]="estadoSeverity(param.sn_activo)" styleClass="tag-sm" />
+        </td>
+        <td class="text-center">
+          <p-button
+            icon="pi pi-trash"
+            size="small"
+            variant="text"
+            [rounded]="true"
+            severity="danger"
+            (onClick)="eliminar(param); $event.stopPropagation()"
+          />
+        </td>
+      </tr>
+    </ng-template>
 
-        <ng-template pTemplate="body" let-param>
-          <tr
-            (click)="onRowClick(param)"
-            [class.row-selected]="selectedParam()?.ttipoparametrosId === param.ttipoparametrosId"
-          >
-            <td class="font-bold">{{ param.field }}</td>
-            <td>
-              <p-tag [value]="tipoLabel(param.tipo)" [severity]="tipoSeverity(param.tipo)" styleClass="tag-sm" />
-            </td>
-            <td>{{ param.valor }}</td>
-            <td class="text-center">
-              <p-tag [value]="estadoLabel(param.sn_activo)" [severity]="estadoSeverity(param.sn_activo)" styleClass="tag-sm" />
-            </td>
-            <td class="text-center">
-              <p-button
-                icon="pi pi-trash"
-                size="small"
-                variant="text"
-                [rounded]="true"
-                severity="danger"
-                (onClick)="eliminar(param); $event.stopPropagation()"
-              />
-            </td>
-          </tr>
-        </ng-template>
+    <ng-template pTemplate="empty">
+      <tr>
+        <td colspan="7" class="text-center p-4">
+          @if (!empresaId()) {
+            Seleccione una empresa para ver los parámetros.
+          } @else {
+            No hay parámetros que coincidan con los filtros.
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</section>
 
-        <ng-template pTemplate="empty">
-          <tr>
-            <td colspan="5" class="text-center p-4">
-              @if (!empresaId() || !moduloId()) {
-                Seleccione empresa y módulo para ver los parámetros.
-              } @else {
-                No hay parámetros para este módulo.
-              }
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+<!-- ── Drawer: Nuevo / Editar Parámetro ──────────────── -->
+<p-drawer
+  [visible]="drawer()"
+  (visibleChange)="onDrawerChange($event)"
+  [header]="editando() ? 'Editar Parámetro' : 'Nuevo Parámetro'"
+  position="right"
+  [style]="{ width: '28rem' }"
+>
+  <div class="p-fluid" [formGroup]="form">
+    <!-- Campo -->
+    <div class="p-field">
+      <label>Campo</label>
+      <input
+        pInputText
+        class="w-full"
+        formControlName="field"
+        placeholder="Ej: nrocliente, bodegaId..."
+        [disabled]="editando()"
+      />
     </div>
 
-    <!-- Columna derecha: Formulario -->
-    <div class="col-right">
-      <div class="form-panel">
-        <div class="form-panel-header">
-          <h3>{{ selectedParam() ? 'Editar Parámetro' : 'Nuevo Parámetro' }}</h3>
-          @if (selectedParam()) {
-            <p-button
-              icon="pi pi-times"
-              size="small"
-              variant="text"
-              [rounded]="true"
-              severity="secondary"
-              (onClick)="limpiarSeleccion()"
-              pTooltip="Deseleccionar"
-            />
-          }
-        </div>
+    <!-- Descripción -->
+    <div class="p-field">
+      <label>Descripción</label>
+      <input
+        pInputText
+        class="w-full"
+        formControlName="descripcion"
+        placeholder="Descripción del parámetro (máx. 80)"
+        maxlength="80"
+      />
+    </div>
 
-        <div class="form-panel-body">
-          <div class="p-fluid" [formGroup]="form">
-            <!-- Campo -->
-            <div class="p-field">
-              <label>Campo</label>
-              <input
-                pInputText
-                class="w-full"
-                formControlName="field"
-                placeholder="Ej: nrocliente, bodegaId..."
-                [disabled]="editando()"
-              />
-            </div>
+    <!-- Tipo -->
+    <div class="p-field">
+      <label>Tipo</label>
+      <p-select
+        [options]="tipoOptions"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="tipo"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        size="small"
+      />
+    </div>
 
-            <!-- Tipo -->
-            <div class="p-field">
-              <label>Tipo</label>
-              <p-select
-                [options]="tipoOptions"
-                optionLabel="label"
-                optionValue="value"
-                formControlName="tipo"
-                styleClass="w-full"
-                [appendTo]="'body'"
-                size="small"
-              />
-            </div>
+    <!-- Valor -->
+    <div class="p-field">
+      <label>Valor</label>
+      @if (form.get('tipo')?.value === 'NUMBER') {
+        <p-inputNumber
+          formControlName="valor"
+          [useGrouping]="false"
+          styleClass="w-full"
+          [inputStyle]="{ 'width': '100%' }"
+        />
+      } @else {
+        <input pInputText class="w-full" formControlName="valor" placeholder="Valor del parámetro" />
+      }
+    </div>
 
-            <!-- Valor -->
-            <div class="p-field">
-              <label>Valor</label>
-              @if (form.get('tipo')?.value === 'NUMBER') {
-                <p-inputNumber
-                  formControlName="valor"
-                  [useGrouping]="false"
-                  styleClass="w-full"
-                  [inputStyle]="{ 'width': '100%' }"
-                />
-              } @else {
-                <input pInputText class="w-full" formControlName="valor" placeholder="Valor del parámetro" />
-              }
-            </div>
+    <!-- Grupo -->
+    <div class="p-field">
+      <label>Grupo</label>
+      <p-select
+        [options]="grupoOptions"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="grupo"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        size="small"
+      />
+    </div>
 
-            <!-- Estado -->
-            <div class="p-field">
-              <label>Estado</label>
-              <p-select
-                [options]="estadoOptions"
-                optionLabel="label"
-                optionValue="value"
-                formControlName="sn_activo"
-                styleClass="w-full"
-                [appendTo]="'body'"
-                size="small"
-              />
-            </div>
+    <!-- Estado -->
+    <div class="p-field">
+      <label>Estado</label>
+      <p-select
+        [options]="estadoOptions"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="sn_activo"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        size="small"
+      />
+    </div>
 
-            <!-- Acciones -->
-            <div class="form-actions">
-              <p-button
-                size="small"
-                label="Cancelar"
-                rounded
-                variant="text"
-                severity="secondary"
-                (onClick)="limpiarSeleccion()"
-              />
-              <p-button
-                size="small"
-                [label]="editando() ? 'Actualizar' : 'Guardar'"
-                icon="pi pi-check"
-                variant="text"
-                [raised]="true"
-                [rounded]="true"
-                severity="success"
-                [loading]="guardando()"
-                [disabled]="form.invalid || !empresaId() || !moduloId()"
-                (onClick)="guardar()"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Acciones -->
+    <div class="form-actions">
+      <p-button
+        size="small"
+        label="Cancelar"
+        rounded
+        variant="text"
+        severity="secondary"
+        (onClick)="drawer.set(false)"
+      />
+      <p-button
+        size="small"
+        [label]="editando() ? 'Actualizar' : 'Guardar'"
+        icon="pi pi-check"
+        variant="text"
+        [raised]="true"
+        [rounded]="true"
+        severity="success"
+        [loading]="guardando()"
+        [disabled]="form.invalid || !empresaId() || (!editando() && !moduloId())"
+        (onClick)="guardar()"
+      />
     </div>
   </div>
-</section>
+</p-drawer>
 
 ```
 
@@ -67271,7 +78839,7 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
 // ── Contexto ──────────────────────────────────────────
 .ctx-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
 
   @media (max-width: 768px) {
@@ -67295,64 +78863,21 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
   }
 }
 
-// ── Layout 2 columnas ─────────────────────────────────
-.content-2col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  align-items: start;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
+.text-muted {
+  color: var(--c-text-muted);
+  font-size: 0.85rem;
 }
 
-.col-left {
-  min-width: 0;
-  overflow: hidden;
-}
+// ── Campos del formulario (drawer) ────────────────────
+.p-field {
+  margin-bottom: 1rem;
 
-.col-right {
-  min-width: 0;
-}
-
-// ── Panel formulario derecha ──────────────────────────
-.form-panel {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  position: sticky;
-  top: 1rem;
-}
-
-.form-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--c-border);
-
-  h3 {
-    margin: 0;
-    font-size: 0.95rem;
+  label {
+    display: block;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--c-text);
-  }
-}
-
-.form-panel-body {
-  padding: 1rem;
-
-  .p-field {
-    margin-bottom: 1rem;
-
-    label {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--c-text-muted);
-      margin-bottom: 0.3rem;
-    }
+    color: var(--c-text-muted);
+    margin-bottom: 0.3rem;
   }
 }
 
@@ -67412,7 +78937,7 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
 ## 📄 src\app\features\parametros\param-manager-modulos\param-manager-modulos.ts
 
 ```typescript
-import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -67421,15 +78946,21 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { TagModule } from 'primeng/tag';
 import { FieldsetModule } from 'primeng/fieldset';
+import { DrawerModule } from 'primeng/drawer';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { EmpresasService } from '../../../core/services/empresas.service';
 import { ParametroUnificadoService } from '../../../core/services/parametro-unificado.service';
-import { TipoParametro, MODULO_LABELS } from '../../../core/models/parametro-unificado.model';
+import {
+  TipoParametro,
+  GrupoTipoParametro,
+  GRUPOS_TIPO_PARAMETRO,
+  MODULO_LABELS,
+} from '../../../core/models/parametro-unificado.model';
 import { Empresa } from '../../../core/models/empresa.models';
-import { Sucursal } from '../../../core/models/sucursal.models';
 
 @Component({
   selector: 'app-param-manager-modulos',
@@ -67443,8 +78974,10 @@ import { Sucursal } from '../../../core/models/sucursal.models';
     InputTextModule,
     InputNumberModule,
     SelectModule,
+    MultiSelectModule,
     TagModule,
     FieldsetModule,
+    DrawerModule,
     TooltipModule,
   ],
   templateUrl: './param-manager-modulos.html',
@@ -67468,9 +79001,10 @@ export class ParamManagerModulos implements OnInit {
     { label: 'Inactivo', value: 'N' },
   ];
 
+  readonly grupoOptions = GRUPOS_TIPO_PARAMETRO;
+
   // Datos de selects
   empresas = signal<Empresa[]>([]);
-  sucursales = signal<Sucursal[]>([]);
   modulos = signal<{ label: string; value: number }[]>([]);
 
   // Estado
@@ -67480,19 +79014,33 @@ export class ParamManagerModulos implements OnInit {
 
   // Filtros
   empresaId = signal<number | null>(null);
-  sucursalId = signal<number | null>(null);
   moduloId = signal<number | null>(null);
+  grupoFiltro = signal<GrupoTipoParametro[]>([]);
 
-  // Selección / edición inline
+  // Selección / edición
   selectedParam = signal<TipoParametro | null>(null);
   editando = signal(false);
   form!: FormGroup;
 
+  // Drawer de creación y edición (la tabla ocupa toda la pantalla)
+  drawer = signal(false);
+
+  // Valor editado directo en la tabla (guardado al salir del campo)
+  valorOriginal = signal<string | null>(null);
+
+  /** Parámetros visibles aplicando la selección múltiple de tipos de configuración */
+  parametrosVista = computed(() => {
+    const sel = this.grupoFiltro();
+    return sel.length ? this.parametros().filter(p => sel.includes(p.grupo)) : this.parametros();
+  });
+
   ngOnInit() {
     this.form = this.fb.group({
       field: ['', Validators.required],
+      descripcion: [''],
       tipo: ['STRING', Validators.required],
       valor: ['', Validators.required],
+      grupo: ['CORRELATIVO', Validators.required],
       sn_activo: ['S', Validators.required],
     });
 
@@ -67504,7 +79052,6 @@ export class ParamManagerModulos implements OnInit {
           this.empresas.set(data);
           if (data.length > 0) {
             this.empresaId.set(data[0].empresaId);
-            this.cargarSucursales(data[0].empresaId);
           }
         },
       });
@@ -67521,28 +79068,14 @@ export class ParamManagerModulos implements OnInit {
     }
   }
 
-  cargarSucursales(empresaId: number) {
-    this.empresasService.getAllSucursales(empresaId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (data) => {
-          this.sucursales.set(data);
-          if (data.length > 0) {
-            this.sucursalId.set(data[0].idsucursal);
-          }
-        },
-      });
-  }
-
   onEmpresaChange(empresaId: number) {
     this.empresaId.set(empresaId);
-    this.sucursalId.set(null);
     this.parametros.set([]);
     this.limpiarSeleccion();
-    this.cargarSucursales(empresaId);
+    this.cargarParametros();
   }
 
-  onModuloChange(moduloId: number) {
+  onModuloChange(moduloId: number | null) {
     this.moduloId.set(moduloId);
     this.limpiarSeleccion();
     this.cargarParametros();
@@ -67571,20 +79104,19 @@ export class ParamManagerModulos implements OnInit {
   // ── Selección / Edición inline ──────────────────────────
 
   onRowClick(param: TipoParametro) {
-    if (this.selectedParam()?.ttipoparametrosId === param.ttipoparametrosId) {
-      this.limpiarSeleccion();
-    } else {
-      this.selectedParam.set(param);
-      this.cargarForm(param);
-    }
+    this.selectedParam.set(param);
+    this.cargarForm(param);
+    this.drawer.set(true);
   }
 
   private cargarForm(param: TipoParametro) {
     this.editando.set(true);
     this.form.reset({
       field: param.field,
+      descripcion: param.descripcion || '',
       tipo: param.tipo,
       valor: param.valor,
+      grupo: param.grupo || 'CORRELATIVO',
       sn_activo: param.sn_activo,
     });
     this.form.get('field')?.disable();
@@ -67595,8 +79127,10 @@ export class ParamManagerModulos implements OnInit {
     this.editando.set(false);
     this.form.reset({
       field: '',
+      descripcion: '',
       tipo: 'STRING',
       valor: '',
+      grupo: 'CORRELATIVO',
       sn_activo: 'S',
     });
     this.form.get('field')?.enable();
@@ -67605,34 +79139,96 @@ export class ParamManagerModulos implements OnInit {
   // ── Guardar ─────────────────────────────────────────────
 
   guardar() {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Complete los campos requeridos' });
+      return;
+    }
 
     const eid = this.empresaId();
-    const mid = this.moduloId();
+    const paramSel = this.selectedParam();
+    // En edición se usa el módulo DEL parámetro (la tabla puede mostrar varios módulos)
+    const mid = paramSel ? paramSel.moduloId : this.moduloId();
     if (!eid || !mid) {
-      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Seleccione empresa y módulo' });
+      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Seleccione la empresa y el módulo en el contexto' });
       return;
     }
 
     const raw = this.form.getRawValue();
-    this.guardando.set(true);
+    if (raw.tipo === 'NUMBER' && (String(raw.valor).trim() === '' || isNaN(Number(raw.valor)))) {
+      this.msgs.add({ severity: 'warn', summary: 'Valor inválido', detail: 'El valor debe ser numérico' });
+      return;
+    }
 
-    this.parametroService.upsert(mid, raw.field, raw.valor, raw.tipo)
+    this.guardando.set(true);
+    this.parametroService.upsert(mid, raw.field, String(raw.valor), raw.tipo, raw.descripcion ?? '', raw.grupo)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
           this.guardando.set(false);
           this.msgs.add({
             severity: 'success',
-            summary: this.editando() ? 'Actualizado' : 'Creado',
-            detail: this.editando() ? 'Parámetro actualizado' : 'Parámetro creado',
+            summary: paramSel ? 'Actualizado' : 'Creado',
+            detail: paramSel ? 'Parámetro actualizado' : 'Parámetro creado',
           });
+          this.drawer.set(false);
           this.limpiarSeleccion();
           this.cargarParametros();
         },
         error: () => {
           this.guardando.set(false);
           this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el parámetro' });
+        },
+      });
+  }
+
+  // ── Drawer (crear y editar) ─────────────────────────────
+
+  abrirNuevo() {
+    this.limpiarSeleccion();
+    this.drawer.set(true);
+  }
+
+  onDrawerChange(visible: boolean) {
+    this.drawer.set(visible);
+    if (!visible) {
+      this.limpiarSeleccion();
+    }
+  }
+
+  // ── Valor editable en la tabla ─────────────────────────
+
+  onValorFocus(param: TipoParametro) {
+    this.valorOriginal.set(param.valor);
+  }
+
+  onValorEnter(ev: Event) {
+    (ev.target as HTMLInputElement | null)?.blur();
+  }
+
+  guardarValorInline(param: TipoParametro) {
+    const original = this.valorOriginal();
+    const nuevo = param.valor;
+    if (original === null || nuevo === original) return;
+
+    if (param.tipo === 'NUMBER' && (String(nuevo).trim() === '' || isNaN(Number(nuevo)))) {
+      this.msgs.add({ severity: 'warn', summary: 'Valor inválido', detail: 'Este parámetro requiere un valor numérico' });
+      param.valor = original;
+      return;
+    }
+
+    this.guardando.set(true);
+    this.parametroService.upsert(param.moduloId, param.field, String(nuevo), param.tipo, param.descripcion ?? '', param.grupo)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.guardando.set(false);
+          this.msgs.add({ severity: 'success', summary: 'Guardado', detail: `${param.field} = ${nuevo}` });
+          this.cargarParametros();
+        },
+        error: () => {
+          param.valor = original;
+          this.guardando.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el valor' });
         },
       });
   }
@@ -67666,6 +79262,21 @@ export class ParamManagerModulos implements OnInit {
 
   tipoSeverity(tipo: string): 'success' | 'info' {
     return tipo === 'NUMBER' ? 'success' : 'info';
+  }
+
+  grupoLabel(grupo: string): string {
+    return GRUPOS_TIPO_PARAMETRO.find(g => g.value === grupo)?.label || grupo || '-';
+  }
+
+  grupoSeverity(grupo: string): 'info' | 'warn' | 'success' | 'secondary' | 'contrast' {
+    switch (grupo) {
+      case 'IMPUESTO': return 'warn';
+      case 'INTERES': return 'success';
+      case 'IMPRESION': return 'secondary';
+      case 'CONTABLE': return 'contrast';
+      case 'ASIENTO': return 'info';
+      default: return 'info';
+    }
   }
 
   estadoLabel(sn: string): string {
@@ -67834,7 +79445,7 @@ size="small"           id="paisresidencia"
 
       <div class="campo">
         <label for="email">Email</label>
-        <input pInputText pSize="small" id="email" formControlName="email" maxlength="20" placeholder="Email" />
+        <input pInputText pSize="small" id="email" formControlName="email" maxlength="30" placeholder="Email" />
       </div>
 
       <div class="campo">
@@ -68835,7 +80446,7 @@ export class ListaUsuarios implements OnInit {
           pInputText
           id="usuario"
           formControlName="usuario"
-          maxlength="12"
+          maxlength="20"
           placeholder="Nombre de acceso"
           autocomplete="off"
           [readonly]="esEdicion()"
@@ -68867,7 +80478,7 @@ export class ListaUsuarios implements OnInit {
           pInputText
           id="email"
           formControlName="email"
-          maxlength="20"
+          maxlength="30"
           type="email"
           placeholder="correo@empresa.com"
           [ngClass]="{ 'ng-invalid': invalid('email') }"
@@ -68934,12 +80545,15 @@ size="small"           id="Idsucursal"
           [feedback]="false"
           autocomplete="new-password"
           [fluid]="true"
+          [maxLength]="250"
           [ngClass]="{ 'ng-invalid': invalid('password') || !!errorPassword() }"
         />
         @if (esEdicion()) {
           <small class="hint">Dejar vacío para mantener la actual</small>
         }
-        @if (invalid('password')) {
+        @if (form.get('password')?.errors?.['maxlength']) {
+          <small class="err">Máximo 250 caracteres</small>
+        } @else if (invalid('password')) {
           <small class="err">La contraseña es requerida</small>
         }
         @if (errorPassword() && !invalid('password')) {
@@ -69117,7 +80731,7 @@ export class UsuarioForm implements OnInit {
       usuario: ['', Validators.required],
       nombre: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      password: [''],
+      password: ['', [Validators.maxLength(20)]],
       sn_activo: ['S' as 'S' | 'N'],
       empresaId: [null as number | null, Validators.required],
       Idsucursal: [null as number | null, Validators.required],
@@ -69168,7 +80782,11 @@ export class UsuarioForm implements OnInit {
       },
       error: () => {
         this.empresasCargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las empresas' });
+        this.msgs.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las empresas',
+        });
       },
     });
   }
@@ -69186,7 +80804,11 @@ export class UsuarioForm implements OnInit {
       error: () => {
         this.sucursales.set([]);
         this.sucursalesCargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las sucursales' });
+        this.msgs.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las sucursales',
+        });
       },
     });
   }
@@ -69257,12 +80879,20 @@ export class UsuarioForm implements OnInit {
       this.service.update(this.usuarioId, dto as any).subscribe({
         next: () => {
           this.guardando.set(false);
-          this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Usuario actualizado' });
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Guardado',
+            detail: 'Usuario actualizado',
+          });
           this.volver();
         },
         error: () => {
           this.guardando.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el usuario' });
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo guardar el usuario',
+          });
         },
       });
     } else {
@@ -69279,17 +80909,26 @@ export class UsuarioForm implements OnInit {
         .subscribe({
           next: () => {
             this.guardando.set(false);
-            this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Usuario creado correctamente' });
+            this.msgs.add({
+              severity: 'success',
+              summary: 'Guardado',
+              detail: 'Usuario creado correctamente',
+            });
             this.volver();
           },
           error: () => {
             this.guardando.set(false);
-            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el usuario' });
+            this.msgs.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo guardar el usuario',
+            });
           },
         });
     }
   }
 }
+
 ```
 
 ---
@@ -69329,6 +80968,18 @@ export class UsuarioForm implements OnInit {
         @if (invalid('descripcion')) {
           <small class="err">La descripción es obligatoria</small>
         }
+      </div>
+
+      <div class="campo">
+        <label for="abreviatura">Abreviatura</label>
+        <input
+          pInputText
+          id="abreviatura"
+          formControlName="abreviatura"
+          maxlength="20"
+          placeholder="Ej: INV, FAC, CXC"
+        />
+        <small class="hint">Máximo 20 caracteres</small>
       </div>
 
       @if (esEdicion()) {
@@ -69462,6 +81113,7 @@ export class ModuloForm implements OnInit {
   ngOnInit() {
     this.form = this.fb.group({
       descripcion: ['', Validators.required],
+      abreviatura: ['', [Validators.maxLength(20)]],
       sn_activo: ['S', Validators.required],
     });
 
@@ -69475,6 +81127,7 @@ export class ModuloForm implements OnInit {
         next: (m) => {
           this.form.patchValue({
             descripcion: m.descripcion,
+            abreviatura: m.abreviatura ?? '',
             sn_activo: m.sn_activo === 'S' ? 'S' : 'N',
           });
           this.cargando.set(false);
@@ -69505,8 +81158,8 @@ export class ModuloForm implements OnInit {
 
     const raw = this.form.getRawValue();
     const payload = this.esEdicion()
-      ? { descripcion: raw.descripcion, sn_activo: raw.sn_activo }
-      : { descripcion: raw.descripcion, sn_activo: 'S' };
+      ? { descripcion: raw.descripcion, abreviatura: raw.abreviatura ?? '', sn_activo: raw.sn_activo }
+      : { descripcion: raw.descripcion, abreviatura: raw.abreviatura ?? '', sn_activo: 'S' };
 
     this.guardando.set(true);
     const op = this.esEdicion()
@@ -69556,7 +81209,7 @@ export class ModuloForm implements OnInit {
       <input
         pInputText
         type="text"
-        placeholder="Descripción..."
+        placeholder="Descripción o abreviatura..."
         [ngModel]="q()"
         (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()"
@@ -69598,6 +81251,10 @@ export class ModuloForm implements OnInit {
               <div class="dv-row">
                 <span class="dv-label">ID</span>
                 <span class="dv-value">{{ m.moduloId }}</span>
+              </div>
+              <div class="dv-row">
+                <span class="dv-label">Abreviatura</span>
+                <span class="dv-value">{{ m.abreviatura || '—' }}</span>
               </div>
             </div>
 
@@ -69716,7 +81373,11 @@ export class Modulos implements OnInit {
     const q = this.q().toLowerCase();
     this.filtered.set(
       this.data().filter((m) => {
-        return !q || m.descripcion.toLowerCase().includes(q);
+        return (
+          !q ||
+          m.descripcion.toLowerCase().includes(q) ||
+          (m.abreviatura ?? '').toLowerCase().includes(q)
+        );
       }),
     );
   }
@@ -69759,11 +81420,11 @@ export class Modulos implements OnInit {
             });
             this.load();
           },
-          error: () => {
+          error: (err) => {
             this.msgs.add({
               severity: 'error',
-              summary: 'Error',
-              detail: 'No se pudo eliminar el módulo',
+              summary: 'No se pudo eliminar',
+              detail: err?.error?.message || 'No se pudo eliminar el módulo',
             });
           },
         });
@@ -72673,6 +84334,10 @@ export const USUARIOS_ROUTES: Routes = [
          [rounded]="true" [text]="true"
          icon="pi pi-arrow-left" />
 
+        <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-search"
+          (onClick)="quickNav.abrir()" size="small" iconOnly
+          pTooltip="Navegación rápida (Ctrl+Alt+1)" tooltipPosition="bottom" />
+
         <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-sign-out" (onClick)="cerrarSesion()"
           size="small" iconOnly pTooltip="Presione para salir de la app" tooltipPosition="bottom" />
 
@@ -72696,6 +84361,9 @@ export const USUARIOS_ROUTES: Routes = [
 <!-- Globales: notificaciones y confirmaciones -->
 <p-toast />
 <p-confirmdialog />
+
+<!-- Navegación rápida global (Ctrl+Alt+1) -->
+<app-quick-nav />
 
 ```
 
@@ -72972,7 +84640,14 @@ $topbar-height: 60px;
     .p-panelmenu-header-icon {
       color: var(--d-menuitem-text-color);
       min-width: 1.25rem;
-      font-size: 1.1rem;
+      font-size: 0.05rem;
+      
+        // Font Awesome: ligeramente más compacto para alinearse con PrimeIcons
+        &.fa-solid,
+        &.fa-regular,
+        &.fa-brands {
+          font-size: 0.05rem;
+        }
     }
 
     .p-panelmenu-header-label {
@@ -73057,8 +84732,15 @@ $topbar-height: 60px;
 
     .p-panelmenu-item-icon {
       color: var(--d-menuitem-text-color);
-      min-width: 1.25rem;
-      font-size: 1rem;
+      min-width: 0.55rem;
+        font-size: 0.03rem;
+      
+        // Font Awesome: ligeramente más compacto para alinearse con PrimeIcons
+        &.fa-solid,
+        &.fa-regular,
+        &.fa-brands {
+          font-size: 0.3rem;
+        }
     }
 
     .p-panelmenu-item-label {
@@ -73361,7 +85043,9 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService, MenuItem } from 'primeng/api';
 import { AuthService } from '../../core/services/auth.service';
 import { MenuConfigService } from '../../core/services/menu-config.service';
+import { QuickNavService } from '../../core/services/quick-nav.service';
 import { Drawer, DrawerModule } from 'primeng/drawer';
+import { QuickNav } from '../quick-nav/quick-nav';
 
 @Component({
   selector: 'app-main-layout',
@@ -73376,6 +85060,7 @@ import { Drawer, DrawerModule } from 'primeng/drawer';
     SplitButtonModule,
     TooltipModule,
     DrawerModule,
+    QuickNav,
   ],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss',
@@ -73386,6 +85071,8 @@ export class MainLayout {
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
   private menuConfig = inject(MenuConfigService);
+  /** Instancia del servicio de navegación rápida (botón del topbar) */
+  readonly quickNav = inject(QuickNavService);
 
   mobileSidebarOpen = signal(false);
   sidebarHidden = signal(false);
@@ -73410,13 +85097,29 @@ export class MainLayout {
   );
 
   private mapItem(item: import('../../core/services/menu-config.service').MenuItemConfig): MenuItem {
-    const mi: MenuItem = { label: item.label, icon: `pi pi-${item.icon}` };
+    const mi: MenuItem = { label: item.label, icon: this.resolverIcono(item.icon) };
     if (item.route) mi.routerLink = [item.route];
     if (item.children?.length) {
       mi.expanded = false;
       mi.items = item.children.map((c) => this.mapItem(c));
     }
     return mi;
+  }
+
+  /**
+   * Resuelve el ícono del MenuItem sin romper clases completas:
+   *  - `'fa-solid fa-box'` / `'pi pi-home'` (con espacio) → se usa tal cual
+   *  - `'fa-box'` (solo una clase FA) → se completa con `fa-solid`
+   *  - `'pi-home'` → se completa con `pi `
+   *  - `'home'` (nombre corto) → `pi pi-home` (compatibilidad con el formato viejo)
+   */
+  private resolverIcono(icon: string): string {
+    const i = (icon ?? '').trim();
+    if (!i) return '';
+    if (i.includes(' ')) return i;
+    if (i.startsWith('fa-')) return `fa-solid ${i}`;
+    if (i.startsWith('pi-')) return `pi ${i}`;
+    return `pi pi-${i}`;
   }
 
   userMenuItems: MenuItem[] = [
@@ -73475,6 +85178,461 @@ export class MainLayout {
       acceptButtonStyleClass: 'p-button-text p-button-success p-button-rounded',
       rejectButtonStyleClass: 'p-button-text p-button-secondary p-button-rounded',
       accept: () => this.auth.logout(),
+    });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\layout\quick-nav\quick-nav.html
+
+```typescript
+<p-dialog
+  [visible]="nav.abierto()"
+  (visibleChange)="nav.abierto.set($event)"
+  header="Navegación rápida"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [focusOnShow]="true"
+  [closeOnEscape]="true"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  styleClass="quick-nav-dialog"
+  (onShow)="onShow()"
+  (onHide)="onHide()"
+>
+  <div class="quick-nav-body">
+    <div class="quick-nav-tabs">
+      <p-selectButton
+        [options]="tabs"
+        [ngModel]="pestana()"
+        (ngModelChange)="cambiarPestana($event)"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="quick-nav-tabgroup"
+      />
+      <span class="quick-nav-hint">{{ hintPestana }}</span>
+    </div>
+
+    <p-autoComplete
+      [suggestions]="sugerencias()"
+      [minLength]="0"
+      [delay]="250"
+      [showClear]="true"
+      [autoHighlight]="true"
+      [completeOnFocus]="true"
+      [forceSelection]="false"
+      [appendTo]="'body'"
+      optionLabel="label"
+      placeholder="Buscar pantalla o dato…"
+      styleClass="quick-nav-input"
+      inputStyleClass="quick-nav-input-el"
+      panelStyleClass="quick-nav-panel"
+      (completeMethod)="buscar($event.query)"
+      (onSelect)="onSelect($event.value)"
+      (onKeyUp)="onKeyup($event)"
+      (onClear)="buscar('')"
+    >
+      <ng-template let-item pTemplate="item">
+        <div class="quick-nav-item">
+          <i [class]="item.icono"></i>
+          <div class="quick-nav-item-text">
+            <span class="quick-nav-item-label">{{ item.label }}</span>
+            @if (item.detalle) {
+              <span class="quick-nav-item-detalle">{{ item.detalle }}</span>
+            }
+          </div>
+          <span class="quick-nav-item-tipo">{{ item.tipo }}</span>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="empty">
+        <div class="quick-nav-empty">
+          @if (cargando()) {
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>Buscando…</span>
+          } @else {
+            <i class="pi pi-search"></i>
+            <span>
+              @if (pestana() === 'datos') {
+                Sin resultados. Use 2 o más caracteres.
+              } @else {
+                Sin coincidencias.
+              }
+            </span>
+          }
+        </div>
+      </ng-template>
+    </p-autoComplete>
+
+    <div class="quick-nav-footer">
+      <div class="quick-nav-keys">
+        <span class="kbd">Enter</span> ir
+        <span class="kbd-sep">·</span>
+        <span class="kbd">Esc</span> cerrar
+        <span class="kbd-sep">·</span>
+        <span class="kbd">Ctrl+Alt+1</span> abrir / cerrar
+      </div>
+      <div class="quick-nav-actions">
+        <p-button
+          size="small"
+          label="Cerrar"
+          rounded
+          variant="text"
+          severity="secondary"
+          (onClick)="nav.cerrar()"
+        />
+        <p-button
+          size="small"
+          label="Ir"
+          icon="pi pi-arrow-right"
+          [rounded]="true"
+          [raised]="true"
+          severity="success"
+          (onClick)="ir()"
+        />
+      </div>
+    </div>
+  </div>
+</p-dialog>
+
+```
+
+---
+
+## 📄 src\app\layout\quick-nav\quick-nav.scss
+
+```typescript
+:host {
+  display: contents;
+}
+
+.quick-nav-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.quick-nav-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .quick-nav-hint {
+    color: var(--c-text-muted);
+    font-size: 0.78rem;
+  }
+}
+
+// Botones internos de p-selectButton (creados por PrimeNG → requieren ::ng-deep)
+::ng-deep .quick-nav-tabgroup {
+  .p-toggle-button {
+    padding: 0.35rem 1.1rem;
+    font-size: 0.85rem;
+  }
+}
+
+.quick-nav-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--c-border);
+
+  .quick-nav-keys {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+
+    .kbd {
+      padding: 0.05rem 0.4rem;
+      border: 1px solid var(--c-border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      background: var(--c-surface-ground);
+      color: var(--c-text);
+      font-family: monospace;
+      font-size: 0.72rem;
+    }
+
+    .kbd-sep {
+      opacity: 0.5;
+    }
+  }
+
+  .quick-nav-actions {
+    display: flex;
+    gap: 0.35rem;
+    margin-left: auto;
+  }
+}
+
+// ── Ítem de resultado ──────────────────────────────────────────────
+.quick-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.35rem 0.25rem;
+
+  > i {
+    color: var(--c-primary);
+    font-size: 0.95rem;
+    width: 1.1rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .quick-nav-item-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .quick-nav-item-label {
+    font-size: 0.85rem;
+    color: var(--c-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .quick-nav-item-detalle {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .quick-nav-item-tipo {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    color: var(--c-text-muted);
+  }
+}
+
+.quick-nav-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 1rem;
+  color: var(--c-text-muted);
+  font-size: 0.82rem;
+}
+
+// ── Estilos vía ::ng-deep (diálogo + panel del autocomplete) ──────
+// Nombres de clase únicos: no afectan a otros diálogos de la app.
+::ng-deep .quick-nav-dialog {
+  width: 34rem;
+  max-width: 92vw;
+
+  .p-dialog-content {
+    padding: 1rem 1.25rem;
+  }
+}
+
+::ng-deep .quick-nav-input {
+  width: 100%;
+
+  .quick-nav-input-el,
+  input {
+    width: 100%;
+    font-size: 1rem;
+  }
+}
+
+::ng-deep .quick-nav-panel {
+  width: 34rem;
+  max-width: 92vw;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+
+  .p-autocomplete-items {
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 0.25rem;
+  }
+
+  .p-autocomplete-option {
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+  }
+
+  .p-autocomplete-option-highlight {
+    background: color-mix(in srgb, var(--c-primary) 14%, transparent);
+    color: var(--c-text);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\layout\quick-nav\quick-nav.ts
+
+```typescript
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DialogModule } from 'primeng/dialog';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { AutoCompleteModule, AutoComplete } from 'primeng/autocomplete';
+import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
+import { QuickNavItem, QuickNavService } from '../../core/services/quick-nav.service';
+
+type Pestana = 'menu' | 'datos';
+
+/**
+ * Navegación rápida global (Ctrl+Alt+1).
+ *
+ * Un solo cuadro con dos modos:
+ *  - Menú: autocompletado sobre los ítems del menú lateral → navega a la ruta.
+ *  - Datos: búsqueda global en clientes, proveedores, productos y cuentas contables.
+ */
+@Component({
+  selector: 'app-quick-nav',
+  standalone: true,
+  imports: [CommonModule, FormsModule, DialogModule, SelectButtonModule, AutoCompleteModule, ButtonModule, TooltipModule],
+  templateUrl: './quick-nav.html',
+  styleUrl: './quick-nav.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class QuickNav {
+  readonly nav = inject(QuickNavService);
+  private destroyRef = inject(DestroyRef);
+
+  @ViewChild(AutoComplete) private ac?: AutoComplete;
+
+  readonly tabs: { label: string; value: Pestana }[] = [
+    { label: 'Menú', value: 'menu' },
+    { label: 'Datos', value: 'datos' },
+  ];
+
+  readonly pestana = signal<Pestana>('menu');
+  readonly sugerencias = signal<QuickNavItem[]>([]);
+  readonly cargando = signal(false);
+  readonly seleccionado = signal<QuickNavItem | null>(null);
+
+  private queryActual = '';
+  private reqId = 0;
+  private navegoConEnter = false;
+
+  buscar(query: string): void {
+    this.queryActual = query ?? '';
+    this.navegoConEnter = false;
+
+    if (this.pestana() === 'menu') {
+      this.sugerencias.set(this.nav.filtrarMenu(this.queryActual));
+      this.cargando.set(false);
+      return;
+    }
+
+    const termino = this.queryActual.trim();
+    if (termino.length < 2) {
+      this.sugerencias.set([]);
+      this.cargando.set(false);
+      return;
+    }
+
+    const id = ++this.reqId;
+    this.cargando.set(true);
+    this.nav
+      .buscarDatos(termino)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          if (id !== this.reqId) return;
+          this.sugerencias.set(res);
+          this.cargando.set(false);
+        },
+        error: () => {
+          if (id !== this.reqId) return;
+          this.sugerencias.set([]);
+          this.cargando.set(false);
+        },
+      });
+  }
+
+  cambiarPestana(valor: Pestana): void {
+    if (this.pestana() === valor) return;
+    this.pestana.set(valor);
+    this.sugerencias.set([]);
+    this.buscar(this.queryActual);
+    this.enfocar();
+  }
+
+  onShow(): void {
+    this.seleccionado.set(null);
+    this.navegoConEnter = false;
+    this.queryActual = '';
+    this.sugerencias.set(this.nav.filtrarMenu(''));
+    this.enfocar();
+  }
+
+  onHide(): void {
+    this.pestana.set('menu');
+    this.cargando.set(false);
+    // No resetear navegoConEnter aquí: el keyup de Enter llega DESPUÉS de ocultar
+    // el panel y, si se resetea, se navegaría una 2ª vez a sugerencias()[0].
+  }
+
+  onSelect(event: { value?: QuickNavItem } | QuickNavItem | null): void {
+    // PrimeNG emite { originalEvent, value } — normalizar por si llega el objeto plano
+    const item = event && 'value' in event ? event.value : (event as QuickNavItem | null);
+    if (!item) return;
+    this.seleccionado.set(item);
+    this.navegoConEnter = true;
+    this.ir(item);
+  }
+
+  onKeyup(event: Event): void {
+    // Diálogo cerrado → no reaccionar (el keyup llega tarde, tras el cierre)
+    if (!this.nav.abierto()) return;
+    const e = event as KeyboardEvent;
+    if (e.key !== 'Enter') return;
+    // PrimeNG ya seleccionó la opción resaltada → onSelect() se encarga
+    if (this.navegoConEnter) {
+      this.navegoConEnter = false;
+      return;
+    }
+    const primero = this.sugerencias()[0];
+    if (primero) this.ir(primero);
+  }
+
+  ir(item?: QuickNavItem | null): void {
+    const destino = item ?? this.seleccionado() ?? this.sugerencias()[0];
+    if (!destino) return;
+    this.nav.navegar(destino);
+  }
+
+  get hintPestana(): string {
+    return this.pestana() === 'menu'
+      ? 'Escriba para buscar una pantalla del sistema'
+      : 'Escriba 2+ caracteres para buscar clientes, proveedores, productos o cuentas';
+  }
+
+  private enfocar(): void {
+    setTimeout(() => {
+      const input = (this.ac as unknown as { inputEL?: { nativeElement?: HTMLInputElement } } | undefined)?.inputEL
+        ?.nativeElement;
+      input?.focus();
+      input?.select();
     });
   }
 }
@@ -74145,6 +86303,22 @@ body {
   font-style: normal;
 }
 
+/* Figtree — fuente variable (pesos 300–900, romana + itálica) */
+@font-face {
+  font-family: 'Figtree';
+  src: url('/assets/fonts/Figtree/Figtree-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Figtree';
+  src: url('/assets/fonts/Figtree/Figtree-Italic-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
 @font-face {
   font-family: 'AstroSpace';
   src: url('/assets/fonts/AstroSpace/AstroSpace.ttf') format('truetype');
@@ -74160,9 +86334,29 @@ body {
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'Audiowide';
+  src: url('/assets/fonts/Audiowide/Audiowide-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
+
+@font-face {
+  font-family: 'Hurricane';
+  src: url('/assets/fonts/Hurricane/Hurricane-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
+
+@font-face {
+  font-family: 'Rye';
+  src: url('/assets/fonts/Rye/Rye-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
 
 :root {
-  --font-family: 'Mukta', sans-serif;
+  --font-family: 'Figtree', 'Mukta', sans-serif;
 
   --color-font-sidebar: #dbe7f0;
   --color-texto-label: rgba(255, 255, 255, 0.4);
@@ -74174,7 +86368,11 @@ body {
 
   /* ===== Design tokens ===== */
   --c-bg: #1e2e3b;
+  --c-bg-white: white;
+    --c-bg-black: black;
   --c-bg-muted: #1e2e3b00;
+  --c-bg-login: #030713;
+  --c-bg-login-inputtext: #030713;
   --c-surface: #1e2e3b;
   --c-surface-muted: #2d3d50b4;
   --c-card-background: #08131c;
@@ -74295,8 +86493,11 @@ body {
 
   --surface-border: var(--for-border-color-alls);
 
-
+--p-button-contrast-background: var(--c-bg-black);
+  --p-button-contrast-border-color: var(--c-bg-black);
+  --p-button-contrast-color: var(--c-bg-white);
 }
+
 
 body {
   font-family: var(--font-family);
@@ -74811,7 +87012,6 @@ ul {
     }
   }
 }
-
 ```
 
 ---

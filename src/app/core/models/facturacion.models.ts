@@ -107,7 +107,7 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'gestorId',
         label: 'Gestor',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/gestores', labelCampo: 'nombre', valueCampo: 'g_gestorId' },
+        cargaOpciones: { url: '/parametros/gestores', labelCampo: 'nombre', valueCampo: 'gestorId' },
         requerido: true,
       },
       {
@@ -196,7 +196,7 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'gestorId',
         label: 'Gestor',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/gestores', labelCampo: 'nombre', valueCampo: 'g_gestorId' },
+        cargaOpciones: { url: '/parametros/gestores', labelCampo: 'nombre', valueCampo: 'gestorId' },
         requerido: true,
       },
     ],
@@ -389,7 +389,7 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'gestorId',
         label: 'Gestor',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/gestores', labelCampo: 'nombre', valueCampo: 'g_gestorId' },
+        cargaOpciones: { url: '/parametros/gestores', labelCampo: 'nombre', valueCampo: 'gestorId' },
       },
       {
         key: 'monedaId',

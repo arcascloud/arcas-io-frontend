@@ -94,3 +94,47 @@
     grid-template-columns: 1fr;
   }
 }
+
+// ===== Diálogo de bloqueo por DNI duplicado (llave maestra) =====
+.dni-bloqueo {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+
+  > i {
+    font-size: 2rem;
+    color: var(--c-warning);
+    line-height: 1;
+  }
+
+  .dni-bloqueo-msg {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+
+    p {
+      margin: 0;
+    }
+
+    .titulo {
+      font-size: 1rem;
+    }
+
+    .numero {
+      color: var(--c-text-muted);
+      font-size: 0.9rem;
+    }
+
+    .detalle {
+      color: var(--c-error);
+      font-size: 0.85rem;
+      word-break: break-word;
+    }
+
+    .nota {
+      color: var(--c-text-muted);
+      font-size: 0.85rem;
+    }
+  }
+}

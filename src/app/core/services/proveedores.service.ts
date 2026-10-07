@@ -27,6 +27,19 @@ export class ProveedoresService {
   }
 
   /**
+   * Verifica si un DNI ya existe en proveedores de la empresa (DNI = llave maestra)
+   * @param dni - DNI a verificar
+   * @param excluirId - Proveedor a excluir (para edicion)
+   * @returns true si el DNI ya esta asignado a otro proveedor
+   */
+  dniExiste(dni: string, excluirId?: number): Observable<{ existe: boolean; id: number | null; numero: string | null; nombre: string | null }> {
+    return this.api.get(`${this.path}/dni-existe`, {
+      dni,
+      ...(excluirId ? { excluirId } : {}),
+    });
+  }
+
+  /**
    * Crea un nuevo proveedor en el backend
    * @param dto - Datos parciales del proveedor a crear
    * @returns Observable con el proveedor creado

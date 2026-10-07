@@ -12,7 +12,7 @@ import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
-import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo } from '../../../core/models/catalogo-parametros.models';
+import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo, labelOpcion } from '../../../core/models/catalogo-parametros.models';
 
 @Component({
   selector: 'app-catalogo-form',
@@ -205,10 +205,15 @@ export class CatalogoForm implements OnInit, OnChanges {
               const candidate = res.data ?? res.results ?? Object.values(res).find(Array.isArray) ?? [];
               items = Array.isArray(candidate) ? candidate : [];
             }
-            const opts = items.map((i) => ({
-              label: String(i[c.cargaOpciones!.labelCampo] ?? i[c.cargaOpciones!.valueCampo] ?? ''),
+            let opts = items.map((i) => ({
+              label: labelOpcion(i, c.cargaOpciones!),
               value: i[c.cargaOpciones!.valueCampo],
             }));
+            // Filtrado declarativo: solo ciertos valores (ej: gestores → módulos 3 y 4)
+            const permitidos = c.cargaOpciones!.valores;
+            if (permitidos?.length) {
+              opts = opts.filter((o) => permitidos.some((v) => String(v) === String(o.value)));
+            }
             this.opcionesMap.update((m) => ({ ...m, [c.key]: opts }));
           },
         });

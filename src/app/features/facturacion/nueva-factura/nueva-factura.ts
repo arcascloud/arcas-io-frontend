@@ -243,6 +243,14 @@ export class NuevaFactura implements OnInit {
           this.form.patchValue({ cajaId });
         }
 
+        // Caja por defecto: parámetro del módulo 4 (CxC).
+        // La bodega NO se toma de parámetros: la resuelve el backend desde la
+        // sucursal del usuario (tusuario.Idsucursal → tsucursal.bodegaId)
+        this.api.get<any>('/parametros/parametros/objeto?moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((p4) => {
+          const c4 = Number(p4?.cajaId) || null;
+          if (c4) this.form.patchValue({ cajaId: c4 });
+        });
+
         this.aplicarTasa();
         this.cargarGestor();
       },
@@ -312,6 +320,7 @@ export class NuevaFactura implements OnInit {
       tipofactura: ['E'],
       clienteId: [null as number | null, Validators.required],
       nrocliente: ['', Validators.required],
+      rtn_cliente: [''],
       formapagoId: [null as number | null],
       bodegaId: [null as number | null],
       cajaId: [null as number | null],
@@ -450,6 +459,8 @@ export class NuevaFactura implements OnInit {
         nombrecliente: `${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim() || null,
         // cxccclientesdir eliminada: la dirección ya no se resuelve desde catálogo
         direccion: '',
+        // RTN: en crédito se lee del cliente; en contado queda limpio
+        rtn_cliente: this.esContado() ? '' : (c.rtn ?? ''),
       });
     }
   }
@@ -468,8 +479,10 @@ export class NuevaFactura implements OnInit {
           nrocliente: tienda.nrocliente ?? 'TIENDA',
         });
       }
+      // Contado: RTN siempre en limpio (se carga manualmente si se necesita)
+      this.form.patchValue({ rtn_cliente: '' });
     } else {
-      this.form.patchValue({ clienteId: null, nrocliente: '' });
+      this.form.patchValue({ clienteId: null, nrocliente: '', rtn_cliente: '' });
       this.nombreClienteManual.set('');
     }
   }
@@ -978,6 +991,7 @@ export class NuevaFactura implements OnInit {
       factordecambio: 0,
       diascredito: 0,
       efectivo_recibido: 0,
+      rtn_cliente: '',
       bodegaId,
       cajaId,
       gestorId,
@@ -1060,6 +1074,7 @@ export class NuevaFactura implements OnInit {
       clienteId: raw.clienteId,
       nrocliente: raw.nrocliente,
       nombrecliente: nombreCliente,
+      rtn_cliente: raw.rtn_cliente || null,
       direccion: raw.direccion || null,
       factordecambio: raw.factordecambio ?? 0,
       subTotal: t.subTotal,
@@ -1097,7 +1112,8 @@ export class NuevaFactura implements OnInit {
             const descuentoMonto = Math.round(cant * precio * (pDescuento / 100) * 100) / 100;  // Monto calculado
             return this.service.createDet<any>('/facturacion/facturas-det', {
               facturaId: fac.facturaId,
-              bodegaId: raw.bodegaId,
+              // La bodega resuelta por el backend (sucursal del usuario) tiene prioridad
+              bodegaId: fac.bodegaId ?? raw.bodegaId,
               nrofila: i + 1,
               productoId: r.productoId,
               codbarra: r.codbarra || '',

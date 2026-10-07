@@ -10,6 +10,13 @@ export const CONFIGURACION_ROUTES: Routes = [
       import('./empresas/empresas-manager').then((m) => m.EmpresasManager),
   },
 
+  // CAI y Correlativos (tcai / tcai_autorizado) — control independiente
+  {
+    path: 'cai',
+    loadComponent: () =>
+      import('./cai/cai-manager').then((m) => m.CaiManager),
+  },
+
   // Usuarios
   {
     path: 'usuarios',
@@ -156,6 +163,13 @@ export const CONFIGURACION_ROUTES: Routes = [
     path: 'fechas',
     loadComponent: () =>
       import('./fechas/manager-fechas').then((m) => m.ManagerFechas),
+  },
+
+  // Fechas autorizadas — réplica (separación de funciones pendiente)
+  {
+    path: 'fechasautorizadas',
+    loadComponent: () =>
+      import('./fechasautorizadas/fechasautorizadas').then((m) => m.FechasAutorizadas),
   },
 
   { path: '**', redirectTo: 'empresas' },

@@ -126,8 +126,8 @@ export class CotizacionesForm implements OnInit {
       next: (res) => {
         const items = res?.value ?? (Array.isArray(res) ? res : []);
         this.gestores.set((items ?? []).map((g: any) => ({
-          label: g.nombre || 'Gestor #' + g.g_gestorId,
-          value: g.g_gestorId,
+          label: g.nombre || 'Gestor #' + g.gestorId,
+          value: g.gestorId,
         })));
       },
     });

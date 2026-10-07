@@ -1,4 +1,5 @@
-import { Component, inject, signal, OnInit, input, output, effect, Injector, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, OnInit, input, output, effect, Injector, ViewChild, ElementRef, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,10 +9,12 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { DatePickerModule } from 'primeng/datepicker';
+import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NavegacionService } from '../../../core/services/navegacion.service';
+import { ParametroUnificadoService } from '../../../core/services/parametro-unificado.service';
 
 @Component({
   selector: 'app-cliente-form',
@@ -25,6 +28,7 @@ import { NavegacionService } from '../../../core/services/navegacion.service';
     SelectModule,
     SelectButtonModule,
     DatePickerModule,
+    DialogModule,
   ],
   templateUrl: './cliente-form.html',
   styleUrl: './cliente-form.scss',
@@ -37,6 +41,8 @@ export class ClienteForm implements OnInit {
   private auth = inject(AuthService);
   private nav = inject(NavegacionService);
   private msgs = inject(MessageService);
+  private paramsUnif = inject(ParametroUnificadoService);
+  private destroyRef = inject(DestroyRef);
 
   // ===== MODO INLINE (nuevo) =====
   clienteIdInput = input<number | null>(null); // null = nuevo, >0 = editar
@@ -53,6 +59,9 @@ export class ClienteForm implements OnInit {
   guardando = signal(false);
   titulo = signal('Nuevo cliente');
   modoFacturacion = signal(false);
+  // Bloqueo por DNI duplicado (DNI = llave maestra por empresa)
+  dialogoDni = signal(false);
+  bloqueoDni = signal<{ dni: string; nombre: string | null; numero: string | null; detalle?: string } | null>(null);
 
   @ViewChild('primerCampo') primerCampo?: ElementRef<HTMLInputElement>;
 
@@ -76,6 +85,7 @@ export class ClienteForm implements OnInit {
           limiteCredito: 0, diasplazo: 0, interes: 0, moratorio: 0,
           categoria: 'A', sn_activo: 'S', fechanacimiento: null,
         });
+        this.cargarDefaultsCreditos();
         this.cargando.set(false);
       }
     }
@@ -156,8 +166,26 @@ export class ClienteForm implements OnInit {
         this.titulo.set('Editar cliente');
         this._clienteId = Number(id);
         this.cargarCliente(this._clienteId);
+      } else {
+        this.cargarDefaultsCreditos();
       }
     }
+  }
+
+  /**
+   * Precarga los defaults de credito del cliente desde ttipoparametros
+   * (CxC, moduloId=4: cxc_limitecredito, cxc_diasPlazo, cxc_interes, cxc_mora).
+   * Solo en alta - en edicion manda lo guardado.
+   */
+  private cargarDefaultsCreditos(): void {
+    this.paramsUnif.getAsObject(4).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((obj) => {
+      this.form.patchValue({
+        limiteCredito: Number(obj['cxc_limitecredito'] ?? 0),
+        diasplazo: Number(obj['cxc_diasPlazo'] ?? 0),
+        interes: Number(obj['cxc_interes'] ?? 0),
+        moratorio: Number(obj['cxc_mora'] ?? 0),
+      });
+    });
   }
 
   private cargarCliente(id: number) {
@@ -241,6 +269,26 @@ export class ClienteForm implements OnInit {
     }
 
     this.guardando.set(true);
+    const dniEfectivo = ((raw.dni as string) || '').trim() || '0000000000000';
+
+    // DNI = llave maestra: verificar duplicado por empresa ANTES de registrar (dialogo bloqueante)
+    this.service.dniExiste(dniEfectivo, this.esEdicion() ? this._clienteId : undefined).subscribe({
+      next: (r) => {
+        if (r.existe) {
+          this.guardando.set(false);
+          this.bloqueoDni.set({ dni: dniEfectivo, nombre: r.nombre, numero: r.numero });
+          this.dialogoDni.set(true);
+          return;
+        }
+        this.registrar(payload);
+      },
+      // sin verificacion disponible: aplica el bloqueo 409 del backend
+      error: () => this.registrar(payload),
+    });
+  }
+
+  private registrar(payload: any): void {
+    const dniEfectivo = (((this.form.getRawValue().dni as string) || '').trim()) || '0000000000000';
     const op = this.esEdicion()
       ? this.service.updateCliente(this._clienteId, payload as any)
       : this.service.createCliente(payload as any);
@@ -259,9 +307,14 @@ export class ClienteForm implements OnInit {
           this.nav.volver(['/facturacion/nueva-factura']);
         }
       },
-      error: () => {
+      error: (err: any) => {
         this.guardando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el cliente' });
+        if (err?.status === 409) {
+          this.bloqueoDni.set({ dni: dniEfectivo, nombre: null, numero: null, detalle: err?.error?.message });
+          this.dialogoDni.set(true);
+        } else {
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el cliente' });
+        }
       },
     });
   }

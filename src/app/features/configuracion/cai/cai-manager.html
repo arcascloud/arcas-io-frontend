@@ -1,0 +1,222 @@
+<div class="cai-manager">
+  <div class="page-header">
+    <div>
+      <h2>CAI y Correlativos</h2>
+      <span class="subtitulo">Autorizaciones de impresión y rangos de facturación</span>
+    </div>
+  </div>
+
+  <div class="split-layout">
+    <!-- ============ COLUMNA IZQUIERDA: DETALLE / FORMULARIO ============ -->
+    <div class="left-column">
+      @if (formMode() !== 'none') {
+      <!-- ===== Formulario CAI (nuevo / editar) ===== -->
+      <div class="cai-detail">
+        <div class="tab-header">
+          <h4>{{ formMode() === 'editar' ? 'Editar CAI' : 'Nuevo CAI' }}</h4>
+          <span class="tab-subtitulo">Código de Autorización de Impresión (SAT)</span>
+        </div>
+
+        <div class="card">
+          <div class="prestamo-form-columns" [formGroup]="caiForm">
+            <div class="form-col">
+              <h5 class="form-col-title">Código CAI</h5>
+              <div class="p-field">
+                <label>Código <span class="req">*</span> <small class="text-muted">(mínimo 35 caracteres, letras/números/guiones)</small></label>
+                <input pInputText pSize="small" formControlName="cai" placeholder="Ejemplo: A1B2FF-C3D4FF-E5F6BB-G7H8GG-I9J0TT-K1" class="cai-input-mono" />
+                @if (caiForm.get('cai')?.touched && caiForm.get('cai')?.invalid) {
+                <small class="err">
+                  @if (caiForm.get('cai')?.errors?.['minlength']) {
+                  Mínimo 35 caracteres (actual: {{ caiForm.get('cai')?.value?.length || 0 }})
+                  } @else {
+                  Este campo es requerido
+                  }
+                </small>
+                }
+              </div>
+            </div>
+            <div class="form-col">
+              <h5 class="form-col-title">Estado</h5>
+              <div class="p-field">
+                <label>Estado del CAI</label>
+                <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione estado" />
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarForm()" />
+            <p-button [label]="formMode() === 'editar' ? 'Actualizar CAI' : 'Crear CAI'" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingCai()" (onClick)="guardarCai()" />
+          </div>
+        </div>
+      </div>
+      } @else if (!selected()) {
+      <!-- ===== Empty state ===== -->
+      <div class="empty-state">
+        <i class="pi pi-arrow-left empty-icon"></i>
+        <h3>Pulse un CAI</h3>
+        <p>Seleccione un CAI de la lista para ver sus rangos de facturación</p>
+        <p-button label="Nuevo CAI" icon="pi pi-plus" severity="success" [rounded]="true" size="small" (onClick)="nuevo()" />
+      </div>
+      } @else {
+      <!-- ===== Detalle del CAI seleccionado ===== -->
+      <div class="cai-detail">
+        <div class="detail-header">
+          <div class="detail-codigo">
+            <span class="codigo-label">Código CAI</span>
+            <h3 class="cai-mono">{{ selected()!.cai }}</h3>
+            <p-tag [value]="getEstadoLabel(selected()!.sn_activo)" [severity]="getEstadoSeverity(selected()!.sn_activo)" styleClass="tag-sm" />
+          </div>
+          <div class="detail-actions">
+            <p-button label="Editar" icon="pi pi-pencil" variant="text" severity="warn" [rounded]="true" size="small" (onClick)="editarCai(selected()!)" />
+            <p-button label="Eliminar" icon="pi pi-trash" variant="text" severity="danger" [rounded]="true" size="small" (onClick)="eliminarCai(selected()!)" />
+          </div>
+        </div>
+
+        <!-- Formulario nuevo/editar correlativo -->
+        <div class="card mb-3" [formGroup]="corrForm">
+          <!-- Sucursal full-width -->
+          <div class="corr-sucursal">
+            <div class="p-field">
+              <label>Sucursal <span class="req">*</span></label>
+              <p-select formControlName="Idsucursal" [options]="sucursales()" optionLabel="descripcion" optionValue="idsucursal" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar sucursal" (onChange)="onSucursalChange()" />
+            </div>
+          </div>
+
+          <!-- Rango de facturación: título + 2 columnas -->
+          <div class="corr-rango">
+            <h5 class="form-col-title">Rango de facturación</h5>
+            <div class="corr-rango-cols">
+              <div class="form-col">
+                <div class="p-field">
+                  <label>Rango Desde <span class="req">*</span></label>
+                  <input pInputText pSize="small" formControlName="rangoDesde" placeholder="000-001-01-00120001" />
+                </div>
+                <div class="p-field">
+                  <label>Rango Hasta <span class="req">*</span></label>
+                  <input pInputText pSize="small" formControlName="rangoHasta" placeholder="000-001-01-00127000" />
+                </div>
+              </div>
+              <div class="form-col">
+                <div class="p-field">
+                  <label>Fecha Límite <span class="req">*</span></label>
+                  <p-datepicker formControlName="fechaLimite" size="small" dateFormat="dd/mm/yy" [showIcon]="true" [appendTo]="'body'" styleClass="w-full" placeholder="Fecha de vencimiento" />
+                </div>
+                <div class="p-field">
+                  <label>Nro. Factura Actual <span class="req">*</span></label>
+                  <p-inputNumber formControlName="nrofactura" [min]="0" size="small" styleClass="w-full" [inputStyle]="{ 'width': '100%' }" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            @if (corrEditando()) {
+            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarCorr()" />
+            }
+            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingCorr()" (onClick)="guardarCorrelativo()" />
+          </div>
+        </div>
+
+        <!-- Lista de correlativos -->
+        <p-table
+          [value]="correlativos()"
+          [loading]="loadingCorr()"
+          showGridlines
+          styleClass="tabla-card"
+          [tableStyle]="{ 'min-width': '50rem' }"
+          size="small"
+          [paginator]="true"
+          [rows]="10"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+          [rowsPerPageOptions]="[10, 25, 50]"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Sucursal</th>
+              <th>Rango</th>
+              <th class="col-estado">Nro. Factura</th>
+              <th>Disponibles</th>
+              <th class="col-estado">Estado</th>
+              <th>Fecha Límite</th>
+              <th class="col-acciones"></th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-corr>
+            <tr [class.row-agotado]="getRangoEstado(corr.Idsucursal) === 'AGOTADO'" [class.row-critico]="getRangoEstado(corr.Idsucursal) === 'CRITICO'" [class.row-alerta]="getRangoEstado(corr.Idsucursal) === 'ALERTA'">
+              <td>{{ getSucursalNombre(corr.Idsucursal) }}</td>
+              <td>
+                <div class="rango-info">
+                  <span class="rango-text">{{ corr.rangoDesde }} → {{ corr.rangoHasta }}</span>
+                  <div class="rango-progress-container">
+                    <div class="rango-progress-bar" [style.width.%]="getRangoPorcentaje(corr.Idsucursal)" [class.progress-ok]="getRangoEstado(corr.Idsucursal) === 'OK'" [class.progress-alerta]="getRangoEstado(corr.Idsucursal) === 'ALERTA'" [class.progress-critico]="getRangoEstado(corr.Idsucursal) === 'CRITICO' || getRangoEstado(corr.Idsucursal) === 'AGOTADO'"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="col-estado text-center">{{ corr.nrofactura }}</td>
+              <td>
+                <span class="disponibles-text">{{ getRangoDisponible(corr.Idsucursal) }}</span>
+                <span class="porcentaje-text">({{ getRangoPorcentaje(corr.Idsucursal) }}%)</span>
+              </td>
+              <td class="col-estado"><p-tag [value]="getRangoLabel(corr.Idsucursal)" [severity]="getRangoEstadoSeverity(corr.Idsucursal)" styleClass="tag-sm" /></td>
+              <td>{{ formatFecha(corr.fechaLimite) }}</td>
+              <td class="col-acciones">
+                <p-button icon="pi pi-pencil" (click)="editarCorr(corr)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                <p-button icon="pi pi-trash" (click)="eliminarCorr(corr)" [rounded]="true" size="small" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="7" class="text-center text-muted">No hay correlativos registrados para este CAI</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+      }
+    </div>
+
+    <!-- ============ COLUMNA DERECHA: LISTA DE CAIs ============ -->
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input pInputText pSize="small" [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Buscar CAI..." />
+          @if (q()) {
+          <button class="search-clear" (click)="limpiarFiltros()">×</button>
+          }
+        </div>
+        <p-button label="Nuevo" icon="pi pi-plus" severity="success" [rounded]="true" size="small" (onClick)="nuevo()" />
+      </div>
+
+      @if (cargando()) {
+      @for (s of [1, 2, 3]; track s) {
+      <div class="ficha-skeleton">
+        <p-skeleton height="4.5rem" />
+      </div>
+      }
+      } @else if (filtrados().length === 0) {
+      <div class="lista-empty">
+        <i class="pi pi-inbox"></i>
+        <p>No hay CAIs registrados</p>
+        <p-button label="Crear el primero" icon="pi pi-plus" severity="success" variant="text" [rounded]="true" size="small" (onClick)="nuevo()" />
+      </div>
+      } @else {
+      <div class="cai-lista">
+        @for (cai of filtrados(); track cai.caiId) {
+        <div class="cai-item-ficha" [class.selected]="selected()?.caiId === cai.caiId" (click)="seleccionar(cai)">
+          <div class="item-ficha-header">
+            <p-tag [value]="getEstadoLabel(cai.sn_activo)" [severity]="getEstadoSeverity(cai.sn_activo)" styleClass="tag-sm" />
+            <div class="item-ficha-actions">
+              <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (click)="editarCai(cai); $event.stopPropagation()" />
+              <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (click)="eliminarCai(cai); $event.stopPropagation()" />
+            </div>
+          </div>
+          <div class="ficha-codigo">{{ cai.cai }}</div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+</div>

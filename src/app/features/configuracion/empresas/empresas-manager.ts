@@ -14,15 +14,11 @@ import { ToastModule } from 'primeng/toast';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { ConfirmDialog } from 'primeng/confirmdialog';
-import { FieldsetModule } from 'primeng/fieldset';
-import { DatePickerModule } from 'primeng/datepicker';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { SkeletonModule } from 'primeng/skeleton';
 import { PaginatorModule } from 'primeng/paginator';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { forkJoin, of } from 'rxjs';
 import { EmpresasService } from '../../../core/services/empresas.service';
-import { Empresa, EmpresaDet, Correlativo, Cai, EmpresaLogo, Impresora, EstadoCorrelativo } from '../../../core/models/empresa.models';
+import { Empresa, EmpresaDet, EmpresaLogo, Impresora } from '../../../core/models/empresa.models';
 import { Sucursal } from '../../../core/models/sucursal.models';
 
 @Component({
@@ -33,7 +29,6 @@ import { Sucursal } from '../../../core/models/sucursal.models';
     ButtonModule, InputTextModule, TextareaModule, SelectModule,
     TagModule, TooltipModule, TabsModule, TableModule,
     ToastModule, IconFieldModule, InputIconModule, ConfirmDialog,
-    FieldsetModule, DatePickerModule, InputNumberModule,
     SkeletonModule, PaginatorModule,
   ],
   templateUrl: './empresas-manager.html',
@@ -101,33 +96,6 @@ export class EmpresasManager implements OnInit {
   });
   sucEditando = signal<Sucursal | null>(null);
 
-  // ===== Correlativos (CAI) - Maestro/Detalle =====
-  caiRecords = signal<Cai[]>([]);
-  correlativos = signal<Correlativo[]>([]);
-  savingCai = signal(false);
-  savingCorr = signal(false);
-  loadingCai = signal(false);
-  loadingCorr = signal(false);
-
-  // Formulario maestro CAI (tcai)
-  caiForm = this.fb.group({
-    cai: ['', [Validators.required, Validators.minLength(35)]],
-    sn_activo: ['N'],
-  });
-
-  // Formulario detalle correlativo
-  corrForm = this.fb.group({
-    Idsucursal: [null as number | null, Validators.required],
-    rangoDesde: ['', Validators.required],
-    rangoHasta: ['', Validators.required],
-    nrofactura: [0, Validators.required],
-    fechaLimite: [null as Date | null, Validators.required],
-  });
-
-  caiEditando = signal<Cai | null>(null);
-  corrEditando = signal<Correlativo | null>(null);
-  caiSeleccionado = signal<Cai | null>(null);
-
   // ===== Logo =====
   logo = signal<EmpresaLogo | null>(null);
   savingLogo = signal(false);
@@ -157,9 +125,6 @@ export class EmpresasManager implements OnInit {
     { label: 'Automático', value: 'A' },
     { label: 'Manual', value: 'M' },
   ];
-
-  // ===== Estado correlativos (alertas) =====
-  estadoCorrelativos = signal<EstadoCorrelativo[]>([]);
 
   // ===== Filtros =====
   empresasFiltradas = signal<Empresa[]>([]);
@@ -214,10 +179,8 @@ export class EmpresasManager implements OnInit {
     });
     this.loadDet(emp.empresaId);
     this.loadSucursales(emp.empresaId);
-    this.loadCaiRecords(emp.empresaId);
     this.loadLogo(emp.empresaId);
     this.loadImpresoras(emp.empresaId);
-    this.loadEstadoCorrelativos(emp.empresaId);
   }
 
   /** Botón lápiz de la ficha: evita que el click burbujee a la tarjeta */
@@ -242,9 +205,6 @@ export class EmpresasManager implements OnInit {
     });
     this.empresaDet.set([]);
     this.sucursales.set([]);
-    this.caiRecords.set([]);
-    this.correlativos.set([]);
-    this.caiSeleccionado.set(null);
     this.limpiarDatosEmpresa();
     this.logo.set(null);
     this.logoPreview.set(null);
@@ -448,246 +408,6 @@ export class EmpresasManager implements OnInit {
   }
 
   // ==================================================
-  //  CAI - MAESTRO (tcai)
-  // ==================================================
-
-  loadCaiRecords(empresaId: number) {
-    this.loadingCai.set(true);
-    this.empresasService.getAllCai(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => {
-        const caiList = data ?? [];
-        this.caiRecords.set(caiList);
-        this.loadingCai.set(false);
-        if (caiList.length > 0 && !this.caiSeleccionado()) {
-          this.seleccionarCai(caiList[0]);
-        } else if (caiList.length === 0) {
-          this.caiSeleccionado.set(null);
-          this.correlativos.set([]);
-        }
-      },
-      error: () => {
-        this.caiRecords.set([]);
-        this.correlativos.set([]);
-        this.loadingCai.set(false);
-      },
-    });
-  }
-
-  seleccionarCai(cai: Cai) {
-    this.caiSeleccionado.set(cai);
-    this.caiEditando.set(null);
-    this.caiForm.reset({ cai: cai.cai, sn_activo: cai.sn_activo });
-    this.loadCorrelativos(cai.empresaId);
-  }
-
-  guardarCai() {
-    if (this.caiForm.invalid || !this.empresaSeleccionada()) return;
-
-    const codigo = this.caiForm.value.cai || '';
-    if (codigo.length < 35) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'El CAI debe tener al menos 35 caracteres' });
-      return;
-    }
-
-    this.savingCai.set(true);
-    const dto: Partial<Cai> = {
-      cai: codigo.toUpperCase(),
-      sn_activo: this.caiForm.value.sn_activo || 'N',
-      empresaId: this.empresaSeleccionada()!.empresaId,
-    };
-    const editando = this.caiEditando();
-
-    const obs = editando
-      ? this.empresasService.updateCai(editando.caiId, dto)
-      : this.empresasService.createCai(dto);
-
-    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'CAI guardado correctamente' });
-        this.savingCai.set(false);
-        this.caiForm.reset({ cai: '', sn_activo: 'N' });
-        this.caiEditando.set(null);
-        this.loadCaiRecords(this.empresaSeleccionada()!.empresaId);
-      },
-      error: (err: any) => {
-        this.savingCai.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
-      },
-    });
-  }
-
-  editarCai(cai: Cai) {
-    this.caiEditando.set(cai);
-    this.caiForm.reset({ cai: cai.cai, sn_activo: cai.sn_activo });
-  }
-
-  eliminarCai(cai: Cai) {
-    this.confirm.confirm({
-      message: '¿Eliminar este CAI y todos sus correlativos?',
-      header: 'Confirmar',
-      icon: 'pi pi-exclamation-triangle',
-      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
-      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
-      accept: () => {
-        // Cascada: primero los correlativos del CAI, luego el CAI
-        this.empresasService.getAllCorr(cai.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: (corrs) => {
-            const dels = (corrs ?? [])
-              .filter(c => c.caiId === cai.caiId)
-              .map(c => this.empresasService.removeCorr(c.caiAutorizadoId, c.empresaId));
-            (dels.length > 0 ? forkJoin(dels) : of([])).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-              next: () => this.procesarEliminacionCai(cai),
-              error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudieron eliminar los correlativos' }),
-            });
-          },
-          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudieron leer los correlativos' }),
-        });
-      },
-    });
-  }
-
-  private procesarEliminacionCai(cai: Cai) {
-    this.empresasService.removeCai(cai.caiId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'CAI eliminado' });
-        this.caiSeleccionado.set(null);
-        this.correlativos.set([]);
-        this.loadCaiRecords(this.empresaSeleccionada()!.empresaId);
-      },
-      error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
-    });
-  }
-
-  cancelarCai() {
-    this.caiEditando.set(null);
-    this.caiForm.reset({ cai: '', sn_activo: 'N' });
-  }
-
-  // ==================================================
-  //  CAI - DETALLE (Correlativos)
-  // ==================================================
-
-  loadCorrelativos(empresaId: number) {
-    this.loadingCorr.set(true);
-    const caiId = this.caiSeleccionado()?.caiId;
-    this.empresasService.getAllCorr(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => {
-        // Solo los rangos del CAI seleccionado
-        this.correlativos.set((data ?? []).filter(c => caiId == null || c.caiId === caiId));
-        this.loadingCorr.set(false);
-      },
-      error: () => {
-        this.correlativos.set([]);
-        this.loadingCorr.set(false);
-      },
-    });
-  }
-
-  guardarCorrelativo() {
-    if (this.corrForm.invalid || !this.empresaSeleccionada()) return;
-    this.savingCorr.set(true);
-
-    const formVal = this.corrForm.value;
-    const fechaLimite = formVal.fechaLimite instanceof Date
-      ? formVal.fechaLimite.toISOString()
-      : formVal.fechaLimite;
-
-    const dto: Partial<Correlativo> = {
-      caiId: this.caiSeleccionado()?.caiId,
-      Idsucursal: formVal.Idsucursal!,
-      rangoDesde: formVal.rangoDesde!,
-      rangoHasta: formVal.rangoHasta!,
-      nrofactura: formVal.nrofactura!,
-      fechaLimite: fechaLimite!,
-      empresaId: this.empresaSeleccionada()!.empresaId,
-    };
-
-    const editando = this.corrEditando();
-
-    const obs = editando
-      ? this.empresasService.updateCorr(editando.caiAutorizadoId, dto)
-      : this.empresasService.createCorr(dto);
-
-    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Correlativo guardado correctamente' });
-        this.savingCorr.set(false);
-        this.resetCorrForm();
-        this.corrEditando.set(null);
-        this.loadCorrelativos(this.empresaSeleccionada()!.empresaId);
-      },
-      error: (err: any) => {
-        this.savingCorr.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
-      },
-    });
-  }
-
-  editarCorr(corr: Correlativo) {
-    this.corrEditando.set(corr);
-    const fechaCorr = corr.fechaLimite ? new Date(corr.fechaLimite) : null;
-    this.corrForm.patchValue({
-      Idsucursal: corr.Idsucursal,
-      rangoDesde: corr.rangoDesde,
-      rangoHasta: corr.rangoHasta,
-      nrofactura: corr.nrofactura,
-      fechaLimite: fechaCorr,
-    });
-  }
-
-  eliminarCorr(corr: Correlativo) {
-    this.confirm.confirm({
-      message: '¿Eliminar este correlativo?',
-      header: 'Confirmar',
-      icon: 'pi pi-exclamation-triangle',
-      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
-      acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
-      accept: () => {
-        this.empresasService.removeCorr(corr.caiAutorizadoId, corr.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: () => {
-            this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'Correlativo eliminado' });
-            this.loadCorrelativos(this.empresaSeleccionada()!.empresaId);
-          },
-          error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
-        });
-      },
-    });
-  }
-
-  cancelarCorr() {
-    this.corrEditando.set(null);
-    this.resetCorrForm();
-  }
-
-  resetCorrForm() {
-    this.corrForm.reset({
-      Idsucursal: null,
-      rangoDesde: '',
-      rangoHasta: '',
-      nrofactura: 0,
-      fechaLimite: null,
-    });
-  }
-
-  cargarNroFacturaSiguiente() {
-    const idsucursal = this.corrForm.value.Idsucursal;
-    if (!idsucursal || !this.empresaSeleccionada()) return;
-
-    this.empresasService.getNextNroFactura(this.empresaSeleccionada()!.empresaId, idsucursal)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => this.corrForm.patchValue({ nrofactura: res.nrofactura }),
-        error: () => {},
-      });
-  }
-
-  onSucursalChange() {
-    if (!this.corrEditando()) {
-      this.cargarNroFacturaSiguiente();
-    }
-  }
-
-  // ==================================================
   //  LOGO
   // ==================================================
 
@@ -845,57 +565,6 @@ export class EmpresasManager implements OnInit {
   }
 
   // ==================================================
-  //  ESTADO CORRELATIVOS (alertas)
-  // ==================================================
-
-  loadEstadoCorrelativos(empresaId: number) {
-    this.empresasService.getEstadoCorrelativo(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => this.estadoCorrelativos.set(data ?? []),
-      error: () => this.estadoCorrelativos.set([]),
-    });
-  }
-
-  getEstadoCorr(idsucursal: number): EstadoCorrelativo | undefined {
-    return this.estadoCorrelativos().find(e => e.Idsucursal === idsucursal);
-  }
-
-  getRangoDisponible(idsucursal: number): string {
-    const e = this.getEstadoCorr(idsucursal);
-    if (!e) return '-';
-    return `${e.disponible} de ${e.total}`;
-  }
-
-  getRangoPorcentaje(idsucursal: number): number {
-    const e = this.getEstadoCorr(idsucursal);
-    return e?.porcentaje ?? 0;
-  }
-
-  getRangoEstado(idsucursal: number): string {
-    const e = this.getEstadoCorr(idsucursal);
-    return e?.estado ?? 'OK';
-  }
-
-  getRangoEstadoSeverity(idsucursal: number): string {
-    const estado = this.getRangoEstado(idsucursal);
-    switch (estado) {
-      case 'AGOTADO': return 'danger';
-      case 'CRITICO': return 'danger';
-      case 'ALERTA': return 'warn';
-      default: return 'success';
-    }
-  }
-
-  getRangoLabel(idsucursal: number): string {
-    const estado = this.getRangoEstado(idsucursal);
-    switch (estado) {
-      case 'AGOTADO': return 'Rango agotado';
-      case 'CRITICO': return 'Crítico (<10%)';
-      case 'ALERTA': return 'Alerta (<20%)';
-      default: return 'OK';
-    }
-  }
-
-  // ==================================================
   //  HELPERS
   // ==================================================
 
@@ -920,22 +589,8 @@ export class EmpresasManager implements OnInit {
     return this.empresaDet().find(d => d.tipo === 'TELEFONO')?.descripcion || '-';
   }
 
-  getCaiDescripcion(cai: Cai): string {
-    return cai.cai.length > 50
-      ? cai.cai.substring(0, 50) + '...'
-      : cai.cai;
-  }
-
   getSucursalNombre(idsucursal: number): string {
     return this.sucursales().find(s => s.idsucursal === idsucursal)?.descripcion || `Suc. ${idsucursal}`;
-  }
-
-  validarCai(control: AbstractControl): ValidationErrors | null {
-    const val = control.value;
-    if (!val) return null;
-    if (val.length < 40) return { minLength: true };
-    if (!/^[A-Z0-9\-]+$/.test(val.toUpperCase())) return { pattern: true };
-    return null;
   }
 
   // Validación de RTN hondureño (14 dígitos)

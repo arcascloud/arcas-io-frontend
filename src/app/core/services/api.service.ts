@@ -145,11 +145,12 @@ export class ApiService {
    * @param path - Ruta relativa del endpoint
    * @param body - Datos actualizados del registro
    * @param opts - Opciones de escritura
+   * @param params - Query params adicionales (ej: empresaId explícito; sobrescribe el auto-inyectado)
    * @returns Observable con la respuesta tipada
    */
-  putBase<T>(path: string, body: unknown, opts?: ApiWriteOpts): Observable<T> {
+  putBase<T>(path: string, body: unknown, opts?: ApiWriteOpts, params?: Record<string, string | number>): Observable<T> {
     return this.http.put<T>(`${environment.apiUrl}${path}`, this.withContexto(path, body, opts), {
-      params: this.withEmpresa(),
+      params: this.withEmpresa(params),
     });
   }
 

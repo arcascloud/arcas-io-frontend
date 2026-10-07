@@ -1,0 +1,509 @@
+// ==================================================
+//  CAI Manager — layout split estilo clientes-manager
+//  Izquierda: detalle / formulario  ·  Derecha: lista
+// ==================================================
+
+.cai-manager {
+  height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+}
+
+// ===== Page header =====
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .subtitulo {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+  }
+}
+
+// ===== Split layout =====
+
+.split-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg);
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+.right-column {
+  width: 380px;
+  min-width: 350px;
+  max-width: 450px;
+  border-left: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+}
+
+// ===== Search bar (lista) =====
+
+.search-bar {
+  padding: 1rem;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .pi-search {
+      position: absolute;
+      left: 0.75rem;
+      color: var(--c-text-muted);
+      z-index: 1;
+      font-size: 0.85rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.5rem 2rem 0.5rem 2.25rem;
+      border: 1px solid var(--for-border-color-alls);
+      border-radius: 6px;
+      background: var(--c-bg);
+      color: var(--c-text);
+      font-size: 0.85rem;
+    }
+  }
+
+  .search-clear {
+    position: absolute;
+    right: 0.35rem;
+    border: none;
+    background: transparent;
+    color: var(--c-text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0.15rem 0.35rem;
+
+    &:hover {
+      color: var(--c-error);
+    }
+  }
+}
+
+// ===== Lista de CAIs (fichas) =====
+
+.cai-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cai-item-ficha {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    border-color: var(--c-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &.selected {
+    border-color: var(--for-border-color-alls);
+    background: var(--master-background);
+  }
+}
+
+.item-ficha-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.375rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.item-ficha-actions {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.ficha-codigo {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  color: var(--c-text);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.ficha-skeleton {
+  padding: 0 0.5rem;
+}
+
+.lista-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--c-text-muted);
+  padding: 2rem;
+  text-align: center;
+
+  .pi-inbox {
+    font-size: 2rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+}
+
+// ===== Empty state (columna izquierda) =====
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--c-text-muted);
+  padding: 2rem;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--c-primary);
+    opacity: 0.5;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--c-text-secondary, #6c757d);
+  }
+}
+
+// ===== Detalle del CAI (columna izquierda) =====
+
+.cai-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.detail-codigo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  align-items: flex-start;
+  min-width: 0;
+
+  .codigo-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+  }
+
+  .cai-mono {
+    margin: 0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--c-text);
+    word-break: break-all;
+  }
+}
+
+.detail-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+// ===== Tab header (formularios) =====
+
+.tab-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+
+  h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+}
+
+.tab-subtitulo {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+}
+
+// ===== Formularios 2 columnas =====
+
+.prestamo-form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-col-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.form-col .p-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-col label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+
+  .req {
+    color: var(--c-error);
+  }
+
+  small.text-muted {
+    font-weight: 400;
+  }
+}
+
+.form-col input.p-inputtext,
+.form-col .p-select,
+.form-col .p-inputnumber,
+.form-col .p-datepicker {
+  width: 100%;
+}
+
+.form-col .err {
+  font-size: 0.75rem;
+  color: var(--c-error);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+}
+
+// ===== Formulario correlativo: sucursal full-width + sección rango 2 cols =====
+
+.corr-sucursal {
+  margin-bottom: 1rem;
+
+  .p-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--c-text-muted);
+
+    .req {
+      color: var(--c-error);
+    }
+  }
+}
+
+.corr-rango {
+  .form-col-title {
+    margin-bottom: 0.75rem;
+  }
+}
+
+.corr-rango-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+// ===== Código CAI mono =====
+
+.cai-input-mono {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+// ===== Tabla de correlativos =====
+
+.tabla-card {
+  padding: 0.05rem;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.col-estado {
+  width: 110px;
+  text-align: center;
+}
+
+.col-acciones {
+  width: 110px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+// ===== Rango / barra de progreso correlativos =====
+
+.rango-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 180px;
+}
+
+.rango-text {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.75rem;
+  color: var(--c-text);
+}
+
+.rango-progress-container {
+  width: 100%;
+  height: 6px;
+  background: var(--c-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rango-progress-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+
+  &.progress-ok {
+    background: var(--c-success, #10b981);
+  }
+
+  &.progress-alerta {
+    background: var(--c-warning, #f59e0b);
+  }
+
+  &.progress-critico {
+    background: var(--c-error, #ef4444);
+  }
+}
+
+.disponibles-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text);
+}
+
+.porcentaje-text {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  margin-left: 0.25rem;
+}
+
+// Filas con estado de alerta
+.row-agotado {
+  background: color-mix(in srgb, var(--c-error, #ef4444) 8%, transparent) !important;
+}
+
+.row-critico {
+  background: color-mix(in srgb, var(--c-error, #ef4444) 5%, transparent) !important;
+}
+
+.row-alerta {
+  background: color-mix(in srgb, var(--c-warning, #f59e0b) 5%, transparent) !important;
+}
+
+// ===== Responsive =====
+
+@media (max-width: 1024px) {
+  .right-column {
+    width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .split-layout {
+    flex-direction: column;
+  }
+
+  .left-column {
+    order: 2;
+  }
+
+  .right-column {
+    order: 1;
+    width: 100%;
+    max-width: none;
+    border-left: none;
+    border-bottom: 1px solid var(--c-border);
+    max-height: 40vh;
+  }
+
+  .prestamo-form-columns,
+  .corr-rango-cols {
+    grid-template-columns: 1fr;
+  }
+}

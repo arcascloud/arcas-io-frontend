@@ -10,7 +10,9 @@ import {
   ViewChild,
   ElementRef,
   ChangeDetectionStrategy,
+  DestroyRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -19,10 +21,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { CxpService } from '../../../core/services/cxp.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NavegacionService } from '../../../core/services/navegacion.service';
+import { ParametroUnificadoService } from '../../../core/services/parametro-unificado.service';
 
 /**
  * Formulario de proveedor (solo datos del maestro).
@@ -46,6 +50,7 @@ import { NavegacionService } from '../../../core/services/navegacion.service';
     InputNumberModule,
     SelectModule,
     SelectButtonModule,
+    DialogModule,
   ],
   templateUrl: './proveedor-form.html',
   styleUrl: './proveedor-form.scss',
@@ -59,6 +64,8 @@ export class CxpProveedorForm implements OnInit {
   private nav = inject(NavegacionService);
   private msgs = inject(MessageService);
   private injector = inject(Injector);
+  private paramsUnif = inject(ParametroUnificadoService);
+  private destroyRef = inject(DestroyRef);
 
   // ===== MODO INLINE (manager) =====
   /** null = nuevo, >0 = editar, undefined = modo ruta (no se usa el input) */
@@ -76,6 +83,9 @@ export class CxpProveedorForm implements OnInit {
   cargando = signal(false);
   guardando = signal(false);
   titulo = signal('Nuevo proveedor');
+  // Bloqueo por DNI duplicado (DNI = llave maestra por empresa)
+  dialogoDni = signal(false);
+  bloqueoDni = signal<{ dni: string; nombre: string | null; numero: string | null; detalle?: string } | null>(null);
   /** true cuando cuelga del manager (la cabecera "Volver" solo aplica en modo ruta) */
   modoInline = signal(false);
 
@@ -153,6 +163,8 @@ export class CxpProveedorForm implements OnInit {
         this.titulo.set('Editar proveedor');
         this.proveedorId = Number(id);
         this.cargarProveedor(this.proveedorId);
+      } else {
+        this.cargarDefaultsCreditos();
       }
     }
   }
@@ -185,8 +197,25 @@ export class CxpProveedorForm implements OnInit {
         categoria: 'A',
         sn_activo: 'S',
       });
+      this.cargarDefaultsCreditos();
       this.cargando.set(false);
     }
+  }
+
+  /**
+   * Precarga los defaults de credito del proveedor desde ttipoparametros
+   * (CxP, moduloId=5: cxp_limitecredito, cxp_diasPlazo, cxp_interes, cxp_mora).
+   * Solo en alta - en edicion manda lo guardado.
+   */
+  private cargarDefaultsCreditos(): void {
+    this.paramsUnif.getAsObject(5).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((obj) => {
+      this.form.patchValue({
+        limiteCredito: Number(obj['cxp_limitecredito'] ?? 0),
+        diasplazo: Number(obj['cxp_diasPlazo'] ?? 0),
+        interes: Number(obj['cxp_interes'] ?? 0),
+        moratorio: Number(obj['cxp_mora'] ?? 0),
+      });
+    });
   }
 
   private cargarProveedor(id: number) {
@@ -250,6 +279,26 @@ export class CxpProveedorForm implements OnInit {
         };
 
     this.guardando.set(true);
+    const dniEfectivo = ((raw.dni as string) || '').trim() || '0000000000000';
+
+    // DNI = llave maestra: verificar duplicado por empresa ANTES de registrar (dialogo bloqueante)
+    this.service.dniExiste(dniEfectivo, this.esEdicion() ? this.proveedorId : undefined).subscribe({
+      next: (r) => {
+        if (r.existe) {
+          this.guardando.set(false);
+          this.bloqueoDni.set({ dni: dniEfectivo, nombre: r.nombre, numero: r.numero });
+          this.dialogoDni.set(true);
+          return;
+        }
+        this.registrar(payload);
+      },
+      // sin verificacion disponible: aplica el bloqueo 409 del backend
+      error: () => this.registrar(payload),
+    });
+  }
+
+  private registrar(payload: any): void {
+    const dniEfectivo = (((this.form.getRawValue().dni as string) || '').trim()) || '0000000000000';
     const op = this.esEdicion()
       ? this.service.updateProveedor(this.proveedorId, payload)
       : this.service.createProveedor(payload);
@@ -268,9 +317,14 @@ export class CxpProveedorForm implements OnInit {
           this.nav.volver(['/cxp/proveedores']);
         }
       },
-      error: () => {
+      error: (err: any) => {
         this.guardando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el proveedor' });
+        if (err?.status === 409) {
+          this.bloqueoDni.set({ dni: dniEfectivo, nombre: null, numero: null, detalle: err?.error?.message });
+          this.dialogoDni.set(true);
+        } else {
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el proveedor' });
+        }
       },
     });
   }

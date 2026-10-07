@@ -35,10 +35,13 @@ export interface Fecma {
 
 /** Payload de alta (maestro + detalle) — se guarda en una transacción. */
 export interface FecmaPayload {
+  /** Fecha contable del rango (`YYYY-MM-DD`). Opcional: si se omite el backend usa la Fecha del Sistema. */
+  fechasistema?: Date | string;
   fec_vig_desde: Date | string;
   fec_vig_hasta: Date | string;
   empresaId?: number;
-  detalles: { usuario: string; sn_permitido?: 'S' | 'N' }[];
+  /** Solo en ALTA: el detalle se administra por separado (fechas-det) en la edición. */
+  detalles?: { usuario: string; sn_permitido?: 'S' | 'N' }[];
 }
 
 /** Payload de baja de una línea de detalle suelta. */

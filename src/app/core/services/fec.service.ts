@@ -8,7 +8,7 @@ import { Fecma, Fecdet, FecmaPayload, FecdetPayload, AutorizacionFec, EstadoFech
  *
  * `empresaId` e `Idsucursal` los inyecta `ApiService` automáticamente.
  * Los endpoints de escritura están restringidos en backend a los roles
- * admin y supervisor (ROLES_FECHAS).
+ * admin, supervisor y contador (ROLES_FECHAS).
  */
 @Injectable({ providedIn: 'root' })
 export class FecService {
@@ -19,9 +19,12 @@ export class FecService {
 
   // ── Maestro (tfecma) ────────────────────────────────────────────────
 
-  /** Lista los maestros con su detalle. */
-  getAll(): Observable<Fecma[]> {
-    return this.api.get<Fecma[]>(this.path);
+  /**
+   * Lista los maestros con su detalle.
+   * @param empresaId Empresa a consultar. Si se omite, la del usuario autenticado.
+   */
+  getAll(empresaId?: number): Observable<Fecma[]> {
+    return this.api.get<Fecma[]>(this.path, empresaId != null ? { empresaId } : undefined);
   }
 
   /** Obtiene un maestro con su detalle. */
@@ -104,18 +107,29 @@ export class FecService {
    *
    * GET: siempre accesible (aunque el sistema esté desalineado), para que la
    * pantalla pueda mostrar la discrepancia y ofrecer la corrección.
+   *
+   * @param empresaId Empresa a consultar. Si se omite, el backend usa la del
+   *                  usuario autenticado.
    */
-  getEstadoFechaSistema(): Observable<EstadoFechaSistema> {
-    return this.api.get<EstadoFechaSistema>(`${this.path}-sistema`);
+  getEstadoFechaSistema(empresaId?: number): Observable<EstadoFechaSistema> {
+    return this.api.get<EstadoFechaSistema>(`${this.path}-sistema`, empresaId != null ? { empresaId } : undefined);
   }
 
   /**
    * Corrige la Fecha del Sistema del ERP (`YYYY-MM-DD`).
    *
    * Única escritura exenta del bloqueo por fecha desalineada; requiere los
-   * roles admin / supervisor / contador.
+   * roles admin / supervisor / contador **en la empresa indicada** (el
+   * backend valida el rol contra `tusuarios_rol` de esa empresa → 403).
+   *
+   * @param empresaId Empresa a corregir. Si se omite, la del usuario.
    */
-  actualizarFechaSistema(fecha: string): Observable<EstadoFechaSistema> {
-    return this.api.putBase<EstadoFechaSistema>(`${this.path}-sistema`, { fechasistema: fecha });
+  actualizarFechaSistema(fecha: string, empresaId?: number): Observable<EstadoFechaSistema> {
+    return this.api.putBase<EstadoFechaSistema>(
+      `${this.path}-sistema`,
+      { fechasistema: fecha },
+      undefined,
+      empresaId != null ? { empresaId } : undefined,
+    );
   }
 }

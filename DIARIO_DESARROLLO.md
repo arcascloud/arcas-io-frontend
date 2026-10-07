@@ -319,3 +319,235 @@ Decisión suya: **NO logo, NO "Dir: …", NO "Tel: …"**. El encabezado queda e
 **✅ Aprobado (05/10/2026)**: usted revisó los reportes exportados en **PDF, Word y Excel** (encabezado mixto Audiowide+Mukta, layout 2 filas, filetes discontinuos, ceros en blanco) → *"estamos bien con estos reportes"*. Incluye la fila "Impreso por" de Excel.
 
 **Pendiente**: `reportes-contables` (Balance de Comprobación / Libro Diario / Libro Mayor en una pantalla) no tiene exportación → evaluar sumarla cuando usted lo indique; borrar `public/assets/fonts/grotesk/`; decisión de `.saldo` en Mukta vs Figtree.
+
+---
+
+## Bitácora – 06/10/2026
+
+### Cierre de las 41/41 tablas de `fecharegistro` (Módulo 8: trasaviblidad)
+
+- **Módulo 8 `trasaviblidad`** (`Backend/src/modules/contabilidad/trasaviblidad.service.ts`) — la última tabla de la lista:
+  - Import + inyección de `FechaSistemaService` (era el único service de los 8 módulos sin acceso a la fecha del sistema).
+  - **`create()`**: + `fecharegistro: obtenerFechaRegistro(usuario, dto.empresaId)` (antes caía al `CURRENT_TIMESTAMP` de MySQL).
+  - **`asignarPartida()`**: + lo mismo en el alta de fila nueva. Idempotencia intacta: si la fila existe la devuelve sin tocar el campo.
+  - DTO sin `fecharegistro` → nada que quitar.
+- **Verificación global final**: **41 llamadas** exactas a `obtenerFechaRegistro()` en el backend · **7 services con check `TABLAS_FECHAREGISTRO.has()`** (cxc, bancos, contabilidad, cxp, facturacion, inventario, planilla) · estampado directo en puntos fuera de helpers (4 flujos inventario, kardex, contabilidad-logica, generadores CxC, cheques/conciliación/movCxP, clientes TIENDA, trasaviblidad) · grep residual: los únicos services que insertan con `usuarioCreated` sin fecha son `companies`, `modulos`, `fec`, `parametros`, `sucursales`, `users` → tablas fuera de la lista de 41 ✓ · **cero** `fecharegistro: new Date()/now/fecha` · `nest build` → **exit=0**.
+- **Estado**: 41/41 aplicadas. Verificadas por usted: núcleo, CxC, Bancos. Aplicadas pendientes de verificación: Contabilidad, CxP, Inventario, Planilla, POS/Facturación, trasaviblidad.
+
+### Auditoría `posfacmae`: `rtn_cliente` y `direccion` → `direccion_entrega`
+
+Petición suya: *"agregar rtn_cliente y revisar si ya cambiamos direccion por direccion_entrega"*. Estado por capas:
+
+| Capa | `direccion_entrega` | `rtn_cliente` | Notas |
+|------|:-------------------:|:-------------:|-------|
+| Entity `posfacmae.entity.ts` | ✅ L36 | ✅ L40 | No existe ningún `direccion` en el entity |
+| BD (`information_schema`) | ✅ varchar(2000) | ✅ varchar(20) | 38 columnas; **`direccion` ya NO existe**; 2 filas de datos |
+| DTO `CreatePosFacMaeDto` / `UpdatePosFacMaeDto` | ❌ tiene `direccion` (L27/L141) | ❌ ausente | **Con `whitelist:true` los campos nuevos se descartan silenciosamente** |
+| Service `facturacion.service.ts` | ❌ ticket usa `mae.direccion` (L1382) y `f.direccion` (L1457) → imprime "N/A" | ❌ nadie lo escribe | L870/L936 (`dto.direccion`) son del **carrito/checkout** (`poscotmae`, tabla distinta que sí conserva `direccion`) |
+| Frontend | ⚠️ `consulta-factura-detalle.html` lee `factura()?.direccion`; `nueva-factura.ts` y `facturacion.models.ts` envían clave `direccion` | ⚠️ solo **lee** `rtn_cliente` en `factura-impresion.service.ts:263`; nadie lo envía | `tienda-virtual`/`cotizaciones` usan `direccion` de `poscotmae` (correcto, no tocar) |
+
+**Conclusión**: entity y BD ya están listos; el cambio **no está conectado** en DTO → service (ticket) → frontend (lectura de factura). **Pendiente de su confirmación para aplicar el fix** (DTO con los 2 campos nuevos, ticket con `direccion_entrega`, frontend: payload/lectura de facturas renombrado — sin tocar carrito/cotizaciones).
+
+### Facturación (06/10/2026, tarde) — RTN cliente + bodega por sucursal + fixes 400
+
+**1. RTN del cliente en factura nueva** (pedido suyo):
+- **HTML**: campo `RTN del cliente` (input, maxlength 20) justo **antes del p-select de Descuento**.
+- **TS**: control `rtn_cliente` en el form; **contado** → siempre limpio (`onTipoFacturaChange` + reset de `nueva()`); **crédito** → automático desde `cxcclientes.rtn` al elegir cliente (`onClienteChange`); payload `mae.rtn_cliente`.
+- **Backend**: `rtn_cliente?: string` agregado a `CreatePosFacMaeDto` y `UpdatePosFacMaeDto` (sin esto el `whitelist:true` lo descartaba). Ticket/impresión ya leían `f.rtn_cliente` → ahora sí lo recibe.
+
+**2. Tipo Constancia SAR**: revisado — candado por diseño (solo con "Exenta de ISV"=Sí) y opciones hardcodeadas `OCE/SAG/CEA/FNE`; resultó ser problema suyo → **sin cambios**.
+
+**3. Error 400 `bodegaId/cajaId should not be empty` → regla de negocio nueva: bodega desde `tsucursal`**:
+- **Causa raíz**: el form cargaba bodega/caja de `param-fac` (módulo 3), pero en BD `bodegaId=1` vive en **módulo 1** y `cajaId=1` en **módulo 4** (módulo 3 solo tiene `lineasFactura`/`sn_impuestoincluido`) → `null` → `@IsNotEmpty()` rechazaba **en el ValidationPipe, antes de que corriera cualquier fallback del service**.
+- **Regla suya**: la bodega por defecto de facturación/inventarios/kardex se saca de **`tsucursal.bodegaId`**, vinculando **`tusuario` (`usuario` + `empresaId`) → `Idsucursal` → `tsucursal` (`Idsucursal` + `empresaId`)**.
+- **Entity `Tsucursal`**: la columna `bodegaId` existía en BD (int NOT NULL) pero **no estaba en la entity** → agregada (+ `bodegaId` opcional en DTOs Create/Update).
+- **`facturacion.service.ts`**: nuevo helper **`getBodegaPorUsuario(usuario, empresaId)`**; aplicado en 3 puntos con prioridad `dto.bodegaId` → sucursal → parámetro con fallback: **`createFactura`**, **`checkoutTienda`** y **`checkoutPedido`** (estos dos antes usaban param módulo 3 → siempre fallback 1).
+- **DTO**: `bodegaId` y `cajaId` cambiados de `@IsNotEmpty()` a **`@IsOptional()`** — el ValidationPipe rechazaba antes de que el service resolviera (1er intento de fix insuficiente: el fallback nunca corría).
+- **Frontend**: detalle usa **`fac.bodegaId`** (respuesta del mae) en vez de `raw.bodegaId`; quitado el get de bodega desde módulo 1; caja sigue viniendo del módulo 4.
+- **Verificación end-to-end real** (datos de pruebas, con su payload `bodegaId: null`): **factura #120011 creada con `bodegaId: 1` resuelto** de tsucursal, `cajaId: 1`, `rtn_cliente` guardado. Prueba de validación mínima: los únicos campos rechazados son `clienteId`/`nrocliente` (ya no `bodegaId`/`cajaId`).
+- Builds: `nest build` y `ng build production` → **exit=0**.
+
+**Aprobado (06/10/2026)**: *"estamos bien"*. Nota: en pruebas, no datos de producción (factura 120011 queda como prueba, anulable desde UI).
+
+
+---
+
+
+---
+
+## Bitácora – 07/10/2026
+
+### Completado
+
+#### Correlativo automático de requisición (`invreqmae.nrorequisicion`)
+
+- **Regla (suya)**: `nrorequisicion` es autoincremental por parámetro en **`ttipoparametros`** (`field='nrorequisicion'`), incrementando **`valor = valor + 1`**, localizado por **`Idsucursal` + `empresaId` del usuario logueado**.
+- **Parámetro en BD**: `ttipoparametrosId=109`, `valor='0'` (luego `2`), `grupo='CORRELATIVO'`, `moduloId=11`, `Idsucursal=1`, `empresaId=2`, `sn_activo='S'` (ya existía, sin INSERT).
+- **Backend** (`requisicion-inventario.service.ts`):
+  - Nuevo helper privado **`siguienteNroRequisicion(usuario, empresaId)`**: resuelve `Idsucursal` desde **`tusuarios`** (`usuario` + `empresaId`) y ejecuta un **UPDATE atómico** `valor = LAST_INSERT_ID(CAST(valor AS UNSIGNED) + 1)` en **queryRunner dedicado** (UPDATE y `SELECT LAST_INSERT_ID()` en la misma conexión → sin race condition entre incrementos).
+  - Si no existe el parámetro para esa empresa/sucursal → **400** con mensaje claro (nunca lo crea: `ttipoparametros` requiere autorización para INSERT).
+  - **`createMae`**: `nrorequisicion` se asigna SIEMPRE desde el backend (ignora `dto.nrorequisicion`).
+- **Módulo** (`inventario.module.ts`): `TipoParametro` y `Tusuarios` agregados a `TypeOrmModule.forFeature` (no estaban).
+- **E2E verificado**: POST#1 → `nrorequisicion=1`, POST#2 → `nrorequisicion=2`, parámetro `0 → 1 → 2` (payload mandaba `nrorequisicion: 999` → ignorado). `nest build` → exit=0.
+- **Nota**: quedaron 2 requisiciones de prueba (concepto 'Prueba correlativo 1/2', `invreqmaeid` 2 y 3) y el parámetro en `valor=2` (próxima requisición real = 3).
+- **Fecha del sistema**: actualizada por usted a 07/10/2026 → el guard `FECHA_SISTEMA` (409) ya no bloquea operaciones.
+
+#### Correlativo automático de traslado (`invtrasmae.nroreferencia`)
+
+- **Regla (suya)**: `nroreferencia` es autoincremental por parámetro en **`ttipoparametros`** (`field='nrotraslado'`), incrementando **`valor = valor + 1`**, localizado por **`Idsucursal` + `empresaId` del usuario logueado**.
+- **Parámetro en BD**: `ttipoparametrosId=110`, `valor='0'` (luego `4`), `grupo='CORRELATIVO'`, `moduloId=11`, `Idsucursal=1`, `empresaId=2`, `sn_activo='S'` (ya existía, sin INSERT).
+- **Backend** (`traslado-inventario.service.ts`):
+  - Nuevo helper **`siguienteNroReferencia(usuario, empresaId): Promise<string>`**: misma mecánica que requisiciones — resuelve `Idsucursal` desde `tusuarios` y UPDATE atómico `valor = LAST_INSERT_ID(CAST(valor AS UNSIGNED) + 1)` en queryRunner dedicado; devuelve **string** (`nroreferencia` es `varchar(20) NOT NULL`).
+  - **`createMae`**: `nroreferencia` se asigna SIEMPRE desde el backend (ignora `dto.nroreferencia`).
+  - **Eliminado** `generarNroReferencia()` (fallback hardcodeado `yyyymmddsssss` con `new Date()` — uno de los 4 `new Date()` documentados en AGENTS.md) + `tipoParametroRepo`, `usuariosRepo` y `dataSource` inyectados en el constructor.
+- **Sin cambios de módulo**: `TipoParametro` y `Tusuarios` ya estaban en `inventario.module.ts` (agregados para requisiciones, mismo módulo).
+- **Gotcha del test**: `POST /inventario/traslados` es OTRO endpoint legado (`inventario.controller.ts` → `registrarTraslado`, inserta kardex directo y falló 500 con `NaN`); el endpoint real — el que usa el frontend (`traslados.ts`, `pathMae`) — es **`POST /inventario/traslados-mae`**.
+- **E2E verificado en ambas instancias**: auxiliar :3100 con parámetro en 0 → `nroreferencia` '1' y '2' (payload mandaba `'NO-USAR'` → ignorado), parámetro 0→2; backend principal :3000 → '3' y '4', parámetro 2→4. `nest build` → exit=0.
+- **Nota**: quedaron 4 traslados de prueba (`invtrasladomaeId` 2–5) y el parámetro en `valor=4` (próximo traslado real = 5).
+
+#### Correlativo automático de ajuste (`invmovmae.nroajuste`)
+
+- **Regla (suya)**: `nroajuste` es autoincremental por parámetro en **`ttipoparametros`** (`field='nroajuste'`), incrementando **`valor = valor + 1`**, localizado por **`Idsucursal` + `empresaId` del usuario logueado**.
+- **Parámetro en BD**: `ttipoparametrosId=6`, `valor='1'` (luego `3`), `grupo='CORRELATIVO'`, `moduloId=1`, `Idsucursal=1`, `empresaId=2`, `sn_activo='S'` (ya existía, sin INSERT).
+- **Backend** (`ajuste-inventario.service.ts`):
+  - Nuevo helper **`siguienteNroAjuste(usuario, empresaId): Promise<number>`** — misma mecánica que requisiciones/traslados: `Idsucursal` desde `tusuarios` + UPDATE atómico `valor = LAST_INSERT_ID(CAST(valor AS UNSIGNED) + 1)` en queryRunner dedicado.
+  - **`createMae`**: `nroajuste` se asigna SIEMPRE desde el backend (ignora `dto.nroajuste`).
+  - `tipoParametroRepo`, `usuariosRepo` y `dataSource` inyectados en el constructor (módulo ya los tenía registrados).
+- **Endpoint**: `POST /inventario/ajustes-inventario` → `createMae` (mismo patrón de controller que los otros dos).
+- **E2E verificado**: parámetro inicia en `1` → POST#1 `nroajuste=2`, POST#2 `nroajuste=3` (payload mandaba `999` → ignorado), parámetro `1→3`. `nest build` → exit=0.
+- **Nota**: quedaron 2 ajustes de prueba (`invmovmaeid` 1–2) y el parámetro en `valor=3` (próximo ajuste real = 4). Modo desarrollo: datos de prueba no se limpian.
+- **Patrón consolidado (3/3)**: `nrorequisicion` (requisiciones), `nrotraslado` (traslados-mae), `nroajuste` (ajustes-inventario) — todos idénticos: ttipoparametros `field` + `valor+1` por `Idsucursal`/`empresaId` del logueado, atómico con `LAST_INSERT_ID`, sin INSERT de parámetros (los 3 ya existían).
+
+#### Correlativo automático de partida (`copdamae.nropartida`)
+
+- **Regla (suya)**: `nropartida` es autoincremental por parámetro en **`ttipoparametros`** (`field='nropartida'`), incrementando **`valor = valor + 1`**, localizado por **`Idsucursal` + `empresaId` del usuario logueado**.
+- **Parámetro en BD**: `ttipoparametrosId=77`, `valor='28'` (luego `29`), `grupo='CORRELATIVO'`, `moduloId=7`, `Idsucursal=1`, `empresaId=2`, `sn_activo='S'` (ya existía, sin INSERT). `max(nropartida)` real en BD = 14 → sin colisión.
+- **Backend — 3 caminos de creación unificados bajo el parámetro** (antes: manual mandaba nropartida del cliente + automáticos usaban `MAX+1` por (año,período) → podía haber colisiones):
+  1. **`contabilidad.service.ts` → `createCopdamae`** (endpoint manual `POST /contabilidad/copdamae`): nuevo helper **`siguienteNropartida(usuario, empresaId)`**; ignora `dto.nropartida` (`{...dto, nropartida}`) + inyecciones nuevas `TipoParametro`, `Tusuarios`, `DataSource`.
+  2. **`contabilidad-logica.service.ts`** — **`generarNroPartida()` ELIMINADA** (MAX+1) y reemplazada por el mismo helper en sus 2 usos: `contabilizarPartida` (L91 — lo usan crearPartidaInicial, contabilizarFactura/CxC/CxP/Banco) y `realizarCierre` (L760). + inyección `Tusuarios` (ya tenía `TipoParametro` y `DataSource`).
+  3. Helper idéntico a los anteriores: `Idsucursal` desde `tusuarios` + UPDATE atómico `valor = LAST_INSERT_ID(CAST(valor AS UNSIGNED) + 1)` en queryRunner dedicado; si no existe el parámetro → 400.
+- **DTO `CreateCopdamaeDto`**: `nropartida` cambiado de **requerido** a `@IsOptional()` (lo asigna el backend).
+- **E2E verificado** (`POST /contabilidad/copdamae`, payload mandaba `nropartida: 999` → ignorado): **`nropartida=29`**, parámetro `28 → 29`. `nest build` → exit=0.
+- **Gotcha**: tras mis ediciones el `nest start --watch` del usuario quedó sin hijo `node dist/main` (arranque caído durante recompilación) — verificado con instancia temporal capturando stderr (arrancaba limpio) y cerrada para devolver :3000 al watch.
+
+
+---
+
+## Bitácora – 07/10/2026
+
+### Unificación de correlativos bajo `ttipoparametros` – `CorrelativosService` compartido
+
+- **Regla suya (definitiva)**: TODOS los correlativos del ERP se administran desde **`ttipoparametros`** (grupo `CORRELATIVO`, `valor = valor + 1`, localizado por **`Idsucursal` + `empresaId`** del usuario logueado). Se **eliminó el fallback a `tcotipodocumentofiscal.nrocorrelativo`** en `asignarCorrelativo()` (facturación): sin CAI ahora se usa el contador `nrofactura` de `ttipoparametros`. Campo descartado por su decisión: **`nrofisico`** (no se lleva ese control).
+- **Nuevo servicio compartido** `Backend/src/shared/correlativos.service.ts`:
+  - `siguiente(field, empresaId, usuario, qr?)` — UPDATE atómico `LAST_INSERT_ID(CAST(valor AS UNSIGNED) + 1)` + `SELECT LAST_INSERT_ID()`; 400 si el parámetro no existe o está inactivo; acepta **QueryRunner opcional** para flujos transaccionales (rollback revierte el incremento).
+  - `siguienteString(..., pad)` — mismo flujo con padding (`nrocliente`/`nroempleado`/`nroplanilla`/`nroproveedor`/`nroprestamo` = 6; `nrochq` = 10).
+  - `asegurar(field, ...)` — INSERT del parámetro solo si falta (uso limitado a `nrochq`, comportamiento ya existente en bancos).
+  - `CorrelativosModule` `@Global` registrado en `app.module.ts`.
+- **Migración al servicio (creators que ahora delegan)**:
+  - **CxC** (`cxc.service.ts`): `generarNroMovimiento` → campos **`nro_debito`** (tipomov='D') / **`nro_credito`** ('C') — *antes buscaba `nro_debito_cxc`/`nro_credito_cxc` que no existen y hacía `return 1` sin incrementar (bug)*; `createCliente` → `nrocliente`; `createPrestamo` → `nroprestamo` (DTO `nroprestamo` → `@IsOptional`).
+  - **CxP** (`cxp.service.ts`): `createProveedor` → `nroproveedor` (*antes `moduloId:5`, el param real es `moduloId:1` — bug*); `crearMovimientoCxP` → `cxp_nromovimiento` (antes `Number(ref) || compraId`); `createCompra` → `nrocompra` (columna ya existía en la entity).
+  - **Inventario** (`inventario.service.ts`): `createProveedor` → `nroproveedor` (es el endpoint que usa el FE; el de CxP la UI no lo invoca).
+  - **Planilla**: `createEmpleado` / `createPlanilla` → `nroempleado` / `nroplanilla`.
+  - **Bancos**: `emitirCheques` (lote) y `emitirChequeParticular` → `nrochq` con `asegurar` + `siguiente(..., queryRunner)` **dentro de la transacción** (pad 10; se eliminaron los UPDATE finales de contador).
+  - **Facturación**: modo M de `asignarCorrelativo` → `nrofactura`; **sin CAI → fallback `ttipoparametros`** (antes `tcotipodocumentofiscal.nrocorrelativo`, eliminado por su indicación); `createFacturaAnul` → `nroanulacion` (columna ya existía en la entity).
+- **Refactor de los 5 helpers duplicados → delegación** (sin cambio de comportamiento): `siguienteNroRequisicion`, `siguienteNroReferencia`, `siguienteNroAjuste` y `siguienteNropartida` (contabilidad-logica + contabilidad.service) ahora llaman al servicio compartido; se eliminó el cuerpo duplicado con queryRunner propio de cada uno.
+- **Fixes E2E encontrados**:
+  - `cxccliente.entity.ts` **no mapeaba `Idsucursal`** (columna NOT NULL sin default en BD) → el INSERT la omitía → `ER_NO_DEFAULT_FOR_FIELD (1364)`. Arreglado: mapeo en la entity + `Idsucursal` opcional en `CreateCxcClienteDto` (el `whitelist:true` lo descartaba) + fallback `0` en `createCliente` (consistente con los clientes existentes, que tienen `Idsucursal=0`).
+  - DTO inventario `nroproveedor`: era requerido → ahora `@IsOptional()` (lo asigna el backend).
+- **E2E (aux :3100)**: proveedor → `000006`, cliente → `000008`, empleado → `000005`, préstamo → `000001`, compra → `nrocompra=2`; todos cuadran con los contadores en BD. `nest build` → exit=0. *(Cada intento fallido consume el correlativo — modo desarrollo, sin rollback de contadores.)*
+- **No probado E2E**: modo M de `nrofactura` (el parámetro `modo_correlativo` actual es `'A'` con CAI activo; cambiarlo requiere `UPDATE ttipoparametros` → requiere su autorización).
+- **Estado de contadores (emp 2 / suc 1, verificado)**: nrocliente=8, nroproveedor=6, nroempleado=5, nroplanilla=2, nroprestamo=1, nrocompra=2, nrochq=11, nrofactura=49, nropartida=30, nrorequisicion=2, nrotraslado=4, nroajuste=3, nroanulacion=1, nro_debito=2.
+
+
+### Modo manual de correlativo de factura → contador `nroticket` (su indicación)
+
+- **Regla suya**: en modo manual (`modo_correlativo = 'M'`) el correlativo ahora sale del contador **`nroticket`** de `ttipoparametros` (id 112, grupo CORRELATIVO) y **NO de `nrofactura`** — así la facturación manual no contradice los correlativos fiscales secuestrados de la SAR.
+- **Cambio** (`facturacion.service.ts` → `asignarCorrelativo()`, solo el modo M):
+  - `this.correlativos.siguiente('nroticket', empresaId, currentUser)` en vez de `'nrofactura'` (doc comment y log actualizados con la justificación SAR).
+  - El resultado sigue llenando `posfacmae.nrofactura` (no cambia esquema ni callers): la factura creada en modo M recibe el número que generó el contador de tickets.
+  - **Sin cambios** en el modo automático (CAI) ni en el *fallback* sin CAI (sigue `nrofactura`, id 1, `valor=49`).
+- **E2E con autorización suya** (UPDATE temporal `modo_correlativo` 'A'→'M' y **revertido en `finally`** a 'A'):
+  - `POST /facturacion/facturas` (crédito, cliente CLI-0001, total L 1.00) → **201**, `facturaId=7`, **`nrofactura=1`**.
+  - `nroticket`: **0 → 1** ✅ · `nrofactura` param: **49 intacto** ✅ · `modo_correlativo`: de vuelta en **'A'** ✅.
+- **Nota**: quedó la factura de prueba `facturaId=7` (`nrofactura=1`, crédito, sin detalles, total L 1.00). Modo desarrollo: los datos de prueba no se limpian.
+- `nest build` → exit=0; `nroticket` es `sn_activo='S'`, `moduloId=7`, `Idsucursal=1`, `empresaId=2` (el servicio solo filtra por field + empresaId + Idsucursal + sn_activo, no por moduloId).
+
+
+---
+
+## Bitácora – 07/10/2026
+
+### Defaults de crédito desde ttipoparametros (alta de cliente y proveedor)
+
+**Regla**: al dar de alta un **cliente** (CxC) o **proveedor** (CxP), los 4 campos de crédito se inicializan automáticamente desde `ttipoparametros` (grupo INTERES). Los valores explícitos del usuario siempre se respetan (`??` = solo si el DTO no los trae).
+
+| Entidad | Módulo | Fields usados (valores hoy) |
+|---------|--------|------------------------------|
+| Cliente | 4 (CxC) | `cxc_limitecredito`=50000, `cxc_diasPlazo`=15, `cxc_interes`=24, `cxc_mora`=3 |
+| Proveedor | 5 (CxP) | `cxp_limitecredito`=50000, `cxp_diasPlazo`=15, `cxp_interes`=24, `cxp_mora`=3 |
+| Préstamos | 4 | `pres_*` existe en BD pero **ningún código lo lee aún** (pendiente) |
+
+**Backend** (doble capa):
+- `cxc/cxc.service.ts` → `createCliente`: field names corregidos a `cxc_*` (antes `interes/mora/diasPlazo/limitecredito` que ya no existían en la BD)
+- `inventario/inventario.service.ts` → `createProveedor`: inyectado repo `TipoParametro` + helper privado `getParamMod(empresaId, moduloId, field, def)` + 4 defaults (moduloId 5)
+- `cxp/cxp.service.ts` → `createProveedor`: 4 defaults vía `getValorParametro()` existente
+- `cxp/dto/proveedor.dto.ts`: `diasplazo/interes/moratorio` ahora `@IsOptional()` en Create (antes requeridos → la API directa no podía omitirlos)
+- Compila: `nest build` exit=0
+
+**Frontend** (3 forms prellenan en ALTA, nunca en edición — `ParametroUnificadoService.getAsObject()`):
+- `cxc/clientes/cliente-form.ts`: `cargarDefaultsCreditos()` (m4) en el effect de reset inline + rama ruta-nuevo
+- `inventario/proveedores/proveedor-form.ts`: `cargarDefaultsCreditos()` (m5) en rama sin id
+- `cxp/proveedores/proveedor-form.ts`: `cargarDefaultsCreditos()` (m5) en `aplicarId(null)` + rama ruta-nuevo
+- Patrón: `takeUntilDestroyed(this.destroyRef)` + patch numérico `Number(...)`; OnPush-safe (writeValue toca el DOM directo)
+- Compila: `ng build` exit=0
+
+**E2E 33/33 PASS** (`test-defaults-credito.js`): endpoints `/parametros/parametros/objeto` y `/valor` (los que consume el FE), alta de cliente/proveedor sin campos → valores vigentes de BD (espera dinámica, no hardcode), alta con valores explícitos (1234/30/7.5/2) → respetados, cleanup de 4 filas sin residuos.
+
+**Gotchas / hallazgos**:
+1. **Bug preexistente (NO de este cambio)**: `cxcclientesUnique(dni, empresaId)` — el cliente TIENDA (id 15) ya ocupó `dni='0000000000000'` (el fallback del backend) → **crear cliente sin dni desde el FE ahora da 500 duplicado**. Igual en `proveedorUnique(dni, empresaId)`. Requiere decisión: fallback único por registro o permitir NULL.
+2. `interes` CxC/CxP cambió de 18 → 24 en BD durante la sesión (edición del usuario) — el código lee el valor vigente.
+3. Contadores avanzados por E2E: `nrocliente`→12, `nroproveedor`→10 (dev mode: permitido).
+4. **Matar procesos con timeout del shell tool**: `Start-Process` lanza bien pero el tool mata el árbol al hacer timeout → usar `Invoke-CimMethod Win32_Process.Create` con `cmd /c "node dist\main.js > backend-out.log 2> backend-error.log"` para procesos independientes.
+5. PS5.1 `Set-Content` sobre archivos UTF-8 los doble-encripta (mojibake) — scripts .js siempre con Write/Node, nunca re-guardar con PS.
+
+**Archivos modificados**:
+- `Backend/src/modules/cxc/cxc.service.ts`
+- `Backend/src/modules/inventario/inventario.service.ts`
+- `Backend/src/modules/cxp/cxp.service.ts`
+- `Backend/src/modules/cxp/dto/proveedor.dto.ts`
+- `Frontend/src/app/features/cxc/clientes/cliente-form.ts`
+- `Frontend/src/app/features/inventario/proveedores/proveedor-form.ts`
+- `Frontend/src/app/features/cxp/proveedores/proveedor-form.ts`
+
+---
+
+## Bit�cora � 07/10/2026 (tarde)
+
+### Completado
+
+#### Validaci�n de DNI duplicado � bloqueo antes de registrar (cliente y proveedor)
+- **Regla**: el DNI es la **llave maestra** por empresa (UNIQUE (dni, empresaId) en `cxcclientes` y `proveedor`); no se permiten duplicados ? **alerta bloqueante ANTES de registrar**.
+- **Backend � 3 rutas nuevas + guard en create/update (cxc, inventario, cxp)**:
+  - `GET /cxc/clientes/dni-existe?empresaId&dni[&excluirId]` ? `{existe, id, numero, nombre}` (declarada ANTES de `clientes/:id`)
+  - `GET /inventario/proveedores/dni-existe` y `GET /cxp/proveedores/dni-existe` (antes de `proveedores/:id`)
+  - `createCliente` / `createProveedor` (�2): `ConflictException` **409** antes del INSERT y **antes de consumir correlativo** (nrocliente/nroproveedor NO avanzan en intento bloqueado); mensaje `DNI X ya esta registrado a nombre de Y (nro. Z)`
+  - `updateCliente` / `updateProveedor` (�3): 409 si se cambia a dni ajeno (`Not(id)`)
+  - Dni efectivo: cliente/cxp ? `dto.dni || '0000000000000'` (mismo fallback que inserta el payload); inventario ? solo si el dto trae dni (payload guarda NULL, que MySQL permite repetir)
+  - `dni` vac�o en el check ? `{existe:false}` (evita match accidental)
+- **Frontend � 3 formularios**:
+  - `dniExiste()` agregado a `CxcService`, `ProveedoresService`, `CxpService`
+  - En `guardar()`: verifica primero ? si `existe` abre **p-dialog modal bloqueante** (signals `dialogoDni`/`bloqueoDni`) con DNI + titular + nro + nota "llave maestra"; si el check no responde ? POST y el **409** del backend abre el mismo di�logo con `err.error.message`
+  - Refactor `guardar ? verificar ? registrar`; `DialogModule` importado en cliente-form (cxc), proveedor-form (inventario) y proveedor-form (cxp)
+  - SCSS: clase `.dni-bloqueo` (icono warning, mensaje, detalle en rojo, nota muted) en los 3 forms
+- **E2E 35/35 PASS** (`test-dni-duplicado.js`): chk existente/inexistente/excluirId/vac�o; POST dup ? 409 cliente (inventario+cxp) y proveedores con mensaje correcto; **correlativo nrocliente NO consumido en 409**; POST sin dni ? 409 (fallback TIENDA ocupado); PUT dni propio ? 200 / ajeno ? 409; proveedor sin dni ? 201�2 (NULL permitido); limpieza completa sin residuos
+- Builds: `nest build` OK + `ng build` exit 0; backend relanzado (:3000) sin errores en log; FE :4200 responde 200
+
+### Hallazgos
+- **No existe endpoint DELETE de proveedores** (ni en inventario ni en cxp) � preexistente; la limpieza de pruebas se hizo v�a BD (misma tabla `proveedor`)
+- `max-w-30rem` se usa en HTML (cheques.html) pero **no est� definido en ning�n SCSS** ? no-op; los di�logos nuevos usan `[style]="{ width: '30rem' }"` + `[breakpoints]`
+- El interceptor global ya muestra toast en 409 ("Conflicto de Datos") adem�s del di�logo modal ? doble notificaci�n aceptada (el di�logo es el bloqueo que pidi� el usuario)
+
+### Gotchas
+- Rutas con path literal (`clientes/dni-existe`) deben declararse ANTES de `clientes/:id`; si no, Nest las captura como `:id` (ParseIntPipe ? error)
+- PowerShell no puede leer el body de errores HTTP (`GetResponseStream()` queda vac�o despu�s de Invoke-RestMethod/WebRequest) ? usar `fetch` de Node para inspeccionar cuerpos 4xx
+- En modo desarrollo los correlativos avanzan con cada alta v�lida; los intentos bloqueados por DNI NO los consumen (guard va antes del `correlativos.siguienteString`)

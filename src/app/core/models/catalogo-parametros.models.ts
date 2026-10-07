@@ -3,7 +3,19 @@ export interface CampoCatalogo {
   label: string;
   tipo: 'texto' | 'numero' | 'select' | 'fecha';
   opciones?: { label: string; value: string | number }[];
-  cargaOpciones?: { url: string; labelCampo: string; valueCampo: string };
+  cargaOpciones?: {
+    url: string;
+    /** Campo único de etiqueta (alternar con labelCampos) */
+    labelCampo?: string;
+    /** Campos concatenados con espacio para la etiqueta (ej: nombres + apellidos) */
+    labelCampos?: string[];
+    valueCampo: string;
+    /**
+     * Filtra las opciones tras la carga: solo se muestran estos valores.
+     * Ej: gestores → solo módulos 3 y 4: `valores: [3, 4]`.
+     */
+    valores?: (string | number)[];
+  };
   requerido?: boolean;
   principal?: boolean;
   formato?: string;
@@ -29,6 +41,26 @@ export interface CampoCatalogo {
    * Ej: columnas Saldo Acum. y Saldo de movcta, Saldo Acumulado de saldoscta.
    */
   lado?: boolean;
+}
+
+/**
+ * Construye la etiqueta de una opción de cargaOpciones:
+ * - `labelCampos: ['nombres', 'apellidos']` → "Juan Carlos Pérez"
+ * - `labelCampo: 'descripcion'` → item.descripcion
+ * - sin label → valueCampo como fallback
+ */
+export function labelOpcion(
+  item: any,
+  c: { labelCampo?: string; labelCampos?: string[]; valueCampo: string },
+): string {
+  if (c.labelCampos?.length) {
+    return c.labelCampos
+      .map((k) => (item?.[k] != null && item[k] !== '' ? String(item[k]) : ''))
+      .filter((v) => v !== '')
+      .join(' ')
+      .trim();
+  }
+  return String(item?.[c.labelCampo ?? ''] ?? item?.[c.valueCampo] ?? '');
 }
 
 /** Filtro de selección en la barra de filtros del catálogo genérico */
@@ -263,8 +295,26 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     idKey: 'gestorId',
     icono: 'user',
     campos: [
-      { key: 'moduloId', label: 'Módulo', tipo: 'numero', requerido: true },
-      { key: 'empleadoId', label: 'Empleado', tipo: 'numero', requerido: true },
+      {
+        // Select de tmodulos filtrado: solo módulos 3 y 4 (decisión 06/10/2026)
+        key: 'moduloId',
+        label: 'Módulo',
+        tipo: 'select',
+        requerido: true,
+        cargaOpciones: {
+          url: '/modulos',
+          labelCampo: 'descripcion_contable',
+          valueCampo: 'moduloId',
+          valores: [3, 4],
+        },
+      },
+      { key: 'empleadoId', label: 'Empleado', tipo: 'select', requerido: true,
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampos: ['nombres', 'apellidos'],
+          valueCampo: 'empleadoId',
+        },
+      },
       {
         key: 'sn_vendedor',
         label: '¿Vendedor?',

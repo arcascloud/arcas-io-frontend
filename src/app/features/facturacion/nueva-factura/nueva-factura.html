@@ -139,7 +139,7 @@
       </div> <!-- Fin campos de header izquierdo-->
 
       <!-- Columna 2: Campos de header derecho-->
-      <div class="col-12 xl:col-3">
+      <div style="margin-top: -20px" class="col-12 xl:col-3">
         <div class="p-2 for-border-color-alls border-2 border-round m-2 nf-side-panel">
 
           <div class="field">
@@ -189,6 +189,12 @@
               </div>
               }
             </div>
+
+        <div class="field">
+          <label for="rtnCliente">RTN del cliente</label>
+          <input pInputText id="rtnCliente" pSize="small" formControlName="rtn_cliente"
+            maxlength="20" placeholder="RTN del cliente" class="w-full" />
+        </div>
 
         <div class="field">
           <label>Descuento</label>

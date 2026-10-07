@@ -34,6 +34,19 @@ export class CxcService {
   }
 
   /**
+   * Verifica si un DNI ya existe en clientes de la empresa (DNI = llave maestra).
+   * @param dni - DNI a verificar
+   * @param excluirId - Cliente a excluir (para edicion)
+   * @returns true si el DNI ya esta asignado a otro cliente
+   */
+  dniExiste(dni: string, excluirId?: number): Observable<{ existe: boolean; id: number | null; numero: string | null; nombre: string | null }> {
+    return this.api.get(`${this.clientes}/dni-existe`, {
+      dni,
+      ...(excluirId ? { excluirId } : {}),
+    });
+  }
+
+  /**
    * Crea un nuevo cliente en el sistema.
    * @param payload - Datos del cliente a crear
    * @returns Observable con el cliente creado
