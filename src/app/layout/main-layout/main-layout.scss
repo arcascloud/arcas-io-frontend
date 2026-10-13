@@ -649,3 +649,51 @@ $topbar-height: 60px;
     }
   }
 }
+
+// ===== Drawer Login (Cuenta) =====
+.drawer-login {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+
+  .drawer-form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.85rem;
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--c-text-muted);
+    }
+
+    .req {
+      color: var(--c-error);
+    }
+
+    :deep(.p-password) {
+      width: 100%;
+    }
+  }
+
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.65rem;
+
+    label {
+      font-size: 0.85rem;
+      color: var(--c-text);
+      cursor: pointer;
+      margin: 0;
+    }
+  }
+}

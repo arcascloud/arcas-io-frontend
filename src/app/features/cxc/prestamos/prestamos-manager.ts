@@ -75,18 +75,37 @@ export class PrestamosManager implements OnInit {
     clienteId: null,
     nroprestamo: '',
     capital: 0,
+    prima: 0,
+    capitalneto: 0,
     cuotas: 1,
     tasa: 0,
+    moratorio: 0,
     vlrcuota: 0,
-    fecharegistro: new Date().toISOString(),
+    fecha_aprobacion: new Date().toISOString(),
     sn_activo: 'S',
   });
 
   prestamoFecha = computed(() => {
-    const f = this.prestamoModel().fecharegistro;
+    const f = this.prestamoModel().fecha_aprobacion;
     if (!f) return null;
     const d = new Date(f);
     return isNaN(d.getTime()) ? null : d;
+  });
+
+  /** Capital neto = capital - prima (solo lectura en el form). */
+  capitalnetoCalc = computed(() => {
+    const m = this.prestamoModel();
+    return Math.round(((Number(m.capital) || 0) - (Number(m.prima) || 0)) * 100) / 100;
+  });
+
+  /** Fecha de la 1er cuota = fecha de aprobación + 30 días (regla de negocio). */
+  fechaEfectivaCalc = computed(() => {
+    const f = this.prestamoModel().fecha_aprobacion;
+    if (!f) return null;
+    const d = new Date(f);
+    if (isNaN(d.getTime())) return null;
+    d.setDate(d.getDate() + 30);
+    return d;
   });
 
   planPago = signal<any[]>([]);
@@ -162,15 +181,19 @@ export class PrestamosManager implements OnInit {
         const pres = Array.isArray(res) ? res[0] : (res?.value ? res.value[0] : res);
         if (pres && pres.prestamoId) {
           this.prestamoData.set(pres);
+          const capitalneto = Number(pres.capitalneto) || (Number(pres.capital) || 0) - (Number(pres.prima) || 0);
           this.prestamoModel.set({
             prestamoId: pres.prestamoId,
             clienteId: pres.clienteId,
             nroprestamo: pres.nroprestamo || '',
             capital: Number(pres.capital) || 0,
+            prima: Number(pres.prima) || 0,
+            capitalneto,
             cuotas: Number(pres.cuotas) || 0,
             tasa: Number(pres.tasa) || 0,
-            vlrcuota: this.calcularCuotaValue(Number(pres.capital), Number(pres.cuotas), Number(pres.tasa)),
-            fecharegistro: pres.fecharegistro,
+            moratorio: Number(pres.moratorio) || 0,
+            vlrcuota: this.calcularCuotaValue(capitalneto, Number(pres.cuotas), Number(pres.tasa)),
+            fecha_aprobacion: pres.fecha_aprobacion || pres.fecharegistro,
             sn_activo: pres.sn_activo || 'S',
           });
           // Plan de pago: loading sigue activo hasta que termine
@@ -213,16 +236,17 @@ export class PrestamosManager implements OnInit {
   }
 
   onPrestamoFechaChange(d: Date | null) {
-    this.prestamoModel.set({ ...this.prestamoModel(), fecharegistro: d ? d.toISOString() : null });
+    this.prestamoModel.set({ ...this.prestamoModel(), fecha_aprobacion: d ? d.toISOString() : null });
   }
 
   calcularCuota() {
     const raw = this.prestamoModel();
-    const capital = Number(raw.capital) || 0;
+    // Regla de negocio: la cuota se calcula sobre el CAPITAL NETO (capital - prima)
+    const capitalneto = Math.round(((Number(raw.capital) || 0) - (Number(raw.prima) || 0)) * 100) / 100;
     const cuotas = Number(raw.cuotas) || 0;
     const tasaAnual = Number(raw.tasa) || 0;
-    const vlrcuota = this.calcularCuotaValue(capital, cuotas, tasaAnual);
-    this.prestamoModel.set({ ...this.prestamoModel(), vlrcuota });
+    const vlrcuota = this.calcularCuotaValue(capitalneto, cuotas, tasaAnual);
+    this.prestamoModel.set({ ...this.prestamoModel(), capitalneto, vlrcuota });
   }
 
   private limpiarFormulario() {
@@ -230,10 +254,13 @@ export class PrestamosManager implements OnInit {
       clienteId: this.selectedCliente()?.clienteId ?? null,
       nroprestamo: '',
       capital: 0,
+      prima: 0,
+      capitalneto: 0,
       cuotas: 1,
       tasa: 0,
+      moratorio: 0,
       vlrcuota: 0,
-      fecharegistro: new Date().toISOString(),
+      fecha_aprobacion: new Date().toISOString(),
       sn_activo: 'S',
     });
   }
@@ -252,26 +279,33 @@ export class PrestamosManager implements OnInit {
     }
 
     const raw = { ...this.prestamoModel() };
+    const capital = Number(raw.capital) || 0;
+    const prima = Number(raw.prima) || 0;
+    const capitalneto = Math.round((capital - prima) * 100) / 100;
     const payload: any = {
       clienteId: cliente.clienteId,
       nroprestamo: raw.nroprestamo || '',
-      capital: Number(raw.capital) || 0,
+      capital,
+      prima,
+      capitalneto, // el backend recalcula, pero viaja coherente
       cuotas: Number(raw.cuotas) || 1,
       tasa: Number(raw.tasa) || 0,
-      fecharegistro: raw.fecharegistro,
+      moratorio: Number(raw.moratorio) || 0,
+      fecha_aprobacion: raw.fecha_aprobacion,
       sn_activo: raw.sn_activo || 'S',
       sn_contabilizado: 'N',
     };
 
-    try {
-      if (payload.fecharegistro) {
-        const d = new Date(payload.fecharegistro);
-        if (!isNaN(d.getTime())) payload.fecharegistro = d.toISOString();
-      }
-    } catch (e) { }
-
-    if (!payload.capital || payload.capital <= 0) {
+    if (capital <= 0) {
       this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital debe ser mayor a 0' });
+      return;
+    }
+    if (prima < 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'La prima no puede ser negativa' });
+      return;
+    }
+    if (capitalneto <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital neto (capital - prima) debe ser mayor a 0' });
       return;
     }
     if (!payload.cuotas || payload.cuotas <= 0) {
@@ -354,11 +388,18 @@ export class PrestamosManager implements OnInit {
   generarPlanPago() {
     const raw = this.prestamoModel();
     const capital = Number(raw.capital) || 0;
+    const prima = Number(raw.prima) || 0;
+    // Regla de negocio: el plan se amortiza sobre el CAPITAL NETO
+    const capitalneto = Math.round((capital - prima) * 100) / 100;
     const cuotas = Number(raw.cuotas) || 0;
     const tasaAnual = Number(raw.tasa) || 0;
 
     if (capital <= 0) {
       this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital debe ser mayor a 0' });
+      return;
+    }
+    if (capitalneto <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital neto (capital - prima) debe ser mayor a 0' });
       return;
     }
     if (cuotas <= 0) {
@@ -380,19 +421,20 @@ export class PrestamosManager implements OnInit {
 
     const tasaMensual = tasaAnual / 100 / 12;
     const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
-    const cuotaFija = capital * factor;
+    const cuotaFija = capitalneto * factor;
 
     const plan: any[] = [];
-    let saldo = capital;
-    const fechaBase = raw.fecharegistro ? new Date(raw.fecharegistro) : new Date();
+    let saldo = capitalneto;
+    // 1er cuota = fecha de aprobación + 30 días; luego mensualidades desde ahí
+    const fechaEfectiva = this.fechaEfectivaCalc() ?? new Date();
 
     for (let i = 1; i <= cuotas; i++) {
       const interes = saldo * tasaMensual;
       const capitalPago = cuotaFija - interes;
       saldo = saldo - capitalPago;
 
-      const fechaPago = new Date(fechaBase);
-      fechaPago.setMonth(fechaPago.getMonth() + i);
+      const fechaPago = new Date(fechaEfectiva);
+      fechaPago.setMonth(fechaPago.getMonth() + (i - 1));
 
       plan.push({
         nrofila: i,
@@ -412,6 +454,7 @@ export class PrestamosManager implements OnInit {
     this.prestamoModel.set({
       ...this.prestamoModel(),
       nroprestamo,
+      capitalneto,
       vlrcuota: Math.round(cuotaFija * 100) / 100,
     });
   }

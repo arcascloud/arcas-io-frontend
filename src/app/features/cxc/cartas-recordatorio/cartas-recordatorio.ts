@@ -145,6 +145,8 @@ export class CartasRecordatorio implements OnInit {
       if (m.tipomov === 'C' || m.tipomov === 'A') {
         esCredito = true;
       }
+      // tipomov='I' (interés/mora) → sin efecto sobre el saldo
+      if (m.tipomov === 'I') return;
 
       if (esCredito) {
         item.total -= importe;

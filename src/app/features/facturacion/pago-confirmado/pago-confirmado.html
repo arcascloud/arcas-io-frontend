@@ -1,0 +1,40 @@
+<div class="tp-confirm-page">
+  <div class="tp-confirm-card">
+    @if (cargando()) {
+    <div class="tp-confirm-cargando">
+      <p-progressSpinner strokeWidth="4" />
+      <p>Confirmando el pago…</p>
+    </div>
+    } @else if (exito) {
+    <div class="tp-confirm-icono ok">
+      <i class="pi pi-check-circle"></i>
+    </div>
+    <h2>Pago confirmado</h2>
+    <p class="tp-confirm-detalle">
+      Factura <strong>#{{ resultado()?.nrofactura || resultado()?.facturaid }}</strong>
+      pagada por <strong>{{ moneda(resultado()?.monto) }}</strong>
+      vía TodoPago.
+    </p>
+    <p-tag value="Pagado" severity="success" />
+    } @else {
+    <div class="tp-confirm-icono error">
+      <i class="pi pi-times-circle"></i>
+    </div>
+    <h2>No se pudo confirmar el pago</h2>
+    <p class="tp-confirm-detalle">{{ error() }}</p>
+    }
+
+    @if (!cargando()) {
+    <div class="tp-confirm-acciones">
+      @if (!exito) {
+      <p-button size="small" label="Reintentar" icon="pi pi-refresh" severity="warn" variant="text" [rounded]="true"
+        (onClick)="reintentar()" />
+      }
+      <p-button size="small" label="Nueva factura" icon="pi pi-plus" severity="secondary" variant="text" [rounded]="true"
+        (onClick)="irANueva()" />
+      <p-button size="small" label="Ver facturas" icon="pi pi-list" severity="success" variant="text" [rounded]="true"
+        (onClick)="irAFacturas()" />
+    </div>
+    }
+  </div>
+</div>

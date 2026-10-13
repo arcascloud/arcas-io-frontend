@@ -74,7 +74,7 @@ export class EmpleadoForm implements OnInit {
     this.form = this.fb.group({
       nombres: ['', Validators.required],
       apellidos: ['', Validators.required],
-      dni: ['', Validators.required],
+      nrodocumento: ['', Validators.required],
       fechanacimiento: [null as Date | null],
       sexo: ['M' as 'M' | 'F' | 'T'],
       estadocivil: ['S' as 'S' | 'C' | 'V' | 'D' | 'U'],
@@ -107,7 +107,7 @@ export class EmpleadoForm implements OnInit {
           this.form.patchValue({
             nombres: e.nombres,
             apellidos: e.apellidos,
-            dni: e.dni,
+            nrodocumento: e.nrodocumento,
             fechanacimiento: e.fechanacimiento ? new Date(e.fechanacimiento) : null,
             sexo: e.sexo,
             estadocivil: e.estadocivil,

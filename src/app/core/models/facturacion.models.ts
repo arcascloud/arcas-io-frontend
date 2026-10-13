@@ -399,6 +399,10 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
       },
       { key: 'gracia', label: 'Gracia', tipo: 'numero' },
       { key: 'ultcuotapagada', label: 'Últ. Cuota Pagada', tipo: 'numero' },
+      { key: 'saldoactual', label: 'Saldo Actual', tipo: 'numero' },
+      { key: 'fecha_aprobacion', label: 'Fecha Aprobación', tipo: 'fecha' },
+      { key: 'fechaEfectiva', label: 'Fecha Efectiva', tipo: 'fecha' },
+      { key: 'fechaUltPago', label: 'Últ. Pago', tipo: 'fecha' },
       {
         key: 'sn_activo',
         label: 'Activo',

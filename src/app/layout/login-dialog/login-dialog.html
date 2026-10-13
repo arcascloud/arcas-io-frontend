@@ -1,0 +1,158 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [showHeader]="false"
+  [closable]="true"
+  [dismissableMask]="true"
+  [closeOnEscape]="true"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: '60%' }"
+  styleClass="login-hl-dialog"
+>
+  <!-- Contenido headless: reemplaza header/cuerpo/footer del diálogo -->
+  <ng-template #headless>
+    <div class="login-hl-card">
+      <button type="button" class="login-hl-close" (click)="cerrar()" aria-label="Cerrar">
+        <i class="pi pi-times"></i>
+      </button>
+
+      <!-- 2 columnas: izquierda con encabezado de bienvenida, derecha con el login -->
+      <div class="login-hl-grid">
+        <div class="login-hl-side">
+          <div class="welcome">
+            <h3 class="welcome-title">¡Bienvenido nuevamente!</h3>
+            <p class="welcome-sub">Por favor ingresa tus datos</p>
+            <div class="welcome-divider"></div>
+            <p class="welcome-cta">Si no tienes una cuenta,</p>
+            <p-button
+              label="Registrarse"
+              icon="pi pi-user-plus"
+              severity="success"
+              variant="outlined"
+              [rounded]="true"
+              (onClick)="registrarse()"
+              styleClass="w-full"
+            />
+          </div>
+        </div>
+
+        <div class="login-hl-main">
+          <div class="login-logo">
+            <img src="assets/images/logo1.png" alt="Arcas Software" class="login-logo-img" />
+          </div>
+
+          <div class="login-header">
+            <h2 class="login-header">Arcas Software</h2>
+            <p class="text-muted">Sistema de Gestión Empresarial</p>
+          </div>
+
+          @if (error()) {
+            <p-message severity="error" [text]="error()" styleClass="w-full mb-2" />
+          }
+
+          <form class="login-form" (ngSubmit)="ingresar()">
+        <div class="campo">
+          <label for="hl-usuario">Usuario <span class="req">*</span></label>
+          <input
+            pInputText
+            id="hl-usuario"
+            name="hl-usuario"
+            type="text"
+            autocomplete="username"
+            [ngModel]="usuario()"
+            (ngModelChange)="onUsuarioInput($event)"
+            placeholder="Ingrese su usuario"
+            [disabled]="loading()"
+          />
+          @if (errUsuario()) {
+            <span class="campo-error">
+              <i class="pi pi-exclamation-circle"></i> {{ errUsuario() }}
+            </span>
+          }
+        </div>
+
+        <div class="campo">
+          <label for="hl-password">Contraseña <span class="req">*</span></label>
+          <p-password
+            id="hl-password"
+            name="hl-password"
+            [ngModel]="password()"
+            (ngModelChange)="onPasswordInput($event)"
+            (keyup)="onPasswordKey($event)"
+            (blur)="onPasswordBlur()"
+            [toggleMask]="true"
+            [feedback]="false"
+            [fluid]="true"
+            autocomplete="current-password"
+            placeholder="Ingrese su contraseña"
+            [disabled]="loading()"
+          />
+          @if (capsLock()) {
+            <span class="caps-warn">
+              <i class="pi pi-exclamation-triangle"></i> Bloq Mayús está activado
+            </span>
+          }
+          @if (errPassword()) {
+            <span class="campo-error">
+              <i class="pi pi-exclamation-circle"></i> {{ errPassword() }}
+            </span>
+          }
+        </div>
+
+        <div class="check-row">
+          <p-checkbox
+            inputId="hl-escliente"
+            name="hl-escliente"
+            [binary]="true"
+            [ngModel]="esCliente"
+            (ngModelChange)="onEsClienteChange($event)"
+          />
+          <label for="hl-escliente">Soy cliente</label>
+        </div>
+
+        <div class="check-row">
+          <p-checkbox
+            inputId="hl-recordar"
+            name="hl-recordar"
+            [binary]="true"
+            [ngModel]="recordar()"
+            (ngModelChange)="onRecordarChange($event)"
+          />
+          <label for="hl-recordar">Recordar mi sesión</label>
+        </div>
+
+        <div class="check-row">
+          <p-checkbox
+            inputId="hl-recordar-pass"
+            name="hl-recordar-pass"
+            [binary]="true"
+            [disabled]="!recordar()"
+            [ngModel]="recordarPassword()"
+            (ngModelChange)="onRecordarPasswordChange($event)"
+          />
+          <label for="hl-recordar-pass" [class.check-disabled]="!recordar()">
+            Recordar contraseña
+            @if (!recordar()) {
+              <span class="check-hint">(requiere "Recordar mi sesión")</span>
+            }
+          </label>
+        </div>
+
+        <p-button
+          type="submit"
+          label="Iniciar Sesión"
+          icon="pi pi-sign-in"
+              severity="success"
+              variant="outlined"
+              [rounded]="true"
+          [loading]="loading()"
+          styleClass="w-full"
+        />
+          </form>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>

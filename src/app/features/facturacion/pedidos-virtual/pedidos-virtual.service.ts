@@ -106,6 +106,11 @@ export class PedidosVirtualService {
     return this.api.get<Pedido>(`/facturacion/pedidos/${pedidoId}`);
   }
 
+  /** Actualiza datos del pedido (nombre/teléfono del cliente) — PUT /facturacion/pedidos/:id */
+  actualizarPedido(pedidoId: number, datos: { nombrecliente?: string; nrotelefono?: string }): Observable<Pedido> {
+    return this.api.put<Pedido>('/facturacion/pedidos', pedidoId, datos);
+  }
+
   getPedidoItemsByPedidoId(pedidoId: number): Observable<PedidoItem[]> {
     return this.api.get<PedidoItem[]>(`/facturacion/pedidos-det/pedido/${pedidoId}`);
   }

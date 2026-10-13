@@ -1,0 +1,457 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [showHeader]="false"
+  [closable]="true"
+  [dismissableMask]="true"
+  [closeOnEscape]="true"
+  [style]="dialogStyle"
+  [breakpoints]="dialogBreakpoints"
+  styleClass="login-hl-dialog"
+  maskStyleClass="registro-mask"
+>
+  <!-- Contenido headless: reemplaza header/cuerpo/footer del diálogo -->
+  <ng-template #headless>
+    <div class="login-hl-card">
+      <button type="button" class="login-hl-close" (click)="cerrar()" aria-label="Cerrar">
+        <i class="pi pi-times"></i>
+      </button>
+
+      <!-- 1 sola columna: solo el formulario (columna izquierda eliminada) -->
+      <div class="login-hl-grid">
+        <div class="login-hl-main">
+          <div class="login-logo">
+            <img src="assets/images/logo1.png" alt="Arcas Software" class="login-logo-img" />
+          </div>
+
+          <div class="login-header">
+            <h2 class="welcome-title">Crear cuenta</h2>
+            <p class="text-muted">Registro de usuario</p>
+          </div>
+
+          @if (error()) {
+            <p-message severity="error" [text]="error()" styleClass="w-full mb-2" />
+          }
+
+          @if (exito()) {
+            <p-message severity="success" [text]="exito()" styleClass="w-full mb-2" />
+
+            <p-button
+              label="Iniciar sesión"
+              icon="pi pi-sign-in"
+              severity="success"
+              variant="outlined"
+              [rounded]="true"
+              (onClick)="irALogin()"
+              styleClass="w-full"
+            />
+          } @else {
+            <form class="login-form" (ngSubmit)="registrar()">
+              <div class="registro-grid">
+                <!-- Fila 1: Nombres | Apellidos -->
+                <div class="campo">
+                  <label for="reg-nombres">Nombres <span class="req">*</span></label>
+                  <input
+                    pInputText
+                    id="reg-nombres"
+                    name="reg-nombres"
+                    type="text"
+                    maxlength="80"
+                    autocomplete="given-name"
+                    [ngModel]="nombres"
+                    (ngModelChange)="onNombreChange($event)"
+                    placeholder="Sus nombres"
+                    [disabled]="loading()"
+                  />
+                  @if (errNombres()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errNombres() }}
+                    </span>
+                  }
+                </div>
+
+                <div class="campo">
+                  <label for="reg-apellidos">Apellidos <span class="req">*</span></label>
+                  <input
+                    pInputText
+                    id="reg-apellidos"
+                    name="reg-apellidos"
+                    type="text"
+                    maxlength="80"
+                    autocomplete="family-name"
+                    [ngModel]="apellidos"
+                    (ngModelChange)="onApellidosChange($event)"
+                    placeholder="Sus apellidos"
+                    [disabled]="loading()"
+                  />
+                  @if (errApellidos()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errApellidos() }}
+                    </span>
+                  }
+                </div>
+
+                <!-- Tipo de documento (ancho completo, segmentado) -->
+                <div class="campo campo-full">
+                  <label for="reg-tipodoc">Tipo de documento <span class="req">*</span></label>
+                  <p-selectButton
+                    id="reg-tipodoc"
+                    name="reg-tipodoc"
+                    [options]="opcionesTipodoc"
+                    [(ngModel)]="tipodoc"
+                    optionLabel="label"
+                    optionValue="value"
+                    (onChange)="errTipodoc.set('')"
+                    [disabled]="loading()"
+                    styleClass="togglebutton-bg-black"
+                  />
+                  @if (errTipodoc()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errTipodoc() }}
+                    </span>
+                  }
+                </div>
+
+                <!-- Fila: Documento | Celular -->
+                <div class="campo">
+                  <label for="reg-dni">{{ etiquetaDoc }} <span class="req">*</span></label>
+                  <input
+                    pInputText
+                    id="reg-dni"
+                    name="reg-dni"
+                    type="text"
+                    maxlength="30"
+                    autocomplete="off"
+                    [(ngModel)]="dni"
+                    (ngModelChange)="errDni.set('')"
+                    [placeholder]="etiquetaDoc"
+                    [disabled]="loading()"
+                  />
+                  @if (errDni()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errDni() }}
+                    </span>
+                  }
+                </div>
+
+                <div class="campo">
+                  <label for="reg-celular">Celular <span class="req">*</span></label>
+                  <input
+                    pInputText
+                    id="reg-celular"
+                    name="reg-celular"
+                    type="tel"
+                    maxlength="80"
+                    autocomplete="tel"
+                    [(ngModel)]="celular"
+                    (ngModelChange)="errCelular.set('')"
+                    placeholder="Ej: 9999-9999"
+                    [disabled]="loading()"
+                  />
+                  @if (errCelular()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errCelular() }}
+                    </span>
+                  }
+                </div>
+
+                <!-- Fila: SEXO | Fecha de nacimiento -->
+                <div class="campo">
+                  <label for="reg-sexo">Sexo <span class="req">*</span></label>
+                  <p-selectButton
+                    id="reg-sexo"
+                    name="reg-sexo"
+                    [options]="opcionesSexo"
+                    [(ngModel)]="sexo"
+                    optionLabel="label"
+                    optionValue="value"
+                    (onChange)="errSexo.set('')"
+                    [disabled]="loading()"
+                    styleClass="togglebutton-bg-black"
+                  />
+                  @if (errSexo()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errSexo() }}
+                    </span>
+                  }
+                </div>
+
+                <div class="campo">
+                  <label for="reg-fecnac">Fecha de nacimiento <span class="req">*</span></label>
+                  <p-datepicker
+                    id="reg-fecnac"
+                    name="reg-fecnac"
+                    [(ngModel)]="fechaNac"
+                    (ngModelChange)="errFecha.set('')"
+                    dateFormat="dd/mm/yy"
+                    [showIcon]="true"
+                    [appendTo]="'body'"
+                    [minDate]="fechaMin"
+                    [maxDate]="fechaMax"
+                    styleClass="w-full"
+                    [disabled]="loading()"
+                  />
+                  @if (errFecha()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errFecha() }}
+                    </span>
+                  }
+                </div>
+
+                <!-- Dirección (ancho completo) -->
+                <div class="campo campo-full">
+                  <label for="reg-direccion">Dirección <span class="req">*</span></label>
+                  <input
+                    pInputText
+                    id="reg-direccion"
+                    name="reg-direccion"
+                    type="text"
+                    maxlength="2000"
+                    autocomplete="street-address"
+                    [(ngModel)]="direccion"
+                    (ngModelChange)="errDireccion.set('')"
+                    placeholder="Dirección completa"
+                    [disabled]="loading()"
+                  />
+                  @if (errDireccion()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errDireccion() }}
+                    </span>
+                  }
+                </div>
+
+                <!-- País / Departamento / Ciudad (cascada, ancho completo) -->
+                <div class="campo campo-full">
+                  <label for="reg-pais">País <span class="req">*</span></label>
+                  <p-select
+                    id="reg-pais"
+                    name="reg-pais"
+                    [options]="paises()"
+                    [(ngModel)]="paisValue"
+                    (ngModelChange)="onPaisChange()"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Seleccionar país"
+                    styleClass="w-full"
+                    [appendTo]="'body'"
+                    [filter]="true"
+                    [loading]="geoLoading()"
+                    [disabled]="loading()"
+                    filterPlaceholder="Buscar país"
+                  />
+                  @if (errPais()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errPais() }}
+                    </span>
+                  }
+                </div>
+
+                <div class="campo campo-full">
+                  <label for="reg-depto">Departamento <span class="req">*</span></label>
+                  <p-select
+                    id="reg-depto"
+                    name="reg-depto"
+                    [options]="departamentos()"
+                    [(ngModel)]="deptoValue"
+                    (ngModelChange)="onDeptoChange()"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Seleccionar departamento"
+                    styleClass="w-full"
+                    [appendTo]="'body'"
+                    [filter]="true"
+                    [loading]="geoLoading()"
+                    [disabled]="loading() || !paisValue"
+                    filterPlaceholder="Buscar departamento"
+                  />
+                  @if (errDepto()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errDepto() }}
+                    </span>
+                  }
+                </div>
+
+                <div class="campo campo-full">
+                  <label for="reg-ciudad">Ciudad <span class="req">*</span></label>
+                  <p-select
+                    id="reg-ciudad"
+                    name="reg-ciudad"
+                    [options]="ciudades()"
+                    [(ngModel)]="ciudadValue"
+                    (ngModelChange)="errCiudad.set('')"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Seleccionar ciudad"
+                    styleClass="w-full"
+                    [appendTo]="'body'"
+                    [filter]="true"
+                    [loading]="geoLoading()"
+                    [disabled]="loading() || !deptoValue"
+                    filterPlaceholder="Buscar ciudad"
+                  />
+                  @if (errCiudad()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errCiudad() }}
+                    </span>
+                  }
+                </div>
+
+                <!-- Fila: Correo | Confirmar correo -->
+                <div class="campo">
+                  <label for="reg-email">Correo <span class="req">*</span></label>
+                  <input
+                    pInputText
+                    id="reg-email"
+                    name="reg-email"
+                    type="email"
+                    maxlength="30"
+                    autocomplete="email"
+                    [(ngModel)]="email"
+                    (ngModelChange)="errEmail.set('')"
+                    placeholder="correo@ejemplo.com"
+                    [disabled]="loading()"
+                  />
+                  @if (errEmail()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errEmail() }}
+                    </span>
+                  }
+                </div>
+
+                <div class="campo">
+                  <label for="reg-confirmar-email">Confirmar correo <span class="req">*</span></label>
+                  <input
+                    pInputText
+                    id="reg-confirmar-email"
+                    name="reg-confirmar-email"
+                    type="email"
+                    maxlength="30"
+                    autocomplete="email"
+                    [(ngModel)]="confirmarEmail"
+                    (ngModelChange)="errConfirmarEmail.set('')"
+                    placeholder="Repita su correo"
+                    [disabled]="loading()"
+                  />
+                  @if (errConfirmarEmail()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errConfirmarEmail() }}
+                    </span>
+                  }
+                </div>
+
+                <!-- Fila: Contraseña | Confirmar contraseña -->
+                <div class="campo">
+                  <label for="reg-password">Contraseña <span class="req">*</span></label>
+                  <p-password
+                    id="reg-password"
+                    name="reg-password"
+                    [(ngModel)]="password"
+                    (ngModelChange)="errPassword.set('')"
+                    [toggleMask]="true"
+                    [feedback]="false"
+                    [fluid]="true"
+                    maxlength="250"
+                    autocomplete="new-password"
+                    placeholder="Mínimo 8 caracteres"
+                    [disabled]="loading()"
+                  />
+                  <ul class="pwd-rules">
+                    <li [class.ok]="pwdLargo">
+                      <i class="pi" [class.pi-check]="pwdLargo" [class.pi-times]="!pwdLargo"></i>
+                      Mínimo 8 caracteres
+                    </li>
+                    <li [class.ok]="pwdMayuscula">
+                      <i class="pi" [class.pi-check]="pwdMayuscula" [class.pi-times]="!pwdMayuscula"></i>
+                      Al menos 1 mayúscula
+                    </li>
+                    <li [class.ok]="pwdDigito">
+                      <i class="pi" [class.pi-check]="pwdDigito" [class.pi-times]="!pwdDigito"></i>
+                      Al menos 1 número
+                    </li>
+                    <li [class.ok]="pwdEspecial">
+                      <i class="pi" [class.pi-check]="pwdEspecial" [class.pi-times]="!pwdEspecial"></i>
+                      Al menos 1 carácter especial
+                    </li>
+                  </ul>
+                  @if (errPassword()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errPassword() }}
+                    </span>
+                  }
+                </div>
+
+                <div class="campo">
+                  <label for="reg-confirmar">Confirmar contraseña <span class="req">*</span></label>
+                  <p-password
+                    id="reg-confirmar"
+                    name="reg-confirmar"
+                    [(ngModel)]="confirmar"
+                    (ngModelChange)="errConfirmar.set('')"
+                    [toggleMask]="true"
+                    [feedback]="false"
+                    [fluid]="true"
+                    maxlength="250"
+                    autocomplete="new-password"
+                    placeholder="Repita la contraseña"
+                    [disabled]="loading()"
+                  />
+                  @if (errConfirmar()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errConfirmar() }}
+                    </span>
+                  }
+                </div>
+
+                <!-- Usuario (ancho completo, sugerido y editable) -->
+                <div class="campo campo-full">
+                  <label for="reg-usuario">Usuario <span class="req">*</span></label>
+                  <input
+                    pInputText
+                    id="reg-usuario"
+                    name="reg-usuario"
+                    type="text"
+                    maxlength="20"
+                    autocomplete="username"
+                    [ngModel]="usuario"
+                    (ngModelChange)="onUsuarioChange($event)"
+                    placeholder="Elija un usuario"
+                    [disabled]="loading()"
+                  />
+                  @if (!usuarioEditado && usuario) {
+                    <span class="campo-hint">
+                      <i class="pi pi-info-circle"></i>
+                      Sugerido a partir de sus apellidos y nombre — puedes editarlo
+                    </span>
+                  }
+                  @if (errUsuario()) {
+                    <span class="campo-error">
+                      <i class="pi pi-exclamation-circle"></i> {{ errUsuario() }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <p-button
+                type="submit"
+                label="Crear cuenta"
+                icon="pi pi-user-plus"
+                severity="success"
+                variant="outlined"
+                [rounded]="true"
+                [loading]="loading()"
+                styleClass="w-full"
+              />
+            </form>
+
+            <!-- Enlace de login (ya no hay columna lateral: siempre visible) -->
+            <p class="registro-link-mobile">
+              <a (click)="irALogin()">¿Ya tienes una cuenta? Inicia sesión</a>
+            </p>
+          }
+        </div>
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>

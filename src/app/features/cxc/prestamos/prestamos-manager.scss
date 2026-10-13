@@ -368,6 +368,44 @@ app-prestamos-manager {
   opacity: 0.5;
 }
 
+// ===== Control del préstamo (saldo/fechas) =====
+
+.prestamo-info-control {
+  display: flex;
+  gap: 2rem;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface-muted);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  flex-wrap: wrap;
+
+  .pic-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 9rem;
+  }
+
+  .pic-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--c-text-muted);
+    font-weight: 600;
+  }
+
+  .pic-value {
+    font-size: 0.95rem;
+    color: var(--c-text);
+    font-weight: 600;
+  }
+
+  .pic-saldo {
+    color: var(--c-primary);
+    font-size: 1.05rem;
+  }
+}
+
 // ===== Responsive =====
 
 @media (max-width: 1024px) {

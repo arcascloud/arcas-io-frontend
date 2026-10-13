@@ -14,6 +14,10 @@ export const CXC_ROUTES: Routes = [
     path: 'caja/editar/:id',
     loadComponent: () => import('./caja/caja').then((m) => m.Caja),
   },
+  {
+    path: 'rendicion-caja',
+    loadComponent: () => import('./rendicion-caja/rendicion-caja').then((m) => m.RendicionCaja),
+  },
 
   // Clientes - Nuevo gestor con layout dividido
   {

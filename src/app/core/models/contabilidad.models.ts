@@ -74,6 +74,12 @@ export interface CopdaMae {
   sn_contabilizada: 'S' | 'N';
   /** 'S' = su período contable está cerrado → inmutable (bloqueado en backend con 403) */
   sn_cerrada: 'S' | 'N';
+  /** Si != null: la partida ES una contra (espejo) de la partida con este id (N/S, vigente) */
+  partidaOrigenId?: number | null;
+  /** Si != null: la partida ya fue contraedida; apunta a su contra partida (original queda S/S) */
+  contrapdaId?: number | null;
+  /** Fecha en que se creó la contra partida asociada */
+  feccontrapda?: string | null;
   nropartida: number;
   Idsucursal: number;
   empresaId: number;

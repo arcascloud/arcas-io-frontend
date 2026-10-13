@@ -310,12 +310,22 @@
           <div class="detail-header-actions">
             <p-button
               size="small"
+              icon="pi pi-undo"
+              severity="danger"
+              variant="text"
+              [rounded]="true"
+              [disabled]="!puedeContraer(partida)"
+              [pTooltip]="tooltipContra(partida)"
+              (onClick)="contraPartida(partida)"
+            />
+            <p-button
+              size="small"
               icon="pi pi-pencil"
               severity="warn"
               variant="text"
               [rounded]="true"
-              [disabled]="partida.sn_cerrada === 'S'"
-              [pTooltip]="partida.sn_cerrada === 'S' ? 'Partida cerrada (período cerrado)' : 'Editar'"
+              [disabled]="!puedeEditar(partida)"
+              [pTooltip]="tooltipEditar(partida)"
               (onClick)="editarPartida(partida)"
             />
             <p-button
@@ -324,8 +334,8 @@
               severity="danger"
               variant="text"
               [rounded]="true"
-              [disabled]="partida.sn_cerrada === 'S'"
-              [pTooltip]="partida.sn_cerrada === 'S' ? 'Partida cerrada (período cerrado)' : 'Eliminar'"
+              [disabled]="!puedeEliminar(partida)"
+              [pTooltip]="tooltipEliminar(partida)"
               (onClick)="eliminarPartida(partida)"
             />
             <p-button
@@ -396,6 +406,19 @@
                   [severity]="partida.sn_cerrada === 'S' ? 'danger' : 'info'"
                   [icon]="partida.sn_cerrada === 'S' ? 'pi pi-lock' : 'pi pi-lock-open'"
                 />
+              </div>
+              <div class="info-item">
+                <span class="info-label">ContraPda:</span>
+                @if (partida.contrapdaId != null) {
+                <span class="info-value"><p-tag value="Sí" severity="warn" icon="pi pi-undo" pTooltip="Tiene una contra partida asociada: primero elimínela para modificar esta partida" />@if (partidaNumero(partida.contrapdaId) != null) {, con ContraPda (#{{ partidaNumero(partida.contrapdaId) }})}</span>
+                } @else if (partida.partidaOrigenId != null) {
+                <span class="info-value"><p-tag value="Sí" severity="danger" icon="pi pi-undo" pTooltip="Es la contra partida de la partida original indicada" />@if (partidaNumero(partida.partidaOrigenId) != null) {, de la Pda Origen (#{{ partidaNumero(partida.partidaOrigenId) }})}</span>
+                } @else {
+                <p-tag value="No" severity="secondary" />
+                }
+                @if (partida.feccontrapda) {
+                <span class="info-value contra-fecha">({{ partida.feccontrapda | date:'dd/MM/yyyy HH:mm' }})</span>
+                }
               </div>
               <div class="info-item info-item--origen">
                 <span class="info-label">Origen del documento:</span>
@@ -613,6 +636,7 @@
           class="partida-item"
           [class.selected]="partidaSeleccionada()?.partidaId === partida.partidaId"
           [class.partida-cerrada]="partida.sn_cerrada === 'S'"
+          [class.partida-contra]="partida.partidaOrigenId != null"
           (click)="verPartida(partida)"
         >
           <div class="partida-item-header">
@@ -645,12 +669,18 @@
           <div class="partida-item-desc">Concepto: {{ partida.descripcion }}</div>
           <div class="partida-item-actions">
             <!-- 20260929 Alineado a left Contabilizada: Sí -->
-            <span class="partida-item-desc">Contabilizada: </span>
-            <p-tag
-              [value]="partida.sn_contabilizada === 'S' ? 'Sí' : 'No'"
-              [severity]="partida.sn_contabilizada === 'S' ? 'success' : 'warn'"
-              styleClass="tag-sm contabilizada-left"
-            />
+            <div class="partida-estado-left">
+              <span class="partida-item-desc">Contabilizada: </span>
+              <p-tag
+                [value]="partida.sn_contabilizada === 'S' ? 'Sí' : 'No'"
+                [severity]="partida.sn_contabilizada === 'S' ? 'success' : 'warn'"
+                styleClass="tag-sm"
+              />
+              @if (partida.sn_anulada === 'S') {
+              <span class="partida-item-desc">ContraPda: </span>
+              <p-tag value="Sí" severity="danger" styleClass="tag-sm" />
+              }
+            </div>
             <p-button
               size="small"
               icon="pi pi-eye"
@@ -662,12 +692,22 @@
             />
             <p-button
               size="small"
+              icon="pi pi-undo"
+              severity="danger"
+              variant="text"
+              [rounded]="true"
+              [disabled]="!puedeContraer(partida)"
+              [pTooltip]="tooltipContra(partida)"
+              (onClick)="contraPartida(partida); $event.stopPropagation()"
+            />
+            <p-button
+              size="small"
               icon="pi pi-pencil"
               severity="warn"
               variant="text"
               [rounded]="true"
-              [disabled]="partida.sn_cerrada === 'S'"
-              [pTooltip]="partida.sn_cerrada === 'S' ? 'Partida cerrada' : 'Editar'"
+              [disabled]="!puedeEditar(partida)"
+              [pTooltip]="tooltipEditar(partida)"
               (onClick)="editarPartida(partida); $event.stopPropagation()"
             />
             <p-button
@@ -676,8 +716,8 @@
               severity="danger"
               variant="text"
               [rounded]="true"
-              [disabled]="partida.sn_cerrada === 'S'"
-              [pTooltip]="partida.sn_cerrada === 'S' ? 'Partida cerrada' : 'Eliminar'"
+              [disabled]="!puedeEliminar(partida)"
+              [pTooltip]="tooltipEliminar(partida)"
               (onClick)="eliminarPartida(partida); $event.stopPropagation()"
             />
           </div>

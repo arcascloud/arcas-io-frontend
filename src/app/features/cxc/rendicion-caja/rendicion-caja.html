@@ -1,0 +1,131 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h3 class="page-title">Rendición de Caja</h3>
+      <p class="page-subtitle">Totales por forma de pago del día</p>
+    </div>
+    <div class="header-actions">
+      @if (rendicion()) {
+      <p-button label="Imprimir" icon="pi pi-print" severity="secondary" text size="small" rounded
+        (onClick)="imprimir()" />
+      }
+      <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text size="small" rounded
+        (onClick)="volver()" />
+    </div>
+  </header>
+
+  <div class="card filtros-card">
+    <div class="filtro-fecha">
+      <label>Fecha</label>
+      <p-datepicker size="small" [(ngModel)]="fecha" dateFormat="dd/mm/yy" [showIcon]="true" [appendTo]="'body'"
+        styleClass="w-12rem" (ngModelChange)="onFechaChange()" [maxDate]="fechaMax" />
+    </div>
+  </div>
+
+  @if (cargando()) {
+  <div class="card center-loading">Cargando rendición...</div>
+  } @else if (rendicion(); as data) {
+  <!-- Summary cards -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <span class="summary-label">Total General</span>
+      <span class="summary-value primary">{{ data.totalGeneral | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">Cobros Realizados</span>
+      <span class="summary-value">{{ data.totalCobros }}</span>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">Formas de Pago</span>
+      <span class="summary-value">{{ data.resumen.length }}</span>
+    </div>
+  </div>
+
+  <!-- Resumen por forma de pago -->
+  <div class="card">
+    <h4 class="section-title">
+      <i class="pi pi-wallet"></i> Resumen por Forma de Pago
+    </h4>
+    <p-table [value]="data.resumen" size="small" styleClass="resumen-table">
+      <ng-template #header>
+        <tr>
+          <th>Forma de Pago</th>
+          <th class="text-center">Cantidad</th>
+          <th class="text-right">Total</th>
+          <th class="text-right">% del Total</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-row>
+        <tr>
+          <td>{{ row.formaPago }}</td>
+          <td class="text-center">{{ row.cantidad }}</td>
+          <td class="text-right font-semibold">{{ row.total | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</td>
+          <td class="text-right">{{ porcentaje(row.total, data.totalGeneral) }}%</td>
+        </tr>
+      </ng-template>
+      <ng-template #summary>
+        <tr>
+          <td class="font-bold">TOTAL</td>
+          <td class="text-center font-bold">{{ data.totalCobros }}</td>
+          <td class="text-right font-bold text-primary">{{ data.totalGeneral | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</td>
+          <td class="text-right font-bold">100%</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="4" class="text-center p-3">Sin cobros registrados en esta fecha</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Detalle de cobros -->
+  @if (data.cajas.length > 0) {
+  <div class="card">
+    <h4 class="section-title">
+      <i class="pi pi-list"></i> Detalle de Cobros ({{ data.cajas.length }})
+    </h4>
+      <p-table [value]="data.cajas" size="small" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        styleClass="detalle-table">
+        <ng-template #header>
+          <tr>
+            <th style="width:60px">#</th>
+            <th style="width:80px">Hora</th>
+            <th>Cliente</th>
+            <th>Documento</th>
+            <th>Concepto</th>
+            <th class="text-right">Total</th>
+            <th style="width:80px"></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td>{{ row.cxccajaId }}</td>
+            <td>{{ row.fecharegistro | date:'HH:mm' }}</td>
+            <td>{{ row.nrocliente }}</td>
+            <td>{{ row.nrodocumento || '—' }}</td>
+            <td class="concepto-cell">{{ row.concepto || '—' }}</td>
+            <td class="text-right font-semibold">{{ row.totalPagos | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</td>
+            <td class="text-center">
+              <p-button icon="pi pi-print" severity="secondary" variant="text" [rounded]="true" size="small"
+                pTooltip="Reimprimir recibo" [loading]="imprimiendo() === row.cxccajaId"
+                (onClick)="imprimirRecibo(row.cxccajaId)" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="7" class="text-center p-3">Sin cobros registrados</td>
+          </tr>
+        </ng-template>
+      </p-table>
+  </div>
+  }
+  } @else {
+  <div class="card empty-state">
+    <i class="pi pi-calendar"></i>
+    <p>Seleccione una fecha para ver la rendición de caja</p>
+  </div>
+  }
+</section>

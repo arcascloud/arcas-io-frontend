@@ -61,12 +61,15 @@
           <span>Total</span>
           <strong>{{ formatearPrecio(totalCarrito()) }}</strong>
         </div>
+        @if (!autenticado()) {
+          <p class="login-hint"><i class="pi pi-lock"></i> Inicie sesión para poder pagar</p>
+        }
         <p-button
           label="Pagar ahora"
           icon="pi pi-check"
           severity="success"
           [fluid]="true"
-          [disabled]="cargandoCarrito()"
+          [disabled]="cargandoCarrito() || !autenticado()"
           (click)="abrirCheckout(); carritoOpen.set(false)"
         />
       </div>
@@ -375,7 +378,7 @@ size="small"             [(ngModel)]="checkout.tarjetacreditoId"
         severity="success"
         [fluid]="true"
         [loading]="procesando()"
-        [disabled]="procesando()"
+        [disabled]="procesando() || !autenticado()"
         (click)="procesarPago()"
       />
     </div>

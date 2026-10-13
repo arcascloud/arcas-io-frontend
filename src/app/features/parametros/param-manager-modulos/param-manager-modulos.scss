@@ -41,6 +41,22 @@
     color: var(--c-text-muted);
     margin-bottom: 0.3rem;
   }
+
+  .req {
+    color: var(--c-error);
+  }
+}
+
+// Ayuda bajo los campos del drawer
+.field-hint {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+
+  &.warn {
+    color: var(--c-warning);
+  }
 }
 
 .form-actions {

@@ -86,3 +86,73 @@ export interface CxcCarteraCliente {
   usuarioUpdate?: string;
   fechaUpdate?: string;
 }
+
+/**
+ * Préstamo a cliente (cxcprestamos).
+ * Nota: los nombres de propiedad de la entity mapean a columnas distintas en BD:
+ * tasa → tasa_interes_anual, diascuotas → diasplazo,
+ * moratorio → tasa_interes_moratorio_anual, gracia → diasgracia.
+ */
+export interface Prestamo {
+  prestamoId: number;
+  fecharegistro?: string;
+  nroprestamo: string;
+  clienteId: number;
+  /** Importe solicitado del préstamo. */
+  capital: number;
+  /** Aporte del cliente que rebaja el monto solicitado. */
+  prima?: number | null;
+  /** Importe real = capital - prima (solo lectura; amortiza el plan). */
+  capitalneto?: number | null;
+  tasa: number;
+  cuotas?: number | null;
+  diascuotas?: number | null;
+  moratorio?: number | null;
+  gracia?: number | null;
+  gestorId?: number | null;
+  monedaId?: number | null;
+  /** Fecha en que se aprobó el préstamo (default = fecha de registro). */
+  fecha_aprobacion?: string | null;
+  /** Fecha de la 1er cuota = fecha_aprobacion + 30 días. */
+  fechaEfectiva?: string | null;
+  /** Al abrir el préstamo = fechaEfectiva; luego, fecha del último cobro. */
+  fechaUltPago?: string | null;
+  /** Cuota a la que llegó el último pago (MAX(nrofila) de cuotas pagadas). */
+  ultcuotapagada?: number | null;
+  /** Saldo de capital neto pendiente = Σ capital de cuotas no pagadas. */
+  saldoactual?: number | null;
+  /** Valor de la cuota planificada (calculado en UI, no persiste). */
+  vlrcuota?: number;
+  sn_activo: 'S' | 'N';
+  sn_contabilizado?: 'S' | 'N';
+  sn_anulado?: 'S' | 'N';
+  Idsucursal?: number;
+  empresaId: number;
+  usuarioCreated?: string;
+  usuarioUpdated?: string | null;
+  fechaUpdated?: string | null;
+}
+
+/** Cuota del plan de pagos de un préstamo (cxcprestamospp). */
+export interface PrestamoCuota {
+  pppId: number;
+  prestamoId: number;
+  FechaPago: string;
+  clienteId: number;
+  nrofila: number;
+  vlrcuota: number;
+  capital: number;
+  interes: number;
+  mora: number;
+  saldo: number;
+  /** Días de mora al momento del cálculo/cobro (columna BD: diasmora). */
+  diasvencido?: number | null;
+  sn_pagada: 'S' | 'N';
+  sn_anulada: 'S' | 'N';
+  /** Caja (cxccajamae) que pagó esta cuota — permite reversa al anular. */
+  cxccajaId?: number | null;
+  empresaId: number;
+  usuarioCreated?: string;
+  usuarioUpdated?: string | null;
+  fechaUpdated?: string | null;
+}

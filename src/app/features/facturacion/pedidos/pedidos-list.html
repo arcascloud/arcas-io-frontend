@@ -37,11 +37,11 @@
         <tr>
           <th style="width:5rem"># Pedido</th>
           <th style="width:6rem">Fecha</th>
-          <th style="width:5rem" class="th-hora">Hora</th>
           <th>Cliente</th>
           <th style="width:8rem">Teléfono</th>
           <th style="width:5rem">Envío Gratis</th>
           <th style="width:5rem">Facturado</th>
+          <th style="width:8rem" class="text-right">Total</th>
           <th style="width:8rem" class="acciones-header">Acciones</th>
         </tr>
       </ng-template>
@@ -51,7 +51,6 @@
             <span class="nro-factura">{{ p.pospedmaeId }}</span>
           </td>
           <td>{{ fechaCorta(p.fecharegistro) }}</td>
-          <td class="hora-cell">{{ horaCorta(p.fecharegistro) }}</td>
           <td>
             <span class="cliente-nombre">{{ p.nombrecliente || 'Sin cliente' }}</span>
           </td>
@@ -62,10 +61,14 @@
           <td>
             <p-tag [value]="getFacturadoLabel(p.sn_facturado)" [severity]="getFacturadoSeverity(p.sn_facturado)" styleClass="tag-sm" />
           </td>
+          <td class="text-right">{{ moneda(p.total) }}</td>
           <td class="acciones-cell">
             <div class="acciones-row">
               <p-button icon="pi pi-pencil" severity="info" text rounded size="small"
                 (onClick)="editar(p.pospedmaeId); $event.stopPropagation()" pTooltip="Editar" tooltipPosition="top" />
+              <p-button icon="pi pi-print" severity="secondary" text rounded size="small"
+                [loading]="imprimiendo() === p.pospedmaeId" [disabled]="imprimiendo() != null && imprimiendo() !== p.pospedmaeId"
+                (onClick)="imprimir(p); $event.stopPropagation()" pTooltip="Imprimir detalle" tooltipPosition="top" />
             </div>
           </td>
         </tr>

@@ -1,7 +1,7 @@
 @if (cargando()) {
   <div class="card mb-3">Cargando datos...</div>
 } @else {
-  <div class="card mb-3">
+  <div class="card mb-3" [class.modo-facturacion]="modoFacturacion()">
     <div class="prestamo-form-columns" [formGroup]="form">
       <div class="form-col">
         @if (modoFacturacion()) {

@@ -492,13 +492,14 @@ export class MovimientosManager implements OnInit {
   }
 
   getTipoMovLabel(tipo: string): string {
-    const tipos: Record<string, string> = { 'C': 'Credito', 'A': 'Abono', 'D': 'Debito' };
+    const tipos: Record<string, string> = { 'C': 'Credito', 'A': 'Abono', 'D': 'Debito', 'I': 'Interés/Mora' };
     return tipos[tipo] || tipo;
   }
 
   getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'warning' | 'info' {
     if (tipo === 'A') return 'success';
     if (tipo === 'C') return 'info';
+    if (tipo === 'I') return 'warning';
     return 'danger';
   }
 }

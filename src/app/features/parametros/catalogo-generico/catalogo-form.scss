@@ -82,3 +82,36 @@
     width: 100%;
   }
 }
+
+// ===== Diálogo de alerta de registro duplicado (409) =====
+.dlg-duplicado {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+
+  > i {
+    font-size: 2rem;
+    color: var(--c-warning, #f59e0b);
+    line-height: 1;
+  }
+
+  .dlg-duplicado-msg {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+
+    p {
+      margin: 0;
+    }
+
+    .titulo {
+      font-size: 1rem;
+    }
+
+    .nota {
+      color: var(--c-text-muted, #64748b);
+      font-size: 0.85rem;
+    }
+  }
+}

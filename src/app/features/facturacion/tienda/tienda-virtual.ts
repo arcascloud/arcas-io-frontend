@@ -39,6 +39,9 @@ export class TiendaVirtual implements OnInit {
   private destroyRef = inject(DestroyRef);
   private api = inject(ApiService);
 
+  /** true si hay sesión activa — el botón "Pagar" solo se habilita autenticado (tienda es pública) */
+  readonly autenticado = this.auth.isAuthenticated;
+
   productos = signal<ProductoTienda[]>([]);
   carritoItems = signal<CarritoItem[]>([]);
   carritoId = signal<number | null>(null);
@@ -314,6 +317,11 @@ export class TiendaVirtual implements OnInit {
   }
 
   abrirCheckout() {
+    // Tienda pública: visitantes navegan libre, pero pagar exige sesión
+    if (!this.auth.isAuthenticated()) {
+      this.messageService.add({ severity: 'warn', summary: 'Sesión requerida', detail: 'Inicie sesión para poder pagar' });
+      return;
+    }
     if (this.carritoItems().length === 0) {
       this.messageService.add({ severity: 'warn', summary: 'Carrito vacío', detail: 'Agrega productos antes de pagar' });
       return;
@@ -333,6 +341,11 @@ export class TiendaVirtual implements OnInit {
   }
 
   procesarPago() {
+    // Defensa: el checkout solo procede con sesión activa
+    if (!this.auth.isAuthenticated()) {
+      this.messageService.add({ severity: 'warn', summary: 'Sesión requerida', detail: 'Inicie sesión para poder pagar' });
+      return;
+    }
     if (!this.checkout.nombrecliente) {
       this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa el nombre del cliente' });
       return;

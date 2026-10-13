@@ -1,4 +1,4 @@
-# Diario de Desarrollo - ERP (Frontend)
+﻿# Diario de Desarrollo - ERP (Frontend)
 
 Este documento registra el progreso diario, las decisiones de arquitectura y los estándares que definimos a medida que construimos el ERP.
 
@@ -551,3 +551,505 @@ Petición suya: *"agregar rtn_cliente y revisar si ya cambiamos direccion por di
 - Rutas con path literal (`clientes/dni-existe`) deben declararse ANTES de `clientes/:id`; si no, Nest las captura como `:id` (ParseIntPipe ? error)
 - PowerShell no puede leer el body de errores HTTP (`GetResponseStream()` queda vac�o despu�s de Invoke-RestMethod/WebRequest) ? usar `fetch` de Node para inspeccionar cuerpos 4xx
 - En modo desarrollo los correlativos avanzan con cada alta v�lida; los intentos bloqueados por DNI NO los consumen (guard va antes del `correlativos.siguienteString`)
+
+---
+
+## Bitácora – 07/10/2026 (tarde 2: gestores duplicados)
+
+### Completado
+
+#### Catálogo Gestores — bloqueo de duplicados con alerta por módulo
+- **Regla**: un empleado solo puede ser gestor **una vez por empresa** — la BD ya tenía la clave única `gestoresUnique(empleadoId, empresaId)` (SIN módulo); el INSERT duplicado daba `ER_DUP_ENTRY` → **500**. El guard de app ahora se alinea con la BD: sin eso, cualquier registro repetido seguía cayendo al 500.
+- **Backend** (`parametros.service.ts`):
+  - `validarGestorDuplicado(empresaId, empleadoId, excluirId?, moduloIdSolicitado?)` — `findOne` por (empresaId, empleadoId) excluyendo el propio id en update; lanza `ConflictException(409)`; bloquea también registros **inactivos** (la clave única los sigue ocupando — reactivar editando desde la lista; la lista no filtra `sn_activo`)
+  - `mensajeGestorDuplicado(moduloId, empleadoId)` — nombre = `nombres + apellidos` de `plplempleados` (repo ya inyectado) + género por `sexo === 'F'`:
+    - módulo 3 (Facturación) → "… ya se encuentra **registrada como vendedora**" / "registrado como vendedor"
+    - módulo 4 (CxC) → "… ya se encuentra **registrada como gestora de cobro**" / "registrado como gestor de cobro"
+    - usa el módulo del **registro existente** (el rol que ya tiene); en cruce de módulos describe el rol existente, no el solicitado
+  - Llamada al inicio de `createGestor` (antes de consumir nada) y en `updateGestor` (valores efectivos `dto.x ?? actual.x`, excluye id propio)
+- **Frontend** (`catalogo-generico/catalogo-form.*`): 409 → **diálogo modal bloqueante** con el mensaje exacto del backend (signals `dialogoDuplicado`/`mensajeDuplicado`, `DialogModule`, p-dialog 30rem + footer "Entendido", SCSS `.dlg-duplicado`); se omite el toast genérico "No se pudo guardar" en 409 (el interceptor global añade su toast "Conflicto de Datos", patrón ya aceptado con DNI). El código es **genérico**: sirve a cualquier catálogo que devuelva 409.
+- **Verificación**: E2E **23/23 PASS** (`test-gestores-duplicado.js`) — duplicado mismo par, cruzado de módulo, género F/M exacto, create único 201 → repetido 409 (no 500), PUT propio 200 / ajeno 409, inactivo 409, limpieza (baseline 3 filas intacta, 0 residuos); `nest build` + `ng build` OK; `backend-error.log` vacío
+- **Nota**: no se alteró el índice único (ALTER requiere aprobación). Si la regla de negocio debiera ser "empleado+módulo" (un mismo empleado podría ser vendedor Y gestor de cobro), habría que cambiar la clave a `(empleadoId, empresaId, moduloId)` — pendiente de su decisión. Los mensajes usan "gestor **de** cobro" (forma gramatical; indicó "gestor cobro").
+
+---
+
+## Bitácora – 07/10/2026 (tarde 3: textos de catálogos genéricos)
+
+### Completado
+
+#### Encabezados "Nuevo …" / "Editar …" de los 66 catálogos genéricos
+- **Bug original**: `catalogo-form.ts` calcula el singular con `config.tituloSingular ?? config.titulo.slice(0, -1)` (recorta 1 letra) — solo funciona con plurales regulares en "s". Ej: Gestores → **"Nuevo Gestore"**.
+- **Fix 1 — `tituloSingular` explícito**: 40 configs agregados (43 total con los 3 preexistentes) en `catalogo-parametros.models.ts`; los 23 restantes usan el fallback y son plurales regulares correctos (Estados→Estado, Marcas→Marca, etc.). Ejemplos: Meses→**Mes**, Formas de Pago→**Forma de Pago**, Países→**País**, Direcciones→**Dirección**, Cuentas Bancarias→**Cuenta Bancaria**, Profesiones→**Profesión**, Deducciones→**Deducción**, Cuentas Contables→**Cuenta Contable**, Unidades de Medida→**Unidad de Medida**, Ubicaciones→**Ubicación**, **Colores→Color** ("Colores"−s = "Colore", hallazgo del script de verificación), Factor de Cambio→**Factor de Cambio** (ya era singular), ISR/Impuesto Vecinal/Naturaleza de Cuenta/Grupo Contable/Detalle de Cierre/Reporte de Liquidez/Asistencia (singulares que el fallback mutilaba), Reportes Diarios→**Reporte Diario**, Movimientos de Cuentas→**Movimiento de Cuentas**, Saldos anuales→**Saldo anual**, Deducciones por Empleado→**Deducción por Empleado**, Carteras Contables (×4)→**Cartera Contable…**, Información de Proveedores/Clientes→**Información de Proveedor/Cliente**, Tipos de Documento Fiscal→**Tipo de Documento Fiscal**, Niveles Contables→**Nivel Contable**, Tarjetas de Crédito→**Tarjeta de Crédito**, Días de Cobro→**Día de Cobro**, Zonas Venta/Cobro→**Zona Venta/Cobro**, Precios de Venta→**Precio de Venta**, Titulaciones/Certificaciones/Comisiones→con tilde.
+- **Fix 2 — artículo Nuevo/Nueva**: el "Nuevo" estaba hardcodeado → "Nuevo Dirección", "Nuevo Cuenta Contable". Nuevo helper exportado **`articuloNuevo(singular)`** en `catalogo-parametros.models.ts`: primer sustantivo del singular → termina en -a/-ción/-sión/-dad/-tad/-tud → "Nueva"; excepción **"día"** → "Nuevo Día de Cobro". Usado en `catalogo-form.ts:105`.
+- **Verificación**: script `verificar-singulares.js` replica la lógica real y simula los 66 encabezados → **66/66 gramaticalmente correctos**; `ng build` OK (solo warnings CommonJS preexistentes)
+- **Alcance**: solo afecta a los 66 catálogos de `CATALOGOS_PARAMETROS` (ruta `parametros/:nombre`); no hay otro lugar que construya "Nuevo …" dinámico en `features/parametros`
+
+---
+
+## Bitácora – 07/10/2026 (noche)
+
+### Completado
+
+#### Pedidos (`/facturacion/pedidos/editar/nuevo`) — puntos 12, 13 y 14 de la revisión
+
+- **12 — ISV en el pedido (Subtotal ≠ Total)**: el carrito y el resumen del checkout mostraban Subtotal = Total porque las líneas se guardaban con `impuesto: 0`; **la factura final también salía sin ISV** (`checkoutPedido` en `facturacion.service.ts` ya suma `det.impuesto` correctamente con `total = subTotal + impuestoTotal - descuentoTotal`, pero recibía 0 en todas las líneas).
+  - `pedidos-virtual.ts`: cálculo de ISV con el **mismo criterio que `nueva-factura`** — `GET /parametros/parametros/objeto?moduloId=3` (`impuestoId`) + `GET /parametros/impuestos` con fallback al primer impuesto activo del módulo 3 → **ISV 15%** (`impuestoId` vacío en param-fac de empresa 2); helper `calcularImpuesto(bruto) = Math.round(bruto * tasa * 100) / 100` aplicado en los payloads de `agregarAlPedido`, `incrementar` y `decrementar`
+  - Nuevos computeds: `subtotalPedido` (Σ brutos sin ISV), `isvPedido` (Σ impuesto de las líneas) y `totalPedido` redefinido = `Σ(subtotal + impuesto − descuento)` (misma fórmula que `checkoutPedido`) → `efectivo_recibido`, "Total a pagar" y el cambio del checkout ahora cuadran con `importe_cambio` del backend
+  - `pedidos-virtual.html`: línea **`ISV (15%)`** agregada en el resumen del carrito y en "Resumen del Pedido" del checkout (`@if (tasaImpuestoPct > 0)`); la línea "Subtotal" ahora usa `subtotalPedido()`
+  - **Sin cambios en backend** → sin rebuild ni restart
+  - Nota: pedidos antiguos en BD tienen `impuesto = 0` en sus líneas → muestran ISV 0.00 hasta que el ítem se toque (incrementar/decrementar recalcula)
+- **13 — Botón Volver**: `p-button` "← Volver" en `toolbar-left` (size small, variant text, severity secondary, rounded + pTooltip) → `NavegacionService.volver(['/facturacion/pedidos'])` (history.back con fallback al listado)
+- **14 — Toast al incrementar ítem existente**: la rama `existing` de `agregarAlPedido` y el método `incrementar()` ahora emiten toast success "Actualizado — N unidades en el pedido" (antes solo se mostraba toast al agregar ítem nuevo)
+- Build: `npx ng build --configuration production` exit=0 (solo warnings CommonJS preexistentes)
+
+#### Fix — Botón "Confirmar Factura" siempre inhabilitado en pedidos
+
+- **Causa raíz**: `formularioPagoValido` era un `computed()` que solo leía `this.checkout.*`, y `checkout` es un **objeto plano** ligado con `[(ngModel)]` (no es signal). Un computed sin dependencias signals se evalúa **una sola vez** — al renderizar el contenido del diálogo, con los campos de pago aún vacíos → `false` — y queda **congelado para siempre**: escribir en los inputs cambia el objeto plano pero no invalida el computed, así que el botón `[disabled]="procesando() || !formularioPagoValido()"` nunca se habilitaba.
+- **Fix**: convertido a **método** `formularioPagoValido(): boolean` (misma lógica: nombre cliente requerido; tarjeta → 13+ dígitos + Luhn + vencimiento MM/YY + CVV≥3 + tipo tarjeta; transferencia → nroautorizacion; otro → true). El template ya lo llamaba con `()`, sin cambios en el HTML.
+- Por qué funciona en zoneless: cada evento DOM ligado por Angular (tecleo en `p-inputmask`/`input`, cambio de `p-select`) programa detección de cambios → el binding `[disabled]` reevalúa el método con el estado fresco del objeto plano.
+- `npx ng build --configuration production` exit=0
+
+#### Pedidos — botón "Guardar pedido" (facturación a futuro) en el sidebar "Mi Pedido"
+
+- **Footer del carrito** (`cart-summary`): ahora dos botones lado a lado (`.cart-actions`, flex) — **"Guardar pedido"** (secondary, `pi-save`) y **"Facturar pedido"** (success, `pi-check`; antes se llamaba solo "Facturar").
+- **Flujo Guardar**: valida que haya pedido con items → diálogo modal "Guardar pedido" (nombre completo * + teléfono, precargado desde el pedido cargado si tiene nombre real distinto de "Cliente Pedido") → `PUT /facturacion/pedidos/:id` con `{ nombrecliente, nrotelefono }` → toast success "Pedido #N guardado" → `limpiarTodo()` → navega a `/facturacion/pedidos`.
+- **Backend sin cambios**: ya existía `PUT /facturacion/pedidos/:id` con `UpdatePosPedMaeDto` (`nombrecliente?`, `nrotelefono?`); `ApiService.put` inyecta `empresaId` como query param (el controller lo toma de `@Query`).
+- **Nuevo método** `PedidosVirtualService.actualizarPedido(pedidoId, datos)` → `api.put("/facturacion/pedidos", id, datos)`.
+- **Facturar a futuro**: el pedido ya queda en `pospedmae` con su cliente → desde el listado `/facturacion/pedidos` (columna Cliente) → Editar → `/editar/:id` carga items → botón "Facturar pedido" → checkout.
+- Reset completo en `limpiarTodo()`: dialogs, señales de nombre/teléfono y datos de cliente precargados.
+- Diálogo: modal + draggable/resizable false + breakpoints + `[style]` 30rem (95vw mobile); footer con Cancelar (text/secondary) y Guardar (text/raised/success con `[loading]="guardandoPedido()"`); Enter en el nombre guarda.
+- E2E API 4/4 OK: POST crea (pedidoId=5) → PUT `CLIENTE GUARDADO E2E`/`9999-1234` → GET listado lo refleja → DELETE limpia; `backend-error.log` vacío.
+- `npx ng build --configuration production` exit=0
+
+- **Ajuste UX**: .cart-actions cambiado a lex-direction: column — botones Guardar pedido / Facturar pedido apilados en vertical (uno sobre otro), no lado a lado.
+
+#### Listado de pedidos — columna Hora eliminada
+- /facturacion/pedidos: quitada la columna **Hora** de la tabla (th + td + estilos .th-hora/.hora-cell); colspan del empty message 8 → 7; método horaCorta() eliminado de pedidos-list.ts. Compila exit=0.
+
+#### Pedidos — precios con separador de millares
+
+- `pedidos-virtual.ts` (`formatearPrecio`): de `L ${Number(x).toFixed(2)}` a `toLocaleString("es-HN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })` → **L 1,250.00** — aplica en los 16 usos del template (cards de productos, carrito, resumen del pedido y checkout), cubre `/facturacion/pedidos/editar/nuevo` y `/editar/:id` (mismo componente).
+- Toast de "Pedido facturado" (total de la factura) también con millares.
+- Listado `/facturacion/pedidos`: no tiene columnas con montos (solo #, fecha, cliente, teléfono, tags) — no hay números que formatear ahí.
+- `npx ng build --configuration production` exit=0
+
+#### Listado de pedidos - orden descendente
+
+- /facturacion/pedidos: tabla ordenada por **# de pedido de mayor a menor** (9 -> 1, mas reciente primero). Sort en pedidos-list.ts load() antes de setear la signal; el filtro y la paginacion respetan el orden. Frontend only, build exit=0.
+
+---
+
+## Bitácora – 07/10/2026
+
+### Completado
+
+#### Impresión de detalle de pedido (`/facturacion/pedidos`) — ticket/pdf por fila
+- **Decisión del usuario**: "Cada pedido (Detalle/Ticket)" (NO listado completo)
+- **Botón** `pi pi-print` en columna Acciones junto a Editar (severity secondary, text, rounded, small), con `[loading]` por fila, `[disabled]` mientras otra impresión corre y `$event.stopPropagation()` (la fila navega a editar)
+- **Backend SIN cambios**: reutiliza `GET /facturacion/pedidos/:id`, `GET /facturacion/pedidos-det/pedido/:id`, catálogo `/inventario/tienda/productos` (cache 1 min de PedidosVirtualService), `/companies/:id` + `/companies/det` + `/companies/impresoras`
+- **Motor reutilizado**: `FacturaImpresionService` (pdfmake, formato parametrizado desde `timpresoras` → TICKET 80mm o CARTA LETTER, impresión vía iframe oculto) — mismo motor que las facturas
+- **`factura-impresion.service.ts`** (sección nueva "PEDIDO"):
+  - `imprimirPedido(pedido, detalles)` — público; resuelve formato, arma doc, blob e imprime
+  - `cargarEmpresaImpresion()` — cacheado: nombre de `tempresas` + RTN/DIRECCION/TELEFONO/CORREO de `tempresasdet` + mensajes; fallback `{nombre:'EMPRESA'}`
+  - `totalesPedido()** — misma fórmula que `checkoutPedido`: `total = subtotal + ISV − descuentos`
+  - `buildPedidoTicketPdf()` — Courier 80mm: encabezado empresa, PEDIDO No./Fecha+Hora/Cliente/Tel/Estado (con # de factura si facturado), tabla ARTÍCULO / CANT × P.U. / TOTAL con desc por línea, Subtotal/−Descuentos/ISV/**TOTAL PEDIDO**, pie "Documento NO fiscal - pedido de venta / No equivale a factura" + fecha de impresión
+  - `buildPedidoCartaPdf()` — LETTER: encabezado empresa, bloque PEDIDO # + fecha/hora/estado (colores PENDIENTE ámbar / FACTURADO verde), tabla 6 col con header verde #10b981, bloque totales alineado a la derecha, mismo pie no fiscal
+  - `alturaPedidoTicketPdf(items)` — altura estimada de bobina (una sola página)
+- **`pedidos-list.ts`**:
+  - `imprimir(p)` → `forkJoin` de pedido + detalles + catálogo (productos con `catchError(() => of([]))`)
+  - `enriquecerDescripcion()` une cada línea con la descripción por **codbarra** (fallback productoId) — porque **`pospeddet` NO guarda `descripcion`** (solo `codbarra` + `productoId`); si no hay match: `Producto #id`
+  - signal `imprimiendo: number | null` (# de pedido en curso) + guard de doble click
+- **Smoke test API**: 10 pedidos; #2 → 2 detalles (codbarra 7501234567894 → "Corolla" en catálogo ✓); empresa AUTOSEL con RTN/DIRECCION/TELEFONO/CORREO ✓; impresoras formato **TICKET** ✓
+- **Nota**: pedidos legacy (creados antes del fix de ISV en tienda) imprimen ISV 0.00 — esperado
+- `npx ng build --configuration production` **exit=0** (solo warnings preexistentes)
+
+### Pendiente
+- Verificar impresión en browser: click pi-print → diálogo de impresión con ticket 80mm (formato TICKET de la empresa)
+
+---
+
+## Bitácora - 07/10/2026 (2)
+
+### Separación de rutas de pedidos: PedidoForm (ERP) vs PedidosVirtual (CRM)
+
+**Problema**: `/facturacion/pedidos/editar/:id` y `/facturacion/pedidos/editar/nuevo`
+cargaban `PedidosVirtual` (el CRM de clientes externos con diseño de tienda online).
+El editor ERP de pedidos se veía como la tienda virtual - "la cagada" reportada.
+
+**Solución**: nuevo componente `PedidoForm` con el mismo diseño de `nueva-factura`
+(grid xl:col-9 + panel lateral xl:col-3) que opera sobre pospedmae/pospeddet.
+
+**Archivos nuevos**:
+- `features/facturacion/pedidos/pedido-form.ts` - logica:
+  - Filas en memoria (FilaPedido) con calculo: bruto = cantidad x precio;
+    ISV = (bruto - descuento) x tasa (param-fac modulo 3, fallback 15%),
+    total = bruto - desc + ISV (cuadra con checkoutPedido del backend:
+    pospeddet.subtotal = bruto, descuento = monto, impuesto = ISV)
+  - Helper de productos (DynamicDialog ALT+1), escaneo >=13 digitos,
+    ofertas/promos desde /facturacion/combos-ofertas
+  - `asegurarGuardado()`: crea (POST mae + detalles secuenciales) o actualiza
+    (PUT mae + DELETE/POST detalles solo si sucio); Guardar navega al listado,
+    Facturar abre dialogo de pago
+  - Dialogo de pago UNICO con TODAS las formas de pago (a diferencia del CRM):
+    tarjeta (Luhn + MM/YY + CVV + tipo), transferencia (autorizacion),
+    efectivo (recibido + cambio); `formularioPagoValido()` es METODO (leccion
+    comput() con objetos planos + ngModel)
+  - Si sn_facturado = 'S' -> solo lectura (banner + campos/botones disabled)
+- `features/facturacion/pedidos/pedido-form.html` - layout identico a
+  nueva-factura: buscador, tabla 7 columnas (Producto/Imagen/Cantidad/Promo/
+  PrecioVta/Subtotal/Accion), totales 4 bloques, panel lateral (cliente, nombre,
+  telefono, envio gratis, resumen, botones Salir/Nueva/Guardar/Facturar)
+- `features/facturacion/pedidos/pedido-form.scss` - copia de clases relevantes
+  de nueva-factura.scss + extras (.page-header-pedido, .pd-actions, .pd-cambio)
+
+**Cambio de ruta** (unico archivo tocado de rutas):
+- `facturacion.routes.ts`: `pedidos/editar/:id` -> `./pedidos/pedido-form`
+- INTACTOS: `/pedidos-virtual` (CRM), `/pedidos` (lista ERP con impresion),
+  pedidos-list.ts navega a /editar/:id y /editar/nuevo -> ahora PedidoForm
+
+**Verificado**:
+- `UpdatePosPedMaeDto` acepta nombrecliente/nrotelefono/sn_enviogratis/sn_facturado
+- `npx ng build --configuration production` exit=0 (solo warnings preexistentes)
+- git status: solo routes.ts (1 linea) + 3 archivos nuevos en esta ronda
+- `p-table` NO tiene input `trackBy` (es de ngFor) - removido del template
+
+## Bitácora - 07/10/2026 (3): Pedidos — nuevo esquema pospedmae/pospeddet, E2E 61/61
+
+### Contexto
+El usuario recreó `pospedmae`/`pospeddet` con el nuevo DDL (tablas vacías, sin migración). Alcance aprobado: **"Contado + cabecera completa"** — defaults completos en backend, totales de cabecera recalculados, ERP envía `clienteId`/`nrocliente` con `tipofactura 'E'`, cerrar con E2E + revisión fuerte CRM/ERP.
+
+### E2E completado (61 OK / 0 FAIL)
+Script: `Temp\\opencode\\test-pedidos-nuevo-esquema.js` (snapshots previos + limpieza exacta).
+
+**A. Pedido ERP (clienteId real = 1 / CLI-0001)** — 33 checks:
+- Defaults backend al nacer: `bodegaId=1`, `cajaId=1`, `Idsucursal=1`, `sn_facturado='N'`, `tipofactura='E'`, total 0
+- Totales de cabecera recalculados en cada cambio de detalle: 200/30/0/230 → 250/36.75/5/281.75 → (PUT det) 300/43.50/10/333.50
+- PUT: renombra sin romper totales ni clienteId; PUT con `sn_facturado:'S'` → 400 (solo checkout lo marca)
+- Checkout **multi-pago** (efectivo 200 + transferencia 133.50 con AUT): 2 filas en `posfaccaja`, `nrofactura` numérico, pedido enlazado (`sn_facturado='S'`, `facturaId`, `nrofactura`)
+- `posfacmae`: cliente/bodega/caja/sucursal/pagada/tipo/total/dirección correctos; `posfacdet` 2 líneas con empresaId/bodegaId; `invkardex` 2 salidas (nroreferencia=facturaId, moduloId=1)
+- **Partida contable automática** (integración ON en empresa 2): 6 líneas cuadradas D=H=72,343.50 + bitácora `posfacmov`
+- 5 guards 400: re-checkout, crear det, PUT, DELETE det, DELETE pedido (todo facturado)
+- Dirección copiada del pedido **vigente** (la renombrada en el PUT)
+
+**B. Pedido CRM (sin clienteId)** — 15 checks:
+- Fallback cliente TIENDA (clienteId=15) + mismos defaults; det → totales 100/15/0/115; DELETE det → cabecera a 0; re-crear det
+- Checkout **legacy** (1 fila de caja, efectivo 115, cambio 0); guard re-checkout 400
+
+**Limpieza/restore (sin residuos):** 0 filas TEST; `coctamov` (45), `coctasaldos` (38) e `invexistencias` (7) idénticos a sus snapshots; conteos baseline intactos; detección de concurrencia exacta por IDs (kardex/facturas ajenas/anulaciones en la ventana). Pedidos del usuario #13-15 intactos.
+
+### Hallazgo corregido: dirección de factura NUNCA se persistía
+- **Síntoma**: todas las `posfacmae.direccion_entrega = NULL` (5/5 filas existentes); el HTML de correo-factura (`generarHtmlFactura`) mostraba siempre `f.direccion = 'N/A'`
+- **Causa**: DTO/FE envían `direccion`, pero la entidad mapeaba la propiedad `direccion_entrega` sin `name:` → TypeORM descartaba el campo en INSERT (no existe columna `direccion`)
+- **Fix**: `posfacmae.entity.ts` → propiedad renombrada a `direccion` con `@Column({ name: 'direccion_entrega', ... })` (length 2000, coincide con BD). Beneficia los 3 flujos de una vez: Nueva Factura, `checkoutTienda` y `checkoutPedido` (que copia `pedido.direccion_entrega`)
+- Verificado en E2E: A24 confirma dirección correcta en la factura creada por checkout
+
+### Hallazgo PENDIENTE (reportado, no corregido — requiere aprobación)
+- `contabilidad-logica.service.ts` → `descontabilizarFactura` usa `.where('movctascontablesId = :id')` pero la columna real de `coctamov` es `coctamovId` → error SQL silenciado por catch → la reversa de una factura contabilizada queda incompleta (coctamov mal revertido + paso 5 saltado → factura con `partidaId`). No afecta al E2E (la limpieza es SQL directo). Corrección de 1 línea cuando el usuario apruebe.
+
+### Revisión fuerte CRM + ERP (OK)
+- **ERP** (`pedido-form.ts`): envía `clienteId`/`nrocliente` (valida cliente requerido), `p_descuento` en cada línea, checkout con pagos[] completo (Luhn tarjeta + autorización transferencia), todos los campos declarados en DTOs
+- **CRM** (`pedidos-virtual`): `crearPedido` sin clienteId (→ TIENDA), `nrotelefono` con fallback 'N/A', checkout legacy sin pagos[]
+- `checkoutPedido` resuelve `empresaId` desde el pedido → `sinContexto: true` es válido; `Idsucursal` inyectado desde JWT + fallback en service
+- Formularios FE no recolectan dirección/RTN del pedido (columnas opcionales en BD; backend los acepta y el checkout los copia) — funcionalidad disponible si se decide agregarlos a la UI
+
+### Verificaciones de build
+- `nest build` exit 0 → backend reiniciado (:3000, node PID nuevo, docs 200)
+- `ng build --configuration production` exit 0 (solo warnings preexistentes: budgets + CommonJS)
+
+## Bitácora - 07/10/2026 (4): Fix descontabilizarFactura + paridad pedido→factura (crédito) + E2E 76/76
+
+### 1. Fix aplicado: `descontabilizarFactura` (aprobación del usuario — "dejar bien fino")
+- `contabilidad-logica.service.ts` (~L2172):
+  - `.where('movctascontablesId = :id')` → `.where('coctamovId = :id')` (PK real de `coctamov`; el error SQL estaba silenciado por catch y la reversa quedaba incompleta)
+  - `saldo` recalculado **con signo**: `sacum + (nuevoDebe − nuevoHaber)` redondeado a 2 decimales
+  - Paso nuevo: `actualizarSaldosCuentas(detallesPartida.map(...), empresaId, periodo, anio, currentUser)` **después** de marcar flags (la doble bandera sn_anulada='N' AND sn_contabilizada='S' solo ve los datos ya revertidos)
+
+### 2. Paridad pedido→factura (DTOs + `checkoutPedido`)
+- **`facturacion.dto.ts`**: `CreatePosPedMaeDto`/`UpdatePosPedMaeDto` += `factordecambio`, `sn_excenta` (S/N), `tipoconstancia` (OCE/SAG/CEA/FNE), `nroconstancia`, `importe_excento`; `CheckoutPedidoDto.formapagoId` → `@IsOptional()` (el crédito no paga)
+- **`checkoutPedido`**:
+  - `validarPeriodoAbierto` (mismo criterio que Nueva Factura; verificado: 10/2026 abierto → seguro)
+  - `facturaPayload` con paridad total: `tipofactura: 'C'/'E'`, `rtn_cliente`, `factordecambio` (fallback 1), `diascredito`/`fechavencimiento` solo crédito, `gestorId`, `sn_excenta`, `tipoconstancia` (default FNE), `nroconstancia`, `importe_excento`, `sn_pagada`, `efectivo_recibido`/`importe_cambio`=0 en crédito
+  - Crédito → `cxcService.generarMovimientoDesdeFactura` (try/catch) en paralelo a la factura
+  - Filas `posfaccaja` **solo contado** (`if (!esCredito)`); pedido queda `sn_pagada='N'` en crédito
+- **`pospedmae`** tiene todas las columnas de `posfacmae` → sin DDL
+
+### 3. Frontend `pedido-form` (ERP) — espejo de Nueva Factura
+- Campos nuevos: Tipo factura (Contado/Crédito selectbutton), cliente "+" (ruta `?modo=facturacion`), RTN (auto desde cliente en crédito), bloque fiscal (Descuento global, Exenta ISV, Tipo/Nro Constancia, Importe Excento readonly)
+- Fórmula ISV incluido (`sn_impuestoincluido='S'`, empresa 2): `recalcularFila` con exenta → `impuesto=0` + `impuestoExcento`
+- Descuentos (`/facturacion/descuentos` con acumulables), días plazo CxC, gestor, ALT+1/ALT+2
+- `facturar()` ramifica: crédito → `checkoutCredito()` (POST checkout, solo pospedmaeId/nombrecliente/nrotelefono, `sinContexto`); contado → diálogo de pago
+- Validación exenta (tipo+nro constancia requeridos) en `asegurarGuardado`; payload mae completo en PUT (sin factordecambio → backend fallback 1)
+- Builds: `nest build` 0 · `ng build --configuration production` 0
+
+### 4. E2E extendido: **76 OK / 0 FAIL**
+Script: `Temp\\opencode\\test-pedidos-nuevo-esquema.js` — secciones A (33) + B (15) intactas, **sección C nueva (15 checks)**:
+- C0 contado hereda: rtn, excenta=N, FNE, importe 0, factor 1, gestor null, días 0
+- C1-C4: pedido crédito con cabecera fiscal completa persiste en `pospedmae` (whitelist) + detalle exenta 100/0/100
+- C5-C6: checkout **sin formapagoId ni pagos** (201) → `posfacmae`: tipo='C', pagada='N', RTN, exenta='S', SAG/CONST-E2E-1, importe_excento=15, vencimiento, factor=1, dirección, total=100
+- C7 `posfaccaja` = 0 filas (crédito no paga) · C8 `cxcmovimientos` 1 débito FAC por 100 · C9 pedido pagada='N' enlazado
+- C10-C12: kardex 1 salida + partida 39 cuadrada (15,100 = 15,100) + movimiento CxC vinculado a la partida · C13 guard re-checkout 400
+- Limpieza: nueva `DELETE cxcmovimientos` (moduloId=3, nroreferencia=nrofacturas TEST) **antes** de `copdamae` (FK partidaId) + **V14** sin huérfanos; snapshots exactos (coctamov 45, coctasaldos 38, invexistencias 7); pedidos usuario #13-15 intactos
+
+
+---
+
+## Bitácora – 07/10/2026 (5) — TodoPago: link de pago (modo sandbox)
+
+### Completado
+
+#### TodoPago en ERP — implementación completa backend + frontend (E2E 47/47 OK)
+
+**Decisión del usuario**: botón/activación = **en la forma de pago** (fila `formapagoId=6 TodoPagoLink` en el diálogo de Formas de Pago de Nueva Factura); al confirmar = **"Todo: transacción + factura + caja"**.
+
+**Flujo implementado**
+1. Facturar contado con pago TodoPagoLink → factura nace `sn_pagada='N'` y la fila TP **NO** se inserta en `posfaccaja` al facturar (los otros pagos sí).
+2. Tras kardex, se genera el link → card en el panel derecho con URL (copiar/abrir/ver estado), monto, tag estado y badge SANDBOX; **polling cada 10 s** al `/status`.
+3. Al abrir el link (sandbox simulado) → redirige a **`/facturacion/pago-confirmado?Answer=SIM-…&Order=FA-…`** → componente confirma vía `POST /api/todopago/confirmar` → pantalla éxito/error.
+4. Confirmación atómica (idempotente): transacción `completed` + `fecha_confirmacion` + `raw_response` · `posfacmae.sn_pagada='S'` · `INSERT posfaccaja` (formapagoId=6, importe_otros=link, `usuarioCreated` heredado de la factura, `nroautorizacion`=operationId). Reconfirmar → `alreadyProcessed=true`, sin duplicados.
+
+**Backend — módulo `src/modules/todopago/`**
+- `entities/transaccion-pago.entity.ts` — mapea tabla existente `transacciones_pago` (columna `facturaid` minúsculas, FK → `posfacmae`; enum status pending/completed/failed/expired/reversed; json raw_request/raw_response).
+- `todopago.service.ts` — protocolo 3 operaciones con **axios**: SendAuthorizeRequest / GetAuthorizeAnswer / GetStatus; **sandbox automático** sin credenciales (`TODOPAGO_*` vacías en .env) → link simulado `${PUBLIC_URL}/facturacion/pago-confirmado?Answer=SIM-…`; monto = total factura − sum(posfaccaja); validaciones 404 factura inexistente / 400 anulada / 400 saldada.
+- `todopago.controller.ts` — `GET /todopago/config` · `POST /generar-link/:facturaId` · `GET /status/:operationId` · `GET /transacciones/:facturaId` · **`POST /confirmar`** (público, callback) · **`POST /webhook`** (público, servidor a servidor).
+- `todopago.module.ts` registrado en `app.module.ts` (forFeature TransaccionPago + TPosFacMae + TPosFacCaja); usa `FechaSistemaService` (global) para `fecha_confirmacion`/`fechaUpdated`.
+- `axios` instalado en Backend.
+
+**🔴 Gotcha crítico: dotenv y JWT (401 generalizado)**
+- Primer intento: `dotenv.config()` al inicio de `main.ts` → el .env del repo es un **template de junta-agua** con `JWT_SECRET=${seed}` (literal, sin expandir).
+- Efecto: `JwtModule.register` evalúa `process.env.JWT_SECRET` **al importar** (antes de dotenv) → firma con fallback `arcas-software-secret-key-2026`; `JwtStrategy` construye **después** de dotenv → verifica con `${seed}` → **firma inválida → 401 en TODA la API autenticada** (descubierto en la primera pasada del E2E: B1 401).
+- **Solución**: quitado `dotenv.config()` global. Nuevo helper todopago.env.ts (cargarEnvTodoPago) que parsea el .env y carga SOLO TODOPAGO_* y PUBLIC_URL, invocado en main.ts después de NestFactory.create() (el JWT ya capturó su secreto). SMTP/DB/JWT del .env (plantilla de junta-agua) quedan intactos.
+- Verificación: login → verify OK con fallback → GET protegidos pasan el guard (400 por query requerida = correcto).
+
+**Frontend**
+- `core/services/todopago.service.ts` — getConfig/generarLink/getStatus/getTransacciones (vía ApiService) + `confirmar()` (HttpClient directo, público); exporta `FORMAPAGO_TODOPAGO = 6`.
+- `nueva-factura.ts`:
+  - `facturar()`: detecta pagos con `formapagoId=6` → `sn_pagada='N'`, `efectivo_recibido` solo suma pagos no-TP, `importe_cambio=0`.
+  - `guardarPagosYFinalizar()`: **excluye TP** de los `fac-caja`.
+  - `procesarKardexYFinalizar()`: si hubo link → `generarLinkPago(fac)` (card + polling) en vez de reset directo.
+  - `onFormaPagoChange()`: al elegir TodoPago auto-asigna el **importe pendiente** de la factura.
+  - Signals `linkPago/linkStatus/linkCopiado`; métodos copiarLink/abrirLink/cerrarLink/consultarEstadoLink + tag estado (Pendiente/Pagado/Fallido/Expirado).
+- `nueva-factura.html/.scss` — card **`.tp-link-card`** al inicio del panel derecho (URL copiable, botones Copiar/Abrir/Estado/Cerrar, badge SANDBOX); `(onChange)` en select de forma de pago.
+- **Ruta nueva** `/facturacion/pago-confirmado` (`features/facturacion/pago-confirmado/`) — lee `?Answer=&Order=`, confirma, muestra éxito (factura # + monto) / error con Reintentar; botones a consultas/nueva factura.
+- Build: `ng build --configuration production` OK (solo warnings CommonJS preexistentes).
+
+**Prueba E2E sandbox — `test-todopago-link.js` → 47/47 OK**
+- A: config (sandbox, formapagoId=6) · B: factura contado `sn_pagada=N` sin caja · C: generar-link (pending, monto 115, URL SIM-…, fila BD) · D: confirmar (completed, `sn_pagada='S'`, 1 caja formapagoId=6 importe_otros=115, usuarioCreated heredado) · E: idempotencia (reconfirmar no duplica) · F: status/historial/404/400 (anulada, saldada) · V: snapshots `posfacmae/posfacdet/posfaccaja/transacciones_pago/copdamae/copdadet/invkardex` + `coctamov/coctasaldos/invexistencias` **idénticos**; cleanup sin residuos TEST E2E TP%.
+- `backend-error.log` en 0 líneas.
+
+**Nota**: quedan en `src/` archivos .js muertos de la referencia Express (`config/todopago.js`, `todopago.service.js`, `todopagoController.js`, `todopagoRoutes.js`) — código no compilado (tsc solo .ts); no borrar sin avisar.
+
+### Pendiente
+- Prueba en browser: Nueva Factura → pago TodoPagoLink → Facturar → card link → **Abrir** → pantalla de confirmación → verificar `sn_pagada='S'` + caja.
+- Modo producción: credenciales `TODOPAGO_MERCHANT_ID/API_KEY/SECURITY` en .env + endpoint real (arreglar URLs `.com.ar` vs dominio HN según documentación de TodoPago Honduras) y webhook público.
+- Los archivos .js de referencia Express en `src/` → eliminar o mover a docs.
+
+
+---
+
+## Bitácora – 07/10/2026 (6)
+
+### Completado
+
+#### TodoPago replicado en Pedidos (`/facturacion/pedidos`) — E2E 40/40 OK
+- **Backend `facturacion.service.ts` → `checkoutPedido()`**:
+  - Constante local `FORMAPAGO_TODOPAGO = 6` (evita import cruzado con módulos)
+  - Detección `conLink`: tabla `pagos` con formapagoId=6, O legacy sin tabla pero `formapagoId=6` (camino CRM/pedidos-virtual)
+  - Factura nace `sn_pagada='N'`; `efectivo_recibido = suma de pagos NO-TP`; pagos TP **no** entran a `posfaccaja` (se insertan al confirmar el link)
+  - `pospedmae.sn_pagada='N'` hasta que el link se confirme; return `{ facturaId, nrofactura, total, conLink }`
+- **Backend `todopago.service.ts` → `aplicarConfirmacion()`**: además de `posfacmae.sn_pagada='S'`, localiza el pedido (`pospedmae.facturaId`) y lo marca `sn_pagada='S'` (coherencia con la lista de pedidos). `todopago.module.ts` +repo `TPosPedMae`
+- **Frontend `pedido-form.ts/html/scss`**: inyecta `TodoPagoService`; `facturarConLink` detectado en `procesarPago()`; en success con link **NO navega** → `generarLinkPago()` + card `.tp-link-card` (monto, tag estado, SANDBOX, copiar/abrir/estado/cerrar) + polling 10s + `onFormaPagoChange` (auto-importe pendiente al elegir TP)
+- **E2E `test-todopago-pedidos.js`: 40/40** — multi-pago efectivo 100 + TP 130 → factura N, caja solo efectivo, kardex OK; link cobra **saldo pendiente 130** (230−100); confirmar → completed + caja 2 filas (suma 230) + pedido pagado; caso legacy (formapagoId=6 sin tabla); idempotencia; 404; snapshots intactos (V1–V4); cleanup total
+- `nest build` 0 · `ng build --configuration production` 0 · backend reiniciado :3000
+
+### Gotchas encontrados
+- **El checkout de pedidos contabiliza automáticamente** (emisión de partida por `factura.creada`) — el cleanup del E2E debe: borrar `posfacmov` **ANTES** que `copdadet`/`copdamae` (FK `FK_posfacmov_copdamae` RESTRICT) + revertir `coctamov`/`coctasaldos` (restauración desde snapshot si no hay actividad concurrente, o reversa selectiva por deltas si la hay)
+- `POST /todopago/generar-link/:id` cobra el **saldo pendiente** (total − pagos ya en caja), no el total de la factura
+- Runs fallidos dejaron residuos → scripts de reparación en Temp: `fix-tp-pedidos-residuos.js` (limpieza por nombre TEST E2E TP) y `fix-tp-deltas-run2.js` (reversa de deltas contables); I1/I2 verificados OK tras cada reparación
+
+### Hallazgo (preexistente, NO tocado — requiere su revisión)
+- Descuadre de **500** entre `coctamov.saldo` y `coctasaldos.octubre` (periodo 10/2026, empresa 2): `1-1-10-1-001` = 344,600 vs 344,100 y `1-1-20-1-001` = 1,003,900 vs 1,004,400 (se compensan entre sí). **Ya existía antes** de los fixes de hoy (confirmado: presente en los valores previos a la primera reparación). Parece un movimiento de 500 aplicado solo a `coctamov`.
+
+### Pendiente
+- Probar en browser: pedidos → pago con TodoPagoLink → card del link → confirmación en sandbox
+- Ruta `/facturacion/pago-confirmado` queda bajo `authGuard` (OK en sandbox con sesión; en producción real deberá salirse del guard)
+
+#### E2E TodoPago en pedidos reescrito SIN tocar contabilidad (42/42 OK)
+- **Regla del usuario**: prohibido TODA prueba contable del agente (cero escrituras a `coctamov`, `coctasaldos`, `copdamae`, `copdadet`, `cocierremae/det`, `coperiodoctable`). Se permite flujo completo factura/pago/TodoPago/kardex SIEMPRE que NO se genere partida contable.
+- **Opción A autorizada**: alternar `ttipoparametros.sn_integrar_facturacion` 'S'→'N' solo durante la corrida y restaurar 'S' verificado en `finally`. Mecanismo: `contabilizarFactura` (contabilidad-logica.service.ts L1911) sale temprano → cero `copdamae`/`copdadet`/`posfacmov`/`coctamov`/`coctasaldos`; kardex y pagos siguen normales.
+- **Simulación contable** (pedido + factura TEST): `sn_contabilizada='S'` + `partidaId = ttipoparametros.nropartida` (47; no existe en `copdamae`, sin FK en `pospedmae`/`posfacmae` → no apunta a partida real). ```nropartida``` NO existe como columna en esas tablas: el número va en `partidaId`.
+- **Marcador**: pedidos con `direccion_entrega='TEST de prueba'`; `nombrecliente LIKE 'TEST E2E TP %'` para cleanup.
+- **Test** `test-todopago-pedidos.js` reescrito: flag en try/finally; snapshots SOLO tablas de negocio (sin V2/V3 de coctamov para evitar falsos positivos por contabilidad concurrente del usuario en UI); aserciones de cero partidas TEST (lectura) al inicio/fin; limpieza sin tablas contables. Resultado: **42/42** — flag restaurado 'S', conteos negocio == iniciales, invexistencias exacto.
+
+#### Notificación del link TodoPago → ConfirmDialog headless (llamativa)
+- **Motivo**: la notificación del link (toast + card en el panel) era casi inadvertida. Se reemplaza con un **ConfirmDialog headless** (https://v21.primeng.org/confirmdialog#headless) modal en **Nueva Factura** y **Pedido Form**.
+- **Dos variantes en un solo template** (según `linkStatus()`):
+  1. **Link generado** (badge círculo gradiente emerald + icono pi-link, título, Factura #, monto grande L, tag estado, tag SANDBOX, url copiable, acciones: Copiar link / Abrir link / Estado / Cerrar)
+  2. **¡Pago confirmado!** (badge check, monto en verde, botón Entendido) — se reabre automáticamente cuando el polling o "Estado" detectan `completed`
+- **Disparadores**: `generarLinkPago()` (exito) y `polling`/`consultarEstadoLink()` en `completed`. El toast de "Link de pago generado" se quitó (el diálogo lo reemplaza); el de "Pago confirmado" se mantiene.
+- **Implementación**:
+  - `ConfirmDialogModule` + `ConfirmationService` **local en providers** de cada componente (aisla su `<p-confirmdialog>` del global de `main-layout` — mismo patrón de `anular-facturas`)
+  - `<p-confirmdialog key="tp-link">` declarativo con `[style] width 460px` y `breakpoints` (esos dos NO existen en la interfaz `Confirmation`; irían en `confirm()` y no compilan)
+  - `confirm()` solo pasa props válidas: key/header/message/icon/modal/closable/closeOnEscape/dismissableMask + `acceptVisible:false` y `rejectVisible:false`
+  - Template `#headless` con contexto `let-message let-onAccept let-onReject` (ContentChild 'headless' en primeng 21.1.9)
+  - **Footer por defecto oculto**: PrimeNG renderiza el footer con botones Cancel/OK incluso en headless (bug #17000) → doble protección: props de visibilidad + `.tp-hl-dialog .p-dialog-footer { display: none }` con `::ng-deep` (styleClass declarativo en el `<p-confirmdialog>`)
+  - SCSS `.tp-hl` idéntico en ambos componentes (tokens `--c-*`, badge gradiente con sombra, monto 1.8rem)
+  - `nueva-factura`: signal nueva `nroFacturaLink` (tras `nueva()` el formulario se resetea, el nro. fiscal se guarda aparte para el diálogo)
+  - La card `.tp-link-card` se conserva como indicador persistente tras cerrar el diálogo
+- `npx ng build --configuration production` **EXIT=0**
+
+
+---
+
+## Bitácora – 08/10/2026
+
+### Completado
+
+#### TodoPago A+B+C: pantalla de links pendientes, expiración local 48h y botón en Consulta de Facturas (E2E backend 20/20 OK)
+
+**C (expiración local de links - 48h)** `Backend/src/modules/todopago/todopago.service.ts`:
+- Constante `TTL_LINK_HORAS = 48`
+- `expirarLinksVencidos()` privado: UPDATE lazy que pasa a 'expired' todo link 'pending' con `fecha_creacion < NOW() - INTERVAL 48 HOUR` (idempotente)
+- `listarLinksPendientes()` lo invoca ANTES de listar
+- `consultarStatus()`: si el tx está 'pending' y ya venció el TTL → 'expired' en BD y retorna SIN consultar el gateway
+- `generarLink()`: antes de guardar la transacción nueva, marca 'expired' los 'pending' anteriores de la misma factura → **un solo link vigente por factura** (regenerar vence el anterior)
+- `mapTx()` ahora incluye `url` (desde rawRequest.url) y `sandbox`
+
+**B (pantalla de links pendientes)**:
+- Backend: `GET /todopago/links-pendientes` (`todopago.controller.ts`) con `@Query('empresaId')` opcional (parseo manual, sin ParseIntPipe); `listarLinksPendientes(empresaId?)` enriquece cada tx con nrofactura, nombrecliente, totalFactura, empresaId, snPagada, snAnulada (join manual via facMaeRepo + `In()`) y filtra por empresa (transacciones_pago NO tiene columna empresaId → se filtra vía posfacmae)
+- Frontend service: interfaz `TodoPagoLinkPendiente` + `getLinksPendientes()` (empresaId auto-inyectado por ApiService); `nrofactura` del base ampliado a `string | number`
+- Componente nuevo `features/facturacion/todopago/` (`TodoPago`): tabla paginada de links pendientes (Factura, Cliente, Monto, Creado, Edad, Estado, Entorno, Acciones), filtro por factura/cliente, tag PRODUCCIÓN/SANDBOX del config, acciones por fila: Copiar link, Abrir link, Consultar estado (completed → sale de la lista; expired → avisa), Regenerar con ConfirmDialog local (`key='tp-regenerar'`, providers locales `ConfirmationService`)
+- Ruta: `/facturacion/todopago` en `facturacion.routes.ts` (**el item de menú en tusuariomnuitem requiere INSERT aprobado por el usuario**)
+
+**A (botón en Consulta de Facturas)** `consulta-facturas.ts|html|scss`:
+- Botón `pi pi-link` con `pTooltip="Ver link de pago"` en la columna Acciones, visible solo si `sn_pagada !== 'S' && sn_anulada !== 'S'` (severity help)
+- Diálogo "Link de pago — Factura #": carga `GET /todopago/transacciones/:id`; si hay tx 'pending' muestra URL readonly + Copiar/Abrir + monto/fecha/SANDBOX + botón "Regenerar link"; si no hay → estado vacío con botón "Generar link"; abajo tabla Historial (fecha, monto, estado con labels ES: Pendiente/Completado/Fallido/Vencido/Reversado)
+- Signals: dialogLink, linkFactura, linkHistorial, linkVigente, linkCargando, linkGenerando; métodos abrirLink, cargarLink, generarLinkFactura, copiarLinkUrl, abrirLinkUrl, getLinkEstadoLabel/Severity
+
+**Verificación E2E `test-links-e2e.js` → 20/20 OK** (admin, factura pendiente 1 = 120009, empresa 2):
+- generar-link 201 con url; links-pendientes lo lista con nrofactura/nombrecliente/empresaId enriquecidos y url presente
+- empresaId=999 no ve la fila (filtro multi-empresa OK)
+- regenerar → anterior 'expired', nueva 'pending' (un solo link vigente)
+- envejecer 49h → al listar NO aparece, BD queda 'expired' (TTL lazy OK)
+- GET status/:operationId → 'expired' sin gateway
+- historial incluye url + sandbox
+- cleanup: 2 filas baseline intactas (solo se borraron las creadas por el test; NO toca contabilidad ni ttipoparametros)
+- `nest build` EXIT=0; `ng build --configuration production` EXIT=0; backend reiniciado en :3000
+
+### Pendiente
+- INSERT aprobado del usuario para el item de menu `/facturacion/todopago`
+- Probar A y B en browser (usuario revisa visualmente)
+
+---
+
+## Bitácora – 10/10/2026
+
+### Contra partida (Contabilidad) — backend + E2E + UI
+
+#### Diseño (aprobado por el usuario)
+- **Contra partida** = reverso de un asiento: crea partida espejo en el **período vigente** (fechaSistema) con débito↔crédito invertidos, mismo módulo/documento/referencia/sucursal/factor.
+- **Original** → `sn_anulada='S'` + `sn_contabilizada='S'` + `contrapdaId` + `feccontrapda` (marcado AL FINAL); **contra** → `N/S` + `partidaOrigenId`, `nropartida` correlativo propio, `descripcion = "Contra partida #N: ..."`, líneas conservan su descripción.
+- Ambas permanecen en el mayor y **netean a cero** (se postean con `actualizarMovimientosContables` + `actualizarSaldosCuentas`).
+- **Estados**: `N/S` vigente · `S/N` anulada normal · `S/S` original contraedida (cuenta) · `N/S` + `partidaOrigenId` = contra (cuenta). **Criterio único**: solo `sn_contabilizada='S'` para cálculo/reconstrucción (cambio de doble bandera → bandera simple en TODO: saldos, ER, libro diario, dashboard, reconstrucción).
+
+#### Bloqueos (backend `contabilidad-logica.service.ts` / `contabilidad.service.ts`)
+- `contraPartida`: 404 inexistente · 400 (es contra / `CIERRE-` / no contabilizada / sin período vigente abierto / original en período posterior / sin líneas) · 409 ya contraedida (+ red de seguridad por `partidaOrigenId` + `sn_contabilizada='S'`).
+- Guard `exigirPartidaNoContraida` en update/remove `copdamae` y en líneas: original contraedida no se edita/elimina (409); **la propia contra sí se puede eliminar** (deshacer, limpia marcador de la original); `descontabilizarFactura` lanza 400 si la partida tiene `contrapdaId`.
+- Reconstrucción: snapshot por `sn_contabilizada='S'`; mata módulos 3/4/5 **no contra** y regenera desde fuentes; **fase 5 reaplica contras** (`partidaOrigenId != null`) → el par sobrevive a la reconstrucción.
+- Endpoint: `POST /contabilidad/copdamae/:id/contra` (empresaId en body vía ApiService, fallback JWT).
+
+#### E2E (`test-contra.js`, empresa 2) — 33/35 → fallos resueltos
+- **OK (33)**: creación de contra de la partida 48 (FAC-120009, per. 10): `partidaOrigenId`, N/S, período vigente, módulo/referencia conservados, correlativo propio, original S/S + `contrapdaId` + `feccontrapda`, líneas S/S, espejo déb↔cred invertido por línea y cuadrado, líneas contra N/S, bloqueos 409/400 (ya contraedida, contraer contra, editar/eliminar original, editar contra, editar línea), bloqueo `CIERRE-`.
+- **2 fallos eran bugs del script** (typo `b.deb`→`b.debe`; esperaba 200 en `POST reportes/libro-diario` que devuelve 201) → corregidos.
+- **1 fallo es PREEXISTENTE** (no de la contra): `1-1-10-1-001` tenía drift de **500.00** entre `coctamov` y `coctasaldos[oct]` porque la partida 7 "BCO-TEST-D/C" (mód. 6) tiene líneas en `copdadet` (contab S) que **nunca se postearon a `coctamov`**. El drift existía ANTES de la contra (Δ de la contra neteó a 0 en las 5 cuentas ✓). Solución: **Reconstrucción de Mayores** (fase 5 repostearía la partida 7).
+
+#### UI (`/contabilidad/copdamae` → copdamae-manager) — `ng build` OK
+- **Modelo** `CopdaMae`: `partidaOrigenId?`, `contrapdaId?`, `feccontrapda?`.
+- **Servicio** `ContabilidadService.contraPartida(id)` → POST con body `{}` (empresaId auto).
+- **Detalle**: botón contra (pi-undo) en toolbar + item "Contra partida:" en ficha (tag `Contraedida → #N` warn / `Contra de #N` danger + fecha).
+- **Lista**: tags "Contraedida"/"Contra", borde izquierdo ámbar (`.partida-contra`), botón contra por fila.
+- **Helpers TS**: `puedeContraer/tooltipContra`, `puedeEditar/tooltipEditar`, `puedeEliminar/tooltipEliminar` (disabled + tooltip explicativo), `partidaNumero(id)` para enlazar original↔contra; guards en `editarPartida`/`eliminarPartida` con mensajes previos (backend sigue siendo la autoridad); confirm de eliminar contra advierte que **requiere Reconstrucción de Mayores** para impactar el mayor.
+
+### Verificación post-ajuste del usuario (10/10/2026 tarde) — TODO CUADRA
+- El usuario hizo el **ajuste de mayores directo**: la partida 7 "BCO-TEST-D/C" (mód. 6, líneas de prueba de Bancos) quedó con `debito=0 / credito=0` en `copdadet` (copdadetId 239/240). **La reconstrucción NO se ejecutó** (sin trace `[Reconstruir] Fase 0` en el log; la 48/49 nunca se marcaron S/N) — y ya no hace falta.
+- Verificación (`verif-post-recon.js`, empresa 2): **I1 = 0 cuentas rotas en per. 10 y 0 en los 12 meses (48 filas coctamov)** · **I2 `sacum+(d-h)=saldo` 0 desviadas** · `coctamov` D/H = `copdadet` (contab S) D/H = **3,293,001.00 exacto** · global 2026 **D = H = 17,773,001.00** · pareja intacta: **48 S/S + contrapdaId=50 ↔ 50 N/S + partidaOrigenId=48** (sin clon; FAC-120009: mód 3 = nropartida 4, mód 4 = 48/49/50).
+
+#### Ajustes de terminología UI — aprobados por el usuario (11/10/2026)
+- **Regla**: usar **"ContraPda"**; **prohibido** "Contraedida"/"Contra" como etiquetas (términos inventados que los contables no comprenden). "Espejo" también quitado de textos visibles.
+- **Lista**: tag `Contabilizada: Sí/No` + `ContraPda: Sí` (solo cuando `sn_anulada='S'`) agrupados a la izquierda de la fila de acciones (wrapper `.partida-estado-left` con `margin-right:auto`, reemplaza a `.contabilizada-left`); eliminados los tags "Contraedida"/"Contra" del header de lista.
+- **Ficha "Datos de la Partida"**: label `ContraPda:` + tag corto `[Sí]` + texto **fuera** del tag:
+  - fila contra (#50): `[Sí] , de la Pda Origen (#48)`
+  - fila original (#48): `[Sí] , con ContraPda (#50)` + fecha entre paréntesis
+  - sin contra: `[No]`
+- **Tooltip botón contra**: `Crear contra partida de esta partida #N en el período en curso` (antes "Contra partida (espejo en el período vigente)").
+- **Confirm crear contra**: `...en el período en curso. Las dos partidas permanecen en el mayor y netean a cero.` (sin "espejo").
+- `ng build` OK; usuario verificó en browser: **"quedo bien"**.
+
+### Pendiente
+- Click en vivo del botón Contra desde la UI (la pareja 48 ← 50 fue creada vía E2E/API).
+
+---
+
+## Bitácora – 11/10/2026 (seguridad)
+
+### Bug reportado
+- Usuario **floresmurillo** (sin items de menú en `tusuariomnuitem`) podía navegar **todas las rutas** del sistema tras cambiar de usuario vía login-dialog.
+
+### Diagnóstico
+- **El token NO es el problema**: `login-dialog.ingresar()` → `AuthService.login()` reescribe token+user en localStorage y signals; el interceptor lee el signal en cada petición; el menú se recarga vía `effect` sobre `currentUser()` (por eso el sidebar sí quedaba vacío).
+- **Causa real**: `authGuard` solo verificaba **autenticación** (¿hay token?) + restricción de clientes (`tipoPersona='C'`). **No existía autorización por ruta**: cualquier sesión autenticada accedía a cualquier URL. El menú (`tusuariomnuitem`) solo ocultaba enlaces — UI, no seguridad. El backend tampoco validaba permisos por endpoint.
+
+### Solución (B completa) — backend
+- **`jwt-auth.guard.ts`** (punto único: todos los controllers usan `JwtAuthGuard`): nuevo `validarPermisoModulo(req)` después del JWT y **antes** de los checks de fecha; aplica a GET y escrituras. Exige AL MENOS 1 fila activa en `tusuariomnuitem` (usuario+empresa+moduloId) según el prefijo del endpoint. Fail-closed: prefijo sin mapear → 403 (mejor visible en desarrollo que abierto en producción). `@Public`/auth/todopago quedan fuera (no pasan por el guard).
+- **`MAPA_MODULOS`** (IDs reales de `tmodulos` empresa 2): inventario=2, facturacion=3, cxc=4, cxp=5, bancos=6, contabilidad=7, planilla=8, users/companies/sucursales/modulos/parametros=**11** (el menú de /configuracion vive en módulo 11 — CORRELATIVOS —; el módulo 1 no tiene items asignados).
+- **Lecturas compartidas** (GET sin requerir módulo, para no romper flujos cross-module): `parametros`, `companies`, `sucursales` (catálogos/contexto) + parciales `inventario/productos|tienda|existencias` y `cxc/clientes|cajeros` (lookups de facturación/tienda). `users/menu-items` siempre (el chequeo depende de ese mismo endpoint).
+- Inyección vía `DataSource` (global) — sin wiring de módulos nuevos.
+
+### Solución (B completa) — frontend
+- **`menu-config.service.ts`**: `modulosPermitidos(): Promise<Set<number>>` con caché por usuario (`claveModulos` + promesa) — evita carreras guard↔effect; el effect y el guard comparten la misma carga.
+- **`auth.guard.ts`**: para empleados (`tipoPersona='E'`), la ruta debe caer en un segmento cuyo `moduloId` esté en los módulos del usuario (`MODULOS_POR_SEGMENTO`, alineado con el backend). **Whitelist** `RUTAS_LIBRES`: `/dashboard`, `/tienda`, `/pedidos`, + `RUTAS_PUBLICAS`. Denegación → toast "Acceso denegado: No tiene permiso para el módulo X" + redirect a `/dashboard`.
+
+### E2E API (`test-permisos-api.js`) — 16/16 según diseño
+- floresmurillo (JWT minteado, 0 items): **403** en POST /cxc/clientes, GET /users, /inventario/bodegas, /bancos/cuentas, /contabilidad/ctacontables, /planilla/empleados, /cxp/proveedores · **200** en /users/menu-items, /inventario/productos, /inventario/tienda/productos, /cxc/cajeros, /parametros/formas-pago (lecturas compartidas).
+- admin: pasa el guard en todos (400 restantes = faltantes de query params en el script, no de permisos).
+
+### Pendiente
+- Verificación en browser: login como floresmurillo → intentar URLs directas (debe toast + dashboard); admin → todo normal. Ajustar `LECTURA_COMPARTIDA`/`LECTURA_PARCIAL`/`MAPA_MODULOS` si algún flujo cross-module legítimo queda bloqueado.
+
+---
+
+## Bitácora – 11/10/2026 (tarde)
+
+### Completado
+
+#### Caja · Destino de abono: Cuenta corriente (1) / Préstamos (2) — E2E 19/19 OK
+
+**Petición del usuario**: en `/cxc/caja`, p-select "Destino de abono" antes del cliente (Cuenta corriente=1, Préstamos=2). Destino=Préstamos: abono a cuotas del plan, siempre desde la cuota 1; cuota pagada SOLO si el abono cubre su total (capital + interés + mora); interés simple y mora con la MISMA regla de facturas pero tasas del préstamo. Regla de abono insuficiente para cuota 1: **guardar con aviso** (aprobada).
+
+**BD (ALTER ejecutados por el usuario)**:
+- `cxccajamae`: +`destinoabono TINYINT NOT NULL DEFAULT 1` (1=CTA CTTE, 2=PRÉSTAMOS) y +`prestamoId INT NULL`
+- `cxcprestamospp`: +`cxccajaId INT NULL` (enlace cuota↔caja → reversa al anular + idempotencia al re-guardar)
+
+**Backend** (`cxc.service.ts`):
+- `procesarAbonoCaja` firma ampliada: recibe `{ interes?, mora?, prestamoId?, cuotas? }`; si `destinoabono=2` delega en **`procesarAbonoPrestamo`**: (1) revierte cuotas pagadas por ESTA caja (`cxccajaId`), (2) valida cuotas enviadas (existentes, del préstamo, pendientes) y que su total no exceda el efectivo, (3) las marca `sn_pagada='S'` con mora/días mora/`cxccajaId`, (4) recalcula `ultcuotapagada` (`actualizarUltCuotaPagada`). **Sin movimientos CxC** (los préstamos no postean D al crearse → los abonos tampoco, no distorsionan cuenta corriente)
+- `anularCaja`: paso 4 nuevo — revierte cuotas con `cxccajaId = caja` (limpia enlace, `mora=0`, `diasvencido=NULL`) + recalcula `ultcuotapagada`
+- `findCajaRecibo`: si destino=2, devuelve `prestamo: { nroprestamo, capital, tasa, cuotas: [pagadas por esta caja] }`
+- Controller `procesar-abono` body ampliado en consecuencia
+
+**🐛 Bug pre-existente corregido — `cxcprestamo.entity.ts` (causaba 500 en GET /cxc/prestamos/cliente)**: la entity declaraba `tasa`/`diascuotas`/`moratorio`/`gracia` como nombres de columna, pero la BD usa `tasa_interes_anual`/`diasplazo`/`tasa_interes_moratorio_anual`/`diasgracia` → `Unknown column 'tasa'` en todo SELECT/INSERT vía repo. **Fix**: `@Column({ name: 'tasa_interes_anual' })` etc. (mapeo a columnas reales, sin tocar BD). Con esto la lista de préstamos de la caja carga y el cálculo de interés usa las tasas correctas
+
+**Frontend** (`cxc/caja/`):
+- Select "Destino de abono" (`DESTINO_ABONO` readonly array) antes de Cliente; deshabilitado al editar; cambio de destino limpia cliente/documentos/plan
+- Destino=2: oculta Tipo/Nro Documento; tras elegir cliente carga `getPrestamosByCliente` (activos) en select; al elegir préstamo carga plan vía `getPrestamoPPByPrestamo` con **`calcularCuotaHoy`** (espejo de `calcularInteresesFactura`: período inicia `FechaPago − diascuotas`, `proximoPago=FechaPago`, gracia del préstamo; interés = capital×tasa/100×días/360; mora desde `FechaPago+gracia` con `moratorio`)
+- Tabla cuotas: #, Vencimiento, Capital, Interés, Mora, Total, Estado (Pagada/Se paga ahora/Pendiente) + fila highlight verde para las que cubre el abono; resumen (efectivo/cuotas a pagar/total)
+- `cuotasCubiertas` computed: reparto en secuencia desde cuota 1 pendiente; `avisoCuota1` si no alcanza ni para la 1 → toast warn al guardar ("faltan L x.xx… la caja se guardará sin pagar cuotas")
+- `procesarYFinalizar` rama destino=2: envía `{ prestamoId, cuotas: [{pppId, capital, interes, mora, diasMora, total}] }`; éxito muestra cuotas pagadas; error no bloquea el cobro guardado
+- Recibo térmico: bloque "Préstamo #: … / Cuotas pagadas: #1, #2"
+- SCSS: `.cuotas-card`, `.prestamo-select`, `.cuotas-table` (`.cuota-cubierta`, `.cuota-pagada`, `.mora-positiva`), `.resumen-cuotas`, `.aviso-cuota`
+
+**E2E API (`test-caja-prestamos.js`, 19/19)**: GET prestamos/cliente (fix 500) · plan 52 cuotas · caja destino=2 paga cuota 1 (interés 13d @28% = L 11.23, total L 1,122.14) · BD `sn_pagada=S`+`cxccajaId`+`ultcuotapagada=1` · re-procesar idempotente · recibo con préstamo · anulación revierte todo (cuota N, enlace NULL, ultcuotapagada 0) · abono insuficiente guarda sin cuotas con motivo · cleanup OK
+
+**Nota**: en el primer intento del E2E saltó el gate `FECHA_SISTEMA` (409 ERP 10/10 vs servidor 11/10); al reintentar la fecha ya era 11/10 (posible cache TTL del servicio de fecha con expiración entre ejecuciones) — sin UPDATE necesario
+
+### Pendiente
+- Verificar en browser: `/cxc/caja` → destino Préstamos → cliente con préstamo → tabla cuotas → guardar → imprimir recibo; y anular para ver reversa
+- Préstamos no contabilizan cobros (diseño actual: sin movimientos CxC ni partida por abonos a préstamo) — futura mejora si se requiere asiento por cobro de préstamo

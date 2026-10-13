@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, catchError, of } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { EmpresasService } from './empresas.service';
+import { ParametroUnificadoService } from './parametro-unificado.service';
+import { MODULO_IDS } from '../models/parametro-unificado.model';
 import { numeroALetras } from '../utils/numeros-a-letras';
 import { COURIER_OBLIQUE_AFM, COURIER_BOLD_OBLIQUE_AFM } from '../utils/courier-afm';
 
@@ -60,6 +62,7 @@ export class FacturaImpresionService {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private empresas = inject(EmpresasService);
+  private parametros = inject(ParametroUnificadoService);
 
   /** Cache del catálogo de formas de pago (etiquetas de pagos) */
   private formasPago: Promise<{ label: string; value: number }[]> | null = null;
@@ -181,21 +184,42 @@ export class FacturaImpresionService {
   }
 
   /**
+   * ¿Imprimir los datos de la sucursal en el documento?
+   * Parámetro `imprime_labels_sucursal` (módulo Facturación, ttipoparametros):
+   *   'N' → NO imprime ningún dato de la sucursal (nombre, bloque Sucursal,
+   *         teléfono móvil de la sucursal).
+   *   'S' o ausente → imprime (comportamiento histórico).
+   * Sin cache: cada impresión lee el valor vigente para reflejar cambios al instante.
+   */
+  private async imprimeDatosSucursal(): Promise<boolean> {
+    try {
+      const valor = await firstValueFrom(
+        this.parametros.getValor(MODULO_IDS.FACTURACION, 'imprime_labels_sucursal', 'S'),
+      );
+      return valor !== 'N';
+    } catch {
+      return true; // Error leyendo el parámetro → imprime por defecto
+    }
+  }
+
+  /**
    * Construye el PDF según el formato parametrizado.
-   * Precarga el catálogo de formas de pago (etiquetas en los pagos).
+   * Precarga el catálogo de formas de pago (etiquetas en los pagos) y
+   * resuelve el parámetro de impresión de datos de sucursal.
    */
   private async buildPdf(data: FacturaImpresionData, idsucursal?: number): Promise<any> {
     const suc = idsucursal ?? data?.factura?.Idsucursal;
     const formato = await this.getFormatoImpresion(suc);
     this.formasPagoList = await this.cargarFormasPago();
-    return formato === 'TICKET' ? this.buildTicketPdf(data) : this.buildCartaPdf(data);
+    const imprimeSucursal = await this.imprimeDatosSucursal();
+    return formato === 'TICKET' ? this.buildTicketPdf(data, imprimeSucursal) : this.buildCartaPdf(data);
   }
 
   // =========================================================================
   // FORMATO TICKET — PDF de 80mm (bobina térmica)
   // =========================================================================
 
-  private buildTicketPdf(data: FacturaImpresionData): any {
+  private buildTicketPdf(data: FacturaImpresionData, imprimeSucursal = true): any {
     const f = data?.factura;
     const dets = data?.detalles ?? [];
     const emp = data?.empresa ?? {};
@@ -225,23 +249,24 @@ export class FacturaImpresionService {
     const suc = data?.sucursal ?? {};
 
     // Teléfonos del encabezado: "Mobil: <suc.telefono1>, Telefonos: <empresa>"
+    // (el móvil es dato de la sucursal → solo si imprime_labels_sucursal !== 'N')
     const telParts: string[] = [];
-    if (suc.telefono1) telParts.push('Mobil: ' + suc.telefono1);
+    if (imprimeSucursal && suc.telefono1) telParts.push('Mobil: ' + suc.telefono1);
     if (emp.telefono) telParts.push('Telefonos: ' + emp.telefono);
     const lineaTelefonos = telParts.join(', ');
 
     const content: any[] = [
       { text: emp.nombre || 'EMPRESA', bold: true, fontSize: 12, alignment: 'center', margin: [0, 0, 0, 2] },
-      // Nombre de la sucursal centrado (nuevo)
-      ...(suc.descripcion ? [{ text: suc.descripcion, fontSize: 9, alignment: 'center', margin: [0, 0, 0, 1] }] : []),
+      // Nombre de la sucursal centrado (solo si el parámetro lo permite)
+      ...(imprimeSucursal && suc.descripcion ? [{ text: suc.descripcion, fontSize: 9, alignment: 'center', margin: [0, 0, 0, 1] }] : []),
       ...(emp.rtn ? [{ text: 'RTN: ' + emp.rtn, bold: true, fontSize: 7.5, alignment: 'center' }] : []),
       ...(emp.direccion ? [{ text: emp.direccion, fontSize: 7.5, alignment: 'center' }] : []),
       ...(lineaTelefonos ? [{ text: lineaTelefonos, fontSize: 7.5, alignment: 'center' }] : []),
       // Atención al cliente (nuevo) — tempresasdet tipo CORREO
       ...(emp.correo ? [{ text: 'Atención al cliente: ' + emp.correo, fontSize: 7.5, alignment: 'center' }] : []),
       this.sepTicket(anchoUtil),
-      // Bloque Sucursal (nuevo): tsucursal descripción / dirección / teléfonos
-      ...(data?.sucursal != null
+      // Bloque Sucursal: descripción / dirección / teléfonos (solo si el parámetro lo permite)
+      ...(imprimeSucursal && data?.sucursal != null
         ? [
             { text: 'Sucursal', bold: true, fontSize: 7.5, alignment: 'center', margin: [0, 1, 0, 1] },
             ...(suc.descripcion ? [{ text: suc.descripcion, fontSize: 7.5, alignment: 'center' }] : []),
@@ -607,6 +632,257 @@ export class FacturaImpresionService {
           { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: '#e2e8f0' }], margin: [0, 4, 0, 4] },
         ]),
         { text: 'Original: OBLIGADO TRIBUTARIO    Copia al contribuyente emisor', fontSize: 8, alignment: 'center', color: '#64748b', margin: [0, 6, 0, 0] },
+        { text: '\u00a1Gracias por su compra!', bold: true, fontSize: 11, alignment: 'center' },
+        { text: emp.mensajeDevolucion || '', alignment: 'center', fontSize: 8, italics: true, color: '#64748b' },
+        { text: emp.mensajeFactura || '', alignment: 'center', fontSize: 8, italics: true, color: '#64748b' },
+      ],
+      styles: {
+        header: { fontSize: 18, bold: true },
+        tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#10b981' },
+      },
+      defaultStyle: { fontSize: 10 },
+    };
+  }
+
+  // =========================================================================
+  // PEDIDO (detalle / ticket) — reutiliza el mismo motor y formato parametrizado
+  // =========================================================================
+
+  /**
+   * Imprime el detalle de un pedido (NO es factura fiscal) en el formato
+   * configurado en `timpresoras` (TICKET 80mm / CARTA LETTER).
+   * `detalles` debe venir ya enriquecido con `descripcion` (el backend de
+   * pospeddet solo guarda codbarra); si no la trae, se usa codbarra.
+   */
+  async imprimirPedido(pedido: any, detalles: any[]): Promise<void> {
+    const emp = await this.cargarEmpresaImpresion();
+    const formato = await this.getFormatoImpresion();
+    const doc = formato === 'TICKET' ? this.buildPedidoTicketPdf(pedido, detalles, emp) : this.buildPedidoCartaPdf(pedido, detalles, emp);
+    const pdfMake = await this.cargarPdfMake();
+    const blob: Blob = await pdfMake.createPdf(doc).getBlob();
+    this.imprimirBlobEnIframe(blob);
+  }
+
+  /** Encabezado de empresa para impresión: nombre (tempresas) + datos fiscales/de contacto (tempresasdet). Cacheado. */
+  private empresaImpresionCache: Promise<any> | null = null;
+
+  private cargarEmpresaImpresion(): Promise<any> {
+    if (!this.empresaImpresionCache) {
+      const empresaId = this.auth.currentUser()?.empresaId;
+      if (!empresaId) return Promise.resolve({ nombre: 'EMPRESA' });
+      this.empresaImpresionCache = Promise.all([
+        firstValueFrom(this.empresas.getOne(empresaId)),
+        firstValueFrom(this.empresas.getAllDet(empresaId).pipe(catchError(() => of([])))),
+      ])
+        .then(([base, det]: any[]) => {
+          const campo = (tipo: string): string =>
+            (Array.isArray(det) ? det : []).find((d: any) => d.tipo === tipo && d.sn_activo !== 'N')?.descripcion || '';
+          return {
+            nombre: base?.descripcion || 'EMPRESA',
+            rtn: campo('RTN'),
+            direccion: campo('DIRECCION'),
+            telefono: campo('TELEFONO'),
+            correo: campo('CORREO'),
+            mensajeFactura: base?.msjfactura || '',
+            mensajeDevolucion: base?.msjdevfactura || '',
+          };
+        })
+        .catch(() => ({ nombre: 'EMPRESA' }));
+    }
+    return this.empresaImpresionCache;
+  }
+
+  /** Totales del pedido: misma fórmula que checkoutPedido (total = sub + ISV − descuentos) */
+  private totalesPedido(dets: any[]): { subtotal: number; descuento: number; impuesto: number; total: number } {
+    let subtotal = 0;
+    let descuento = 0;
+    let impuesto = 0;
+    for (const d of dets ?? []) {
+      const cant = Number(d.cantidad) || 0;
+      const precio = Number(d.precioventa) || 0;
+      subtotal += Number(d.subtotal) || cant * precio;
+      descuento += Number(d.descuento) || 0;
+      impuesto += Number(d.impuesto) || 0;
+    }
+    return { subtotal, descuento, impuesto, total: subtotal + impuesto - descuento };
+  }
+
+  /** Estado del pedido para el encabezado */
+  private estadoPedido(p: any): string {
+    return p?.sn_facturado === 'S' ? 'FACTURADO' : 'PENDIENTE';
+  }
+
+  /** TICKET de pedido — PDF 80mm (bobina térmica, Courier) */
+  private buildPedidoTicketPdf(p: any, dets: any[], emp: any): any {
+    const ancho = Math.round(ANCHO_TICKET_MM * MM_A_PT * 100) / 100;
+    const anchoUtil = Math.round((ancho - 2 * MARGEN_TICKET_PT) * 100) / 100;
+
+    const fecha = p?.fecharegistro
+      ? new Date(p.fecharegistro).toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '-';
+    const hora = p?.fecharegistro
+      ? new Date(p.fecharegistro).toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' })
+      : '-';
+    const estado = this.estadoPedido(p);
+
+    const content: any[] = [
+      { text: emp.nombre || 'EMPRESA', bold: true, fontSize: 12, alignment: 'center', margin: [0, 0, 0, 2] },
+      ...(emp.rtn ? [{ text: 'RTN: ' + emp.rtn, bold: true, fontSize: 7.5, alignment: 'center' }] : []),
+      ...(emp.direccion ? [{ text: emp.direccion, fontSize: 7.5, alignment: 'center' }] : []),
+      ...(emp.telefono ? [{ text: 'Tel: ' + emp.telefono, fontSize: 7.5, alignment: 'center' }] : []),
+      this.sepTicket(anchoUtil),
+      this.filaTicket('PEDIDO No.:', String(p?.pospedmaeId ?? ''), true, 9),
+      this.filaTicket('Fecha:', `${fecha}  Hora: ${hora}`),
+      this.filaTicket('Cliente:', String(p?.nombrecliente || 'N/A').substring(0, 30)),
+      ...(p?.nrotelefono ? [this.filaTicket('Tel. Cliente:', String(p.nrotelefono))] : []),
+      this.filaTicket('Estado:', estado + (p?.sn_facturado === 'S' && p?.facturaId ? ` (Factura #${p.facturaId})` : ''), true),
+      this.sepTicket(anchoUtil),
+    ];
+
+    // ----- Detalle de artículos -----
+    const body: any[] = [
+      [
+        { text: 'ARTÍCULO', bold: true, fontSize: 7 },
+        { text: 'CANT × P.U.', bold: true, fontSize: 7, alignment: 'right' },
+        { text: 'TOTAL', bold: true, fontSize: 7, alignment: 'right' },
+      ],
+      ...dets.map((d: any) => {
+        const cant = Number(d.cantidad) || 0;
+        const precio = Number(d.precioventa) || 0;
+        const tot = Number(d.subtotal) || cant * precio;
+        const desc = d.descripcion || d.codbarra || `#${d.productoId}`;
+        const cod = d.codbarra && d.descripcion ? ` (${d.codbarra})` : '';
+        const descMonto = Number(d.descuento) || 0;
+        return [
+          { text: [
+            { text: desc + cod + '\n', fontSize: 7.5 },
+            ...(descMonto > 0 ? [{ text: 'Desc: L ' + this.formatNum(descMonto), fontSize: 6.5, color: '#555555' }] : []),
+          ] },
+          { text: `${cant} × ${this.formatNum(precio)}`, fontSize: 7.5, alignment: 'right' },
+          { text: this.formatNum(tot), fontSize: 7.5, alignment: 'right' },
+        ];
+      }),
+    ];
+    content.push(
+      { table: { widths: ['*', 58, 52], body }, layout: 'noBorders', margin: [0, 2, 0, 2] },
+      this.sepTicket(anchoUtil),
+    );
+
+    // ----- Totales -----
+    const t = this.totalesPedido(dets);
+    content.push(
+      this.filaTicket('Subtotal:', 'L ' + this.formatNum(t.subtotal)),
+      this.filaTicket('-Descuentos:', 'L ' + this.formatNum(t.descuento)),
+      this.filaTicket('ISV:', 'L ' + this.formatNum(t.impuesto)),
+      this.filaTicket('TOTAL PEDIDO:', 'L ' + this.formatNum(t.total), true, 10),
+      this.sepTicket(anchoUtil),
+      { text: 'Documento NO fiscal - pedido de venta', fontSize: 6.5, alignment: 'center', color: '#555555' },
+      { text: 'No equivale a factura', fontSize: 6.5, alignment: 'center', color: '#555555' },
+      { text: 'Impreso: ' + this.fechaLarga(new Date()) + '  ' + this.horaCorta(new Date()), fontSize: 6.5, alignment: 'center', color: '#555555', margin: [0, 2, 0, 0] },
+    );
+
+    return {
+      pageSize: { width: ancho, height: this.alturaPedidoTicketPdf(dets.length) },
+      pageMargins: [MARGEN_TICKET_PT, MARGEN_TICKET_PT, MARGEN_TICKET_PT, MARGEN_TICKET_PT],
+      content,
+      defaultStyle: { font: 'Courier', fontSize: 8 },
+    };
+  }
+
+  /** Altura estimada del ticket de pedido (una sola página) */
+  private alturaPedidoTicketPdf(items: number): number {
+    return Math.max(360, Math.ceil(320 + items * 26));
+  }
+
+  /** CARTA de pedido — PDF pdfMake (LETTER) */
+  private buildPedidoCartaPdf(p: any, dets: any[], emp: any): any {
+    const t = this.totalesPedido(dets);
+    const fecha = this.fechaLarga(p?.fecharegistro);
+    const hora = this.horaCorta(p?.fecharegistro);
+    const estado = this.estadoPedido(p);
+
+    const detRows = dets.map((d: any, i: number) => [
+      '' + (i + 1),
+      (d.descripcion || d.codbarra || '') + (d.descripcion && d.codbarra ? ` (${d.codbarra})` : ''),
+      '' + (Number(d.cantidad) || 0),
+      'L ' + this.formatNum(Number(d.precioventa) || 0),
+      'L ' + this.formatNum(Number(d.descuento) || 0),
+      'L ' + this.formatNum(Number(d.subtotal) || (Number(d.cantidad) || 0) * (Number(d.precioventa) || 0)),
+    ]);
+
+    return {
+      pageSize: 'LETTER',
+      pageMargins: [40, 60, 40, 60],
+      content: [
+        { text: emp.nombre || 'EMPRESA', style: 'header', alignment: 'center' },
+        { text: emp.rtn ? 'RTN: ' + emp.rtn : '', alignment: 'center', fontSize: 9 },
+        { text: emp.direccion || '', alignment: 'center', fontSize: 9 },
+        { text: emp.telefono ? 'Tel: ' + emp.telefono : '', alignment: 'center', fontSize: 9 },
+        { text: '\n' },
+        { columns: [
+          { text: '', width: '*' },
+          { text: [
+            { text: estado + '\n', bold: true, fontSize: 12, color: estado === 'PENDIENTE' ? '#f59e0b' : '#10b981' },
+            { text: 'PEDIDO ', bold: true, fontSize: 16 },
+            { text: '#' + (p?.pospedmaeId ?? ''), fontSize: 16 },
+            '\n',
+            { text: 'Fecha: ', bold: true }, fecha + '\n',
+            { text: 'Hora: ', bold: true }, hora,
+            ...(p?.sn_facturado === 'S' && p?.facturaId ? ['\n', { text: 'Factura: ', bold: true }, '#' + p.facturaId] : []),
+          ], width: '*', alignment: 'right' },
+        ] },
+        { text: '\n' },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
+        { text: '\n' },
+        { columns: [
+          { text: [
+            { text: 'CLIENTE\n', bold: true, fontSize: 10 },
+            p?.nombrecliente || 'Sin cliente', '\n',
+            p?.nrotelefono || '',
+          ], width: '*' },
+          { text: [
+            { text: 'DATOS DEL PEDIDO\n', bold: true, fontSize: 10 },
+            'Pedido #' + (p?.pospedmaeId ?? ''), '\n',
+            'Envío gratis: ' + (p?.sn_enviogratis === 'S' ? 'Sí' : 'No'),
+          ], width: '*' },
+        ] },
+        { text: '\n' },
+        {
+          table: {
+            headerRows: 1,
+            widths: [30, '*', 50, 70, 60, 70],
+            body: [
+              [
+                { text: '#', style: 'tableHeader' },
+                { text: 'Producto', style: 'tableHeader' },
+                { text: 'Cant.', style: 'tableHeader', alignment: 'right' },
+                { text: 'Precio', style: 'tableHeader', alignment: 'right' },
+                { text: 'Desc.', style: 'tableHeader', alignment: 'right' },
+                { text: 'Subtotal', style: 'tableHeader', alignment: 'right' },
+              ],
+              ...detRows,
+            ],
+          },
+          layout: 'lightHorizontalLines',
+        },
+        { text: '\n' },
+        {
+          alignment: 'right',
+          columns: [
+            { width: '*', text: '' },
+            { width: 250, text: [
+              { text: 'Subtotal: ', bold: true }, 'L ' + this.formatNum(t.subtotal),
+              '\n', { text: '-Descuentos: ', bold: true }, 'L ' + this.formatNum(t.descuento),
+              '\n', { text: 'ISV: ', bold: true }, 'L ' + this.formatNum(t.impuesto),
+              '\n', { text: 'Total pedido: ', bold: true, fontSize: 14 }, { text: 'L ' + this.formatNum(t.total), bold: true, fontSize: 14, color: '#10b981' },
+            ] },
+          ],
+        },
+        { text: '\n' },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
+        { text: '\n' },
+        { text: 'Documento NO fiscal - pedido de venta. No equivale a factura.', fontSize: 9, alignment: 'center', color: '#64748b' },
+        { text: 'Impreso: ' + this.fechaLarga(new Date()) + ' ' + this.horaCorta(new Date()), fontSize: 9, alignment: 'center', color: '#64748b' },
         { text: '\u00a1Gracias por su compra!', bold: true, fontSize: 11, alignment: 'center' },
         { text: emp.mensajeDevolucion || '', alignment: 'center', fontSize: 8, italics: true, color: '#64748b' },
         { text: emp.mensajeFactura || '', alignment: 'center', fontSize: 8, italics: true, color: '#64748b' },

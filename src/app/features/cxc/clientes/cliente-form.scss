@@ -15,6 +15,24 @@
   gap: 1.5rem;
 }
 
+// Modo facturación (cliente rápido): card al 50% centrado en el contenedor,
+// y solo 1 columna de campos (la de clasificación/crédito está oculta)
+.card.modo-facturacion {
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+
+  .prestamo-form-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .card.modo-facturacion {
+    width: 100%;
+  }
+}
+
 .form-col {
   display: flex;
   flex-direction: column;

@@ -9,11 +9,12 @@ import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TagModule } from 'primeng/tag';
 import { forkJoin } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { FacturacionService } from '../../../core/services/facturacion.service';
 import { ProductosHelperList } from '../../helpers/productos';
@@ -23,12 +24,16 @@ import { Producto } from '../../../core/models/inventario.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { QuickNavService } from '../../../core/services/quick-nav.service';
 import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
+import {
+  TodoPagoService,
+  TodoPagoLink,
+  FORMAPAGO_TODOPAGO,
+} from '../../../core/services/todopago.service';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { DividerModule } from 'primeng/divider';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-
 
 interface Opcion {
   label: string;
@@ -76,12 +81,14 @@ interface PagoFactura {
     DialogModule,
     ToolbarModule,
     TagModule,
-     TooltipModule,
-     DividerModule,
-     InputIconModule,
-     IconFieldModule,
+    TooltipModule,
+    DividerModule,
+    InputIconModule,
+    IconFieldModule,
+    ConfirmDialogModule,
   ],
-  providers: [DialogService],
+  // ConfirmationService local: aisla nuestro p-confirmdialog del global de main-layout
+  providers: [DialogService, ConfirmationService],
   templateUrl: './nueva-factura.html',
   styleUrl: './nueva-factura.scss',
 })
@@ -95,6 +102,8 @@ export class NuevaFactura implements OnInit {
   private auth = inject(AuthService);
   private quickNav = inject(QuickNavService);
   private impresion = inject(FacturaImpresionService);
+  private todp = inject(TodoPagoService);
+  private confirm = inject(ConfirmationService);
 
   ref: DynamicDialogRef | undefined;
 
@@ -109,6 +118,8 @@ export class NuevaFactura implements OnInit {
   clientes = signal<Opcion[]>([]);
   formaspago = signal<Opcion[]>([]);
   tarjetas = signal<Opcion[]>([]);
+  /** Gestores de VENTAS (ttipogestores módulo 3 = Facturación) activos de la empresa */
+  gestores = signal<Opcion[]>([]);
 
   productosArray: Producto[] = [];
   dialogProductos = signal(false);
@@ -118,6 +129,15 @@ export class NuevaFactura implements OnInit {
 
   filas = signal<FilaDet[]>([]);
   pagos = signal<PagoFactura[]>([]);
+
+  // ── TodoPago: link de pago de la última factura facturada ──
+  linkPago = signal<TodoPagoLink | null>(null);
+  linkStatus = signal<string>('pending');
+  linkCopiado = signal(false);
+  /** Nro. fiscal de la última factura con link (para mostrar en el diálogo headless) */
+  nroFacturaLink = signal<number | null>(null);
+  private facturarConLink = false;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
   pagosLength = computed(() => this.pagos().length);
   descuentos = signal<Opcion[]>([]);
   descuentoGlobalId = signal<number | null>(null);
@@ -142,7 +162,10 @@ export class NuevaFactura implements OnInit {
   private descuentosMap = new Map<number, number>();
 
   /** Mapa productoId → { porcentaje, precioConDescuento } para ofertas/promos vigentes */
-  private ofertasMap = new Map<number, { porcentaje: number; precioConDescuento: number; desc: string }>();
+  private ofertasMap = new Map<
+    number,
+    { porcentaje: number; precioConDescuento: number; desc: string }
+  >();
 
   /** IDs de descuentos que SÍ se acumulan con promos (ej: Tercera Edad) */
   private descAcumulables = new Set<number>();
@@ -171,24 +194,24 @@ export class NuevaFactura implements OnInit {
 
   readonly tipoOptions = [
     { label: 'Contado', value: 'E' },
-    { label: 'Crédito', value: 'C' }
+    { label: 'Crédito', value: 'C' },
   ];
 
- readonly snNombreOptions = [
+  readonly snNombreOptions = [
     { label: 'No', value: 'N' },
-    { label: 'Si', value: 'S' }
+    { label: 'Si', value: 'S' },
   ];
 
   readonly snOptions = [
     { label: 'No', value: 'N' },
-    { label: 'Sí', value: 'S' }
+    { label: 'Sí', value: 'S' },
   ];
 
   readonly tipoConstanciaOpciones = [
-    { label: 'OCE', value: 'OCE' },
-    { label: 'SAG', value: 'SAG' },
-    { label: 'CEA', value: 'CEA' },
-    { label: 'FNE', value: 'FNE' },
+    { label: 'Orden Compra Excenta', value: 'OCE' },
+    { label: 'Registro Exonerado SAG', value: 'SAG' },
+    { label: 'Constancia Registro Exonerado', value: 'CEA' },
+    { label: 'Factura NO excenta', value: 'FNE' },
   ];
 
   constructor(public dialogService: DialogService) {}
@@ -204,81 +227,98 @@ export class NuevaFactura implements OnInit {
   }
 
   private cargarParamCxc() {
-    this.api.get<any>('/parametros/parametros/objeto?moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (p) => {
-        const dias = Number(p?.diasPlazo ?? 0);
-        const v = new Date();
-        v.setDate(v.getDate() + dias);
-        this.form.patchValue({
-          diascredito: dias,
-          fechavencimiento: v,
-        });
-      },
-    });
+    this.api
+      .get<any>('/parametros/parametros/objeto?moduloId=4')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (p) => {
+          const dias = Number(p?.diasPlazo ?? 0);
+          const v = new Date();
+          v.setDate(v.getDate() + dias);
+          this.form.patchValue({
+            diascredito: dias,
+            fechavencimiento: v,
+          });
+        },
+      });
   }
 
   private cargarImpuestos() {
-    this.api.get<any[]>('/parametros/impuestos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (items) => {
-        this.impuestos = items ?? [];
-        this.aplicarTasa();
-      },
-    });
+    this.api
+      .get<any[]>('/parametros/impuestos')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          this.impuestos = items ?? [];
+          this.aplicarTasa();
+        },
+      });
   }
 
   private cargarParamFac() {
-    this.api.get<any>('/parametros/parametros/objeto?moduloId=3').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (p) => {
-        this.impuestoIncluido = p?.sn_impuestoincluido === 'S';
-        this.impuestoId = Number(p?.impuestoId) || null;
-        this.snImprimeFactura = p?.sn_imprimefactura === 'S';
+    this.api
+      .get<any>('/parametros/parametros/objeto?moduloId=3')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (p) => {
+          this.impuestoIncluido = p?.sn_impuestoincluido === 'S';
+          this.impuestoId = Number(p?.impuestoId) || null;
+          this.snImprimeFactura = p?.sn_imprimefactura === 'S';
 
-        const bodegaId = Number(p?.bodegaId) || null;
-        const cajaId = Number(p?.cajaId) || null;
+          const bodegaId = Number(p?.bodegaId) || null;
+          const cajaId = Number(p?.cajaId) || null;
 
-        if (bodegaId) {
-          this.form.patchValue({ bodegaId });
-        }
-        if (cajaId) {
-          this.form.patchValue({ cajaId });
-        }
+          if (bodegaId) {
+            this.form.patchValue({ bodegaId });
+          }
+          if (cajaId) {
+            this.form.patchValue({ cajaId });
+          }
 
-        // Caja por defecto: parámetro del módulo 4 (CxC).
-        // La bodega NO se toma de parámetros: la resuelve el backend desde la
-        // sucursal del usuario (tusuario.Idsucursal → tsucursal.bodegaId)
-        this.api.get<any>('/parametros/parametros/objeto?moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((p4) => {
-          const c4 = Number(p4?.cajaId) || null;
-          if (c4) this.form.patchValue({ cajaId: c4 });
-        });
+          // Caja por defecto: parámetro del módulo 4 (CxC).
+          // La bodega NO se toma de parámetros: la resuelve el backend desde la
+          // sucursal del usuario (tusuario.Idsucursal → tsucursal.bodegaId)
+          this.api
+            .get<any>('/parametros/parametros/objeto?moduloId=4')
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((p4) => {
+              const c4 = Number(p4?.cajaId) || null;
+              if (c4) this.form.patchValue({ cajaId: c4 });
+            });
 
-        this.aplicarTasa();
-        this.cargarGestor();
-      },
-      error: () => {
-        this.impuestoIncluido = false;
-        this.impuestoId = null;
-      },
-    });
+          this.aplicarTasa();
+          this.cargarGestor();
+        },
+        error: () => {
+          this.impuestoIncluido = false;
+          this.impuestoId = null;
+        },
+      });
   }
 
   private cargarGestor() {
-    const empresaId = this.auth.currentUser()?.empresaId;
     const usuarioId = this.auth.currentUser()?.usuarioId;
-    if (!empresaId || !usuarioId) return;
+    if (!usuarioId) return;
 
-    this.api.get<any[]>('/parametros/gestores').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (items) => {
-        console.log('[cargarGestor] empresaId:', empresaId, 'usuarioId:', usuarioId);
-        console.log('[cargarGestor] gestores:', items);
-        const gestor = (items ?? []).find(
-          (g) => Number(g.empresaId) === empresaId && Number(g.usuarioId) === usuarioId,
-        );
-        console.log('[cargarGestor] gestor found:', gestor);
-        if (gestor) {
-          this.form.patchValue({ gestorId: gestor.gestorId });
-        }
-      },
-    });
+    this.api
+      .get<any[]>('/parametros/gestores')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          // Solo gestores de VENTAS: módulo 3 (Facturación) y activos.
+          // (El backend ya filtra por empresa.)
+          const ventas = (items ?? []).filter(
+            (g) => Number(g.moduloId) === 3 && g.sn_activo !== 'N' && !!g.nombre,
+          );
+          this.gestores.set(
+            ventas.map((g) => ({ label: String(g.nombre), value: Number(g.gestorId) })),
+          );
+          // Precarga: si el usuario actual tiene gestor asignado en facturación, se preselecciona
+          const propio = ventas.find((g) => Number(g.usuarioId) === usuarioId);
+          this.form.patchValue({ gestorId: propio ? Number(propio.gestorId) : null });
+        },
+        error: () => this.gestores.set([]),
+      });
   }
 
   private aplicarTasa() {
@@ -302,17 +342,20 @@ export class NuevaFactura implements OnInit {
   }
 
   private cargarFactorCambio() {
-    this.api.get<any[]>('/contabilidad/factordecambio').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (items) => {
-        const lista = items ?? [];
-        const enDolares = lista.find((i) => (i.tipomoneda ?? 'D') === 'D') ?? lista[0];
-        if (enDolares) {
-          this.form.patchValue({
-            factordecambio: Number(enDolares.precioventa) || Number(enDolares.preciocompra) || 0,
-          });
-        }
-      },
-    });
+    this.api
+      .get<any[]>('/contabilidad/factordecambio')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          const lista = items ?? [];
+          const enDolares = lista.find((i) => (i.tipomoneda ?? 'D') === 'D') ?? lista[0];
+          if (enDolares) {
+            this.form.patchValue({
+              factordecambio: Number(enDolares.precioventa) || Number(enDolares.preciocompra) || 0,
+            });
+          }
+        },
+      });
   }
 
   private buildForm() {
@@ -335,81 +378,113 @@ export class NuevaFactura implements OnInit {
       diascredito: [0],
       fechavencimiento: [null as Date | null],
       sn_excenta: ['N'],
-       snNombreOptions: ['N'],
+      snNombreOptions: ['N'],
       efectivo_recibido: [0],
     });
   }
 
   private cargarOpciones() {
-    this.api.get<any>('/cxc/clientes').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
-      this.clientesArray = res?.data ?? [];
-      this.onTipoFacturaChange();
-      this.clientes.set(
-        this.clientesArray.map((c) => ({
-          label: `${c.nrocliente ?? ''} - ${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim(),
-          value: c.clienteId,
-        })),
-      );
-    });
-    this.api.get<any[]>('/parametros/formas-pago').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((items) => {
-      this.formaspago.set((items ?? []).map((i) => ({ label: i.descripcion, value: i.formapagoId })));
-      this.inicializarPagos();
-    });
-    this.api.get<any[]>('/parametros/tarjetas-credito').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((items) => {
-      this.tarjetas.set((items ?? []).map((i) => ({ label: i.descripcion, value: i.tarjetacreditoId })));
-    });
-    this.api.get<any[]>('/inventario/existencias').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((items) => {
-      const m = new Map<number, number>();
-      for (const e of items ?? []) {
-        const id = Number(e.productoId);
-        m.set(id, (m.get(id) ?? 0) + Number(e.existencia ?? 0));
-      }
-      this.existenciasMap = m;
-
-      this.api.get<any[]>('/inventario/productos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((prods) => {
-        this.productosArray = ((prods ?? []) as Producto[]).filter((p) => m.has(Number(p.produtoId)));
-        this.filtrarProductos();
+    this.api
+      .get<any>('/cxc/clientes')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((res) => {
+        this.clientesArray = res?.data ?? [];
+        this.onTipoFacturaChange();
+        this.clientes.set(
+          this.clientesArray.map((c) => ({
+            label: `${c.nrocliente ?? ''} - ${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim(),
+            value: c.clienteId,
+          })),
+        );
       });
-    });
-    this.api.get<any[]>('/inventario/productos-img').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((items) => {
-      const m = new Map<number, string>();
-      for (const i of items ?? []) {
-        const id = Number(i.productoId);
-        if (i.sn_activo === 'S' && i.img && !m.has(id)) {
-          m.set(id, this.resolverImagen(i.img));
+    this.api
+      .get<any[]>('/parametros/formas-pago')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((items) => {
+        this.formaspago.set(
+          (items ?? []).map((i) => ({ label: i.descripcion, value: i.formapagoId })),
+        );
+        this.inicializarPagos();
+      });
+    this.api
+      .get<any[]>('/parametros/tarjetas-credito')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((items) => {
+        this.tarjetas.set(
+          (items ?? []).map((i) => ({ label: i.descripcion, value: i.tarjetacreditoId })),
+        );
+      });
+    this.api
+      .get<any[]>('/inventario/existencias')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((items) => {
+        const m = new Map<number, number>();
+        for (const e of items ?? []) {
+          const id = Number(e.productoId);
+          m.set(id, (m.get(id) ?? 0) + Number(e.existencia ?? 0));
         }
-      }
-      this.imagenesMap = m;
-    });
-    this.api.get<any>('/facturacion/descuentos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
-      const items = res?.value ?? res ?? [];
-      this.descuentosMap.clear();
-      this.descAcumulables.clear();
-      for (const d of items) {
-        this.descuentosMap.set(d.descuentoId, Number(d.porcentaje) || 0);
-        // Detectar descuentos acumulables (tercera edad, vejez, etc.)
-        const desc = (d.descripcion ?? '').toLowerCase();
-        if (desc.includes('tercera') || desc.includes('vejez') || desc.includes('adulto mayor')) {
-          this.descAcumulables.add(d.descuentoId);
+        this.existenciasMap = m;
+
+        this.api
+          .get<any[]>('/inventario/productos')
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe((prods) => {
+            this.productosArray = ((prods ?? []) as Producto[]).filter((p) =>
+              m.has(Number(p.produtoId)),
+            );
+            this.filtrarProductos();
+          });
+      });
+    this.api
+      .get<any[]>('/inventario/productos-img')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((items) => {
+        const m = new Map<number, string>();
+        for (const i of items ?? []) {
+          const id = Number(i.productoId);
+          if (i.sn_activo === 'S' && i.img && !m.has(id)) {
+            m.set(id, this.resolverImagen(i.img));
+          }
         }
-      }
-      this.descuentos.set(items
-        .filter((d: any) => d.sn_activo === 'S')
-        .map((d: any) => ({ label: d.descripcion, value: d.descuentoId })));
-    });
+        this.imagenesMap = m;
+      });
+    this.api
+      .get<any>('/facturacion/descuentos')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((res) => {
+        const items = res?.value ?? res ?? [];
+        this.descuentosMap.clear();
+        this.descAcumulables.clear();
+        for (const d of items) {
+          this.descuentosMap.set(d.descuentoId, Number(d.porcentaje) || 0);
+          // Detectar descuentos acumulables (tercera edad, vejez, etc.)
+          const desc = (d.descripcion ?? '').toLowerCase();
+          if (desc.includes('tercera') || desc.includes('vejez') || desc.includes('adulto mayor')) {
+            this.descAcumulables.add(d.descuentoId);
+          }
+        }
+        this.descuentos.set(
+          items
+            .filter((d: any) => d.sn_activo === 'S')
+            .map((d: any) => ({ label: d.descripcion, value: d.descuentoId })),
+        );
+      });
 
     // Cargar ofertas/promociones vigentes
-    this.api.get<any>('/facturacion/combos-ofertas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
-      const ofertas = res?.value ?? res ?? [];
-      this.ofertasMap.clear();
-      for (const o of (Array.isArray(ofertas) ? ofertas : [])) {
-        this.ofertasMap.set(Number(o.productoId), {
-          porcentaje: Number(o.porcentaje),
-          precioConDescuento: Number(o.precioConDescuento),
-          desc: o.descuentoDesc ?? `${o.porcentaje}%`,
-        });
-      }
-    });
+    this.api
+      .get<any>('/facturacion/combos-ofertas')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((res) => {
+        const ofertas = res?.value ?? res ?? [];
+        this.ofertasMap.clear();
+        for (const o of Array.isArray(ofertas) ? ofertas : []) {
+          this.ofertasMap.set(Number(o.productoId), {
+            porcentaje: Number(o.porcentaje),
+            precioConDescuento: Number(o.precioConDescuento),
+            desc: o.descuentoDesc ?? `${o.porcentaje}%`,
+          });
+        }
+      });
   }
 
   private resolverImagen(img: string): string {
@@ -417,8 +492,10 @@ export class NuevaFactura implements OnInit {
   }
 
   /** Retorna info de oferta/promo del producto, null si no tiene */
-  getOferta(productoId: number | null): { porcentaje: number; precioConDescuento: number; desc: string } | null {
-    return productoId ? this.ofertasMap.get(productoId) ?? null : null;
+  getOferta(
+    productoId: number | null,
+  ): { porcentaje: number; precioConDescuento: number; desc: string } | null {
+    return productoId ? (this.ofertasMap.get(productoId) ?? null) : null;
   }
 
   /** Verifica si el producto tiene oferta/promo vigente */
@@ -466,7 +543,9 @@ export class NuevaFactura implements OnInit {
   }
 
   private getClienteTienda(): any | null {
-    return this.clientesArray.find((c: any) => (c.nrocliente ?? '').toUpperCase() === 'TIENDA') ?? null;
+    return (
+      this.clientesArray.find((c: any) => (c.nrocliente ?? '').toUpperCase() === 'TIENDA') ?? null
+    );
   }
 
   onTipoFacturaChange() {
@@ -554,12 +633,12 @@ export class NuevaFactura implements OnInit {
       case '5':
       case '6':
         event.preventDefault();
-        this.dialogPagos.set(true);
+        this.abrirPagos();
         break;
       case '7':
         event.preventDefault();
         if (this.esContado()) {
-          this.dialogPagos.set(true);
+          this.abrirPagos();
         } else {
           this.facturar();
         }
@@ -578,7 +657,11 @@ export class NuevaFactura implements OnInit {
   private suspenderVenta() {
     const filas = this.filas();
     if (filas.length === 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Suspender', detail: 'No hay artículos para suspender' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Suspender',
+        detail: 'No hay artículos para suspender',
+      });
       return;
     }
     const raw = this.form.getRawValue();
@@ -594,14 +677,18 @@ export class NuevaFactura implements OnInit {
       tipoconstancia: raw.tipoconstancia,
       nroconstancia: raw.nroconstancia,
       importe_excento: raw.importe_excento,
-      filas: filas.map(f => ({ ...f })),
+      filas: filas.map((f) => ({ ...f })),
       totales: { ...this.totales() },
     };
     const suspendidas = this.leerVentasSuspendidas();
     suspendidas.push(venta);
     localStorage.setItem('ventasSuspendidas', JSON.stringify(suspendidas));
     this.ventasSuspendidas.set(suspendidas);
-    this.msgs.add({ severity: 'success', summary: 'Venta suspendida', detail: `Venta con ${filas.length} artículo(s) guardada` });
+    this.msgs.add({
+      severity: 'success',
+      summary: 'Venta suspendida',
+      detail: `Venta con ${filas.length} artículo(s) guardada`,
+    });
     this.nueva();
   }
 
@@ -632,18 +719,22 @@ export class NuevaFactura implements OnInit {
     });
     this.nombreClienteManual.set(venta.nombreClienteManual ?? '');
     this.filas.set((venta.filas ?? []).map((f: any) => ({ ...f })));
-    this.contadorFila = Math.max(0, ...this.filas().map(f => f.fila));
+    this.contadorFila = Math.max(0, ...this.filas().map((f) => f.fila));
     this.recalcularTotales();
 
-    const suspendidas = this.leerVentasSuspendidas().filter(s => s.id !== venta.id);
+    const suspendidas = this.leerVentasSuspendidas().filter((s) => s.id !== venta.id);
     localStorage.setItem('ventasSuspendidas', JSON.stringify(suspendidas));
     this.ventasSuspendidas.set(suspendidas);
     this.dialogSuspendidas.set(false);
-    this.msgs.add({ severity: 'success', summary: 'Venta restaurada', detail: 'Venta suspendida cargada' });
+    this.msgs.add({
+      severity: 'success',
+      summary: 'Venta restaurada',
+      detail: 'Venta suspendida cargada',
+    });
   }
 
   eliminarVentaSuspendida(venta: any) {
-    const suspendidas = this.leerVentasSuspendidas().filter(s => s.id !== venta.id);
+    const suspendidas = this.leerVentasSuspendidas().filter((s) => s.id !== venta.id);
     localStorage.setItem('ventasSuspendidas', JSON.stringify(suspendidas));
     this.ventasSuspendidas.set(suspendidas);
   }
@@ -653,13 +744,14 @@ export class NuevaFactura implements OnInit {
     this.qProducto.set(texto);
 
     if (texto.length >= 13) {
-      this.api.get<any>(`/inventario/productos/buscar`, { q: texto.trim() })
+      this.api
+        .get<any>(`/inventario/productos/buscar`, { q: texto.trim() })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => {
             const items = Array.isArray(res) ? res : (res?.value ?? []);
-            const producto = items.find(
-              (p: any) => (p.codbarra ?? '').trim().startsWith(texto.trim()),
+            const producto = items.find((p: any) =>
+              (p.codbarra ?? '').trim().startsWith(texto.trim()),
             );
             if (producto) {
               this.agregarProductoDirecto(producto);
@@ -808,7 +900,14 @@ export class NuevaFactura implements OnInit {
   agregarPago() {
     this.pagos.update((p) => [
       ...p,
-      { formapagoId: null, tarjetacreditoId: null, nrotarjeta: '', nroautorizacion: '', importe: 0, nroreferencia: '' },
+      {
+        formapagoId: null,
+        tarjetacreditoId: null,
+        nrotarjeta: '',
+        nroautorizacion: '',
+        importe: 0,
+        nroreferencia: '',
+      },
     ]);
   }
 
@@ -830,6 +929,28 @@ export class NuevaFactura implements OnInit {
 
   pendiente(): number {
     return Math.max(0, this.totales().total - this.totalPagos());
+  }
+
+  /** true si el total de la factura es L 0.00 — no se permite pagar/facturar */
+  totalEnCero(): boolean {
+    return Math.round((this.totales().total || 0) * 100) / 100 <= 0;
+  }
+
+  /**
+   * Abre el diálogo de formas de pago. Si el total de la factura es L 0.00
+   * muestra una alerta explicativa y NO abre (los botones NO se deshabilitan:
+   * un botón gris sin explicación genera llamadas al call center).
+   */
+  abrirPagos(): void {
+    if (this.totalEnCero()) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'No se puede pagar',
+        detail: 'El total de la factura es L 0.00. Agregue productos para continuar.',
+      });
+      return;
+    }
+    this.dialogPagos.set(true);
   }
 
   esTarjeta(pago: PagoFactura): boolean {
@@ -869,7 +990,8 @@ export class NuevaFactura implements OnInit {
     if (this.impuestoIncluido) {
       const subConImp = bruto * (1 + this.tasaImpuesto) * (1 - descuento / 100);
       // ISV que se dejó de cobrar (15%) — se guarda en importe_excento cuando la venta es exenta
-      const isvCalculado = Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
+      const isvCalculado =
+        Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
       row.impuesto = exenta ? 0 : isvCalculado;
       row.impuestoExcento = exenta ? isvCalculado : 0;
       row.subTotal = Math.round(subConImp * 100) / 100;
@@ -1003,6 +1125,7 @@ export class NuevaFactura implements OnInit {
     this.varProducto.set('');
     this.varPrecioVenta.set(0);
     this.nombreClienteManual.set('');
+    this.facturarConLink = false;
     this.onTipoFacturaChange();
     this.recalcularTotales();
   }
@@ -1010,12 +1133,20 @@ export class NuevaFactura implements OnInit {
   facturar() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Complete los campos obligatorios de la factura' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Complete los campos obligatorios de la factura',
+      });
       return;
     }
     const filas = this.filas();
     if (filas.length === 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Agregue al menos un artículo' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Agregue al menos un artículo',
+      });
       return;
     }
 
@@ -1023,51 +1154,103 @@ export class NuevaFactura implements OnInit {
     const t = this.totales();
     const esCredito = raw.tipofactura === 'C';
 
+    // No se permite pagar/facturar con total de factura en L 0.00
+    if (this.totalEnCero()) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'No se puede pagar: el total de la factura es L 0.00',
+      });
+      return;
+    }
+
     if (!esCredito) {
       if (raw.snNombreOptions === 'S' && !this.nombreClienteManual()?.trim()) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el nombre del cliente' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: 'Ingrese el nombre del cliente',
+        });
         return;
       }
       const pagos = this.pagosConImporte();
       if (pagos.length === 0) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese al menos una forma de pago con importe' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: 'Ingrese al menos una forma de pago con importe',
+        });
         return;
       }
       for (const p of pagos) {
         if (this.esTarjeta(p)) {
           if (!p.nrotarjeta?.trim()) {
-            this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el número de tarjeta de crédito' });
+            this.msgs.add({
+              severity: 'warn',
+              summary: 'Validación',
+              detail: 'Ingrese el número de tarjeta de crédito',
+            });
             return;
           }
           if (p.nrotarjeta.replace(/\D/g, '').length < 13) {
-            this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'El número de tarjeta debe tener al menos 13 dígitos' });
+            this.msgs.add({
+              severity: 'warn',
+              summary: 'Validación',
+              detail: 'El número de tarjeta debe tener al menos 13 dígitos',
+            });
             return;
           }
           if (!this.validarLuhn(p.nrotarjeta)) {
-            this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'El número de tarjeta no es válido' });
+            this.msgs.add({
+              severity: 'warn',
+              summary: 'Validación',
+              detail: 'El número de tarjeta no es válido',
+            });
             return;
           }
           if (!p.nroautorizacion?.trim()) {
-            this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el número de autorización de la tarjeta' });
+            this.msgs.add({
+              severity: 'warn',
+              summary: 'Validación',
+              detail: 'Ingrese el número de autorización de la tarjeta',
+            });
             return;
           }
         }
         if (this.esTransferencia(p) && !p.nroautorizacion?.trim()) {
-          this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el número de autorización de la transferencia' });
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Validación',
+            detail: 'Ingrese el número de autorización de la transferencia',
+          });
           return;
         }
       }
       const totalPagos = this.totalPagos();
       if (totalPagos < t.total) {
-        this.msgs.add({ severity: 'error', summary: 'Validación', detail: `Factura de contado debe ser pagada en su totalidad. Falta por pagar: ${this.moneda(t.total - totalPagos)}` });
+        this.msgs.add({
+          severity: 'error',
+          summary: 'Validación',
+          detail: `Factura de contado debe ser pagada en su totalidad. Falta por pagar: ${this.moneda(t.total - totalPagos)}`,
+        });
         return;
       }
     }
 
+    // ── TodoPago: detectar pago por link en el diálogo de formas de pago ──
+    const pagosTP = !esCredito
+      ? this.pagosConImporte().filter((p) => p.formapagoId === FORMAPAGO_TODOPAGO)
+      : [];
+    const conLink = pagosTP.length > 0;
+    this.facturarConLink = conLink;
+
     const clienteArr = this.clientesArray.find((c) => c.clienteId === raw.clienteId);
-    const nombreCliente = (raw.tipofactura === 'E' && raw.snNombreOptions === 'S')
-      ? this.nombreClienteManual()
-      : (clienteArr ? `${clienteArr.nombres ?? ''} ${clienteArr.apellidos ?? ''}`.trim() : null);
+    const nombreCliente =
+      raw.tipofactura === 'E' && raw.snNombreOptions === 'S'
+        ? this.nombreClienteManual()
+        : clienteArr
+          ? `${clienteArr.nombres ?? ''} ${clienteArr.apellidos ?? ''}`.trim()
+          : null;
 
     const mae = {
       tipofactura: raw.tipofactura,
@@ -1081,8 +1264,13 @@ export class NuevaFactura implements OnInit {
       impuesto: t.impuesto,
       descuento: t.descuento,
       total: t.total,
-      efectivo_recibido: esCredito ? 0 : this.totalPagos(),
-      importe_cambio: esCredito ? 0 : Math.round(this.cambioTotal() * 100) / 100,
+      // Con link TodoPago el pago efectivo es lo no-TP (el link aún no se confirma)
+      efectivo_recibido: esCredito
+        ? 0
+        : conLink
+          ? this.totalPagos() - pagosTP.reduce((s, p) => s + (Number(p.importe) || 0), 0)
+          : this.totalPagos(),
+      importe_cambio: esCredito || conLink ? 0 : Math.round(this.cambioTotal() * 100) / 100,
       diascredito: raw.diascredito ?? 0,
       fechavencimiento: raw.fechavencimiento ? new Date(raw.fechavencimiento).toISOString() : null,
       bodegaId: raw.bodegaId,
@@ -1092,24 +1280,33 @@ export class NuevaFactura implements OnInit {
       tipoconstancia: raw.tipoconstancia || 'FNE',
       nroconstancia: raw.nroconstancia || null,
       importe_excento: raw.importe_excento || 0,
-      sn_pagada: esCredito ? 'N' : 'S',
+      // Con link TodoPago la factura queda pendiente hasta la confirmación del pago
+      sn_pagada: esCredito || conLink ? 'N' : 'S',
       sn_anulada: 'N',
       sn_contabilizada: 'N',
     };
 
     this.guardando.set(true);
-    this.service.createMae<any>('/facturacion/facturas', mae).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (fac) => {
-        // Alerta si el rango CAI está por agotarse
-        if (fac.alerta) {
-          this.msgs.add({ severity: 'warn', summary: 'CAI — Autorización próxima a caducar', detail: fac.alerta, life: 10000 });
-        }
+    this.service
+      .createMae<any>('/facturacion/facturas', mae)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (fac) => {
+          // Alerta si el rango CAI está por agotarse
+          if (fac.alerta) {
+            this.msgs.add({
+              severity: 'warn',
+              summary: 'CAI — Autorización próxima a caducar',
+              detail: fac.alerta,
+              life: 10000,
+            });
+          }
 
-        const detOps = filas.map((r, i) => {
-            const pDescuento = r.descuento ?? 0;  // Porcentaje de descuento
+          const detOps = filas.map((r, i) => {
+            const pDescuento = r.descuento ?? 0; // Porcentaje de descuento
             const cant = r.cantidad ?? 0;
             const precio = r.precioventa ?? 0;
-            const descuentoMonto = Math.round(cant * precio * (pDescuento / 100) * 100) / 100;  // Monto calculado
+            const descuentoMonto = Math.round(cant * precio * (pDescuento / 100) * 100) / 100; // Monto calculado
             return this.service.createDet<any>('/facturacion/facturas-det', {
               facturaId: fac.facturaId,
               // La bodega resuelta por el backend (sucursal del usuario) tiene prioridad
@@ -1125,32 +1322,47 @@ export class NuevaFactura implements OnInit {
               p_descuento: pDescuento,
               sn_anulada: 'N',
             });
-        });
-        forkJoin(detOps).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: () => {
-            if (esCredito) {
-              this.procesarKardexYFinalizar(fac, `Factura de crédito #${fac.nrofactura} creada`);
-            } else {
-              this.guardarPagosYFinalizar(fac, raw);
-            }
-          },
-          error: (err) => {
-            this.guardando.set(false);
-            console.error('Error al guardar detalle de factura', err);
-            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'La factura se creó pero falló el detalle' });
-          },
-        });
-      },
-      error: (err) => {
-        this.guardando.set(false);
-        console.error('Error al guardar factura', err);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la factura' });
-      },
-    });
+          });
+          forkJoin(detOps)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: () => {
+                if (esCredito) {
+                  this.procesarKardexYFinalizar(
+                    fac,
+                    `Factura de crédito #${fac.nrofactura} creada`,
+                  );
+                } else {
+                  this.guardarPagosYFinalizar(fac, raw);
+                }
+              },
+              error: (err) => {
+                this.guardando.set(false);
+                console.error('Error al guardar detalle de factura', err);
+                this.msgs.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: 'La factura se creó pero falló el detalle',
+                });
+              },
+            });
+        },
+        error: (err) => {
+          this.guardando.set(false);
+          console.error('Error al guardar factura', err);
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo guardar la factura',
+          });
+        },
+      });
   }
 
   private guardarPagosYFinalizar(fac: any, raw: any) {
-    const pagosList = this.pagosConImporte();
+    // El pago TodoPagoLink NO se registra en posfaccaja ahora:
+    // se inserta recién cuando el link se confirma (callback/confirmar)
+    const pagosList = this.pagosConImporte().filter((p) => p.formapagoId !== FORMAPAGO_TODOPAGO);
     if (pagosList.length > 0) {
       const pagoOps = pagosList.map((p) =>
         this.service.createDet<any>('/facturacion/fac-caja', {
@@ -1166,38 +1378,266 @@ export class NuevaFactura implements OnInit {
           cajaId: raw.cajaId,
         }),
       );
-      forkJoin(pagoOps).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-        next: () => {
-          this.procesarKardexYFinalizar(fac, `Factura #${fac.nrofactura} creada con ${pagosList.length} pago(s)`);
-        },
-        error: (err) => {
-          this.guardando.set(false);
-          console.error('Error al guardar formas de pago', err);
-          this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.nrofactura} creada, pero falló el registro de pagos` });
-          this.nueva();
-        },
-      });
+      forkJoin(pagoOps)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.procesarKardexYFinalizar(
+              fac,
+              `Factura #${fac.nrofactura} creada con ${pagosList.length} pago(s)`,
+            );
+          },
+          error: (err) => {
+            this.guardando.set(false);
+            console.error('Error al guardar formas de pago', err);
+            this.msgs.add({
+              severity: 'warn',
+              summary: 'Advertencia',
+              detail: `Factura #${fac.nrofactura} creada, pero falló el registro de pagos`,
+            });
+            this.nueva();
+          },
+        });
     } else {
       this.procesarKardexYFinalizar(fac, `Factura #${fac.nrofactura} creada`);
     }
   }
 
   private procesarKardexYFinalizar(fac: any, mensajeExito: string) {
-    this.api.post<any>(`/facturacion/facturas/${fac.facturaId}/procesar-kardex`, {}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.guardando.set(false);
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: mensajeExito });
-        if (this.snImprimeFactura) {
-          this.imprimirTicket(fac.facturaId);
-        }
-        this.nueva();
-      },
-      error: () => {
-        this.guardando.set(false);
-        this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.nrofactura} creada, pero falló el registro de kardex` });
-        this.nueva();
-      },
+    this.api
+      .post<any>(`/facturacion/facturas/${fac.facturaId}/procesar-kardex`, {})
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.guardando.set(false);
+          this.msgs.add({ severity: 'success', summary: 'Guardado', detail: mensajeExito });
+          if (this.snImprimeFactura) {
+            this.imprimirTicket(fac.facturaId);
+          }
+          if (this.facturarConLink) {
+            this.generarLinkPago(fac);
+          } else {
+            this.nueva();
+          }
+        },
+        error: () => {
+          this.guardando.set(false);
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail: `Factura #${fac.nrofactura} creada, pero falló el registro de kardex`,
+          });
+          if (this.facturarConLink) {
+            this.generarLinkPago(fac);
+          } else {
+            this.nueva();
+          }
+        },
+      });
+  }
+
+  // ═══════════════════ TodoPago — link de pago ═══════════════════
+
+  /** Genera el link para la factura recién creada y abre el diálogo headless */
+  private generarLinkPago(fac: any) {
+    this.todp
+      .generarLink(fac.facturaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (link) => {
+          this.linkPago.set(link);
+          this.linkStatus.set(link.status || 'pending');
+          this.linkCopiado.set(false);
+          this.nroFacturaLink.set(fac.nrofactura ?? null);
+          this.iniciarPollingLink(link.operationId);
+          this.nueva();
+          // El toast queda reemplazado por el diálogo headless (llamativo)
+          this.mostrarDialogoLink();
+        },
+        error: (err) => {
+          console.error('Error al generar link de pago', err);
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Link de pago',
+            detail: `Factura #${fac.nrofactura} creada, pero no se pudo generar el link`,
+          });
+          this.nueva();
+        },
+      });
+  }
+
+  /** Consulta el estado cada 10 s mientras esté pendiente */
+  private iniciarPollingLink(operationId: string) {
+    this.detenerPollingLink();
+    this.pollTimer = setInterval(() => {
+      if (this.linkPago()?.operationId !== operationId) {
+        this.detenerPollingLink();
+        return;
+      }
+      this.todp
+        .getStatus(operationId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (tx) => {
+            this.linkStatus.set(tx.status);
+            if (tx.status !== 'pending') {
+              this.detenerPollingLink();
+              if (tx.status === 'completed') {
+                this.msgs.add({
+                  severity: 'success',
+                  summary: 'Pago confirmado',
+                  detail: `Factura #${tx.nrofactura || tx.facturaid} pagada vía TodoPago`,
+                  life: 8000,
+                });
+                // Reabre el diálogo headless con la variante "¡Pago confirmado!"
+                this.mostrarDialogoLink();
+              } else if (tx.status === 'failed' || tx.status === 'expired') {
+                this.msgs.add({
+                  severity: 'warn',
+                  summary: 'Pago no completado',
+                  detail: 'La transacción TodoPago finalizó sin completarse',
+                  life: 8000,
+                });
+              }
+            }
+          },
+          error: () => {
+            /* el polling tolera fallos transitorios */
+          },
+        });
+    }, 10000);
+    this.destroyRef.onDestroy(() => this.detenerPollingLink());
+  }
+
+  private detenerPollingLink(): void {
+    if (this.pollTimer !== null) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+
+  /**
+   * Diálogo headless (ConfirmDialog) llamativo para el link TodoPago.
+   * El template decide la variante según linkStatus():
+   *  - pending  → link generado (badge link + monto + url + acciones)
+   *  - completed → ¡Pago confirmado! (badge check + monto + Entendido)
+   */
+  mostrarDialogoLink(): void {
+    if (!this.linkPago()) return;
+    this.confirm.confirm({
+      key: 'tp-link',
+      header: 'Link de pago TodoPago',
+      message: 'Link de pago generado',
+      icon: 'pi pi-link',
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
+      // Headless: sin botones por defecto (bug PrimeNG #17000 — el footer se oculta por CSS)
+      acceptVisible: false,
+      rejectVisible: false,
+      // style/breakpoints van declarativos en <p-confirmdialog> (no existen en Confirmation)
     });
+  }
+
+  /** Estado visible de la card del link */
+  labelEstadoLink(): string {
+    switch (this.linkStatus()) {
+      case 'completed':
+        return 'Pagado';
+      case 'failed':
+        return 'Fallido';
+      case 'expired':
+        return 'Expirado';
+      case 'reversed':
+        return 'Reversado';
+      default:
+        return 'Pendiente';
+    }
+  }
+
+  severityEstadoLink(): 'success' | 'warn' | 'danger' | 'info' {
+    switch (this.linkStatus()) {
+      case 'completed':
+        return 'success';
+      case 'failed':
+        return 'danger';
+      case 'expired':
+        return 'warn';
+      case 'reversed':
+        return 'danger';
+      default:
+        return 'info';
+    }
+  }
+
+  async copiarLink(): Promise<void> {
+    const url = this.linkPago()?.url;
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      this.linkCopiado.set(true);
+      setTimeout(() => this.linkCopiado.set(false), 2500);
+      this.msgs.add({
+        severity: 'success',
+        summary: 'Copiado',
+        detail: 'Link copiado al portapapeles',
+        life: 2500,
+      });
+    } catch {
+      this.msgs.add({ severity: 'warn', summary: 'Copiar', detail: 'No se pudo copiar el link' });
+    }
+  }
+
+  abrirLink(): void {
+    const url = this.linkPago()?.url;
+    if (url) window.open(url, '_blank', 'noopener');
+  }
+
+  cerrarLink(): void {
+    this.detenerPollingLink();
+    this.linkPago.set(null);
+    this.linkStatus.set('pending');
+  }
+
+  /** Reconsulta el estado bajo demanda (botón "Ver estado") */
+  consultarEstadoLink(): void {
+    const link = this.linkPago();
+    if (!link) return;
+    this.todp
+      .getStatus(link.operationId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (tx) => {
+          this.linkStatus.set(tx.status);
+          if (tx.status !== 'pending') this.detenerPollingLink();
+          if (tx.status === 'completed') {
+            this.msgs.add({
+              severity: 'success',
+              summary: 'Pago confirmado',
+              detail: `Factura #${tx.nrofactura || tx.facturaid} pagada vía TodoPago`,
+              life: 8000,
+            });
+            this.mostrarDialogoLink();
+          }
+        },
+        error: () =>
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Estado',
+            detail: 'No se pudo consultar el estado',
+          }),
+      });
+  }
+
+  /** Auto-asignar el importe pendiente al elegir TodoPago como forma de pago */
+  onFormaPagoChange(pago: PagoFactura): void {
+    if (pago.formapagoId !== FORMAPAGO_TODOPAGO) return;
+    const otros = this.pagosConImporte()
+      .filter((p) => p !== pago && p.formapagoId !== FORMAPAGO_TODOPAGO)
+      .reduce((s, p) => s + (Number(p.importe) || 0), 0);
+    const pendiente = Math.round((this.totales().total - otros) * 100) / 100;
+    if (pendiente > 0) pago.importe = pendiente;
   }
 
   moneda(n: number | undefined): string {
@@ -1209,15 +1649,25 @@ export class NuevaFactura implements OnInit {
   }
 
   private imprimirTicket(facturaId: number) {
-    this.api.get<any>(`/facturacion/facturas/${facturaId}/ticket`)
+    this.api
+      .get<any>(`/facturacion/facturas/${facturaId}/ticket`)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         // El formato (TICKET/CARTA) lo resuelve el servicio desde timpresoras
-        next: (data) => this.impresion.imprimir(data).catch(() => {
-          this.msgs.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudo imprimir la factura' });
-        }),
+        next: (data) =>
+          this.impresion.imprimir(data).catch(() => {
+            this.msgs.add({
+              severity: 'warn',
+              summary: 'Impresión',
+              detail: 'No se pudo imprimir la factura',
+            });
+          }),
         error: () => {
-          this.msgs.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudieron cargar los datos del ticket' });
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Impresión',
+            detail: 'No se pudieron cargar los datos del ticket',
+          });
         },
       });
   }

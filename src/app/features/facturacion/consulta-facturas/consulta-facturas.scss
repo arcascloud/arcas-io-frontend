@@ -215,6 +215,126 @@
   gap: 0.5rem;
 }
 
+// ==================== Dialog Link de pago (TodoPago) ====================
+
+.link-cargando {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.25rem 0;
+  color: var(--c-text-muted);
+  font-size: 0.85rem;
+}
+
+.link-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.link-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.link-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.link-url-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.link-url-input {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+}
+
+.link-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--c-text);
+
+  b {
+    font-weight: 700;
+  }
+}
+
+.link-acciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.link-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 0;
+  text-align: center;
+
+  i {
+    font-size: 2.5rem;
+    color: var(--c-text-muted);
+    opacity: 0.35;
+  }
+}
+
+.link-vacio-titulo {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.link-vacio-sub {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+}
+
+.link-historial {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tabla-historial {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+
+  th {
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--c-text-muted);
+    background: var(--c-surface-ground);
+    padding: 0.45rem 0.6rem;
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  td {
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid var(--c-border);
+    color: var(--c-text);
+  }
+}
+
 // ==================== Responsive ====================
 
 @media (max-width: 768px) {

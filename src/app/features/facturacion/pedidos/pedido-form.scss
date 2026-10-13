@@ -1,0 +1,606 @@
+// Pedido Form (ERP) — layout visual equivalente a NuevaFactura.
+// Solo las clases que usa este componente + extras propios.
+
+.field {
+  margin-bottom: 0.2rem;
+}
+
+.nf-side-panel {
+  min-width: 275px;
+  min-height: 200px;
+}
+
+.nf-col {
+  min-width: 0;
+}
+
+.nf-col-right {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.nf-busqueda {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0;
+
+  input[pinputtext] {
+    flex: 1;
+    min-width: 0;
+  }
+
+  ::ng-deep .p-inputicon {
+    top: 50%;
+    left: 97%;
+    transform: translateY(calc(-50% + 7px));
+  }
+}
+
+.invoice-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.invoice-party-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary-color);
+  margin-bottom: 0.25rem;
+}
+
+.pago-block {
+  border: none;
+  padding: 0;
+  background: none;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-texto-label);
+  }
+
+  .req {
+    color: #ef4444;
+  }
+
+  .err {
+    color: #ef4444;
+    font-size: 0.75rem;
+  }
+
+  p-select,
+  p-inputnumber,
+  p-datepicker {
+    width: 100%;
+  }
+
+  input[pinputtext] {
+    width: 100%;
+  }
+}
+
+// Label a la izquierda + control a la derecha en UNA sola fila
+// (ahorra altura vertical en el panel derecho — evita scroll innecesario)
+.campo-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+
+  label {
+    white-space: nowrap;
+  }
+}
+
+// Botones de acción apilados: fila 1 = Guardar, fila 2 = Salir/Nueva/Pagar
+.acciones-pedido {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.acciones-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+// Guardar a ancho completo: el host <p-button> es un elemento inline con
+// ancho auto — hay que forzarlo a block/100% y estirar el <button> interno
+.acciones-fila-guardar {
+  p-button {
+    display: block;
+    width: 100%;
+  }
+
+  ::ng-deep button {
+    width: 100%;
+  }
+}
+
+.pago-resumen {
+  border-top: 1px solid var(--surface-border);
+  padding-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.pago-resumen-inline {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.pago-dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.text-ok {
+  color: var(--c-success, #10b981);
+}
+
+.text-warn {
+  color: var(--c-warning, #f59e0b);
+}
+
+.det-table {
+  p-inputnumber {
+    width: 100%;
+  }
+
+  input {
+    width: 100%;
+  }
+
+  ::ng-deep .p-datatable-tbody>tr>td {
+    padding: 0.25rem 0.75rem;
+  }
+
+  ::ng-deep .p-datatable-thead>tr>th {
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+// Cabecera del formulario: título arriba + tags de estado debajo
+.page-header-pedido {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+
+  >span {
+    font-weight: 600;
+    color: var(--color-texto-label);
+  }
+}
+
+.pedido-estado {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+// Fila 1 del header: chips de estado (Pedido #, estado, Factura #, candado)
+.pedido-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+// Fila 2 del header: controles (Gestor → Teléfono → Envío gratis)
+// flex-basis 100% = siempre en su propia línea, debajo de los chips
+.pedido-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-basis: 100%;
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-texto-label);
+    white-space: nowrap;
+  }
+}
+
+.badge-readonly {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-warning, #f59e0b);
+}
+
+// Columnas de la tabla
+.th-label {
+  color: var(--color-texto-label);
+}
+
+.width-producto {
+  width: 17rem;
+}
+
+.width-imagen {
+  width: 3rem;
+}
+
+.width-cantidad {
+  width: 12rem;
+}
+
+.width-promo {
+  width: 10rem;
+}
+
+.width-precio {
+  width: 8rem;
+}
+
+.width-subtotal {
+  width: 8rem;
+}
+
+.width-accion {
+  width: 5rem;
+}
+
+.icono-sin-imagen {
+  color: slateblue;
+}
+
+// Totales (idéntico a nueva-factura)
+.nf-totales {
+
+  .nf-totales-split {
+    display: flex;
+    align-items: center;
+  }
+
+  .nf-totales-col-data {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.15rem 1.5rem;
+    padding: 0.2rem 1rem;
+
+    .nf-total-block {
+      flex: unset;
+      min-width: unset;
+    }
+  }
+}
+
+.nf-total-block {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 120px;
+
+  .font-bold {
+    font-size: 0.8rem;
+    color: var(--text-muted-color);
+  }
+
+  >div:last-child {
+    font-size: 1.05rem;
+    color: var(--text-color);
+  }
+}
+
+.nf-total-grand {
+  border-left: 1px solid var(--c-border);
+  padding-left: 1rem;
+
+  >div:last-child {
+    font-size: 1.35rem;
+    color: var(--primary-color);
+  }
+}
+
+.alt9 {
+  display: block;
+  font-weight: 300;
+  margin-left: 5px;
+  font-size: 1.05rem;
+  color: var(--c-warning);
+}
+
+.cell-producto {
+  line-height: 1;
+
+  .cod-barra {
+    display: block;
+    font-weight: 300;
+    font-size: 1rem;
+    color: var(--text-muted-color);
+    margin-bottom: -2px;
+  }
+
+  .desc-linea {
+    display: block;
+    font-weight: 300;
+    font-size: 1.05rem;
+    color: var(--text-muted-color);
+  }
+}
+
+.img-producto {
+  mix-blend-mode: multiply;
+  background: transparent;
+  border-radius: 7px;
+  object-fit: contain;
+  width: 50px;
+  height: 50px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0);
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-muted {
+  color: var(--text-muted-color);
+}
+
+.tag-sm {
+  font-size: 0.9rem;
+  padding: 0.15rem 0.45rem;
+}
+
+// Acciones del panel lateral (vertical, como los gestores)
+.pd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+// Diálogo de pagos (tabla idéntica a Nueva Factura)
+.pago-dialog-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1rem;
+}
+
+.pago-add-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.cambio-amount {
+  color: var(--primary-color);
+}
+
+.pendiente-line {
+  border-top: 1px dashed var(--surface-border);
+  padding-top: 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.width-fp {
+  width: 25%;
+}
+
+.width-tarjeta {
+  width: 20%;
+}
+
+.width-nrotarjeta {
+  width: 15%;
+}
+
+.width-autoriza {
+  width: 15%;
+}
+
+.width-importe {
+  width: 10%;
+}
+
+.width-quitar {
+  width: 5%;
+}
+
+@media (max-width: 767px) {
+  section.page {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  .nf-busqueda {
+    margin-top: 0;
+  }
+
+  .nf-totales .nf-totales-col-data {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+// ═══════════════════ TodoPago — card de link de pago (idéntica a Nueva Factura) ═══════════════════
+.tp-link-card {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-primary);
+  border-radius: 8px;
+
+  .tp-link-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    i.pi-link {
+      color: var(--c-primary);
+      font-size: 1rem;
+    }
+
+    .tp-link-title {
+      flex: 1;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--c-text);
+    }
+  }
+
+  .tp-link-monto {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--c-text);
+
+    .tp-sandbox-tag {
+      margin-left: 0.5rem;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--c-warning);
+      background: transparent;
+      border: 1px solid var(--c-warning);
+      border-radius: 4px;
+      vertical-align: middle;
+    }
+  }
+
+  .tp-link-url {
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    cursor: text;
+  }
+
+  .tp-link-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: flex-end;
+  }
+}
+
+// ═══════════════════ TodoPago — diálogo headless (notificación llamativa) ═══════════════════
+.tp-hl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 1.5rem 1.5rem;
+  gap: 0.3rem;
+
+  .tp-hl-badge {
+    width: 5rem;
+    height: 5rem;
+    margin-bottom: 0.9rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-hover));
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+
+    i {
+      color: #fff;
+      font-size: 2.25rem;
+    }
+
+    &--ok {
+      background: linear-gradient(135deg, var(--c-success), var(--c-primary-hover));
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.55);
+    }
+  }
+
+  .tp-hl-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--c-text);
+    line-height: 1.2;
+  }
+
+  .tp-hl-sub {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--c-text-muted);
+  }
+
+  .tp-hl-monto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--c-text);
+
+    &--ok {
+      color: var(--c-success);
+    }
+
+    .tp-hl-sandbox {
+      padding: 0.1rem 0.45rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--c-warning);
+      background: transparent;
+      border: 1px solid var(--c-warning);
+      border-radius: 4px;
+      vertical-align: middle;
+    }
+  }
+
+  .tp-hl-status {
+    margin-top: 0.25rem;
+  }
+
+  .tp-hl-url {
+    margin-top: 0.85rem;
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    background: var(--c-surface-ground);
+    border: 1px dashed var(--c-border);
+    border-radius: 4px;
+    text-align: center;
+    cursor: text;
+  }
+
+  .tp-hl-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+}
+
+// En modo headless el footer de ConfirmDialog queda vacío (o con botones por defecto
+// según PrimeNG #17000) — se oculta completamente. ::ng-deep porque el panel lo crea Dialog.
+::ng-deep .tp-hl-dialog .p-dialog-footer {
+  display: none;
+}

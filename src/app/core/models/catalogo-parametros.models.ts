@@ -63,6 +63,18 @@ export function labelOpcion(
   return String(item?.[c.labelCampo ?? ''] ?? item?.[c.valueCampo] ?? '');
 }
 
+/**
+ * Artículo para los encabezados "Nuevo …" / "Nueva …" del formulario de catálogo,
+ * según el género del primer sustantivo del singular. Reglas básicas del español:
+ * termina en -a, -ción, -sión, -dad, -tad, -tud → femenino; "día" es excepción (masculino).
+ * Ej: "Dirección" → "Nueva", "Día de Cobro" → "Nuevo Día de Cobro".
+ */
+export function articuloNuevo(singular: string): string {
+  const cabeza = (singular.trim().split(/\s+/)[0] ?? '').toLowerCase();
+  const femenino = cabeza !== 'día' && (cabeza.endsWith('a') || /(ción|sión|dad|tad|tud)$/.test(cabeza));
+  return femenino ? 'Nueva' : 'Nuevo';
+}
+
 /** Filtro de selección en la barra de filtros del catálogo genérico */
 export interface CampoFiltroCatalogo {
   key: string;
@@ -167,6 +179,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   meses: {
     ruta: '/parametros/meses',
     titulo: 'Meses',
+    tituloSingular: 'Mes',
     subtitulo: 'Meses del año',
     idKey: 'ttipomesId',
     icono: 'calendar',
@@ -177,6 +190,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'formas-pago': {
     ruta: '/parametros/formas-pago',
     titulo: 'Formas de Pago',
+    tituloSingular: 'Forma de Pago',
     subtitulo: 'Tipos de forma de pago',
     idKey: 'formapagoId',
     icono: 'credit-card',
@@ -210,6 +224,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   paises: {
     ruta: '/parametros/paises',
     titulo: 'Países',
+    tituloSingular: 'País',
     subtitulo: 'Tipos de país',
     idKey: 'paisId',
     icono: 'globe',
@@ -220,6 +235,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'departamentos-pais': {
     ruta: '/parametros/departamentos-pais',
     titulo: 'Departamentos (País)',
+    tituloSingular: 'Departamento (País)',
     subtitulo: 'Tipos de departamento por país',
     idKey: 'ttipodeptopaisId',
     icono: 'map',
@@ -230,6 +246,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'departamentos-empresa': {
     ruta: '/parametros/departamentos-empresa',
     titulo: 'Departamentos Empresa',
+    tituloSingular: 'Departamento Empresa',
     subtitulo: 'Tipos de departamento de la empresa',
     idKey: 'departamentostempresasId',
     icono: 'building',
@@ -241,6 +258,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   direcciones: {
     ruta: '/parametros/direcciones',
     titulo: 'Direcciones',
+    tituloSingular: 'Dirección',
     subtitulo: 'Tipos de dirección',
     idKey: 'direccionId',
     icono: 'map-marker',
@@ -261,6 +279,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'tarjetas-credito': {
     ruta: '/parametros/tarjetas-credito',
     titulo: 'Tarjetas de Crédito',
+    tituloSingular: 'Tarjeta de Crédito',
     subtitulo: 'Tipos de tarjeta de crédito',
     idKey: 'tarjetacreditoId',
     icono: 'credit-card',
@@ -291,6 +310,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   gestores: {
     ruta: '/parametros/gestores',
     titulo: 'Gestores',
+    tituloSingular: 'Gestor',
     subtitulo: 'Gestores de cartera',
     idKey: 'gestorId',
     icono: 'user',
@@ -343,6 +363,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'zonas-vta-cob': {
     ruta: '/parametros/zonas-vta-cob',
     titulo: 'Zonas Venta/Cobro',
+    tituloSingular: 'Zona Venta/Cobro',
     subtitulo: 'Zonas de venta y cobro',
     idKey: 'ttipozonasvtacobId',
     icono: 'map',
@@ -373,6 +394,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   precios: {
     ruta: '/facturacion/precios',
     titulo: 'Precios de Venta',
+    tituloSingular: 'Precio de Venta',
     subtitulo: 'Tipos de precio de venta',
     idKey: 'preciovtaId',
     icono: 'dollar',
@@ -442,6 +464,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'dias-cobro': {
     ruta: '/cxc/dias-cobro',
     titulo: 'Días de Cobro',
+    tituloSingular: 'Día de Cobro',
     subtitulo: 'Plazos de días de cobro',
     idKey: 'tdiascobrosId',
     icono: 'calendar',
@@ -462,6 +485,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   cuentas: {
     ruta: '/bancos/cuentas',
     titulo: 'Cuentas Bancarias',
+    tituloSingular: 'Cuenta Bancaria',
     subtitulo: 'Cuentas por banco',
     idKey: 'bcoctasId',
     icono: 'wallet',
@@ -501,6 +525,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   profesiones: {
     ruta: '/planilla/profesiones',
     titulo: 'Profesiones',
+    tituloSingular: 'Profesión',
     subtitulo: 'Profesiones de empleados',
     idKey: 'profesionId',
     icono: 'graduation-cap',
@@ -511,6 +536,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   deducciones: {
     ruta: '/planilla/deducciones',
     titulo: 'Deducciones',
+    tituloSingular: 'Deducción',
     subtitulo: 'Tipos de deducción',
     idKey: 'deduccioneId',
     icono: 'minus',
@@ -569,6 +595,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   titulaciones: {
     ruta: '/planilla/titulaciones',
     titulo: 'Titulaciones',
+    tituloSingular: 'Titulación',
     subtitulo: 'Titulaciones por empleado',
     idKey: 'emptitulacionId',
     icono: 'award',
@@ -590,6 +617,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   certificaciones: {
     ruta: '/planilla/certificaciones',
     titulo: 'Certificaciones',
+    tituloSingular: 'Certificación',
     subtitulo: 'Certificaciones por empleado',
     idKey: 'empcertificacionId',
     icono: 'id-card',
@@ -610,6 +638,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   asistencia: {
     ruta: '/planilla/asistencia',
     titulo: 'Asistencia',
+    tituloSingular: 'Asistencia',
     subtitulo: 'Marcación de empleados',
     idKey: 'plempleadosasistenciaId',
     icono: 'clock',
@@ -635,6 +664,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   comisiones: {
     ruta: '/planilla/comisiones',
     titulo: 'Comisiones',
+    tituloSingular: 'Comisión',
     subtitulo: 'Comisiones por empleado',
     idKey: 'emplcomId',
     icono: 'money-bill-wave',
@@ -674,6 +704,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'deducciones-emp': {
     ruta: '/planilla/deducciones-emp',
     titulo: 'Deducciones por Empleado',
+    tituloSingular: 'Deducción por Empleado',
     subtitulo: 'Deducciones asignadas a empleados',
     idKey: 'empdeduccionId',
     icono: 'minus-circle',
@@ -724,6 +755,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   grupocontable: {
     ruta: '/contabilidad/grupocontable',
     titulo: 'Grupo Contable',
+    tituloSingular: 'Grupo Contable',
     subtitulo: 'Grupos contables',
     idKey: 'tcogrupocontableId',
     icono: 'sitemap',
@@ -734,6 +766,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   carteras: {
     ruta: '/contabilidad/carteras',
     titulo: 'Carteras Contables',
+    tituloSingular: 'Cartera Contable',
     subtitulo: 'Carteras de cuentas contables',
     idKey: 'tcocarteraId',
     icono: 'folder-open',
@@ -760,6 +793,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   cierredet: {
     ruta: '/contabilidad/cierredet',
     titulo: 'Detalle de Cierre Contable',
+    tituloSingular: 'Detalle de Cierre Contable',
     subtitulo: 'Saldos de cierre por cuenta',
     idKey: 'cocierredetId',
     icono: 'lock',
@@ -806,6 +840,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'carteras-cta': {
     ruta: '/cxp/carteras-cta',
     titulo: 'Carteras Contables por Proveedor',
+    tituloSingular: 'Cartera Contable por Proveedor',
     subtitulo: 'Asignación de cartera contable a proveedores',
     idKey: 'id',
     icono: 'folder-open',
@@ -839,6 +874,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'proveedor-info': {
     ruta: '/cxp/proveedor-info',
     titulo: 'Información de Proveedores',
+    tituloSingular: 'Información de Proveedor',
     subtitulo: 'Correos, celulares y direcciones de contacto',
     idKey: 'id',
     icono: 'address-book',
@@ -876,6 +912,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'carteras-cliente': {
     ruta: '/cxc/carteras-cliente',
     titulo: 'Carteras Contables por Cliente',
+    tituloSingular: 'Cartera Contable por Cliente',
     subtitulo: 'Asignación de cartera contable a clientes',
     idKey: 'id',
     icono: 'folder-open',
@@ -909,6 +946,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'clientes-info': {
     ruta: '/cxc/clientes-info',
     titulo: 'Información de Clientes',
+    tituloSingular: 'Información de Cliente',
     subtitulo: 'Celulares, direcciones y correos de contacto',
     idKey: 'id',
     icono: 'address-book',
@@ -946,6 +984,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   nivelcta: {
     ruta: '/contabilidad/nivelcta',
     titulo: 'Niveles Contables',
+    tituloSingular: 'Nivel Contable',
     subtitulo: 'Niveles de cuentas contables',
     idKey: 'nivelcontableId',
     icono: 'layer-group',
@@ -981,6 +1020,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   naturalezacta: {
     ruta: '/contabilidad/naturalezacta',
     titulo: 'Naturaleza de Cuenta',
+    tituloSingular: 'Naturaleza de Cuenta',
     subtitulo: 'Naturaleza débito/crédito',
     idKey: 'naturalezaCtaId',
     icono: 'balance-scale',
@@ -1002,6 +1042,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'tipos-doc-fiscal': {
     ruta: '/contabilidad/tipos-doc-fiscal',
     titulo: 'Tipos de Documento Fiscal',
+    tituloSingular: 'Tipo de Documento Fiscal',
     subtitulo: 'Tipos de documento fiscal',
     idKey: 'tipodocumentofiscalId',
     icono: 'file-signature',
@@ -1033,6 +1074,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   impuestovecinal: {
     ruta: '/contabilidad/impuestovecinal',
     titulo: 'Impuesto Vecinal',
+    tituloSingular: 'Impuesto Vecinal',
     subtitulo: 'Tramos de impuesto vecinal',
     idKey: 'impvecinalId',
     icono: 'landmark',
@@ -1046,6 +1088,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   isr: {
     ruta: '/contabilidad/isr',
     titulo: 'ISR (Retención en la Fuente)',
+    tituloSingular: 'ISR (Retención en la Fuente)',
     subtitulo: 'Rangos de impuesto sobre la renta',
     idKey: 'tcoisrId',
     icono: 'percent',
@@ -1059,6 +1102,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   factordecambio: {
     ruta: '/contabilidad/factordecambio',
     titulo: 'Factor de Cambio',
+    tituloSingular: 'Factor de Cambio',
     subtitulo: 'Tasas de cambio',
     idKey: 'factordecambioId',
     icono: 'dollar',
@@ -1136,6 +1180,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   ctacontables: {
     ruta: '/contabilidad/ctacontables',
     titulo: 'Cuentas Contables',
+    tituloSingular: 'Cuenta Contable',
     subtitulo: 'Catálogo de cuentas contables',
     idKey: 'cuentacontablesId',
     icono: 'list',
@@ -1184,6 +1229,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   saldoscta: {
     ruta: '/contabilidad/saldoscta',
     titulo: 'Saldos anuales',
+    tituloSingular: 'Saldo anual',
     subtitulo: 'Saldos acumulado por año',
     idKey: 'cosaldosctaId',
     icono: 'chart-line',
@@ -1232,6 +1278,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   repliquidez: {
     ruta: '/contabilidad/repliquidez',
     titulo: 'Reporte de Liquidez',
+    tituloSingular: 'Reporte de Liquidez',
     subtitulo: 'Definición de reporte de liquidez',
     idKey: 'tcorepliquidezId',
     icono: 'water',
@@ -1243,6 +1290,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   repdiarios: {
     ruta: '/contabilidad/repdiarios',
     titulo: 'Reportes Diarios',
+    tituloSingular: 'Reporte Diario',
     subtitulo: 'Definición de reportes diarios',
     idKey: 'tcorepdiariosId',
     icono: 'newspaper',
@@ -1254,6 +1302,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   repbalances: {
     ruta: '/contabilidad/repbalances',
     titulo: 'Reportes de Balances',
+    tituloSingular: 'Reporte de Balances',
     subtitulo: 'Comparación de saldos por periodo',
     idKey: 'balcomId',
     icono: 'chart-bar',
@@ -1271,6 +1320,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   movcta: {
     ruta: '/contabilidad/movcta',
     titulo: 'Movimientos de Cuentas',
+    tituloSingular: 'Movimiento de Cuentas',
     subtitulo: 'Movimientos por periodos',
     idKey: 'movctascontablesId',
     icono: 'arrows-spin',
@@ -1362,6 +1412,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   colores: {
     ruta: '/inventario/colores',
     titulo: 'Colores',
+    tituloSingular: 'Color',
     subtitulo: 'Colores de productos',
     idKey: 'colorId',
     icono: 'pi-palette',
@@ -1372,6 +1423,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   'unidades-medida': {
     ruta: '/inventario/unidades-medida',
     titulo: 'Unidades de Medida',
+    tituloSingular: 'Unidad de Medida',
     subtitulo: 'Unidades de medida',
     idKey: 'unidadmedidaId',
     icono: 'pi-arrows-h',
@@ -1402,6 +1454,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   ubicaciones: {
     ruta: '/inventario/ubicaciones',
     titulo: 'Ubicaciones',
+    tituloSingular: 'Ubicación',
     subtitulo: 'Ubicaciones',
     idKey: 'ubicacionId',
     icono: 'pi-map-marker',

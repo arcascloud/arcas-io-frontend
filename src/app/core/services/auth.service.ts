@@ -22,7 +22,34 @@ export interface AuthUser {
   rol?: string;
   /** Roles del usuario (ttipo_rol vía tusuarios_rol) */
   roles?: string[];
+  /**
+   * Tipo de persona que determinó el backend al iniciar sesión (por datos,
+   * no por el checkbox del formulario): 'C' = cliente (solo rutas de
+   * tienda/pedidos), 'E' = empleado (acceso completo al ERP).
+   */
+  tipoPersona?: 'C' | 'E';
 }
+
+/**
+ * Rutas permitidas para usuarios cliente (`tipoPersona === 'C'`).
+ * El guard de autenticación y el filtro de menú usan esta lista como
+ * única fuente de verdad.
+ */
+export const RUTAS_CLIENTE: readonly string[] = [
+  '/tienda',
+  '/pedidos',
+  '/facturacion/tienda',
+  '/facturacion/pedidos-virtual',
+];
+
+/**
+ * Rutas públicas: accesibles SIN sesión (la tienda se puede navegar como
+ * visitante; el botón "Pagar" se habilita solo con sesión activa).
+ */
+export const RUTAS_PUBLICAS: readonly string[] = [
+  '/tienda',
+  '/facturacion/tienda',
+];
 
 /** Roles con permiso de administrar cuentas contables (sn_operable / cuentas con historial) */
 export const ROLES_CONTABILIDAD = ['admin', 'supervisor', 'contador'];
@@ -67,6 +94,9 @@ export class AuthService {
     const roles = u.roles ?? (u.rol ? [u.rol] : []);
     return roles.some((r) => ROLES_FECHAS.includes(r));
   });
+
+  /** true si la sesión actual pertenece a un cliente (tipoPersona 'C' según datos del backend) */
+  readonly esCliente = computed(() => this.user()?.tipoPersona === 'C');
 
   /**
    * Autentica al usuario con credenciales

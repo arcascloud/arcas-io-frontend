@@ -18,7 +18,8 @@ import { PedidosVirtualService } from './pedidos-virtual.service';
 import { ProductoTienda, PedidoItem, CheckoutPedido } from '../../../core/models/pedido.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 
 @Component({
   selector: 'app-pedidos-virtual',
@@ -39,6 +40,8 @@ export class PedidosVirtual implements OnInit {
   private destroyRef = inject(DestroyRef);
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
+  private navegacion = inject(NavegacionService);
+  private router = inject(Router);
 
   productos = signal<ProductoTienda[]>([]);
   pedidoItems = signal<PedidoItem[]>([]);
@@ -55,12 +58,28 @@ export class PedidosVirtual implements OnInit {
   tarjetaError = signal<string | null>(null);
   pedidoOpen = signal(false);
 
+  //── Guardar pedido (facturación a futuro) ──
+  dialogGuardarPedido = signal(false);
+  guardandoPedido = signal(false);
+  guardarNombre = signal('');
+  guardarTelefono = signal('');
+  /** Datos de cliente del pedido cargado (para precargar el diálogo) */
+  private pedidoDatosCliente = signal<{ nombre: string; tel: string } | null>(null);
+
   // Image cache removed — browser handles caching natively
 
   /** Mapa productoId → precio con descuento de promo/oferta */
   private mapaOfertas = new Map<number, number>();
   /** Mapa productoId → porcentaje de descuento */
   private mapaDescuento = new Map<number, number>();
+
+  //── ISV — mismo criterio que nueva-factura (param-fac módulo 3 + catálogo /parametros/impuestos) ──
+  /** Tasa de ISV como decimal (ej. 0.15) */
+  tasaImpuesto = 0;
+  /** Tasa de ISV como porcentaje para mostrar en UI (ej. 15) */
+  tasaImpuestoPct = 0;
+  private impuestos: any[] = [];
+  private impuestoId: number | null = null;
 
   categorias = computed(() => {
     const cats = new Set(this.productos().map(p => p.categoria).filter(Boolean));
@@ -105,9 +124,21 @@ export class PedidosVirtual implements OnInit {
   });
 
   totalItems = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.cantidad), 0));
-  totalPedido = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.subtotal), 0));
+  /** Σ subtotales brutos de las líneas (sin ISV) */
+  subtotalPedido = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.subtotal), 0));
+  /** Σ ISV de las líneas */
+  isvPedido = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.impuesto ?? 0), 0));
+  /** Total = Σ(subtotal + impuesto − descuento) — misma fórmula que checkoutPedido en backend */
+  totalPedido = computed(() => this.pedidoItems().reduce((sum, i) =>
+    sum + Number(i.subtotal) + Number(i.impuesto ?? 0) - Number(i.descuento ?? 0), 0));
 
-  formularioPagoValido = computed(() => {
+  /**
+   * Valida el formulario de pago — DEBE ser método y NO computed(): `checkout` es un objeto
+   * plano ligado con ngModel, así que un computed() no leería ninguna signal, se evaluaría
+   * una sola vez al abrir el diálogo (campos vacíos → false) y quedaría congelado para
+   * siempre, dejando el botón "Confirmar Factura" inhabilitado sin importar lo que se escriba.
+   */
+  formularioPagoValido(): boolean {
     if (!this.checkout.nombrecliente) return false;
     if (this.esTarjeta()) {
       const num = this.checkout.nrotarjeta?.replace(/\s/g, '') || '';
@@ -121,7 +152,7 @@ export class PedidosVirtual implements OnInit {
       return !!this.checkout.nroautorizacion && this.checkout.nroautorizacion.trim().length > 0;
     }
     return true;
-  });
+  }
 
   checkout: CheckoutPedido & { nrotarjeta?: string; tarjetacreditoId?: number; fechaexpiracion?: string; cvv?: string; nroautorizacion?: string } = {
     pospedmaeId: 0,
@@ -141,11 +172,18 @@ export class PedidosVirtual implements OnInit {
     this.cargarOfertas();
     this.cargarFormasPago();
     this.cargarTarjetasCredito();
+    this.cargarImpuestosISV();
+    this.cargarParamFacISV();
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id && id !== 'nuevo') {
       this.cargarPedidoExistente(Number(id));
     }
+  }
+
+  /** Vuelve al listado de pedidos (con fallback si no hay historial) */
+  volver() {
+    this.navegacion.volver(['/facturacion/pedidos']);
   }
 
   cargarPedidoExistente(pedidoId: number) {
@@ -155,6 +193,7 @@ export class PedidosVirtual implements OnInit {
       .subscribe({
         next: (pedido) => {
           this.pedidoId.set(pedido.pospedmaeId);
+          this.pedidoDatosCliente.set({ nombre: pedido.nombrecliente || '', tel: pedido.nrotelefono || '' });
           this.pedidosService.getPedidoItems(pedido.pospedmaeId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
@@ -248,6 +287,49 @@ export class PedidosVirtual implements OnInit {
       });
   }
 
+  /** Catálogo de impuestos (módulo Facturación): ISV 15%, 18%, etc. */
+  private cargarImpuestosISV() {
+    this.api.get<any[]>('/parametros/impuestos')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          this.impuestos = items ?? [];
+          this.aplicarTasa();
+        },
+        error: () => {},
+      });
+  }
+
+  /** Param-fac (módulo 3): impuesto configurado para facturación */
+  private cargarParamFacISV() {
+    this.api.get<any>('/parametros/parametros/objeto?moduloId=3')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (p) => {
+          this.impuestoId = Number(p?.impuestoId) || null;
+          this.aplicarTasa();
+        },
+        error: () => {},
+      });
+  }
+
+  /** Resuelve la tasa: por impuestoId del param-fac, o fallback al primer impuesto activo del módulo 3 (igual que nueva-factura) */
+  private aplicarTasa() {
+    if (!this.impuestos.length) return;
+    const porId = this.impuestos.find(i => i.impuestoId === this.impuestoId && i.sn_activo === 'S');
+    const porModulo = porId || this.impuestos.find(i => Number(i.moduloId) === 3 && i.sn_activo === 'S');
+    if (porModulo && Number(porModulo.porcentaje) > 0) {
+      this.tasaImpuestoPct = Number(porModulo.porcentaje);
+      this.tasaImpuesto = this.tasaImpuestoPct / 100;
+    }
+  }
+
+  /** ISV de una línea — round(bruto × tasa, 2); pedidos no manejan descuento ni exenta */
+  private calcularImpuesto(bruto: number): number {
+    if (this.tasaImpuesto <= 0) return 0;
+    return Math.round(bruto * this.tasaImpuesto * 100) / 100;
+  }
+
   async agregarAlPedido(producto: ProductoTienda) {
     if (producto.existencia <= 0) {
       this.messageService.add({ severity: 'warn', summary: 'Sin stock', detail: 'Producto sin existencia' });
@@ -278,7 +360,7 @@ export class PedidosVirtual implements OnInit {
       precioventa: precio,
       subtotal,
       descuento: 0,
-      impuesto: 0,
+      impuesto: this.calcularImpuesto(subtotal),
       nrofila,
     };
 
@@ -289,7 +371,10 @@ export class PedidosVirtual implements OnInit {
           this.pedidosService.agregarItem(payload)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-              next: () => this.recargarItems(),
+              next: () => {
+                this.recargarItems();
+                this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: `${producto.descripcion} — ${nuevaCant} unidades en el pedido` });
+              },
               error: () => this.cargandoPedido.set(false),
             });
         });
@@ -347,6 +432,7 @@ export class PedidosVirtual implements OnInit {
     }
     const precio = Number(item.precioventa);
     const nuevaCant = Number(item.cantidad) + 1;
+    const subtotal = precio * nuevaCant;
     this.pedidosService.eliminarItem(item.pospeddetId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
@@ -356,11 +442,14 @@ export class PedidosVirtual implements OnInit {
           codbarra: item.codbarra,
           cantidad: nuevaCant,
           precioventa: precio,
-          subtotal: precio * nuevaCant,
+          subtotal,
           descuento: 0,
-          impuesto: 0,
+          impuesto: this.calcularImpuesto(subtotal),
           nrofila: item.nrofila,
-        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.recargarItems());
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+          this.recargarItems();
+          this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: `${item.descripcion || item.codbarra} — ${nuevaCant} unidades en el pedido` });
+        });
       });
   }
 
@@ -371,6 +460,7 @@ export class PedidosVirtual implements OnInit {
     }
     const precio = Number(item.precioventa);
     const nuevaCant = Number(item.cantidad) - 1;
+    const subtotal = precio * nuevaCant;
     this.pedidosService.eliminarItem(item.pospeddetId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
@@ -380,9 +470,9 @@ export class PedidosVirtual implements OnInit {
           codbarra: item.codbarra,
           cantidad: nuevaCant,
           precioventa: precio,
-          subtotal: precio * nuevaCant,
+          subtotal,
           descuento: 0,
-          impuesto: 0,
+          impuesto: this.calcularImpuesto(subtotal),
           nrofila: item.nrofila,
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.recargarItems());
       });
@@ -392,6 +482,55 @@ export class PedidosVirtual implements OnInit {
     this.pedidosService.eliminarItem(item.pospeddetId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.recargarItems());
+  }
+
+  /** Abre el diálogo para guardar el pedido con datos del cliente (facturación a futuro) */
+  abrirGuardarPedido() {
+    if (!this.pedidoId() || this.pedidoItems().length === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Pedido vacío', detail: 'Agrega productos antes de guardar' });
+      return;
+    }
+    const datos = this.pedidoDatosCliente();
+    // Precarga solo si tiene un nombre real (no el "Cliente Pedido" por defecto)
+    this.guardarNombre.set(datos?.nombre && datos.nombre !== 'Cliente Pedido' ? datos.nombre : '');
+    this.guardarTelefono.set(datos?.tel ?? '');
+    this.dialogGuardarPedido.set(true);
+  }
+
+  /**
+   * Persiste nombre/teléfono del pedido (PUT) y navega al listado:
+   * el pedido queda registrado con su cliente para facturarlo a futuro
+   * desde /facturacion/pedidos → Editar → Facturar pedido.
+   */
+  guardarPedido() {
+    const nombre = this.guardarNombre().trim();
+    if (!nombre) {
+      this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa el nombre del cliente' });
+      return;
+    }
+    const id = this.pedidoId()!;
+    this.guardandoPedido.set(true);
+    this.pedidosService.actualizarPedido(id, {
+      nombrecliente: nombre,
+      nrotelefono: this.guardarTelefono().trim() || 'N/A',
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.guardandoPedido.set(false);
+          this.messageService.add({
+            severity: 'success',
+            summary: `Pedido #${id} guardado`,
+            detail: 'Podés facturarlo desde el listado de pedidos',
+          });
+          this.limpiarTodo();
+          this.router.navigate(['/facturacion/pedidos']);
+        },
+        error: () => {
+          this.guardandoPedido.set(false);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el pedido' });
+        },
+      });
   }
 
   abrirCheckout() {
@@ -491,7 +630,7 @@ export class PedidosVirtual implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: 'Pedido facturado',
-            detail: `Factura #${resp.nrofactura} — Total: L ${resp.total.toFixed(2)}`,
+            detail: `Factura #${resp.nrofactura} — Total: L ${Number(resp.total).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           });
           this.limpiarTodo();
           this.pedidosService.invalidateCache();
@@ -508,6 +647,10 @@ export class PedidosVirtual implements OnInit {
     this.pedidoItems.set([]);
     this.pedidoId.set(null);
     this.dialogCheckout.set(false);
+    this.dialogGuardarPedido.set(false);
+    this.pedidoDatosCliente.set(null);
+    this.guardarNombre.set('');
+    this.guardarTelefono.set('');
   }
 
   resolverImagen(imagen: string | null): string {
@@ -521,8 +664,9 @@ export class PedidosVirtual implements OnInit {
     return prod?.imagen ? this.resolverImagen(prod.imagen) : '';
   }
 
+  /** Formato Lempiras con separador de miles y 2 decimales (ej: L 1,250.00) */
   formatearPrecio(precio: number | string): string {
-    return `L ${Number(precio).toFixed(2)}`;
+    return `L ${Number(precio).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   validarLuhn(numero: string): boolean {

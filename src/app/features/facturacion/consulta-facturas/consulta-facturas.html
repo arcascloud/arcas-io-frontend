@@ -111,6 +111,18 @@
                 pTooltip="Ver factura"
                 tooltipPosition="top"
               />
+              @if (f.sn_pagada !== 'S' && f.sn_anulada !== 'S') {
+                <p-button
+                  icon="pi pi-link"
+                  severity="help"
+                  text
+                  rounded
+                  size="small"
+                  (onClick)="abrirLink(f, $event)"
+                  pTooltip="Ver link de pago"
+                  tooltipPosition="top"
+                />
+              }
               <p-button
                 icon="pi pi-print"
                 severity="secondary"
@@ -199,6 +211,137 @@
           [rounded]="true"
           (onClick)="enviarCorreo()"
           [loading]="enviando()"
+        />
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    [header]="'Link de pago — Factura #' + ((linkFactura()?.nrofactura) || linkFactura()?.facturaId || '')"
+    [(visible)]="dialogLink"
+    [modal]="true"
+    [style]="{ width: '560px' }"
+    [draggable]="false"
+    [resizable]="false"
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+    [closable]="true"
+    styleClass="link-dialog"
+  >
+    @if (linkCargando()) {
+      <div class="link-cargando">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>Cargando link de pago...</span>
+      </div>
+    } @else {
+      @if (linkVigente(); as lv) {
+        <div class="link-bloque">
+          <div class="link-header-row">
+            <span class="link-label">Link vigente (pendiente de pago)</span>
+            <p-tag
+              [value]="getLinkEstadoLabel(lv.status)"
+              [severity]="getLinkEstadoSeverity(lv.status)"
+              styleClass="tag-sm"
+            />
+          </div>
+          <div class="link-url-row">
+            <input pInputText type="text" pSize="small" readonly [ngModel]="lv.url" class="link-url-input" />
+            <p-button
+              icon="pi pi-copy"
+              severity="secondary"
+              text
+              rounded
+              size="small"
+              (onClick)="copiarLinkUrl(lv.url)"
+              pTooltip="Copiar link"
+              tooltipPosition="top"
+            />
+            <p-button
+              icon="pi pi-external-link"
+              severity="info"
+              text
+              rounded
+              size="small"
+              (onClick)="abrirLinkUrl(lv.url)"
+              pTooltip="Abrir link"
+              tooltipPosition="top"
+            />
+          </div>
+          <div class="link-meta">
+            <span>Monto: <b>{{ moneda(lv.monto) }}</b></span>
+            <span>Creado: {{ fechaCorta(lv.fecha_creacion) }} {{ horaCorta(lv.fecha_creacion) }}</span>
+            @if (lv.sandbox) {
+              <p-tag value="SANDBOX" severity="warn" styleClass="tag-sm" />
+            }
+          </div>
+          <div class="link-acciones">
+            <p-button
+              label="Regenerar link"
+              icon="pi pi-refresh"
+              severity="danger"
+              variant="outlined"
+              size="small"
+              [rounded]="true"
+              [loading]="linkGenerando()"
+              (onClick)="generarLinkFactura()"
+            />
+          </div>
+        </div>
+      } @else {
+        <div class="link-vacio">
+          <i class="pi pi-link"></i>
+          <p class="link-vacio-titulo">Sin link de pago vigente</p>
+          <p class="link-vacio-sub">Genere un link para cobrar esta factura mediante enlace.</p>
+          <p-button
+            label="Generar link"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            [rounded]="true"
+            [loading]="linkGenerando()"
+            (onClick)="generarLinkFactura()"
+          />
+        </div>
+      }
+
+      @if (linkHistorial().length > 0) {
+        <div class="link-historial">
+          <span class="link-label">Historial de transacciones</span>
+          <table class="tabla-historial">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Monto</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of linkHistorial(); track t.id) {
+                <tr>
+                  <td>{{ fechaCorta(t.fecha_creacion) }} {{ horaCorta(t.fecha_creacion) }}</td>
+                  <td class="text-right">{{ moneda(t.monto) }}</td>
+                  <td>
+                    <p-tag
+                      [value]="getLinkEstadoLabel(t.status)"
+                      [severity]="getLinkEstadoSeverity(t.status)"
+                      styleClass="tag-sm"
+                    />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+    <ng-template pTemplate="footer">
+      <div class="correo-footer">
+        <p-button
+          label="Cerrar"
+          severity="secondary"
+          text
+          size="small"
+          [rounded]="true"
+          (onClick)="dialogLink.set(false)"
         />
       </div>
     </ng-template>

@@ -163,9 +163,35 @@
   [style]="{ width: '28rem' }"
 >
   <div class="p-fluid" [formGroup]="form">
+    <!-- Módulo (solo al crear — en edición se conserva el del parámetro) -->
+    @if (!editando()) {
+      <div class="p-field">
+        <label>Módulo <span class="req">*</span></label>
+        <p-select
+          [options]="modulos()"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="moduloId"
+          styleClass="w-full"
+          [appendTo]="'body'"
+          [showClear]="true"
+          placeholder="Seleccione el módulo"
+          size="small"
+        />
+        @if (!form.get('moduloId')?.value) {
+          <small class="field-hint">El módulo al que pertenece este parámetro</small>
+        }
+      </div>
+      @if (!empresaId()) {
+        <div class="p-field">
+          <small class="field-hint warn">Seleccione la empresa en el contexto superior</small>
+        </div>
+      }
+    }
+
     <!-- Campo -->
     <div class="p-field">
-      <label>Campo</label>
+      <label>Campo <span class="req">*</span></label>
       <input
         pInputText
         class="w-full"
@@ -263,7 +289,7 @@
         [rounded]="true"
         severity="success"
         [loading]="guardando()"
-        [disabled]="form.invalid || !empresaId() || (!editando() && !moduloId())"
+        [disabled]="form.invalid || !empresaId() || (!editando() && !form.get('moduloId')?.value)"
         (onClick)="guardar()"
       />
     </div>

@@ -73,7 +73,9 @@
           <td>{{ item.modulo }}</td>
           <td>{{ item.nroreferencia }}</td>
           <td>
-            <p-tag [value]="getTipoMovLabel(item.tipomov)" [severity]="getTipoMovSeverity(item.tipomov)" />
+            <p-tag [value]="getTipoMovLabel(item.tipomov)"
+             [severity]="getTipoMovSeverity(item.tipomov)"
+             />
           </td>
           <td class="font-bold">{{ moneda(item.importe) }}</td>
           <td>{{ item.concepto || '-' }}</td>

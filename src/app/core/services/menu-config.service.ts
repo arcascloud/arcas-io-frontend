@@ -1,8 +1,8 @@
-import { Injectable, inject, signal, effect, DestroyRef } from '@angular/core';
+import { Injectable, inject, signal, effect } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthService } from './auth.service';
+import { AuthService, RUTAS_CLIENTE } from './auth.service';
 
 /** Registro crudo que viene de tusuariomnuitem */
 interface RawMnuItem {
@@ -44,9 +44,13 @@ export interface MenuItemConfig {
 export class MenuConfigService {
   private auth = inject(AuthService);
   private http = inject(HttpClient);
-  private destroyRef = inject(DestroyRef);
 
   private items = signal<MenuItemConfig[]>([]);
+  /** Módulos (moduloId) con al menos un item de menú activo del usuario actual */
+  private modulos = signal<Set<number>>(new Set());
+  /** Promesa de carga del menú del usuario actual (evita carreras con el guard) */
+  private promesaModulos: Promise<Set<number>> | null = null;
+  private claveModulos = '';
 
   constructor() {
     // effect re-actúa cuando currentUser() cambia (login/logout)
@@ -54,23 +58,87 @@ export class MenuConfigService {
       const user = this.auth.currentUser();
       if (!user) {
         this.items.set([]);
+        this.modulos.set(new Set());
+        this.promesaModulos = null;
+        this.claveModulos = '';
         return;
       }
-      this.cargarMenu(user.empresaId, user.usuario);
+      this.cargarMenu(user.empresaId, user.usuario, user.tipoPersona === 'C');
     });
   }
 
-  private cargarMenu(empresaId: number, usuario: string) {
+  /**
+   * Módulos permitidos del usuario actual (moduloId con items activos en
+   * tusuariomnuitem). Espera la carga del menú si aún no terminó — lo usa
+   * el authGuard para autorizar la ruta por módulo.
+   */
+  modulosPermitidos(): Promise<Set<number>> {
+    const user = this.auth.currentUser();
+    if (!user) return Promise.resolve(new Set<number>());
+    const clave = `${user.usuario}|${user.empresaId}`;
+    if (this.claveModulos === clave && this.promesaModulos) return this.promesaModulos;
+    return this.cargarMenu(user.empresaId, user.usuario, user.tipoPersona === 'C');
+  }
+
+  private cargarMenu(empresaId: number, usuario: string, soloRutasCliente: boolean): Promise<Set<number>> {
+    const clave = `${usuario}|${empresaId}`;
+    // Ya hay una carga en curso/terminada para este usuario → reutilizar
+    if (this.claveModulos === clave && this.promesaModulos) return this.promesaModulos;
+
     const params = new HttpParams()
       .set('empresaId', empresaId)
       .set('usuario', usuario);
 
-    this.http.get<RawMnuItem[]>(`${environment.apiUrl}/users/menu-items`, { params })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (rows) => this.items.set(this.buildTree(rows)),
-        error: () => this.items.set([]),
+    this.claveModulos = clave;
+    this.promesaModulos = firstValueFrom(
+      this.http.get<RawMnuItem[]>(`${environment.apiUrl}/users/menu-items`, { params }),
+    )
+      .then((rows) => {
+        const mods = new Set<number>();
+        for (const r of rows) {
+          if (r.sn_activo === 'S') mods.add(r.moduloId);
+        }
+        const tree = this.buildTree(rows);
+        this.items.set(soloRutasCliente ? this.filtrarRutasCliente(tree) : tree);
+        this.modulos.set(mods);
+        return mods;
+      })
+      .catch(() => {
+        this.items.set([]);
+        this.modulos.set(new Set());
+        return new Set<number>();
       });
+    return this.promesaModulos;
+  }
+
+  /**
+   * Filtra el menú para usuarios cliente (tipoPersona 'C'): conserva solo
+   * los items cuya ruta esté en `RUTAS_CLIENTE`. Un contenedor sin ruta
+   * permitida se conserva si algún hijo pasa el filtro (pero sin ruta
+   * propia, para que solo expanda el submenú).
+   */
+  private filtrarRutasCliente(items: MenuItemConfig[]): MenuItemConfig[] {
+    const resultado: MenuItemConfig[] = [];
+    for (const item of items) {
+      const hijos = item.children ? this.filtrarRutasCliente(item.children) : undefined;
+      const hijosOk = hijos != null && hijos.length > 0;
+      const rutaOk =
+        item.route != null &&
+        RUTAS_CLIENTE.some((r) => item.route === r || item.route!.startsWith(`${r}/`));
+
+      if (rutaOk) {
+        const copia: MenuItemConfig = { ...item };
+        if (hijosOk) copia.children = hijos;
+        resultado.push(copia);
+      } else if (hijosOk) {
+        resultado.push({
+          label: item.label,
+          icon: item.icon,
+          children: hijos,
+        });
+      }
+    }
+    return resultado;
   }
 
   /** Construye la estructura jerárquica del menú desde filas planas de la BD */

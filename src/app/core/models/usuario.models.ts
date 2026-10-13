@@ -2,6 +2,7 @@ export interface Usuario {
   usuario: string;
   usuarioId: number;
   nombre: string;
+  apellidos?: string;
   password?: string;
   email: string;
   sn_activo: 'S' | 'N';
@@ -10,6 +11,21 @@ export interface Usuario {
   usuarioCreated: string;
   usuarioUpdated?: string;
   fechaUpdated?: Date;
+}
+
+/**
+ * Información extendida del usuario (`tusuariosinfoinfo`).
+ * Solo se declaran los campos que consume el formulario de usuario.
+ */
+export interface UsuarioInfo {
+  usuarioId: number;
+  usuario: string;
+  nrodocumento: string;
+  tipodoc?: string;
+  sexo?: 'M' | 'F';
+  fecnac?: string | Date | null;
+  empleadoId?: number | null;
+  sn_cliente?: 'S' | 'N';
 }
 
 export interface UsuariosModule {

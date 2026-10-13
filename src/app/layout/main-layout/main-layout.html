@@ -43,25 +43,100 @@
       </div>
       <div class="topbar-right">
 
-         <p-button type="button" (click)="visible = true"
-         [rounded]="true" [text]="true"
-         icon="pi pi-arrow-left" />
 
         <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-search"
           (onClick)="quickNav.abrir()" size="small" iconOnly
           pTooltip="Navegación rápida (Ctrl+Alt+1)" tooltipPosition="bottom" />
 
+         <!-- Abre el login headless (estilo login) -->
+         <p-button type="button"
+         (onClick)="loginDlg.abrir()"
+         label="Cuenta"
+         [rounded]="true" [text]="true"
+         icon="fa-regular fa-circle-user" />
+
+<!--
         <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-sign-out" (onClick)="cerrarSesion()"
           size="small" iconOnly pTooltip="Presione para salir de la app" tooltipPosition="bottom" />
-
+-->
       </div>
     </header>
 
-            <p-drawer header="Left Drawer" [(visible)]="visible" position="right">
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-                    consequat.
-                </p>
+            <p-drawer header="Cuenta" [(visible)]="visible" position="right">
+              <div class="drawer-login">
+                @if (loginError()) {
+                  <p-message severity="error" [text]="loginError()" styleClass="w-full" />
+                }
+
+                <form class="drawer-form" (ngSubmit)="login()">
+                  <div class="campo">
+                    <label for="d-usuario">Usuario <span class="req">*</span></label>
+                    <input
+                      pInputText
+                      id="d-usuario"
+                      name="d-usuario"
+                      type="text"
+                      autocomplete="username"
+                      [ngModel]="loginUsuario()"
+                      (ngModelChange)="loginUsuario.set($event)"
+                      placeholder="Ingrese su usuario"
+                      [disabled]="loginLoading()"
+                      styleClass="w-full"
+                    />
+                  </div>
+
+                  <div class="campo">
+                    <label for="d-password">Contraseña <span class="req">*</span></label>
+                    <p-password
+                      id="d-password"
+                      name="d-password"
+                      [ngModel]="loginPassword()"
+                      (ngModelChange)="loginPassword.set($event)"
+                      [toggleMask]="true"
+                      [feedback]="false"
+                      [fluid]="true"
+                      autocomplete="current-password"
+                      placeholder="Ingrese su contraseña"
+                      [disabled]="loginLoading()"
+                      styleClass="w-full"
+                    />
+                  </div>
+
+                  <div class="check-row">
+                    <p-checkbox
+                      inputId="d-escliente"
+                      name="d-escliente"
+                      [binary]="true"
+                      [ngModel]="esCliente"
+                      (ngModelChange)="onEsClienteChange($event)"
+                    />
+                    <label for="d-escliente">Soy cliente</label>
+                  </div>
+
+                  <div class="check-row">
+                    <p-checkbox
+                      inputId="d-recordar"
+                      name="d-recordar"
+                      [binary]="true"
+                      [ngModel]="recordar()"
+                      (ngModelChange)="onRecordarChange($event)"
+                    />
+                    <label for="d-recordar">Recordar mi sesión</label>
+                  </div>
+
+                  <p-button
+                    type="submit"
+                    label="Ingresar"
+                    icon="pi pi-sign-in"
+                    size="small"
+                    [rounded]="true"
+                    severity="success"
+                    variant="outlined"
+                    [loading]="loginLoading()"
+                    styleClass="w-full mt-2"
+                  />
+                </form>
+              </div>
             </p-drawer>
 
     <!-- Content -->
@@ -77,3 +152,14 @@
 
 <!-- Navegación rápida global (Ctrl+Alt+1) -->
 <app-quick-nav />
+
+<!-- Login headless (diálogo estilo login) — botón "Cuenta" del topbar -->
+<app-login-dialog
+  #loginDlg
+  [tipoPersona]="tipoPersona()"
+  (tipoPersonaChange)="onTipoPersonaChange($event)"
+  (registro)="registroDlg.abrir()"
+/>
+
+<!-- Registro headless (diálogo estilo login) — botón "Registrarse" del login -->
+<app-registro-dialog #registroDlg (solicitarLogin)="loginDlg.abrir()" />

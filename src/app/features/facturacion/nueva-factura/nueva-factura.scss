@@ -163,12 +163,40 @@
   }
 }
 
-.ml-campo {
-  margin-left: 0rem;
+// Label a la izquierda + control a la derecha en UNA sola fila
+// (ahorra altura vertical en el panel derecho — evita scroll innecesario)
+.campo-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+
+  label {
+    white-space: nowrap;
+  }
 }
 
-.btn-add-cliente {
-  margin-top: 1.42rem;
+// Panel derecho: en desktop sube -40px respecto a la tabla (ajuste visual del usuario).
+// En tablet/móvil la columna apila debajo de la tabla → el margen negativo
+// la haría solaparse, por eso se anula por debajo del breakpoint xl (1200px).
+.nf-panel-col {
+  margin-top: -40px;
+}
+
+@media (max-width: 1199px) {
+  .nf-panel-col {
+    margin-top: 0;
+  }
+
+  // Móvil/tablet: el panel de parámetros respira un 3% menos de ancho
+  .nf-side-panel {
+    width: 97%;
+  }
+}
+
+.ml-campo {
+  margin-left: 0rem;
 }
 
 .pago-table {
@@ -528,4 +556,170 @@
 
 .surface-border {
   color: var(--for-border-color-alls);
+}
+
+// ═══════════════════ TodoPago — card de link de pago ═══════════════════
+.tp-link-card {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-primary);
+  border-radius: 8px;
+
+  .tp-link-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    i.pi-link {
+      color: var(--c-primary);
+      font-size: 1rem;
+    }
+
+    .tp-link-title {
+      flex: 1;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--c-text);
+    }
+  }
+
+  .tp-link-monto {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--c-text);
+
+    .tp-sandbox-tag {
+      margin-left: 0.5rem;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--c-warning);
+      background: transparent;
+      border: 1px solid var(--c-warning);
+      border-radius: 4px;
+      vertical-align: middle;
+    }
+  }
+
+  .tp-link-url {
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    cursor: text;
+  }
+
+  .tp-link-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: flex-end;
+  }
+}
+
+// ═══════════════════ TodoPago — diálogo headless (notificación llamativa) ═══════════════════
+.tp-hl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 1.5rem 1.5rem;
+  gap: 0.3rem;
+
+  .tp-hl-badge {
+    width: 5rem;
+    height: 5rem;
+    margin-bottom: 0.9rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-hover));
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+
+    i {
+      color: #fff;
+      font-size: 2.25rem;
+    }
+
+    &--ok {
+      background: linear-gradient(135deg, var(--c-success), var(--c-primary-hover));
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.55);
+    }
+  }
+
+  .tp-hl-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--c-text);
+    line-height: 1.2;
+  }
+
+  .tp-hl-sub {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--c-text-muted);
+  }
+
+  .tp-hl-monto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--c-text);
+
+    &--ok {
+      color: var(--c-success);
+    }
+
+    .tp-hl-sandbox {
+      padding: 0.1rem 0.45rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--c-warning);
+      background: transparent;
+      border: 1px solid var(--c-warning);
+      border-radius: 4px;
+      vertical-align: middle;
+    }
+  }
+
+  .tp-hl-status {
+    margin-top: 0.25rem;
+  }
+
+  .tp-hl-url {
+    margin-top: 0.85rem;
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    background: var(--c-surface-ground);
+    border: 1px dashed var(--c-border);
+    border-radius: 4px;
+    text-align: center;
+    cursor: text;
+  }
+
+  .tp-hl-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+}
+
+// En modo headless el footer de ConfirmDialog queda vacío (o con botones por defecto
+// según PrimeNG #17000) — se oculta completamente. ::ng-deep porque el panel lo crea Dialog.
+::ng-deep .tp-hl-dialog .p-dialog-footer {
+  display: none;
 }

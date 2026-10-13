@@ -29,6 +29,9 @@ export const routes: Routes = [
         path: 'facturacion',
         loadChildren: () => import('./features/facturacion/facturacion.routes').then((m) => m.FACTURACION_ROUTES),
       },
+      // Atajos raíz → módulo de facturación
+      { path: 'tienda', redirectTo: 'facturacion/tienda', pathMatch: 'full' },
+      { path: 'pedidos', redirectTo: 'facturacion/pedidos-virtual', pathMatch: 'full' },
       {
         path: 'cxc',
         loadChildren: () => import('./features/cxc/cxc.routes').then((m) => m.CXC_ROUTES),

@@ -1,0 +1,163 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">TodoPago — Links de pago</h1>
+      <p class="page-subtitle">Links pendientes de cobro (vencen a las 48 horas)</p>
+    </div>
+    <div class="header-acciones">
+      @if (config(); as cfg) {
+        <p-tag
+          [value]="cfg.sandbox || !cfg.enabled ? 'SANDBOX' : 'PRODUCCIÓN'"
+          [severity]="cfg.sandbox || !cfg.enabled ? 'warn' : 'success'"
+          styleClass="tag-sm"
+        />
+      }
+      <p-button
+        label="Refrescar"
+        icon="pi pi-refresh"
+        severity="secondary"
+        text
+        size="small"
+        [rounded]="true"
+        [loading]="cargando()"
+        (onClick)="load()"
+      />
+    </div>
+  </header>
+
+  <div class="card filtros-card">
+    <div class="filtros-row">
+      <div class="campo campo-busqueda">
+        <span class="p-input-icon-left">
+          <input
+            pInputText
+            type="text"
+            pSize="small"
+            placeholder="Buscar por # factura o cliente..."
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event)"
+            class="busqueda-input"
+          />
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card tabla-card">
+    <p-table
+      [value]="filtradas()"
+      [loading]="cargando()"
+      showGridlines
+      [tableStyle]="{ 'min-width': '40rem' }"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} links pendientes"
+      size="small"
+      styleClass="links-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th style="width: 6rem"># Factura</th>
+          <th>Cliente</th>
+          <th style="width: 8rem">Monto link</th>
+          <th style="width: 9rem">Creado</th>
+          <th style="width: 5rem">Edad</th>
+          <th style="width: 6rem">Estado</th>
+          <th style="width: 7rem">Entorno</th>
+          <th style="width: 11rem" class="acciones-header">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-l>
+        <tr>
+          <td>
+            <span class="nro-factura">{{ l.nrofactura ?? l.facturaid }}</span>
+          </td>
+          <td>
+            <span class="cliente-nombre">{{ l.nombrecliente || 'Sin cliente' }}</span>
+          </td>
+          <td class="text-right">{{ moneda(l.monto) }}</td>
+          <td>{{ fechaCorta(l.fecha_creacion) }} {{ horaCorta(l.fecha_creacion) }}</td>
+          <td class="edad-cell">{{ edadTexto(l.fecha_creacion) }}</td>
+          <td>
+            <p-tag value="Pendiente" severity="warn" styleClass="tag-sm" />
+          </td>
+          <td>
+            <p-tag
+              [value]="l.sandbox ? 'Sandbox' : 'Real'"
+              [severity]="l.sandbox ? 'warn' : 'success'"
+              styleClass="tag-sm"
+            />
+          </td>
+          <td class="acciones-cell">
+            <div class="acciones-row">
+              <p-button
+                icon="pi pi-copy"
+                severity="secondary"
+                text
+                rounded
+                size="small"
+                [disabled]="!l.url"
+                (onClick)="copiar(l, $event)"
+                pTooltip="Copiar link"
+                tooltipPosition="top"
+              />
+              <p-button
+                icon="pi pi-external-link"
+                severity="info"
+                text
+                rounded
+                size="small"
+                [disabled]="!l.url"
+                (onClick)="abrir(l, $event)"
+                pTooltip="Abrir link"
+                tooltipPosition="top"
+              />
+              <p-button
+                icon="pi pi-sync"
+                severity="warn"
+                text
+                rounded
+                size="small"
+                [loading]="consultandoId() === l.id"
+                [disabled]="consultandoId() !== null && consultandoId() !== l.id"
+                (onClick)="consultarEstado(l, $event)"
+                pTooltip="Consultar estado"
+                tooltipPosition="top"
+              />
+              <p-button
+                icon="pi pi-refresh"
+                severity="danger"
+                text
+                rounded
+                size="small"
+                [loading]="regenerandoId() === l.id"
+                [disabled]="regenerandoId() !== null && regenerandoId() !== l.id"
+                (onClick)="confirmarRegenerar(l, $event)"
+                pTooltip="Regenerar link"
+                tooltipPosition="top"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="empty-state">
+            <div class="empty-content">
+              <i class="pi pi-link"></i>
+              <p>No hay links pendientes de pago</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <p-confirmdialog
+    key="tp-regenerar"
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+    [style]="{ width: '420px' }"
+  />
+</section>

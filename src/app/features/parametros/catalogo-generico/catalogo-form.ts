@@ -8,11 +8,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
+import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
-import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo, labelOpcion } from '../../../core/models/catalogo-parametros.models';
+import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo, labelOpcion, articuloNuevo } from '../../../core/models/catalogo-parametros.models';
 
 @Component({
   selector: 'app-catalogo-form',
@@ -25,6 +26,7 @@ import { CATALOGOS_PARAMETROS, CatalogoConfig, CampoCatalogo, labelOpcion } from
     InputNumberModule,
     SelectModule,
     DatePickerModule,
+    DialogModule,
   ],
   templateUrl: './catalogo-form.html',
   styleUrl: './catalogo-form.scss',
@@ -57,6 +59,9 @@ export class CatalogoForm implements OnInit, OnChanges {
   titulo = signal('');
   /** Registro protegido (ej: período cerrado) → formulario bloqueado, sin Guardar */
   protegido = signal(false);
+  /** Alerta de registro duplicado (409 del backend, ej: gestor empleado+módulo) */
+  dialogoDuplicado = signal(false);
+  mensajeDuplicado = signal('');
 
   opcionesMap = signal<Record<string, { label: string; value: any }[]>>({});
 
@@ -97,7 +102,7 @@ export class CatalogoForm implements OnInit, OnChanges {
     this.protegido.set(false);
     this.nuevoRegistro = this.esNuevo(id);
     const singular = this.config.tituloSingular ?? this.config.titulo.slice(0, -1);
-    this.titulo.set(this.nuevoRegistro ? `Nuevo ${singular}` : `Editar ${singular}`);
+    this.titulo.set(this.nuevoRegistro ? `${articuloNuevo(singular)} ${singular}` : `Editar ${singular}`);
     this.buildForm();
 
     // Catálogo protegido: sn_abierto nunca se toca desde aquí
@@ -335,6 +340,12 @@ export class CatalogoForm implements OnInit, OnChanges {
           err?.error?.error ||
           err?.message ||
           'No se pudo guardar el registro';
+        if (err?.status === 409) {
+          // Registro duplicado (ej: gestor por empleado+módulo): alerta modal con el mensaje exacto
+          this.mensajeDuplicado.set(detalle);
+          this.dialogoDuplicado.set(true);
+          return;
+        }
         this.msgs.add({ severity: 'error', summary: 'No se pudo guardar', detail: detalle });
       },
     });

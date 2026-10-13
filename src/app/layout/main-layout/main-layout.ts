@@ -1,33 +1,55 @@
 ﻿import { Component, DestroyRef, inject, signal, computed } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { AvatarModule } from 'primeng/avatar';
 import { PanelMenuModule } from 'primeng/panelmenu';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { CheckboxModule } from 'primeng/checkbox';
+import { InputTextModule } from 'primeng/inputtext';
+import { PasswordModule } from 'primeng/password';
 import { TooltipModule } from 'primeng/tooltip';
-import { ConfirmationService, MenuItem } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
+import { Message } from 'primeng/message';
 import { AuthService } from '../../core/services/auth.service';
 import { MenuConfigService } from '../../core/services/menu-config.service';
 import { QuickNavService } from '../../core/services/quick-nav.service';
 import { Drawer, DrawerModule } from 'primeng/drawer';
 import { QuickNav } from '../quick-nav/quick-nav';
+import { LoginDialog } from '../login-dialog/login-dialog';
+import { RegistroDialog } from '../registro-dialog/registro-dialog';
+
+interface Opcion {
+  label: string;
+  value: any;
+}
+
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
   imports: [
     RouterOutlet,
+    FormsModule,
     ButtonModule,
     AvatarModule,
     PanelMenuModule,
     ToastModule,
     ConfirmDialogModule,
     SplitButtonModule,
+    SelectButtonModule,
+    CheckboxModule,
+    InputTextModule,
+    PasswordModule,
     TooltipModule,
+    Message,
     DrawerModule,
     QuickNav,
+    LoginDialog,
+    RegistroDialog,
   ],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss',
@@ -35,6 +57,7 @@ import { QuickNav } from '../quick-nav/quick-nav';
 export class MainLayout {
   private auth = inject(AuthService);
   private confirm = inject(ConfirmationService);
+  private msgs = inject(MessageService);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
   private menuConfig = inject(MenuConfigService);
@@ -45,9 +68,115 @@ export class MainLayout {
   sidebarHidden = signal(false);
   pinned = signal(false);
 
+  /** Tipo de persona que identifica el usuario en el topbar: 'C' = Cliente, 'E' = Empleado */
+  readonly tipoPersonaOptions: Opcion[] = [
+    { label: 'Cliente', value: 'C' },
+    { label: 'Empleado', value: 'E' },
+  ];
+
+  tipoPersona = signal<string>('C');
+
+  onTipoPersonaChange(valor: string) {
+    this.tipoPersona.set(valor);
+  }
+
   visible: boolean = false;
 
+  // ==================== Login en drawer (Cuenta) ====================
+
+  /** Clave de localStorage para "recordar lo que indiqué el usuario" */
+  private static readonly CLAVE_RECORDAR = 'drawer_login_preferencias';
+
+  loginUsuario = signal('');
+  loginPassword = signal('');
+  loginLoading = signal(false);
+  loginError = signal('');
+  recordar = signal(false);
+
+  /** true si la persona identificada es cliente (sincronizado con el toggle Cliente/Empleado del topbar) */
+  get esCliente(): boolean {
+    return this.tipoPersona() === 'C';
+  }
+
+  /** Checkbox "Es cliente": marca/desmarca y sincroniza el tipo de persona del topbar */
+  onEsClienteChange(esCliente: boolean) {
+    this.tipoPersona.set(esCliente ? 'C' : 'E');
+    this.guardarPreferencias();
+  }
+
+  /** Checkbox "Recordar lo que indiqué": persiste o limpia la selección */
+  onRecordarChange(recordar: boolean) {
+    this.recordar.set(recordar);
+    this.guardarPreferencias();
+  }
+
+  /** Guarda (o limpia) en localStorage el usuario + tipo de persona indicado */
+  private guardarPreferencias() {
+    if (this.recordar()) {
+      localStorage.setItem(
+        MainLayout.CLAVE_RECORDAR,
+        JSON.stringify({
+          usuario: this.loginUsuario(),
+          tipoPersona: this.tipoPersona(),
+        }),
+      );
+    } else {
+      localStorage.removeItem(MainLayout.CLAVE_RECORDAR);
+    }
+  }
+
+  /** Restaura la selección guardada al iniciar (si el usuario pidió recordar) */
+  private cargarPreferencias() {
+    try {
+      const raw = localStorage.getItem(MainLayout.CLAVE_RECORDAR);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data?.usuario) this.loginUsuario.set(String(data.usuario));
+      if (data?.tipoPersona === 'C' || data?.tipoPersona === 'E') {
+        this.tipoPersona.set(data.tipoPersona);
+      }
+      this.recordar.set(true);
+    } catch {
+      // JSON inválido → se ignora y queda sin recordar
+    }
+  }
+
+  /** Ingreso desde el drawer: reemplaza token/usuario de la sesión */
+  login() {
+    this.loginError.set('');
+    const usuario = this.loginUsuario().trim();
+    const password = this.loginPassword();
+    if (!usuario || !password) {
+      this.loginError.set('Ingrese usuario y contraseña');
+      return;
+    }
+
+    this.loginLoading.set(true);
+    this.auth.login(usuario, password).subscribe({
+      next: (res) => {
+        this.loginLoading.set(false);
+        this.loginPassword.set('');
+        this.loginUsuario.set(usuario);
+        this.guardarPreferencias(); // si "recordar" está activo, persiste usuario + tipo
+        this.visible = false;
+        this.msgs.add({
+          severity: 'success',
+          summary: 'Sesión iniciada',
+          detail: `Bienvenido ${res.usuario?.nombre || usuario}`,
+        });
+      },
+      error: (err) => {
+        this.loginLoading.set(false);
+        const msg = Array.isArray(err.error?.message)
+          ? err.error.message.join(', ')
+          : err.error?.message || 'Credenciales incorrectas';
+        this.loginError.set(msg);
+      },
+    });
+  }
+
   constructor() {
+    this.cargarPreferencias();
     this.destroyRef.onDestroy(() =>
       this.router.events.subscribe((event) => {
         if (event instanceof NavigationEnd && window.innerWidth <= 768) {
@@ -63,7 +192,9 @@ export class MainLayout {
     this.menuConfig.getMenuItems().map((item) => this.mapItem(item)),
   );
 
-  private mapItem(item: import('../../core/services/menu-config.service').MenuItemConfig): MenuItem {
+  private mapItem(
+    item: import('../../core/services/menu-config.service').MenuItemConfig,
+  ): MenuItem {
     const mi: MenuItem = { label: item.label, icon: this.resolverIcono(item.icon) };
     if (item.route) mi.routerLink = [item.route];
     if (item.children?.length) {

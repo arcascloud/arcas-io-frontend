@@ -139,33 +139,66 @@
       </div> <!-- Fin campos de header izquierdo-->
 
       <!-- Columna 2: Campos de header derecho-->
-      <div style="margin-top: -20px" class="col-12 xl:col-3">
+      <div class="col-12 xl:col-3 nf-panel-col">
         <div class="p-2 for-border-color-alls border-2 border-round m-2 nf-side-panel">
 
-          <div class="field">
-            <div class="campo">
-              <label for="tipofactura">Tipo factura<span class="req">*</span></label>
-              <p-selectbutton size="small" id="tipofactura" [options]="tipoOptions" formControlName="tipofactura"
-                optionLabel="label" optionValue="value" aria-labelledby="tipo-factura"
-                (onChange)="onTipoFacturaChange()" />
+          @if (linkPago(); as link) {
+          <div class="tp-link-card">
+            <div class="tp-link-head">
+              <i class="pi pi-link"></i>
+              <span class="tp-link-title">Link de pago TodoPago</span>
+              <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
+            </div>
+            <div class="tp-link-monto">
+              {{ moneda(link.monto) }}
+              @if (link.sandbox) {
+              <span class="tp-sandbox-tag">SANDBOX</span>
+              }
+            </div>
+            <input pInputText pSize="small" class="w-full tp-link-url" [ngModel]="link.url"
+              [ngModelOptions]="{ standalone: true }" readonly />
+            <div class="tp-link-actions">
+              <p-button size="small" [label]="linkCopiado() ? 'Copiado' : 'Copiar'" icon="pi pi-copy"
+                severity="secondary" variant="text" [rounded]="true" (onClick)="copiarLink()" />
+              <p-button size="small" label="Abrir" icon="pi pi-external-link" severity="success" variant="text"
+                [rounded]="true" (onClick)="abrirLink()" />
+              <p-button size="small" label="Estado" icon="pi pi-refresh" severity="info" variant="text" [rounded]="true"
+                (onClick)="consultarEstadoLink()" />
+              <p-button size="small" icon="pi pi-times" severity="danger" variant="text" [rounded]="true"
+                pTooltip="Cerrar" [appendTo]="'body'" (onClick)="cerrarLink()" />
             </div>
           </div>
-          <div class="field">
+          }
 
-            <div class="p-0 grid">
-              <div class="p-2 col-5">
+          <div class="field">
+            <div class="p-0 grid ">
+              <div class="p-0 ml-2 mt-2 col">
                 <div class="campo">
-                  <label for="snFacturaconNombreId">Factura con nombre</label>
-                  <p-selectbutton size="small" id="snFacturaconNombreId" [options]="snNombreOptions"
-                    formControlName="snNombreOptions" optionLabel="label" optionValue="value"
-                    aria-labelledby="snFacturaconNombreId" />
+                  <label for="tipofactura">Tipo factura<span class="req">*</span></label>
+                  <p-selectbutton id="cbotipofactura"
+                  size="small" id="tipofactura" [options]="tipoOptions" formControlName="tipofactura"
+                    optionLabel="label" optionValue="value" aria-labelledby="tipo-factura"
+                    (onChange)="onTipoFacturaChange()" />
                 </div>
               </div>
-              <div class="p-2 ml-2 mt-2 col-5">
-                <p-button icon="pi pi-plus" class="ml-campo btn-add-cliente" size="small" severity="info"
+              <div class="p-0 mt-5 mr-2">
+                <p-button
+                 id="btnaddnewcustomer"
+                icon="pi pi-plus" size="small" severity="info"
+                label="Nuevo cliente" variant="text"
                   [raised]="true" [rounded]="true" pTooltip="ALT + 2 Agregar nuevo cliente" [appendTo]="'body'"
                   showDelay="1000" hideDelay="300" (onClick)="abrirNuevoCliente()" />
               </div>
+            </div>
+
+          </div>
+
+          <div class="field">
+            <div class="campo campo-inline">
+              <label for="snFacturaconNombreId">Factura con nombre</label>
+              <p-selectbutton size="small" id="snFacturaconNombreId" [options]="snNombreOptions"
+                formControlName="snNombreOptions" optionLabel="label" optionValue="value"
+                aria-labelledby="snFacturaconNombreId" />
             </div>
           </div>
           <div class="p-0 field">
@@ -197,6 +230,13 @@
         </div>
 
         <div class="field">
+          <label for="gestorId">Gestor de ventas</label>
+          <p-select size="small" id="gestorId" formControlName="gestorId" [options]="gestores()"
+            optionLabel="label" optionValue="value" filter showClear placeholder="Seleccionar gestor..."
+            styleClass="w-full" [appendTo]="'body'" />
+        </div>
+
+        <div class="field">
           <label>Descuento</label>
           <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
             placeholder="Sin descuento" [showClear]="true" style="width: 100%;" [appendTo]="'body'"
@@ -205,7 +245,7 @@
         </div>
 
             <div class="field">
-              <div class="campo">
+              <div class="campo campo-inline">
                 <label>Exenta de ISV</label>
                 <p-selectbutton size="small" [options]="snOptions" formControlName="sn_excenta" optionLabel="label"
                   optionValue="value" (onChange)="recalcularExenta()" />
@@ -290,7 +330,7 @@
                 pTooltip="ALT + 8 Finalizar" />
               } @else {
               <p-button type="button" label="Pagar" variant="text" severity="info" icon="pi pi-credit-card" size="small"
-                [rounded]="true" (onClick)="dialogPagos.set(true)"
+                [rounded]="true" (onClick)="abrirPagos()"
                 [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
                 pTooltip="ALT + 6 Pago" />
               }
@@ -340,7 +380,7 @@
           <td>
             <p-select size="small" [options]="formaspago()" optionLabel="label" optionValue="value"
               placeholder="Seleccionar..." styleClass="w-full" [(ngModel)]="pago.formapagoId"
-              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" />
+              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" (onChange)="onFormaPagoChange(pago)" />
           </td>
           <td>
             @if (esTarjeta(pago)) {
@@ -466,6 +506,61 @@
     }
   </div>
 </p-dialog>
+
+<!-- Diálogo headless TodoPago: notificación llamativa del link (y del pago confirmado) -->
+<p-confirmdialog key="tp-link" styleClass="tp-hl-dialog" [modal]="true" [style]="{ width: '460px' }"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [dismissableMask]="true">
+  <ng-template #headless let-message let-onAccept="onAccept" let-onReject="onReject">
+    @if (linkPago(); as link) {
+    <div class="tp-hl">
+      @if (linkStatus() === 'completed') {
+      <!-- Variante: pago confirmado -->
+      <div class="tp-hl-badge tp-hl-badge--ok">
+        <i class="pi pi-check"></i>
+      </div>
+      <span class="tp-hl-title">¡Pago confirmado!</span>
+      <p class="tp-hl-sub">Factura #{{ nroFacturaLink() }} — el cobro se recibió vía TodoPago</p>
+      <div class="tp-hl-monto tp-hl-monto--ok">{{ moneda(link.monto) }}</div>
+      <div class="tp-hl-status">
+        <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
+      </div>
+      <div class="tp-hl-actions">
+        <p-button size="small" label="Entendido" icon="pi pi-check" severity="success" [raised]="true" [rounded]="true"
+          (onClick)="onAccept()" />
+      </div>
+      } @else {
+      <!-- Variante: link generado (pendiente) -->
+      <div class="tp-hl-badge">
+        <i class="pi pi-link"></i>
+      </div>
+      <span class="tp-hl-title">Link de pago generado</span>
+      <p class="tp-hl-sub">Factura #{{ nroFacturaLink() }} — comparta el link con el cliente</p>
+      <div class="tp-hl-monto">
+        {{ moneda(link.monto) }}
+        @if (link.sandbox) {
+        <span class="tp-hl-sandbox">SANDBOX</span>
+        }
+      </div>
+      <div class="tp-hl-status">
+        <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
+      </div>
+      <input pInputText pSize="small" class="w-full tp-hl-url" [ngModel]="link.url"
+        [ngModelOptions]="{ standalone: true }" readonly />
+      <div class="tp-hl-actions">
+        <p-button size="small" [label]="linkCopiado() ? 'Copiado' : 'Copiar link'" icon="pi pi-copy"
+          severity="success" [raised]="true" [rounded]="true" (onClick)="copiarLink()" />
+        <p-button size="small" label="Abrir link" icon="pi pi-external-link" severity="info" variant="text"
+          [rounded]="true" (onClick)="abrirLink()" />
+        <p-button size="small" label="Estado" icon="pi pi-refresh" severity="secondary" variant="text" [rounded]="true"
+          (onClick)="consultarEstadoLink()" />
+        <p-button size="small" label="Cerrar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
+          (onClick)="onReject()" />
+      </div>
+      }
+    </div>
+    }
+  </ng-template>
+</p-confirmdialog>
 
 @if (zoomVisible()) {
 <img [src]="zoomUrl()" class="img-zoom-overlay" [style.left.px]="zoomX()" [style.top.px]="zoomY()" />

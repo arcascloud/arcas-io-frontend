@@ -48,41 +48,31 @@
                     [readonly]="true" />
                 </div>
                 <div class="p-field">
-                  <label>Capital</label>
+                  <label>Capital Solicitado</label>
                   <p-inputNumber size="small" [ngModel]="prestamoModel().capital"
                     (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})"
                     (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'"
-                    [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    locale="es-HN"
                     [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
                     [disabled]="!!prestamoData()"></p-inputNumber>
                 </div>
                 <div class="p-field">
-                  <label>Tasa %</label>
-                  <p-inputNumber size="small" [ngModel]="prestamoModel().tasa"
-                    (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})"
-                    (blur)="calcularCuota()" mode="decimal" [min]="0" [step]="0.01"
-                    [minFractionDigits]="2" [maxFractionDigits]="2"
-                    [inputStyle]="{ 'width': '100%' }"
+                  <label>Prima (aporte del cliente)</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().prima"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), prima: $event})"
+                    (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'"
+                    [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    locale="es-HN"
+                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
                     [disabled]="!!prestamoData()"></p-inputNumber>
                 </div>
                 <div class="p-field">
-                  <label>Fecha</label>
-                  <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)"
-                    dateFormat="dd/mm/yy" [showIcon]="true"
-                    [disabled]="!!prestamoData()"></p-datepicker>
-                </div>
-              </div>
-            </div>
-
-            <div class="prestamo-col">
-              <h5 class="prestamo-col-title">Cuotas y Calculo</h5>
-              <div class="p-fluid">
-                <div class="p-field">
-                  <label>Estado</label>
-                  <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo"
-                    (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"
-                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar estado"
-                    [disabled]="!!prestamoData()"></p-select>
+                  <label>Capital Neto (solo lectura)</label>
+                  <p-inputNumber size="small" [ngModel]="capitalnetoCalc()" [readonly]="true"
+                    mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0"
+                    [minFractionDigits]="2" [maxFractionDigits]="2" locale="es-HN"
+                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
                 </div>
                 <div class="p-field">
                   <label>Cuotas</label>
@@ -100,7 +90,82 @@
                 </div>
               </div>
             </div>
+
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Tasas y Control</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Tasa anual %</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().tasa"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})"
+                    (blur)="calcularCuota()" mode="decimal" [min]="0" [step]="0.01"
+                    locale="es-HN"
+                    [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [inputStyle]="{ 'width': '100%' }"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Tasa moratoria %</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().moratorio"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), moratorio: $event})"
+                    mode="decimal" [min]="0" [step]="0.01"
+                    locale="es-HN"
+                    [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [inputStyle]="{ 'width': '100%' }"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Fecha Aprobación</label>
+                  <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)"
+                    dateFormat="dd/mm/yy" [showIcon]="true" size="small" [appendTo]="'body'"
+                    styleClass="w-full"
+                    [disabled]="!!prestamoData()"></p-datepicker>
+                </div>
+                <div class="p-field">
+                  <label>Fecha 1er Cuota (aprobación + 30 días)</label>
+                  <input pInputText pSize="small"
+                    [value]="(fechaEfectivaCalc() | date:'dd/MM/yyyy') || ''" [readonly]="true" />
+                </div>
+                <div class="p-field">
+                  <label>Estado</label>
+                  <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar estado"
+                    [disabled]="!!prestamoData()"></p-select>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- Control del préstamo (solo consulta cuando ya existe) -->
+          @if (prestamoData(); as pres) {
+          <div class="prestamo-info-control mb-3">
+            <div class="pic-item">
+              <span class="pic-label">Saldo actual</span>
+              <span class="pic-value pic-saldo">{{ moneda(pres.saldoactual) }}</span>
+            </div>
+            <div class="pic-item">
+              <span class="pic-label">Capital neto</span>
+              <span class="pic-value">{{ moneda(pres.capitalneto) }}</span>
+            </div>
+            <div class="pic-item">
+              <span class="pic-label">Fecha aprobación</span>
+              <span class="pic-value">{{ (pres.fecha_aprobacion | date:'dd/MM/yyyy') || '—' }}</span>
+            </div>
+            <div class="pic-item">
+              <span class="pic-label">Fecha efectiva (1er cuota)</span>
+              <span class="pic-value">{{ (pres.fechaEfectiva | date:'dd/MM/yyyy') || '—' }}</span>
+            </div>
+            <div class="pic-item">
+              <span class="pic-label">Últ. pago</span>
+              <span class="pic-value">{{ (pres.fechaUltPago | date:'dd/MM/yyyy') || '—' }}</span>
+            </div>
+            <div class="pic-item">
+              <span class="pic-label">Últ. cuota pagada</span>
+              <span class="pic-value">{{ pres.ultcuotapagada ? '#' + pres.ultcuotapagada : '—' }}</span>
+            </div>
+          </div>
+          }
 
           <!-- Botones: solo visibles si NO tiene prestamo (para crear) -->
           @if (!prestamoData()) {

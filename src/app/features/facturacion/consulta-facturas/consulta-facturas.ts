@@ -13,6 +13,7 @@ import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
+import { TodoPagoService, TodoPagoTransaccion } from '../../../core/services/todopago.service';
 
 @Component({
   selector: 'app-consulta-facturas',
@@ -38,6 +39,15 @@ export class ConsultaFacturas implements OnInit {
   emailDestino = signal('');
   enviando = signal(false);
   facturaSeleccionada = signal<any>(null);
+
+  // ==================== LINK DE PAGO (TodoPago) ====================
+  private tp = inject(TodoPagoService);
+  dialogLink = signal(false);
+  linkFactura = signal<any>(null);
+  linkHistorial = signal<TodoPagoTransaccion[]>([]);
+  linkVigente = signal<TodoPagoTransaccion | null>(null);
+  linkCargando = signal(false);
+  linkGenerando = signal(false);
 
   ngOnInit() {
     this.load();
@@ -164,6 +174,107 @@ export class ConsultaFacturas implements OnInit {
         this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al enviar correo' });
       },
     });
+  }
+
+  // ==================== LINK DE PAGO (TodoPago) ====================
+
+  /** Abre el diálogo de link de pago de una factura pendiente */
+  abrirLink(f: any, $event?: Event) {
+    $event?.stopPropagation();
+    this.linkFactura.set(f);
+    this.linkVigente.set(null);
+    this.linkHistorial.set([]);
+    this.dialogLink.set(true);
+    this.cargarLink(f.facturaId);
+  }
+
+  private cargarLink(facturaId: number) {
+    this.linkCargando.set(true);
+    this.tp
+      .getTransacciones(facturaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (filas) => {
+          this.linkHistorial.set(filas);
+          this.linkVigente.set(filas.find((t) => t.status === 'pending') ?? null);
+          this.linkCargando.set(false);
+        },
+        error: () => {
+          this.linkCargando.set(false);
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo cargar el link de pago',
+          });
+        },
+      });
+  }
+
+  /** Genera (o regenera) el link de pago de la factura y recarga el diálogo */
+  generarLinkFactura() {
+    const f = this.linkFactura();
+    if (!f) return;
+    this.linkGenerando.set(true);
+    this.tp
+      .generarLink(f.facturaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.linkGenerando.set(false);
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Link generado',
+            detail: `Factura #${f.nrofactura ?? f.facturaId}`,
+          });
+          this.cargarLink(f.facturaId);
+        },
+        error: () => {
+          this.linkGenerando.set(false);
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo generar el link de pago',
+          });
+        },
+      });
+  }
+
+  copiarLinkUrl(url: string | null | undefined) {
+    if (!url) return;
+    navigator.clipboard
+      .writeText(url)
+      .then(() =>
+        this.msgs.add({ severity: 'success', summary: 'Link copiado', detail: 'Enlace copiado al portapapeles' }),
+      )
+      .catch(() =>
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo copiar el link' }),
+      );
+  }
+
+  abrirLinkUrl(url: string | null | undefined) {
+    if (url) window.open(url, '_blank');
+  }
+
+  getLinkEstadoLabel(estado: string): string {
+    const map: Record<string, string> = {
+      pending: 'Pendiente',
+      completed: 'Completado',
+      failed: 'Fallido',
+      expired: 'Vencido',
+      reversed: 'Reversado',
+    };
+    return map[estado] || estado;
+  }
+
+  getLinkEstadoSeverity(estado: string): string {
+    const map: Record<string, string> = {
+      pending: 'warn',
+      completed: 'success',
+      failed: 'danger',
+      expired: 'secondary',
+      reversed: 'info',
+    };
+    return map[estado] || 'secondary';
   }
 
   // ==================== WHATSAPP ====================

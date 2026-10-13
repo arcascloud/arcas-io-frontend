@@ -141,6 +141,16 @@ export class ContabilidadService {
   }
 
   /**
+   * Contra partida: crea la partida espejo en el período vigente, marca la
+   * original (S/S + contrapdaId) y postea ambas al mayor. El `empresaId` lo
+   * inyecta ApiService en el body. Devuelve la contra partida creada.
+   * Errores: 400 (período/cierre/no contabilizada), 409 (ya contraedida).
+   */
+  contraPartida(id: number): Observable<CopdaMae> {
+    return this.api.post<CopdaMae>(`${this.R}/copdamae/${id}/contra`, {});
+  }
+
+  /**
    * Crea la partida inicial de operaciones en el período contable ABIERTO.
    * El backend decide el período, la fecha documento y la referencia.
    */

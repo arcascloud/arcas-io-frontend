@@ -2,6 +2,28 @@
   display: block;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.banner-anulada {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-left: 4px solid var(--c-error);
+  background: color-mix(in srgb, var(--c-error) 8%, transparent);
+  color: var(--c-error);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+
+  i {
+    font-size: 1.2rem;
+  }
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -51,5 +73,214 @@
 .det-table {
   p-inputnumber {
     width: 100%;
+  }
+}
+
+.total-linea {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.total-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+}
+
+.total-valor {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--c-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.desglose-card {
+  border-left: 3px solid var(--c-primary);
+
+  &.con-cargos {
+    border-left-color: var(--c-warning);
+  }
+}
+
+.desglose-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--c-text);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  i {
+    color: var(--c-primary);
+  }
+}
+
+.desglose-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.dl-label {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.dl-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--c-text);
+
+  &.warn {
+    color: var(--c-warning);
+  }
+}
+
+.desglose-reparto {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.reparto-head {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.2rem;
+}
+
+.reparto-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--c-text);
+
+  .rp {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &.cargos .rp {
+    color: var(--c-warning);
+  }
+
+  &.capital .rp {
+    color: var(--c-primary);
+  }
+
+  &.saldo {
+    margin-top: 0.2rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed var(--c-border);
+    font-weight: 600;
+  }
+}
+
+// ===== Destino = Préstamos · plan de cuotas =====
+
+.cuotas-card {
+  border-left: 3px solid var(--c-primary);
+}
+
+.prestamo-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  max-width: 480px;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-texto-label);
+  }
+
+  p-select {
+    width: 100%;
+  }
+}
+
+.cuotas-table {
+  .col-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .col-total {
+    font-weight: 700;
+  }
+
+  .mora-positiva {
+    color: var(--c-warning);
+    font-weight: 600;
+  }
+
+  tr.cuota-pagada td {
+    opacity: 0.55;
+  }
+
+  tr.cuota-cubierta td {
+    background: color-mix(in srgb, var(--c-primary) 10%, transparent);
+    font-weight: 600;
+  }
+}
+
+.resumen-cuotas {
+  display: flex;
+  gap: 2rem;
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.rc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.rc-label {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.rc-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.aviso-cuota {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid var(--c-warning);
+  background: color-mix(in srgb, var(--c-warning) 10%, transparent);
+  color: var(--c-text);
+  font-size: 0.85rem;
+
+  i {
+    color: var(--c-warning);
   }
 }

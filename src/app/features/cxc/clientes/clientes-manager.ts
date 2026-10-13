@@ -214,8 +214,9 @@ export class ClientesManager implements OnInit {
   saldoPendiente = computed(() =>
     this.estadoCuentaData().reduce((sum, m) => {
       const importe = Number(m.importe || 0);
-      // D = Debito (cargo) suma, C = Credito / A = Abono restan
+      // D = Debito (cargo) suma, C = Credito / A = Abono restan, I = Interés/Mora (sin efecto)
       if (m.tipomov === 'D') return sum + importe;
+      if (m.tipomov === 'I') return sum;
       return sum - importe;
     }, 0)
   );
@@ -775,6 +776,7 @@ export class ClientesManager implements OnInit {
       'C': 'Credito',
       'A': 'Abono',
       'D': 'Debito',
+      'I': 'Interes/Mora',
     };
     return tipos[tipo] || tipo;
   }
@@ -782,6 +784,7 @@ export class ClientesManager implements OnInit {
   getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'warning' | 'info' {
     if (tipo === 'A') return 'success';
     if (tipo === 'C') return 'info';
+    if (tipo === 'I') return 'warning';
     return 'danger';
   }
 

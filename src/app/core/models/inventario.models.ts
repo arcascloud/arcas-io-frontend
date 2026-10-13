@@ -13,13 +13,16 @@ export interface Producto {
   codbarra?: string;
   descripcion: string;
   descripcion_corta?: string;
+  sku?: string;
   cstounit: number;
   cstoprom: number;
   precioventa: number;
   fecUltcom?: string;
   fecUltvta?: string;
   puntoretorno: number;
+  deptoId: number;
   categoriaId: number;
+  marcaId: number;
   impuestoId?: number;
   sn_activo: 'S' | 'N';
   empresaId: number;

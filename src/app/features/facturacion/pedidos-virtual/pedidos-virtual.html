@@ -55,14 +55,24 @@
     <div class="cart-summary">
       <div class="summary-line">
         <span>Subtotal</span>
-        <span>{{ formatearPrecio(totalPedido()) }}</span>
+        <span>{{ formatearPrecio(subtotalPedido()) }}</span>
       </div>
+      @if (tasaImpuestoPct > 0) {
+      <div class="summary-line">
+        <span>ISV ({{ tasaImpuestoPct }}%)</span>
+        <span>{{ formatearPrecio(isvPedido()) }}</span>
+      </div>
+      }
       <div class="summary-line summary-total">
         <span>Total</span>
         <strong>{{ formatearPrecio(totalPedido()) }}</strong>
       </div>
-      <p-button label="Facturar" icon="pi pi-check" severity="success" [fluid]="true" [disabled]="cargandoPedido()"
-        (click)="abrirCheckout(); pedidoOpen.set(false)" />
+      <div class="cart-actions">
+        <p-button label="Guardar pedido" icon="pi pi-save" severity="secondary" [fluid]="true"
+          [disabled]="cargandoPedido()" (click)="abrirGuardarPedido()" />
+        <p-button label="Facturar pedido" icon="pi pi-check" severity="success" [fluid]="true"
+          [disabled]="cargandoPedido()" (click)="abrirCheckout(); pedidoOpen.set(false)" />
+      </div>
     </div>
   </aside>
   }
@@ -70,6 +80,8 @@
   <main class="tienda-main">
     <div class="tienda-toolbar">
       <div class="toolbar-left">
+        <p-button icon="pi pi-arrow-left" label="Volver" size="small" [rounded]="true" variant="text"
+          severity="secondary" pTooltip="Volver al listado" (onClick)="volver()" />
         <h2 class="toolbar-title"><i class="pi pi-shopping-cart"></i> Pedidos</h2>
         <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's'
           : '' }}</span>
@@ -305,8 +317,14 @@
       <div class="summary-totals">
         <div class="summary-line">
           <span>Subtotal ({{ totalItems() }} items)</span>
-          <span>{{ formatearPrecio(totalPedido()) }}</span>
+          <span>{{ formatearPrecio(subtotalPedido()) }}</span>
         </div>
+        @if (tasaImpuestoPct > 0) {
+        <div class="summary-line">
+          <span>ISV ({{ tasaImpuestoPct }}%)</span>
+          <span>{{ formatearPrecio(isvPedido()) }}</span>
+        </div>
+        }
         <div class="summary-line summary-total">
           <span>Total a pagar</span>
           <strong>{{ formatearPrecio(totalPedido()) }}</strong>
@@ -321,5 +339,28 @@
   <ng-template pTemplate="footer">
     <p-button label="Cancelar" [text]="true" icon="pi pi-arrow-left" [disabled]="procesando()"
       (click)="dialogCheckout.set(false)" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Guardar pedido" [(visible)]="dialogGuardarPedido" [modal]="true" [draggable]="false"
+  [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: isMobile() ? '95vw' : '30rem' }">
+  <div class="guardar-fields">
+    <div class="campo">
+      <label>Nombre completo *</label>
+      <input pInputText pSize="small" [ngModel]="guardarNombre()" (ngModelChange)="guardarNombre.set($event)"
+        placeholder="Nombre del cliente" class="w-full" (keyup.enter)="guardarPedido()" />
+    </div>
+    <div class="campo">
+      <label>Teléfono</label>
+      <input pInputText pSize="small" [ngModel]="guardarTelefono()" (ngModelChange)="guardarTelefono.set($event)"
+        placeholder="Teléfono del cliente" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" size="small" rounded variant="text" severity="secondary"
+      [disabled]="guardandoPedido()" (onClick)="dialogGuardarPedido.set(false)" />
+    <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" [raised]="true" [rounded]="true"
+      severity="success" [loading]="guardandoPedido()" (onClick)="guardarPedido()" />
   </ng-template>
 </p-dialog>

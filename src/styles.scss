@@ -95,6 +95,7 @@
   --color-texto-label: rgba(255, 255, 255, 0.4);
   --color-texto-input: rgba(255, 255, 255, 0.808);
   --master-background: #213341;
+  --datatable-row-hover-background: #305f5de7;
   --texto-secundario: #2c4d6f;
   --select-row: #93b7d3;
   --for-border-color-alls: #39495b;
@@ -102,7 +103,7 @@
   /* ===== Design tokens ===== */
   --c-bg: #1e2e3b;
   --c-bg-white: white;
-    --c-bg-black: black;
+  --c-bg-black: black;
   --c-bg-muted: #1e2e3b00;
   --c-bg-login: #030713;
   --c-bg-login-inputtext: #030713;
@@ -130,7 +131,6 @@
   --radius-md: 0.75rem;
   --radius-lg: 1.25rem;
   --radius-full: 9999px;
-
 
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -183,7 +183,7 @@
   --p-inputtext-invalid-border-color: var(--c-danger);
 
   --p-togglebutton-color: var(--color-texto-input);
-  ---p-togglebutton-background: var(--color-texto-input);
+  --p-togglebutton-background: var(--c-bg);
 
 
   // para los botones selecionados del toggle button
@@ -212,8 +212,18 @@
   --p-datatable-body-cell-border-color: #25374a;
   --p-datatable-header-cell-border-color: #25374a;
   --p-datatable-header-cell-color: var(--color-texto-input);
-  --p-datatable-body-cell-sm-padding: 0.275rem 0.1rem;
+  --p-datatable-body-cell-sm-padding: 0.20rem 0.08rem;
+    /* Reduce o aumenta el padding vertical y horizontal de las celdas */
+    --p-datatable-body-cell-padding: 0.20rem 0.08rem;
+    /* Valor más compacto que el predeterminado */
 
+    /* Cambiar el color de fondo para las filas impares/pares alternadas */
+      --p-datatable-row-striped-background: var(--p-form-field-background);
+
+      /* Color de fila seleccionada */
+      --p-datatable-row-selected-background: var(--c-text-muted);
+      --p-datatable-row-selected-color: var(--color-texto-label);
+      --p-datatable-row-hover-background: var(--datatable-row-hover-background);
 
 
   --p-tag-secondary-background: var(--c-bg-muted);
@@ -232,6 +242,51 @@
 }
 
 
+.p-dataview {
+  --p-dataview-content-padding: 0.25rem;
+  /* Modifica el padding general del contenedor de contenido */
+}
+
+::ng-deep .p-dataview .p-dataview-content .dataview-item {
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+::ng-deep .p-dataview .p-dataview-content .dataview-item:hover {
+  background-color: var(--datatable-row-hover-background);
+  /* O usa un color fijo como #f8fafc */
+  color: var(--c-bg-white);
+  cursor: pointer;
+}
+
+.togglebutton-bg-azulnarino {
+  /* Estado Normal (Sin chequear) */
+  --p-togglebutton-background: var(--c-bg-black);
+  --p-togglebutton-border-color: var(--c-bg-black);
+
+  /* Estado Hover (Sin chequear) */
+  --p-togglebutton-hover-background: rgba(255, 255, 255, 0.08);
+  --p-togglebutton-hover-border-color: var(--c-bg-black);
+
+  /* Estado Chequeado */
+  --p-togglebutton-checked-background: rgba(255, 255, 255, 0.08);
+  --p-togglebutton-content-checked-background: rgba(255, 255, 255, 0.08);
+  --p-togglebutton-checked-border-color: var(--c-bg-black);
+}
+
+.togglebutton-bg-black {
+  /* Estado Normal (Sin chequear) */
+  --p-togglebutton-background: var(--c-bg-black);
+  --p-togglebutton-border-color: var(--c-bg-black);
+
+  /* Estado Hover (Sin chequear) */
+  --p-togglebutton-hover-background: var(--c-bg);
+  --p-togglebutton-hover-border-color: var(--c-bg);
+
+  /* Estado Chequeado */
+  --p-togglebutton-checked-background: var(--c-bg);
+  --p-togglebutton-content-checked-background: var(--c-bg);
+  --p-togglebutton-checked-border-color: var(--c-bg);
+}
 body {
   font-family: var(--font-family);
   color: var(--c-text);

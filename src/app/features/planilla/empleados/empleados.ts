@@ -65,7 +65,7 @@ export class Empleados implements OnInit {
         return (
           e.nombres?.toLowerCase().includes(q) ||
           e.apellidos?.toLowerCase().includes(q) ||
-          e.dni?.toLowerCase().includes(q) ||
+          e.nrodocumento?.toLowerCase().includes(q) ||
           e.telefono?.toLowerCase().includes(q) ||
           e.email?.toLowerCase().includes(q)
         );

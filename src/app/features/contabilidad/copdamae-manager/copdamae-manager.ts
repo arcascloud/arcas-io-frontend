@@ -390,6 +390,24 @@ export class CopdamaeManager implements OnInit {
       });
       return;
     }
+    // Pareja original ↔ contra (backend 409): avisar antes de intentar
+    if (partida.partidaOrigenId != null) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Contra partida',
+        detail: `La Partida #${partida.nropartida} es una contra partida y no puede editarse`,
+      });
+      return;
+    }
+    if (partida.contrapdaId != null) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Tiene contra partida',
+        detail: `La Partida #${partida.nropartida} ya fue contraedida; primero elimine la contra partida` +
+          (this.partidaNumero(partida.contrapdaId) ? ` #${this.partidaNumero(partida.contrapdaId)}` : ''),
+      });
+      return;
+    }
     this.partidaSeleccionada.set(partida);
     this.marcarPartidaEnUrl(partida.partidaId);
     this.form.reset({
@@ -688,9 +706,24 @@ export class CopdamaeManager implements OnInit {
       });
       return;
     }
+    // La original contraedida no se elimina mientras exista su contra (backend 409).
+    // La propia contra SÍ se puede eliminar (deshacer) — ver mensaje especial abajo.
+    if (partida.contrapdaId != null) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Tiene contra partida',
+        detail: `La Partida #${partida.nropartida} ya fue contraedida; primero elimine la contra partida` +
+          (this.partidaNumero(partida.contrapdaId) ? ` #${this.partidaNumero(partida.contrapdaId)}` : ''),
+      });
+      return;
+    }
+    const esContra = partida.partidaOrigenId != null;
     this.confirmationService.confirm({
-      message: `¿Está seguro de eliminar la Partida #${partida.nropartida}?`,
-      header: 'Confirmar eliminación',
+      message: esContra
+        ? `¿Eliminar la contra partida #${partida.nropartida}? OJO: la eliminación NO revierte el mayor ` +
+          'automáticamente; ejecute Reconstrucción de Mayores para sincronizar coctamov.'
+        : `¿Está seguro de eliminar la Partida #${partida.nropartida}?`,
+      header: esContra ? 'Eliminar contra partida' : 'Confirmar eliminación',
       icon: 'pi pi-exclamation-triangle',
       rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
       acceptButtonProps: { label: 'Eliminar', severity: 'danger', variant: 'text', size: 'small', rounded: true },
@@ -707,6 +740,104 @@ export class CopdamaeManager implements OnInit {
           });
       },
     });
+  }
+
+  // ===== CONTRA PARTIDA =====
+
+  /**
+   * Crea la contra partida (espejo en el período vigente) de una partida
+   * contabilizada y marca la original. Bloqueos de UX previos (el backend
+   * es la autoridad): cerrada, no contabilizada, ya contraedida o si la
+   * fila ES una contra.
+   */
+  contraPartida(partida: CopdaMae): void {
+    if (!this.puedeContraer(partida)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No permitido',
+        detail: this.tooltipContra(partida),
+      });
+      return;
+    }
+    this.confirmationService.confirm({
+      message: `Se creará la contra partida de la Partida #${partida.nropartida} ` +
+        `(${partida.nroreferencia || partida.descripcion}) en el período en curso. ` +
+        'Las dos partidas permanecen en el mayor y netean a cero.',
+      header: 'Contra partida',
+      icon: 'pi pi-undo',
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Contraer', severity: 'warn', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.cargando.set(true);
+        this.contabilidad.contraPartida(partida.partidaId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (contra) => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Contra partida creada',
+                detail: `Partida #${contra.nropartida} creada como contra de la #${partida.nropartida}`,
+              });
+              // Recarga la lista y (vía ?partidaId= en la URL) refresca la
+              // partida seleccionada con sus nuevas marcas (S/S + contrapdaId)
+              this.cargarDatos();
+              this.cargando.set(false);
+            },
+            // El interceptor global ya muestra el toast con el mensaje del
+            // backend (400 período/cierre, 409 ya contraedida)
+            error: () => this.cargando.set(false),
+          });
+      },
+    });
+  }
+
+  /** ¿Se puede pedir la contra partida de esta fila? (el backend es la autoridad) */
+  puedeContraer(partida: CopdaMae): boolean {
+    return partida.sn_cerrada !== 'S' &&
+      partida.sn_contabilizada === 'S' &&
+      partida.partidaOrigenId == null &&
+      partida.contrapdaId == null;
+  }
+
+  /** Explica por qué el botón Contra está deshabilitado (o su acción) */
+  tooltipContra(partida: CopdaMae): string {
+    if (partida.sn_cerrada === 'S') return 'Período cerrado: la partida no puede contraerse';
+    if (partida.partidaOrigenId != null) return 'Ya es una contra partida: no puede contraerse';
+    if (partida.contrapdaId != null) return 'Ya tiene una contra partida asociada';
+    if (partida.sn_contabilizada !== 'S') return 'Solo se contraen partidas contabilizadas';
+    return `Crear contra partida de esta partida #${partida.nropartida} en el período en curso`;
+  }
+
+  /** Editar habilitado: sin cerrar, sin pareja de contra (backend 409) */
+  puedeEditar(partida: CopdaMae): boolean {
+    return partida.sn_cerrada !== 'S' &&
+      partida.contrapdaId == null &&
+      partida.partidaOrigenId == null;
+  }
+
+  tooltipEditar(partida: CopdaMae): string {
+    if (partida.sn_cerrada === 'S') return 'Partida cerrada (período cerrado)';
+    if (partida.partidaOrigenId != null) return 'Es una contra partida: no editable';
+    if (partida.contrapdaId != null) return 'Tiene contra partida asociada: primero elimine la contra';
+    return 'Editar';
+  }
+
+  /** Eliminar habilitado: sin cerrar y sin contra asociada (la propia contra sí se elimina) */
+  puedeEliminar(partida: CopdaMae): boolean {
+    return partida.sn_cerrada !== 'S' && partida.contrapdaId == null;
+  }
+
+  tooltipEliminar(partida: CopdaMae): string {
+    if (partida.sn_cerrada === 'S') return 'Partida cerrada (período cerrado)';
+    if (partida.contrapdaId != null) return 'Tiene contra partida asociada: primero elimine la contra';
+    if (partida.partidaOrigenId != null) return 'Eliminar contra partida (requiere Reconstrucción de Mayores)';
+    return 'Eliminar';
+  }
+
+  /** nropartida de otra partida por id (para mostrar el enlace original ↔ contra) */
+  partidaNumero(id: number | null | undefined): number | null {
+    if (id == null) return null;
+    return this.partidas().find(p => Number(p.partidaId) === Number(id))?.nropartida ?? null;
   }
 
   // ===== PARTIDA INICIAL (carga desde archivo Excel) =====

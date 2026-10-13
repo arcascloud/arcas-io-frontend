@@ -406,9 +406,13 @@
                           <td>{{ mov.concepto }}</td>
                           <td
                             class="col-importe"
-                            [ngClass]="{'text-success': mov.tipomov === 'D', 'text-danger': mov.tipomov !== 'D'}"
+                            [ngClass]="{
+                              'text-success': mov.tipomov === 'D',
+                              'text-danger': mov.tipomov === 'C' || mov.tipomov === 'A',
+                              'text-warning': mov.tipomov === 'I'
+                            }"
                           >
-                            {{ mov.tipomov === 'D' ? '+' : '-' }}{{ moneda(mov.importe) }}
+                            {{ mov.tipomov === 'D' ? '+' : (mov.tipomov === 'I' ? '' : '-') }}{{ moneda(mov.importe) }}
                           </td>
                         </tr>
                         <tr *ngIf="estadoCuentaData().length === 0">

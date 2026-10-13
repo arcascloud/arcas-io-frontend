@@ -64,6 +64,7 @@ export class HistoricoManager implements OnInit {
   readonly tipoMovOptions = [
     { label: 'Debito', value: 'D' },
     { label: 'Credito', value: 'C' },
+    { label: 'Interés/Mora', value: 'I' },
   ];
 
   ngOnInit() {
@@ -72,28 +73,30 @@ export class HistoricoManager implements OnInit {
 
   private cargarHistorico() {
     this.cargando.set(true);
-    this.service.getHistoricoConFiltros(
-      '',
-      this.cliente(),
-      this.fechaDesde(),
-      this.fechaHasta(),
-    ).pipe(
-      takeUntilDestroyed(this.destroyRef),
-      timeout(15000),
-      catchError(() => of([]))
-    ).subscribe({
-      next: (res) => {
-        const datos = res ?? [];
-        this.data.set(datos);
-        this.filtered.set(datos);
-        this.totalRecords.set(datos.length);
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.cargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los registros históricos' });
-      },
-    });
+    this.service
+      .getHistoricoConFiltros('', this.cliente(), this.fechaDesde(), this.fechaHasta())
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        timeout(15000),
+        catchError(() => of([])),
+      )
+      .subscribe({
+        next: (res) => {
+          const datos = res ?? [];
+          this.data.set(datos);
+          this.filtered.set(datos);
+          this.totalRecords.set(datos.length);
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.cargando.set(false);
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudieron cargar los registros históricos',
+          });
+        },
+      });
   }
 
   buscar() {
@@ -109,12 +112,13 @@ export class HistoricoManager implements OnInit {
   }
 
   getTipoMovLabel(tipo: string): string {
-    const tipos: Record<string, string> = { 'C': 'Crédito', 'D': 'Débito' };
+    const tipos: Record<string, string> = { C: 'Crédito', D: 'Débito', I: 'Interés/Mora' };
     return tipos[tipo] || tipo;
   }
 
-  getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'info' {
+  getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'info' | 'warning' | 'help' {
     if (tipo === 'C') return 'info';
+    if (tipo === 'I') return 'help';
     return 'danger';
   }
 

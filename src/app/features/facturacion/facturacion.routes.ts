@@ -68,7 +68,7 @@ export const FACTURACION_ROUTES: Routes = [
   {
     path: 'pedidos/editar/:id',
     loadComponent: () =>
-      import('./pedidos-virtual/pedidos-virtual').then((m) => m.PedidosVirtual),
+      import('./pedidos/pedido-form').then((m) => m.PedidoForm),
   },
   {
     path: 'combos',
@@ -84,6 +84,16 @@ export const FACTURACION_ROUTES: Routes = [
     path: 'facturas-anul',
     loadComponent: () =>
       import('./anular-facturas/anular-facturas').then((m) => m.AnularFacturas),
+  },
+  {
+    path: 'pago-confirmado',
+    loadComponent: () =>
+      import('./pago-confirmado/pago-confirmado').then((m) => m.PagoConfirmado),
+  },
+  {
+    path: 'todopago',
+    loadComponent: () =>
+      import('./todopago/todopago').then((m) => m.TodoPago),
   },
   { path: '**', redirectTo: 'consultas' },
 ];

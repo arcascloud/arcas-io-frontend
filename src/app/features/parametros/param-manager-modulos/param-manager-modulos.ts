@@ -103,6 +103,9 @@ export class ParamManagerModulos implements OnInit {
       valor: ['', Validators.required],
       grupo: ['CORRELATIVO', Validators.required],
       sn_activo: ['S', Validators.required],
+      // Módulo al que pertenece el parámetro nuevo (campo visible del drawer;
+      // en edición se usa el módulo del parámetro seleccionado)
+      moduloId: [null as number | null],
     });
 
     // Cargar empresas
@@ -193,6 +196,8 @@ export class ParamManagerModulos implements OnInit {
       valor: '',
       grupo: 'CORRELATIVO',
       sn_activo: 'S',
+      // Precarga con el módulo del filtro superior si está activo
+      moduloId: this.moduloId(),
     });
     this.form.get('field')?.enable();
   }
@@ -205,16 +210,20 @@ export class ParamManagerModulos implements OnInit {
       return;
     }
 
+    const raw = this.form.getRawValue();
     const eid = this.empresaId();
     const paramSel = this.selectedParam();
-    // En edición se usa el módulo DEL parámetro (la tabla puede mostrar varios módulos)
-    const mid = paramSel ? paramSel.moduloId : this.moduloId();
-    if (!eid || !mid) {
-      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Seleccione la empresa y el módulo en el contexto' });
+    // En edición se usa el módulo DEL parámetro (la tabla puede mostrar varios módulos);
+    // al crear nuevo, el módulo viene del campo del drawer
+    const mid = paramSel ? paramSel.moduloId : raw.moduloId;
+    if (!eid) {
+      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Seleccione la empresa en el contexto superior' });
       return;
     }
-
-    const raw = this.form.getRawValue();
+    if (!mid) {
+      this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'Seleccione el módulo al que pertenece el parámetro' });
+      return;
+    }
     if (raw.tipo === 'NUMBER' && (String(raw.valor).trim() === '' || isNaN(Number(raw.valor)))) {
       this.msgs.add({ severity: 'warn', summary: 'Valor inválido', detail: 'El valor debe ser numérico' });
       return;

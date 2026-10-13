@@ -346,4 +346,64 @@ export class CxcService {
   removeCarteraCliente(id: number): Observable<{ id: number; eliminado: boolean }> {
     return this.api.putBase<{ id: number; eliminado: boolean }>(`/cxc/carteras-cliente/${id}/remove`, {});
   }
+
+  // ========== Caja · abono con reparto de cargos vs capital ==========
+
+  /**
+   * Genera los movimientos CxC de un cobro (caja) sobre el TOTAL recibido,
+   * repartiendo primero los cargos (interés + mora) y el resto al capital.
+   * Destino = Préstamos: en lugar de movimientos, aplica el abono a las cuotas
+   * del plan (la UI envía las cuotas cubiertas con su desglose).
+   * Idempotente: re-guardar no duplica movimientos ni cuotas.
+   * @param cajaId - Identificador del maestro de caja (cxccajaId)
+   * @returns Observable con el resumen ({ movimientos, totalEfectivo } o { cuotasPagadas, totalAplicado })
+   */
+  procesarAbono(
+    cajaId: number,
+    desglose?: {
+      interes?: number;
+      mora?: number;
+      prestamoId?: number;
+      cuotas?: Array<{ pppId: number; capital: number; interes: number; mora: number; diasMora: number; total: number }>;
+    },
+  ): Observable<{ movimientos?: number; totalEfectivo?: number; cuotasPagadas?: number[]; totalAplicado?: number; motivo?: string }> {
+    return this.api.post<{ movimientos?: number; totalEfectivo?: number; cuotasPagadas?: number[]; totalAplicado?: number; motivo?: string }>(
+      `/cxc/caja-mae/${cajaId}/procesar-abono`,
+      desglose ?? {},
+    );
+  }
+
+  // ========== Caja · anulación ==========
+
+  /**
+   * Anula una caja (cobro) completa: maestro, detalles y movimientos CxC.
+   * @param cajaId - Identificador del maestro de caja (cxccajaId)
+   * @returns Observable con el resultado de la anulación
+   */
+  anularCaja(cajaId: number): Observable<{ ok: boolean; mensaje: string }> {
+    return this.api.post<{ ok: boolean; mensaje: string }>(`/cxc/caja-mae/${cajaId}/anular`, {});
+  }
+
+  // ========== Caja · recibo de impresión ==========
+
+  /**
+   * Obtiene los datos completos de una caja para imprimir el recibo.
+   * @param cajaId - Identificador del maestro de caja (cxccajaId)
+   * @returns Observable con los datos del recibo (caja, detalles, cliente, empresa)
+   */
+  getCajaRecibo(cajaId: number): Observable<any> {
+    return this.api.get<any>(`/cxc/caja-mae/${cajaId}/recibo`);
+  }
+
+  // ========== Caja · rendición ==========
+
+  /**
+   * Obtiene la rendición de caja de una fecha: totales por forma de pago
+   * y detalle de cobros no anulados.
+   * @param fecha - Fecha en formato YYYY-MM-DD
+   * @returns Observable con la rendición (cajas, resumen, totalGeneral)
+   */
+  getRendicionCaja(fecha: string): Observable<any> {
+    return this.api.get<any>(`/cxc/caja-mae/rendicion?fecha=${fecha}`);
+  }
 }

@@ -257,6 +257,18 @@ $sidebar-width: 380px;
   gap: 0.5rem;
   background: var(--c-surface);
 
+  /* Tienda pública: aviso de que pagar requiere sesión */
+  .login-hint {
+    margin: 0;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+
+    i {
+      margin-right: 0.3rem;
+    }
+  }
+
   .summary-line {
     display: flex;
     justify-content: space-between;

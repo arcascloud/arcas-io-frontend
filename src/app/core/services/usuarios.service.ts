@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Usuario } from '../models/usuario.models';
+import { Usuario, UsuarioInfo } from '../models/usuario.models';
 
 @Injectable({ providedIn: 'root' })
 export class UsuariosService {
@@ -43,5 +43,24 @@ export class UsuariosService {
    */
   update(usuario: string, dto: Partial<Usuario>): Observable<Usuario> {
     return this.api.put<Usuario>(this.path, usuario, dto);
+  }
+
+  /**
+   * Obtiene la información extendida (`tusuariosinfoinfo`) de un usuario.
+   * @param usuarioId - Identificador numérico del usuario.
+   * @returns Observable con la información del usuario.
+   */
+  getInfo(usuarioId: number): Observable<UsuarioInfo> {
+    return this.api.getOne<UsuarioInfo>(`${this.path}/info`, usuarioId);
+  }
+
+  /**
+   * Actualiza la información extendida del usuario (vínculo con empleado, documento, etc.).
+   * @param usuarioId - Identificador numérico del usuario.
+   * @param dto - Campos a actualizar (ej: `empleadoId`, usar `null` para desvincular).
+   * @returns Observable con la información actualizada.
+   */
+  updateInfo(usuarioId: number, dto: Partial<UsuarioInfo>): Observable<UsuarioInfo> {
+    return this.api.put<UsuarioInfo>(`${this.path}/info`, usuarioId, dto);
   }
 }

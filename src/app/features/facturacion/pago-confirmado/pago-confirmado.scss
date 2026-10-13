@@ -1,0 +1,56 @@
+.tp-confirm-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 8rem);
+  padding: 2rem;
+}
+
+.tp-confirm-card {
+  width: 100%;
+  max-width: 28rem;
+  padding: 2rem;
+  text-align: center;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+
+  h2 {
+    margin: 0.75rem 0 0.5rem;
+    font-size: 1.25rem;
+    color: var(--c-text);
+  }
+
+  .tp-confirm-detalle {
+    margin-bottom: 0.75rem;
+    color: var(--c-text-muted);
+  }
+}
+
+.tp-confirm-cargando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.tp-confirm-icono {
+  font-size: 3rem;
+
+  &.ok {
+    color: var(--c-success);
+  }
+
+  &.error {
+    color: var(--c-error);
+  }
+}
+
+.tp-confirm-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 1.25rem;
+}

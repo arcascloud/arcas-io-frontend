@@ -3,7 +3,7 @@ export interface PlanillaEmpleado {
   fecharegistro: string;
   nombres: string;
   apellidos: string;
-  dni: string;
+  nrodocumento: string;
   fechanacimiento: string;
   sexo: 'M' | 'F' | 'T';
   estadocivil: 'S' | 'C' | 'V' | 'D' | 'U';
