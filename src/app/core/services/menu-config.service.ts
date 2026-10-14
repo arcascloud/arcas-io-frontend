@@ -106,6 +106,10 @@ export class MenuConfigService {
       .catch(() => {
         this.items.set([]);
         this.modulos.set(new Set());
+        // Limpiar cache para que el próximo intento (re-login) no devuelva
+        // la promesa vacía cacheada — causa del menú vacío tras token vencido.
+        this.claveModulos = '';
+        this.promesaModulos = null;
         return new Set<number>();
       });
     return this.promesaModulos;

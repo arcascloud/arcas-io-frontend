@@ -7,7 +7,6 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
@@ -31,7 +30,6 @@ import { FooterHelper } from '../../helpers/footer';
     InputTextModule,
     InputNumberModule,
     SelectModule,
-    TableModule,
     ConfirmDialogModule,
     TagModule,
   ],
@@ -85,60 +83,89 @@ export class Caja implements OnInit {
   ] as const;
   /** Préstamos activos del cliente (cuando destino = Préstamos). */
   prestamosCliente = signal<{ label: string; value: number; _raw: any }[]>([]);
-  /** Plan de cuotas del préstamo seleccionado, con interés/mora calculados al día de hoy. */
-  planCuotas = signal<any[]>([]);
+  /**
+   * Préstamo crudo seleccionado (destino = Préstamos). El cálculo de interés
+   * es INTERÉS SIMPLE sobre el saldo total, anclado en `fechaUltPago`
+   * (modelo sin plan de pagos).
+   */
+  prestamoSeleccionado = signal<any>(null);
 
   /** true si el destino seleccionado es Préstamos. */
   esDestinoPrestamo = computed(() => this.destinoAbono() === 2);
 
   /**
-   * Cuotas que cubre el efectivo recibido (desde la cuota 1 pendiente, en orden).
-   * Si no alcanza ni para la cuota 1 → lista vacía (regla: guardar con aviso).
+   * Cuota pactada del préstamo. Prefiere el valor persistido en
+   * `cxcprestamos.vlrcuota`; si es nulo o 0, lo deriva de los términos
+   * del préstamo (amortización francesa mensual).
+   * Se usa como MÍNIMO de efectivo exigido para aplicar el cobro.
    */
-  cuotasCubiertas = computed(() => {
-    const restante = this.totalPagos();
-    const ids = new Set<number>();
-    const lista: any[] = [];
-    let aplicado = 0;
-    if (restante > 0) {
-      for (const c of this.planCuotas()) {
-        if (c.sn_pagada === 'S') continue;
-        const total = Number(c.total) || 0;
-        if (aplicado + total <= restante + 0.005) {
-          ids.add(c.pppId);
-          lista.push(c);
-          aplicado += total;
-        } else {
-          break; // el abono aplica en secuencia: si no cubre esta, tampoco las siguientes
-        }
-      }
+  vlrcuotaPactada = computed(() => {
+    const p = this.prestamoSeleccionado();
+    if (!p) return 0;
+    // Preferir valor persistido
+    const persistido = Number(p.vlrcuota) || 0;
+    if (persistido > 0) return Math.round(persistido * 100) / 100;
+    // Fallback: cálculo por fórmula francesa
+    const capitalneto = Number(p.capitalneto)
+      || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
+    const cuotas = Number(p.cuotas) || 0;
+    const i = (Number(p.tasa) || 0) / 100 / 12;
+    if (capitalneto <= 0 || cuotas <= 0) return 0;
+    const cuota = i > 0 ? capitalneto * (i / (1 - Math.pow(1 + i, -cuotas))) : capitalneto / cuotas;
+    return Math.round(cuota * 100) / 100;
+  });
+
+  /**
+   * Reparto del cobro al préstamo (interés simple sobre el saldo, misma regla
+   * de gracia/mora que facturas). Recalcula en vivo según el efectivo capturado.
+   */
+  repartoPrestamo = computed(() => {
+    const p = this.prestamoSeleccionado();
+    const r2 = (x: number) => Math.round(x * 100) / 100;
+    const efectivo = this.totalPagos();
+    const vlrcuota = this.vlrcuotaPactada();
+    if (!p) return null;
+    const saldo = Number(p.saldoactual) || Number(p.capitalneto) || Number(p.capital) || 0;
+    if (saldo <= 0) {
+      return { saldo, efectivo, vlrcuota, interes: 0, mora: 0, cargos: 0, abonoCapital: 0, saldoNuevo: 0, diasInteres: 0, diasMora: 0, cumple: false };
     }
-    const primera = this.planCuotas().find((c) => c.sn_pagada !== 'S');
-    const faltaPrimera = primera && !ids.size
-      ? Math.round(((Number(primera.total) || 0) - restante) * 100) / 100
-      : 0;
+
+
+    const hoy = new Date();
+    const fechaBase = (p.fechaUltPago ? new Date(p.fechaUltPago) : null)
+      ?? (p.fechaEfectiva ? new Date(p.fechaEfectiva) : hoy);
+    const ultcuotapagada = p.ultcuotapagada;
+     const tasa = (Number(p.tasa) || 0) / 100;
+    const tasaMor = (Number(p.moratorio) || 0) / 100;
+    const diasPlazo = Number(p.diascuotas) || 0;
+    const gracia = Number(p.gracia) || 0;
+
+    const diasTrans = Math.max(0, this.diasEntre(fechaBase, hoy));
+    const proximo = this.sumarDias(fechaBase, diasPlazo);
+    const fechaMax = this.sumarDias(proximo, gracia);
+    let diasInteres = diasTrans;
+    let diasMora = 0;
+    let diasGracia = 0;
+    if (this.diasEntre(hoy, fechaMax) >= 0) {
+      // Dentro de plazo/gracia: la gracia usada no devenga interés.
+      diasGracia = Math.max(0, this.diasEntre(proximo, hoy));
+      diasInteres = Math.max(0, diasTrans - diasGracia);
+    } else {
+      // Vencido: interés sobre todos los días + mora desde el fin de gracia.
+      diasMora = this.diasEntre(fechaMax, hoy);
+    }
+
+    const interes = r2(saldo * tasa * (diasInteres / 360));
+    const mora = r2(saldo * tasaMor * (diasMora / 360));
+    const cargos = r2(interes + mora);
+    const abonoCapital = r2(Math.max(0, efectivo - cargos));
+    const saldoNuevo = r2(Math.max(0, saldo - abonoCapital));
     return {
-      ids,
-      lista,
-      aplicado: Math.round(aplicado * 100) / 100,
-      faltaPrimera,
+      saldo, fechaBase, ultcuotapagada, proximo, fechaMax, diasTrans, diasInteres, diasMora,diasGracia,
+      interes, mora, cargos, efectivo, abonoCapital, saldoNuevo, vlrcuota,
+      cumple: efectivo >= vlrcuota - 0.01,
     };
   });
-
-  /** Aviso cuando el abono no cubre ni la cuota 1 (la caja se guarda sin pagar cuotas). */
-  avisoCuota1 = computed(() => {
-    if (!this.esDestinoPrestamo() || !this.planCuotas().length) return null;
-    const cc = this.cuotasCubiertas();
-    if (this.totalPagos() > 0 && cc.faltaPrimera > 0) {
-      return `El abono no cubre la cuota #1: faltan L ${cc.faltaPrimera.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. La caja se guardará sin pagar cuotas.`;
-    }
-    return null;
-  });
-
-  /** true si la cuota actualmente se pagaría con el efectivo capturado. */
-  esCubierta(cuota: any): boolean {
-    return this.cuotasCubiertas().ids.has(cuota.pppId);
-  }
 
   /** true si la caja puede editarse (no anulada y hay formulario activo). */
   puedeEditar = computed(() => !this.esAnulada() && !this.guardando() && !this.anulando());
@@ -196,6 +223,9 @@ export class Caja implements OnInit {
       this.service.getMaeOne<any>('/cxc/caja-mae', this.itemId).subscribe({
         next: (mae) => {
           this.destinoAbono.set(Number(mae?.destinoabono) || 1);
+          // Recarga el select de clientes con el destino real de la caja
+          // (cargarOpciones corrió con destino=1 por defecto).
+          this.cargarClientes();
           this.form.patchValue({
             moduloId: mae?.moduloId ?? 4,
             clienteId: mae?.clienteId,
@@ -284,7 +314,7 @@ export class Caja implements OnInit {
   /**
    * Carga el select de clientes según el destino del abono:
    * - destino=1 (Facturas): clientes con saldo pendiente en cuenta corriente.
-   * - destino=2 (Préstamos): solo clientes con préstamos activos.
+   * - destino=2 (Préstamos): solo clientes con préstamos activos (con cuotas por cobrar).
    */
   private cargarClientes() {
     const ruta = this.destinoAbono() === 2
@@ -293,6 +323,19 @@ export class Caja implements OnInit {
     this.api.get<any>(ruta).subscribe({
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data ?? []);
+        // En edición, el cliente de la caja puede ya no estar en la lista
+        // (ej. su préstamo se saldó después) → se agrega para no perderlo del select.
+        const actual = this.form?.get('clienteId')?.value;
+        if (actual && !items.some((i: any) => i.clienteId === actual)) {
+          items.push({
+            clienteId: actual,
+            nrocliente: this.form.get('nrocliente')?.value ?? '',
+            cliente: this.form.get('nombrecliente')?.value || '(Cliente de la caja)',
+            dni: '',
+            rtn: '',
+            saldo: 0,
+          });
+        }
         this.clientes.set(items);
       },
       error: () => this.clientes.set([]),
@@ -308,7 +351,7 @@ export class Caja implements OnInit {
         this.nrosDocumento.set([]);
         this.docSeleccionado.set(null);
         this.prestamosCliente.set([]);
-        this.planCuotas.set([]);
+        this.prestamoSeleccionado.set(null);
         return;
       }
       this.api.get<any>(`/cxc/clientes/${clienteId}`).subscribe({
@@ -362,7 +405,7 @@ export class Caja implements OnInit {
     this.nrosDocumento.set([]);
     this.docSeleccionado.set(null);
     this.prestamosCliente.set([]);
-    this.planCuotas.set([]);
+    this.prestamoSeleccionado.set(null);
     // Recarga el select de clientes según el nuevo destino (saldo vs préstamos)
     this.cargarClientes();
   }
@@ -371,10 +414,14 @@ export class Caja implements OnInit {
   private cargarPrestamosCliente(clienteId: number, after?: () => void) {
     this.cxcService.getPrestamosByCliente(clienteId).subscribe({
       next: (prestamos) => {
-        const activos = (prestamos ?? []).filter((p: any) => p.sn_activo === 'S' && p.sn_anulado !== 'S');
+        // Activo = no anulado, sn_activo='S' Y con saldo de capital por cobrar
+        // (los totalmente pagados conservan sn_activo='S' en BD).
+        const activos = (prestamos ?? []).filter((p: any) =>
+          p.sn_activo === 'S' && p.sn_anulado !== 'S' && Number(p.saldoactual ?? p.capital ?? 0) > 0,
+        );
         this.prestamosCliente.set(activos.map((p: any) => ({
           // saldoactual: capital pendiente (fallback al capital para préstamos antiguos sin saldo)
-          label: `${p.nroprestamo} · Saldo L ${Number(p.saldoactual ?? p.capital ?? 0).toFixed(2)} · Cuota L ${Number(p.vlrcuota || 0).toFixed(2)}`,
+          label: `${p.nroprestamo} · Saldo L ${Number(p.saldoactual ?? p.capital ?? 0).toFixed(2)} · Cuota L ${this.calcularVlrcuota(p).toFixed(2)}`,
           value: p.prestamoId,
           _raw: p,
         })));
@@ -382,84 +429,33 @@ export class Caja implements OnInit {
       },
       error: () => {
         this.prestamosCliente.set([]);
-        this.planCuotas.set([]);
-      },
-    });
-  }
-
-  /** Al elegir el préstamo, carga su plan de cuotas con interés/mora calculados al día de hoy. */
-  onPrestamoChange(prestamoId: number | null) {
-    this.form.patchValue({ prestamoId: prestamoId ?? null }, { emitEvent: false });
-    this.planCuotas.set([]);
-    if (!prestamoId) return;
-    const prestamo = this.prestamosCliente().find((p) => p.value === prestamoId)?._raw ?? null;
-    this.cxcService.getPrestamoPPByPrestamo(prestamoId).subscribe({
-      next: (plan) => {
-        this.planCuotas.set((plan ?? []).map((c: any) => this.calcularCuotaHoy(c, prestamo)));
-      },
-      error: () => {
-        this.planCuotas.set([]);
-        this.msgs.add({ severity: 'error', summary: 'Préstamos', detail: 'No se pudo cargar el plan de cuotas' });
+        this.prestamoSeleccionado.set(null);
       },
     });
   }
 
   /**
-   * Calcula la cuota al día de hoy con la MISMA regla de facturas
-   * (calcularInteresesFactura), pero usando las tasas del préstamo:
-   * - capital de la cuota = plan.capital
-   * - período: inicia FechaPago − diascuotas; proximoPago = FechaPago;
-   *   con gracia del préstamo
-   * - interés = capital × (tasa/100) × (días interés/360)
-   * - mora = capital × (moratorio/100) × (días mora/360) desde FechaPago + gracia
-   * - total a pagar = capital + interés + mora
+   * Al elegir el préstamo fija el objeto crudo; el cálculo de interés
+   * (interés simple sobre el saldo, anclado en fechaUltPago) lo deriva el
+   * computed `repartoPrestamo` en vivo según el efectivo capturado.
    */
-  private calcularCuotaHoy(cuota: any, prestamo: any): any {
-    const r2 = (x: number) => Math.round(x * 100) / 100;
-    const capital = Number(cuota.capital) || 0;
-    const tasaAnual = Number(prestamo?.tasa) || 0;
-    const tasaMoratoria = Number(prestamo?.moratorio) || 0;
-    const diasPlazo = Number(prestamo?.diascuotas) || 0;
-    const diasGracia = Number(prestamo?.gracia) || 0;
-    const hoy = new Date();
-    const vencimiento = new Date(cuota.FechaPago);
+  onPrestamoChange(prestamoId: number | null) {
+    this.form.patchValue({ prestamoId: prestamoId ?? null }, { emitEvent: false });
+    this.prestamoSeleccionado.set(
+      prestamoId ? (this.prestamosCliente().find((p) => p.value === prestamoId)?._raw ?? null) : null,
+    );
+  }
 
-    let interes = 0;
-    let mora = 0;
-    let diasInteres = 0;
-    let diasMora = 0;
-
-    if (cuota.sn_pagada !== 'S') {
-      const fechaBase = this.sumarDias(vencimiento, -diasPlazo);      // inicio del período
-      const proximoPago = vencimiento;                                 // FechaPago
-      const fechaMaxPago = this.sumarDias(proximoPago, diasGracia);    // fin de gracia
-      const diasTotales = Math.max(0, this.diasEntre(fechaBase, hoy));
-
-      if (hoy.getTime() <= fechaMaxPago.getTime()) {
-        // Dentro del plazo/gracia: interés devengado menos la gracia; mora = 0.
-        const diasGraciaEfectiva = Math.max(0, this.diasEntre(proximoPago, hoy));
-        diasInteres = Math.max(0, diasTotales - diasGraciaEfectiva);
-        diasMora = 0;
-      } else {
-        // Vencido: interés sobre todos los días + mora desde el fin de gracia.
-        diasInteres = diasTotales;
-        diasMora = Math.max(0, this.diasEntre(fechaMaxPago, hoy));
-      }
-
-      interes = r2(capital * (tasaAnual / 100) * (diasInteres / 360));
-      mora = r2(capital * (tasaMoratoria / 100) * (diasMora / 360));
-    }
-
-    const total = r2(capital + interes + mora);
-    return {
-      ...cuota,
-      capital,
-      interes,
-      mora,
-      diasInteres,
-      diasMora,
-      total,
-    };
+  /** Cuota pactada de un préstamo (francesa mensual) — espejo de vlrcuotaPactada por objeto. */
+  private calcularVlrcuota(p: any): number {
+    if (!p) return 0;
+    const capitalneto = Number(p.capitalneto)
+      || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
+    const cuotas = Number(p.cuotas) || 0;
+    const i = (Number(p.tasa) || 0) / 100 / 12;
+    if (capitalneto <= 0 || cuotas <= 0) return 0;
+    const cuota = i > 0 ? capitalneto * (i / (1 - Math.pow(1 + i, -cuotas))) : capitalneto / cuotas;
+    return Math.round(cuota * 100) / 100;
   }
 
   /** Días completos entre dos fechas (ignora hora, espejo de diasEntre del backend). */
@@ -647,23 +643,43 @@ export class Caja implements OnInit {
     return this.tarjetas();
   }
 
-  esEfectivo(row: any): boolean {
+  /** Label de la forma de pago seleccionada en la fila (o vacío). */
+  private labelFp(row: any): string {
     const opts = this.formasPago();
     const selected = opts.find((o: any) => o.value === row['formapagoId']);
-    return selected ? /efectivo/i.test(selected.label) : false;
+    return selected ? String(selected.label) : '';
   }
 
+  esEfectivo(row: any): boolean {
+    return /efectivo/i.test(this.labelFp(row));
+  }
+
+  /** Tarjeta de crédito/débito: muestra select de marca + nro. tarjeta. */
+  esTarjeta(row: any): boolean {
+    return /tarjeta/i.test(this.labelFp(row));
+  }
+
+  /** Transferencia: muestra autorización. */
+  esTransferencia(row: any): boolean {
+    return /transferencia|transfer/i.test(this.labelFp(row));
+  }
+
+  /** Limpia los campos que no aplican al cambiar la forma de pago. */
   onFormaPagoChange(row: any) {
+    const esTarjeta = this.esTarjeta(row);
+    const esTrans = this.esTransferencia(row);
+    if (!esTarjeta) {
+      row['tarjetacreditoId'] = null;
+      row['nrotarjeta'] = '';
+    }
+    if (!esTrans) {
+      row['nroautorizacion'] = '';
+    }
     if (this.esEfectivo(row)) {
       row['tarjetacreditoId'] = null;
       row['nrotarjeta'] = '';
       row['nroautorizacion'] = '';
     }
-  }
-
-  isCampoDesactivado(row: any, key: string): boolean {
-    const camposTarjeta = ['tarjetacreditoId', 'nrotarjeta', 'nroautorizacion'];
-    return camposTarjeta.includes(key) && this.esEfectivo(row);
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -746,10 +762,45 @@ export class Caja implements OnInit {
 
     if (!this.validarDetalles()) return;
 
-    if (this.destinoAbono() === 2 && !this.form.get('prestamoId')?.value) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione el préstamo a pagar' });
-      return;
+    if (this.destinoAbono() === 2) {
+      if (!this.form.get('prestamoId')?.value) {
+        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione el préstamo a pagar' });
+        return;
+      }
+      const rp = this.repartoPrestamo();
+      if (rp && !rp.cumple) {
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: `El efectivo recibido (L ${rp.efectivo.toFixed(2)}) es menor a la cuota pactada (L ${rp.vlrcuota.toFixed(2)})`,
+        });
+        return;
+      }
     }
+
+    this.confirm.confirm({
+      message: '¿Está seguro de aplicar el abono?',
+      header: 'Confirmación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: {
+        label: 'Sí',
+        severity: 'success',
+        variant: 'text',
+        size: 'small',
+        rounded: true,
+      },
+      rejectButtonProps: {
+        label: 'No',
+        severity: 'secondary',
+        variant: 'text',
+        size: 'small',
+        rounded: true,
+      },
+      accept: () => this.ejecutarGuardado(),
+    });
+  }
+
+  private ejecutarGuardado() {
 
     const maeBody = {
       ...this.form.getRawValue(),
@@ -803,41 +854,22 @@ export class Caja implements OnInit {
     }
   }
 
-  /** Tras guardar maestro + detalles, genera los movimientos CxC (reparto) o aplica a cuotas y finaliza. */
+  /** Tras guardar maestro + detalles, genera los movimientos CxC (reparto) o aplica al préstamo y finaliza. */
   private procesarYFinalizar(maeId: number) {
-    // Destino = Préstamos: la UI envía las cuotas cubiertas (con su desglose
-    // de interés/mora calculado y aprobado en pantalla) para que las marque pagadas.
+    // Destino = Préstamos: modelo de INTERÉS SIMPLE sobre el saldo (sin plan de
+    // pagos). El backend recalcula interés/mora con la fecha de sistema como
+    // autoridad y valida que el efectivo cubra la cuota pactada.
     if (this.destinoAbono() === 2) {
-      const cc = this.cuotasCubiertas();
-      const payload = {
-        prestamoId: this.form.get('prestamoId')?.value,
-        cuotas: cc.lista.map((c) => ({
-          pppId: c.pppId,
-          capital: Number(c.capital) || 0,
-          interes: Number(c.interes) || 0,
-          mora: Number(c.mora) || 0,
-          diasMora: Number(c.diasMora) || 0,
-          total: Number(c.total) || 0,
-        })),
-      };
+      const payload = { prestamoId: this.form.get('prestamoId')?.value };
       this.cxcService.procesarAbono(maeId, payload).subscribe({
         next: (res) => {
-          const pagadas = res?.cuotasPagadas?.length ?? 0;
-          if (pagadas > 0) {
+          if (res?.motivo) {
+            this.msgs.add({ severity: 'warn', summary: 'Cobro a préstamo', detail: res.motivo });
+          } else {
             this.msgs.add({
               severity: 'success',
               summary: 'Cobro a préstamo',
-              detail: `Cuota(s) pagada(s): ${res!.cuotasPagadas!.join(', ')} · Total aplicado L ${(res!.totalAplicado || 0).toFixed(2)}`,
-            });
-          } else {
-            // Regla aprobada: guardar con aviso si no cubre ni la cuota 1.
-            const falta = this.cuotasCubiertas().faltaPrimera;
-            this.msgs.add({
-              severity: 'warn',
-              summary: 'Caja guardada sin cuotas',
-              detail: falta > 0
-                ? `El abono no cubre la cuota #1: faltan L ${falta.toFixed(2)}`
-                : (res?.motivo || 'Ninguna cuota fue cubierta por el abono'),
+              detail: `Interés L ${(res!.interes || 0).toFixed(2)} · Mora L ${(res!.mora || 0).toFixed(2)} · Abono capital L ${(res!.abonoCapital || 0).toFixed(2)} · Nuevo saldo L ${(res!.saldoNuevo || 0).toFixed(2)}`,
             });
           }
           this.finalizar(maeId);
@@ -847,7 +879,7 @@ export class Caja implements OnInit {
           this.msgs.add({
             severity: 'warn',
             summary: 'Caja guardada',
-            detail: 'Cobro guardado, pero no se pudieron aplicar las cuotas del préstamo',
+            detail: 'Cobro guardado, pero no se pudo aplicar al préstamo',
           });
         },
       });
@@ -922,7 +954,7 @@ export class Caja implements OnInit {
     this.docSeleccionado.set(null);
     this.destinoAbono.set(1);
     this.prestamosCliente.set([]);
-    this.planCuotas.set([]);
+    this.prestamoSeleccionado.set(null);
     this.totalPagos.set(0);
     this.esEdicion.set(false);
     this.esAnulada.set(false);

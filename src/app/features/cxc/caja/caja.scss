@@ -48,6 +48,22 @@
   }
 }
 
+.campo-span-2 {
+  grid-column: span 2;
+}
+
+.req {
+  color: var(--c-error);
+  margin-left: 0.15rem;
+}
+
+.err {
+  color: var(--c-error);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
 .acciones-form {
   grid-column: 1 / -1;
   display: flex;
@@ -70,12 +86,52 @@
   color: var(--c-text);
 }
 
-.det-table {
-  p-inputnumber {
+.fp-lista {
+  display: flex;
+  flex-direction: column;
+}
+
+.fp-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+}
+
+.fp-campo {
+  display: flex;
+  align-items: center;
+
+  p-select,
+  p-inputnumber,
+  input {
     width: 100%;
   }
 }
 
+.fp-fp {
+  flex: 0 0 200px;
+}
+
+.fp-importe {
+  flex: 0 0 160px;
+}
+
+.fp-extra {
+  flex: 0 0 180px;
+}
+
+.fp-accion {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.fp-vacio {
+  padding: 0.75rem;
+  color: var(--c-text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
 .total-linea {
   display: flex;
   justify-content: flex-end;
@@ -194,8 +250,6 @@
   }
 }
 
-// ===== Destino = Préstamos · plan de cuotas =====
-
 .cuotas-card {
   border-left: 3px solid var(--c-primary);
 }
@@ -218,55 +272,110 @@
   }
 }
 
-.cuotas-table {
-  .col-num {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .col-total {
-    font-weight: 700;
-  }
-
-  .mora-positiva {
-    color: var(--c-warning);
-    font-weight: 600;
-  }
-
-  tr.cuota-pagada td {
-    opacity: 0.55;
-  }
-
-  tr.cuota-cubierta td {
-    background: color-mix(in srgb, var(--c-primary) 10%, transparent);
-    font-weight: 600;
-  }
+.cuota-virtual {
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: var(--c-surface);
 }
 
-.resumen-cuotas {
+.cv-header {
   display: flex;
-  gap: 2rem;
-  margin-top: 0.75rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--c-border);
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
-.rc {
+.cv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.cv {
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
 }
 
+.cv-num {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--c-info);
+}
+
+.cv-vence {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--c-info);
+  margin-right: auto;
+}
+.mora-positiva {
+  color: var(--c-warning);
+}
+
+.cv-label {
+  font-size: 1rem;
+  color: var(--c-text-muted);
+}
+
+.cv-value {
+  font-size: 1rem;
+  font-weight: 400;
+  width: 100%;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.resumen-cuotas {
+width: 18%;
+}
+
+.rc {
+width: 90%;
+  text-align: right;
+}
+
 .rc-label {
-  font-size: 0.75rem;
+  font-size: 1rem;
+    width: 100%;
+    text-align: right;
   color: var(--c-text-muted);
 }
 
 .rc-value {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 400;
+    text-align: right;
+    margin-left: 2px;
   color: var(--c-text);
   font-variant-numeric: tabular-nums;
+}
+
+.rc-capital {
+  .rc-label,
+  .rc-value {
+    color: var(--c-primary);
+    font-weight: 600;
+  }
+}
+
+/* fin de couta-virtual */
+
+.cuota-vacia {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid var(--c-success);
+  background: color-mix(in srgb, var(--c-success) 10%, transparent);
+  color: var(--c-text);
+  font-size: 0.85rem;
+
+  i {
+    color: var(--c-success);
+  }
 }
 
 .aviso-cuota {

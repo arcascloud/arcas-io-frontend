@@ -121,8 +121,12 @@ export interface Prestamo {
   ultcuotapagada?: number | null;
   /** Saldo de capital neto pendiente = Σ capital de cuotas no pagadas. */
   saldoactual?: number | null;
-  /** Valor de la cuota planificada (calculado en UI, no persiste). */
-  vlrcuota?: number;
+  /** Valor de la cuota pactada (persiste en BD — columna vlrcuota de cxcprestamos). */
+  vlrcuota?: number | null;
+  /** Pre-aprobado (S/N). */
+  sn_preaprobado?: 'S' | 'N';
+  /** Aprobado (S/N). */
+  sn_aprobado?: 'S' | 'N';
   sn_activo: 'S' | 'N';
   sn_contabilizado?: 'S' | 'N';
   sn_anulado?: 'S' | 'N';

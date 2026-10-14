@@ -10,7 +10,8 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
 import { SkeletonModule } from 'primeng/skeleton';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -34,6 +35,7 @@ import { CxcCliente } from '../../../core/models/cxc.models';
     TooltipModule,
     CardModule,
     SkeletonModule,
+    ConfirmDialogModule,
     InputNumberModule,
     SelectModule,
     DatePickerModule,
@@ -41,6 +43,7 @@ import { CxcCliente } from '../../../core/models/cxc.models';
     IconFieldModule,
     InputIconModule,
   ],
+  providers: [ConfirmationService],
   templateUrl: './prestamos-manager.html',
   styleUrl: './prestamos-manager.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,6 +51,7 @@ import { CxcCliente } from '../../../core/models/cxc.models';
 export class PrestamosManager implements OnInit {
   private service = inject(CxcService);
   private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
   private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
 
@@ -82,6 +86,7 @@ export class PrestamosManager implements OnInit {
     moratorio: 0,
     vlrcuota: 0,
     fecha_aprobacion: new Date().toISOString(),
+    sn_preaprobado: 'N',
     sn_activo: 'S',
   });
 
@@ -114,6 +119,11 @@ export class PrestamosManager implements OnInit {
   readonly estadoOptions = [
     { label: 'Activo', value: 'S' },
     { label: 'Inactivo', value: 'N' },
+  ];
+
+  readonly preaprobadoOptions = [
+    { label: 'Sí', value: 'S' },
+    { label: 'No', value: 'N' },
   ];
 
   ngOnInit() { }
@@ -192,8 +202,9 @@ export class PrestamosManager implements OnInit {
             cuotas: Number(pres.cuotas) || 0,
             tasa: Number(pres.tasa) || 0,
             moratorio: Number(pres.moratorio) || 0,
-            vlrcuota: this.calcularCuotaValue(capitalneto, Number(pres.cuotas), Number(pres.tasa)),
+            vlrcuota: Number(pres.vlrcuota) || this.calcularCuotaValue(capitalneto, Number(pres.cuotas), Number(pres.tasa)),
             fecha_aprobacion: pres.fecha_aprobacion || pres.fecharegistro,
+            sn_preaprobado: pres.sn_preaprobado || 'N',
             sn_activo: pres.sn_activo || 'S',
           });
           // Plan de pago: loading sigue activo hasta que termine
@@ -261,6 +272,7 @@ export class PrestamosManager implements OnInit {
       moratorio: 0,
       vlrcuota: 0,
       fecha_aprobacion: new Date().toISOString(),
+      sn_preaprobado: 'N',
       sn_activo: 'S',
     });
   }
@@ -288,10 +300,12 @@ export class PrestamosManager implements OnInit {
       capital,
       prima,
       capitalneto, // el backend recalcula, pero viaja coherente
+      vlrcuota: Number(raw.vlrcuota) || 0,
       cuotas: Number(raw.cuotas) || 1,
       tasa: Number(raw.tasa) || 0,
       moratorio: Number(raw.moratorio) || 0,
       fecha_aprobacion: raw.fecha_aprobacion,
+      sn_preaprobado: raw.sn_preaprobado || 'N',
       sn_activo: raw.sn_activo || 'S',
       sn_contabilizado: 'N',
     };
@@ -456,6 +470,116 @@ export class PrestamosManager implements OnInit {
       nroprestamo,
       capitalneto,
       vlrcuota: Math.round(cuotaFija * 100) / 100,
+    });
+  }
+
+  // ── Flujo de estados del préstamo ─────────────────────────────────
+
+  /** true si el préstamo existe y NO está pre-aprobado ni aprobado (puede regenerar plan). */
+  puedeGenerarPlan = computed(() => {
+    const p = this.prestamoData();
+    return !!p && p.sn_preaprobado !== 'S' && p.sn_aprobado !== 'S';
+  });
+
+  /** true si el préstamo existe, tiene plan y NO está pre-aprobado. */
+  puedePreaprobar = computed(() => {
+    const p = this.prestamoData();
+    return !!p && p.sn_preaprobado !== 'S' && p.sn_aprobado !== 'S';
+  });
+
+  /** true si el préstamo está pre-aprobado y NO aprobado. */
+  puedeAprobar = computed(() => {
+    const p = this.prestamoData();
+    return !!p && p.sn_preaprobado === 'S' && p.sn_aprobado !== 'S';
+  });
+
+  /** true si el préstamo está aprobado y NO contabilizado. */
+  puedeContabilizar = computed(() => {
+    const p = this.prestamoData();
+    return !!p && p.sn_aprobado === 'S' && p.sn_contabilizado !== 'S';
+  });
+
+  preaprobar() {
+    const p = this.prestamoData();
+    if (!p) return;
+    this.prestamoSaving.set(true);
+    this.service.preaprobarPrestamo(p.prestamoId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.prestamoData.set(res);
+        this.prestamoModel.set({ ...this.prestamoModel(), nroprestamo: res.nroprestamo, sn_preaprobado: 'S' });
+        this.prestamoSaving.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Pre-aprobado', detail: `Préstamo ${res.nroprestamo} pre-aprobado` });
+      },
+      error: (err) => {
+        this.prestamoSaving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo pre-aprobar' });
+      },
+    });
+  }
+
+  confirmarAprobar() {
+    const p = this.prestamoData();
+    if (!p) return;
+    this.confirm.confirm({
+      message: `¿Está seguro de APROBAR el préstamo ${p.nroprestamo || '#' + p.prestamoId}?`,
+      header: 'Confirmar Aprobación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Sí, aprobar', severity: 'success', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      accept: () => this.aprobar(),
+    });
+  }
+
+  aprobar() {
+    const p = this.prestamoData();
+    if (!p) return;
+    this.prestamoSaving.set(true);
+    this.service.aprobarPrestamo(p.prestamoId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.prestamoData.set(res);
+        this.prestamoModel.set({ ...this.prestamoModel(), nroprestamo: res.nroprestamo, sn_aprobado: 'S' });
+        this.prestamoSaving.set(false);
+        this.msgs.add({ severity: 'success', summary: 'Aprobado', detail: `Préstamo ${res.nroprestamo} aprobado` });
+      },
+      error: (err) => {
+        this.prestamoSaving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo aprobar' });
+      },
+    });
+  }
+
+  confirmarContabilizar() {
+    const p = this.prestamoData();
+    if (!p) return;
+    this.confirm.confirm({
+      message: `¿Está seguro de CONTABILIZAR el préstamo ${p.nroprestamo}?<br/>Se generará la partida (Débito préstamo / Crédito bancos) y el movimiento de débito por L ${Number(p.capitalneto || 0).toFixed(2)}.`,
+      header: 'Confirmar Contabilización',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Sí, contabilizar', severity: 'success', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      accept: () => this.contabilizar(),
+    });
+  }
+
+  contabilizar() {
+    const p = this.prestamoData();
+    if (!p) return;
+    this.prestamoSaving.set(true);
+    this.service.contabilizarPrestamo(p.prestamoId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.prestamoData.set(res.prestamo);
+        this.prestamoModel.set({ ...this.prestamoModel(), sn_contabilizado: 'S' });
+        this.prestamoSaving.set(false);
+        this.msgs.add({
+          severity: 'success',
+          summary: 'Contabilizado',
+          detail: `Partida #${res.partidaId} y movimiento #${res.movimientoId} generados`,
+        });
+      },
+      error: (err) => {
+        this.prestamoSaving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo contabilizar' });
+      },
     });
   }
 }

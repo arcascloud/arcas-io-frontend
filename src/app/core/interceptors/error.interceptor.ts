@@ -1,20 +1,19 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { MessageService } from 'primeng/api';
+import { AuthService } from '../services/auth.service';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
-  const router = inject(Router);
+  const auth = inject(AuthService);
   const msgs = inject(MessageService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Evitamos mostrar Toast para un 401, el usuario simplemente debe ser redirigido a Login.
+      // Evitamos mostrar Toast para un 401: logout() limpia signals +
+      // localStorage + navega a /login (el interceptor ya no debe hacerlo a mano).
       if (error.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        router.navigateByUrl('/login');
+        auth.logout();
       } else {
         // Para cualquier otro error, sacamos el mensaje que provea el Backend NestJS o un mensaje genérico
         let detail = 'Ocurrió un error en el servidor.';

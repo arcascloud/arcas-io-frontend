@@ -127,6 +127,13 @@
                     [value]="(fechaEfectivaCalc() | date:'dd/MM/yyyy') || ''" [readonly]="true" />
                 </div>
                 <div class="p-field">
+                  <label>Pre-aprobado</label>
+                  <p-select size="small" [options]="preaprobadoOptions" [ngModel]="prestamoModel().sn_preaprobado"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_preaprobado: $event})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar">
+                  </p-select>
+                </div>
+                <div class="p-field">
                   <label>Estado</label>
                   <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo"
                     (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"
@@ -167,18 +174,38 @@
           </div>
           }
 
-          <!-- Botones: solo visibles si NO tiene prestamo (para crear) -->
-          @if (!prestamoData()) {
+          <!-- Botones del flujo: siempre visibles cuando hay préstamo seleccionado -->
           <div class="prestamo-actions mb-3">
-            <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary"
               (click)="limpiarFormulario()" [rounded]="true" size="small"></p-button>
+
+            @if (!prestamoData()) {
             <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
               (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
-            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
-              [loading]="prestamoSaving()" (click)="guardarPrestamo()" [rounded]="true"
-              size="small"></p-button>
+            }
+
+            @if (prestamoData(); as pres) {
+            @if (puedeGenerarPlan()) {
+            <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
+              (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
+            }
+
+            @if (puedePreaprobar()) {
+            <p-button label="Pre-Aprobación" icon="pi pi-check-circle" variant="text" severity="warn"
+              [loading]="prestamoSaving()" (click)="preaprobar()" [rounded]="true" size="small"></p-button>
+            }
+
+            @if (puedeAprobar()) {
+            <p-button label="Aprobación" icon="pi pi-verified" variant="text" severity="success"
+              [loading]="prestamoSaving()" (click)="confirmarAprobar()" [rounded]="true" size="small"></p-button>
+            }
+
+            @if (puedeContabilizar()) {
+            <p-button label="Contabilización" icon="pi pi-book" variant="text" severity="info"
+              [loading]="prestamoSaving()" (click)="confirmarContabilizar()" [rounded]="true" size="small"></p-button>
+            }
+            }
           </div>
-          }
 
           <!-- Plan de pago -->
           @if (showPlanPago() && planPago().length > 0) {
@@ -317,3 +344,5 @@
     </div>
   </div>
 </div>
+
+<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />

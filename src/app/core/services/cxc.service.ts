@@ -217,6 +217,27 @@ export class CxcService {
   }
 
   /**
+   * Pre-aprueba un préstamo (genera nroprestamo).
+   */
+  preaprobarPrestamo(prestamoId: number): Observable<any> {
+    return this.api.putBase<any>(`/cxc/prestamos/${prestamoId}/preaprobado`, {});
+  }
+
+  /**
+   * Aprueba un préstamo (solo pre-aprobados).
+   */
+  aprobarPrestamo(prestamoId: number): Observable<any> {
+    return this.api.putBase<any>(`/cxc/prestamos/${prestamoId}/aprobar`, {});
+  }
+
+  /**
+   * Contabiliza un préstamo aprobado (partida D préstamo / C bancos + movimiento D capital neto).
+   */
+  contabilizarPrestamo(prestamoId: number): Observable<any> {
+    return this.api.putBase<any>(`/cxc/prestamos/${prestamoId}/contabilizar`, {});
+  }
+
+  /**
    * Crea una nueva referencia personal para un cliente.
    * @param payload - Datos de la referencia a crear
    * @returns Observable con la referencia creada
@@ -364,10 +385,35 @@ export class CxcService {
       interes?: number;
       mora?: number;
       prestamoId?: number;
-      cuotas?: Array<{ pppId: number; capital: number; interes: number; mora: number; diasMora: number; total: number }>;
     },
-  ): Observable<{ movimientos?: number; totalEfectivo?: number; cuotasPagadas?: number[]; totalAplicado?: number; motivo?: string }> {
-    return this.api.post<{ movimientos?: number; totalEfectivo?: number; cuotasPagadas?: number[]; totalAplicado?: number; motivo?: string }>(
+  ): Observable<{
+    movimientos?: number;
+    totalEfectivo?: number;
+    cuotasPagadas?: number[];
+    totalAplicado?: number;
+    motivo?: string;
+    interes?: number;
+    mora?: number;
+    abonoCapital?: number;
+    saldoNuevo?: number;
+    vlrcuota?: number;
+    diasInteres?: number;
+    diasMora?: number;
+  }> {
+    return this.api.post<{
+      movimientos?: number;
+      totalEfectivo?: number;
+      cuotasPagadas?: number[];
+      totalAplicado?: number;
+      motivo?: string;
+      interes?: number;
+      mora?: number;
+      abonoCapital?: number;
+      saldoNuevo?: number;
+      vlrcuota?: number;
+      diasInteres?: number;
+      diasMora?: number;
+    }>(
       `/cxc/caja-mae/${cajaId}/procesar-abono`,
       desglose ?? {},
     );

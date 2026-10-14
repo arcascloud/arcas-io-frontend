@@ -1053,3 +1053,41 @@ Script: `Temp\\opencode\\test-pedidos-nuevo-esquema.js` — secciones A (33) + B
 ### Pendiente
 - Verificar en browser: `/cxc/caja` → destino Préstamos → cliente con préstamo → tabla cuotas → guardar → imprimir recibo; y anular para ver reversa
 - Préstamos no contabilizan cobros (diseño actual: sin movimientos CxC ni partida por abonos a préstamo) — futura mejora si se requiere asiento por cobro de préstamo
+
+---
+
+## Bitácora – 12/10/2026
+
+### Completado
+
+#### Caja destino = Préstamos → CÁLCULO VIRTUAL de la próxima cuota (reemplaza tabla del plan)
+
+**Decisiones del usuario**: (1) visual = **solo la próxima cuota** (tarjeta, no tabla del plan completo); (2) al pagar = **avanza el préstamo Y marca las cuotas físicas** en `cxcprestamospp`.
+
+**Backend (`cxc.service.ts`)**:
+- `procesarAbonoPrestamo` reescrito para recibir cuotas **virtuales identificadas por `nrofila`** (antes `pppId`): (1) reversa idempotente de cuotas de ESTA caja, (2) valida total ≤ efectivo, (3) **consecutividad** desde `MAX(nrofila pagada)+1` → 400 "deben cobrarse en orden desde la #N", (4) por cada cuota: si la fila física pendiente existe la marca `sn_pagada='S'` (mora/diasmora/cxccajaId); **si no existe la crea pagada** vía nuevo helper `crearCuotaFisicaPagada` (FechaPago = fechaEfectiva + (nrofila−1) meses, vlrcuota = capital+interes, saldo 0) → préstamos creados sin plan también cobran
+- Firma `procesarAbonoCaja` + controller `POST caja-mae/:id/procesar-abono` + `CxcService.procesarAbono` (FE): `cuotas: Array<{ nrofila, capital?, interes?, mora?, diasMora?, total? }>` (antes `pppId`)
+- **`actualizarUltCuotaPagada` — saldo robusto**: `saldoactual = capitalneto − Σ capital de cuotas PAGADAS` (antes Σ de las *sin pagar*, que daba 0 en préstamos sin plan tras el 1er cobro); fallback al método anterior si `capitalneto` es 0/dato legado. Usado también por `anularCaja`
+- **`createCajaMae` — defaults destino=2** (columnas NOT NULL que el formulario oculta en modo préstamo): `documentoId = 13` (**'Prestamo' PPR** de `tcotipodocumentofiscal`, decisión del usuario) y `nrodocumento = nroprestamo` del préstamo. Sin esto el guardado daba `500 ER_NO_DEFAULT_FOR_FIELD` (bug de punta a punta del flujo nuevo)
+
+**Frontend (`cxc/caja/`)**:
+- `planCuotas` = solo las **pendientes virtuales** (`generarPendientesVirtuales(prestamo)`: fórmula de amortización francesa replicada de `prestamos-manager.generarPlanPago` sobre `capitalneto`, desde `_raw` del préstamo — **sin HTTP** al cambiar de préstamo)
+- `cuotaVirtual` computed = primera pendiente; tarjeta en `caja.html`: "**Próxima cuota del préstamo**" (`.cuota-virtual`, `.cv-grid` 4 columnas: #/Vencimiento/Capital/Interés, + Mora si vencida, tag "Se paga ahora"/"Pendiente", `.cv-total` = mora+capital+interés+total, `.resumen-cuotas`, `.cuota-vacia` si préstamo saldado) — **reemplaza a la tabla `.cuotas-table`** (SCSS actualizado)
+- Payload `procesarYFinalizar` (destino=2) envía `{ nrofila, capital, interes, mora, diasMora, total }`; `esCubierta`/`cuotasCubiertas`/`avisoCuota1` ahora por `nrofila`; mensajes "cuota #1" → "próxima cuota #N"
+- `cargarClientes()` recarga tras leer destino en **modo edición** (antes solo al crear); fallback que agrega el cliente actual al select si no viene en la lista; `cargarPrestamosCliente` filtra además `saldoactual > 0`
+
+**Filtro de clientes con préstamo (`getClientesConPrestamos`)**: exige ahora cuotas **pendientes físicas** (`cxcprestamospp`: `sn_pagada='N'` y `sn_anulada='N'` vía subquery DISTINCT) — antes bastaba `sn_activo='S'` y devolvía clientes con préstamos saldados (saldo 0). E2E: solo cliente 18 (cuotas pendientes) ✓
+
+**FECHA_SISTEMA**: el guard bloqueaba toda escritura (ERP 11/10 vs servidor 12/10) → `PUT /parametros/fechas-sistema` alineó la Fecha del Sistema a **12/10/2026** (operación rutinaria de apertura del día, única escritura exenta del bloqueo)
+
+**E2E API (`test-caja-virtual.js`, 34/34)**: préstamo TESTVIRT sin plan (6 cuotas, tasa 24%) → caja destino=2 (mae con defaults PPR/TESTVIRT) → cobro cuota 1 vencida (mora 25d) **crea la fila física pagada** → `ultcuotapagada=1`, `saldoactual=12000−capital1`, `fechaUltPago` ✓ → saltar a cuota 4 → **400 orden** ✓ → cuota 2 OK → re-guardado idempotente (0 duplicados) → anular caja 1 revierte fila #1 (`sn_pagada=N`, `cxccajaId NULL`) y `ultcuotapagada` sigue 2 ✓ → limpieza 0 filas residuales (CxC no expone `@Delete` → mysql2 directo solo de filas de prueba). `backend-error.log` vacío
+
+**Gotchas de esta sesión**:
+- `nest build 2>&1 | Select-Object -Last N` puede enmascarar el exit code → `dist` quedó desactualizado (fuente 20:13 vs dist 19:26) y el backend corría código viejo; verificar con `(Get-Item dist/...).LastWriteTime` vs fuente
+- `new Date().toISOString().slice(0,10)` da fecha **UTC** (13/10 por la hora local) pero el guard compara con `CURDATE()` local → usar año/mes/día locales
+- CxC **no tiene endpoints `@Delete`** (caja/prestamos/prestamo-pp) → limpieza de tests vía SQL directo de las filas propias
+- `tcotipodocumentofiscal` tiene ID 13 'Prestamo' (PPR) — mi primer SELECT no lo mostró (limit/eyeball), verificar siempre con `SELECT *` completo
+
+### Pendiente
+- Verificar en browser: `/cxc/caja` → destino Préstamos → cliente con préstamo → tarjeta de próxima cuota → guardar → recibo → anular
+- Préstamos no contabilizan cobros (diseño actual: sin movimientos CxC ni partida por abonos a préstamo)
