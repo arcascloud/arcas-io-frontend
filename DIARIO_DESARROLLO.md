@@ -1091,3 +1091,46 @@ Script: `Temp\\opencode\\test-pedidos-nuevo-esquema.js` — secciones A (33) + B
 ### Pendiente
 - Verificar en browser: `/cxc/caja` → destino Préstamos → cliente con préstamo → tarjeta de próxima cuota → guardar → recibo → anular
 - Préstamos no contabilizan cobros (diseño actual: sin movimientos CxC ni partida por abonos a préstamo)
+
+---
+
+## Bitácora - 14/10/2026
+
+### Completado
+
+#### Concepto de partidas: resolución SIEMPRE por `tcoplantillapdamaeId` (nunca por `documentoId`)
+
+**Regla del usuario (arquitectura, no parche)**: `getPlantillaLabel(tcoplantillapdamaeId, moduloId, documentoId)` — el label de la plantilla se resuelve únicamente por el id de plantilla; **nunca** se cruza `documentoId` contra el catálogo de plantillas (ese cruce hizo que doc=13 de CxC/Prestamos casara con la PDA 13 de Bancos "emisión de cheque a particular", etc.). Composición: `${plantilla} · ${módulo}` + tipo de documento solo en módulo 3 ("Factura"); en CxC/CxP la propia plantilla nombra el tipo. **No procede ALTER** a `copdamae` → el `plantillaId` se **deriva en backend al hacer GET** (computed, sin columna nueva).
+
+**Backend (`contabilidad.service.ts`)**:
+- Nuevos repos inyectados: `TPosFacMae`, `CxcMovimiento`, `TCxpMovimiento`, `TCxpCompraMae` (todos ya registrados en `forFeature`)
+- `findAllCopdamae`/`findCopdamae` → `enriquecerPlantillasPartidas(filas, empresaId)`: agrega `plantillaId: number|null` con queries batched (sin N+1) y reglas POR MÓDULO (catálogo siempre filtrado por `moduloId` — invariante: jamás cruza entre módulos):
+  - **mod 6/7 (sin docs fiscales)**: `documentoId` ES el `tcoplantillapdamaeId` vs catálogo del módulo. Fallback histórico mod6 (filas creadas cuando doc guardaba `bcomovId`, movs ya borrados): descripción `deposito`→PDA10, `retiro`→PDA11, `cheque`→12/13; `transferencia`→null (no hay PDA propia)
+  - **mod 3**: ref `^FAC-` → factura → `tipofactura`: 'C'→'%credito%' (PDA2), 'E'→'%contado%' (PDA1) — misma regla que `contabilizarFactura`; manual → catálogo del módulo
+  - **mod 4**: desc `apertura`→PDA20; movimiento (`clienteMovId`) → tipodoc 2→NCR, 3→ND, resto→'%abono%' (PDA3); movimiento borrado (histórico) → desc `abono`; manual → catálogo
+  - **mod 5**: desc contado/crédito; **compra vinculada** (`cxpcomprasmae.partidaId`): `TipoCompra='FCO'`→contado (PDA14), FCC/ORC→crédito (PDA15) — misma regla que `handleCxPMovimientoCreado`; si no, `tipomov` del movimiento (C→NCR, D→ND, resto→abono); manual → catálogo
+  - JSDoc con tabla completa de semántica de `documentoId` por módulo
+- **Gotcha**: PK de `TCxpMovimiento` se llama `bcomovId` (naming heredado) pero mapea a columna `cxpmovId`
+- **`contabilizarBanco` (contabilidad-logica)**: `documentoId` cambiado de `movId` → **`plantillaMae.tcoplantillapdamaeId`** (módulo sin docs fiscales; el enlace al movimiento queda en `bcosmovimientos.partidaId` + ref `BCO-X`). `plantillaMae` ya validado antes (L3048) → nunca undefined
+- **`contabilizarPrestamo` (cxc.service.ts) — REORDER**: el movimiento D en `cxcmovimientos` se crea **ANTES** que la partida (regla CxC): (1) movimiento `partidaId:null`, `sn_cotabilizada:'N'`; (2) partida con `documentoId = clienteMovId` (antes era `13`=tipodoc PPR, cruzado contra catálogo); (3) UPDATE movimiento → `partidaId` + `'S'`; (4) préstamo `sn_contabilizado='S'`
+
+**Frontend**:
+- `contabilidad.models.ts`: `CopdaMae.plantillaId?: number|null` (transient, calculado en backend)
+- `copdamae-manager.ts`: **nuevo `getPlantillaLabel(pid, moduloId, documentoId)`** (3 parámetros, valida pid∈módulo, doc-part solo módulo 3); **borrado** `plantillaDePartida` (el cruce viejo por doc); `editPartida` usa `partida.plantillaId`; `enlaceOrigen` mod6 → ruta plana `/bancos/historial` (sin `movimientoId`: doc ya no es movId); `origenTipoLabel` + PPR/ICS/ICM
+- HTML: `Concepto:` → `getPlantillaLabel(partida.plantillaId, partida.moduloId, partida.documentoId) || getModuloLabel(...)`
+
+**Verificación**:
+- `nest build` + `ng build --configuration production` OK; backend reiniciado, `backend-error.log` vacío
+- **GET copdamae (32 filas, 26 con plantilla)**: mod3 FAC crédito #16/#17→**2**, contado #28/#40/#41→**1** ✓; mod4 abonos #26/#48-54→**3**, aperturas #56/#57→**20** ✓; mod5 compras #12/#15→**14** (FCO) ✓; mod6 depósitos→**10**, retiros→**11**, doc=11→**11** ✓, transf→null (sin PDA) ✓; mod7 doc16→**16**, pruebas doc0/1→null ✓
+- **E2E apertura de préstamo (`test-apertura-prestamo-e2e.js`, 18/18)**: prestamo 4 (marcado aprobado vía SQL de módulo para NO tocar `ttipoparametros`) → `PUT /cxc/prestamos/4/contabilizar` → partida 58 con `documentoId==clienteMovId(26)` + `plantillaId=20` ✓, movimiento vinculado `sn_cotabilizada=S` ✓, líneas cuadradas ✓, préstamo S/partidaId/saldoactual ✓
+- **Limpieza E2E (residuo 0)**: `PUT copdamae/:id/remove` = **anulación soft** (flags S/N, NO revierte coctamov por diseño → "ejecute Reconstrucción"); revert manual quirúrgico: `coctamov` (debe/haber de las 2 cuentas del período 10) + `coctasaldos.octubre` + DELETE mae/det; después de corregir `saldo` con recálculo literal: **I2 global 0 desviadas, I4 D=H=41,816,101, conteos 32/119/41 = baseline exacto**
+
+**Gotchas de esta sesión**:
+- **UPDATE con SET múltiple del mismo alias NO re-evalúa como esperaba**: `SET debe=?, haber=?, saldo=sacum+((debe-?)-(haber-?))` dejó `saldo` desfasado → recalcular `saldo` con UPDATE aparte leyendo valores finales (o computar en JS)
+- `aprobarPrestamo` incrementa contador `nroprestamo` en **`ttipoparametros`** (UPDATE con autorización requerida) → en E2E marcar `sn_aprobado`/`nroprestamo` por SQL de módulo (CxC) en vez de usar el endpoint
+- PK `TCxpMovimiento.bcomovId` ≠ nombre de columna `cxpmovId` (el `name:` del decorador mapea); query SQL directa debe usar el nombre de COLUMNA
+- `SHOW COLUMNS` con destructuring `[[cols]]` devuelve la 1ª fila, no el array
+
+### Pendiente
+- Verificar en browser: detalle de partida (`/contabilidad/copdamae`) → Concepto con nuevo formato "plantilla · módulo · Factura" para las 32 filas
+- Flujo bancos: `contabilizarBanco` con doc=plantillaId pendiente de prueba en vivo (crear movimiento bancario) — el round-trip es consistente por construcción (doc=10-13 ∈ catálogo mod6) pero no se ejecutó E2E de creación

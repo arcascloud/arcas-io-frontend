@@ -22,16 +22,11 @@ import { BadgeModule } from 'primeng/badge';
 
 /** Labels legibles para los tipos de atributo del producto */
 const TIPO_LABELS: Record<string, string> = {
-  MARCA: 'Marca',
   MODELO: 'Modelo',
   EMBALAJE: 'Embalaje',
   PASILLO: 'Pasillo',
-  DEPARTAMENTO: 'Departamento',
-  UBICACION: 'Ubicación',
   COLOR: 'Color',
   PESO: 'Peso',
-  EQUIVALENCIA: 'Equivalencia',
-  CODIGOBARRA: 'Código de barras',
   TAMANO: 'Tamaño',
 };
 

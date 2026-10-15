@@ -7,22 +7,30 @@
   </header>
 
   <!-- FILTROS -->
-  <div class="grid">
-    <div class="col-fixed" style="width:50%">
+  <div class="grid" style="width:50%">
+    <div class="col-fixed">
       <label>Cliente</label>
-      <input pInputText pSize="small" [ngModel]="cliente()" (ngModelChange)="cliente.set($event)"
+      <input pInputText pSize="small"
+      appendTo="body"
+      [ngModel]="cliente()" (ngModelChange)="cliente.set($event)"
         placeholder="Nombre o razón social" fluid />
     </div>
-    <div class="col">
+</div>
+
+<div class="grid" style="width:100%">
+   <div class="col">
       <label>Desde</label>
-      <p-datepicker size="small" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" dateFormat="dd/mm/yy"
+      <p-datepicker size="small" appendTo="body"
+        [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" dateFormat="dd/mm/yy"
         [showIcon]="true" styleClass="w-full"></p-datepicker>
-      <label>Hasta</label>
-      <p-datepicker size="small" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" dateFormat="dd/mm/yy"
-        [showIcon]="true" styleClass="w-full"></p-datepicker>
-
     </div>
-
+    <div class="col">
+      <label>Hasta</label>
+      <p-datepicker size="small"
+      appendTo="body"
+        [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" dateFormat="dd/mm/yy"
+        [showIcon]="true" styleClass="w-full"></p-datepicker>
+    </div>
   </div>
   <div class="grid">
     <div class="col">

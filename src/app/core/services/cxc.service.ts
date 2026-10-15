@@ -16,12 +16,16 @@ export class CxcService {
    * @param q - Texto de búsqueda para filtrar clientes
    * @returns Observable con los datos paginados y el total de registros
    */
-  getClientes(page?: number, limit?: number, q?: string): Observable<{ data: CxcCliente[], total: number }> {
+  getClientes(
+    page?: number,
+    limit?: number,
+    q?: string,
+  ): Observable<{ data: CxcCliente[]; total: number }> {
     const p = page ?? 1;
     const l = limit ?? 50; // default grande para compatibilidad
     let url = `${this.clientes}?page=${p}&limit=${l}`;
     if (q && q.trim()) url += `&q=${encodeURIComponent(q.trim())}`;
-    return this.api.get<{ data: CxcCliente[], total: number }>(url);
+    return this.api.get<{ data: CxcCliente[]; total: number }>(url);
   }
 
   /**
@@ -39,7 +43,15 @@ export class CxcService {
    * @param excluirId - Cliente a excluir (para edicion)
    * @returns true si el DNI ya esta asignado a otro cliente
    */
-  dniExiste(dni: string, excluirId?: number): Observable<{ existe: boolean; id: number | null; numero: string | null; nombre: string | null }> {
+  dniExiste(
+    dni: string,
+    excluirId?: number,
+  ): Observable<{
+    existe: boolean;
+    id: number | null;
+    numero: string | null;
+    nombre: string | null;
+  }> {
     return this.api.get(`${this.clientes}/dni-existe`, {
       dni,
       ...(excluirId ? { excluirId } : {}),
@@ -112,12 +124,14 @@ export class CxcService {
     cliente?: string,
     fechaDesde?: string,
     fechaHasta?: string,
+    documentoId?: string,
   ): Observable<CxcHistorico[]> {
     const params: Record<string, string | number> = {};
     if (dni && dni.trim()) params['dni'] = dni.trim();
     if (cliente && cliente.trim()) params['cliente'] = cliente.trim();
     if (fechaDesde && fechaDesde.trim()) params['fechaDesde'] = fechaDesde.trim();
     if (fechaHasta && fechaHasta.trim()) params['fechaHasta'] = fechaHasta.trim();
+    if (documentoId && documentoId.trim()) params['documentoId'] = documentoId.trim();
     return this.api.get<CxcHistorico[]>('/cxc/historico/filtros', params);
   }
 
@@ -217,7 +231,7 @@ export class CxcService {
   }
 
   /**
-   * Pre-aprueba un préstamo (genera nroprestamo).
+   * Pre-aprueba un préstamo (guarda con prestamoId, NO genera nroprestamo).
    */
   preaprobarPrestamo(prestamoId: number): Observable<any> {
     return this.api.putBase<any>(`/cxc/prestamos/${prestamoId}/preaprobado`, {});
@@ -271,6 +285,15 @@ export class CxcService {
    */
   getPrestamoPPByPrestamo(prestamoId: number): Observable<any[]> {
     return this.api.get<any[]>(`/cxc/prestamo-pp?prestamoId=${prestamoId}`);
+  }
+
+  /**
+   * Elimina TODAS las cuotas del plan de un préstamo (regenerar plan).
+   * El backend bloquea la operación si el préstamo está pre-aprobado/aprobado.
+   */
+  deletePrestamoPPByPrestamo(prestamoId: number): Observable<{ eliminadas: number }> {
+    //20261016 ARFM, creo que falta la empresa
+    return this.api.delete<{ eliminadas: number }>('/cxc/prestamo-pp/prestamo', prestamoId);
   }
 
   /**
@@ -365,7 +388,10 @@ export class CxcService {
    * @returns Observable con el resultado
    */
   removeCarteraCliente(id: number): Observable<{ id: number; eliminado: boolean }> {
-    return this.api.putBase<{ id: number; eliminado: boolean }>(`/cxc/carteras-cliente/${id}/remove`, {});
+    return this.api.putBase<{ id: number; eliminado: boolean }>(
+      `/cxc/carteras-cliente/${id}/remove`,
+      {},
+    );
   }
 
   // ========== Caja · abono con reparto de cargos vs capital ==========
@@ -413,10 +439,7 @@ export class CxcService {
       vlrcuota?: number;
       diasInteres?: number;
       diasMora?: number;
-    }>(
-      `/cxc/caja-mae/${cajaId}/procesar-abono`,
-      desglose ?? {},
-    );
+    }>(`/cxc/caja-mae/${cajaId}/procesar-abono`, desglose ?? {});
   }
 
   // ========== Caja · anulación ==========

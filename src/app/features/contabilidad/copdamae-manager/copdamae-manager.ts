@@ -412,7 +412,9 @@ export class CopdamaeManager implements OnInit {
     this.marcarPartidaEnUrl(partida.partidaId);
     this.form.reset({
       moduloId: partida.moduloId,
-      plantillaId: partida.documentoId || null,
+      // plantillaId calculada en backend por módulo; null en partidas sin
+      // plantilla aplicable (nunca derivarla de documentoId)
+      plantillaId: partida.plantillaId ?? null,
       auxiliar: null,
       fechadocumento: new Date(partida.fechadocumento),
       nroreferencia: partida.nroreferencia,
@@ -475,6 +477,9 @@ export class CopdamaeManager implements OnInit {
       NCR: 'Nota crédito',
       CXC: 'Cobro CxC',
       CXP: 'Pago CxP',
+      PPR: 'Préstamo',
+      ICS: 'Interés simple',
+      ICM: 'Interés moratorio',
       BCO: 'Movimiento bancario',
       CAJA: 'Caja',
       CHEQ: 'Cheque',
@@ -514,8 +519,10 @@ export class CopdamaeManager implements OnInit {
         // cxpmovId en cxpmovimientos
         return doc > 0 ? { ruta: '/cxp/movimientos', params: { movimientoId: doc } } : null;
       case 6:
-        // bcomovimientosId en bcosmovimientos
-        return doc > 0 ? { ruta: '/bancos/historial', params: { movimientoId: doc } } : null;
+        // Bancos: documentoId ES el tcoplantillapdamaeId (módulo sin documentos
+        // fiscales); el id del movimiento queda en bcosmovimientos.partidaId,
+        // no aquí → sin params, se navega al listado del historial.
+        return { ruta: '/bancos/historial' };
       default:
         return null;
     }
@@ -1160,8 +1167,41 @@ export class CopdamaeManager implements OnInit {
     return m?.descripcion_contable || m?.descripcion || `M${moduloId}`;
   }
 
-  getPlantillaLabel(documentoId: number): string {
-    return this.plantillas().find(p => p.tcoplantillapdamaeId === documentoId)?.descripcion ?? '';
+  /**
+   * Concepto contable del encabezado.
+   *
+   * REGLA (14/10/2026): el label de la plantilla se resuelve SIEMPRE por el
+   * `tcoplantillapdamaeId` (`partida.plantillaId`, calculado en backend por módulo).
+   * JAMÁS se cruza `documentoId` contra el catálogo de plantillas.
+   *
+   * Composición: `${plantilla} · ${módulo}` + tipo de documento solo en módulos
+   * con documentos fiscales (3 → "Factura"; en CxC/CxP la propia plantilla ya
+   * nombra el tipo: abono, nota débito/crédito, compra contado/crédito…).
+   *
+   * @param tcoplantillapdamaeId plantillaId entregada por backend (null si no aplica)
+   * @param moduloId   módulo de la partida (valida que la plantilla sea DEL módulo)
+   * @param documentoId para módulo 3 decide "Factura" (facturaId > 0); en los demás
+   *                    no se usa para el label
+   * @returns '' cuando no hay plantilla → el HTML cae al nombre del módulo
+   */
+  getPlantillaLabel(
+    tcoplantillapdamaeId: number | null | undefined,
+    moduloId: number,
+    documentoId: number,
+  ): string {
+    const pid = Number(tcoplantillapdamaeId) || 0;
+    const mod = Number(moduloId) || 0;
+    if (!pid || !mod) return '';
+    const plantilla = this.plantillas().find(
+      p =>
+        p.sn_activo === 'S' &&
+        Number(p.moduloId) === mod &&
+        Number(p.tcoplantillapdamaeId) === pid,
+    );
+    if (!plantilla) return '';
+    const partes = [plantilla.descripcion, this.getModuloLabel(mod)];
+    if (mod === 3 && Number(documentoId) > 0) partes.push('Factura');
+    return partes.join(' · ');
   }
 
   getPeriodoTagSeverity(periodo: number): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' | undefined {

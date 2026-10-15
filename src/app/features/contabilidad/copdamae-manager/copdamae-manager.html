@@ -362,7 +362,12 @@
               <div class="info-item">
                 <span class="info-label">Concepto:</span>
                 <span class="info-value"
-                  >{{ getPlantillaLabel(partida.documentoId) || getModuloLabel(partida.moduloId)
+                  >{{
+                    getPlantillaLabel(
+                      partida.plantillaId,
+                      partida.moduloId,
+                      partida.documentoId
+                    ) || getModuloLabel(partida.moduloId)
                   }}</span
                 >
               </div>

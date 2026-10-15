@@ -129,6 +129,8 @@ export interface Prestamo {
   sn_aprobado?: 'S' | 'N';
   sn_activo: 'S' | 'N';
   sn_contabilizado?: 'S' | 'N';
+  /** ID de la partida contable generada al contabilizar (copdamae). */
+  partidaId?: number | null;
   sn_anulado?: 'S' | 'N';
   Idsucursal?: number;
   empresaId: number;

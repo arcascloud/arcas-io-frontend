@@ -87,6 +87,12 @@ export interface CopdaMae {
   usuarioUpdated?: string;
   fechaUpdated?: Date;
   // Transient (calculated)
+  /**
+   * `tcoplantillapdamaeId` que da el CONCEPTO de la partida, calculado en backend
+   * por módulo (sin columna nueva en copdamae). null = sin plantilla aplicable.
+   * NUNCA confiar en `documentoId` para resolver la plantilla.
+   */
+  plantillaId?: number | null;
   totalDebito?: number;
   totalCredito?: number;
   cuadrada?: boolean;

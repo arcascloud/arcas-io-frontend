@@ -44,8 +44,8 @@
               <div class="p-fluid">
                 <div class="p-field">
                   <label>Nro. Prestamo</label>
-                  <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo"
-                    [readonly]="true" />
+                  <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo || ''"
+                    placeholder="Se asigna al aprobar" [readonly]="true" />
                 </div>
                 <div class="p-field">
                   <label>Capital Solicitado</label>
@@ -127,11 +127,19 @@
                     [value]="(fechaEfectivaCalc() | date:'dd/MM/yyyy') || ''" [readonly]="true" />
                 </div>
                 <div class="p-field">
-                  <label>Pre-aprobado</label>
-                  <p-select size="small" [options]="preaprobadoOptions" [ngModel]="prestamoModel().sn_preaprobado"
-                    (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_preaprobado: $event})"
-                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar">
-                  </p-select>
+                  <label>Estado del flujo</label>
+                  <div class="estado-flujo-tags">
+                    @if (prestamoData(); as pres) {
+                      <p-tag [value]="pres.sn_preaprobado === 'S' ? 'Pre-aprobado' : 'Sin pre-aprobar'"
+                        [severity]="pres.sn_preaprobado === 'S' ? 'warn' : 'secondary'"></p-tag>
+                      <p-tag [value]="pres.sn_aprobado === 'S' ? 'Aprobado' : 'Sin aprobar'"
+                        [severity]="pres.sn_aprobado === 'S' ? 'success' : 'secondary'"></p-tag>
+                      <p-tag [value]="pres.sn_contabilizado === 'S' ? 'Contabilizado' : 'Sin contabilizar'"
+                        [severity]="pres.sn_contabilizado === 'S' ? 'info' : 'secondary'"></p-tag>
+                    } @else {
+                      <p-tag value="Nuevo" severity="secondary"></p-tag>
+                    }
+                  </div>
                 </div>
                 <div class="p-field">
                   <label>Estado</label>
@@ -147,64 +155,63 @@
           <!-- Control del préstamo (solo consulta cuando ya existe) -->
           @if (prestamoData(); as pres) {
           <div class="prestamo-info-control mb-3">
-            <div class="pic-item">
-              <span class="pic-label">Saldo actual</span>
-              <span class="pic-value pic-saldo">{{ moneda(pres.saldoactual) }}</span>
-            </div>
-            <div class="pic-item">
-              <span class="pic-label">Capital neto</span>
-              <span class="pic-value">{{ moneda(pres.capitalneto) }}</span>
-            </div>
-            <div class="pic-item">
-              <span class="pic-label">Fecha aprobación</span>
-              <span class="pic-value">{{ (pres.fecha_aprobacion | date:'dd/MM/yyyy') || '—' }}</span>
-            </div>
-            <div class="pic-item">
-              <span class="pic-label">Fecha efectiva (1er cuota)</span>
-              <span class="pic-value">{{ (pres.fechaEfectiva | date:'dd/MM/yyyy') || '—' }}</span>
-            </div>
-            <div class="pic-item">
-              <span class="pic-label">Últ. pago</span>
-              <span class="pic-value">{{ (pres.fechaUltPago | date:'dd/MM/yyyy') || '—' }}</span>
-            </div>
-            <div class="pic-item">
-              <span class="pic-label">Últ. cuota pagada</span>
-              <span class="pic-value">{{ pres.ultcuotapagada ? '#' + pres.ultcuotapagada : '—' }}</span>
-            </div>
+            <table class="pic-tabla">
+              <thead>
+                <tr>
+                  <th>Capital</th>
+                  <th>Fecha</th>
+                  <th>Fecha efectiva</th>
+                  <th>Saldo</th>
+                  <th>Fecha</th>
+                  <th>Nro Cuota</th>
+                </tr>
+                <tr>
+                  <th>Neto aprobado</th>
+                  <th>Aprobación</th>
+                  <th>(1era cuota)</th>
+                  <th>Actual</th>
+                  <th>Ult. pago</th>
+                  <th>Ult. pagada</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="pic-valor">{{ moneda(pres.capitalneto) }}</td>
+                  <td class="pic-valor">{{ (pres.fecha_aprobacion | date:'dd/MM/yyyy') || '—' }}</td>
+                  <td class="pic-valor">{{ (pres.fechaEfectiva | date:'dd/MM/yyyy') || '—' }}</td>
+                  <td class="pic-valor pic-saldo">{{ moneda(pres.saldoactual) }}</td>
+                  <td class="pic-valor">{{ (pres.fechaUltPago | date:'dd/MM/yyyy') || '—' }}</td>
+                  <td class="pic-valor">{{ pres.ultcuotapagada ? '#' + pres.ultcuotapagada : '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
           }
 
-          <!-- Botones del flujo: siempre visibles cuando hay préstamo seleccionado -->
+          <!-- Botones del flujo (siempre visibles; deshabilitados con motivo) -->
           <div class="prestamo-actions mb-3">
             <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary"
-              (click)="limpiarFormulario()" [rounded]="true" size="small"></p-button>
+              (click)="cancelar()" [rounded]="true" size="small"></p-button>
 
-            @if (!prestamoData()) {
             <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
-              (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
-            }
+              (click)="generarPlanPago()" [rounded]="true" size="small"
+              [disabled]="!puedeGenerarPlan()"
+              [pTooltip]="motivoBloqueoPlan()" tooltipPosition="bottom"></p-button>
 
-            @if (prestamoData(); as pres) {
-            @if (puedeGenerarPlan()) {
-            <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
-              (click)="generarPlanPago()" [rounded]="true" size="small"></p-button>
-            }
-
-            @if (puedePreaprobar()) {
             <p-button label="Pre-Aprobación" icon="pi pi-check-circle" variant="text" severity="warn"
-              [loading]="prestamoSaving()" (click)="preaprobar()" [rounded]="true" size="small"></p-button>
-            }
+              [loading]="prestamoSaving()" (click)="preaprobar()" [rounded]="true" size="small"
+              [disabled]="!puedePreaprobar()"
+              [pTooltip]="motivoBloqueoPreaprobado()" tooltipPosition="bottom"></p-button>
 
-            @if (puedeAprobar()) {
             <p-button label="Aprobación" icon="pi pi-verified" variant="text" severity="success"
-              [loading]="prestamoSaving()" (click)="confirmarAprobar()" [rounded]="true" size="small"></p-button>
-            }
+              [loading]="prestamoSaving()" (click)="confirmarAprobar()" [rounded]="true" size="small"
+              [disabled]="!puedeAprobar()"
+              [pTooltip]="motivoBloqueoAprobar()" tooltipPosition="bottom"></p-button>
 
-            @if (puedeContabilizar()) {
             <p-button label="Contabilización" icon="pi pi-book" variant="text" severity="info"
-              [loading]="prestamoSaving()" (click)="confirmarContabilizar()" [rounded]="true" size="small"></p-button>
-            }
-            }
+              [loading]="prestamoSaving()" (click)="confirmarContabilizar()" [rounded]="true" size="small"
+              [disabled]="!puedeContabilizar()"
+              [pTooltip]="motivoBloqueoContabilizar()" tooltipPosition="bottom"></p-button>
           </div>
 
           <!-- Plan de pago -->
