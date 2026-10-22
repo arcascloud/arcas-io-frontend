@@ -75,7 +75,7 @@ export class ParamManagerModulos implements OnInit {
 
   // Filtros
   empresaId = signal<number | null>(null);
-  moduloId = signal<number | null>(null);
+  modulosFiltro = signal<number[]>([]);
   grupoFiltro = signal<GrupoTipoParametro[]>([]);
 
   // Selección / edición
@@ -89,10 +89,14 @@ export class ParamManagerModulos implements OnInit {
   // Valor editado directo en la tabla (guardado al salir del campo)
   valorOriginal = signal<string | null>(null);
 
-  /** Parámetros visibles aplicando la selección múltiple de tipos de configuración */
+  /** Parámetros visibles: selección múltiple de módulos + selección de tipos de configuración */
   parametrosVista = computed(() => {
+    const mods = this.modulosFiltro();
     const sel = this.grupoFiltro();
-    return sel.length ? this.parametros().filter(p => sel.includes(p.grupo)) : this.parametros();
+    let items = this.parametros();
+    if (mods.length) items = items.filter(p => mods.includes(p.moduloId));
+    if (sel.length) items = items.filter(p => sel.includes(p.grupo));
+    return items;
   });
 
   ngOnInit() {
@@ -108,7 +112,8 @@ export class ParamManagerModulos implements OnInit {
       moduloId: [null as number | null],
     });
 
-    // Cargar empresas
+    // Cargar empresas — los parámetros se cargan cuando la empresa ya existe
+    // (antes se llamaba cargarParametros() de forma síncrona y quedaba sin datos)
     this.empresasService.getAll()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -116,6 +121,7 @@ export class ParamManagerModulos implements OnInit {
           this.empresas.set(data);
           if (data.length > 0) {
             this.empresaId.set(data[0].empresaId);
+            this.cargarParametros();
           }
         },
       });
@@ -126,10 +132,6 @@ export class ParamManagerModulos implements OnInit {
       value: Number(id),
     }));
     this.modulos.set(mods);
-
-    if (this.empresaId()) {
-      this.cargarParametros();
-    }
   }
 
   onEmpresaChange(empresaId: number) {
@@ -139,19 +141,21 @@ export class ParamManagerModulos implements OnInit {
     this.cargarParametros();
   }
 
-  onModuloChange(moduloId: number | null) {
-    this.moduloId.set(moduloId);
+  onModulosChange(mids: number[] | null) {
+    this.modulosFiltro.set(mids || []);
     this.limpiarSeleccion();
     this.cargarParametros();
   }
 
   cargarParametros() {
     const eid = this.empresaId();
-    const mid = this.moduloId();
+    const mods = this.modulosFiltro();
     if (!eid) return;
 
     this.cargando.set(true);
-    this.parametroService.getAll(mid || undefined)
+    // 1 módulo seleccionado → filtrado en servidor; varios o ninguno →
+    // se traen todos y el filtrado dinámico lo hace parametrosVista()
+    this.parametroService.getAll(mods.length === 1 ? mods[0] : undefined)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
@@ -196,8 +200,8 @@ export class ParamManagerModulos implements OnInit {
       valor: '',
       grupo: 'CORRELATIVO',
       sn_activo: 'S',
-      // Precarga con el módulo del filtro superior si está activo
-      moduloId: this.moduloId(),
+      // Precarga con el módulo del filtro superior si hay exactamente uno seleccionado
+      moduloId: this.modulosFiltro().length === 1 ? this.modulosFiltro()[0] : null,
     });
     this.form.get('field')?.enable();
   }

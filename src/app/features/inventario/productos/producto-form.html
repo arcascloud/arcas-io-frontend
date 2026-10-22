@@ -55,6 +55,22 @@
               </div>
 
               <div class="campo">
+                <label for="codigo_sku">SKU <span class="req">*</span></label>
+                <input
+                  pInputText
+                  pSize="small"
+                  id="codigo_sku"
+                  formControlName="codigo_sku"
+                  maxlength="20"
+                  placeholder="Código interno (SKU)"
+                  [ngClass]="{ 'ng-invalid': invalid('codigo_sku') }"
+                />
+                @if (invalid('codigo_sku')) {
+                  <small class="err">El SKU es obligatorio</small>
+                }
+              </div>
+
+              <div class="campo">
                 <label for="codbarra">Código de barras</label>
                 <input
                   pInputText
@@ -140,13 +156,72 @@
             </p-accordion-panel>
           </p-accordion>
 
-          <!-- Accordion: Categoria, Impuesto, Estado -->
+          <!-- Accordion: Impuesto -->
           <p-accordion class="mb-3" [value]="['0']">
             <p-accordion-panel value="0">
-              <p-accordion-header>Categoría, Impuesto y Estado</p-accordion-header>
+              <p-accordion-header>Impuestos</p-accordion-header>
               <p-accordion-content>
                 <div class="p-fluid">
                   <div class="form-grid-2">
+
+                    <div class="campo">
+                      <label for="impuestoId">Impuesto <span class="req">*</span></label>
+                      <p-select
+                        size="small"
+                        id="impuestoId"
+                        formControlName="impuestoId"
+                        [options]="impuestos()"
+                        optionLabel="descripcion"
+                        optionValue="impuestoId"
+                        placeholder="Seleccionar impuesto"
+                        styleClass="w-full"
+                        [appendTo]="'body'"
+                        [ngClass]="{ 'ng-invalid': invalid('impuestoId') }"
+                      />
+                      @if (invalid('impuestoId')) {
+                        <small class="err">Seleccione un impuesto</small>
+                      }
+                    </div>
+
+
+                  </div>
+                </div>
+              </p-accordion-content>
+            </p-accordion-panel>
+          </p-accordion>
+
+
+          <!-- Accordion: Departamento, Categoría, Marca, Pasillo, Estado -->
+          <p-accordion class="mb-3" [value]="['0']">
+            <p-accordion-panel value="0">
+              <p-accordion-header>Departamento, Categoría, Marca, Pasillo y Control</p-accordion-header>
+              <p-accordion-content>
+                <div class="p-fluid">
+                  <div class="form-grid-2">
+
+                    <div class="campo">
+                      <!-- 20261015 ARFM select real de departamentos (tinvdeptos) -->
+                      <label for="deptoId">Departamento <span class="req">*</span></label>
+                      <p-select
+                        size="small"
+                        id="deptoId"
+                        formControlName="deptoId"
+                        [options]="departamentos()"
+                        optionLabel="descripcion"
+                        optionValue="deptoId"
+                        placeholder="Seleccione un departamento"
+                        styleClass="w-full"
+                        [showClear]="true"
+                        [loading]="departamentosCargando()"
+                        [ngClass]="{ 'ng-invalid': invalid('deptoId') }"
+                        [appendTo]="'body'"
+                      />
+                      @if (invalid('deptoId')) {
+                        <small class="err">Seleccione un departamento</small>
+                      }
+                    </div>
+
+
                     <div class="campo">
                       <label for="categoriaId">Categoría <span class="req">*</span></label>
                       <p-select
@@ -158,7 +233,6 @@
                         optionValue="categoriaId"
                         placeholder="Seleccione categoría"
                         styleClass="w-full"
-                        [fluid]="true"
                         [showClear]="true"
                         [loading]="categoriasCargando()"
                         [ngClass]="{ 'ng-invalid': invalid('categoriaId') }"
@@ -170,18 +244,59 @@
                     </div>
 
                     <div class="campo">
-                      <label for="impuestoId">Impuesto</label>
+                      <label for="marcaId">Marca <span class="req">*</span></label>
                       <p-select
                         size="small"
-                        id="impuestoId"
-                        formControlName="impuestoId"
-                        [options]="impuestos()"
+                        id="marcaId"
+                        formControlName="marcaId"
+                        [options]="marcas()"
                         optionLabel="descripcion"
-                        optionValue="impuestoId"
-                        placeholder="Seleccionar impuesto"
+                        optionValue="marcaId"
+                        placeholder="Seleccione una marca"
+                        styleClass="w-full"
+                        [showClear]="true"
+                        [loading]="marcasCargando()"
+                        [ngClass]="{ 'ng-invalid': invalid('marcaId') }"
+                        [appendTo]="'body'"
+                      />
+                      @if (invalid('marcaId')) {
+                        <small class="err">Seleccione una marca</small>
+                      }
+                    </div>
+
+                    <div class="campo">
+                      <label for="pasilloId">Pasillo <span class="req">*</span></label>
+                      <p-select
+                        size="small"
+                        id="pasilloId"
+                        formControlName="pasilloId"
+                        [options]="pasillos()"
+                        optionLabel="descripcion"
+                        optionValue="pasilloId"
+                        placeholder="Seleccione un pasillo"
+                        styleClass="w-full"
+                        [showClear]="true"
+                        [loading]="pasillosCargando()"
+                        [ngClass]="{ 'ng-invalid': invalid('pasilloId') }"
+                        [appendTo]="'body'"
+                      />
+                      @if (invalid('pasilloId')) {
+                        <small class="err">Seleccione un pasillo</small>
+                      }
+                    </div>
+
+                    <div class="campo">
+                      <label for="sn_controlado">Control</label>
+                      <p-select
+                        size="small"
+                        id="sn_controlado"
+                        formControlName="sn_controlado"
+                        [options]="snControladoOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Producto controlado"
                         styleClass="w-full"
                         [appendTo]="'body'"
-                        [showClear]="true"
                       />
                     </div>
 
@@ -292,7 +407,10 @@
 
         <!-- Fieldset: Información Específica -->
         <div class="fieldset-wrapper">
-        <p-fieldset legend="Información Específica" styleClass="mb-3"   [toggleable]="true">
+          <p-accordion class="mb-3" [value]="['1']">
+            <p-accordion-panel value="1">
+              <p-accordion-header>Información adicional</p-accordion-header>
+              <p-accordion-content>
           <!-- Formulario de atributo -->
           <div class="atributo-form" [formGroup]="atributoForm">
             <div class="p-fluid">
@@ -426,7 +544,11 @@
           } @else {
             <p class="text-muted text-center">Sin atributos registrados</p>
           }
-        </p-fieldset>
+
+              </p-accordion-content>
+            </p-accordion-panel>
+          </p-accordion>
+
         </div>
       </div>
     </div>

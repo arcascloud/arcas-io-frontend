@@ -350,30 +350,51 @@
   border-radius: 8px;
 }
 
-// ===== Inf. Adicional: 2 columnas (formulario | listado) =====
+// ===== Inf. Adicional: accordion con 2 paneles =====
 
-.info-adicional-grid {
-  display: grid;
-  grid-template-columns: minmax(260px, 340px) 1fr;
-  gap: 1.25rem;
-  align-items: start;
-}
-
-.info-panel {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 1.25rem;
-}
-
-.info-panel-form {
+.accordion-panel-body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  padding: 0.5rem 0;
 }
 
-.info-panel-list {
-  padding: 1rem 1.25rem 1.25rem;
+.info-form-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 1rem;
+  align-items: end;
+  padding: 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+}
+
+.info-form-row .p-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.info-form-row label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+}
+
+.info-form-row .field-grow {
+  min-width: 180px;
+}
+
+.info-form-buttons {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.detalle-title {
+  margin: 0.5rem 0 0;
 }
 
 .info-form-actions {
@@ -404,21 +425,6 @@
 
 // ===== Cartera contable por cliente =====
 
-.info-panel-form h4 {
-  margin: 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--c-border);
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--c-text);
-}
-
-.carteras-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 0.25rem;
-}
-
 .carteras-sin-opciones {
   display: block;
   font-size: 0.75rem;
@@ -427,17 +433,9 @@
   margin-top: 0.25rem;
 }
 
-// Bloque de solo-lectura (columna derecha del tab Inf. Adicional)
-
-.carteras-asignadas {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--c-border);
-}
-
 // ===== Tablas estándar p-table (tab Inf. Adicional) =====
 
-.info-adicional-grid ::ng-deep .p-datatable {
+.tab-content ::ng-deep .p-datatable {
   .p-datatable-thead>tr>th {
     padding: 0.4rem 0.75rem;
     font-size: 0.7rem;
@@ -633,8 +631,13 @@
     flex-direction: column;
   }
 
-  .info-adicional-grid {
+  .info-form-row {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .info-form-buttons {
+    justify-content: flex-end;
   }
 
   .left-column {

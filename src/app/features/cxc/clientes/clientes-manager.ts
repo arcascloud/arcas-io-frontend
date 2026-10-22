@@ -10,6 +10,7 @@ import { DataViewModule } from 'primeng/dataview';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { TabsModule } from 'primeng/tabs';
+import { AccordionModule } from 'primeng/accordion';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { SelectModule } from 'primeng/select';
@@ -36,6 +37,7 @@ import { InputIconModule } from 'primeng/inputicon';
     TagModule,
     TooltipModule,
     TabsModule,
+    AccordionModule,
     SkeletonModule,
     SelectModule,
     TableModule,
@@ -735,7 +737,9 @@ export class ClientesManager implements OnInit {
     this.estadoCuentaLoading.set(true);
     this.service.getMovimientosByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
-        this.estadoCuentaData.set(res);
+        // Estado de cuenta: solo movimientos VIGENTES (excluir anulados)
+        const vigentes = (res || []).filter((m: any) => m?.sn_doc_anulado !== 'S');
+        this.estadoCuentaData.set(vigentes);
         this.estadoCuentaLoading.set(false);
       },
       error: () => this.estadoCuentaLoading.set(false),

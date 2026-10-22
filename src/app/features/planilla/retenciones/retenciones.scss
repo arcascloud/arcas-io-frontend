@@ -1,0 +1,200 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.mov-chip {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--c-surface-ground, #f8fafc);
+  border: 1px solid var(--c-border);
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.mov-chip--vecinal {
+  margin-left: 0.35rem;
+}
+
+/* ── Tarjetas de resumen ─────────────────────────────────────── */
+.resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.resumen-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  border-left: 3px solid var(--c-border);
+}
+
+.resumen-card--isr {
+  border-left-color: var(--c-error);
+}
+
+.resumen-card--vecinal {
+  border-left-color: var(--c-primary);
+}
+
+.resumen-card--total {
+  border-left-color: var(--c-text);
+}
+
+.resumen-card--pendiente {
+  border-left-color: var(--c-warning);
+}
+
+.resumen-label {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.resumen-valor {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.resumen-meta {
+  font-size: 0.72rem;
+  color: var(--c-text-muted);
+}
+
+/* ── Secciones ───────────────────────────────────────────────── */
+.seccion-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.seccion-umidad {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--c-text-muted);
+}
+
+.tramo-nota {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  color: var(--c-text-muted);
+  line-height: 1.4;
+
+  code {
+    padding: 0 0.25rem;
+    border-radius: 3px;
+    background: var(--c-surface-ground, #f8fafc);
+    font-size: 0.75rem;
+  }
+}
+
+/* ── Tramos lado a lado ──────────────────────────────────────── */
+.tramos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1rem;
+}
+
+/* ── Toolbar de la tabla ─────────────────────────────────────── */
+.tabla-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.tabla-toolbar .seccion-title {
+  margin: 0;
+}
+
+.tabla-filtros {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Filas ───────────────────────────────────────────────────── */
+.emp-nombre {
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.emp-meta {
+  font-size: 0.72rem;
+  color: var(--c-text-muted);
+}
+
+.col-isr,
+.col-vec {
+  width: 11rem;
+}
+
+.ret-meses {
+  font-size: 0.72rem;
+  color: var(--c-text-muted);
+}
+
+.ret-base {
+  font-size: 0.72rem;
+  color: var(--c-text-muted);
+}
+
+.ret-monto {
+  font-weight: 700;
+  color: var(--c-text-muted);
+}
+
+.ret-monto--positivo {
+  color: var(--c-error);
+}
+
+.ret-monto--vecinal {
+  color: var(--c-primary);
+}
+
+.total-cell {
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.fila-exenta td {
+  color: var(--c-text-muted);
+}
+
+.accion-col {
+  width: 4.5rem;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: var(--c-text-muted);
+
+  i {
+    font-size: 2rem;
+  }
+
+  p {
+    margin: 0;
+  }
+}

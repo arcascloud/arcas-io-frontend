@@ -57,6 +57,7 @@
           optionValue="value"
           placeholder="Seleccionar"
           styleClass="w-full"
+          [appendTo]="'body'"
           size="small"
         />
         <small class="field-hint">Se sugiere según grupo contable; puede cambiarlo</small>
@@ -71,6 +72,7 @@
           optionLabel="label"
           optionValue="value"
           styleClass="w-full"
+          [appendTo]="'body'"
           size="small"
           [disabled]="!snOperableHabilitado()"
         />
@@ -102,6 +104,7 @@
           optionValue="tcogrupocontableId"
           placeholder="Seleccionar grupo"
           styleClass="w-full"
+          [appendTo]="'body'"
           size="small"
           [ngClass]="{ 'ng-invalid': invalid('tcogrupocontableId') }"
         />
@@ -120,6 +123,7 @@
           optionValue="value"
           placeholder="Seleccionar nivel"
           styleClass="w-full"
+          [appendTo]="'body'"
           size="small"
           [ngClass]="{ 'ng-invalid': invalid('nivel') }"
         />
@@ -143,6 +147,7 @@
           optionValue="value"
           placeholder="Seleccionar cuenta mayor"
           styleClass="w-full"
+          [appendTo]="'body'"
           size="small"
           [filter]="true"
           filterBy="label"
@@ -168,6 +173,7 @@
           optionLabel="label"
           optionValue="value"
           styleClass="w-full"
+          [appendTo]="'body'"
           size="small"
         />
       </div>

@@ -1134,3 +1134,409 @@ Script: `Temp\\opencode\\test-pedidos-nuevo-esquema.js` — secciones A (33) + B
 ### Pendiente
 - Verificar en browser: detalle de partida (`/contabilidad/copdamae`) → Concepto con nuevo formato "plantilla · módulo · Factura" para las 32 filas
 - Flujo bancos: `contabilizarBanco` con doc=plantillaId pendiente de prueba en vivo (crear movimiento bancario) — el round-trip es consistente por construcción (doc=10-13 ∈ catálogo mod6) pero no se ejecutó E2E de creación
+
+---
+
+## Bitácora - 15/10/2026
+
+### Completado
+
+#### CxC Movimientos - Especificación final `sn_doc_manual` (UI 2 columnas + referencia libre)
+
+**Layout del formulario** (`movimientos-manager.html`) reorganizado según boceto del usuario:
+- **Columna 1**: Tipo | ¿Es un documento manual? (`p-select` Si/No) | Documento Fiscal | Nro. Referencia (condicional) | Concepto
+- **Columna 2**: Fecha del documento | Cartera Contable | Importe del documento
+- Sin líneas separadoras (el usuario indicó "las líneas no van")
+- **Nro. Referencia condicional**: si `sn_doc_manual='S'` → `<input pInputText>` (referencia libre); si `'N'` → `<p-select>` de documentos pendientes/débitos
+
+**Frontend (`movimientos-manager.ts`)**:
+- `snDocManualOptions` readonly (Si - Documento manual / No - Generado por el sistema)
+- `onModoManualChange(valor)` limpia `nroreferencia` al alternar
+- `esManual()` helper
+- `cancelarMovimiento()` y `precargarMovimiento()` mantienen `sn_doc_manual`
+- `payload.sn_doc_manual = raw.sn_doc_manual === 'N' ? 'N' : 'S'`
+
+#### CxC Movimientos - Regla de tipos aplicables ND/NC (desglose del usuario)
+
+**Regla de negocio**: una Nota de Débito/Crédito solo se aplica sobre documentos fiscales que lo admiten:
+- **Permitidos**: Factura (FAC/1), Prestamo (PPR/13), Ticket (TCK/4), Recibo por Honorarios Profesionales (RHP/5), Boleta de Compra (BDC/7), Constancia de Donación (CDD/8), Otros comprobantes autorizados (OCA/9)
+- **Prohibidos** (400): Interés simple (ICS/11), Interés moratorio (ICM/12), Guías de Remisión (GDR/10), Nota de Crédito (NCR/2), Nota de Débito (NDB/3) — las NCR/NDB no se aplican sobre sí mismas
+
+**Backend (`cxc.service.ts` → `createMovimiento`)**:
+- Constante `DOCS_APLICABLES_ND_NC = ['FAC', 'PPR', 'TCK', 'RHP', 'BDC', 'CDD', 'OCA']`
+- Si `dto.tipomov === 'D' || 'C'`: resuelve `tipoDocRepo.findOne(documentoId)` y valida `abreviatura ∈ lista` → si no, `BadRequestException` con mensaje `"El tipo de documento fiscal X no admite aplicar Nota de Debito/Credito"`
+
+**Frontend (`movimientos-manager.ts`)**:
+- Constante `DOCS_APLICABLES_ND_NC` (mismas abreviaturas)
+- `loadDocumentos()`: filtra catálogo por `sn_activo='S'` + misma empresa + **abreviatura en la lista** (solo tipos que admiten ND/NC)
+- `debitoReferencias()` (computed): enriquecido con `documentoId`; excluye débitos cuyo tipo fiscal no admite ND/NC (set `docsPermitidos` desde `documentosOptions()`)
+- `onRefSelect()`: auto-setea `documentoSelected` con el `documentoId` del débito elegido (coherencia ref↔tipo)
+- `guardarMovimiento()`: exige `documentoSelected()` (400 si vacío); `payload.documentoId = this.documentoSelected()` (antes default `?? 3`)
+
+#### CxC Movimientos - Corrección de la regla de unicidad de `nroreferencia`
+
+**Corregido (el usuario aclaró)**: la `nroreferencia` **NO** es única en la captura de ND/NC. Puede repetir el mismo número de factura/préstamo/ticket:
+- Múltiples NC sobre la misma factura
+- ND acumulativas sobre un mismo documento
+- Filas de interés de un préstamo (repiten la ref del préstamo)
+
+**La referencia SI debe ser única cuando el movimiento ES el documento origen** (factura, préstamo, ticket) — eso se controla al CREAR ese documento en su módulo (facturación, préstamos), no en `/cxc/movimientos`.
+
+**Backend (`cxc.service.ts` → `createMovimiento`)**: eliminada la validación de duplicado (`ConflictException` por ref repetida). Solo se mantiene: referencia **obligatoria** en manual (`BadRequestException` si vacía).
+
+**Frontend (`movimientos-manager.ts` → `guardarMovimiento`)**: eliminado el bloque de duplicado (espejo del backend). Se mantiene la rama `!esManual && tipomov==='C'` con validación de saldo.
+
+#### CxC - Excluir anulados de Estado de Cuenta y lista de movimientos
+
+**Clientes (`clientes-manager.ts` → `cargarDatosCliente`)**:
+- `estadoCuentaData` ahora filtra `res.filter(m => m?.sn_doc_anulado !== 'S')` — la tabla del tab "Estado de Cuenta" y el saldo (`saldoPendiente`/`getSaldoPendiente`) muestran solo vigentes
+
+**Movimientos (`movimientos-manager.ts` → `loadMovimientos`)**:
+- `movimientosData` filtra `res.filter(m => m?.sn_doc_anulado !== 'S')` — la lista de movimientos del cliente excluye anulados
+- `totalDebitos()`/`totalCreditos()`/`saldoCliente()` ya filtraban `sn_doc_anulado` por su cuenta (filtro redundante e inofensivo)
+
+### Verificación
+- `nest build` + `ng build` OK en ambas iteraciones
+- **E2E `test-docfiscal-aplicables.js` (13/13 OK)**: ND/NC sobre FAC(1)/PPR(13)/RHP(5)/CDD(8)/BDC(7)/TCK(4) → 201; sobre ICS(11)/ICM(12)/GDR(10)/NCR(2)/NDB(3) → 400; 0 con tipo prohibido en BD
+- **E2E `test-manual-referencia.js` (9/9 OK)**: ref obligatoria 400 si vacía; 1ra/2da/3ra ND+NC misma ref mismo cliente → 201 (repetible); mismo ref otro cliente → 201; anulación manual sin partida → 200; BD coherente (2 vigentes + 1 anulado con misma ref)
+- **Baseline BD**: `cxcmovimientos` empresaId=2 → 14 filas, 0 manuales, 4 anulados (intacto tras E2E)
+
+### Pendiente
+- Verificar en browser: form de movimientos `/cxc/movimientos` con layout 2 columnas + select Documento Fiscal filtrado + referencia condicional (input vs select)
+- Verificar Estado de Cuenta (`/cxc/clientes`) y lista de movimientos (`/cxc/movimientos`) sin anulados
+
+### Notas de sesión
+- **`cxc.service.ts` es CRLF**: el tool `edit` falla en oldStrings multilinea → usar edición por índices de línea con PowerShell (`ReadAllLines`/`WriteAllLines`) o strings de una sola línea
+- Los reinicios de backend (kill + `Start-Process node dist/main.js`) toman ~10-15s (TypeORM + NestJS bootstrap); el loop de salud a veces falla la primera vez → el usuario prefiere que no espere ociosa, lanzar en background y seguir
+
+
+---
+
+## Bitácora - 20/10/2026
+
+### Completado
+
+#### Planillas: factorización de rutas a componentes dedicados (`pagar-planilla`)
+- **Objetivo**: que el módulo Planilla sea dueño de sus componentes de planillas (lista + form) en vez de reutilizar el genérico `facturacion/maestro-detalle`, dejando fuera la lógica específica de planilla del componente genérico
+- **Nuevo `features/planilla/pagar-planilla/pagar-planilla.ts`** (`PagarPlanilla`): subclase de `MaestroDetalle`; reutiliza template/scss del genérico vía `templateUrl`/`styleUrl` relativos (`../../facturacion/maestro-detalle/...`), sin duplicar lógica
+- **Nuevo `features/planilla/pagar-planilla/pagar-planilla-form.ts`** (`PagarPlanillaForm`): subclase de `MaestroDetalleForm` con la lógica específica de planilla:
+  - `generarPlanilla()` → `POST /planilla/planillas/:id/generar` (IHSS con techo, RAP sobre excedente, RTF y vecinal ÷12 desde el mes del parámetro, otras deducciones, comisiones por tramo, bonos, horas extras y neto; si el mes corresponde crea o regenera la planilla especial del décimo 13avo/14avo)
+  - `calcularHorasExtras()` → `POST /planilla/planillas/:id/calcular-horas-extras` (integra HE del período en `importe_chorasextras`)
+  - Botones "Generar planilla" y "Calcular horas extras" en el footer (clase `.accion-izq`), solo visibles en edición; messages con `MessageService` propio
+  - `fmtL()` propio (L 1,234.56 es-HN); template y scss propios en `pagar-planilla-form.html/.scss` (copia del genérico + botones de planilla)
+  - `providers: [DialogService]` declarado (Angular no hereda metadata del decorador del padre)
+- **`maestro-detalle-form.ts` (genérico) limpiado**: eliminados imports/modelos de PlanillaService y `planilla.models`; eliminados signals `calculandoHE`/`generandoPlanilla`; eliminados métodos `calcularHorasExtras`/`trasCalcularHorasExtras`/`generarPlanilla`/`trasGenerarPlanilla`/`fmtL`; `itemId` y `cargarDetsFiltrando` cambiados a `protected` (reutilizados por la subclase); `msgs` y `destroyRef` cambiados a `protected`
+- **`maestro-detalle-form.html`**: eliminados los bloques de botones `mostrarGenerarPlanilla`/`mostrarCalcularHorasExtras`; **`maestro-detalle-form.scss`**: eliminada regla `.accion-izq`
+- **`facturacion.models.ts`**: eliminados los flags `mostrarCalcularHorasExtras`/`mostrarGenerarPlanilla` de `MaestroDetalleConfig` (grep residual: 0)
+- **`planilla.routes.ts`**: rutas `planillas`, `planillas/nuevo`, `planillas/editar/:id` ahora cargan `PagarPlanilla` y `PagarPlanillaForm` desde `./pagar-planilla/...` (antes `../facturacion/maestro-detalle/...`); `data: { nombre: 'planillas' }` intacto (la config `MAESTRO_DETALLE['planillas']` sigue en `facturacion.models.ts`)
+- **Nota**: `maestro-detalle` (genérico) se conserva en facturación porque también lo usan `plantillapdamae`, `plantillabalancesmae` y `copdamae-old` de contabilidad
+
+#### Pruebas E2E generación de planilla (`test-generar-planilla-e2e.js`) — 117/117 OK
+- **TEST 1 (generar planilla 3, per. 11/2026)**: 8 empleados; recálculo independiente en el script (helpers IHSS/RAP/RTF/vecinal replicados de `planilla.service.ts`) coincide 100% con la API: IHSS 5% sobre MÍN(sueldo, techo 11,903.13) → 595.16 para todos; RAP 1.5% sobre EXCEDENTE > techo → 196.45 a 4,621.45; RTF+vecinal ÷12; neto total 471,860.92; cabecera `items=8`, `totalapagar=471,861` (round); invariante por línea `neto = bruto + HE + comisión + bonos − (IHSS + RAP + drtf + dotras)` verificado en las 8
+- **TEST 2 (idempotencia)**: regenerar planilla 3 → mismos totales (IHSS/RAP/RTF/vecinal idénticos), sigue con 8 líneas (sin duplicados; el backend borra y reinserta en transacción)
+- **TEST 3 (décimo 13avo, planilla 4 per. 12/2026)**: `decimo.aplicado=true`, tipo `13AVO`, nro `ESP-13AVO-12-2026`; total 234,166.67 = suma de importes `PAGO-13AVO` de `pletipomov` por empleado; **regenera** la ESP previa (mismo `planillaEspecialId`, 0 duplicados); ESP con 8 líneas sin deducciones; neto de la planilla 4 = 471,860.92 (el décimo va en planilla especial, no en la normal)
+- **TEST 4 (errores)**: planilla inexistente → 404; pagada (`sn_pagada='S'`) → 400 "pagada"; anulada → 400; flags restaurados tras la prueba
+- **TEST 5 (horas extras, per. 10)**: `calcular-horas-extras` planilla 2 → 7 emp, 261.03 h, L 45,517.12, 0 min sin tramo; regenerar planilla 2 integra HE → neto 519,228.04, `totales.horasExtras > 0`; planilla 3 (per. 11 sin autorizaciones) → 400; planilla 1 (sin líneas) → 400
+- **Estado BD tras pruebas**: planillas 1-5 + ESP-13AVO-12-2026 intactas; planillas 2/3/4 regeneradas con sus HE/décimo correctos
+
+### Verificación
+- `npm run build` (producción) OK (solo warnings CommonJS preexistentes)
+- Backend activo en :3000 (PID 1624); login admin OK
+- **E2E generar planilla: 117 OK / 0 FAIL** (script en `Temp\opencode\test-generar-planilla-e2e.js`)
+
+### Pendiente
+- Verificar en browser: lista `/planilla/planillas` y form `/planilla/planillas/editar/:id` con botones "Generar planilla" y "Calcular horas extras" (refactor de rutas)
+- Queda pendiente retomar el Balance Dinámico / Estado de Resultado cuando el usuario lo indique (fix de columna 0 quedó aplicado, no revertido)
+
+---
+
+## Bitácora – 20/10/2026 (tarde)
+
+### Completado
+
+#### Pagar Planilla – Cabecera nueva: Periodo (coperiodoctable + tmeses), Departamento multi (tpldeptos) y layout 2 filas
+
+**Petición del usuario**: layout de cabecera
+```
+Periodo*   Año*   Departamento*   Cuenta Bancaria*
+Pagada*    Items  Total a Pagar   Anulada          <Generar planilla>
+```
+- Periodo = `p-select` desde `coperiodoctable` (query del usuario: `INNER JOIN tmeses ON tmesId=nromes WHERE sn_abierto='S'` → **solo períodos abiertos**, etiqueta "Mes Año")
+- Departamento = `p-select multiple` de `tpldeptos` con opción **"Todos"**; **no se persiste** (es filtro de UI): filtra la tabla de líneas; en la carga inicial muestra todos
+- **NO** se agregó columna a `pleplamae` (sin ALTER TABLE)
+
+**Backend (2 endpoints nuevos, sin DDL — las tablas ya existían):**
+- `entities/pldeptos.entity.ts` → `TplDepto` (`tpldeptos`: tpldeptosId, descripcion, sn_activo, empleadoId, empresaId, auditoría)
+- `entities/tmeses.entity.ts` → `TMes` (`tmeses`: tmesId, descripcion — catálogo global sin empresaId)
+- `planilla.module.ts` → `TplDepto` + `TMes` en `forFeature`
+- `planilla.service.ts` → `findAllDeptos(empresaId)` (ordenado por `descripcion ASC`), `findMeses()` (1..12)
+- `planilla.controller.ts` → `GET /planilla/deptos` (empresaId) y `GET /planilla/tmeses` (global)
+
+**Frontend:**
+- `planilla.models.ts` → interfaces `PlDepto`, `TMes`; `planilla.service.ts` → `getPlDeptos()`, `getMeses()`
+- `facturacion.models.ts` config `MAESTRO_DETALLE.planillas`:
+  - Orden de `camposMae`: periodo, anio, bcoctasId, sn_pagada, items, totalapagar, sn_anulada (Departamento se inserta en el HTML entre Año y Cuenta Bancaria)
+  - `periodo`: `numero` → `select` (opciones del componente); `sn_pagada` ahora `requerido` (según layout)
+  - `camposDet.departamentoId`: `numero` → `select` con `cargaOpciones: /planilla/deptos` + `filtro: true`
+- `pagar-planilla-form.ts`:
+  - `periodosOptions` signal: `GET /contabilidad/periodoctable` filtrado a `sn_abierto='S'` (DESC), etiquetado con `tmeses` vía `mesesMap`; **valor del control = `"anio-nromes"`** (string)
+  - Sincronía Año ↔ Periodo: elegir período setea el Año (emitEvent:false); cambiar el Año a mano limpia el período si es de otro año; el patch numérico de carga (`periodo=9`) se convierte a `"2026-9"`
+  - Opción sintética: si el registro existente tiene un período ya cerrado, se agrega su opción para que el select lo muestre (y poder editarlo)
+  - `deptosOptions`/`deptosSel` (`[-1]` = Todos al cargar) + `onDeptosChange()` (Todos es excluyente; deseleccionar todo vuelve a Todos)
+  - `detsFiltrados` computed: filtra `dets()` por departamentos seleccionados; **las filas sin guardar siempre se muestran**
+  - `quitarFilaFiltrado(row)`: busca la fila real en `dets()` (el rowIndex de la tabla es del array filtrado)
+- `pagar-planilla-form.html`:
+  - Branch `c.key === 'periodo'` en el select de cabecera
+  - Multi-select Departamento insertado tras el campo Año (ngModel standalone, fuera del formGroup)
+  - Tabla de líneas usa `detsFiltrados()`; botón eliminar → `quitarFilaFiltrado(row)`
+  - **"Generar planilla" movido a la cabecera** (fin de la 2ª fila, derecha); pie conserva Calcular horas extras / Cancelar / Guardar
+- `pagar-planilla-form.scss`: `.form-grid` → 4 columnas fijas (`repeat(4, minmax(0,1fr))`) para lograr las 2 filas del layout + responsive (2 col ≤1200px, 1 col ≤640px); `.campo-accion-grid` (grid-column 1/-1, alineado a la derecha)
+
+**Verificación**: `nest build` ✓ · `ng build --configuration production` ✓ (solo warnings CommonJS) · backend reiniciado :3000 · endpoints 200: deptos (6: Ventas, Compras, Administración, Contabilidad, Recuperaciones, RRHH), tmeses (12), periodoctable (abierto: **2026-10** → el select mostrará "Octubre 2026")
+
+### Pendiente
+- Verificar en browser: cabecera de `/planilla/planillas/editar/:id` (select "Octubre 2026", multi departamentos filtrando la tabla, botón Generar en cabecera) y creación de planilla nueva
+
+
+---
+
+## Bitácora – 20/10/2026 (tarde, correcciones)
+
+### Completado
+
+#### Fix: multi-select de Departamento no filtraba la tabla (`p-select multiple` no existe en PrimeNG 21)
+- **Causa raíz**: PrimeNG 21 no tiene `multiple` en `p-select` (el multiselect es `p-multiselect`, componente aparte — verificado en `primeng-select.mjs`: 0 ocurrencias de `multiple`). El atributo se escribió estático → Angular lo dejó como atributo DOM **sin error** → el dropdown operó como selección simple → `ngModelChange` emitía un **número** (ej. `1`) en vez de array → `onDeptosChange` hacía `!sel?.length` → `true` → rebotaba a `[-1]` (Todos) → `detsFiltrados` nunca filtraba
+- **Fix**: `<p-select multiple>` → `<p-multiselect>` (`[showToggleAll]="false"` para no duplicar la opción "Todos") + `MultiSelectModule` en imports + `onDeptosChange` endurecida (`number[] | number`, normaliza escalar→array) + `p-multiselect` en la regla `width:100%` del SCSS
+- Verificado: build producción OK; era el único `p-select multiple` del proyecto
+
+#### Pagar Planilla – Departamento quitado del detalle; columna Empleado ahora es select de empleados
+- **Config** `MAESTRO_DETALLE.planillas.camposDet`:
+  - Eliminado `departamentoId` (ya no se muestra en la tabla)
+  - `empleadoId`: `numero` → `select` + `filtro: true` (sin `cargaOpciones` — lo carga el componente para tener los objetos crudos)
+- **`pagar-planilla-form.ts`**:
+  - `empleadosRaw` signal + `empleadosOptions` computed (`PlanillaService.getEmpleados()` → `GET /planilla/empleados`, etiqueta `"nombres apellidos"` ordenada alfabéticamente; 8 empleados en emp2)
+  - `onEmpleadoChange(row)`: al elegir empleado sincroniza `row.departamentoId = emp.deptoId` — **misma regla del backend** (`planilla.service.ts:1803 departamentoId: e.deptoId ?? null`); sin esto, las filas nuevas quedarían con depto NULL y no responderían al filtro de cabecera
+- **`pagar-planilla-form.html`**: branch `c.key === 'empleadoId'` en la celda select del detalle (ngModel standalone + filtro por etiqueta)
+- **Verificado**: `GET /planilla/empleados?empresaId=2` → 200 (8 empleados) · `npm run build` producción OK · `plepladet.departamentoId` es **nullable** + DTO `@IsOptional` (no rompe guardar)
+
+### Hallazgo (requiere decisión del usuario — NO modificado)
+- **Dos catálogos de departamento con numeración distinta**:
+  - `tpldeptos` (1=Ventas, 2=Compras, 3=Administración, 4=Contabilidad, 5=Recuperaciones, 6=RRHH) → el que alimenta el **multi-select del filtro de cabecera** (`GET /planilla/deptos`)
+  - `ttipodeptoempresa` (1=Administración, 2=Ventas, 3=Contabilidad, 4=RRHH, 5=Almacén) → el que usa **`plepladet.departamentoId`** y **`plempleados.deptoId`** (verificado: backend escribe `departamentoId = e.deptoId` y los 8 empleados cuadran 1:1 con sus líneas)
+  - **Efecto**: filtrar cabecera por "Ventas" (tpldeptosId=1) muestra en realidad líneas de deptoId=1 = "Administración" (etiquetas cruzadas). `GET /parametros/departamentos-empresa` (= `ttipodeptoempresa`, ya usado por `horas-extras-form`) es el catálogo alineado con los datos
+  - **Opciones**: (a) cambiar el multi-select de cabecera a `getDeptos()`/`ttipodeptoempresa`, (b) migrar datos de `plepladet.departamentoId`/`plempleados.deptoId` a numeración `tpldeptos`, o (c) mantenerlo si los catálogos se alinearán a propósito
+
+### Pendiente
+- Verificar en browser: cabecera + tabla de `/planilla/planillas/editar/:id` con el select de Empleado y el filtro de departamentos
+- Decisión del usuario sobre la discrepancia de catálogos de departamento (hallazgo arriba)
+
+#### Pagar Planilla – Checkbox "Pagar" en la tabla de detalle (marcar líneas a pagar)
+- **Petición**: checkbox para marcar las líneas que queremos pagar (ref. docs `v21.primeng.org/table#checkbox-selection`)
+- **Decisión técnica**: NO se usó el API de `selection` de p-table (`p-tableHeaderCheckbox`/`p-tableBodyCheckbox`) porque:
+  1. `p-tableBodyCheckbox` **no existe** en PrimeNG 21.1.9 (grep: 0 ocurrencias en `primeng-table.mjs`) — solo existe `p-tableHeaderCheckbox`, que opera sobre `dataTable.selection` (selección efímera de filas, **no persiste**)
+  2. El negocio paga según **`sn_pagar='S'`** (`planilla.service.ts:891` "Sólo líneas autorizadas a pagar (regla: autorizado Y sn_pagar='S')`) → hay que persistir ese campo, y `selection` sería una segunda fuente de verdad
+  3. Precedente del proyecto: `p-checkbox` manual (toma-inventarios, compras — bitácora 31/08)
+- **Implementación** (mismo patrón visual que los docs: cabecera + fila):
+  - `facturacion.models.ts`: `CampoDetalle.tipo` += `'checkbox'`; `sn_pagar` de `'texto'` → `'checkbox'` (antes era un input de texto crudo con "S"/"N")
+  - `pagar-planilla-form.html`:
+    - **Cabecera**: etiqueta "Pagar" + checkbox de **marcar todas las visibles** (`todasPagar()`/`marcarTodas()`; respeta el filtro de departamentos activo)
+    - **Celda**: `<p-checkbox [binary]="true">` → `row.sn_pagar = 'S'|'N'`
+  - `pagar-planilla-form.ts`:
+    - `CheckboxModule` importado
+    - `todasPagar` computed + `onPagarChange(row, marcado)` + `marcarTodas(marcar)` — ambos hacen `dets.update(filas => [...filas])` para **invalidar los computed** (las mutaciones in-place de filas no las invalidan)
+    - **`override nuevaFila()`**: nueva línea nace con `sn_pagar='S'` (default de BD/backend) — **corrige bug latente**: `nuevaFila` dejaba `''` y el DTO `@IsEnum(['S','N'])` rechazaba el guardado con 400
+  - `pagar-planilla-form.scss`: `th.th-pagar` (flex: etiqueta a la izquierda, checkbox a la derecha)
+- **Datos**: `plepladet.sn_pagar` = `enum('S','N') NOT NULL DEFAULT 'S'` (32 filas actuales todas 'S')
+- **Verificado**: `npm run build` producción OK
+
+#### Pagar Planilla – "Total a Pagar" calculado y solo lectura
+- **Regla**: `totalapagar` (cabecera) = **suma de `sueldoneto` de las líneas marcadas para pagar** (`sn_pagar='S'`), sin importar el filtro de departamentos (es un total global); `Math.round` igual que el backend (**`totalapagar` es INT en la BD** — `planilla.service.ts:1886` `Math.round(totales.neto)`)
+- **Config** `MAESTRO_DETALLE.planillas`: `totalapagar` += `soloLectura: true`
+- **Frontend**:
+  - `totalAPagar` **computed** (filtra `sn_pagar='S'` y suma `sueldoneto`)
+  - **`effect()`** (field initializer, inyección válida) sincroniza el total al control del form: `setValue(total, { emitEvent: false })` — sin loops de `valueChanges`
+  - Control queda **habilitado** (renderizado `[readonly]="true"` + `mode="currency"` HNL/es-HN + fondo apagado `.total-lectura`) — así **`form.getRawValue()` en `guardar()` lo incluye en el payload** y se persiste
+  - Gatillos de recálculo (invalidación de `computed` con `dets.update([...])`):
+    - cargar líneas · agregar/quitar fila · checkbox fila (`onPagarChange`) · marcar todas (`marcarTodas`) · **editar celda de dinero** (rama `moneda` del detalle ahora llama `refrescarTotales()`)
+  - `generarPlanilla()` ya hacía `patchValue({ items, totalapagar })` + `cargarDetsFiltrando()` — coincide con el computed (al generar todas las líneas quedan `sn_pagar='S'`)
+- **Verificado**: `npm run build` producción OK; `styleClass` de `p-inputnumber` aplica al **host** (`host: { '[class]': cn(cx('root'), styleClass) }`) → la regla SCSS `.campo .total-lectura ::ng-deep input` matchea
+- **Nota**: horas extras NO modifican `sueldoneto` (el backend solo actualiza `importe_chorasextras`, línea 1128) → no afectan este total
+
+#### Pagar Planilla – detalle con Expand (PrimeNG v21), subtotales y recibo
+- **Layout nuevo de la p-table del detalle (7 columnas)**: `Pagar (chk) | Empleado | Salario Bruto | SubTot. Egresos | SubTot. Ingresos | Neto a Pagar | Acciones (expand / imprimir recibo / borrar)`
+- **Expand de PrimeNG** (inspeccionado en `node_modules/primeng/fesm2022/primeng-table.mjs`):
+  - `toggleRow()` **exige `dataKey`** (lanza *"dataKey or groupRowsBy must be defined"*) → `dataKey="rowId"` en `<p-table>`
+  - `rowId` asignado por `effect()` `syncRowIds`: líneas guardadas = `plepladetId` (estable entre recargas → **el estado expandido persiste**), líneas nuevas = contador negativo único (no colisiona con PKs positivos); mutación in-place sin escribir señales (no encadena efectos)
+  - Toggle: `[pRowToggler]="row"` en `<p-button>` (el input `pRowToggler` mapea a `data`; el click del `<button>` interno burbujea al host — PrimeNG Button no usa `stopPropagation`)
+  - Fila expandida: `<ng-template #expandedrow let-row>` con `<tr class="det-expandida"><td colspan="7">` (mismo mecanismo `#header`/`#body` por ContentChild)
+  - `#body` ahora incluye `let-expanded="expanded"` (contexto que PrimeNG pasa cuando hay expandedRowTemplate) para el icono chevron
+  - `rowExpandMode` default `'multiple'` → se pueden expandir varias filas a la vez
+- **Montos individuales movidos a la fila expandida** (config `oculto: true`, `facturacion.models.ts`):
+  - Grupo **Egresos**: IHSS, RAP, RTF, Otras Ded. — editables (`(ngModelChange)` → `refrescarTotales()`)
+  - Grupo **Ingresos**: Comisiones, H. Extras, Bonos — iguales
+  - Pie de cada grupo con el subtotal en texto; `clavesEgresos`/`clavesIngresos` como arrays `readonly` en TS (sin arrays inline en HTML)
+- **Nueva columna `tipo: 'subtotal'`** en `CampoDetalle`: celda de solo lectura `fmtL(subtotalFila(row, c.key))`; `_egresos` = IHSS+RAP+RTF+Otras, `_ingresos` = Comisiones+H.Extras+Bonos (claves locales; el `ValidationPipe whitelist:true` global — `Backend/src/main.ts:34` — las descarta junto con `rowId` al guardar)
+- **Cabeceras de 2 líneas** (`encabezadoDinero` en el TS): `Salario/Bruto`, `SubTot./Egresos`, `SubTot./Ingresos`, `Salario/Neto a Pagar` (`.th-pre` en minúscula tenue + `.th-main`); labels de config renombrados a `Salario Bruto`/`Neto a Pagar`
+- **Imprimir recibo** (botón `pi pi-print` por línea):
+  - Nuevo `FacturaImpresionService.imprimirReciboPlanilla()` (+ interfaces `ReciboPlanillaData`/`ReciboPlanillaMontos`) — mismo motor pdfmake de facturas/pedidos, **formato parametrizado `timpresoras`**: TICKET 80mm (Courier, firmas "Elaborado por" / "Recibí conforme") o CARTA LETTER (tabla CONCEPTO|MONTO con filas de grupo `colSpan`, estilo `neto` verde); documento **NO fiscal**; empresa vía `cargarEmpresaImpresion()` (cacheada: nombre/RTN/dir/tel de `tempresas` + `tempresasdet`)
+  - Componente: `imprimirRecibo(row)` valida empleado, arma período legible (opción del select o `tmeses` fallback) y montos de la fila; rechaza con toast si falla
+- **Acciones de fila**: chevron expand (`pi pi-chevron-right`/`-down` según `expanded`), imprimir recibo (con `pTooltip`), borrar (`pi pi-trash`, deshabilitado en filas guardadas — regla existente de `quitarFila`)
+- `<th style="width: 80px">` inline reemplazado por `.th-acciones` (regla: sin `style=""` inline)
+- **Archivos**: `facturacion.models.ts` (tipo `subtotal` + camposDet), `factura-impresion.service.ts`, `pagar-planilla-form.ts/html/scss`
+- **Verificado**: `npm run build` (producción) compila sin errores (solo warnings CommonJS preexistentes)
+- **Nota**: el recibo NO muestra departamento (la discrepancia de catálogos `tpldeptos` vs `ttipodeptoempresa` sigue pendiente de su decisión)
+
+#### Pagar Planilla – Fix: Expand no funcionaba → patrón manual del Libro Diario
+- **Síntoma**: el chevron de Acciones no abría la sub-fila (click "no hace nada" visible)
+- **Causa**: el Expand nativo de PrimeNG depende del ContentChild `#expandedrow` y del contexto `expanded` en `#body`; con `RowToggler` el estado interno alternaba pero la sub-fila nunca se renderizaba
+- **Solución (replicado el patrón que SÍ funciona en el proyecto — `contabilidad/libro-diario`)**:
+  - TS: `expandido = signal<Set<string>>(new Set())` + `toggleFila(row)` / `isExpandido(row)` / `claveFila(row)` (clave = `rowId`: guardadas = `plepladetId` estable → persiste al recargar; nuevas = contador negativo; `claveFila` asigna el id si faltaba)
+  - HTML: **todo dentro del mismo `<ng-template #body>`**: `</tr>` principal + `@if (isExpandido(row)) { <tr class="det-expandida"><td colspan="7">... }` — segunda `<tr>` como hermana de la fila (mismo mecanismo que Libro Diario con paginación)
+  - Chevron: `<p-button [icon]="isExpandido(row) ? 'pi-chevron-down' : 'pi-chevron-right'" (onClick)="toggleFila(row)">` — **sin** `[pRowToggler]`, sin `dataKey`, sin `let-expanded`, sin `#expandedrow` (todo eliminado)
+  - **Sin click en la fila completa** (a diferencia de Libro Diario, que es lectura): la fila tiene selects/inputs/checkbox y un click global los interferiría
+  - `rowId` se conserva porque es la clave del expand, no porque sea dataKey
+- **Verificado**: `npm run build` (producción) compila sin errores
+
+#### Pagar Planilla – Salario Neto SIEMPRE derivado: bruto + ingresos − egresos
+- **Reporte**: "Pedro no cuadra" — bruto 25,000.00, egresos 1,926.00, ingresos 4,635.69 → esperaba neto 27,709.69 (`bruto + ingresos − egresos`, resta si negativo); en pantalla el Neto no seguía a los importes
+- **Causas encontradas (2 bugs reales)**:
+  1. **Backend**: `calcularHorasExtrasPlanilla` (`planilla.service.ts`) actualizaba SOLO `importe_chorasextras` y **no** `sueldoneto` → al integrar horas extras el neto quedaba desfasado (BD no cuadraba con sus propios importes)
+  2. **Frontend**: `sueldoneto` era una celda `moneda` **editable y estática** — al editar cualquier monto de la fila expandida (HE, comisiones, IHSS, etc.) los subtotales se recalculaban pero el Neto y el Total quedaban con el valor viejo
+- **Regla aplicada (definitiva, todas las salidas)**: `netoFila(row) = round(bruto + ingresos − egresos, 2)` en `pagar-planilla-form.ts`:
+  - **Celda "Neto a Pagar"**: campo `sueldoneto` cambiado de `tipo: 'moneda'` a `tipo: 'subtotal'` en `facturacion.models.ts` (solo lectura, `subtotalFila()` ahora maneja `_egresos`/`_ingresos`/`sueldoneto`)
+  - **Total a Pagar**: `totalAPagar` suma `netoFila(d)` (no el valor guardado)
+  - **Recibo**: `imprimirRecibo()` usa `netoFila(row)`
+  - **Guardar**: `override guardar()` escribe `sueldoneto = netoFila(fila)` en cada línea ANTES de `super.guardar()` → la BD siempre recibe el neto que cuadra
+- **Backend fix**: `calcularHorasExtrasPlanilla` ahora recalcula `sueldoneto` en el MISMO UPDATE con la fórmula de `generarPlanilla` (bruto + comisiones + HE nuevas + bonos − (IHSS+RAP+RTF+otras)), vía QueryBuilder explícito (decimals = strings)
+- **Verificado en BD** (empresa 2): las 4 líneas de Pedro ya cuadraban `dif=0` (per 10/11/12 + ESP-13avo); la planilla especial décimo también cuadra (bruto = importe, resto 0)
+- **Builds**: `nest build` OK + `npm run build` (producción) OK — **reiniciar backend** para aplicar el fix de horas extras
+
+---
+
+## Bitácora – 20/10/2026 (tarde 2: Generar planilla desde "nuevo")
+
+### Pagar Planilla – Botón "Generar planilla" en la cabecera nueva (crea cabecera + genera detalle masivo)
+
+- **Petición**: en `/planilla/planillas/editar/nuevo` el botón "Generar planilla" debe estar visible; al pulsarlo se **crea primero la cabecera** y luego se genera el detalle (todos los empleados activos) y se presenta en la p-table — masivo, sin agregar empleados 1 × 1
+- **Bug encontrado de camino**: la API rechazaba la creación desde el form — `CreatePlPlaMaeDto.periodo` es `@IsNumber()` pero el control guarda `"anio-mes"` (string del select) → **HTTP 400 "periodo must be a number conforming to the specified constraints"** (verificado con POST real). El "Guardar" de una planilla nueva también estaba roto
+- **Solución** (`pagar-planilla-form.ts`, `maestro-detalle-form.ts`, `facturacion.models.ts`, `pagar-planilla-form.html`):
+  1. **`override guardar()`**: convierte `periodo` "anio-mes" → número para el payload con `setValue(..., { emitEvent: false })` antes de `super.guardar()` y restaura el string enseguida (`maeBody` se construye síncrono dentro de `super.guardar()`, antes de cualquier render) — arregla Guardar en nuevo Y en edición
+  2. **`generarPlanilla()` reescrito** con 2 ramas:
+     - **Edición**: `ejecutarGeneracion()` directo (igual que antes, pero sin el toast "Guarde la planilla antes…")
+     - **Nuevo**: valida el form (`markAllAsTouched` + toast si falta), crea la cabecera con el **mismo payload que Guardar** (periodo ya numérico + `empresaId`), setea `itemId`/`esEdicion.set(true)`, `router.navigate(['/planilla/planillas/editar', id], { replaceUrl: true })` (Angular reutiliza el componente — `ngOnInit` no re-corre, el form se conserva) y recién entonces `ejecutarGeneracion()`
+  3. **Base `MaestroDetalleForm`**: `router`, `service` y `auth` pasaron de `private` a `protected` (la subclase crea la cabecera con `createMae` + `empresaId` del `currentUser`)
+  4. **Config `MAESTRO_DETALLE.planillas`**: `sn_pagada` += `defaultValue: 'N'` (mismo default de BD) — habilita el flujo sin elegir "Pagada" a mano
+  5. **HTML**: quitado `@if (esEdicion())` del botón "Generar planilla" — visible en nuevo y en edición
+- **Prueba E2E API 9/9 OK** (`test-generar-desde-nuevo.js`): POST `/planillas` con `periodo:3` numérico → 201 (`nroplanilla` auto `000006`) · POST con `periodo:"2026-03"` → 400 (regresión negativa) · POST `/:id/generar` → **8 líneas / 8 empleados activos**, totales OK, `decimo.aplicado:false` (mes 3) · **`sueldoneto` cuadra 8/8** · detalle con `empresaId` + `usuarioCreated` · `sn_pagar='S'` todas · cabecera `items=8`, `totalapagar=503742` · limpieza OK
+- **Estado de BD verificado después del test**: 5 planillas originales intactas (ids 1–5), planilla de prueba 6 eliminada sin huérfanos, planilla especial décimo `ESP-13AVO-12-2026` sin tocar (8 líneas), total 32 líneas
+- **Build**: `npm run build` (producción) compila sin errores (solo warnings CommonJS preexistentes)
+- **Nota**: `POST /planillas/:id/generar` no necesita body/`empresaId` — resuelve la empresa desde la propia planilla (`planilla.controller.ts:422`)
+
+---
+
+## Bitácora – 20/10/2026 (tarde 3: Autorizar pago + Contabilizar planilla — E2E 12/12)
+
+### Flujo de cabecera de planilla: Generar → Autorizar pago → Contabilizar (botones a la izquierda)
+
+- **Petición**: 3 botones en la cabecera del form de planilla, a la izquierda, en orden: **Generar planilla** · **Autorizar pago** · **Contabilizar planilla**; antes de contabilizar, **validar fondos en la cuenta bancaria seleccionada**. La partida contable "la vemos después" (decisión del usuario)
+- **El usuario agregó a la BD** (antes de esta sesión): `pleplamae.sn_autorizada ENUM('S','N') DEFAULT 'N'`, `sn_contabilizada ENUM('S','N') DEFAULT 'N'` y `partidaId INT NOT NULL` (¡sin default!)
+- **Bug crítico encontrado**: `partidaId NOT NULL` sin default + `STRICT_TRANS_TABLES` → **todo INSERT de planilla devolvía 500** ("partidaId cannot be null"): rompía crear desde el form (incluido "Generar desde nuevo") y también la creación automática de la planilla especial décimo en meses 12/6. **Verificado en vivo**: POST con el backend corriendo → 500; tras el fix → 201
+
+#### Backend (`planilla/`)
+- **`pleplamae.entity.ts`**: agregados `sn_autorizada`, `sn_contabilizada` y `partidaId` (`default: 0` — el default de la entity es obligatorio contra la BD NOT NULL; documentado en el JSDoc del campo)
+- **`planilla.service.ts`**:
+  - `createPlanilla()`: payload con `partidaId: 0`, `sn_autorizada: 'N'`, `sn_contabilizada: 'N'` explícitos; mismo `partidaId: 0` en el `insert` automático de la planilla especial décimo
+  - **`calcularSaldoCta(bcoctasId, empresaId)`** (privado): copia del patrón de `BancosService` — saldo = Σ Débitos − Σ Créditos de `bcosmovimientos` no anulados (QueryBuilder; se inyecta el repo `TbcoMovimiento` sin acoplar módulos)
+  - **`autorizarPlanilla(id, usuario)`** (paso 2): valida exista/no anulada/no pagada/no autorizada/con líneas → `sn_autorizada='S'` (no mueve dinero)
+  - **`contabilizarPlanilla(id, usuario)`** (paso 3): valida flujo (no anulada, no pagada, con líneas, **autorizada**, no contabilizada) y **FONDOS**: `saldo(bcoctasId) ≥ totalapagar`; si faltan → 400 `Fondos insuficientes en la cuenta bancaria seleccionada: saldo disponible L …, total a pagar L …`; si alcanza → `sn_contabilizada='S'` (`partidaId` queda 0 — partida contable pendiente)
+- **`planilla.module.ts`**: `TbcoMovimiento` en `forFeature`
+- **`planilla.controller.ts`**: `POST /planilla/planillas/:id/autorizar` y `POST /planilla/planillas/:id/contabilizar` (patrón del `/:id/generar`, sin body, empresa resuelta desde la planilla)
+
+#### Frontend
+- **`maestro-detalle-form.ts`** (base): nuevo signal **`maeActual`** = cabecera COMPLETA del backend en edición (incluye flags que no son controles del form); se setea en `getMaeOne` y en la creación desde "Generar desde nuevo"
+- **`planilla.models.ts`**: interfaz **`PlanillaMae`** (cabecera con `sn_autorizada`/`sn_contabilizada`/`partidaId`)
+- **`planilla.service.ts`** (core): `autorizarPlanilla(id)` y `contabilizarPlanilla(id)`
+- **`pagar-planilla-form.ts`**: signals `autorizandoPago`/`contabilizando`; **computed** `snAutorizada`/`snContabilizada` (desde `maeActual`); métodos `autorizarPago()` y `contabilizarPlanilla()` (la respuesta del backend actualiza `maeActual` → tags y botones se refrescan solos; los 400 —fondos, secuencia— los muestra el interceptor global)
+- **`pagar-planilla-form.html`**: los 3 botones en fila a la **izquierda** (`.campo-accion-grid` con `justify-content: flex-start`); Generar se deshabilita si ya autorizada/contabilizada; Autorizar se deshabilita si ya autorizada; Contabilizar solo se deshabilita si ya contabilizada (si no está autorizada o faltan fondos, el backend responde con el mensaje). **Tags de estado** (solo en edición): `Autorizada`/`Autorización pendiente` y `Contabilizada`/`Contabilización pendiente` (`p-tag`, `TagModule` agregado)
+- **`pagar-planilla-form.scss`**: `.campo-accion-grid` → `flex-start`, `gap: 0.75rem`, `flex-wrap: wrap` + `.estado-planilla` (gap de tags)
+
+#### Verificación E2E API 12/12 (`test-flujo-planilla.js`, planilla de prueba 3/2026 borrada al final)
+- `POST /planillas` → **201** (regresión del fix `partidaId`; antes 500) · generar → 8 líneas, neto L 503,742.12
+- contabilizar **sin autorizar** → 400 "primero use Autorizar pago" · autorizar → `S` · autorizar 2ª vez → 400
+- **Fondos insuficientes reales**: cuenta 1 con saldo L 100.00 vs total L 503,742 → **400 "Fondos insuficientes… saldo disponible L 100.00, total a pagar L 503742.00"** ✓
+- depósito temporal → contabilizar → **200 `sn_contabilizada='S'`, `partidaId=0`** · contabilizar 2ª vez → 400
+- flags finales en BD `S/S/0` ✓ · limpieza completa (planilla de prueba + depósito temporal borrados; planillas 1–5 + 7 intactas)
+- Builds: `nest build` OK + `npm run build` (producción) OK · backend reiniciado en :3000 con los cambios
+
+#### Pendiente (acordado con el usuario)
+- **Partida contable de la planilla**: integración `copdamae`/`copdadet` con `partidaId` real (hoy queda 0); faltaría definir el asiento y el mapeo de cuentas (posible plantilla contable del módulo 8 PLANILLA — `tmodulos` ya tiene el módulo, pero `tcoplantillapdamae` **no tiene ninguna plantilla del módulo 8**)
+- La columna `bcosctas.saldo` existe en BD pero la entity `TbcoCta` de `bancos/` no la refleja (el saldo operativo se calcula desde `bcosmovimientos`; sincronización de entity pendiente si algún día se usa)
+
+---
+
+## Bitácora – 21/10/2026 (Impuesto Vecinal en `plepladet`: columna propia `importe_drvc` — E2E 10/10)
+
+### Petición
+- Agregar a `plepladet` el campo **`importe_drvc`** (Impuesto Vecinal) y ajustar `generarPlanilla` para mostrar cuánto toca deducir de impuesto vecinal **por empleado** — antes venía **mezclado dentro de `importe_drtf`** (`importe_drtf: red(rtf + vecinal)`, el vecinal era indistinguible del ISR en la UI y en el recibo).
+
+### BD
+- El usuario **ya había agregado la columna él mismo** en `arcasdb`: `importe_drvc decimal(20,2) NULL DEFAULT 0.00`, posicionada después de `importe_drtf` (el `ALTER` propuesto dio `Duplicate column name` → verificado con `SHOW COLUMNS` y confirmado como correcto). No se ejecutó ningún DDL.
+
+### Backend
+- **`plepladet.entity.ts`**: columna `importe_drvc` (decimal 20,2, default 0) con JSDoc del cambio.
+- **`dto/plepladet.dto.ts`**: `importe_drvc` opcional (`@IsNumber() @IsOptional()`) en `CreatePlPlaDetDto` y `UpdatePlPlaDetDto` (con `whitelist:true` los campos no declarados se descartan silenciosamente).
+- **`planilla.service.ts`** (5 puntos):
+  1. `LineaGen` += `importe_drvc`
+  2. `generarPlanilla` push de línea: **`importe_drtf: rtf` (solo ISR) + `importe_drvc: vecinal`** — el neto YA restaba el vecinal por separado (`bruto + HE + comisión + bono − (IHSS + RAP + RTF + vecinal + dotras)`); solo cambió DÓNDE se persiste, la fórmula no se tocó
+  3. `insert(PlPlaDet)` de las líneas normales += `importe_drvc`
+  4. Líneas de la **planilla especial décimo** += `importe_drvc: 0`
+  5. `calcularHorasExtrasPlanilla`: `nuevoNeto` += `Number(linea.importe_drvc)` (si no, integrar HE descuadraba el neto de las líneas con vecinal)
+
+### Frontend
+- **`pagar-planilla-form.ts`**: `clavesEgresos` += `'importe_drvc'` (orden IHSS · RAP · RTF · **Imp. Vecinal** · Otras) — `egresosDe()`, `netoFila()`, `subtotalFila()` y el Total a Pagar lo absorben automáticamente; `imprimirRecibo()` pasa `vecinal: row['importe_drvc']`.
+- **`facturacion.models.ts`** (config planillas): `camposDet` += `{ key: 'importe_drvc', label: 'Imp. Vecinal', tipo: 'moneda', oculto: true }` → etiqueta para la fila expandida vía `etiquetaCampo()`.
+- **`factura-impresion.service.ts`**: `ReciboPlanillaMontos` += `vecinal` y `egresosRecibo()` muestra **"Imp. Vecinal"** con signo negativo entre RTF y Otras Deducciones (ticket 80mm y carta LETTER — comparten `egresosRecibo`).
+- La fila expandida muestra un `p-inputnumber` más en Egresos; `refrescarTotales()` recalcula subtotales/neto al editarlo.
+
+### Verificación E2E API 10/10 (`test-drvc-vecinal.js`, planilla de prueba 7/2026 id=9 borrada)
+- Datos reales: tipo `RETECION-VECINAL` (tipomovId 4) y **8 empleados con movimientos vecinal activos** (anual 35.00 – 8,198.75); per 7 ≥ mayo → cálculo activo sin tocar datos.
+- `importe_drvc = vecinalAnual ÷ 12` en **8/8 líneas** · neto cuadra con **los 5 egresos** en 8/8 · cabecera `items=8`, `totalapagar=471,861` = Σ netos ✓ · sin planilla especial (per 7 no es 12/6) ✓.
+- **Muestra (emp#1)**: `drtf=895.95` (SOLO ISR — antes sería 934.39 con el vecinal adentro) + `drvc=38.44` (461.25÷12) · neto=23,074.00 ✓.
+- Limpieza: planilla de prueba borrada; planillas del usuario intactas (1–5 + 000007). La 000003 (per 10) quedó con `drvc<>0` porque **el usuario la regeneró desde el navegador** durante la prueba — comportamiento esperado, datos correctos (vecinal separado).
+- Builds: `nest build` + `npm run build` OK · backend reiniciado en :3000.
+
+### Notas
+- Las líneas GENERADAS ANTES del cambio (per 9–12 de las planillas 1–5) siguen con el vecinal mezclado dentro de `importe_drtf`; **regenerar la planilla las normaliza** con la separación nueva.
+- El total `vecinal` del resumen de `generarPlanilla` (`totales.vecinal`) ya existía por separado — ahora además persiste por línea.
+
+---
+
+## Bitácora – 21/10/2026 (tarde: Partida contable de planilla — PDA 21 — E2E 15/15)
+
+### Petición
+- Completar el paso 3 del flujo de planillas: **Contabilizar planilla** debe crear la **partida contable real** (`copdamae` + `copdadet` + posteo a `coctamov`/`coctasaldos`) y poblar `pleplamae.partidaId`, usando la **plantilla PDA 21 "Pago de planilla"** (módulo 8 PLANILLA, 25 filas en `tcoplantillapdadet`).
+- Esquema del asiento definido por el usuario en el Excel `Frontend\partidaplanilla.xlsx` (hoja `PartidaPlanilla`); **decisión de cuadre**: "buen punto, estima el techo, pero igual tiene que cuadrar" → IHSS/RAP se calculan **con techo** (`mín(sueldo, techoseguro)`) pero el asiento DEBE = HABER.
+
+### Regla de cuadre (por construcción, exacta)
+- **Pares idénticos D/C**: IHSS emp (filas 11/18), RAP emp (12/19), IHSS pat (23/20), RAP vivienda pat (24/21) y Reserva 4% (25/22) llevan el **mismo importe** en gasto (D) y en por-pagar (C).
+- **Fila 13 (2-1-60-001) = neto por pagar** = Σ(sueldobruto + HE + bonos) **sin deducciones ni comisiones** (regla literal del Excel); comisiones (14), ISR (15), vecinal (16), otras ded. (17) van en sus propias filas C.
+- Mapeo completo por `nrofila` (25): D = sueldos/HE/bonos admón (1,3,4) y ventas (5,7,8), od (2), comisiones (6), ISR (9), vecinal (10), IHSS/RAP emp (11,12) e IHSS/RAP/reserva pat (23–25); C = neto (13) + comisiones/ISR/vecinal/od (14–17) + IHSS/RAP emp (18,19) + IHSS/RAP/reserva pat (20–22).
+- **Deptos**: no-Ventas → `5-1-10-*`; Ventas (descripcion LIKE '%VENTA%' en `tpldeptos`) → `5-1-20-*`; comisiones SIEMPRE `5-1-20-002`; otras deducciones SIEMPRE `5-1-10-002` (según Excel).
+- **Patronales recalculadas** en el contabilizar con la misma fórmula que `generarPlanilla`: IHSS pat 8.7% sobre `mín(bruto, techo)`; RAP vivienda 1.5% sobre excedente; Reserva `max(0, tasaPatronRap − tasaRap)` = 4% sobre bruto. IHSS/RAP empleado se toman de los `importe_dihss`/`importe_drap` ya generados.
+- Líneas con importe 0 se omiten; validación de seguridad `|D − C| ≥ 0.01` → 400 (no debe ocurrir).
+
+### Backend
+- **`contabilidad/contabilidad-logica.service.ts`**: nuevo método **`crearPartidaPlanilla(dto, currentUser)`** (exportado con las interfaces `CrearPartidaPlanillaDto`/`PartidaPlanillaImportes`): carga plantilla 21 activa + filas, arma líneas por `nrofila`, valida cuadre, verifica cuentas (`verificarCuentasContables`), rechaza duplicado por `nroreferencia`, crea `copdamae` (`moduloId: 8`, `documentoId: 0`, `nroreferencia: PLANILLA-{nroplanilla}`, `sn_contabilizada: 'S'`) + `copdadet` (nrofila secuencial) y postea a mayor con `actualizarMovimientosContables` + `actualizarSaldosCuentas` (patrón del cierre). Devuelve `{ partidaId, nropartida, totDebito, totCredito, lineas }`.
+- **`planilla/planilla.module.ts`**: importa `ContabilidadModule` (exporta `ContabilidadLogicaService`; sin ciclos).
+- **`planilla/planilla.service.ts`**: inyecta `ContabilidadLogicaService`; **`contabilizarPlanilla`** reescrito: tras validar flujo + fondos (y el nuevo guard `partidaId > 0`), acumula por línea (depto desde `plepladet.departamentoId ?? plempleados.deptoId`; tasas IHSS/RAP de `tpltipomov` vía `esIhss`/`esRap`), llama a `crearPartidaPlanilla` y hace UPDATE de `pleplamae` (`partidaId`, `sn_contabilizada='S'`) vía QueryBuilder. JSDoc de `autorizarPlanilla` actualizado.
+- **No hubo ALTER TABLE**: la plantilla 21 y todas las tablas ya existían (25 filas activas verificadas en BD).
+
+### Verificación E2E API 15/15 (`test-partida-planilla.js`, planilla de prueba 000011 per 10/2026 borrada al final)
+- Flujo: crear → generar (8 líneas, neto 519,228.04) → autorizar → depósito temporal (fondos) → **contabilizar → `partidaId=60`**, ref `PLANILLA-000011`, módulo 8, per 10/2026.
+- **`copdadet`: 24 líneas, D = C = L 640,687.36 exacto** ✓ · todas las cuentas ⊆ plantilla 21 · naturaleza D/C coherente por cuenta · posteo a `coctamov` (24 cuentas) ✓ · `pleplamae.partidaId=60` + `sn_contabilizada='S'` ✓ · 2ª contabilización → 400 ✓.
+- **Muestra del asiento real**: sueldos admón 458,000 D · HE admón 33,978.65 · HE ventas 11,538.47 · ISR 31,008.27 · vecinal 872.93 · IHSS emp 4,761.28 (5% con techo) · IHSS pat 8,284.56 (8.7% con techo) · RAP emp = RAP viv pat 6,296.60 (mismo excedente) · Reserva 4% = 20,600.00 (0.04 × 515,000 bruto) · neto por pagar 562,017.12 C.
+- **Limpieza completa del residuo de prueba**: reversa de `coctamov` (resta de debe/haber + `saldo = sacum + (debe−haber)`), DELETE `copdadet`/`copdamae`, `POST /contabilidad/saldoscta/calcular` (idempotente, 26 filas), planilla y depósito borrados → planillas del usuario intactas (6).
+- Builds: `nest build` OK · backend reiniciado en :3000 (HTTP 200 en `/api/docs`).
+
+### Pendiente
+- Verificar en browser: planilla autorizada → botón "Contabilizar planilla" → tag "Contabilizada" + `partidaId` visible (la respuesta actualiza `maeActual`; quizá convenga mostrar el # de partida en el tag o un link al libro diario).

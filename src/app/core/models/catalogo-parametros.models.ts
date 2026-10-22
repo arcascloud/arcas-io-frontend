@@ -252,6 +252,8 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'building',
     campos: [
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+      { key: 'empleadoId', label: 'Empleado', tipo: 'select', requerido: true,
+        cargaOpciones: { url: '/planilla/empleados', labelCampos: ['nombres', 'apellidos'], valueCampo: 'empleadoId' } },
       { key: 'cuentacontableId', label: 'Cuenta Contable', tipo: 'numero' },
     ],
   },
@@ -533,15 +535,27 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
     ],
   },
-  deducciones: {
-    ruta: '/planilla/deducciones',
-    titulo: 'Deducciones',
-    tituloSingular: 'Deducción',
-    subtitulo: 'Tipos de deducción',
-    idKey: 'deduccioneId',
-    icono: 'minus',
+  'tipo-mov': {
+    ruta: '/planilla/tipo-mov',
+    titulo: 'Tipos de Movimiento',
+    tituloSingular: 'Tipo de Movimiento',
+    subtitulo: 'Ingresos y deducciones de planilla',
+    idKey: 'tipomovId',
+    icono: 'exchange-alt',
     campos: [
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+      { key: 'abreviatura', label: 'Abreviatura', tipo: 'texto', requerido: true },
+
+      {
+        key: 'tipomov',
+        label: 'Tipo',
+        tipo: 'select',
+        requerido: true,
+        opciones: [
+          { label: 'Ingreso', value: 'I' },
+          { label: 'Egreso', value: 'E' },
+        ],
+      },
       {
         key: 'sn_porcentual',
         label: 'Porcentual',
@@ -560,7 +574,26 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
           { label: 'No', value: 'N' },
         ],
       },
-      { key: 'porcentaje', label: 'Porcentaje', tipo: 'numero' },
+      {
+        key: 'sn_por_fecalta',
+        label: 'Por Fecha Alta',
+        tipo: 'select',
+        opciones: [
+          { label: 'Sí', value: 'S' },
+          { label: 'No', value: 'N' },
+        ],
+      },
+      {
+        key: 'es_obligacion_patronal',
+        label: 'Obligación Patronal',
+        tipo: 'select',
+        opciones: [
+          { label: 'Sí', value: 'S' },
+          { label: 'No', value: 'N' },
+        ],
+      },
+      { key: 'periodo_prueba', label: 'Período Prueba', tipo: 'numero' },
+      { key: 'importe', label: 'Importe', tipo: 'numero', decimales: 2 },
     ],
   },
   ingresos: {
@@ -661,13 +694,20 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
       { key: 'horasalida', label: 'Hora Salida', tipo: 'texto' },
     ],
   },
-  comisiones: {
-    ruta: '/planilla/comisiones',
-    titulo: 'Comisiones',
-    tituloSingular: 'Comisión',
-    subtitulo: 'Comisiones por empleado',
-    idKey: 'emplcomId',
+  /**
+   * Ingresos autorizados por un departamento (comisiones y bonos).
+   * Tabla `pleingresos` — sustituyó a `plecomisiones`.
+   * `anio_ejercicio`, `periodo` y `fecha_registro` los deriva el backend de la
+   * fecha de sistema si no se envían, por eso van ocultos en el formulario.
+   */
+  'ple-ingresos': {
+    ruta: '/planilla/ple-ingresos',
+    titulo: 'Ingresos Autorizados',
+    tituloSingular: 'Ingreso Autorizado',
+    subtitulo: 'Comisiones y bonos autorizados por departamento',
+    idKey: 'pleingresoId',
     icono: 'money-bill-wave',
+    sinEstado: true,
     campos: [
       {
         key: 'empleadoId',
@@ -675,28 +715,68 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         tipo: 'select',
         cargaOpciones: {
           url: '/planilla/empleados',
-          labelCampo: 'nombres',
+          labelCampos: ['nombres', 'apellidos'],
           valueCampo: 'empleadoId',
         },
         requerido: true,
       },
-      { key: 'comisionId', label: 'Comisión', tipo: 'numero', requerido: true },
       {
-        key: 'tipocomision',
-        label: 'Tipo Comisión',
+        key: 'deptoId',
+        label: 'Departamento',
         tipo: 'select',
-        opciones: [
-          { label: 'Fija', value: 'F' },
-          { label: 'Porcentual', value: 'P' },
-        ],
+        cargaOpciones: {
+          url: '/parametros/departamentos-empresa',
+          labelCampo: 'descripcion',
+          valueCampo: 'deptoId',
+        },
+        requerido: true,
+        pista: 'Departamento que autoriza el ingreso',
       },
       {
-        key: 'sn_quincenal',
-        label: 'Quincenal',
+        key: 'jefeId',
+        label: 'Jefe que autoriza',
+        tipo: 'select',
+        cargaOpciones: {
+          url: '/planilla/empleados',
+          labelCampos: ['nombres', 'apellidos'],
+          valueCampo: 'empleadoId',
+        },
+        requerido: true,
+        pista: 'Firma la autorización del pago',
+      },
+      {
+        key: 'concepto',
+        label: 'Concepto',
         tipo: 'select',
         opciones: [
-          { label: 'Sí', value: 'S' },
-          { label: 'No', value: 'N' },
+          { label: 'Comisión', value: 'COMISION' },
+          { label: 'Bono', value: 'BONO' },
+        ],
+        requerido: true,
+      },
+      { key: 'importe', label: 'Importe', tipo: 'numero', decimales: 2, requerido: true },
+      {
+        key: 'anio_ejercicio',
+        label: 'Ejercicio',
+        tipo: 'numero',
+        formato: 'anio',
+        pista: 'Si se deja vacío se toma el año de la fecha de sistema',
+      },
+      {
+        key: 'periodo',
+        label: 'Período',
+        tipo: 'numero',
+        pista: 'Mes 1-12 del ingreso. Si se deja vacío se toma el de la fecha de sistema',
+      },
+    ],
+    filtros: [
+      {
+        key: 'concepto',
+        label: 'Concepto',
+        tipo: 'select',
+        opciones: [
+          { label: 'Comisión', value: 'COMISION' },
+          { label: 'Bono', value: 'BONO' },
         ],
       },
     ],
@@ -722,12 +802,12 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
       },
       {
         key: 'deduccionId',
-        label: 'Deducción',
+        label: 'Tipo Movimiento',
         tipo: 'select',
         cargaOpciones: {
-          url: '/planilla/deducciones',
+          url: '/planilla/tipo-mov',
           labelCampo: 'descripcion',
-          valueCampo: 'deduccioneId',
+          valueCampo: 'tipomovId',
         },
         requerido: true,
       },

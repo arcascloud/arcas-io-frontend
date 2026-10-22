@@ -41,16 +41,18 @@ import { NavegacionService } from '../../../core/services/navegacion.service';
 export class MaestroDetalleForm implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private service = inject(FacturacionService);
+  /** `protected` para subclases (ej. PagarPlanillaForm crea la cabecera
+   *  antes de generar la planilla cuando se parte desde "nuevo"). */
+  protected router = inject(Router);
+  protected service = inject(FacturacionService);
   private api = inject(ApiService);
-  private auth = inject(AuthService);
-  private destroyRef = inject(DestroyRef);
+  protected auth = inject(AuthService);
+  protected destroyRef = inject(DestroyRef);
   private dialogService = inject(DialogService);
   private cxcService = inject(CxcService);
   private navegacion = inject(NavegacionService);
   ref: DynamicDialogRef | undefined;
-  private msgs = inject(MessageService);
+  protected msgs = inject(MessageService);
 
   config!: MaestroDetalleConfig;
   camposMae: CampoMae[] = [];
@@ -67,7 +69,15 @@ export class MaestroDetalleForm implements OnInit {
   detGuardados = new Set<number>();
   documentosPendientes = signal<any[]>([]);
 
-  private itemId = 0;
+  /**
+   * Cabecera COMPLETA tal cual vino del backend en edición (incluye campos
+   * que no son controles del form: flags de estado como `sn_autorizada` /
+   * `sn_contabilizada` de planillas). Null en modo "nuevo".
+   */
+  maeActual = signal<any>(null);
+
+  /** Id de la cabecera en edición (protegido para subclases como PagarPlanillaForm). */
+  protected itemId = 0;
   private contadorFila = 0;
   private factorCambioDefault = 0;
 
@@ -102,6 +112,7 @@ export class MaestroDetalleForm implements OnInit {
             patch[c.key] = c.tipo === 'fecha' && v ? new Date(v) : v;
           }
           this.form.patchValue(patch);
+          this.maeActual.set(mae);
           this.cargarDets();
         },
         error: () => {
@@ -304,32 +315,38 @@ export class MaestroDetalleForm implements OnInit {
   }
 
   private cargarDets() {
-    const rutaDetById = this.config.rutaDetById
-      ? `${this.config.rutaDetById}/${this.itemId}`
-      : `${this.config.rutaDet}/factura/${this.itemId}`;
-    this.service.getDet<any>(rutaDetById).subscribe({
-      next: (mios) => {
-        this.dets.set((mios ?? []).map((d) => ({ ...d })));
-        for (const d of (mios ?? [])) this.detGuardados.add(d[this.config.idKeyDet]);
-        this.contadorFila = (mios ?? []).length;
-        this.cargando.set(false);
-      },
+    // Sólo hay endpoint "por id" si la config lo declara (`rutaDetById`:
+    // facturas, cotizaciones, pedidos). Sin esa ruta se cargan todas las
+    // filas del recurso y se filtran por la FK; antes se adivinaba
+    // `rutaDet/factura/:id` y generaba un 404 ruidoso en la consola.
+    if (!this.config.rutaDetById) {
+      this.cargarDetsFiltrando();
+      return;
+    }
+
+    this.service.getDet<any>(`${this.config.rutaDetById}/${this.itemId}`).subscribe({
+      next: (mios) => this.asignarDets(mios ?? []),
+      error: () => this.cargarDetsFiltrando(),
+    });
+  }
+
+  /** Carga todos los detalles del recurso y conserva sólo los de esta cabecera. */
+  protected cargarDetsFiltrando() {
+    this.service.getDet<any>(this.config.rutaDet).subscribe({
+      next: (todos) =>
+        this.asignarDets((todos ?? []).filter((d) => d[this.config.fkDet] === this.itemId)),
       error: () => {
-        this.service.getDet<any>(this.config.rutaDet).subscribe({
-          next: (todos) => {
-            const mios = (todos ?? []).filter((d) => d[this.config.fkDet] === this.itemId);
-            this.dets.set(mios.map((d) => ({ ...d })));
-            for (const d of mios) this.detGuardados.add(d[this.config.idKeyDet]);
-            this.contadorFila = mios.length;
-            this.cargando.set(false);
-          },
-          error: () => {
-            this.cargando.set(false);
-            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los detalles' });
-          },
-        });
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los detalles' });
       },
     });
+  }
+
+  private asignarDets(mios: any[]) {
+    this.dets.set(mios.map((d) => ({ ...d })));
+    for (const d of mios) this.detGuardados.add(d[this.config.idKeyDet]);
+    this.contadorFila = mios.length;
+    this.cargando.set(false);
   }
 
   nuevaFila() {
@@ -338,7 +355,7 @@ export class MaestroDetalleForm implements OnInit {
     for (const c of this.camposDet) {
       if (c.key === 'nrofila') fila[c.key] = this.contadorFila;
       else if (c.key === 'factordecambio') fila[c.key] = this.factorCambioDefault;
-      else fila[c.key] = c.tipo === 'numero' ? 0 : c.tipo === 'fecha' ? new Date() : '';
+      else fila[c.key] = c.tipo === 'numero' || c.tipo === 'moneda' ? 0 : c.tipo === 'fecha' ? new Date() : '';
     }
     this.dets.update((d) => [...d, fila]);
   }

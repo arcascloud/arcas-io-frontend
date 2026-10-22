@@ -38,40 +38,41 @@
     </div>
   </div>
 
-  <p-dataview
+  <p-table
     [value]="filtered()"
     [loading]="cargando()"
+    [dataKey]="config.idKeyMae"
+    [rowHover]="true"
     [paginator]="true"
     [rows]="20"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
     size="small"
-    [layout]="list"
+    styleClass="p-datatable-sm lista-maestro"
   >
-    <ng-template #list let-items>
-      <div class="dv-cards">
-        @for (item of items; track item?.[config.idKeyMae]) {
-          <div class="dv-card" (click)="!config.soloLectura && editar(item[config.idKeyMae])">
-            <div class="dv-top">
-              <span class="dv-title">{{ config.tituloLista(item) }}</span>
-            </div>
-
-            <div class="dv-body">
-              @for (f of config.filasLista(item); track f.label) {
-                <div class="dv-row">
-                  <span class="dv-label">{{ f.label }}</span>
-                  <span class="dv-value">{{ f.value }}</span>
-                </div>
-              }
-            </div>
-          </div>
+    <ng-template #header>
+      <tr>
+        <th>Registro</th>
+        @for (c of columnasLista(); track c) {
+          <th>{{ c }}</th>
         }
-      </div>
+      </tr>
     </ng-template>
 
-    <ng-template #emptymessage>
-      <div class="text-center p-3">No hay registros.</div>
+    <ng-template #body let-item>
+      <tr class="fila-click" (click)="!config.soloLectura && editar(item[config.idKeyMae])">
+        <td class="c-titulo">{{ config.tituloLista(item) }}</td>
+        @for (f of config.filasLista(item); track f.label) {
+          <td>{{ f.value }}</td>
+        }
+      </tr>
     </ng-template>
-  </p-dataview>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="100" class="text-center p-3">No hay registros.</td>
+      </tr>
+    </ng-template>
+  </p-table>
 </section>

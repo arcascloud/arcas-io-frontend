@@ -1,8 +1,8 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
@@ -12,7 +12,7 @@ import { MAESTRO_DETALLE, MaestroDetalleConfig } from '../../../core/models/fact
 @Component({
   selector: 'app-maestro-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataViewModule, ButtonModule, InputTextModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule],
   templateUrl: './maestro-detalle.html',
   styleUrl: './maestro-detalle.scss',
 })
@@ -27,9 +27,15 @@ export class MaestroDetalle implements OnInit {
   data = signal<any[]>([]);
   filtered = signal<any[]>([]);
   cargando = signal(false);
-  layout: 'list' | 'grid' = 'list';
 
   q = signal('');
+
+  /** Encabezados de la tabla: el título del registro + las etiquetas de `filasLista`. */
+  columnasLista = computed<string[]>(() => {
+    const primero = this.filtered()[0] ?? this.data()[0];
+    if (!this.config || !primero) return [];
+    return this.config.filasLista(primero).map((f) => f.label);
+  });
 
   ngOnInit() {
     const nombre = this.route.snapshot.data['nombre'] ?? '';

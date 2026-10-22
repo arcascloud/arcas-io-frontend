@@ -72,6 +72,7 @@
   animation: loginCardIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
+
 @keyframes loginCardIn {
   from {
     opacity: 0;
@@ -146,20 +147,29 @@
 
       .p-password {
         border-radius: var(--radius-sm);
+        color: var(--c-text-muted);
         overflow: hidden;
       }
 
       .p-inputtext {
+        color: var(--c-text-muted);
         border-radius: var(--radius-sm);
         transition:
+          color var(--c-text-muted),
           border-color var(--tr-fast),
           box-shadow var(--tr-fast);
-        background-color: var(--c-bg-login-inputtext);
+            backdrop-filter: blur(16px);
+              -webkit-backdrop-filter: blur(16px);
+              opacity: 0.70;
 
         &:focus,
         &.p-focus {
+          color: var(--color-texto-input);
           border-color: var(--c-primary);
           box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+          backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            opacity: 0.50;
         }
       }
     }

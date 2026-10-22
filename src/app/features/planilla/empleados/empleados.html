@@ -14,71 +14,84 @@
   </header>
 
   <div class="card">
-    <div class="buscar">
-      <div class="p-inputgroup flex-1">
-        <input
-          pInputText
-          placeholder="Buscar por nombre, DNI, teléfono o email..."
-          [(ngModel)]="q"
-          (keyup.enter)="buscar()"
-        />
-        <p-button icon="pi pi-search" severity="secondary" size="small" (onClick)="buscar()" />
-      </div>
-      <p-button
-        label="Limpiar"
-        icon="pi pi-times"
-        severity="secondary"
-        text
-        size="small"
-        (onClick)="limpiarFiltros()"
-      />
-    </div>
-
-    @if (cargando()) {
-      <div class="centro">Cargando empleados...</div>
-    } @else if (filtered().length === 0) {
-      <div class="centro">No se encontraron empleados</div>
-    } @else {
-      <p-dataview [value]="filtered()" [rows]="10" layout="list">
-        <ng-template #list let-items>
-          <div class="grid-lista">
-            @for (e of items; track e.empleadoId) {
-              <div class="item">
-                <div class="item-body">
-                  <div class="item-titulo">
-                    {{ e.nombres }} {{ e.apellidos }}
-                  </div>
-                  <div class="item-det">
-                    <span>DNI: {{ e.nrodocumento }}</span>
-                    <span>Tel: {{ e.telefono }}</span>
-                    <span>Cel: {{ e.celular }}</span>
-                    <span>Email: {{ e.email }}</span>
-                  </div>
-                  <div class="item-tags">
-                    <p-tag
-                      [value]="activoLbl(e.sn_activo)"
-                      [severity]="activoSev(e.sn_activo)"
-                      rounded
-                    />
-                  </div>
-                </div>
-                <div class="item-acciones">
-                  <p-button
-                    icon="pi pi-pencil"
-                    severity="secondary"
-                    size="small"
-                    rounded
-                    [text]="true"
-                    pTooltip="Editar"
-                    tooltipPosition="left"
-                    (onClick)="editar(e.empleadoId)"
-                  />
-                </div>
-              </div>
-            }
-          </div>
-        </ng-template>
-      </p-dataview>
-    }
+    <p-table
+      [value]="data()"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      size="small"
+      [loading]="cargando()"
+      [globalFilterFields]="['nombres', 'apellidos', 'nrodocumento', 'telefono', 'celular', 'email']"
+      #dt
+    >
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="nombres">Nombre <p-sortIcon field="nombres" /></th>
+          <th pSortableColumn="apellidos">Apellido <p-sortIcon field="apellidos" /></th>
+          <th pSortableColumn="nrodocumento">DNI <p-sortIcon field="nrodocumento" /></th>
+          <th>Teléfono</th>
+          <th>Celular</th>
+          <th pSortableColumn="email">Email <p-sortIcon field="email" /></th>
+          <th>Estado</th>
+          <th style="width: 6rem; text-align: center">Acciones</th>
+        </tr>
+        <tr>
+          <th><input pInputText type="text" pSize="small" placeholder="Buscar nombre" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
+          <th><input pInputText type="text" pSize="small" placeholder="Buscar apellido" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
+          <th><input pInputText type="text" pSize="small" placeholder="Buscar DNI" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
+          <th></th>
+          <th></th>
+          <th><input pInputText type="text" pSize="small" placeholder="Buscar email" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
+          <th></th>
+          <th></th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-e>
+        <tr>
+          <td>{{ e.nombres }}</td>
+          <td>{{ e.apellidos }}</td>
+          <td>{{ e.nrodocumento }}</td>
+          <td>{{ e.telefono }}</td>
+          <td>{{ e.celular }}</td>
+          <td>{{ e.email }}</td>
+          <td>
+            <p-tag
+              [value]="activoLbl(e.sn_activo)"
+              [severity]="activoSev(e.sn_activo)"
+              rounded
+            />
+          </td>
+          <td style="text-align: center">
+            <p-button
+              icon="pi pi-money"
+              severity="secondary"
+              size="small"
+              rounded
+              [text]="true"
+              pTooltip="Afectaciones económicas"
+              tooltipPosition="left"
+              (onClick)="irATipoMov(e.empleadoId)"
+            />
+            <p-button
+              icon="pi pi-pencil"
+              severity="secondary"
+              size="small"
+              rounded
+              [text]="true"
+              pTooltip="Editar"
+              tooltipPosition="left"
+              (onClick)="editar(e.empleadoId)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="centro">No se encontraron empleados</td>
+        </tr>
+      </ng-template>
+    </p-table>
   </div>
 </section>

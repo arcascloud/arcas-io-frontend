@@ -13,7 +13,8 @@ export interface Producto {
   codbarra?: string;
   descripcion: string;
   descripcion_corta?: string;
-  sku?: string;
+  /** SKU del producto (columna `codigo_sku` varchar(20), única por código+barras) */
+  codigo_sku?: string;
   cstounit: number;
   cstoprom: number;
   precioventa: number;
@@ -23,8 +24,11 @@ export interface Producto {
   deptoId: number;
   categoriaId: number;
   marcaId: number;
+  pasilloId: number;
   impuestoId?: number;
   sn_activo: 'S' | 'N';
+  /** Producto controlado (fármacos, material agroindustrial) */
+  sn_controlado?: 'S' | 'N';
   empresaId: number;
   usuarioCreated: string;
   usuarioUpdated?: string;
@@ -95,6 +99,18 @@ export interface Kardex {
   usuarioUpdated?: string;
   fechaUpdated?: string;
 }
+
+export interface Departamento {
+  deptoId: number;
+  descripcion: string;
+  zorden: number;
+  sn_activo: 'S' | 'N';
+  empresaId: number;
+  usuarioCreated: string;
+  usuarioUpdated?: string;
+  fechaUpdated?: string;
+}
+
 
 export interface Marca {
   marcaId: number;
@@ -388,3 +404,4 @@ export interface TipoImpuesto {
   sn_activo: string;
   empresaId: number;
 }
+

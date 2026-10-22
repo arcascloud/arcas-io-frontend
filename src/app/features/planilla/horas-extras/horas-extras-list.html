@@ -1,0 +1,112 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Horas extras</h1>
+      <p class="page-subtitle">
+        Autorización de pago de horas extras por departamento y rango de fechas
+      </p>
+    </div>
+    <div class="header-actions">
+      <p-button
+        label="Nueva autorización"
+        icon="pi pi-plus"
+        rounded
+        size="small"
+        severity="success"
+        (onClick)="nuevo()"
+      />
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <span class="p-input-icon-left">
+      <i class="pi pi-search"></i>
+      <input
+        pInputText
+        type="text"
+        pSize="small"
+        placeholder="Buscar por depto, jefe, gerente o período"
+        styleClass="w-20rem"
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+      />
+    </span>
+    <p-button
+      icon="pi pi-times"
+      size="small"
+      rounded
+      text
+      severity="secondary"
+      pTooltip="Limpiar búsqueda"
+      (onClick)="limpiar()"
+    />
+    <span class="contador">{{ filtrados().length }} de {{ data().length }}</span>
+  </div>
+
+  <div class="card">
+    <p-table
+      [value]="filtrados()"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      size="small"
+      [loading]="cargando()"
+    >
+      <ng-template #header>
+        <tr>
+          <th style="width: 4rem">#</th>
+          <th>Departamento</th>
+          <th>Solicita (jefe)</th>
+          <th>Aprueba (gerente)</th>
+          <th>Rango de fechas</th>
+          <th style="width: 6rem">Período</th>
+          <th style="width: 7rem; text-align: center">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-a>
+        <tr>
+          <td>{{ a.pleauthoraexmaeid }}</td>
+          <td>{{ nombreDepto(a.deptoId) }}</td>
+          <td>{{ nombreEmpleado(a.solicitado_por) }}</td>
+          <td>{{ nombreEmpleado(a.autorizado_por) }}</td>
+          <td>{{ rango(a) }}</td>
+          <td>{{ a.periodo }}/{{ a.anio_ejercicio }}</td>
+          <td style="text-align: center">
+            <p-button
+              icon="pi pi-pencil"
+              severity="secondary"
+              size="small"
+              rounded
+              text
+              pTooltip="Editar / ver horas extras"
+              tooltipPosition="left"
+              (onClick)="editar(a.pleauthoraexmaeid)"
+            />
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              size="small"
+              rounded
+              text
+              pTooltip="Eliminar"
+              tooltipPosition="left"
+              (onClick)="eliminar(a)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="centro">No se encontraron autorizaciones de horas extras</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <p-confirmdialog
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+    [style]="{ width: '420px' }"
+  />
+</section>

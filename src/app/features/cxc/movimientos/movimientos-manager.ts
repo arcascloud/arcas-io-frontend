@@ -12,17 +12,18 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
 import { SkeletonModule } from 'primeng/skeleton';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { PaginatorModule } from 'primeng/paginator';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { TableModule } from 'primeng/table';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
-import { CxcCliente } from '../../../core/models/cxc.models';
+import { CxcCliente, CxcMovimiento } from '../../../core/models/cxc.models';
 
 @Component({
   selector: 'app-movimientos-manager',
@@ -44,6 +45,7 @@ import { CxcCliente } from '../../../core/models/cxc.models';
     PaginatorModule,
     IconFieldModule,
     InputIconModule,
+    TableModule,
   ],
   templateUrl: './movimientos-manager.html',
   styleUrl: './movimientos-manager.scss',
@@ -52,6 +54,7 @@ import { CxcCliente } from '../../../core/models/cxc.models';
 export class MovimientosManager implements OnInit {
   private service = inject(CxcService);
   private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
   private auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogoParametrosService);
@@ -86,12 +89,13 @@ export class MovimientosManager implements OnInit {
   });
 
   // ===== MOVIMIENTOS =====
-  movimientosData = signal<any[]>([]);
+  movimientosData = signal<CxcMovimiento[]>([]);
   movimientosLoading = signal(false);
   movimientoSaving = signal(false);
   movimientoModel = signal<any>({
     clienteId: null,
     tipomov: 'D',
+    sn_doc_manual: 'S',
     concepto: '',
     importe: 0,
     nroreferencia: '',
@@ -118,25 +122,52 @@ export class MovimientosManager implements OnInit {
     { label: 'Credito', value: 'C' },
   ];
 
-  // Referencias de debitos existentes con saldo (para credito)
+  /**
+   * Origen del documento que se está capturando:
+   *  'S' = manual del usuario → nroreferencia libre (input texto)
+   *  'N' = generado por el sistema → nroreferencia se elige (select)
+   */
+  readonly snDocManualOptions = [
+    { label: 'Si - Documento manual', value: 'S' },
+    { label: 'No - Generado por el sistema', value: 'N' },
+  ];
+
+  /**
+   * Saldos por referencia de débito (para elegir a qué factura/préstamo abonar).
+   * Reglas de negocio:
+   *  - Solo movimientos VIGENTES (sn_doc_anulado !== 'S') alimentan el saldo:
+   *    un débito anulado no se ofrece y un crédito anulado no descuenta.
+   *  - Referencias con saldo <= 0 quedan fuera del select.
+   */
   debitoReferencias = computed(() => {
     const movs = this.movimientosData();
-    const mapa = new Map<string, { nroreferencia: string; saldo: number }>();
+    const mapa = new Map<string, { nroreferencia: string; saldo: number; documentoId: number | null }>();
+    // Tipos de documento que admiten ND/NC (options ya vienen filtrados)
+    const docsPermitidos = new Set(this.documentosOptions().map(o => Number(o.value)));
 
-    // 1ra pasada: acumular debitos
+    // 1ra pasada: acumular debitos vigentes
     for (const m of movs) {
+      if (m.sn_doc_anulado === 'S') continue;
       if (m.tipomov !== 'D' || !m.nroreferencia) continue;
+      // Debitos cuyo tipo fiscal no admite ND/NC (intereses, guias, etc.)
+      // no se ofrecen como referencia
+      if (m.documentoId != null && !docsPermitidos.has(Number(m.documentoId))) continue;
       const ref = String(m.nroreferencia);
       const existente = mapa.get(ref);
       if (existente) {
         existente.saldo += Number(m.importe) || 0;
       } else {
-        mapa.set(ref, { nroreferencia: ref, saldo: Number(m.importe) || 0 });
+        mapa.set(ref, {
+          nroreferencia: ref,
+          saldo: Number(m.importe) || 0,
+          documentoId: m.documentoId != null ? Number(m.documentoId) : null,
+        });
       }
     }
 
-    // 2da pasada: restar creditos
+    // 2da pasada: restar creditos vigentes
     for (const m of movs) {
+      if (m.sn_doc_anulado === 'S') continue;
       if (m.tipomov !== 'C' || !m.nroreferencia) continue;
       const ref = String(m.nroreferencia);
       const existente = mapa.get(ref);
@@ -262,6 +293,7 @@ export class MovimientosManager implements OnInit {
     this.movimientoModel.set({
       clienteId: movimiento.clienteId,
       tipomov: movimiento.tipomov || 'D',
+      sn_doc_manual: movimiento.sn_doc_manual === 'N' ? 'N' : 'S',
       concepto: movimiento.concepto || '',
       importe: Number(movimiento.importe) || 0,
       nroreferencia: movimiento.nroreferencia || '',
@@ -319,6 +351,15 @@ export class MovimientosManager implements OnInit {
     return partes.join('.');
   }
 
+  /**
+   * Abreviaturas de documentos fiscales que ADMITEN Nota de Debito/Credito.
+   * Regla de negocio (15/10/2026): Factura, Prestamo, Ticket, Recibo por
+   * Honorarios Profesionales, Boleta de Compra, Constancia de Donacion y
+   * Otros comprobantes autorizados. Interes simple y moratorio NO admiten
+   * ND/NC (tampoco Guias de Remision ni las mismas NCR/NDB).
+   */
+  private readonly DOCS_APLICABLES_ND_NC = ['FAC', 'PPR', 'TCK', 'RHP', 'BDC', 'CDD', 'OCA'];
+
   // ===== DOCUMENTOS FISCALES =====
   loadDocumentos() {
     const user = this.auth.currentUser();
@@ -327,7 +368,9 @@ export class MovimientosManager implements OnInit {
         const filtered = (res || []).filter((r: any) => {
           const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
           const mismaEmpresa = user?.empresaId ? Number(r.empresaId) === Number(user.empresaId) : true;
-          return activo && mismaEmpresa;
+          // Solo tipos de documento sobre los que se puede aplicar ND/NC
+          const aplicaNdNc = this.DOCS_APLICABLES_ND_NC.includes(String(r.abreviatura || '').toUpperCase());
+          return activo && mismaEmpresa && aplicaNdNc;
         });
         const opts = filtered.map((r: any) => ({
           label: r.descripcion || r.nombre || r.descripcioncorta || String(r.tipodocumentofiscalId || r.documentoId || r.id),
@@ -366,7 +409,9 @@ export class MovimientosManager implements OnInit {
     this.movimientosLoading.set(true);
     this.service.getMovimientosByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
-        this.movimientosData.set(res);
+        // Lista: solo movimientos VIGENTES (excluir anulados)
+        const vigentes = (res || []).filter((m) => m?.sn_doc_anulado !== 'S');
+        this.movimientosData.set(vigentes);
         this.movimientosLoading.set(false);
       },
       error: () => this.movimientosLoading.set(false),
@@ -377,18 +422,48 @@ export class MovimientosManager implements OnInit {
     this.movimientoModel.set({ ...this.movimientoModel(), fecharegistro: d ? d.toISOString() : null });
   }
 
+  /**
+   * Cambia el origen del documento (manual/automático).
+   * Al alternar se limpia la referencia: manual usa input libre y
+   * automático usa select de documentos pendientes.
+   */
+  onModoManualChange(valor: string) {
+    this.movimientoModel.set({
+      ...this.movimientoModel(),
+      sn_doc_manual: valor === 'N' ? 'N' : 'S',
+      nroreferencia: '',
+    });
+  }
+
+  /** true si la captura actual es un documento manual (nroreferencia libre). */
+  esManual(): boolean {
+    return this.movimientoModel().sn_doc_manual !== 'N';
+  }
+
   onRefSelect(nroReferencia: string) {
+    const refSel = this.debitoReferencias().find(r => r.nroreferencia === nroReferencia);
     this.movimientoModel.set({
       ...this.movimientoModel(),
       nroreferencia: nroReferencia,
       importe: 0,
     });
+    // Coherencia: el Documento Fiscal refleja el tipo del debito elegido
+    // (evita que el usuario elija un tipo que no corresponde a la referencia)
+    if (refSel?.documentoId != null) {
+      this.documentoSelected.set(refSel.documentoId);
+    }
   }
 
+  /**
+   * Limpia SOLO el formulario del movimiento.
+   * Mantiene el cliente seleccionado y su lista de movimientos
+   * (el cliente solo se deselecciona desde "Limpiar filtros" de la lista).
+   */
   cancelarMovimiento() {
     this.movimientoModel.set({
       clienteId: this.selectedCliente()?.clienteId ?? null,
       tipomov: 'D',
+      sn_doc_manual: 'S',
       concepto: '',
       importe: 0,
       nroreferencia: '',
@@ -396,8 +471,6 @@ export class MovimientosManager implements OnInit {
       carteracontableId: null,
     });
     this.documentoSelected.set(null);
-    this.selectedCliente.set(null);
-    this.movimientosData.set([]);
   }
 
   guardarMovimiento() {
@@ -427,28 +500,59 @@ export class MovimientosManager implements OnInit {
       return;
     }
 
+    // ===== Documento Fiscal obligatorio (tipo del documento referenciado) =====
+    // El select ya viene filtrado: solo tipos que admiten ND/NC (FAC, PPR,
+    // TCK, RHP, BDC, CDD, OCA). Intereses y demas tipos quedan fuera.
+    if (!this.documentoSelected()) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Documento Fiscal requerido',
+        detail: 'Seleccione el tipo de documento fiscal de la referencia (Factura, Prestamo, Ticket, etc.)',
+      });
+      return;
+    }
+
     if (typeof payload.importe !== 'number' || payload.importe <= 0) {
       this.msgs.add({ severity: 'warn', summary: 'Importe invalido', detail: 'El importe debe ser mayor que 0' });
       return;
     }
 
-    // Validar debito: referencia obligatoria
-    if (payload.tipomov === 'D') {
-      if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Ingrese el numero de factura o prestamo de referencia' });
-        return;
-      }
-    }
+    // ===== Nro. Referencia =====
+    const esManual = raw.sn_doc_manual !== 'N';
+    const ref = String(payload.nroreferencia ?? '').trim();
 
-    // Validar credito: referencia obligatoria, debe existir como debito
-    if (payload.tipomov === 'C') {
-      if (!payload.nroreferencia || payload.nroreferencia.trim() === '') {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia requerida', detail: 'Seleccione el documento de debito al que aplica el abono' });
+    // Obligatoria en ambos modos
+    if (!ref) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Referencia requerida',
+        detail: esManual
+          ? 'Ingrese el numero de documento que desea registrar manualmente'
+          : 'Seleccione el documento de referencia',
+      });
+      return;
+    }
+    payload.nroreferencia = ref;
+
+    // REGLA DE UNICIDAD (correccion 15/10/2026): la referencia NO se exige
+    // unica en la captura de ND/NC: pueden repetir el mismo numero de factura,
+    // prestamo o ticket (multiples NC sobre una factura, ND acumulativas,
+    // filas de interes de un prestamo). La unicidad aplica al documento
+    // ORIGEN (factura, prestamo, ticket) y se controla en su modulo.
+    if (!esManual && payload.tipomov === 'C') {
+      // AUTOMATICO + credito: la referencia sale del select de debitos
+      // existentes y el importe no puede exceder su saldo pendiente
+      const refSel = this.debitoReferencias().find(r => r.nroreferencia === ref);
+      if (!refSel) {
+        this.msgs.add({ severity: 'warn', summary: 'Referencia invalida', detail: `La referencia "${ref}" no corresponde a ningun debito existente` });
         return;
       }
-      const refsDisponibles = this.debitoReferencias().map(r => r.nroreferencia);
-      if (!refsDisponibles.includes(String(payload.nroreferencia))) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia invalida', detail: `La referencia "${payload.nroreferencia}" no corresponde a ningun debito existente` });
+      if (payload.importe > refSel.saldo) {
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Excede el saldo',
+          detail: `El importe (${this.moneda(payload.importe)}) supera el saldo pendiente de ${refSel.nroreferencia} (${this.moneda(refSel.saldo)})`,
+        });
         return;
       }
     }
@@ -462,29 +566,34 @@ export class MovimientosManager implements OnInit {
 
     payload.nrocliente = payload.nrocliente ?? cliente.nrocliente;
     payload.moduloId = payload.moduloId ?? 4;
-    payload.documentoId = payload.documentoId ?? 3;
     payload.sn_doc_anulado = 'N';
-    payload.sn_cotabilizada = 'N';
+    payload.sn_cotilizada = 'N';
+    // Origen del documento elegido en el form: 'S' manual (input libre) /
+    // 'N' generado por el sistema (select de documentos pendientes)
+    payload.sn_doc_manual = raw.sn_doc_manual === 'N' ? 'N' : 'S';
     payload.factordecambio = payload.factordecambio || 1;
 
-    if (this.documentoSelected()) {
-      payload.tipodocumentofiscalId = payload.tipodocumentofiscalId ?? this.documentoSelected();
-      payload.documentoId = payload.documentoId ?? this.documentoSelected();
+    // Documento Fiscal seleccionado = tipo del documento referenciado
+    // (obligatorio, ya validado arriba y filtrado por tipos que admiten ND/NC)
+    payload.documentoId = this.documentoSelected();
+    if (payload.tipodocumentofiscalId == null) {
+      payload.tipodocumentofiscalId = this.documentoSelected();
     }
 
     this.movimientoSaving.set(true);
     this.service.createMovimiento(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        this.movimientosData.set([...this.movimientosData(), res]);
+      next: () => {
         this.movimientoSaving.set(false);
         this.cancelarMovimiento();
+        // Recargar desde servidor: trae nromovimiento, banderas y saldos reales
+        this.loadMovimientos(cliente.clienteId);
         this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Movimiento registrado correctamente' });
       },
       error: (err) => {
         console.error('[MovimientosManager] Error guardando movimiento', err);
         let detail = 'No se pudo guardar el movimiento';
         if (err?.error?.message) detail = err.error.message;
-        else if (err?.message) detail = err.message;
+        else if (err?.message) detail = err?.error?.message ?? err.message;
         this.movimientoSaving.set(false);
         this.msgs.add({ severity: 'error', summary: 'Error', detail });
       },
@@ -501,5 +610,98 @@ export class MovimientosManager implements OnInit {
     if (tipo === 'C') return 'info';
     if (tipo === 'I') return 'warning';
     return 'danger';
+  }
+
+  // ===== HELPERS DE LA TABLA DE MOVIMIENTOS =====
+
+  /** Formatea fecha sin usar new Date() en el template. */
+  fechaCorta(valor: string | null | undefined): string {
+    if (!valor) return '—';
+    const d = new Date(valor);
+    if (isNaN(d.getTime())) return '—';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}/${d.getFullYear()}`;
+  }
+
+  /** Origen del movimiento: capturado por usuario vs. generado por el sistema. */
+  getOrigenLabel(m: CxcMovimiento): string {
+    return m.sn_doc_manual === 'S' ? 'Manual' : 'Automatico';
+  }
+
+  getOrigenSeverity(m: CxcMovimiento): 'success' | 'secondary' {
+    return m.sn_doc_manual === 'S' ? 'success' : 'secondary';
+  }
+
+  /** Total de débitos (cargos) vigentes del cliente. */
+  totalDebitos(): number {
+    return this.movimientosData()
+      .filter(m => m.tipomov === 'D' && m.sn_doc_anulado !== 'S')
+      .reduce((s, m) => s + (Number(m.importe) || 0), 0);
+  }
+
+  /** Total de créditos (abonos) vigentes del cliente. */
+  totalCreditos(): number {
+    return this.movimientosData()
+      .filter(m => (m.tipomov === 'C' || m.tipomov === 'I') && m.sn_doc_anulado !== 'S')
+      .reduce((s, m) => s + (Number(m.importe) || 0), 0);
+  }
+
+  /** Saldo actual del cliente = débitos − (créditos + intereses). */
+  saldoCliente(): number {
+    return this.totalDebitos() - this.totalCreditos();
+  }
+
+  // ===== ANULACIÓN DE MOVIMIENTOS =====
+
+  /**
+   * Devuelve el motivo por el que el movimiento NO se puede anular
+   * desde esta pantalla, o null si es anulable.
+   * Reglas (espejo del backend):
+   *  - Anulado ya → no.
+   *  - Automático (sn_doc_manual='N') → se anula desde su documento origen.
+   *  - Con partida contable (partidaId) → requiere reversa de la partida.
+   */
+  bloqueoAnulacion(m: CxcMovimiento): string | null {
+    if (m.sn_doc_anulado === 'S') return 'Movimiento ya anulado';
+    if (m.sn_doc_manual !== 'S') return 'Movimiento automatico: se anula desde su documento origen (factura, caja o prestamo)';
+    if (m.partidaId != null) return 'Movimiento con partida contable: requiere reversa de la partida';
+    return null;
+  }
+
+  anularMovimiento(m: CxcMovimiento) {
+    const motivo = this.bloqueoAnulacion(m);
+    if (motivo) {
+      this.msgs.add({ severity: 'warn', summary: 'No anulable', detail: motivo });
+      return;
+    }
+
+    this.confirm.confirm({
+      message: `¿Anular el movimiento #${m.nromovimiento} (${this.getTipoMovLabel(m.tipomov)}) por L ${this.moneda(m.importe)}?<br/>Referencia: ${m.nroreferencia || '—'}`,
+      header: 'Confirmar anulacion',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Si, anular',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.ejecutarAnulacion(m);
+      },
+    });
+  }
+
+  private ejecutarAnulacion(m: CxcMovimiento) {
+    this.movimientosLoading.set(true);
+    this.service.anularMovimiento(m.clienteMovId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.loadMovimientos(m.clienteId);
+        this.msgs.add({ severity: 'success', summary: 'Movimiento anulado', detail: `Movimiento #${m.nromovimiento} anulado correctamente` });
+      },
+      error: (err) => {
+        this.movimientosLoading.set(false);
+        let detail = 'No se pudo anular el movimiento';
+        if (err?.error?.message) detail = err.error.message;
+        else if (err?.message) detail = err.message;
+        this.msgs.add({ severity: 'error', summary: 'Error', detail });
+      },
+    });
   }
 }

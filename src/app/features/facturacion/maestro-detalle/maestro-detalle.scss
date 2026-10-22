@@ -1,31 +1,12 @@
-.dv-cards {
-  padding: 0.75rem;
-}
+.lista-maestro {
+  ::ng-deep {
+    .fila-click {
+      cursor: pointer;
+    }
 
-.dv-card {
-  cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    transform: translateY(-1px);
-  }
-
-  .dv-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.15rem 0;
-  }
-
-  .dv-label {
-    color: #64748b;
-    font-size: 0.78rem;
-  }
-
-  .dv-value {
-    font-weight: 600;
-    color: #334155;
-    text-align: right;
+    .c-titulo {
+      font-weight: 600;
+      color: var(--c-text, #1e293b);
+    }
   }
 }

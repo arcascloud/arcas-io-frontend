@@ -1,0 +1,232 @@
+:host {
+  display: block;
+}
+
+.form-grid {
+  display: grid;
+  // Layout de cabecera: 4 columnas → fila 1 (Periodo, Año, Departamento,
+  // Cuenta Bancaria) y fila 2 (Pagada, Items, Total, Anulada).
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 1200px) {
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  p-select,
+  p-multiselect,
+  p-inputnumber,
+  p-datepicker {
+    width: 100%;
+  }
+
+  // Total a Pagar (solo lectura): fondo apagado, no editable.
+  .total-lectura {
+    ::ng-deep input {
+      background: var(--c-surface-ground);
+      color: var(--c-text);
+      font-weight: 600;
+      cursor: default;
+    }
+  }
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-texto-label);
+  }
+}
+
+.acciones-form {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+// Celda de las acciones de cabecera: Flujo Generar → Autorizar →
+// Contabilizar, alineado a la IZQUIERDA (pedido 20/10/2026).
+.campo-accion-grid {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .estado-planilla {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 0.5rem;
+  }
+}
+
+// Botones de acción de planilla: empujan Cancelar/Guardar a la derecha.
+.acciones-form .accion-izq {
+  margin-right: auto;
+}
+
+.acciones-form .accion-izq + .accion-izq {
+  margin-right: 0;
+}
+
+.detalles-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.detalles-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.det-table {
+  p-inputnumber {
+    width: 100%;
+  }
+
+  // Cabecera de la columna checkbox "Pagar": etiqueta + marcar todas.
+  th.th-pagar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  // Cabecera de 2 líneas de las columnas de dinero (Salario/Bruto,
+  // SubTot./Egresos, SubTot./Ingresos, Salario/Neto a Pagar).
+  th.th-dinero {
+    .th-pre {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 400;
+      color: var(--c-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .th-main {
+      display: block;
+      font-weight: 600;
+    }
+  }
+
+  // Columna Acciones: expand + imprimir recibo + borrar.
+  th.th-acciones {
+    width: 8.5rem;
+  }
+
+  td.td-acciones {
+    white-space: nowrap;
+
+    p-button {
+      vertical-align: middle;
+      margin-left: 0.1rem;
+    }
+  }
+
+  // Subtotales calculados (SubTot. Egresos / SubTot. Ingresos): texto
+  // alineado a la derecha para coincidir con los inputs de dinero.
+  .monto-sub {
+    display: block;
+    text-align: right;
+    font-weight: 600;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+    padding-right: 0.2rem;
+  }
+
+  // Fila expandida (Expand): fondo apagado con los grupos de detalle.
+  tr.det-expandida > td {
+    background: var(--c-surface-ground);
+    padding: 0.75rem 1rem 0.9rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .exp-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem 2rem;
+    max-width: 46rem;
+  }
+
+  .exp-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .exp-titulo {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+    border-bottom: 1px solid var(--c-border);
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .exp-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+
+    .exp-label {
+      font-size: 0.82rem;
+      color: var(--c-text);
+    }
+
+    .exp-input {
+      width: 9.5rem;
+      flex: 0 0 9.5rem;
+    }
+  }
+
+  .exp-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.3rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed var(--c-border);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  @media (max-width: 640px) {
+    .exp-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Moneda y números: alineados a la derecha con formato es-HN (millares).
+  .moneda-input,
+  .numero-input {
+    ::ng-deep input {
+      text-align: right;
+    }
+  }
+}

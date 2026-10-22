@@ -1,0 +1,61 @@
+.page {
+  padding: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--c-text);
+  margin: 0 0 0.25rem;
+}
+
+.page-subtitle {
+  color: var(--c-text-muted);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.centro {
+  text-align: center;
+}
+
+.col-acciones {
+  width: 6rem;
+  text-align: center;
+}
+
+.fila-click {
+  cursor: pointer;
+
+  &:hover td {
+    background: var(--c-surface-ground);
+  }
+}
+
+.p-select {
+  width: 100%;
+}

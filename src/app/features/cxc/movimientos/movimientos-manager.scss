@@ -523,3 +523,129 @@
     }
   }
 }
+
+// ===== Historial de movimientos del cliente =====
+
+.movs-block {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.movs-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+
+  .prestamo-col-title {
+    margin: 0;
+  }
+}
+
+.movs-saldos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+
+  b {
+    color: var(--c-text);
+    font-weight: 600;
+  }
+
+  .movs-saldo-uno b {
+    color: var(--c-primary);
+  }
+}
+
+.movs-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  background: var(--c-surface-ground);
+  border: 1px dashed var(--c-border);
+  border-radius: 6px;
+  text-align: center;
+
+  i {
+    font-size: 1.4rem;
+    opacity: 0.6;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.movs-table {
+  :host ::ng-deep {
+    .p-datatable-thead > tr > th {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      background: var(--c-surface-ground);
+      color: var(--c-text-muted);
+      border-bottom: 1px solid var(--c-border);
+    }
+
+    .p-datatable-tbody > tr > td {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--c-border);
+    }
+
+    .p-datatable-tbody > tr:hover {
+      background: var(--c-surface-ground);
+    }
+
+    .tag-sm {
+      font-size: 0.65rem;
+      padding: 0.1rem 0.4rem;
+    }
+
+    .p-paginator {
+      padding: 0.35rem 0.6rem;
+      font-size: 0.75rem;
+    }
+  }
+}
+
+.mov-concepto {
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acciones-cell {
+  text-align: center;
+}
+
+.acciones-header {
+  text-align: center;
+}
+
+tr.mov-anulado td {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+tr.mov-anulado td:nth-last-child(-n + 2) {
+  // Los tags de estado/origen no se tachan
+  text-decoration: none;
+}
+
+.text-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

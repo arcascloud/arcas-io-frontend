@@ -47,7 +47,7 @@
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
     size="small"
-    styleClass="p-datatable-striped">
+    [tableStyle]="{ 'table-layout': 'fixed' }">
 
     <ng-template pTemplate="header">
       <tr>

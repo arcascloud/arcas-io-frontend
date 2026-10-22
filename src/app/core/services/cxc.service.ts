@@ -222,6 +222,16 @@ export class CxcService {
   }
 
   /**
+   * Anula un movimiento CxC (solo manuales no contabilizados).
+   * El backend estampa fec_anulacion con fechaSistema.
+   * @param id - Identificador del movimiento (clienteMovId)
+   * @returns Observable con el movimiento anulado
+   */
+  anularMovimiento(id: number): Observable<CxcMovimiento> {
+    return this.api.putBase<CxcMovimiento>(`/cxc/movimientos/${id}/anular`, {});
+  }
+
+  /**
    * Crea un nuevo préstamo en CxC.
    * @param payload - Datos del préstamo a crear
    * @returns Observable con el préstamo creado

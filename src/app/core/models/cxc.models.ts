@@ -24,6 +24,26 @@ export interface CxcCliente {
 
 export interface CxcMovimiento {
   clienteMovId: number;
+  nromovimiento?: number;
+  fecharegistro?: string | null;
+  clienteId: number;
+  nrocliente?: string;
+  moduloId?: number;
+  documentoId?: number;
+  /** D=Débito, C=Crédito, I=Interés/mora (generado por caja) */
+  tipomov?: 'D' | 'C' | 'I' | string;
+  nroreferencia?: string | null;
+  importe?: number | string;
+  concepto?: string | null;
+  /** 'S' = movimiento contabilizado a partidas */
+  sn_cotabilizada?: 'S' | 'N';
+  /** 'S' = capturado manualmente por usuario; 'N' = automático (factura, caja, préstamo) */
+  sn_doc_manual?: 'S' | 'N';
+  sn_doc_anulado?: 'S' | 'N';
+  /** Partida contable que asentó el movimiento (si la tiene, no se anula aquí) */
+  partidaId?: number | null;
+  carteracontableId?: number | null;
+  empresaId?: number;
   [key: string]: any;
 }
 

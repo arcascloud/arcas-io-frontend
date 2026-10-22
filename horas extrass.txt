@@ -1,0 +1,59 @@
+cuando se termine el insert de la asistencia, hay que crear las api para estas tablas, despues el front-end 
+de autorizacion del pago de horas extras, es un maestro-detalle de autorizacion, se debe hacer el p-select 
+del departamento de la empresa, un p-select de empleados para escojer el jefe que solicita las horas extras
+y el gerente que aprueba las horas extras, se van a pagar las horas extras solo a los empleados que esten 
+autorizados a trabajar con la debida autorizacion aprobado, y que su asistencia este dentro del rango seleccionado.
+
+-- Volcando estructura para tabla arcasdb.pleingresos
+create table if not exists `pleauthoraexmae` (
+  `pleauthoraexmaeid` int not null auto_increment,
+  `fecha_registro` datetime default null,
+  `anio_ejercicio` int not null,
+  `periodo` int not null,
+  `deptoId` int not null,
+  `solicitado_por` int not null,
+  `autorizado_por` int not null,
+  `fecha_desde` datetime default null,
+  `fecha_hasta` datetime default null,
+  `razon_justificacion` varchar(500),
+  `empresaid` int not null,
+  `usuariocreated` varchar(20) collate utf8mb3_spanish_ci default null,
+  `fechacreated` datetime default null,
+  `usuarioupdated` varchar(20) collate utf8mb3_spanish_ci default null,
+  `fechaupdated` datetime default null,
+  primary key (`pleauthoraexmaeid`),
+  key `fk_pleauthoraexmae_empresa` (`empresaid`),
+  key `fk_create_pleauthoraexmae_tusuarios` (`usuariocreated`),
+  key `fk_update_pleauthoraexmae_tusuarios` (`usuarioupdated`),
+  constraint `fk_create_pleauthoraexmae_tusuarios` foreign key (`usuariocreated`) references `tusuarios` (`usuario`) on delete restrict on update cascade,
+  constraint `fk_pleauthoraexmae_empresa` foreign key (`empresaid`) references `tempresas` (`empresaid`) on delete restrict on update cascade,
+  constraint `fk_pleauthoraexmae_plempleados` foreign key (`solicitado_por`) references `plempleados` (`empleadoid`) on delete restrict on update cascade,
+  constraint `fk_pleauthoraexmae_plplempleados` foreign key (`solicitado_por`) references `plempleados` (`empleadoid`) on delete restrict on update cascade,
+  constraint `fk_update_pleauthoraexmae_tusuarios` foreign key (`usuarioupdated`) references `tusuarios` (`usuario`) on delete restrict on update cascade
+) engINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci COMMENT='Esta tabla registra las autorizacion para el pago de horas extras';
+
+CREATE TABLE IF NOT EXISTS `pleauthoraexdet` (
+  `pleauthoraexdetId` int NOT NULL AUTO_INCREMENT,
+  `pleauthoraexmaeid` int NOT NULL,
+  `fecharegistro` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `empleadoId` int NOT NULL,
+  `departamentoId` int DEFAULT NULL,
+  `sn_pagar` enum('S','N') CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'S',
+  `empresaId` int NOT NULL,
+  `usuarioCreated` varchar(20) COLLATE utf8mb3_spanish_ci DEFAULT NULL,
+  `fechaCreated` datetime DEFAULT NULL,
+  `usuarioUpdated` varchar(20) COLLATE utf8mb3_spanish_ci DEFAULT NULL,
+  `fechaUpdated` datetime DEFAULT NULL,
+  PRIMARY KEY (`pleauthoraexdetId`),
+  UNIQUE KEY `pleauthoraexdetUnique` (`pleauthoraexmaeid`,`empleadoId`,`empresaId`),
+  KEY `fk_pleauthoraexdet_empresa` (`empresaId`),
+  KEY `fk_create_pleauthoraexdet_tusuarios` (`usuarioCreated`),
+  KEY `fk_update_pleauthoraexdet_tusuarios` (`usuarioUpdated`),
+  KEY `fk_pleauthoraexdet_plplempleados` (`empleadoId`),
+  CONSTRAINT `fk_create_pleauthoraexdet_tusuarios` FOREIGN KEY (`usuarioCreated`) REFERENCES `tusuarios` (`usuario`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_pleauthoraexdet_empresa` FOREIGN KEY (`empresaId`) REFERENCES `tempresas` (`empresaId`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_pleauthoraexdet_plempleados` FOREIGN KEY (`empleadoId`) REFERENCES `plempleados` (`empleadoId`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_pleauthoraexdet_pleplamae` FOREIGN KEY (`pleauthoraexmaeid`) REFERENCES `pleauthoraexmae` (`pleauthoraexmaeid`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_pleauthoraexdet_plplempleados` FOREIGN KEY (`empleadoId`) REFERENCES `plempleados` (`empleadoId`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_update_pleauthoraexdet_tusuarios` FOREIGN KEY (`usuarioUpdated`) REFERENCES `tusuarios` (`usuario`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci COMMENT='Esta tabla registra el detalle de las autorizacion de pago a empleados por concepto de horas extras';

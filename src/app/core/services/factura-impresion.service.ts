@@ -57,6 +57,38 @@ export interface FacturaImpresionData {
   sucursal?: { descripcion?: string; direccion?: string; telefono1?: string; telefono2?: string } | null;
 }
 
+/** Montos de una línea de planilla (plepladet) para el recibo de pago */
+export interface ReciboPlanillaMontos {
+  sueldobruto: number;
+  /** Egresos (se imprimen en negativo) */
+  ihss: number;
+  rap: number;
+  rtf: number;
+  /** Impuesto Vecinal (importe_drvc, columna propia desde 20/10/2026) */
+  vecinal: number;
+  otras: number;
+  /** Ingresos (se imprimen en positivo) */
+  comisiones: number;
+  horasExtras: number;
+  bonos: number;
+  /** Neto a pagar (sueldoneto de la línea, cálculo del backend) */
+  neto: number;
+}
+
+/** Datos del recibo de pago de UNA línea de planilla (imprimirReciboPlanilla) */
+export interface ReciboPlanillaData {
+  /** Período legible (ej: "Octubre 2026") */
+  periodo: string;
+  /** Nro/Id de la planilla (cabecera), si ya está guardada */
+  nroplanilla?: number | null;
+  /** Empleado (plempleados) */
+  empleado: { nombre: string };
+  /** Montos de la línea */
+  montos: ReciboPlanillaMontos;
+  /** Fecha de emisión (por defecto: hoy) */
+  fecha?: string | Date;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FacturaImpresionService {
   private api = inject(ApiService);
@@ -890,6 +922,202 @@ export class FacturaImpresionService {
       styles: {
         header: { fontSize: 18, bold: true },
         tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#10b981' },
+      },
+      defaultStyle: { fontSize: 10 },
+    };
+  }
+
+  // =========================================================================
+  // PLANILLA — RECIBO DE PAGO (línea por empleado: plepladet)
+  // =========================================================================
+
+  /**
+   * Imprime el recibo de pago de UNA línea de planilla (empleado) en el
+   * formato parametrizado (TICKET 80mm / CARTA LETTER). Los montos salen
+   * de la línea seleccionada en la tabla (mismos valores que ve el usuario).
+   * Documento NO fiscal: no toca CAI/correlativos.
+   */
+  async imprimirReciboPlanilla(data: ReciboPlanillaData): Promise<void> {
+    const emp = await this.cargarEmpresaImpresion();
+    const formato = await this.getFormatoImpresion();
+    const doc =
+      formato === 'TICKET'
+        ? this.buildReciboPlanillaTicket(data, emp)
+        : this.buildReciboPlanillaCarta(data, emp);
+    const pdfMake = await this.cargarPdfMake();
+    const blob: Blob = await pdfMake.createPdf(doc).getBlob();
+    this.imprimirBlobEnIframe(blob);
+  }
+
+  /** Egresos del recibo con signo negativo (IHSS, RAP, RTF, Vecinal, Otras Ded.) */
+  private egresosRecibo(m: ReciboPlanillaMontos): { label: string; monto: number }[] {
+    return [
+      { label: 'IHSS', monto: -Number(m.ihss || 0) },
+      { label: 'RAP', monto: -Number(m.rap || 0) },
+      { label: 'RTF', monto: -Number(m.rtf || 0) },
+      { label: 'Imp. Vecinal', monto: -Number(m.vecinal || 0) },
+      { label: 'Otras Deducciones', monto: -Number(m.otras || 0) },
+    ];
+  }
+
+  /** Ingresos del recibo con signo positivo (Comisiones, H. Extras, Bonos) */
+  private ingresosRecibo(m: ReciboPlanillaMontos): { label: string; monto: number }[] {
+    return [
+      { label: 'Comisiones', monto: Number(m.comisiones || 0) },
+      { label: 'Horas Extras', monto: Number(m.horasExtras || 0) },
+      { label: 'Bonos', monto: Number(m.bonos || 0) },
+    ];
+  }
+
+  /** TICKET de recibo de planilla — PDF 80mm (bobina térmica, Courier) */
+  private buildReciboPlanillaTicket(data: ReciboPlanillaData, emp: any): any {
+    const m = data.montos;
+    const ancho = Math.round(ANCHO_TICKET_MM * MM_A_PT * 100) / 100;
+    const anchoUtil = Math.round((ancho - 2 * MARGEN_TICKET_PT) * 100) / 100;
+    const egresos = this.egresosRecibo(m);
+    const ingresos = this.ingresosRecibo(m);
+    const totEgresos = egresos.reduce((s, e) => s + e.monto, 0);
+    const totIngresos = ingresos.reduce((s, e) => s + e.monto, 0);
+    const signo = (v: number) => (v < 0 ? '-' : '') + this.formatNum(Math.abs(v));
+
+    const content: any[] = [
+      { text: emp.nombre || 'EMPRESA', bold: true, fontSize: 12, alignment: 'center', margin: [0, 0, 0, 2] },
+      ...(emp.rtn ? [{ text: 'RTN: ' + emp.rtn, bold: true, fontSize: 7.5, alignment: 'center' }] : []),
+      ...(emp.direccion ? [{ text: emp.direccion, fontSize: 7.5, alignment: 'center' }] : []),
+      ...(emp.telefono ? [{ text: 'Tel: ' + emp.telefono, fontSize: 7.5, alignment: 'center' }] : []),
+      this.sepTicket(anchoUtil),
+      { text: 'RECIBO DE PAGO', bold: true, fontSize: 11, alignment: 'center', margin: [0, 2, 0, 2] },
+      this.filaTicket('Planilla:', data.periodo + (data.nroplanilla ? `  #${data.nroplanilla}` : ''), true, 9),
+      this.filaTicket('Empleado:', String(data.empleado.nombre || '').substring(0, 34)),
+      this.filaTicket('Fecha:', this.fechaLarga(data.fecha ?? new Date())),
+      this.sepTicket(anchoUtil),
+      this.filaTicket('SALARIO BRUTO:', 'L ' + this.formatNum(Number(m.sueldobruto) || 0), true, 9),
+      { text: 'EGRESOS', bold: true, fontSize: 7.5, margin: [0, 4, 0, 1] },
+      ...egresos.map((e) => this.filaTicket('  ' + e.label + ':', signo(e.monto))),
+      this.filaTicket('  Total egresos:', signo(totEgresos), true, 8),
+      { text: 'INGRESOS', bold: true, fontSize: 7.5, margin: [0, 4, 0, 1] },
+      ...ingresos.map((e) => this.filaTicket('  ' + e.label + ':', this.formatNum(e.monto))),
+      this.filaTicket('  Total ingresos:', this.formatNum(totIngresos), true, 8),
+      this.sepTicket(anchoUtil),
+      this.filaTicket('NETO A PAGAR:', 'L ' + this.formatNum(Number(m.neto) || 0), true, 11),
+      this.sepTicket(anchoUtil),
+      {
+        columns: [
+          { text: '\n___________________\nElaborado por', width: '*', alignment: 'center', fontSize: 7 },
+          { text: '\n___________________\nRecibí conforme', width: '*', alignment: 'center', fontSize: 7 },
+        ],
+        margin: [0, 6, 0, 2],
+      },
+      { text: 'Documento de pago - no fiscal', fontSize: 6.5, alignment: 'center', color: '#555555', margin: [0, 6, 0, 0] },
+      { text: 'Impreso: ' + this.fechaLarga(new Date()) + '  ' + this.horaCorta(new Date()), fontSize: 6.5, alignment: 'center', color: '#555555' },
+    ];
+
+    // Altura estimada (una sola página; se redondea hacia arriba para que
+    // las firmas y el pie nunca queden cortados).
+    const filas = 4 /* empresa */ + 4 /* datos */ + egresos.length + ingresos.length + 6 /* títulos/totales */;
+    const alto = Math.max(560, Math.ceil(360 + filas * 13 + 90));
+
+    return {
+      pageSize: { width: ancho, height: alto },
+      pageMargins: [MARGEN_TICKET_PT, MARGEN_TICKET_PT, MARGEN_TICKET_PT, MARGEN_TICKET_PT],
+      content,
+      defaultStyle: { font: 'Courier', fontSize: 8 },
+    };
+  }
+
+  /** CARTA de recibo de planilla — PDF pdfMake (LETTER) */
+  private buildReciboPlanillaCarta(data: ReciboPlanillaData, emp: any): any {
+    const m = data.montos;
+    const egresos = this.egresosRecibo(m);
+    const ingresos = this.ingresosRecibo(m);
+    const totEgresos = egresos.reduce((s, e) => s + e.monto, 0);
+    const totIngresos = ingresos.reduce((s, e) => s + e.monto, 0);
+    const fecha = this.fechaLarga(data.fecha ?? new Date());
+
+    /** Celda monto con signo (egresos en negativo) */
+    const celdaMonto = (monto: number, bold = false, size?: number) => ({
+      text: (monto < 0 ? '-L ' : 'L ') + this.formatNum(Math.abs(monto)),
+      alignment: 'right',
+      bold,
+      ...(size ? { fontSize: size } : {}),
+    });
+    /** Fila grupo (EGRESOS/INGRESOS) que ocupa las 2 columnas */
+    const filaGrupo = (texto: string) =>
+      [{ text: texto, colSpan: 2, bold: true, fillColor: '#f1f5f9', margin: [0, 3, 0, 3] }, {}];
+
+    const body: any[] = [
+      [
+        { text: 'CONCEPTO', style: 'tableHeader' },
+        { text: 'MONTO', style: 'tableHeader', alignment: 'right' },
+      ],
+      [
+        { text: 'Salario Bruto', bold: true },
+        celdaMonto(Number(m.sueldobruto) || 0, true),
+      ],
+      filaGrupo('EGRESOS (descuentos)'),
+      ...egresos.map((e) => [e.label, celdaMonto(e.monto)]),
+      [{ text: 'Total Egresos', bold: true }, celdaMonto(totEgresos, true)],
+      filaGrupo('INGRESOS (adiciones)'),
+      ...ingresos.map((e) => [e.label, celdaMonto(e.monto)]),
+      [{ text: 'Total Ingresos', bold: true }, celdaMonto(totIngresos, true)],
+      [
+        { text: 'NETO A PAGAR', style: 'neto' },
+        celdaMonto(Number(m.neto) || 0, true, 13),
+      ],
+    ];
+
+    return {
+      pageSize: 'LETTER',
+      pageMargins: [40, 60, 40, 60],
+      content: [
+        { text: emp.nombre || 'EMPRESA', style: 'header', alignment: 'center' },
+        { text: emp.rtn ? 'RTN: ' + emp.rtn : '', alignment: 'center', fontSize: 9 },
+        { text: emp.direccion || '', alignment: 'center', fontSize: 9 },
+        { text: emp.telefono ? 'Tel: ' + emp.telefono : '', alignment: 'center', fontSize: 9 },
+        { text: '\n' },
+        {
+          columns: [
+            { text: '', width: '*' },
+            {
+              text: [
+                { text: 'RECIBO DE PAGO\n', bold: true, fontSize: 16 },
+                { text: 'Planilla: ', bold: true },
+                data.periodo + (data.nroplanilla ? ` (#${data.nroplanilla})` : ''),
+                '\n',
+                { text: 'Fecha de emisión: ', bold: true },
+                fecha,
+              ],
+              width: '*',
+              alignment: 'right',
+            },
+          ],
+        },
+        { text: '\n' },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
+        { text: '\n' },
+        {
+          columns: [
+            { text: [{ text: 'EMPLEADO\n', bold: true, fontSize: 10 }, data.empleado.nombre || '-'], width: '*' },
+          ],
+        },
+        { text: '\n' },
+        { table: { headerRows: 1, widths: ['*', 140], body }, layout: 'lightHorizontalLines' },
+        { text: '\n' },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
+        { text: '\n' },
+        {
+          columns: [
+            { text: '\n____________________________\nElaborado por', width: '*', alignment: 'center', fontSize: 9 },
+            { text: '\n____________________________\nRecibí conforme', width: '*', alignment: 'center', fontSize: 9 },
+          ],
+        },
+        { text: '\nDocumento de pago - no fiscal', fontSize: 8, alignment: 'center', color: '#64748b', margin: [0, 10, 0, 0] },
+        { text: 'Impreso: ' + this.fechaLarga(new Date()) + ' ' + this.horaCorta(new Date()), fontSize: 8, alignment: 'center', color: '#64748b' },
+      ],
+      styles: {
+        header: { fontSize: 18, bold: true },
+        tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#10b981' },
+        neto: { bold: true, fontSize: 13, color: '#10b981' },
       },
       defaultStyle: { fontSize: 10 },
     };

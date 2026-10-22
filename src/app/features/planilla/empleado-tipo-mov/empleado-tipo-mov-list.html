@@ -1,0 +1,120 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Ingresos y Egresos por Empleado</h1>
+      <p class="page-subtitle">
+        Seleccione un empleado para gestionar sus movimientos de ingreso y egreso
+      </p>
+    </div>
+    <div class="header-actions">
+      <p-button
+        label="Retenciones"
+        icon="pi pi-calculator"
+        severity="warn"
+        variant="outlined"
+        size="small"
+        rounded
+        pTooltip="Revisión de ISR e Impuesto Vecinal por empleado"
+        (onClick)="irARetenciones()"
+      />
+    </div>
+  </header>
+
+  <div class="card">
+    <p-table
+      [value]="data()"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      size="small"
+      [loading]="cargando()"
+      [globalFilterFields]="['nombres', 'apellidos', 'nrodocumento', 'email']"
+      #dt
+    >
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="nombres">Nombre <p-sortIcon field="nombres" /></th>
+          <th pSortableColumn="apellidos">Apellido <p-sortIcon field="apellidos" /></th>
+          <th pSortableColumn="nrodocumento">DNI <p-sortIcon field="nrodocumento" /></th>
+          <th pSortableColumn="email">Email <p-sortIcon field="email" /></th>
+          <th>Estado</th>
+          <th class="text-center col-acciones">Acciones</th>
+        </tr>
+        <tr>
+          <th>
+            <input
+              pInputText
+              type="text"
+              pSize="small"
+              placeholder="Buscar nombre"
+              (input)="dt.filterGlobal($any($event.target).value, 'contains')"
+            />
+          </th>
+          <th>
+            <input
+              pInputText
+              type="text"
+              pSize="small"
+              placeholder="Buscar apellido"
+              (input)="dt.filterGlobal($any($event.target).value, 'contains')"
+            />
+          </th>
+          <th>
+            <input
+              pInputText
+              type="text"
+              pSize="small"
+              placeholder="Buscar DNI"
+              (input)="dt.filterGlobal($any($event.target).value, 'contains')"
+            />
+          </th>
+          <th>
+            <input
+              pInputText
+              type="text"
+              pSize="small"
+              placeholder="Buscar email"
+              (input)="dt.filterGlobal($any($event.target).value, 'contains')"
+            />
+          </th>
+          <th></th>
+          <th></th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-e>
+        <tr class="fila-click" (click)="abrirMovimientos(e.empleadoId)">
+          <td>{{ e.nombres }}</td>
+          <td>{{ e.apellidos }}</td>
+          <td>{{ e.nrodocumento }}</td>
+          <td>{{ e.email }}</td>
+          <td>
+            <p-tag
+              [value]="activoLbl(e.sn_activo)"
+              [severity]="activoSev(e.sn_activo)"
+              rounded
+            />
+          </td>
+          <td class="text-center">
+            <p-button
+              icon="pi pi-money-bill"
+              severity="secondary"
+              size="small"
+              rounded="true"
+              [text]="true"
+              pTooltip="Ver ingresos y egresos"
+              tooltipPosition="left"
+              (onClick)="abrirMovimientos(e.empleadoId); $event.stopPropagation()"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="centro">No se encontraron empleados</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</section>

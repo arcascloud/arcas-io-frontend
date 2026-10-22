@@ -37,19 +37,20 @@
         />
       </div>
 
-      <!-- 2. Módulo de Configuración -->
+      <!-- 2. Módulos de Configuración — selección múltiple -->
       <div class="ctx-field">
-        <label>Módulo de Configuración</label>
-        <p-select
+        <label>Módulos de Configuración</label>
+        <p-multiSelect
           [options]="modulos()"
           optionLabel="label"
           optionValue="value"
           placeholder="Todos los módulos"
           styleClass="w-full"
-          [ngModel]="moduloId()"
-          (ngModelChange)="onModuloChange($event)"
+          [ngModel]="modulosFiltro()"
+          (ngModelChange)="onModulosChange($event || [])"
           size="small"
           [appendTo]="'body'"
+          [maxSelectedLabels]="4"
           [showClear]="true"
         />
       </div>
@@ -140,7 +141,7 @@
       </tr>
     </ng-template>
 
-    <ng-template pTemplate="empty">
+    <ng-template pTemplate="emptymessage">
       <tr>
         <td colspan="7" class="text-center p-4">
           @if (!empresaId()) {

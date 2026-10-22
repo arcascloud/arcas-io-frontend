@@ -121,10 +121,11 @@ export class CopdamaeManager implements OnInit {
       .sort((a, b) => a.label.localeCompare(b.label))
   );
 
-  /** Auxiliares del filtro de lista: módulos 2,3,4,5,6,7 (los que usa el ERP) */
+  /** Auxiliares del filtro de lista: los módulos activos con auxiliar contable
+   *  (flag `tmodulos.sn_auxiliar_contable='S'` — sin lista hardcodeada) */
   auxiliaresFiltroOptions = computed(() =>
     this.modulos()
-      .filter(m => [2, 3, 4, 5, 6, 7].includes(m.moduloId))
+      .filter(m => m.sn_activo === 'S' && m.sn_auxiliar_contable === 'S')
       .map(m => ({ label: m.descripcion_contable || m.descripcion, value: m.moduloId }))
       .sort((a, b) => a.value - b.value)
   );
@@ -484,6 +485,7 @@ export class CopdamaeManager implements OnInit {
       CAJA: 'Caja',
       CHEQ: 'Cheque',
       CIERRE: 'Cierre contable',
+      PLANILLA: 'Planilla',
     };
     return mapa[prefijo] || this.getModuloLabel(partida.moduloId);
   }
@@ -523,6 +525,10 @@ export class CopdamaeManager implements OnInit {
         // fiscales); el id del movimiento queda en bcosmovimientos.partidaId,
         // no aquí → sin params, se navega al listado del historial.
         return { ruta: '/bancos/historial' };
+      case 8:
+        // Planilla: la referencia es PLANILLA-{nroplanilla} y la ruta de edición
+        // necesita planillaId → se navega al listado de planillas.
+        return { ruta: '/planilla/planillas' };
       default:
         return null;
     }

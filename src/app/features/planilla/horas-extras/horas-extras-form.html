@@ -1,0 +1,385 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">
+        @if (esEdicion()) {
+          Autorización de horas extras #{{ id() }}
+        } @else {
+          Nueva autorización de horas extras
+        }
+      </h1>
+      <p class="page-subtitle">
+        Se pagan horas extras sólo a los empleados autorizados cuya asistencia caiga dentro del rango seleccionado
+      </p>
+    </div>
+    <div class="header-actions">
+      <p-button
+        label="Volver"
+        icon="pi pi-arrow-left"
+        size="small"
+        rounded
+        variant="text"
+        severity="secondary"
+        (onClick)="volver()"
+      />
+      @if (esEdicion()) {
+        <p-button
+          label="Eliminar"
+          icon="pi pi-trash"
+          size="small"
+          rounded
+          variant="text"
+          severity="danger"
+          [disabled]="guardando()"
+          (onClick)="eliminar()"
+        />
+      }
+      <p-button
+        label="Guardar"
+        icon="pi pi-check"
+        size="small"
+        rounded
+        severity="success"
+        [loading]="guardando()"
+        (onClick)="guardar()"
+      />
+    </div>
+  </header>
+
+  <!-- ─────────────────────────── MAESTRO ─────────────────────────── -->
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">Datos de la autorización</h2>
+      <span class="chip">{{ periodoLabel() }}</span>
+    </div>
+
+    <div class="form-grid">
+      <div class="campo">
+        <label>Departamento <span class="req">*</span></label>
+        <p-select
+          [options]="opcionesDeptos()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="form().deptoId"
+          (ngModelChange)="actualizar({ deptoId: $event })"
+          placeholder="Seleccionar departamento"
+          styleClass="w-full"
+          [appendTo]="'body'"
+          size="small"
+          [disabled]="cargando()"
+        />
+      </div>
+
+      <div class="campo">
+        <label>Jefe que solicita <span class="req">*</span></label>
+        <p-select
+          [options]="opcionesEmpleados()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="form().solicitado_por"
+          (ngModelChange)="actualizar({ solicitado_por: $event })"
+          placeholder="Seleccionar jefe"
+          styleClass="w-full"
+          [appendTo]="'body'"
+          size="small"
+          [disabled]="cargando()"
+        />
+      </div>
+
+      <div class="campo">
+        <label>Gerente que aprueba <span class="req">*</span></label>
+        <p-select
+          [options]="opcionesEmpleados()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="form().autorizado_por"
+          (ngModelChange)="actualizar({ autorizado_por: $event })"
+          placeholder="Seleccionar gerente"
+          styleClass="w-full"
+          [appendTo]="'body'"
+          size="small"
+          [disabled]="cargando()"
+        />
+      </div>
+
+      <div class="campo">
+        <label>Fecha desde <span class="req">*</span></label>
+        <p-datepicker
+          [ngModel]="form().fecha_desde"
+          (ngModelChange)="actualizar({ fecha_desde: $event })"
+          placeholder="Desde"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          [appendTo]="'body'"
+          styleClass="w-full"
+          size="small"
+          [disabled]="cargando()"
+        />
+      </div>
+
+      <div class="campo">
+        <label>Fecha hasta <span class="req">*</span></label>
+        <p-datepicker
+          [ngModel]="form().fecha_hasta"
+          (ngModelChange)="actualizar({ fecha_hasta: $event })"
+          placeholder="Hasta"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          [appendTo]="'body'"
+          styleClass="w-full"
+          size="small"
+          [disabled]="cargando()"
+        />
+      </div>
+
+      <div class="campo">
+        <label>Ejercicio / Período</label>
+        <input pInputText pSize="small" [value]="periodoLabel()" readonly />
+      </div>
+
+      <div class="campo campo--full">
+        <label>Motivo / justificación</label>
+        <textarea
+          pInputTextarea
+          rows="2"
+          maxlength="500"
+          placeholder="Motivo de la solicitud de horas extras…"
+          [ngModel]="form().razon_justificacion"
+          (ngModelChange)="actualizar({ razon_justificacion: $event })"
+        ></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── DETALLE ─────────────────────────── -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Empleados autorizados</h2>
+        <p class="nota">Sólo estos empleados pueden cobrar las horas extras del período.</p>
+      </div>
+      <div class="detalle-add">
+        <p-select
+          [options]="opcionesDisponibles()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="empleadoAAgregar()"
+          (ngModelChange)="empleadoAAgregar.set($event)"
+          placeholder="Seleccionar empleado"
+          styleClass="w-18rem"
+          [appendTo]="'body'"
+          size="small"
+          [disabled]="opcionesDisponibles().length === 0"
+        />
+        <p-button
+          label="Agregar"
+          icon="pi pi-plus"
+          size="small"
+          rounded
+          severity="success"
+          [disabled]="empleadoAAgregar() == null"
+          (onClick)="agregarLinea()"
+        />
+      </div>
+    </div>
+
+    <p-table [value]="lineas()" size="small" [loading]="cargando()">
+      <ng-template #header>
+        <tr>
+          <th style="width: 3.5rem">#</th>
+          <th>Empleado</th>
+          <th>Departamento</th>
+          <th style="width: 12rem">¿Paga horas extras?</th>
+          <th style="width: 4rem; text-align: center">Quitar</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-l>
+        <tr>
+          <td>{{ fila(l) }}</td>
+          <td>{{ nombreEmpleado(l.empleadoId) }}</td>
+          <td>{{ nombreDepto(l.departamentoId ?? form().deptoId) }}</td>
+          <td>
+            <p-select
+              [options]="OPCIONES_PAGAR"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="l.sn_pagar"
+              (ngModelChange)="marcarPagar(l, $event)"
+              styleClass="w-full"
+              [appendTo]="'body'"
+              size="small"
+            />
+          </td>
+          <td style="text-align: center">
+            <p-button
+              icon="pi pi-times"
+              severity="danger"
+              size="small"
+              rounded
+              text
+              pTooltip="Quitar de la autorización"
+              tooltipPosition="left"
+              (onClick)="quitarLinea(l)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="centro">
+            Sin empleados. Use el selector superior para agregar el primer empleado autorizado.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- ────────────────────── HORAS EXTRAS A PAGAR ─────────────────── -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Horas extras a pagar</h2>
+        <p class="nota">
+          Se computan los minutos posteriores a la <strong>salida programada</strong> de cada día
+          (<code>horasalida</code>), clasificados por tramo en <code>tplhorasextras</code>, sólo para
+          empleados con marca <strong>Sí, paga</strong>.
+          Valor de la hora = (sueldo mensual ÷ 30) ÷ horas de jornada.
+        </p>
+      </div>
+      <p-button
+        label="Calcular"
+        icon="pi pi-calculator"
+        size="small"
+        rounded
+        severity="success"
+        [loading]="calculando()"
+        [disabled]="!puedeCalcular()"
+        (onClick)="calcular()"
+      />
+    </div>
+
+    @if (reporte(); as rep) {
+      <!-- Leyenda de tramos vigentes (tplhorasextras) -->
+      @if (rep.tramos?.length) {
+        <div class="leyenda-tramos">
+          @for (t of rep.tramos; track t.horaextraId) {
+            <span class="tramo-chip">
+              <span class="tramo-tasa">{{ t.tasa | number: '1.0-0' }}%</span>
+              <span class="tramo-desc">{{ t.descripcion }}</span>
+              <span class="tramo-rango">{{ t.desde }} – {{ t.hasta }}</span>
+            </span>
+          }
+        </div>
+      }
+
+      <div class="resumen">
+        <div class="resumen-card resumen-card--total">
+          <span class="resumen-label">Empleados autorizados</span>
+          <span class="resumen-valor">{{ rep.totales.empleadosAutorizados }}</span>
+        </div>
+        <div class="resumen-card resumen-card--ok">
+          <span class="resumen-label">Que pagan</span>
+          <span class="resumen-valor">{{ rep.totales.empleadosQuePagan }}</span>
+        </div>
+        <div class="resumen-card resumen-card--warn">
+          <span class="resumen-label">Días con extras</span>
+          <span class="resumen-valor">{{ rep.totales.diasConExtras }}</span>
+        </div>
+        <div class="resumen-card">
+          <span class="resumen-label">Horas extras (total)</span>
+          <span class="resumen-valor">{{ rep.totales.horasExtras | number: '1.2-2' }}</span>
+        </div>
+        <div class="resumen-card resumen-card--ok">
+          <span class="resumen-label">Horas a pagar</span>
+          <span class="resumen-valor">{{ rep.totales.horasExtrasPagadas | number: '1.2-2' }}</span>
+        </div>
+        <div class="resumen-card resumen-card--dinero">
+          <span class="resumen-label">Importe a pagar</span>
+          <span class="resumen-valor">{{ fmtL(rep.totales.importePagado) }}</span>
+          <span class="resumen-sub">recargo incluido: {{ fmtL(rep.totales.recargoPagado) }}</span>
+        </div>
+      </div>
+
+      <p-table [value]="rep.filas" size="small">
+        <ng-template #header>
+          <tr>
+            <th style="width: 3.5rem">#</th>
+            <th>Empleado</th>
+            <th>Departamento</th>
+            <th style="width: 6rem">Días extras</th>
+            <th style="width: 7.5rem">Valor hora</th>
+            <th>Horas por tramo</th>
+            <th style="width: 6.5rem">Total h</th>
+            <th style="width: 8rem">Importe</th>
+            <th style="width: 9rem">Estado</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-f>
+          <tr [class.fila-excluida]="!f.paga">
+            <td>{{ posEnReporte(f) }}</td>
+            <td>{{ nombreEmpleado(f.empleadoId) }}</td>
+            <td>{{ nombreDepto(f.departamentoId ?? form().deptoId) }}</td>
+            <td>
+              <span
+                [pTooltip]="f.diasAsistencia + ' asistencia(s) en el rango'"
+                tooltipPosition="top"
+              >
+                {{ f.diasConExtras }}
+              </span>
+            </td>
+            <td class="num">{{ fmtL(f.valorHora) }}</td>
+            <td>
+              <div class="tramos-celda">
+                @for (t of f.tramos ?? []; track t.horaextraId) {
+                  <span
+                    class="tramo-chip tramo-chip--detalle"
+                    [pTooltip]="t.descripcion + ' · ' + t.horas + ' h'"
+                    tooltipPosition="top"
+                  >
+                    <span class="tramo-tasa">{{ t.tasa | number: '1.0-0' }}%</span>
+                    <span class="tramo-horas">{{ t.horas | number: '1.2-2' }} h</span>
+                  </span>
+                }
+                @if ((f.minutosSinTramo ?? 0) > 0) {
+                  <span
+                    class="tramo-chip tramo-chip--alerta"
+                    pTooltip="Minutos fuera de todo tramo: horario no cubierto por tplhorasextras"
+                    tooltipPosition="top"
+                  >
+                    sin tramo: {{ f.minutosSinTramo }} min
+                  </span>
+                }
+                @if (!f.tramos?.length) {
+                  <span class="tramo-vacio">—</span>
+                }
+              </div>
+            </td>
+            <td class="num">{{ f.horasExtras | number: '1.2-2' }}</td>
+            <td class="num">{{ fmtL(f.importe) }}</td>
+            <td>
+              <p-tag
+                [value]="snPagarLabel(f.sn_pagar)"
+                [severity]="snPagarSev(f.sn_pagar)"
+                rounded
+              />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="9" class="centro">La autorización no tiene líneas de empleados</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    } @else {
+      <p class="vacio">
+        Presione <strong>Calcular</strong> para ver las horas extras del rango seleccionado.
+      </p>
+    }
+  </div>
+
+  <p-confirmdialog
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+    [style]="{ width: '420px' }"
+  />
+</section>

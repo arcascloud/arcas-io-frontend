@@ -1,0 +1,338 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Afectaciones Económicas</h1>
+      <p class="page-subtitle">
+        @if (empleado(); as emp) {
+          {{ emp.nombres }} {{ emp.apellidos }} — DNI: {{ emp.nrodocumento }}
+        } @else {
+          Cargando empleado...
+        }
+      </p>
+    </div>
+    <div class="header-actions">
+      <p-button
+        label="Editar empleado"
+        icon="pi pi-user-edit"
+        severity="secondary"
+        text
+        size="small"
+        rounded
+        (onClick)="editarEmpleado()"
+      />
+      <p-button
+        label="Volver"
+        icon="pi pi-arrow-left"
+        severity="secondary"
+        text
+        size="small"
+        rounded
+        (onClick)="volver()"
+      />
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <div class="card">Cargando datos...</div>
+  } @else {
+    <!-- Formulario inline 1:N -->
+    <div class="card mb-3">
+      <div class="form-header">
+        <h3 class="form-title">
+          {{ editandoId() ? 'Editar movimiento' : 'Agregar movimiento' }}
+        </h3>
+      </div>
+      <div class="p-fluid" [formGroup]="form">
+        <div class="grid">
+          <div class="col-12 md:col-6">
+            <div class="p-field">
+              <label>Tipo Movimiento <span class="req">*</span></label>
+              <p-select
+                [options]="tipoMovOpciones()"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar tipo de movimiento"
+                formControlName="tipomovId"
+                size="small"
+                styleClass="w-full"
+                [appendTo]="'body'"
+                [ngClass]="{ 'ng-invalid': invalid('tipomovId') }"
+              />
+            </div>
+            <div class="p-field">
+              <label>Tipo Importe <span class="req">*</span></label>
+              <p-select
+                [options]="tipoImporteOptions"
+                optionLabel="label"
+                optionValue="value"
+                formControlName="tipoimporte"
+                size="small"
+                styleClass="w-full"
+                [appendTo]="'body'"
+              />
+            </div>
+          </div>
+          <div class="col-12 md:col-6">
+            <div class="p-field">
+              <label>Aplicación <span class="req">*</span></label>
+              <p-select
+                [options]="aplicacionOptions"
+                optionLabel="label"
+                optionValue="value"
+                formControlName="aplicacion"
+                size="small"
+                styleClass="w-full"
+                [appendTo]="'body'"
+              />
+            </div>
+            <div class="p-field">
+              <label>Importe <span class="req">*</span></label>
+              <p-inputNumber
+                formControlName="importe"
+                mode="decimal"
+                [locale]="'es-HN'"
+                [useGrouping]="true"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                [min]="0"
+                size="small"
+                styleClass="w-full"
+                [inputStyle]="{ width: '100%' }"
+              />
+            </div>
+            <div class="p-field">
+              <label>Imp. Patron</label>
+              <p-inputNumber
+                formControlName="imppatron"
+                mode="decimal"
+                [locale]="'es-HN'"
+                [useGrouping]="true"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                [min]="0"
+                size="small"
+                styleClass="w-full"
+                [inputStyle]="{ width: '100%' }"
+              />
+            </div>
+          </div>
+          <div class="col-12 md:col-6">
+            <div class="p-field estado-field">
+              <label>Estado <span class="req">*</span></label>
+              <p-selectButton
+                [options]="estadoOptions"
+                optionLabel="label"
+                optionValue="value"
+                formControlName="sn_activo"
+                size="small"
+                styleClass="w-full"
+              />
+            </div>
+          </div>
+          <div class="col-12 md:col-6">
+            <div class="form-actions-estado">
+              <p-button
+                label="Cancelar"
+                icon="pi pi-times"
+                severity="secondary"
+                text
+                size="small"
+                rounded
+                (onClick)="limpiarFormulario()"
+              />
+              <p-button
+                label="Guardar"
+                size="small"
+                icon="pi pi-check"
+                severity="success"
+                [raised]="true"
+                [rounded]="true"
+                [loading]="guardando()"
+                (onClick)="guardar()"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla Ingresos -->
+    @if (ingresos().length > 0) {
+      <div class="card mb-3">
+        <h3 class="seccion-title seccion-ingreso">
+          <i class="pi pi-arrow-up"></i> Ingresos
+        </h3>
+        @if (fichaEmpleado(); as ficha) {
+          <div class="empleado-ficha">
+            <i class="pi pi-user"></i>
+            <strong class="ficha-nombre">{{ ficha.nombre }}</strong>
+            <span class="ficha-sep"></span>
+            <span class="ficha-dato">DNI: <strong>{{ ficha.dni }}</strong></span>
+            <span class="ficha-sep"></span>
+            <span class="ficha-dato"
+              >Salario: <strong class="ficha-salario">L {{ formatearImporte(ficha.salario) }}</strong></span
+            >
+            @if (ficha.aplicaTecho) {
+              <span class="ficha-sep"></span>
+              <span class="ficha-dato ficha-techo"
+                >Techo IHSS: <strong>L {{ formatearImporte(ficha.techo) }}</strong></span
+              >
+            }
+          </div>
+        }
+        <p-table
+          [value]="ingresos()"
+          size="small"
+          [tableStyle]="{ 'min-width': '40rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Tipo Movimiento</th>
+              <th>Abrev.</th>
+              <th class="text-center">Aplicación</th>
+              <th class="text-center">Tipo Importe</th>
+              <th class="text-right">Importe</th>
+              <th class="text-right">Imp. Patron</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center" style="width: 7rem">Acción</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr [ngClass]="{ 'fila-inactiva': row.sn_activo === 'N' }">
+              <td>{{ row.descripcionTipo }}</td>
+              <td>{{ row.abreviaturaTipo }}</td>
+              <td class="text-center">
+                <p-tag
+                  [value]="aplicacionLabel(row.aplicacion)"
+                  [severity]="aplicacionSeverity(row.aplicacion)"
+                />
+              </td>
+              <td class="text-center">{{ tipoImporteLabel(row.tipoimporte) }}</td>
+              <td class="text-right">{{ formatearImporte(row.importe) }}</td>
+              <td class="text-right">{{ formatearImporte(row.imppatron) }}</td>
+              <td class="text-center">
+                <p-tag
+                  [value]="estadoLabel(row.sn_activo)"
+                  [severity]="row.sn_activo === 'S' ? 'success' : 'danger'"
+                />
+              </td>
+              <td class="text-center">
+                <p-button
+                  icon="pi pi-pencil"
+                  severity="warn"
+                  variant="text"
+                  [rounded]="true"
+                  size="small"
+                  pTooltip="Editar"
+                  (onClick)="editar(row)"
+                />
+                <p-button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  variant="text"
+                  [rounded]="true"
+                  size="small"
+                  pTooltip="Eliminar"
+                  (onClick)="eliminar(row)"
+                />
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    }
+
+    <!-- Tabla Egresos -->
+    @if (egresos().length > 0) {
+      <div class="card mb-3">
+        <h3 class="seccion-title seccion-egreso">
+          <i class="pi pi-arrow-down"></i> Egresos
+        </h3>
+        @if (fichaEmpleado(); as ficha) {
+          <div class="empleado-ficha">
+            <i class="pi pi-user"></i>
+            <strong class="ficha-nombre">{{ ficha.nombre }}</strong>
+            <span class="ficha-sep"></span>
+            <span class="ficha-dato">DNI: <strong>{{ ficha.dni }}</strong></span>
+            <span class="ficha-sep"></span>
+            <span class="ficha-dato"
+              >Salario: <strong class="ficha-salario">L {{ formatearImporte(ficha.salario) }}</strong></span
+            >
+            @if (ficha.aplicaTecho) {
+              <span class="ficha-sep"></span>
+              <span class="ficha-dato ficha-techo"
+                >Techo IHSS: <strong>L {{ formatearImporte(ficha.techo) }}</strong></span
+              >
+            }
+          </div>
+        }
+        <p-table
+          [value]="egresos()"
+          size="small"
+          [tableStyle]="{ 'min-width': '40rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Tipo Movimiento</th>
+              <th>Abrev.</th>
+              <th class="text-center">Aplicación</th>
+              <th class="text-center">Tipo Importe</th>
+              <th class="text-right">Importe</th>
+              <th class="text-right">Imp. Patron</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center" style="width: 7rem">Acción</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr [ngClass]="{ 'fila-inactiva': row.sn_activo === 'N' }">
+              <td>{{ row.descripcionTipo }}</td>
+              <td>{{ row.abreviaturaTipo }}</td>
+              <td class="text-center">
+                <p-tag
+                  [value]="aplicacionLabel(row.aplicacion)"
+                  [severity]="aplicacionSeverity(row.aplicacion)"
+                />
+              </td>
+              <td class="text-center">{{ tipoImporteLabel(row.tipoimporte) }}</td>
+              <td class="text-right">{{ formatearImporte(row.importe) }}</td>
+              <td class="text-right">{{ formatearImporte(row.imppatron) }}</td>
+              <td class="text-center">
+                <p-tag
+                  [value]="estadoLabel(row.sn_activo)"
+                  [severity]="row.sn_activo === 'S' ? 'success' : 'danger'"
+                />
+              </td>
+              <td class="text-center">
+                <p-button
+                  icon="pi pi-pencil"
+                  severity="warn"
+                  variant="text"
+                  [rounded]="true"
+                  size="small"
+                  pTooltip="Editar"
+                  (onClick)="editar(row)"
+                />
+                <p-button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  variant="text"
+                  [rounded]="true"
+                  size="small"
+                  pTooltip="Eliminar"
+                  (onClick)="eliminar(row)"
+                />
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    }
+
+    @if (ingresos().length === 0 && egresos().length === 0) {
+      <div class="card empty-state">
+        <i class="pi pi-inbox"></i>
+        <p>Este empleado no tiene movimientos asignados</p>
+      </div>
+    }
+  }
+</section>

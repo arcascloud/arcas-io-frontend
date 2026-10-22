@@ -1,0 +1,211 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Resumen de Ingresos</h1>
+      <p class="page-subtitle">
+        @for (c of columnas(); track c.clave) {
+          <span class="mov-chip" [class.mov-chip--anual]="c.esAnual" pTooltip="{{ c.descripcion }}">{{ c.abreviatura }}</span>
+        }
+        · Fecha sistema: {{ fechaSistema() }}
+        · <span [class.periodo-warn]="sinPeriodoAbierto()" pTooltip="Período que rige COMISION y BONO">
+          Período: {{ fmtPeriodo() }}
+        </span>
+      </p>
+    </div>
+    <div class="header-actions">
+      <p-button
+        label="Recargar"
+        icon="pi pi-refresh"
+        severity="secondary"
+        text
+        size="small"
+        rounded
+        [loading]="cargando()"
+        (onClick)="cargar()"
+      />
+      <p-button
+        label="Volver"
+        icon="pi pi-arrow-left"
+        severity="secondary"
+        text
+        size="small"
+        rounded
+        (onClick)="irAEmpleados()"
+      />
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <div class="card">Calculando ingresos...</div>
+  } @else if (datos(); as d) {
+    <!-- Resumen -->
+    @if (d.totales; as t) {
+      <div class="resumen">
+        <div class="resumen-card">
+          <span class="resumen-label">Empleados</span>
+          <span class="resumen-valor">{{ t.empleados }}</span>
+        </div>
+        <div class="resumen-card resumen-card--decimo">
+          <span class="resumen-label">13avo total</span>
+          <span class="resumen-valor">L {{ fmtL(totalCol('decimo13')?.total) }}</span>
+          <span class="resumen-meta">{{ totalCol('decimo13')?.conRegistro ?? 0 }} registrados</span>
+        </div>
+        <div class="resumen-card resumen-card--decimo">
+          <span class="resumen-label">14avo total</span>
+          <span class="resumen-valor">L {{ fmtL(totalCol('decimo14')?.total) }}</span>
+          <span class="resumen-meta">{{ totalCol('decimo14')?.conRegistro ?? 0 }} registrados</span>
+        </div>
+        <div class="resumen-card resumen-card--total">
+          <span class="resumen-label">Total anual</span>
+          <span class="resumen-valor">L {{ fmtL(t.totalAnual) }}</span>
+          <span class="resumen-meta">13avo + 14avo</span>
+        </div>
+        @if (pendientes() > 0) {
+          <div class="resumen-card resumen-card--pendiente">
+            <span class="resumen-label">Pendientes</span>
+            <span class="resumen-valor">{{ pendientes() }}</span>
+            <span class="resumen-meta">sin registrar o descuadradas</span>
+          </div>
+        }
+      </div>
+    }
+
+    <p class="nota">
+      <strong>Comisiones</strong> y <strong>Bonos</strong> muestran el total de los ingresos
+      <em>autorizados</em> por un departamento en el ejercicio
+      (<em>Ingresos Autorizados</em>), siempre en lempiras (<strong>L</strong>).
+      <strong>Horas extras</strong> muestra el importe mensual calculado desde las
+      autorizaciones del período e integrado a la planilla (<strong>L</strong>).
+      <strong>Días festivos</strong> es un
+      <em>porcentaje</em> que aplica planilla al procesar la planilla (<strong>%</strong>).
+      Los <strong>décimos tercero</strong> y <strong>cuarto</strong> son montos anuales en lempiras
+      (<strong>L</strong>), calculados como <code>salario ordinario del año ÷ 12</code>.
+    </p>
+
+    <!-- Cálculo por empleado -->
+    <div class="card">
+      <div class="tabla-toolbar">
+        <h3 class="seccion-title">Ingresos por empleado</h3>
+        <div class="tabla-filtros">
+          <span class="p-input-icon-left">
+            <i class="pi pi-search"></i>
+            <input
+              pInputText
+              type="text"
+              [ngModel]="filtro()"
+              (ngModelChange)="filtro.set($any($event))"
+              placeholder="Buscar nombre, nro. o documento"
+              size="small"
+            />
+          </span>
+          <p-button
+            [label]="soloPendientes() ? 'Pendientes' : 'Todos'"
+            [icon]="soloPendientes() ? 'pi pi-filter-fill' : 'pi pi-filter'"
+            [severity]="soloPendientes() ? 'warn' : 'secondary'"
+            variant="outlined"
+            size="small"
+            rounded
+            (onClick)="toggleSoloPendientes()"
+          />
+          @if (filtro() || soloPendientes()) {
+            <p-button
+              label="Limpiar"
+              icon="pi pi-times"
+              severity="secondary"
+              text
+              size="small"
+              rounded
+              (onClick)="limpiarFiltro()"
+            />
+          }
+        </div>
+      </div>
+
+      <p-table
+        [value]="visibles()"
+        size="small"
+        [paginator]="true"
+        [rows]="10"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [tableStyle]="{ 'min-width': '75rem' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Empleado</th>
+            <th class="text-right">Sueldo bruto</th>
+            <th class="text-center">Fecha alta</th>
+            @for (c of columnas(); track c.clave) {
+              <th class="text-center col-ing" [class.col-anual]="c.esAnual">{{ c.abreviatura }}</th>
+            }
+            <th class="text-right">Total anual</th>
+            <th class="text-center accion-col">Acción</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr [ngClass]="{ 'fila-pendiente': tienePendiente(row) }">
+            <td>
+              <div class="emp-nombre">{{ row.nombre }}</div>
+              <div class="emp-meta">{{ row.nroempleado }} · DNI {{ row.nrodocumento }}</div>
+            </td>
+            <td class="text-right">{{ fmtL(row.sueldobruto) }}</td>
+            <td class="text-center">{{ fmtFecha(row.fecha_alta) }}</td>
+            @for (c of columnas(); track c.clave) {
+              <td class="text-center" [class.col-anual]="c.esAnual">
+                @if (celda(row, c.clave); as cel) {
+                  @if (cel.sinRegistrar) {
+                    <span class="celda-vacia" pTooltip="Sin registrar en pletipomov">—</span>
+                    <!-- Sin importe (ej: comisión no autorizada para este
+                         empleado): guion simple, sin prefijo de moneda -->
+                  } @else if (cel.importe == null || cel.importe === '') {
+                    <span class="celda-vacia">—</span>
+                    <!-- esMonto (no esAnual) define L vs %: comisiones y bonos
+                         no son anuales pero sí son montos en lempiras -->
+                  } @else if (cel.esMonto) {
+                    <span class="celda-monto">L {{ fmtL(cel.importe) }}</span>
+                    @if (cel.descuadra) {
+                      <span
+                        class="badge-descuadre"
+                        pTooltip="Registrado L {{ fmtL(cel.importe) }} ≠ calculado L {{ fmtL(cel.calculado) }}"
+                        >⚠</span
+                      >
+                    }
+                  } @else {
+                    <span class="celda-pct">{{ fmtPct(cel.importe) }}%</span>
+                  }
+                } @else {
+                  <span class="celda-vacia">—</span>
+                }
+              </td>
+            }
+            <td class="text-right total-cell">L {{ fmtL(row.totalAnual) }}</td>
+            <td class="text-center">
+              <p-button
+                icon="pi pi-list"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                size="small"
+                pTooltip="Ver afectaciones económicas"
+                (onClick)="verEmpleado(row)"
+              />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="columnas().length + 5" class="text-center">
+              No hay empleados que coincidan con el filtro
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  } @else {
+    <div class="card empty-state">
+      <i class="pi pi-exclamation-triangle"></i>
+      <p>{{ datos() ? 'No hay datos de ingresos para esta empresa' : 'Cargando…' }}</p>
+    </div>
+  }
+</section>

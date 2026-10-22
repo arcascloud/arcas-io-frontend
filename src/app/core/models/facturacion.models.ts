@@ -3,7 +3,11 @@ import { CampoCatalogo } from './catalogo-parametros.models';
 export interface CampoDetalle {
   key: string;
   label: string;
-  tipo: 'texto' | 'numero' | 'fecha' | 'select';
+  /**
+   * `subtotal` = valor calculado en el cliente (no editable, se renderiza
+   * con el método del componente; ej: SubTot. Egresos/Ingresos en planillas).
+   */
+  tipo: 'texto' | 'numero' | 'fecha' | 'select' | 'moneda' | 'checkbox' | 'subtotal';
   opciones?: { label: string; value: string }[];
   cargaOpciones?: { url: string; labelCampo: string; valueCampo: string };
   requerido?: boolean;
@@ -93,7 +97,11 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'bodegaId',
         label: 'Bodega',
         tipo: 'select',
-        cargaOpciones: { url: '/inventario/bodegas', labelCampo: 'descripcion', valueCampo: 'bodegaId' },
+        cargaOpciones: {
+          url: '/inventario/bodegas',
+          labelCampo: 'descripcion',
+          valueCampo: 'bodegaId',
+        },
         requerido: true,
       },
       {
@@ -107,7 +115,11 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'gestorId',
         label: 'Gestor',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/gestores', labelCampo: 'nombre', valueCampo: 'gestorId' },
+        cargaOpciones: {
+          url: '/parametros/gestores',
+          labelCampo: 'nombre',
+          valueCampo: 'gestorId',
+        },
         requerido: true,
       },
       {
@@ -196,7 +208,11 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'gestorId',
         label: 'Gestor',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/gestores', labelCampo: 'nombre', valueCampo: 'gestorId' },
+        cargaOpciones: {
+          url: '/parametros/gestores',
+          labelCampo: 'nombre',
+          valueCampo: 'gestorId',
+        },
         requerido: true,
       },
     ],
@@ -288,8 +304,14 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
     ],
     tituloLista: (i) => i.descripcion || `Combo #${i.poscbomaeId}`,
     filasLista: (i) => [
-      { label: 'Vigente desde', value: i.fec_vig_desde ? new Date(i.fec_vig_desde).toLocaleDateString() : '-' },
-      { label: 'Vigente hasta', value: i.fec_vig_hasta ? new Date(i.fec_vig_hasta).toLocaleDateString() : '-' },
+      {
+        label: 'Vigente desde',
+        value: i.fec_vig_desde ? new Date(i.fec_vig_desde).toLocaleDateString() : '-',
+      },
+      {
+        label: 'Vigente hasta',
+        value: i.fec_vig_hasta ? new Date(i.fec_vig_hasta).toLocaleDateString() : '-',
+      },
     ],
   },
   caja: {
@@ -308,7 +330,11 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'clienteId',
         label: 'Cliente',
         tipo: 'select',
-        cargaOpciones: { url: '/cxc/clientes-con-saldo', labelCampo: 'cliente', valueCampo: 'clienteId' },
+        cargaOpciones: {
+          url: '/cxc/clientes-con-saldo',
+          labelCampo: 'cliente',
+          valueCampo: 'clienteId',
+        },
         requerido: true,
         selector: 'abrirClientes',
         filtro: true,
@@ -320,14 +346,30 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'documentoId',
         label: 'Tipo de documento fiscal',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/tcotipodocumentofiscal', labelCampo: 'descripcion', valueCampo: 'tipodocumentofiscalId' },
+        cargaOpciones: {
+          url: '/parametros/tcotipodocumentofiscal',
+          labelCampo: 'descripcion',
+          valueCampo: 'tipodocumentofiscalId',
+        },
         filtroAbreviaturas: ['FAC', 'NDB', 'PRE'],
       },
       { key: 'nrodocumento', label: 'Nro. Documento', tipo: 'select' },
       { key: 'tipomov', label: 'Tipo Mov.', tipo: 'texto', defaultValue: 'C', oculto: true },
-      { key: 'sn_cotabilizada', label: 'Contabilizada', tipo: 'texto', defaultValue: 'N', oculto: true },
+      {
+        key: 'sn_cotabilizada',
+        label: 'Contabilizada',
+        tipo: 'texto',
+        defaultValue: 'N',
+        oculto: true,
+      },
       { key: 'sn_anulado', label: 'Anulado', tipo: 'texto', defaultValue: 'N', oculto: true },
-      { key: 'fec_anulacion', label: 'Fec. Anulación', tipo: 'fecha', defaultValue: null, oculto: true },
+      {
+        key: 'fec_anulacion',
+        label: 'Fec. Anulación',
+        tipo: 'fecha',
+        defaultValue: null,
+        oculto: true,
+      },
       { key: 'partidaId', label: 'Partida', tipo: 'numero', defaultValue: 0, oculto: true },
     ],
     camposDet: [
@@ -336,7 +378,11 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'formapagoId',
         label: 'Forma de Pago',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/formas-pago', labelCampo: 'descripcion', valueCampo: 'formapagoId' },
+        cargaOpciones: {
+          url: '/parametros/formas-pago',
+          labelCampo: 'descripcion',
+          valueCampo: 'formapagoId',
+        },
         requerido: true,
         filtro: true,
       },
@@ -345,7 +391,11 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'tarjetacreditoId',
         label: 'Tarjeta',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/tarjetas-credito', labelCampo: 'descripcion', valueCampo: 'tarjetacreditoId' },
+        cargaOpciones: {
+          url: '/parametros/tarjetas-credito',
+          labelCampo: 'descripcion',
+          valueCampo: 'tarjetacreditoId',
+        },
         filtro: true,
       },
       { key: 'nrotarjeta', label: 'Nro. Tarjeta', tipo: 'texto' },
@@ -389,13 +439,21 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'gestorId',
         label: 'Gestor',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/gestores', labelCampo: 'nombre', valueCampo: 'gestorId' },
+        cargaOpciones: {
+          url: '/parametros/gestores',
+          labelCampo: 'nombre',
+          valueCampo: 'gestorId',
+        },
       },
       {
         key: 'monedaId',
         label: 'Moneda',
         tipo: 'select',
-        cargaOpciones: { url: '/parametros/monedas', labelCampo: 'descripcion', valueCampo: 'monedaId' },
+        cargaOpciones: {
+          url: '/parametros/monedas',
+          labelCampo: 'descripcion',
+          valueCampo: 'monedaId',
+        },
       },
       { key: 'gracia', label: 'Gracia', tipo: 'numero' },
       { key: 'ultcuotapagada', label: 'Últ. Cuota Pagada', tipo: 'numero' },
@@ -445,7 +503,17 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
     idKeyDet: 'plepladetId',
     fkDet: 'planillaId',
     camposMae: [
-      { key: 'periodo', label: 'Periodo', tipo: 'numero', requerido: true },
+      // Orden según layout: Periodo | Año | Departamento | Cuenta Bancaria
+      // (Departamento es un multi-select de filtro, se inserta en el HTML
+      // entre Año y Cuenta Bancaria); fila 2: Pagada | Items | Total | Anulada.
+      {
+        key: 'periodo',
+        label: 'Periodo',
+        tipo: 'select',
+        requerido: true,
+        // Opciones cargadas en PagarPlanillaForm desde coperiodoctable
+        // etiquetadas con tmeses (valor = "anio-nromes").
+      },
       { key: 'anio', label: 'Año', tipo: 'numero', requerido: true },
       {
         key: 'bcoctasId',
@@ -454,16 +522,24 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         cargaOpciones: { url: '/bancos/cuentas', labelCampo: 'nrocuenta', valueCampo: 'bcoctasId' },
         requerido: true,
       },
-      { key: 'items', label: 'Items', tipo: 'numero' },
       {
         key: 'sn_pagada',
         label: 'Pagada',
         tipo: 'select',
+        requerido: true,
+        // Default 'N' (también el default de la BD): habilita "Generar
+        // planilla" desde la cabecera sin tener que elegirlo a mano.
+        defaultValue: 'N',
         opciones: [
           { label: 'Sí', value: 'S' },
           { label: 'No', value: 'N' },
         ],
       },
+      { key: 'items', label: 'Items', tipo: 'numero' },
+      // Solo lectura: lo calcula el frontend = suma de sueldoneto de las
+      // líneas marcadas (sn_pagar='S'); el backend lo redondea igual al
+      // generar (totalapagar es INT en la BD).
+      { key: 'totalapagar', label: 'Total a Pagar', tipo: 'numero', soloLectura: true },
       {
         key: 'sn_anulada',
         label: 'Anulada',
@@ -473,21 +549,43 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
           { label: 'No', value: 'N' },
         ],
       },
-      { key: 'totalapagar', label: 'Total a Pagar', tipo: 'numero' },
     ],
     camposDet: [
-      { key: 'empleadoId', label: 'Empleado', tipo: 'numero', requerido: true },
-      { key: 'departamentoId', label: 'Departamento', tipo: 'numero' },
-      { key: 'sueldobruto', label: 'Sueldo Bruto', tipo: 'numero' },
-      { key: 'importe_dihss', label: 'DHSS', tipo: 'numero' },
-      { key: 'importe_drap', label: 'RAP', tipo: 'numero' },
-      { key: 'importe_drtf', label: 'RTF', tipo: 'numero' },
-      { key: 'importe_dotras', label: 'Otras Ded.', tipo: 'numero' },
-      { key: 'importe_ccomision', label: 'Comisiones', tipo: 'numero' },
-      { key: 'importe_chorasextras', label: 'H. Extras', tipo: 'numero' },
-      { key: 'importe_cbonos', label: 'Bonos', tipo: 'numero' },
-      { key: 'sueldoneto', label: 'Sueldo Neto', tipo: 'numero' },
-      { key: 'sn_pagar', label: 'Pagar', tipo: 'texto' },
+      // Orden según layout (fila expandida con Expand):
+      //  Pagar | Empleado | Salario Bruto | SubTot. Egresos | SubTot. Ingresos
+      //  | Neto a Pagar | Acciones (expand/recibo/borrar)
+      // Checkbox de pago: persiste sn_pagar ('S'/'N'); el backend paga solo
+      // las líneas con sn_pagar='S'. La cabecera tiene el "marcar todas".
+      { key: 'sn_pagar', label: 'Pagar', tipo: 'checkbox' },
+      // Empleado = select de plempleados (etiqueta "nombres apellidos"),
+      // cargado por PagarPlanillaForm. departamentoId NO se muestra: se
+      // sincroniza automáticamente desde el depto del empleado elegido.
+      {
+        key: 'empleadoId',
+        label: 'Empleado',
+        tipo: 'select',
+        requerido: true,
+        filtro: true,
+      },
+      { key: 'sueldobruto', label: 'Salario Bruto', tipo: 'moneda' },
+      // Subtotales calculados en el cliente (suma de los importes ocultos
+      // de abajo); tipo 'subtotal' → celda de solo lectura.
+      { key: '_egresos', label: 'SubTot. Egresos', tipo: 'subtotal' },
+      { key: '_ingresos', label: 'SubTot. Ingresos', tipo: 'subtotal' },
+      // Neto DERIVADO (solo lectura, tipo 'subtotal'): bruto + ingresos −
+      // egresos (resta si da negativo) — ver netoFila() en el componente.
+      { key: 'sueldoneto', label: 'Neto a Pagar', tipo: 'subtotal' },
+      // Egresos (ocultos en la tabla principal: viven en la fila expandida,
+      // agrupados bajo "Egresos"; etiquetas reutilizadas por la sub-fila).
+      { key: 'importe_dihss', label: 'IHSS', tipo: 'moneda', oculto: true },
+      { key: 'importe_drap', label: 'RAP', tipo: 'moneda', oculto: true },
+      { key: 'importe_drtf', label: 'RTF', tipo: 'moneda', oculto: true },
+      { key: 'importe_drvc', label: 'Imp. Vecinal', tipo: 'moneda', oculto: true },
+      { key: 'importe_dotras', label: 'Otras Ded.', tipo: 'moneda', oculto: true },
+      // Ingresos (ocultos en la tabla principal: fila expandida).
+      { key: 'importe_ccomision', label: 'Comisiones', tipo: 'moneda', oculto: true },
+      { key: 'importe_chorasextras', label: 'H. Extras', tipo: 'moneda', oculto: true },
+      { key: 'importe_cbonos', label: 'Bonos', tipo: 'moneda', oculto: true },
     ],
     tituloLista: (i) => `Planilla ${i.periodo}/${i.anio}`,
     filasLista: (i) => [
@@ -518,9 +616,7 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
       { key: 'naturaleza', label: 'Naturaleza', tipo: 'texto' },
     ],
     tituloLista: (i) => i.descripcion || `Plantilla #${i.tcoplantillapdamaeId}`,
-    filasLista: (i) => [
-      { label: 'Módulo', value: i.moduloId ?? '-' },
-    ],
+    filasLista: (i) => [{ label: 'Módulo', value: i.moduloId ?? '-' }],
   },
   plantillabalances: {
     nombre: 'plantillabalances',
@@ -544,9 +640,7 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
       { key: 'sn_activo', label: 'Activo', tipo: 'texto' },
     ],
     tituloLista: (i) => i.descripcion || `Plantilla #${i.cocdefbalmaId}`,
-    filasLista: (i) => [
-      { label: 'Descripción', value: i.descripcion || '-' },
-    ],
+    filasLista: (i) => [{ label: 'Descripción', value: i.descripcion || '-' }],
   },
   copda: {
     nombre: 'copda',
@@ -583,7 +677,10 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
     ],
     tituloLista: (i) => `Partida #${i.nropartida ?? i.partidaId}`,
     filasLista: (i) => [
-      { label: 'Fecha', value: i.fechadocumento ? new Date(i.fechadocumento).toLocaleDateString() : '-' },
+      {
+        label: 'Fecha',
+        value: i.fechadocumento ? new Date(i.fechadocumento).toLocaleDateString() : '-',
+      },
       { label: 'Descripción', value: i.descripcion || '-' },
       { label: 'Referencia', value: i.nroreferencia || '-' },
     ],
@@ -605,7 +702,11 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         key: 'bodegaId',
         label: 'Bodega',
         tipo: 'select',
-        cargaOpciones: { url: '/inventario/bodegas', labelCampo: 'descripcion', valueCampo: 'bodegaId' },
+        cargaOpciones: {
+          url: '/inventario/bodegas',
+          labelCampo: 'descripcion',
+          valueCampo: 'bodegaId',
+        },
       },
       {
         key: 'clienteId',

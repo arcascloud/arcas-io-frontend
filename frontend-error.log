@@ -1,0 +1,1186 @@
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'sn_quincenal' does not exist on type 'PlTipoMov'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/empleado-tipo-mov/empleado-tipo-mov-manager.ts:289:25:
+[37m      289 │       sn_quincenal: item.[32msn_quincenal[37m,
+          ╵                          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'sn_quincenal' does not exist on type 'PlTipoMov'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/empleado-tipo-mov/empleado-tipo-mov-manager.ts:293:25:
+[37m      293 │       sn_quincenal: item.[32msn_quincenal[37m,
+          ╵                          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'sn_quincenal' does not exist on type 'PlTipoMov'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/empleado-tipo-mov/empleado-tipo-mov-manager.ts:293:25:
+[37m      293 │       sn_quincenal: item.[32msn_quincenal[37m,
+          ╵                          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'sn_quincenal' does not exist on type 'PlTipoMov'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/empleado-tipo-mov/empleado-tipo-mov-manager.ts:286:25:
+[37m      286 │       sn_quincenal: item.[32msn_quincenal[37m,
+          ╵                          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'sn_quincenal' does not exist on type 'PlTipoMov'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/empleado-tipo-mov/empleado-tipo-mov-manager.ts:286:25:
+[37m      286 │       sn_quincenal: item.[32msn_quincenal[37m,
+          ╵                          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'debeRetener' does not exist on type 'string | number'.
+  Property 'debeRetener' does not exist on type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/retenciones/retenciones.ts:107:40:
+[37m      107 │ ....soloRetienen() && !e.isr.[32mdebeRetener[37m && !e.vecinal.debeRetene...
+          ╵                              [32m~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'debeRetener' does not exist on type 'string | number'.
+  Property 'debeRetener' does not exist on type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/retenciones/retenciones.ts:107:66:
+[37m      107 │ ...() && !e.isr.debeRetener && !e.vecinal.[32mdebeRetener[37m) return false;
+          ╵                                           [32m~~~~~~~~~~~[0m
+
+
+Component update failed: ctx_r4.fmtMeses is not a function
+TypeError: ctx_r4.fmtMeses is not a function
+    at RetencionesRevision_Conditional_13_ng_template_43_Template (http://localhost:4200/@ng/component?c=src%2Fapp%2Ffeatures%2Fplanilla%2Fretenciones%2Fretenciones.ts%40RetencionesRevision&t=1792390953778:297:44)
+    at executeTemplate (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=842f6434:4227:3)
+    at refreshView (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=842f6434:4771:28)
+    at detectChangesInView (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=842f6434:4869:25)
+    at detectChangesInViewIfAttached (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=842f6434:4855:2)
+    at detectChangesInEmbeddedViews (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=842f6434:4829:3)
+    at refreshView (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=842f6434:4783:3)
+    at detectChangesInView (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=842f6434:4869:25)
+    at detectChangesInViewIfAttached (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=842f6434:4855:2)
+    at detectChangesInEmbeddedViews (http://localhost:4200/@fs/E:/desarrollo/proyectos%20angular/erp/Frontend/.angular/cache/22.1.4/arcas-software/vite/deps/core-CWWaK1J-.js?v=842f6434:4829:3)
+Please consider reporting the error at https://github.com/angular/angular-cli/issues
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'DeptoEmpresa[]' is not assignable to parameter of type '{ [k: string]: unknown; }[]'.
+  Type 'DeptoEmpresa' is not assignable to type '{ [k: string]: unknown; }'.
+    Index signature for type 'string' is missing in type 'DeptoEmpresa'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/horas-extras/horas-extras-list.ts:80:62:
+[37m      80 │ ...mapaDeptos.set(this.indexarNombre([32mres[37m, 'deptoId', 'descripcion')),
+         ╵                                      [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2552: Cannot find name 'HorasExtrasFila'. Did you mean 'HorasExtrasForm'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/horas-extras/horas-extras-form.ts:262:21:
+[37m      262 │   posEnReporte(fila: [32mHorasExtrasFila[37m): number {
+          ╵                      [32m~~~~~~~~~~~~~~~[0m
+
+  'HorasExtrasForm' is declared here.
+
+    src/app/features/planilla/horas-extras/horas-extras-form.ts:72:13:
+[37m      72 │ export class [32mHorasExtrasForm[37m implements OnInit {
+         ╵              [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'HorasExtrasPlanillaResultado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/planilla.service.ts:118:54:
+[37m      118 │ ...sPlanilla(id: number): Observable<[32mHorasExtrasPlanillaResultado[37m> {
+          ╵                                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'HorasExtrasPlanillaResultado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/planilla.service.ts:119:25:
+[37m      119 │     return this.api.post<[32mHorasExtrasPlanillaResultado[37m>(
+          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'p-table' is not a known element:
+1. If 'p-table' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.html:41:2:
+[37m      41 │   [32m<p-table[37m
+         ╵   [32m~~~~~~~~[0m
+
+  Error occurs in the template of component MaestroDetalle.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.ts:16:15:
+[37m      16 │   templateUrl: [32m'./maestro-detalle.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'value' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'value' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.html:42:4:
+[37m      42 │     [32m[value]="filtered()"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component MaestroDetalle.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.ts:16:15:
+[37m      16 │   templateUrl: [32m'./maestro-detalle.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'loading' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'loading' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.html:43:4:
+[37m      43 │     [32m[loading]="cargando()"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component MaestroDetalle.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.ts:16:15:
+[37m      16 │   templateUrl: [32m'./maestro-detalle.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'dataKey' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'dataKey' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.html:44:4:
+[37m      44 │     [32m[dataKey]="config.idKeyMae"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component MaestroDetalle.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.ts:16:15:
+[37m      16 │   templateUrl: [32m'./maestro-detalle.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'rowHover' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'rowHover' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.html:45:4:
+[37m      45 │     [32m[rowHover]="true"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component MaestroDetalle.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.ts:16:15:
+[37m      16 │   templateUrl: [32m'./maestro-detalle.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'paginator' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'paginator' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.html:46:4:
+[37m      46 │     [32m[paginator]="true"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component MaestroDetalle.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.ts:16:15:
+[37m      16 │   templateUrl: [32m'./maestro-detalle.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'rows' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'rows' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.html:47:4:
+[37m      47 │     [32m[rows]="20"[37m
+         ╵     [32m~~~~~~~~~~~[0m
+
+  Error occurs in the template of component MaestroDetalle.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.ts:16:15:
+[37m      16 │   templateUrl: [32m'./maestro-detalle.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'rowsPerPageOptions' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'rowsPerPageOptions' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.html:48:4:
+[37m      48 │     [32m[rowsPerPageOptions]="[10, 20, 50]"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component MaestroDetalle.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.ts:16:15:
+[37m      16 │   templateUrl: [32m'./maestro-detalle.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'showCurrentPageReport' since it isn't a known property of 'p-table'.
+1. If 'p-table' is an Angular component and it has 'showCurrentPageReport' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-table' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.html:49:4:
+[37m      49 │     [32m[showCurrentPageReport]="true"[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component MaestroDetalle.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle.ts:16:15:
+[37m      16 │   templateUrl: [32m'./maestro-detalle.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.html:49:21:
+[37m      49 │           [ngModel]="[32mmoduloId[37m()"
+         ╵                      [32m~~~~~~~~[0m
+
+  Error occurs in the template of component ParamManagerModulos.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:44:15:
+[37m      44 │   templateUrl: [32m'./param-manager-modulos.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:143:9:
+[37m      143 │     this.[32mmoduloId[37m.set(moduloId);
+          ╵          [32m~~~~~~~~[0m
+
+  'modulos' is declared here.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:69:2:
+[37m      69 │   [32mmodulos[37m = signal<{ label: string; value: number }[]>([]);
+         ╵   [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:150:21:
+[37m      150 │     const mid = this.[32mmoduloId[37m();
+          ╵                      [32m~~~~~~~~[0m
+
+  'modulos' is declared here.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:69:2:
+[37m      69 │   [32mmodulos[37m = signal<{ label: string; value: number }[]>([]);
+         ╵   [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:200:21:
+[37m      200 │       moduloId: this.[32mmoduloId[37m(),
+          ╵                      [32m~~~~~~~~[0m
+
+  'modulos' is declared here.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:69:2:
+[37m      69 │   [32mmodulos[37m = signal<{ label: string; value: number }[]>([]);
+         ╵   [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.html:49:21:
+[37m      49 │           [ngModel]="[32mmoduloId[37m()"
+         ╵                      [32m~~~~~~~~[0m
+
+  Error occurs in the template of component ParamManagerModulos.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:44:15:
+[37m      44 │   templateUrl: [32m'./param-manager-modulos.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:147:9:
+[37m      147 │     this.[32mmoduloId[37m.set(moduloId);
+          ╵          [32m~~~~~~~~[0m
+
+  'modulos' is declared here.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:69:2:
+[37m      69 │   [32mmodulos[37m = signal<{ label: string; value: number }[]>([]);
+         ╵   [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:154:21:
+[37m      154 │     const mid = this.[32mmoduloId[37m();
+          ╵                      [32m~~~~~~~~[0m
+
+  'modulos' is declared here.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:69:2:
+[37m      69 │   [32mmodulos[37m = signal<{ label: string; value: number }[]>([]);
+         ╵   [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:204:21:
+[37m      204 │       moduloId: this.[32mmoduloId[37m(),
+          ╵                      [32m~~~~~~~~[0m
+
+  'modulos' is declared here.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:69:2:
+[37m      69 │   [32mmodulos[37m = signal<{ label: string; value: number }[]>([]);
+         ╵   [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.html:49:21:
+[37m      49 │           [ngModel]="[32mmoduloId[37m()"
+         ╵                      [32m~~~~~~~~[0m
+
+  Error occurs in the template of component ParamManagerModulos.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:44:15:
+[37m      44 │   templateUrl: [32m'./param-manager-modulos.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'onModuloChange' does not exist on type 'ParamManagerModulos'. Did you mean 'onModulosChange'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.html:50:27:
+[37m      50 │           (ngModelChange)="[32monModuloChange[37m($event)"
+         ╵                            [32m~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ParamManagerModulos.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:44:15:
+[37m      44 │   templateUrl: [32m'./param-manager-modulos.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:204:21:
+[37m      204 │       moduloId: this.[32mmoduloId[37m(),
+          ╵                      [32m~~~~~~~~[0m
+
+  'modulos' is declared here.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:69:2:
+[37m      69 │   [32mmodulos[37m = signal<{ label: string; value: number }[]>([]);
+         ╵   [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'moduloId' does not exist on type 'ParamManagerModulos'. Did you mean 'modulos'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.html:49:21:
+[37m      49 │           [ngModel]="[32mmoduloId[37m()"
+         ╵                      [32m~~~~~~~~[0m
+
+  Error occurs in the template of component ParamManagerModulos.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:44:15:
+[37m      44 │   templateUrl: [32m'./param-manager-modulos.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'onModuloChange' does not exist on type 'ParamManagerModulos'. Did you mean 'onModulosChange'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.html:50:27:
+[37m      50 │           (ngModelChange)="[32monModuloChange[37m($event)"
+         ╵                            [32m~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ParamManagerModulos.
+
+    src/app/features/parametros/param-manager-modulos/param-manager-modulos.ts:44:15:
+[37m      44 │   templateUrl: [32m'./param-manager-modulos.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlanillaService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:52:35:
+[37m      52 │   private planillaService = inject([32mPlanillaService[37m);
+         ╵                                    [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'calcularHorasExtrasPlanilla' does not exist on type 'unknown'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:390:25:
+[37m      390 │     this.planillaService.[32mcalcularHorasExtrasPlanilla[37m(this.itemId)
+          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'HorasExtrasPlanillaResultado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:398:39:
+[37m      398 │ ...vate trasCalcularHorasExtras(res: [32mHorasExtrasPlanillaResultado[37m) {
+          ╵                                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'generarPlanilla' does not exist on type 'unknown'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:449:25:
+[37m      449 │     this.planillaService.[32mgenerarPlanilla[37m(this.itemId)
+          ╵                          [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlanillaGeneradaResultado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:457:35:
+[37m      457 │   private trasGenerarPlanilla(res: [32mPlanillaGeneradaResultado[37m) {
+          ╵                                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'calculandoHE' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:386:9:
+[37m      386 │     this.[32mcalculandoHE[37m.set(true);
+          ╵          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'planillaService' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:387:9:
+[37m      387 │     this.[32mplanillaService[37m.calcularHorasExtrasPlanilla(this.itemId)
+          ╵          [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'calculandoHE' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:391:26:
+[37m      391 │         error: () => this.[32mcalculandoHE[37m.set(false),
+          ╵                           [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'HorasExtrasPlanillaResultado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:395:39:
+[37m      395 │ ...vate trasCalcularHorasExtras(res: [32mHorasExtrasPlanillaResultado[37m) {
+          ╵                                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'calculandoHE' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:396:9:
+[37m      396 │     this.[32mcalculandoHE[37m.set(false);
+          ╵          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'generandoPlanilla' does not exist on type 'MaestroDetalleForm'. Did you mean 'generarPlanilla'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:445:9:
+[37m      445 │     this.[32mgenerandoPlanilla[37m.set(true);
+          ╵          [32m~~~~~~~~~~~~~~~~~[0m
+
+  'generarPlanilla' is declared here.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:435:2:
+[37m      435 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'planillaService' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:446:9:
+[37m      446 │     this.[32mplanillaService[37m.generarPlanilla(this.itemId)
+          ╵          [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'generandoPlanilla' does not exist on type 'MaestroDetalleForm'. Did you mean 'generarPlanilla'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:450:26:
+[37m      450 │         error: () => this.[32mgenerandoPlanilla[37m.set(false),
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+  'generarPlanilla' is declared here.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:435:2:
+[37m      435 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlanillaGeneradaResultado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:454:35:
+[37m      454 │   private trasGenerarPlanilla(res: [32mPlanillaGeneradaResultado[37m) {
+          ╵                                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'generandoPlanilla' does not exist on type 'MaestroDetalleForm'. Did you mean 'generarPlanilla'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:455:9:
+[37m      455 │     this.[32mgenerandoPlanilla[37m.set(false);
+          ╵          [32m~~~~~~~~~~~~~~~~~[0m
+
+  'generarPlanilla' is declared here.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:435:2:
+[37m      435 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'calculandoHE' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:387:9:
+[37m      387 │     this.[32mcalculandoHE[37m.set(true);
+          ╵          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'planillaService' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:388:9:
+[37m      388 │     this.[32mplanillaService[37m.calcularHorasExtrasPlanilla(this.itemId)
+          ╵          [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'calculandoHE' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:392:26:
+[37m      392 │         error: () => this.[32mcalculandoHE[37m.set(false),
+          ╵                           [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'HorasExtrasPlanillaResultado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:396:39:
+[37m      396 │ ...vate trasCalcularHorasExtras(res: [32mHorasExtrasPlanillaResultado[37m) {
+          ╵                                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'calculandoHE' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:397:9:
+[37m      397 │     this.[32mcalculandoHE[37m.set(false);
+          ╵          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'generandoPlanilla' does not exist on type 'MaestroDetalleForm'. Did you mean 'generarPlanilla'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:446:9:
+[37m      446 │     this.[32mgenerandoPlanilla[37m.set(true);
+          ╵          [32m~~~~~~~~~~~~~~~~~[0m
+
+  'generarPlanilla' is declared here.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:436:2:
+[37m      436 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'planillaService' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:447:9:
+[37m      447 │     this.[32mplanillaService[37m.generarPlanilla(this.itemId)
+          ╵          [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'generandoPlanilla' does not exist on type 'MaestroDetalleForm'. Did you mean 'generarPlanilla'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:451:26:
+[37m      451 │         error: () => this.[32mgenerandoPlanilla[37m.set(false),
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+  'generarPlanilla' is declared here.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:436:2:
+[37m      436 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlanillaGeneradaResultado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:455:35:
+[37m      455 │   private trasGenerarPlanilla(res: [32mPlanillaGeneradaResultado[37m) {
+          ╵                                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'generandoPlanilla' does not exist on type 'MaestroDetalleForm'. Did you mean 'generarPlanilla'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:456:9:
+[37m      456 │     this.[32mgenerandoPlanilla[37m.set(false);
+          ╵          [32m~~~~~~~~~~~~~~~~~[0m
+
+  'generarPlanilla' is declared here.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:436:2:
+[37m      436 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'calculandoHE' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:387:9:
+[37m      387 │     this.[32mcalculandoHE[37m.set(true);
+          ╵          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'planillaService' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:388:9:
+[37m      388 │     this.[32mplanillaService[37m.calcularHorasExtrasPlanilla(this.itemId)
+          ╵          [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'calculandoHE' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:392:26:
+[37m      392 │         error: () => this.[32mcalculandoHE[37m.set(false),
+          ╵                           [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'HorasExtrasPlanillaResultado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:396:39:
+[37m      396 │ ...vate trasCalcularHorasExtras(res: [32mHorasExtrasPlanillaResultado[37m) {
+          ╵                                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'calculandoHE' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:397:9:
+[37m      397 │     this.[32mcalculandoHE[37m.set(false);
+          ╵          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'generandoPlanilla' does not exist on type 'MaestroDetalleForm'. Did you mean 'generarPlanilla'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:446:9:
+[37m      446 │     this.[32mgenerandoPlanilla[37m.set(true);
+          ╵          [32m~~~~~~~~~~~~~~~~~[0m
+
+  'generarPlanilla' is declared here.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:436:2:
+[37m      436 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'planillaService' does not exist on type 'MaestroDetalleForm'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:447:9:
+[37m      447 │     this.[32mplanillaService[37m.generarPlanilla(this.itemId)
+          ╵          [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'generandoPlanilla' does not exist on type 'MaestroDetalleForm'. Did you mean 'generarPlanilla'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:451:26:
+[37m      451 │         error: () => this.[32mgenerandoPlanilla[37m.set(false),
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+  'generarPlanilla' is declared here.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:436:2:
+[37m      436 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlanillaGeneradaResultado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:455:35:
+[37m      455 │   private trasGenerarPlanilla(res: [32mPlanillaGeneradaResultado[37m) {
+          ╵                                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'generandoPlanilla' does not exist on type 'MaestroDetalleForm'. Did you mean 'generarPlanilla'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:456:9:
+[37m      456 │     this.[32mgenerandoPlanilla[37m.set(false);
+          ╵          [32m~~~~~~~~~~~~~~~~~[0m
+
+  'generarPlanilla' is declared here.
+
+    src/app/features/facturacion/maestro-detalle/maestro-detalle-form.ts:436:2:
+[37m      436 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2353: Object literal may only specify known properties, and 'mostrarCalcularHorasExtras' does not exist in type 'MaestroDetalleConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/models/facturacion.models.ts:442:4:
+[37m      442 │     [32mmostrarCalcularHorasExtras[37m: true,
+          ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlDepto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/planilla.service.ts:66:28:
+[37m      66 │   getPlDeptos(): Observable<[32mPlDepto[37m[]> {
+         ╵                             [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlDepto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/planilla.service.ts:67:24:
+[37m      67 │     return this.api.get<[32mPlDepto[37m[]>('/planilla/deptos');
+         ╵                         [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'TMes'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/planilla.service.ts:71:25:
+[37m      71 │   getMeses(): Observable<[32mTMes[37m[]> {
+         ╵                          [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'TMes'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/planilla.service.ts:72:24:
+[37m      72 │     return this.api.get<[32mTMes[37m[]>('/planilla/tmeses');
+         ╵                         [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2393: Duplicate function implementation.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:480:2:
+[37m      480 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1434: Unexpected keyword or identifier.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:551:2:
+[37m      551 │   [32moverride[37m nuevaFila(): void {
+          ╵   [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'override'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:551:2:
+[37m      551 │   [32moverride[37m nuevaFila(): void {
+          ╵   [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2663: Cannot find name 'nuevaFila'. Did you mean the instance member 'this.nuevaFila'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:551:11:
+[37m      551 │   override [32mnuevaFila[37m(): void {
+          ╵            [32m~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:551:22:
+[37m      551 │   override nuevaFila()[32m:[37m void {
+          ╵                       [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ':' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:552:9:
+[37m      552 │     super[32m.[37mnuevaFila();
+          ╵          [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:552:21:
+[37m      552 │     super.nuevaFila()[32m;[37m
+          ╵                      [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ':' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:553:10:
+[37m      553 │     const [32mfilas[37m = this.dets();
+          ╵           [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'filas'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:553:10:
+[37m      553 │     const [32mfilas[37m = this.dets();
+          ╵           [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:553:29:
+[37m      553 │     const filas = this.dets()[32m;[37m
+          ╵                              [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ':' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:554:10:
+[37m      554 │     const [32mfila[37m = filas[filas.length - 1];
+          ╵           [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'fila'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:554:10:
+[37m      554 │     const [32mfila[37m = filas[filas.length - 1];
+          ╵           [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'filas'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:554:17:
+[37m      554 │     const fila = [32mfilas[37m[filas.length - 1];
+          ╵                  [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'filas'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:554:23:
+[37m      554 │     const fila = filas[[32mfilas[37m.length - 1];
+          ╵                        [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:554:40:
+[37m      554 │     const fila = filas[filas.length - 1][32m;[37m
+          ╵                                         [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: '{' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:555:14:
+[37m      555 │     if (fila) [32mfila[37m['sn_pagar'] = 'S';
+          ╵               [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS18004: No value exists in scope for the shorthand property 'fila'. Either declare one or provide an initializer.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:555:14:
+[37m      555 │     if (fila) [32mfila[37m['sn_pagar'] = 'S';
+          ╵               [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:555:18:
+[37m      555 │     if (fila) fila[32m[[37m'sn_pagar'] = 'S';
+          ╵                   [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ':' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:555:31:
+[37m      555 │     if (fila) fila['sn_pagar'] [32m=[37m 'S';
+          ╵                                [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:555:36:
+[37m      555 │     if (fila) fila['sn_pagar'] = 'S'[32m;[37m
+          ╵                                     [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'quitarFilaFiltrado'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:562:2:
+[37m      562 │   [32mquitarFilaFiltrado[37m(row: any) {
+          ╵   [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'row'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:562:21:
+[37m      562 │   quitarFilaFiltrado([32mrow[37m: any) {
+          ╵                      [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ',' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:562:24:
+[37m      562 │   quitarFilaFiltrado(row[32m:[37m any) {
+          ╵                         [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2693: 'any' only refers to a type, but is being used as a value here.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:562:26:
+[37m      562 │   quitarFilaFiltrado(row: [32many[37m) {
+          ╵                           [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:562:31:
+[37m      562 │   quitarFilaFiltrado(row: any) [32m{[37m
+          ╵                                [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'row'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:563:36:
+[37m      563 │     const idx = this.dets().indexOf([32mrow[37m);
+          ╵                                     [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'calcularHorasExtras'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:572:2:
+[37m      572 │   [32mcalcularHorasExtras[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1005: ';' expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:572:24:
+[37m      572 │   calcularHorasExtras() [32m{[37m
+          ╵                         [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS1128: Declaration or statement expected.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:591:2:
+[37m      591 │   [32mprivate[37m trasCalcularHorasExtras(res: HorasExtrasPlanillaResulta...
+          ╵   [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2393: Duplicate function implementation.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:631:2:
+[37m      631 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mUnexpected "."[0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:1070:19:
+[37m      1070 │             super: [32m.[37mnuevaFila(),
+           ╵                    [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDuplicate member "generarPlanilla" in class body[0m [duplicate-class-member]
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:1137:4:
+[37m      1137 │     [32mgenerarPlanilla[37m() {
+           ╵     [32m~~~~~~~~~~~~~~~[0m
+
+  The original member "generarPlanilla" is here:
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:1002:4:
+[37m      1002 │     [32mgenerarPlanilla[37m() {
+           ╵     [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2393: Duplicate function implementation.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:480:2:
+[37m      480 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2393: Duplicate function implementation.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:629:2:
+[37m      629 │   [32mgenerarPlanilla[37m() {
+          ╵   [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlanillaMae'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/planilla.service.ts:159:44:
+[37m      159 │   autorizarPlanilla(id: number): Observable<[32mPlanillaMae[37m> {
+          ╵                                             [32m~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlanillaMae'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/planilla.service.ts:160:25:
+[37m      160 │     return this.api.post<[32mPlanillaMae[37m>(`/planilla/planillas/${id}/...
+          ╵                          [32m~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlanillaMae'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/planilla.service.ts:169:47:
+[37m      169 │   contabilizarPlanilla(id: number): Observable<[32mPlanillaMae[37m> {
+          ╵                                                [32m~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'PlanillaMae'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/planilla.service.ts:170:25:
+[37m      170 │     return this.api.post<[32mPlanillaMae[37m>(`/planilla/planillas/${id}/...
+          ╵                          [32m~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1010: 'imports' must be an array of components, directives, pipes, or NgModules.
+  Value could not be determined statically.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:78:4:
+[37m      78 │     [32mTagModule[37m,
+         ╵     [32m~~~~~~~~~[0m
+
+  Unknown reference.
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:78:4:
+[37m      78 │     [32mTagModule[37m,
+         ╵     [32m~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2552: Cannot find name 'TagModule'. Did you mean 'module'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:78:4:
+[37m      78 │     [32mTagModule[37m,
+         ╵     [32m~~~~~~~~~[0m
+
+  'module' is declared here.
+
+    node_modules/@types/node/module.d.ts:707:12:
+[37m      707 │         var [32mmodule[37m: NodeJS.Module;
+          ╵             [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2353: Object literal may only specify known properties, and 'vecinal' does not exist in type 'ReciboPlanillaMontos'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/planilla/pagar-planilla/pagar-planilla-form.ts:776:8:
+[37m      776 │         [32mvecinal[37m: Number(row['importe_drvc']) || 0,
+          ╵         [32m~~~~~~~[0m
+
+  The expected type comes from property 'montos' which is declared here on type 'ReciboPlanillaData'
+
+    src/app/core/services/factura-impresion.service.ts:85:2:
+[37m      85 │   [32mmontos[37m: ReciboPlanillaMontos;
+         ╵   [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'maxWidth' since it isn't a known property of 'p-drawer'.
+1. If 'p-drawer' is an Angular component and it has 'maxWidth' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-drawer' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.html:196:2:
+[37m      196 │   [32m[maxWidth]="800"[37m
+          ╵   [32m~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CtacontablesListComponent.
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.ts:31:15:
+[37m      31 │   templateUrl: [32m'./ctacontables-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'maxWidth' since it isn't a known property of 'p-drawer'.
+1. If 'p-drawer' is an Angular component and it has 'maxWidth' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-drawer' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.html:196:2:
+[37m      196 │   [32m[maxWidth]="1000"[37m
+          ╵   [32m~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CtacontablesListComponent.
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.ts:31:15:
+[37m      31 │   templateUrl: [32m'./ctacontables-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'maxWidth' since it isn't a known property of 'p-drawer'.
+1. If 'p-drawer' is an Angular component and it has 'maxWidth' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-drawer' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.html:196:2:
+[37m      196 │   [32m[maxWidth]="1000"[37m
+          ╵   [32m~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CtacontablesListComponent.
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.ts:31:15:
+[37m      31 │   templateUrl: [32m'./ctacontables-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'maxWidth' since it isn't a known property of 'p-drawer'.
+1. If 'p-drawer' is an Angular component and it has 'maxWidth' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-drawer' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.html:196:2:
+[37m      196 │   [32m[maxWidth]="1000"[37m
+          ╵   [32m~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CtacontablesListComponent.
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.ts:31:15:
+[37m      31 │   templateUrl: [32m'./ctacontables-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'maxWidth' since it isn't a known property of 'p-drawer'.
+1. If 'p-drawer' is an Angular component and it has 'maxWidth' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-drawer' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.html:196:2:
+[37m      196 │   [32m[maxWidth]="1000"[37m
+          ╵   [32m~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CtacontablesListComponent.
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.ts:31:15:
+[37m      31 │   templateUrl: [32m'./ctacontables-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'maxWidth' since it isn't a known property of 'p-drawer'.
+1. If 'p-drawer' is an Angular component and it has 'maxWidth' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-drawer' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.html:196:2:
+[37m      196 │   [32m[maxWidth]="1000"[37m
+          ╵   [32m~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CtacontablesListComponent.
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.ts:31:15:
+[37m      31 │   templateUrl: [32m'./ctacontables-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'maxWidth' since it isn't a known property of 'p-drawer'.
+1. If 'p-drawer' is an Angular component and it has 'maxWidth' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-drawer' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.html:196:2:
+[37m      196 │   [32m[maxWidth]="1000"[37m
+          ╵   [32m~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CtacontablesListComponent.
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.ts:31:15:
+[37m      31 │   templateUrl: [32m'./ctacontables-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'maxWidth' since it isn't a known property of 'p-drawer'.
+1. If 'p-drawer' is an Angular component and it has 'maxWidth' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'p-drawer' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.html:196:2:
+[37m      196 │   [32m[maxWidth]="1000"[37m
+          ╵   [32m~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CtacontablesListComponent.
+
+    src/app/features/contabilidad/ctacontables/ctacontables-list.ts:31:15:
+[37m      31 │   templateUrl: [32m'./ctacontables-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+

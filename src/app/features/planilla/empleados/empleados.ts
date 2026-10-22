@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { DataViewModule } from 'primeng/dataview';
+import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
@@ -17,7 +17,7 @@ import { PlanillaEmpleado } from '../../../core/models/planilla.models';
   imports: [
     CommonModule,
     FormsModule,
-    DataViewModule,
+    TableModule,
     ButtonModule,
     InputTextModule,
     TagModule,
@@ -33,10 +33,7 @@ export class Empleados implements OnInit {
   private msgs = inject(MessageService);
 
   data = signal<PlanillaEmpleado[]>([]);
-  filtered = signal<PlanillaEmpleado[]>([]);
   cargando = signal(false);
-
-  q = signal('');
 
   ngOnInit() {
     this.load();
@@ -47,7 +44,6 @@ export class Empleados implements OnInit {
     this.service.getEmpleados().subscribe({
       next: (res) => {
         this.data.set(res);
-        this.filtrar();
         this.cargando.set(false);
       },
       error: () => {
@@ -57,37 +53,16 @@ export class Empleados implements OnInit {
     });
   }
 
-  filtrar() {
-    const q = this.q().toLowerCase();
-    this.filtered.set(
-      this.data().filter((e) => {
-        if (!q) return true;
-        return (
-          e.nombres?.toLowerCase().includes(q) ||
-          e.apellidos?.toLowerCase().includes(q) ||
-          e.nrodocumento?.toLowerCase().includes(q) ||
-          e.telefono?.toLowerCase().includes(q) ||
-          e.email?.toLowerCase().includes(q)
-        );
-      }),
-    );
-  }
-
-  buscar() {
-    this.filtrar();
-  }
-
-  limpiarFiltros() {
-    this.q.set('');
-    this.filtrar();
-  }
-
   nuevo() {
     this.router.navigate(['nuevo'], { relativeTo: this.route });
   }
 
   editar(id: number) {
     this.router.navigate(['editar', id], { relativeTo: this.route });
+  }
+
+  irATipoMov(id: number) {
+    this.router.navigate(['/planilla/empleado-tipo-mov/editar', id]);
   }
 
   activoLbl(sn: string): string {

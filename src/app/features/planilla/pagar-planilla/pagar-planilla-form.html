@@ -1,0 +1,286 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">{{ titulo() }}</h1>
+      <p class="page-subtitle">{{ config?.subtitulo }}</p>
+    </div>
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text size="small" rounded
+      (onClick)="volver()" />
+  </header>
+
+  @if (cargando()) {
+  <div class="card">Cargando datos...</div>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="guardar()">
+    <div class="card form-grid">
+      @for (c of camposMae; track c.key) {
+      @if (!c.oculto) {
+      <div class="campo">
+        <label [for]="c.key">{{ c.label }} @if (c.requerido) {<span class="req">*</span>}</label>
+
+        @if (c.tipo === 'texto') {
+        @if (c.soloLectura) {
+        <input pInputText pSize="small" [id]="c.key" [formControlName]="c.key" readonly class="bg-gray-100" />
+        } @else {
+        <input pInputText [id]="c.key" [formControlName]="c.key" maxlength="120" [placeholder]="c.label"
+          [ngClass]="{ 'ng-invalid': invalid(c.key) }" />
+        }
+        } @else if (c.tipo === 'numero') {
+        @if (c.soloLectura) {
+        <!-- Total a Pagar: calculado (suma de sueldos netos a pagar), solo lectura -->
+        <p-inputnumber size="small" [formControlName]="c.key" [readonly]="true" mode="currency" currency="HNL"
+          [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+          styleClass="total-lectura" [inputStyle]="{ 'width': '100%' }" />
+        } @else {
+        <p-inputnumber size="small" [formControlName]="c.key" [showButtons]="true"
+          [ngClass]="{ 'ng-invalid': invalid(c.key) }" />
+        }
+        } @else if (c.tipo === 'select') {
+        <div class="flex gap-2">
+          @if (c.key === 'periodo') {
+          <p-select size="small" [formControlName]="c.key" [options]="periodosOptions()" optionLabel="label"
+            optionValue="value" placeholder="Seleccionar período..." styleClass="w-full" filter filterBy="label"
+            [appendTo]="'body'" />
+          } @else if (c.key === 'documentoId') {
+          <p-select size="small" [formControlName]="c.key" [options]="opcionesDocumento()" optionLabel="label"
+            optionValue="value" placeholder="Tipo documento..." styleClass="w-full" filter filterBy="label"
+            [appendTo]="'body'" (ngModelChange)="onDocumentoIdChange()" />
+          } @else if (c.key === 'nrodocumento') {
+          <p-select size="small" [formControlName]="c.key" [options]="opcionesNroDocumento()" optionLabel="label"
+            optionValue="value" placeholder="Nro. documento..." styleClass="w-full" filter filterBy="label"
+            [appendTo]="'body'" />
+          } @else {
+          <p-select size="small" [formControlName]="c.key" [options]="opciones(c)" optionLabel="label"
+            optionValue="value" placeholder="Seleccionar..." styleClass="w-full" [filter]="c.filtro ?? false"
+            filterBy="label" [appendTo]="'body'" />
+          }
+          @if (c.selector) {
+          <p-button type="button" icon="pi pi-search" severity="secondary" (onClick)="abrirSelector(c.selector)" />
+          }
+        </div>
+        } @else if (c.tipo === 'fecha') {
+        <p-datepicker [formControlName]="c.key" dateFormat="dd/mm/yy" styleClass="w-full" />
+        }
+
+        @if (invalid(c.key)) {
+        <small class="err">{{ c.label }} es obligatorio</small>
+        }
+      </div>
+
+      @if (c.key === 'anio') {
+      <!-- Filtro de departamentos (no pertenece al form): multi-select de
+           tpldeptos con "Todos"; filtra la tabla de líneas. -->
+      <div class="campo">
+        <label>Departamento <span class="req">*</span></label>
+        <p-multiselect size="small" [options]="deptosOptions()" [ngModel]="deptosSel()"
+          (ngModelChange)="onDeptosChange($event)" [ngModelOptions]="{ standalone: true }" optionLabel="label"
+          optionValue="value" placeholder="Departamentos..." styleClass="w-full" filter filterBy="label"
+          [showToggleAll]="false" [appendTo]="'body'" />
+      </div>
+      }
+      }
+      }
+
+      <!-- Flujo de cabecera (izquierda): Generar → Autorizar pago → Contabilizar.
+           En "nuevo", Generar crea la cabecera y luego genera el detalle
+           masivo; Autorizar/Contabilizar requieren la planilla en edición.
+           Los tags muestran el estado de los flags de pleplamae. -->
+      <div class="campo-accion-grid">
+        <p-button type="button" label="Generar planilla" icon="pi pi-cog" variant="text" severity="success" size="small"
+          [rounded]="true" [loading]="generandoPlanilla()"
+          [disabled]="guardando() || snAutorizada() || snContabilizada()"
+          (onClick)="generarPlanilla()" />
+
+        <p-button type="button" label="Autorizar pago" icon="pi pi-verified" variant="text" severity="primary"
+          size="small" [rounded]="true" [loading]="autorizandoPago()"
+          [disabled]="guardando() || snAutorizada()"
+          (onClick)="autorizarPago()" />
+
+        <p-button type="button" label="Contabilizar planilla" icon="pi pi-book" variant="text" severity="warn"
+          size="small" [rounded]="true" [loading]="contabilizando()"
+          [disabled]="guardando() || snContabilizada()"
+          (onClick)="contabilizarPlanilla()" />
+
+        @if (esEdicion()) {
+        <div class="estado-planilla">
+          @if (snAutorizada()) {
+          <p-tag value="Autorizada" severity="success" />
+          } @else {
+          <p-tag value="Autorización pendiente" severity="secondary" />
+          }
+          @if (snContabilizada()) {
+          <p-tag value="Contabilizada" severity="success" />
+          } @else {
+          <p-tag value="Contabilización pendiente" severity="secondary" />
+          }
+        </div>
+        }
+      </div>
+    </div>
+
+    @if (camposDet.length > 0) {
+    <div class="card">
+      <div class="detalles-head">
+        <h2 class="detalles-title">Detalles</h2>
+        <p-button type="button" label="Agregar fila" icon="pi pi-plus" variant="text" severity="success" size="small"
+          [rounded]="true" (onClick)="nuevaFila()" />
+      </div>
+
+      <p-table [value]="detsFiltrados()" [scrollable]="true" scrollHeight="400px" styleClass="det-table"
+        [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        size="small">
+        <ng-template #header>
+          <tr>
+            @for (c of camposDet; track c.key) {
+            @if (!c.oculto) {
+            <th [class.th-pagar]="c.tipo === 'checkbox'" [class.th-dinero]="encabezadoDinero[c.key]">
+              @if (c.tipo === 'checkbox') {
+              <span>{{ c.label }}</span>
+              <p-checkbox [binary]="true" [ngModel]="todasPagar()" (ngModelChange)="marcarTodas($event)"
+                [ngModelOptions]="{ standalone: true }" />
+              } @else if (encabezadoDinero[c.key]) {
+              <!-- Cabecera de 2 líneas: línea 1 tenue + línea 2 principal -->
+              <span class="th-pre">{{ encabezadoDinero[c.key][0] }}</span>
+              <span class="th-main">{{ encabezadoDinero[c.key][1] }}</span>
+              } @else {
+              {{ c.label }}
+              }
+            </th>
+            }
+            }
+            <th class="th-acciones"></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row let-idx="rowIndex">
+          <tr>
+            @for (c of camposDet; track c.key) {
+            @if (!c.oculto) {
+            <td>
+              @if (c.tipo === 'checkbox') {
+              <p-checkbox [binary]="true" [ngModel]="row[c.key] === 'S'"
+                (ngModelChange)="onPagarChange(row, $event)" [ngModelOptions]="{ standalone: true }" />
+              } @else if (c.tipo === 'subtotal') {
+              <!-- Subtotal calculado en cliente (suma de la fila expandida) -->
+              <span class="monto-sub">{{ fmtL(subtotalFila(row, c.key)) }}</span>
+              } @else if (c.tipo === 'moneda') {
+              <!-- (ngModelChange) refresca los computed de totales (Total a Pagar) -->
+              <p-inputnumber size="small" [ngModel]="row[c.key]"
+                (ngModelChange)="row[c.key] = $event; refrescarTotales()" [ngModelOptions]="{ standalone: true }"
+                mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0" [minFractionDigits]="2"
+                [maxFractionDigits]="2" [useGrouping]="true" styleClass="moneda-input"
+                [inputStyle]="{ 'width': '100%' }" />
+              } @else if (c.tipo === 'numero') {
+              <p-inputnumber size="small" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" [min]="0"
+                [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" styleClass="numero-input"
+                [inputStyle]="{ 'width': '100%' }" />
+              } @else if (c.tipo === 'fecha') {
+              <p-datepicker [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy"
+                styleClass="w-full" />
+              } @else if (c.tipo === 'select') {
+              @if (c.key === 'empleadoId') {
+              <p-select size="small" [ngModel]="row[c.key]"
+                (ngModelChange)="row[c.key] = $event; onEmpleadoChange(row)" [ngModelOptions]="{ standalone: true }"
+                [options]="empleadosOptions()" optionLabel="label" optionValue="value"
+                placeholder="Seleccionar empleado..." styleClass="w-full" filter filterBy="label" appendTo="body"
+                [disabled]="isCampoDesactivado(row, c.key)" />
+              } @else if (c.key === 'formapagoId') {
+              <p-select size="small" [ngModel]="row[c.key]"
+                (ngModelChange)="row[c.key] = $event; onFormaPagoChange(row)" [ngModelOptions]="{ standalone: true }"
+                [options]="opciones(c)" optionLabel="label" optionValue="value" placeholder="Seleccionar..."
+                styleClass="w-full" [filter]="c.filtro ?? false" filterBy="label" appendTo="body" />
+              } @else {
+              <p-select size="small" [ngModel]="row[c.key]" (ngModelChange)="row[c.key] = $event"
+                [ngModelOptions]="{ standalone: true }" [options]="opciones(c)" optionLabel="label" optionValue="value"
+                placeholder="Seleccionar..." styleClass="w-full" [filter]="c.filtro ?? false" filterBy="label"
+                appendTo="body" [disabled]="isCampoDesactivado(row, c.key)" />
+              }
+              } @else {
+              <input pInputText pSize="small" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }"
+                [disabled]="isCampoDesactivado(row, c.key)"
+                [placeholder]="isCampoDesactivado(row, c.key) ? '' : c.label" />
+              }
+            </td>
+            }
+            }
+            <td class="td-acciones">
+              <!-- Expand/collapse manual (patrón Libro Diario): alterna la
+                   sub-fila con Egresos/Ingresos renderizada abajo. -->
+              <p-button type="button" [icon]="isExpandido(row) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                severity="secondary" variant="text" [rounded]="true" size="small" pTooltip="Ver detalle"
+                (onClick)="toggleFila(row)" />
+              <p-button type="button" icon="pi pi-print" severity="secondary" variant="text" [rounded]="true"
+                size="small" pTooltip="Imprimir recibo" (onClick)="imprimirRecibo(row)" />
+              <p-button type="button" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true"
+                size="small" [disabled]="!esNuevaFila(row)" (onClick)="quitarFilaFiltrado(row)" />
+            </td>
+          </tr>
+          <!-- Fila expandida: detalle de Egresos (IHSS/RAP/RTF/Otras Ded.) e
+               Ingresos (Comisiones/H. Extras/Bonos) con sus subtotales. -->
+          @if (isExpandido(row)) {
+          <tr class="det-expandida">
+            <!-- 6 columnas visibles + Acciones = 7 -->
+            <td colspan="7">
+              <div class="exp-grid">
+                <div class="exp-grupo">
+                  <div class="exp-titulo">Egresos</div>
+                  @for (k of clavesEgresos; track k) {
+                  <div class="exp-item">
+                    <span class="exp-label">{{ etiquetaCampo(k) }}</span>
+                    <p-inputnumber size="small" [ngModel]="row[k]"
+                      (ngModelChange)="row[k] = $event; refrescarTotales()" [ngModelOptions]="{ standalone: true }"
+                      mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0" [minFractionDigits]="2"
+                      [maxFractionDigits]="2" [useGrouping]="true" styleClass="exp-input"
+                      [inputStyle]="{ 'width': '100%' }" />
+                  </div>
+                  }
+                  <div class="exp-total">
+                    <span>SubTot. Egresos</span>
+                    <span>{{ fmtL(egresosDe(row)) }}</span>
+                  </div>
+                </div>
+                <div class="exp-grupo">
+                  <div class="exp-titulo">Ingresos</div>
+                  @for (k of clavesIngresos; track k) {
+                  <div class="exp-item">
+                    <span class="exp-label">{{ etiquetaCampo(k) }}</span>
+                    <p-inputnumber size="small" [ngModel]="row[k]"
+                      (ngModelChange)="row[k] = $event; refrescarTotales()" [ngModelOptions]="{ standalone: true }"
+                      mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0" [minFractionDigits]="2"
+                      [maxFractionDigits]="2" [useGrouping]="true" styleClass="exp-input"
+                      [inputStyle]="{ 'width': '100%' }" />
+                  </div>
+                  }
+                  <div class="exp-total">
+                    <span>SubTot. Ingresos</span>
+                    <span>{{ fmtL(ingresosDe(row)) }}</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          }
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="100" class="text-center p-3">Sin detalles. Agregue filas.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+    }
+
+    <div class="acciones-form">
+      @if (esEdicion()) {
+      <p-button type="button" label="Calcular horas extras" icon="pi pi-clock" variant="text" severity="warn"
+        size="small" [rounded]="true" [loading]="calculandoHE()" [disabled]="guardando()" class="accion-izq"
+        (onClick)="calcularHorasExtras()" />
+      }
+      <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small"
+        [rounded]="true" (onClick)="volver()" />
+      <p-button type="submit" label="Guardar" icon="pi pi-check" variant="text" severity="success" size="small"
+        [rounded]="true" [loading]="guardando()" />
+    </div>
+  </form>
+  }
+</section>
