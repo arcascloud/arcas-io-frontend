@@ -9,12 +9,19 @@ export interface CampoCatalogo {
     labelCampo?: string;
     /** Campos concatenados con espacio para la etiqueta (ej: nombres + apellidos) */
     labelCampos?: string[];
+    /** Separador entre los campos de `labelCampos` (default: espacio). Ej: ' — ' → "1-1-20-1-001 — Banco" */
+    labelSeparador?: string;
     valueCampo: string;
     /**
      * Filtra las opciones tras la carga: solo se muestran estos valores.
      * Ej: gestores → solo módulos 3 y 4: `valores: [3, 4]`.
      */
     valores?: (string | number)[];
+    /**
+     * Filtra los ITEMS cargados por coincidencia de campos (antes de armar las opciones).
+     * Ej: cuentas contables operables: `donde: { sn_operable: 'S', sn_activo: 'S' }`.
+     */
+    donde?: Record<string, string | number>;
   };
   requerido?: boolean;
   principal?: boolean;
@@ -22,6 +29,12 @@ export interface CampoCatalogo {
   frozen?: boolean;
   /** No se muestra en el formulario (ej: ID que asigna el backend). Sí aparece en la lista */
   ocultoForm?: boolean;
+  /**
+   * El campo se muestra en el formulario pero deshabilitado (informativo) y
+   * NO se envía al guardar — el backend conserva el valor (edición) o aplica
+   * su default (creación). Ej: saldo de cuenta bancaria.
+   */
+  soloLectura?: boolean;
   /** El valor de este campo no puede ser menor al del campo indicado (key). Ej: precioventa >= preciocompra */
   minCampo?: string;
   /** Cifras decimales para mostrar en formulario y lista (ej: 4 para tipo de cambio 26.9745) */
@@ -46,18 +59,19 @@ export interface CampoCatalogo {
 /**
  * Construye la etiqueta de una opción de cargaOpciones:
  * - `labelCampos: ['nombres', 'apellidos']` → "Juan Carlos Pérez"
+ * - `labelCampos: ['ctacontable','descripcion'], labelSeparador: ' — '` → "1-1-20-1-001 — Bco Atlantida Cta Nro #1"
  * - `labelCampo: 'descripcion'` → item.descripcion
  * - sin label → valueCampo como fallback
  */
 export function labelOpcion(
   item: any,
-  c: { labelCampo?: string; labelCampos?: string[]; valueCampo: string },
+  c: { labelCampo?: string; labelCampos?: string[]; labelSeparador?: string; valueCampo: string },
 ): string {
   if (c.labelCampos?.length) {
     return c.labelCampos
       .map((k) => (item?.[k] != null && item[k] !== '' ? String(item[k]) : ''))
       .filter((v) => v !== '')
-      .join(' ')
+      .join(c.labelSeparador ?? ' ')
       .trim();
   }
   return String(item?.[c.labelCampo ?? ''] ?? item?.[c.valueCampo] ?? '');
@@ -501,6 +515,20 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
       },
       { key: 'nrocuenta', label: 'Nro. Cuenta', tipo: 'texto', requerido: true, principal: true },
       {
+        key: 'ctacontable',
+        label: 'Cuenta Contable',
+        tipo: 'select',
+        cargaOpciones: {
+          url: '/contabilidad/ctacontables',
+          labelCampos: ['ctacontable', 'descripcion'],
+          labelSeparador: ' — ',
+          valueCampo: 'ctacontable',
+          donde: { sn_operable: 'S', sn_activo: 'S' },
+        },
+        requerido: true,
+        pista: 'Cuenta contable operable asociada a esta cuenta bancaria',
+      },
+      {
         key: 'monedaId',
         label: 'Moneda',
         tipo: 'select',
@@ -510,6 +538,15 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
           valueCampo: 'monedaId',
         },
         requerido: true,
+      },
+      {
+        key: 'saldo',
+        label: 'Saldo',
+        tipo: 'numero',
+        formato: 'moneda',
+        decimales: 2,
+        soloLectura: true,
+        pista: 'Informativo — lo actualizan los movimientos bancarios',
       },
     ],
   },

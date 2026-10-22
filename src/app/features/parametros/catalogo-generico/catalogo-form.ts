@@ -210,6 +210,13 @@ export class CatalogoForm implements OnInit, OnChanges {
               const candidate = res.data ?? res.results ?? Object.values(res).find(Array.isArray) ?? [];
               items = Array.isArray(candidate) ? candidate : [];
             }
+            // Filtrado por coincidencia de campos (ej: sn_operable='S' para cuentas contables)
+            const donde = c.cargaOpciones!.donde;
+            if (donde) {
+              items = items.filter((i) =>
+                Object.entries(donde).every(([k, v]) => String(i?.[k]) === String(v)),
+              );
+            }
             let opts = items.map((i) => ({
               label: labelOpcion(i, c.cargaOpciones!),
               value: i[c.cargaOpciones!.valueCampo],
@@ -245,6 +252,11 @@ export class CatalogoForm implements OnInit, OnChanges {
     }
     if (!this.config.sinEstado) group['sn_activo'] = ['S'];
     this.form = this.fb.group(group);
+
+    // Campos solo-lectura (informativos): se muestran deshabilitados y no se envían
+    for (const c of this.campos) {
+      if (c.soloLectura) this.form.get(c.key)?.disable();
+    }
 
     // Validaciones cruzadas declarativas (ej: precioventa >= preciocompra)
     const form = this.form;
@@ -311,9 +323,11 @@ export class CatalogoForm implements OnInit, OnChanges {
 
     const raw = this.form.getRawValue();
     const sinContexto = this.config.incluyeEmpresaId === false;
-    const body = this.esEdicion()
-      ? { ...raw }
-      : { ...raw };
+    // Excluir campos solo-lectura del payload (el backend conserva su valor)
+    for (const c of this.campos) {
+      if (c.soloLectura) delete raw[c.key];
+    }
+    const body = { ...raw };
 
     this.guardando.set(true);
     const op = this.esEdicion()

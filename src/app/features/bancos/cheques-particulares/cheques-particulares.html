@@ -29,6 +29,12 @@
               </ng-template>
             </p-select>
           </div>
+          @if (cuentaSeleccionada()) {
+            <div class="saldo-info">
+              <span class="saldo-label">Saldo actual:</span>
+              <span class="saldo-valor" [class.saldo-insuficiente]="saldoInsuficiente()">{{ saldoTexto() }}</span>
+            </div>
+          }
         </div>
         <div class="p-col-12 p-col-6">
           <div class="campo">
@@ -51,10 +57,16 @@
           </div>
         </div>
         <div class="p-col-12">
+          @if (saldoInsuficiente()) {
+            <div class="saldo-insuficiente-msg mb-3">
+              <i class="pi pi-exclamation-triangle"></i>
+              <span>Saldo insuficiente — saldo actual {{ saldoTexto() }}, importe del cheque {{ formatCurrency(importeActual()) }}</span>
+            </div>
+          }
           <div class="form-actions">
             <p-button size="small" label="Emitir Cheque" icon="pi pi-check-circle" severity="success"
               variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
-              [disabled]="form.invalid" (click)="emitir()" />
+              [disabled]="form.invalid || saldoInsuficiente()" (click)="emitir()" />
           </div>
         </div>
       </div>

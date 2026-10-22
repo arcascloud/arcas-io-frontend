@@ -1,3 +1,107 @@
-.dv-cards {
-  padding: 0.75rem;
+/* ═══════════════ TreeTable: filas por tipo ═══════════════ */
+// Los <tr>/<td> viven en el template propio (pTemplate), por eso aplican directo.
+
+// Fila padre (usuario)
+.fila-usuario > td {
+  background: var(--c-surface-ground);
+  font-weight: 600;
+  border-top: 2px solid var(--c-border);
+}
+
+// Fila hija (item de menú)
+.fila-item > td {
+  background: var(--c-surface);
+}
+
+// Item deshabilitado en el menú (su fila queda atenuada)
+.item-inactivo {
+  .item-label,
+  .item-nombre,
+  .item-icono {
+    color: var(--c-text-muted);
+  }
+
+  .item-label {
+    font-weight: 500;
+  }
+}
+
+/* ═══════════════ Fila usuario ═══════════════ */
+.usuario-login {
+  font-weight: 700;
+  color: var(--c-text);
+  margin-left: 0.25rem;
+}
+
+.usuario-nombre {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin-left: 0.5rem;
+}
+
+/* ═══════════════ Fila item: icono + label + nameItem ═══════════════ */
+.item-icono {
+  color: var(--c-primary);
+  margin-right: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.item-label {
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.item-nombre {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  margin-left: 0.5rem;
+}
+
+/* ═══════════════ Ruta ═══════════════ */
+.ruta-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  padding: 0.1rem 0.45rem;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+/* ═══════════════ Utilidades locales (no existen en styles.scss) ═══════════════ */
+.text-muted {
+  color: var(--c-text-muted);
+}
+
+.mr-1 {
+  margin-right: 0.25rem;
+}
+
+/* ═══════════════ Filtros en el encabezado ═══════════════ */
+.header-filtros {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    width: 14rem;
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--c-text-muted);
+      margin: 0;
+    }
+  }
+
+  // PrimeNG 21: ancho completo desde el elemento host (patrón de pagar-planilla)
+  p-multiselect {
+    width: 100%;
+  }
 }

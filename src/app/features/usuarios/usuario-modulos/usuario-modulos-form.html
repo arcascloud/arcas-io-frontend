@@ -22,13 +22,14 @@
       <div class="campo">
         <label for="usuario">Usuario <span class="req">*</span></label>
         <p-select
-size="small"           id="usuario"
+          id="usuario"
+          size="small"
           formControlName="usuario"
           [options]="usuarios()"
-          optionLabel="nombre"
-          optionValue="usuario"
+          optionLabel="label"
+          optionValue="value"
           [filter]="true"
-          filterBy="nombre,usuario"
+          filterBy="label"
           filterPlaceholder="Buscar usuario..."
           placeholder="Seleccione usuario"
           appendTo="body"
@@ -39,52 +40,58 @@ size="small"           id="usuario"
         }
       </div>
 
-      <div class="campo">
-        <label for="moduloId">Módulo <span class="req">*</span></label>
-        <p-select
-size="small"           id="moduloId"
-          formControlName="moduloId"
-          [options]="modulos()"
-          optionLabel="descripcion"
-          optionValue="moduloId"
-          placeholder="Seleccione módulo"
-          appendTo="body"
-          [disabled]="esEdicion()"
-        />
-        @if (invalid('moduloId')) {
-          <small class="err">Debe seleccionar un módulo</small>
-        }
-      </div>
+      @if (esEdicion()) {
+        <div class="campo">
+          <label>Módulo</label>
+          <div class="modulo-actual">
+            <i class="pi pi-box"></i>
+            <span>{{ moduloActualNombre() }}</span>
+          </div>
+        </div>
+      } @else {
+        <div class="campo"></div>
+      }
 
-      <div class="campo">
-        <label>Datos</label>
-        <p-selectbutton size="small"
-          [options]="snOptions"
-          formControlName="submnudatos"
-          optionLabel="label"
-          optionValue="value"
-        />
-      </div>
-
-      <div class="campo">
-        <label>Procesos</label>
-        <p-selectbutton size="small"
-          [options]="snOptions"
-          formControlName="submnurocesos"
-          optionLabel="label"
-          optionValue="value"
-        />
-      </div>
-
-      <div class="campo">
-        <label>Reportes</label>
-        <p-selectbutton size="small"
-          [options]="snOptions"
-          formControlName="submnueportes"
-          optionLabel="label"
-          optionValue="value"
-        />
-      </div>
+      @if (!esEdicion()) {
+        <div class="campo campo-wide">
+          <label>Módulos <span class="req">*</span></label>
+          <p-pickList
+            class="picklist-modulos"
+            [source]="sourceMods()"
+            (sourceChange)="sourceMods.set($event)"
+            [target]="targetMods()"
+            (targetChange)="targetMods.set($event)"
+            [sourceHeader]="'Disponibles (' + sourceMods().length + ')'"
+            [targetHeader]="'Asignados (' + targetMods().length + ')'"
+            filterBy="descripcion"
+            sourceFilterPlaceholder="Buscar módulo..."
+            targetFilterPlaceholder="Buscar módulo..."
+            dataKey="moduloId"
+            scrollHeight="260px"
+          >
+            <ng-template let-item pTemplate="item">
+              @if (asignadosIniciales().has(item.moduloId)) {
+                <span class="mod-item mod-item--existente">
+                  <i class="pi pi-check-circle"></i>
+                  <span>{{ item.descripcion }}</span>
+                </span>
+              } @else {
+                <span class="mod-item">
+                  <i class="pi pi-arrows-h"></i>
+                  <span>{{ item.descripcion }}</span>
+                </span>
+              }
+            </ng-template>
+          </p-pickList>
+          <small class="hint">
+            Transfera módulos entre listas. Los ítems con <i class="pi pi-check-circle icon-ok"></i>
+            ya estaban asignados; devolverlos a <strong>Disponibles</strong> los eliminará al guardar.
+          </small>
+          @if (pickIntentado() && nuevosElegidos().length === 0 && aEliminar().length === 0) {
+            <small class="err">No hay cambios que guardar</small>
+          }
+        </div>
+      }
 
       <div class="acciones-form">
         <p-button

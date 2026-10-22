@@ -46,11 +46,29 @@ export class UsuariosMnuItemService {
   }
 
   /**
-   * Elimina un elemento de menú de usuario del sistema por su ID.
-   * @param id - Identificador numérico del elemento de menú de usuario a eliminar.
+   * Elimina un elemento de menú del sistema por su ID.
+   * @param id - Identificador numérico del elemento de menú a eliminar.
    * @returns Observable que se completa cuando la eliminación finaliza.
    */
   delete(id: number): Observable<void> {
     return this.api.delete<void>(this.path, id);
+  }
+
+  /**
+   * Clona los items de menú de la plantilla (admin) hacia el usuario indicado
+   * para todos los módulos que tiene asignados. Solo rellena huecos
+   * (no borra ni duplica).
+   * @param usuario - Login del usuario destino.
+   * @returns Observable con el resultado: módulos procesados e items clonados.
+   */
+  clonarMenu(usuario: string): Observable<{
+    usuario: string;
+    modulosProcesados: number;
+    itemsClonados: number;
+  }> {
+    return this.api.post<{ usuario: string; modulosProcesados: number; itemsClonados: number }>(
+      `${this.path}/clonar`,
+      { usuario },
+    );
   }
 }

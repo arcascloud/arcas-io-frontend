@@ -47,10 +47,12 @@ export class UsuariosModuleService {
 
   /**
    * Elimina un módulo de usuario del sistema por su ID.
+   * También elimina los items de menú del usuario para ese módulo
+   * (`itemsEliminados`), salvo para la plantilla admin.
    * @param id - Identificador numérico del módulo de usuario a eliminar.
-   * @returns Observable que se completa cuando la eliminación finaliza.
+   * @returns Observable con el resultado (incluye itemsEliminados).
    */
-  delete(id: number): Observable<void> {
-    return this.api.delete<void>(this.path, id);
+  delete(id: number): Observable<{ eliminado: boolean; itemsEliminados: number }> {
+    return this.api.delete<{ eliminado: boolean; itemsEliminados: number }>(this.path, id);
   }
 }

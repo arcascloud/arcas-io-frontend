@@ -10,11 +10,6 @@
 }
 
 .nf-col-left {
-  flex: 1 1 70%;
-  min-width: 0;
-}
-
-.nf-col-right {
   flex: 1 1 100%;
   min-width: 0;
 }
@@ -32,28 +27,58 @@
   }
 }
 
-.nf-busqueda {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
+// Buscador de productos: iconfield (input fluid + botón de búsqueda embebido)
+// El toolbar-start crece para que el campo ocupe todo el ancho disponible
+.nf-toolbar .p-toolbar-start {
+  flex: 1;
+  min-width: 0;
+}
 
-  input[pinputtext] {
-    flex: 1;
-    min-width: 0;
+.nf-toolbar p-iconfield {
+  flex: 1;
+  min-width: 0;
+
+  // El icono es un <p-button> (no un <i>): centrarlo verticalmente real.
+  // Sustituye el centrado de PrimeNG (top:50% + margin-top) que deja el
+  // botón desplazado hacia abajo por ser más alto que el icono suelto.
+  .p-inputicon {
+    top: 0;
+    bottom: 0;
+    height: auto;
+    width: auto;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    // Más pegado al borde derecho (el default de PrimeNG es form.field.padding.x ≈ 12px)
+    inset-inline-end: 0.25rem;
+  }
+
+  // Padding extra al final: que el texto no se meta debajo del botón
+  .p-inputtext {
+    padding-inline-end: 3rem;
   }
 }
 
 .toolbar-campos {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  display: grid;
+  // Fila 1: Nombre Cliente + Dirección · Fila 2: Atendió + Gestor
+  // Fila 3 col 1: acciones (Nueva/Guardar/PDF/correo/WhatsApp)
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
   width: 100%;
 
   .campo {
-    flex: 1 1 200px;
-    min-width: 150px;
+    min-width: 0;
   }
+}
+
+// Acciones: 5ta celda del grid → fila 3, columna 1 (debajo de Atendió)
+.toolbar-acciones {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  min-width: 0;
+  align-content: flex-start;
 }
 
 .campo {
@@ -64,15 +89,15 @@
   label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-color);
+    color: var(--c-text);
   }
 
   .req {
-    color: #ef4444;
+    color: var(--c-error);
   }
 
   .err {
-    color: #ef4444;
+    color: var(--c-error);
     font-size: 0.75rem;
   }
 
@@ -87,37 +112,61 @@
   }
 }
 
-.invoice-side {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  min-width: 0;
+/* ═══════════════ Tabla de detalle: columnas ═══════════════ */
+.col-quitar {
+  width: 2.5rem;
 }
 
-.resumen-block {
-  padding: 1rem;
+.col-img {
+  width: 3.5rem;
 }
 
-.resumen-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin: 0 0 0.75rem 0;
-  color: var(--text-color);
+.col-precio {
+  width: 8rem;
 }
 
-.resumen-line {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  padding: 0.2rem 0;
+.col-estado {
+  width: 6rem;
 }
 
-.resumen-total {
-  border-top: 1px solid var(--surface-border);
-  padding-top: 0.5rem;
-  margin-top: 0.25rem;
-  font-weight: 700;
-  font-size: 1rem;
+.col-cantidad {
+  width: 6rem;
+}
+
+.col-subtotal {
+  width: 8rem;
+}
+
+.celda-img {
+  text-align: center;
+}
+
+.img-producto {
+  mix-blend-mode: multiply;
+  background: transparent;
+  border-radius: 7px;
+  object-fit: contain;
+  width: 42px;
+  height: 42px;
+  cursor: zoom-in;
+}
+
+.img-placeholder {
+  color: slateblue;
+  font-size: 1.2rem;
+}
+
+.img-zoom-overlay {
+  position: fixed;
+  width: 250px;
+  height: 250px;
+  object-fit: contain;
+  background: var(--c-surface);
+  border: 2px solid var(--c-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  pointer-events: none;
 }
 
 .det-table {
@@ -138,6 +187,7 @@
   }
 }
 
+/* ═══════════════ Totales ═══════════════ */
 .nf-totales {
   .p-card-body,
   .card-body {
@@ -149,26 +199,12 @@
     align-items: center;
   }
 
-  .nf-totales-col-btns {
-    width: 30%;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-    padding: 0.2rem 1rem;
-    border-right: 1px solid var(--c-border);
-  }
-
   .nf-totales-col-data {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.15rem 1.5rem;
-    padding: 0.2rem 1rem;
-
-    .nf-total-block {
-      flex: unset;
-      min-width: unset;
-    }
+    padding: 0.4rem 1rem;
   }
 }
 
@@ -181,12 +217,12 @@
 
   .font-bold {
     font-size: 0.8rem;
-    color: var(--text-muted-color);
+    color: var(--c-text-muted);
   }
 
   > div:last-child {
     font-size: 1.05rem;
-    color: var(--text-color);
+    color: var(--c-text);
   }
 }
 
@@ -196,10 +232,11 @@
 
   > div:last-child {
     font-size: 1.35rem;
-    color: var(--primary-color);
+    color: var(--c-primary);
   }
 }
 
+/* ═══════════════ Celda producto ═══════════════ */
 .cell-producto {
   line-height: 1;
 
@@ -207,7 +244,7 @@
     display: block;
     font-weight: 600;
     font-size: 0.8rem;
-    color: var(--text-muted-color);
+    color: var(--c-text-muted);
     margin-bottom: -2px;
   }
 
@@ -225,17 +262,6 @@
   text-align: right;
 }
 
-@media (max-width: 1024px) {
-  .nf-layout {
-    flex-direction: column;
-  }
-
-  .nf-col-left,
-  .nf-col-right {
-    width: 100% !important;
-  }
-}
-
 :host ::ng-deep .btn-whatsapp .p-button {
   background-color: #25d366;
   border-color: #25d366;
@@ -243,5 +269,65 @@
   &:hover {
     background-color: #1da851;
     border-color: #1da851;
+  }
+}
+
+/* ═══════════════ Mobile (≤640px) ═══════════════ */
+@media (max-width: 640px) {
+  // Header: campos apilados 1 por línea
+  .toolbar-campos {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  // Botones de acciones: ocupan todo el ancho y envuelven
+  .toolbar-acciones {
+    width: 100%;
+
+    ::ng-deep .p-button {
+      flex: 1 1 auto;
+    }
+  }
+
+  // Buscador: ocupa todo el ancho (el botón queda dentro del input)
+  .nf-toolbar p-iconfield {
+    width: 100%;
+  }
+
+  // Totales: apilados (evita que el dinero se corten en pantallas chicas)
+  .nf-totales {
+    .nf-totales-col-data {
+      grid-template-columns: 1fr;
+      gap: 0.4rem;
+      padding: 0.6rem 0.9rem;
+    }
+  }
+
+  .nf-total-grand {
+    border-left: none;
+    border-top: 1px solid var(--c-border);
+    padding-left: 0;
+    padding-top: 0.5rem;
+  }
+
+  // Tabla de detalle: columnas más compactas
+  .det-table {
+    ::ng-deep .p-datatable-thead > tr > th,
+    ::ng-deep .p-datatable-tbody > tr > td {
+      padding: 0.25rem 0.4rem;
+    }
+  }
+
+  .col-precio,
+  .col-subtotal {
+    width: 6.5rem;
+  }
+
+  .col-estado {
+    width: 5rem;
+  }
+
+  .col-cantidad {
+    width: 5rem;
   }
 }

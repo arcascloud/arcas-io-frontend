@@ -1,7 +1,100 @@
-.dv-cards {
-  padding: 0.75rem;
+/* ═══════════════ Layout general ═══════════════ */
+.page {
+  padding: 1rem;
 }
 
-.dv-sn-tag {
-  font-size: 0.75rem;
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+/* ═══════════════ TreeTable ═══════════════ */
+// Los <tr>/<td> viven en el template propio (pTemplate), por eso aplican directo.
+
+// Fila padre (usuario)
+.fila-usuario > td {
+  background: var(--c-surface-ground);
+  font-weight: 600;
+  border-top: 2px solid var(--c-border);
+}
+
+// Fila hija (módulo)
+.fila-modulo > td {
+  background: var(--c-surface);
+}
+
+// Columna del módulo: indentado para alinearse debajo del usuario
+.celda-modulo {
+  padding-left: 2.75rem !important;
+  position: relative;
+
+  // guía vertical de jerarquía
+  &::before {
+    content: '';
+    position: absolute;
+    left: 1.35rem;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--c-border);
+  }
+}
+
+// Celdas vacías de la fila hija (sin contenido pero manteniendo el borde de fila)
+.celda-vacia {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.usuario-login {
+  font-weight: 700;
+  color: var(--c-text);
+  margin-left: 0.25rem;
+}
+
+.modulo-nombre {
+  font-weight: 600;
+  color: var(--c-text);
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  // ancho mínimo fijo = punto de tabulación: "Permitir" + switch
+  // arrancan en la misma X en todas las filas (nombres cortos y largos)
+  min-width: 7.5rem;
+}
+
+/* ═══════════════ Fila módulo: nombre + switch "Permitir" ═══════════════ */
+.modulo-fila {
+  display: flex;
+  align-items: center;
+  // separación máxima ml-5 (1.25rem) entre módulo y Permitir
+  gap: 1rem;
+}
+
+.permitir-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+}
+
+.text-muted {
+  color: var(--c-text-muted);
+}
+
+.mr-1 {
+  margin-right: 0.25rem;
 }

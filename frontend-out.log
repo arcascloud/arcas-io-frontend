@@ -3653,3 +3653,1850 @@ No output file changes.
 
 Application bundle generation complete. [3.794 seconds] - 2026-10-21T22:41:20.725Z
 
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-VP5A2G7J.js   | catalogo-generico    |  83.58 kB | 
+chunk-TWRLIQFI.js   | bancos-manager       |  64.85 kB | 
+chunk-BQ3SBJTB.js   | -                    |  44.99 kB | 
+chunk-EG3UJCBE.js   | -                    |  39.22 kB | 
+chunk-V5YHGKSX.js   | inventario-routes    |   9.80 kB | 
+chunk-XRE2F47H.js   | contabilidad-routes  |   8.14 kB | 
+chunk-EKYICIMR.js   | planilla-routes      |   5.17 kB | 
+chunk-6JRCT5S6.js   | configuracion-routes |   4.83 kB | 
+chunk-H7NMW26F.js   | cxc-routes           |   2.85 kB | 
+chunk-TXSSTOIM.js   | facturacion-routes   |   2.65 kB | 
+chunk-W7TXLKU3.js   | bancos-routes        |   2.21 kB | 
+chunk-E73LF7NB.js   | cxp-routes           |   1.96 kB | 
+chunk-6GH3IJ2N.js   | catalogo-form        | 323 bytes | 
+
+Application bundle generation complete. [8.866 seconds] - 2026-10-22T03:25:37.864Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-BMF6LVNT.js   | catalogo-generico    |  83.58 kB | 
+chunk-CUFPURXA.js   | bancos-manager       |  64.85 kB | 
+chunk-B6FHETBH.js   | -                    |  44.99 kB | 
+chunk-TGMUS2A5.js   | -                    |  39.22 kB | 
+chunk-U3JRZUTP.js   | inventario-routes    |   9.80 kB | 
+chunk-YPORLZ2B.js   | contabilidad-routes  |   8.14 kB | 
+chunk-CSSJIOH7.js   | planilla-routes      |   5.17 kB | 
+chunk-G3K5UWXM.js   | configuracion-routes |   4.83 kB | 
+chunk-CZTQCNBM.js   | cxc-routes           |   2.85 kB | 
+chunk-52T2EPLF.js   | facturacion-routes   |   2.65 kB | 
+chunk-Z6SPRCO4.js   | bancos-routes        |   2.21 kB | 
+chunk-47MVASQJ.js   | cxp-routes           |   1.96 kB | 
+chunk-EPDH2P4Y.js   | catalogo-form        | 323 bytes | 
+
+Application bundle generation complete. [5.888 seconds] - 2026-10-22T03:25:57.226Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-ERQLVHDW.js   | catalogo-generico    |  83.58 kB | 
+chunk-4MTYCSS4.js   | bancos-manager       |  64.85 kB | 
+chunk-2HZI5GSK.js   | -                    |  45.01 kB | 
+chunk-FATIOLF7.js   | -                    |  39.22 kB | 
+chunk-G5OMIJWY.js   | inventario-routes    |   9.80 kB | 
+chunk-BCWKHGGX.js   | contabilidad-routes  |   8.14 kB | 
+chunk-G45KJMNM.js   | planilla-routes      |   5.17 kB | 
+chunk-TP7LLTZO.js   | configuracion-routes |   4.83 kB | 
+chunk-7KD2PA4X.js   | cxc-routes           |   2.85 kB | 
+chunk-PFN3MFGF.js   | facturacion-routes   |   2.65 kB | 
+chunk-A33JNBG3.js   | bancos-routes        |   2.21 kB | 
+chunk-H2U5E25U.js   | cxp-routes           |   1.96 kB | 
+chunk-J7G3ORCX.js   | catalogo-form        | 323 bytes | 
+
+Application bundle generation complete. [7.351 seconds] - 2026-10-22T03:26:17.202Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-IR26DE6G.js   | catalogo-generico    |  83.58 kB | 
+chunk-64TFHJ4D.js   | bancos-manager       |  64.85 kB | 
+chunk-JBKHKUAC.js   | -                    |  45.72 kB | 
+chunk-7DHZX52C.js   | -                    |  39.22 kB | 
+chunk-26L4EHRN.js   | inventario-routes    |   9.80 kB | 
+chunk-KNPECDD6.js   | contabilidad-routes  |   8.14 kB | 
+chunk-N53HN2SN.js   | planilla-routes      |   5.17 kB | 
+chunk-RPYOLDXQ.js   | configuracion-routes |   4.83 kB | 
+chunk-4FDHYRRN.js   | cxc-routes           |   2.85 kB | 
+chunk-KKK3S2UL.js   | facturacion-routes   |   2.65 kB | 
+chunk-5V4IFVRY.js   | bancos-routes        |   2.21 kB | 
+chunk-66OOUCG4.js   | cxp-routes           |   1.96 kB | 
+chunk-RTXKSKPM.js   | catalogo-form        | 323 bytes | 
+
+Application bundle generation complete. [3.814 seconds] - 2026-10-22T03:31:23.363Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-M4YBQW3J.js   | bancos-manager       |  64.85 kB | 
+chunk-J7PSD3D7.js   | -                    |  39.42 kB | 
+chunk-3XLHPJVU.js   | inventario-routes    |   9.80 kB | 
+chunk-DR66AW3G.js   | contabilidad-routes  |   8.14 kB | 
+chunk-4VY6C55K.js   | planilla-routes      |   5.17 kB | 
+chunk-LPW5M3CG.js   | configuracion-routes |   4.83 kB | 
+chunk-SOMY2NI2.js   | cxc-routes           |   2.85 kB | 
+chunk-TE2IPSKB.js   | facturacion-routes   |   2.65 kB | 
+chunk-4QMDAEX7.js   | bancos-routes        |   2.21 kB | 
+chunk-ZZDXYPMS.js   | cxp-routes           |   1.96 kB | 
+chunk-7MJVWSZP.js   | catalogo-form        | 323 bytes | 
+
+Application bundle generation complete. [5.640 seconds] - 2026-10-22T03:31:52.624Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-HNBCXZNI.js   | bancos-manager       |  64.85 kB | 
+chunk-UXYY4OKN.js   | -                    |  39.52 kB | 
+chunk-3OJ6GSAJ.js   | inventario-routes    |   9.80 kB | 
+chunk-AGKRJY7X.js   | contabilidad-routes  |   8.14 kB | 
+chunk-235PAARX.js   | planilla-routes      |   5.17 kB | 
+chunk-U6G2CK44.js   | configuracion-routes |   4.83 kB | 
+chunk-DNGE4RHL.js   | cxc-routes           |   2.85 kB | 
+chunk-BYUL6L25.js   | facturacion-routes   |   2.65 kB | 
+chunk-TS6JGU3G.js   | bancos-routes        |   2.21 kB | 
+chunk-JWFMOXH2.js   | cxp-routes           |   1.96 kB | 
+chunk-QZP5UFI3.js   | catalogo-form        | 323 bytes | 
+
+Application bundle generation complete. [4.538 seconds] - 2026-10-22T03:32:14.917Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-DDSPQSDX.js   | bancos-manager       |  64.85 kB | 
+chunk-B6WDSRUZ.js   | -                    |  39.57 kB | 
+chunk-GUZGX4TD.js   | inventario-routes    |   9.80 kB | 
+chunk-2AZBPK7R.js   | contabilidad-routes  |   8.14 kB | 
+chunk-SWLP5IG2.js   | planilla-routes      |   5.17 kB | 
+chunk-VXGDE7MM.js   | configuracion-routes |   4.83 kB | 
+chunk-VE3GY6VI.js   | cxc-routes           |   2.85 kB | 
+chunk-PPFHBVHS.js   | facturacion-routes   |   2.65 kB | 
+chunk-EQBOJXFM.js   | bancos-routes        |   2.21 kB | 
+chunk-QYHLQ44O.js   | cxp-routes           |   1.96 kB | 
+chunk-6ROFFBCG.js   | catalogo-form        | 323 bytes | 
+
+Application bundle generation complete. [4.367 seconds] - 2026-10-22T03:32:28.330Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-P2EN2SR5.js   | movimientos   |  42.72 kB | 
+chunk-UXJIFL3U.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [5.089 seconds] - 2026-10-22T03:57:46.525Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-CQS5TJZG.js   | movimientos   |  43.23 kB | 
+chunk-37XQR5WI.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [5.120 seconds] - 2026-10-22T03:58:22.116Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-D7AKF4AK.js   | movimientos   |  43.59 kB | 
+chunk-JYKYFO3O.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [5.232 seconds] - 2026-10-22T03:58:44.328Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-RE3ZMBXA.js   | movimientos   |  43.77 kB | 
+chunk-M7S7NFWE.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [5.019 seconds] - 2026-10-22T03:58:59.512Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-A75GYM7H.js   | movimientos   |  43.84 kB | 
+chunk-RCAJ3NDZ.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [4.462 seconds] - 2026-10-22T03:59:16.220Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-DUS4ERIR.js   | movimientos   |  43.93 kB | 
+chunk-GLYK7ELH.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [9.097 seconds] - 2026-10-22T03:59:35.340Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-7T65QSJH.js   | movimientos   |  43.87 kB | 
+chunk-AM6TPNAM.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [4.571 seconds] - 2026-10-22T03:59:57.652Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-K25QJCGK.js   | movimientos   |  44.03 kB | 
+chunk-MTNWX6O7.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [4.553 seconds] - 2026-10-22T04:00:12.753Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-C3S3QHHL.js   | movimientos   |  45.31 kB | 
+chunk-77DNYTWI.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [6.232 seconds] - 2026-10-22T04:05:47.619Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-Z764AKGK.js   | movimientos   |  45.37 kB | 
+chunk-GTCZ7GJU.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [3.899 seconds] - 2026-10-22T04:06:05.826Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-QDAWT4OQ.js   | movimientos   |  46.53 kB | 
+chunk-6I4ST6YJ.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [8.208 seconds] - 2026-10-22T04:06:35.620Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-BSM6KY2D.js   | cheques       |  75.46 kB | 
+chunk-WEQOGMFG.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [5.084 seconds] - 2026-10-22T04:16:35.354Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-JFYMKOWE.js   | cheques       |  75.76 kB | 
+chunk-IX4X6KOU.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [4.559 seconds] - 2026-10-22T04:16:53.172Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-FZEO6UPG.js   | cheques       |  76.24 kB | 
+chunk-ZUP5UCNE.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [4.494 seconds] - 2026-10-22T04:17:09.631Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-YXKKRH6R.js   | cheques       |  77.16 kB | 
+chunk-RRQUEN6Y.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [5.081 seconds] - 2026-10-22T04:17:26.529Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-6TUOCYZP.js   | cheques       |  77.44 kB | 
+chunk-WBT4VGI3.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [4.769 seconds] - 2026-10-22T04:17:43.564Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-VCN5NG3L.js   | cheques       |  77.58 kB | 
+chunk-W4LQVRUO.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [4.332 seconds] - 2026-10-22T04:17:58.173Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-E6TYIIBW.js   | cheques       |  78.29 kB | 
+chunk-WCHM4LY7.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [5.212 seconds] - 2026-10-22T04:18:17.136Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-ZEDIOQYC.js   | cheques       |  79.57 kB | 
+chunk-ONRIJLAF.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [4.698 seconds] - 2026-10-22T04:18:31.001Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 240.68 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-KTTJ62E6.js   | cheques       |  80.63 kB | 
+chunk-NWVQAI4T.js   | bancos-routes |   2.21 kB | 
+
+Application bundle generation complete. [4.816 seconds] - 2026-10-22T04:18:52.373Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-4T4YAAR4.js   | cheques-particulares |  44.12 kB | 
+chunk-RSSQJ7ZQ.js   | bancos-routes        |   2.21 kB | 
+
+Application bundle generation complete. [5.378 seconds] - 2026-10-22T04:19:14.011Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.369 seconds] - 2026-10-22T04:19:30.433Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [5.156 seconds] - 2026-10-22T04:19:54.133Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-BZKZLTNV.js   | cheques-particulares |  46.90 kB | 
+chunk-4DDYD7A3.js   | bancos-routes        |   2.21 kB | 
+
+Application bundle generation complete. [4.701 seconds] - 2026-10-22T04:20:15.163Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-C2AYMZ2Q.js   | cheques-particulares |  48.09 kB | 
+chunk-YXC6KPP3.js   | bancos-routes        |   2.21 kB | 
+
+Application bundle generation complete. [4.001 seconds] - 2026-10-22T04:20:40.172Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-PQVJIXI4.js   | cheques-particulares |  49.34 kB | 
+chunk-OOL46E56.js   | bancos-routes        |   2.21 kB | 
+
+Application bundle generation complete. [4.799 seconds] - 2026-10-22T04:21:45.709Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-DCTRYQHH.js   | cheques-particulares |  50.97 kB | 
+chunk-JYBWRMZG.js   | bancos-routes        |   2.21 kB | 
+
+Application bundle generation complete. [4.245 seconds] - 2026-10-22T04:22:14.319Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [19.440 seconds] - 2026-10-22T04:48:17.586Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.702 seconds] - 2026-10-22T04:49:50.728Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.555 seconds] - 2026-10-22T04:49:54.298Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [5.315 seconds] - 2026-10-22T04:50:35.840Z
+
+Page reload sent to client(s).
+[2m10:50:39 p. m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [optimizer] bundling dependencies...
+❯ Changes detected. Rebuilding...
+[2m10:51:12 p. m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mdependencies optimized: [33mprimeng/scroller, primeng/treetable[32m[39m
+[2m10:51:12 p. m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32moptimized dependencies changed. reloading[39m
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-3I5RUSDV.js   | usuario-modulos      |  27.83 kB | 
+chunk-PMBQOZHM.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [8.016 seconds] - 2026-10-22T04:51:14.509Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-PQI3HNLR.js   | usuario-modulos      |  27.75 kB | 
+chunk-ZCEB53NL.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.311 seconds] - 2026-10-22T04:51:42.546Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-RUKROJPJ.js   | usuario-modulos-form |  19.83 kB | 
+chunk-BWFGDGZI.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [5.183 seconds] - 2026-10-22T04:52:05.314Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-TBN2PWLM.js   | usuario-modulos-form |  20.23 kB | 
+chunk-LHULWDLA.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.824 seconds] - 2026-10-22T04:52:20.165Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-WU5POJXD.js   | usuario-modulos-form |  20.28 kB | 
+chunk-VVPCDUP5.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.054 seconds] - 2026-10-22T04:52:33.123Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-6UGEBHC6.js   | usuario-modulos-form |  20.32 kB | 
+chunk-A7A3YOWH.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.408 seconds] - 2026-10-22T04:52:37.576Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-EBIGKHNA.js   | usuario-modulos-form |  20.83 kB | 
+chunk-ICEKHO2L.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.305 seconds] - 2026-10-22T04:52:56.997Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-OPP5YMJN.js   | usuario-modulos-form |  20.84 kB | 
+chunk-GAILW2FM.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [3.929 seconds] - 2026-10-22T04:53:12.391Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-TI4QPI7F.js   | usuario-modulos-form |  20.85 kB | 
+chunk-NJT5ERBX.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [3.944 seconds] - 2026-10-22T04:53:16.360Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-YLZBW526.js   | usuario-modulos-form |  20.93 kB | 
+chunk-3SEIPQI2.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.439 seconds] - 2026-10-22T04:53:31.773Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-CTPR3KLO.js   | usuario-modulos      |  25.86 kB | 
+chunk-26ZXOTU6.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.990 seconds] - 2026-10-22T04:58:53.012Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-UEF53CY2.js   | usuario-modulos      |  25.96 kB | 
+chunk-Y5VCEIQQ.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.629 seconds] - 2026-10-22T04:59:58.875Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-4Q6YYA66.js   | usuario-modulos      |  25.91 kB | 
+chunk-QX3L53UF.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.679 seconds] - 2026-10-22T05:00:33.916Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-WMOP6T4O.js   | usuario-modulos      |  25.91 kB | 
+chunk-PPQYW2AK.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [22.742 seconds] - 2026-10-22T05:11:32.963Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-PKDRKTA4.js   | usuario-modulos      |  27.08 kB | 
+chunk-2YAPYWZB.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [5.803 seconds] - 2026-10-22T05:11:38.802Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-RMJ3JGIG.js   | usuario-modulos      |  27.30 kB | 
+chunk-6D6QJHT5.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.726 seconds] - 2026-10-22T05:12:29.019Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-H2V6KQ5Y.js   | usuario-modulos      |  27.36 kB | 
+chunk-24LCVAXY.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [3.565 seconds] - 2026-10-22T05:12:43.686Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-WYDE3N6L.js   | usuario-modulos      |  28.44 kB | 
+chunk-6SLC36FJ.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.437 seconds] - 2026-10-22T05:12:48.456Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-FTUP3ONU.js   | usuario-modulos      |  28.30 kB | 
+chunk-VX5CVGGM.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.302 seconds] - 2026-10-22T05:13:48.119Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-B6URSC4U.js   | usuario-modulos      |  28.70 kB | 
+chunk-PAZJNIR2.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.203 seconds] - 2026-10-22T05:14:05.897Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-WNKOW5MQ.js   | usuario-modulos      |  28.44 kB | 
+chunk-3C7Q2A4P.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.339 seconds] - 2026-10-22T05:14:10.256Z
+
+Page reload sent to client(s).
+[2m11:14:38 p. m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [optimizer] bundling dependencies...
+[2m11:15:00 p. m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mdependency optimized: [33mprimeng/toggleswitch[32m[39m
+[2m11:15:00 p. m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32moptimized dependencies changed. reloading[39m
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-DK34BU2R.js   | usuario-modulos      |  28.25 kB | 
+chunk-IYKT7SSW.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.592 seconds] - 2026-10-22T05:20:54.481Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-WV7MKBVZ.js   | usuario-modulos      |  28.07 kB | 
+chunk-CDEZNOKH.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [3.942 seconds] - 2026-10-22T05:21:22.877Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-O7LHPZ2A.js   | usuario-modulos      |  28.02 kB | 
+chunk-HGMZR2PG.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.017 seconds] - 2026-10-22T05:21:27.158Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-OH6KC7TB.js   | usuario-modulos      |  28.02 kB | 
+chunk-XCTTWBA7.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.180 seconds] - 2026-10-22T05:21:31.362Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-PRXLWAQP.js   | usuario-modulos      |  28.01 kB | 
+chunk-E75E2PUR.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.953 seconds] - 2026-10-22T05:23:10.551Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-U4UFO4HD.js   | usuario-modulos      |  28.05 kB | 
+chunk-SRBXMTCH.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.910 seconds] - 2026-10-22T05:30:56.304Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-UF6CJQXX.js   | usuario-modulos-form |  24.35 kB | 
+chunk-PADZAFTR.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [21.225 seconds] - 2026-10-22T05:45:47.723Z
+
+Page reload sent to client(s).
+[2m11:45:51 p. m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [optimizer] bundling dependencies...
+[2m11:46:04 p. m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mdependency optimized: [33mprimeng/picklist[32m[39m
+[2m11:46:04 p. m.[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32moptimized dependencies changed. reloading[39m
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-ELLBL563.js   | usuario-modulos-form |  28.38 kB | 
+chunk-FA5JRDKZ.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.476 seconds] - 2026-10-22T05:47:16.836Z
+
+Component update sent to client(s).
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.108 seconds] - 2026-10-22T05:47:33.841Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [4.675 seconds] - 2026-10-22T05:47:38.526Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-RQZ27QGR.js   | usuario-modulos-form |  28.81 kB | 
+chunk-XTYA3ZUO.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.675 seconds] - 2026-10-22T05:47:43.266Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.419 seconds] - 2026-10-22T05:48:09.093Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.160 seconds] - 2026-10-22T05:48:12.282Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [4.379 seconds] - 2026-10-22T05:48:28.713Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.993 seconds] - 2026-10-22T05:48:42.295Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [4.412 seconds] - 2026-10-22T05:50:19.553Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-H4D7Y3AH.js   | usuario-modulos-form |  30.75 kB | 
+chunk-EHB5KX3X.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.206 seconds] - 2026-10-22T05:52:18.529Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-OQC2QM3S.js   | usuario-modulos-form |  30.57 kB | 
+chunk-4O5WHV5O.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [3.507 seconds] - 2026-10-22T05:56:50.687Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-AM2KKGUA.js   | usuario-modulos-form |  27.83 kB | 
+chunk-H45OCX7G.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.625 seconds] - 2026-10-22T05:56:55.388Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-JXJP5UPT.js   | usuario-modulos-form |  27.84 kB | 
+chunk-337Y3ORZ.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [3.743 seconds] - 2026-10-22T05:58:38.587Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-WF2MMJY3.js   | usuario-modulos-form |  27.60 kB | 
+chunk-QQXQM4CU.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [5.935 seconds] - 2026-10-22T05:58:44.538Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-VM6SW4S2.js   | usuario-modulos-form |  27.64 kB | 
+chunk-ZYAY3WZS.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [5.518 seconds] - 2026-10-22T05:58:50.070Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [4.847 seconds] - 2026-10-22T05:58:54.947Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [4.900 seconds] - 2026-10-22T05:59:07.532Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-YTLUQK7C.js   | usuario-modulos-form |  28.18 kB | 
+chunk-6HCWKJEX.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.431 seconds] - 2026-10-22T06:08:41.090Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-673ELKUH.js   | usuario-modulos-form |  28.39 kB | 
+chunk-J6H2VPQQ.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.386 seconds] - 2026-10-22T06:08:48.866Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-M5OANG3A.js   | usuario-modulos-form |  28.67 kB | 
+chunk-OUB7DPCH.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [3.780 seconds] - 2026-10-22T06:09:08.362Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-JAI3FNZW.js   | usuario-modulos-form |  31.25 kB | 
+chunk-3KAS7ZHY.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [3.981 seconds] - 2026-10-22T06:09:19.576Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-MPUGKIQ5.js   | usuario-modulos-form |  31.19 kB | 
+chunk-OIVSZTP5.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [3.812 seconds] - 2026-10-22T06:09:36.873Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-AMX75SFZ.js   | usuario-modulos-form |  32.06 kB | 
+chunk-4TR2ABD7.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.061 seconds] - 2026-10-22T06:09:40.953Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-GNKFFTB7.js   | usuario-modulos      |  27.11 kB | 
+chunk-LXLH7QGD.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.345 seconds] - 2026-10-22T06:14:30.239Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-3QDIJS6Z.js   | usuario-modulos      |  26.96 kB | 
+chunk-YTSLNCJ4.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [5.573 seconds] - 2026-10-22T06:14:53.621Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-SJ2NBLTU.js   | usuario-modulos      |  26.09 kB | 
+chunk-V24GDGST.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.106 seconds] - 2026-10-22T15:35:01.862Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-S5CO3OHM.js   | usuario-modulos      |  25.08 kB | 
+chunk-NFGZA62R.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.649 seconds] - 2026-10-22T15:35:07.108Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.824 seconds] - 2026-10-22T15:35:21.995Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [5.307 seconds] - 2026-10-22T15:35:41.580Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-5IV2H4ZO.js   | usuario-modulos-form |  32.31 kB | 
+chunk-AAL7WFIO.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [6.268 seconds] - 2026-10-22T16:04:43.422Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [4.107 seconds] - 2026-10-22T16:05:17.392Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.022 seconds] - 2026-10-22T16:06:11.127Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.142 seconds] - 2026-10-22T16:06:26.906Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [4.865 seconds] - 2026-10-22T16:10:33.290Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-WDF46BVI.js   | usuario-modulos      |  25.02 kB | 
+chunk-3DX4MA47.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [5.577 seconds] - 2026-10-22T16:17:43.825Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-RBDE7BGU.js   | usuario-modulos      |  25.20 kB | 
+chunk-TXWJFWUG.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.760 seconds] - 2026-10-22T16:18:01.427Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-E7OJAOZN.js   | usuario-modulos-form |  32.62 kB | 
+chunk-QWUTVC6X.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.980 seconds] - 2026-10-22T17:23:06.676Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [4.814 seconds] - 2026-10-22T17:45:22.737Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [5.561 seconds] - 2026-10-22T17:45:28.314Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [5.134 seconds] - 2026-10-22T17:50:04.025Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [4.034 seconds] - 2026-10-22T17:50:25.635Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [2.856 seconds] - 2026-10-22T17:52:01.022Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.353 seconds] - 2026-10-22T17:52:09.291Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [4.189 seconds] - 2026-10-22T17:53:51.707Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [4.114 seconds] - 2026-10-22T18:10:59.891Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.706 seconds] - 2026-10-22T18:11:03.613Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.509 seconds] - 2026-10-22T18:11:15.660Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.073 seconds] - 2026-10-22T18:11:31.197Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.783 seconds] - 2026-10-22T18:11:57.952Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [2.382 seconds] - 2026-10-22T18:12:15.862Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.769 seconds] - 2026-10-22T18:12:22.771Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [4.200 seconds] - 2026-10-22T18:12:40.925Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-QFJ7GBMD.js   | usuario-mnuitem      |  40.93 kB | 
+chunk-U54S4GYM.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.392 seconds] - 2026-10-22T18:12:56.368Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-IDKONLR2.js   | usuario-mnuitem      |  40.93 kB | 
+chunk-VLL6KVM6.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.800 seconds] - 2026-10-22T18:13:58.218Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-ODIV75ZA.js   | usuario-mnuitem      |  41.06 kB | 
+chunk-ATTJKTUR.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [4.231 seconds] - 2026-10-22T18:14:02.474Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-E5WLQ4UK.js   | usuario-mnuitem      |  40.91 kB | 
+chunk-U7MQW6KT.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [3.635 seconds] - 2026-10-22T18:14:51.154Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-RDTE5RAA.js   | usuario-modulos-form |  32.62 kB | 
+chunk-EFRWWMTM.js   | usuario-modulos      |  25.20 kB | 
+chunk-42IQCLRO.js   | configuracion-routes |   4.83 kB | 
+chunk-CTOKV2PY.js   | -                    |   2.42 kB | 
+
+Application bundle generation complete. [4.463 seconds] - 2026-10-22T18:32:04.399Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 | 240.68 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-GI3MHMY5.js   | usuario-modulos-form |  32.81 kB | 
+chunk-ETIDXAOP.js   | configuracion-routes |   4.83 kB | 
+
+Application bundle generation complete. [6.568 seconds] - 2026-10-22T18:32:10.991Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [4.536 seconds] - 2026-10-22T18:49:38.102Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.730 seconds] - 2026-10-22T18:50:14.785Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [5.604 seconds] - 2026-10-22T18:50:33.982Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+
+No output file changes.
+
+Application bundle generation complete. [4.599 seconds] - 2026-10-22T18:50:38.647Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [2.947 seconds] - 2026-10-22T18:50:47.303Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.078 seconds] - 2026-10-22T18:50:50.406Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.792 seconds] - 2026-10-22T18:51:20.987Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [5.524 seconds] - 2026-10-22T18:54:54.413Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-JZLJ3TYZ.js   | cotizaciones-form  |  70.38 kB | 
+chunk-YIJBIU3P.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [5.330 seconds] - 2026-10-22T18:55:09.408Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.821 seconds] - 2026-10-22T18:55:48.485Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names               |  Raw size
+styles.css          | styles              | 591.17 kB | 
+main.js             | main                | 240.68 kB | 
+chunk-TTKUXJR6.js   | -                   |  13.55 kB | 
+chunk-4C26VJV4.js   | -                   |   5.90 kB | 
+chunk-ZQXHJJXU.js   | -                   |   5.40 kB | 
+chunk-CZJLB7T5.js   | -                   |   1.13 kB | 
+
+                    | Initial total       | 857.83 kB
+
+Lazy chunk files    | Names               |  Raw size
+chunk-4USJM7GO.js   | nueva-factura       | 182.01 kB | 
+chunk-ATHTJVJF.js   | copdamae-manager    | 178.25 kB | 
+chunk-FPASRDWI.js   | pedido-form         | 167.14 kB | 
+chunk-DJVSOFOL.js   | clientes-manager    | 160.06 kB | 
+chunk-WKD2MTRS.js   | compras-manager     | 159.61 kB | 
+chunk-PQEHGU62.js   | pedidos-virtual     | 148.07 kB | 
+chunk-QVZZYOHE.js   | empresas-manager    | 133.02 kB | 
+chunk-SV35SFNZ.js   | tienda-virtual      | 130.16 kB | 
+chunk-PD7RLZ3A.js   | usuario-form        | 125.41 kB | 
+chunk-IRAGOC6U.js   | caja                | 120.40 kB | 
+chunk-SHVYVLWJ.js   | proveedores-manager | 118.45 kB | 
+chunk-LOAV23WM.js   | pagar-planilla-form | 110.42 kB | 
+chunk-N2HOWUYK.js   | movimientos-manager | 109.81 kB | 
+chunk-VKMT4DHK.js   | prestamos-manager   | 107.00 kB | 
+chunk-JORS5LPO.js   | producto-form       | 100.88 kB | 
+...and 128 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [4.884 seconds] - 2026-10-22T18:56:10.772Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-IFBQGK3I.js   | cotizaciones-form  |  70.42 kB | 
+chunk-6PFR3G7F.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [4.501 seconds] - 2026-10-22T19:07:26.496Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-6CYX7UU6.js   | cotizaciones-form  |  72.46 kB | 
+chunk-ZR725MJE.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [5.331 seconds] - 2026-10-22T19:07:48.484Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-V3U6EIU5.js   | cotizaciones-form  |  72.49 kB | 
+chunk-2EN3D4LX.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [5.273 seconds] - 2026-10-22T19:12:20.348Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-XG2XFHTF.js   | cotizaciones-form  |  72.39 kB | 
+chunk-XMWF3SS6.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [4.740 seconds] - 2026-10-22T19:12:34.056Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-OGSCOTK7.js   | cotizaciones-form  |  72.39 kB | 
+chunk-KWVFL5KB.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [5.966 seconds] - 2026-10-22T19:19:20.568Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-GCW2ZANR.js   | cotizaciones-form  |  72.74 kB | 
+chunk-LUTIIZUZ.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [4.724 seconds] - 2026-10-22T19:19:29.843Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-ZXJFPWTI.js   | cotizaciones-form  |  73.12 kB | 
+chunk-HPJ3E6P4.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [4.492 seconds] - 2026-10-22T19:19:50.973Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-W7D2MKDO.js   | cotizaciones-form  |  72.90 kB | 
+chunk-6JWYODTH.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [4.466 seconds] - 2026-10-22T19:20:06.760Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-HXJL4KZZ.js   | cotizaciones-form  |  72.77 kB | 
+chunk-M25HDFLD.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [4.447 seconds] - 2026-10-22T19:20:11.231Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-HQPFOBD5.js   | cotizaciones-form  |  73.52 kB | 
+chunk-GYGRR7IN.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [4.895 seconds] - 2026-10-22T19:27:58.151Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names              |  Raw size
+main.js             | main               | 240.68 kB | 
+
+Lazy chunk files    | Names              |  Raw size
+chunk-VOQI3OQG.js   | cotizaciones-form  |  73.58 kB | 
+chunk-YTWZQKCG.js   | facturacion-routes |   2.65 kB | 
+
+Application bundle generation complete. [4.317 seconds] - 2026-10-22T19:32:31.763Z
+
+Component update sent to client(s).

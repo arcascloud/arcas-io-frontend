@@ -32,16 +32,31 @@
                   <label>Gestor <span class="req">*</span></label>
                   <p-select size="small" formControlName="gestorId" [options]="gestores()" optionLabel="label" optionValue="value" placeholder="Seleccionar gestor..." styleClass="w-full" filter filterBy="label" appendTo="body" [ngClass]="{ 'ng-invalid': invalid('gestorId') }" />
                 </div>
+                <!-- Fila 3, columna 1: todas las acciones -->
+                <div class="toolbar-acciones">
+                  <p-button label="Nueva" icon="pi pi-plus" severity="secondary" size="small" [rounded]="true" (onClick)="volver()" />
+                  <p-button label="Guardar" icon="pi pi-check" size="small" [rounded]="true" [loading]="guardando()" (onClick)="guardar()" />
+                  <p-button icon="pi pi-print" severity="secondary" size="small" [rounded]="true" (onClick)="imprimirPDF()" [disabled]="!esEdicion()" pTooltip="Imprimir" />
+                  <p-button icon="pi pi-download" severity="secondary" size="small" [rounded]="true" (onClick)="descargarPDF()" [disabled]="!esEdicion()" pTooltip="Descargar PDF" />
+                  <p-button icon="pi pi-envelope" severity="info" size="small" [rounded]="true" (onClick)="abrirDialogCorreo()" [disabled]="!esEdicion()" pTooltip="Enviar por correo" />
+                  <p-button icon="pi pi-whatsapp" severity="success" size="small" [rounded]="true" (onClick)="compartir()" [disabled]="!esEdicion()" pTooltip="Compartir" styleClass="btn-whatsapp" />
+                </div>
               </div>
             </ng-template>
           </p-toolbar>
 
           <p-toolbar class="mb-3 nf-toolbar">
             <ng-template #start>
-              <div class="nf-busqueda">
-                <input pInputText pSize="small" [value]="qProducto()" (input)="onBuscarProducto($event)" placeholder="Buscar producto o escanear código de barras..." />
-                <p-button icon="pi pi-search" severity="info" size="small" [rounded]="true" (onClick)="showHelperProductos()" pTooltip="Buscar producto" />
-              </div>
+              <p-iconfield styleClass="w-full">
+                <input pInputText type="text" pSize="small" [value]="qProducto()"
+                  (input)="onBuscarProducto($event)" fluid
+                  placeholder="Buscar producto o escanear código de barras..." />
+                <p-inputicon class="ml-10">
+                  <p-button size="small" icon="pi pi-search" pTooltip="Buscar producto" showDelay="1000"
+                    hideDelay="300" severity="info" [rounded]="true" variant="text"
+                    (onClick)="showHelperProductos()" />
+                </p-inputicon>
+              </p-iconfield>
             </ng-template>
           </p-toolbar>
 
@@ -51,12 +66,13 @@
             [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
             <ng-template #header>
               <tr>
-                <th style="width: 3rem"></th>
+                <th class="col-quitar"></th>
+                <th class="col-img"></th>
                 <th>Producto</th>
-                <th style="width: 2rem">Precio</th>
-                <th style="width: 1rem">Estado</th>
-                <th style="width: 6rem">Cantidad</th>
-                <th style="width: 5rem">Subtotal</th>
+                <th class="col-precio">Precio</th>
+                <th class="col-estado">Estado</th>
+                <th class="col-cantidad">Cantidad</th>
+                <th class="col-subtotal">Subtotal</th>
               </tr>
             </ng-template>
             <ng-template #body let-row let-idx="rowIndex">
@@ -64,20 +80,29 @@
                 <td>
                   <p-button type="button" icon="pi pi-times" severity="danger" text rounded size="small" (onClick)="quitarFila(idx)" />
                 </td>
+                <td class="celda-img">
+                  @if (row.imagenUrl) {
+                    <img [src]="row.imagenUrl" [alt]="row.descripcion" width="50" class="img-producto"
+                      (mouseenter)="onImgHover(row.imagenUrl, $event)" (mousemove)="onImgMove($event)"
+                      (mouseleave)="onImgLeave()" />
+                  } @else {
+                    <i class="pi pi-images img-placeholder"></i>
+                  }
+                </td>
                 <td>
                   <div class="cell-producto">
                     <span class="cod-barra">{{ row.codbarra }}</span>
-                    <span class="desc-linea">{{ row.descripcion }}</span>
+                    <span class="desc-linea">{{ row.descripcion || row.codbarra }}</span>
                   </div>
                 </td>
                 <td>
-                  <span>{{ moneda(row.precio) }}</span>
+                  <p-inputnumber size="small" [(ngModel)]="row.precio" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recalcularFila(row)" [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" />
                 </td>
                 <td>
                   <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)" styleClass="tag-sm" />
                 </td>
                 <td>
-                  <p-inputnumber size="small" [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recalcularFila(row)" [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" />
+                  <p-inputnumber size="small" [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recalcularFila(row)" [min]="0" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }" />
                 </td>
                 <td>
                   <span class="text-right">{{ moneda(row.subTotal) }}</span>
@@ -86,21 +111,13 @@
             </ng-template>
             <ng-template pTemplate="emptymessage">
               <tr>
-                <td colspan="6" class="text-center p-3">Sin artículos. Agregue el primer artículo.</td>
+                <td colspan="7" class="text-center p-3">Sin artículos. Agregue el primer artículo.</td>
               </tr>
             </ng-template>
           </p-table>
 
           <div class="nf-totales card mt-3">
             <div class="nf-totales-split">
-              <div class="nf-totales-col-btns">
-                <p-button label="Nueva" icon="pi pi-plus" severity="secondary" size="small" [rounded]="true" (onClick)="volver()" />
-                <p-button label="Guardar" icon="pi pi-check" size="small" [rounded]="true" [loading]="guardando()" (onClick)="guardar()" />
-                <p-button icon="pi pi-print" severity="secondary" size="small" [rounded]="true" (onClick)="imprimirPDF()" [disabled]="!esEdicion()" pTooltip="Imprimir" />
-                <p-button icon="pi pi-download" severity="secondary" size="small" [rounded]="true" (onClick)="descargarPDF()" [disabled]="!esEdicion()" pTooltip="Descargar PDF" />
-                <p-button icon="pi pi-envelope" severity="info" size="small" [rounded]="true" (onClick)="abrirDialogCorreo()" [disabled]="!esEdicion()" pTooltip="Enviar por correo" />
-                <p-button icon="pi pi-whatsapp" severity="success" size="small" [rounded]="true" (onClick)="compartir()" [disabled]="!esEdicion()" pTooltip="Compartir" styleClass="btn-whatsapp" />
-              </div>
               <div class="nf-totales-col-data">
                 <div class="nf-total-block">
                   <div class="font-bold">Subtotal venta</div>
@@ -118,39 +135,23 @@
             </div>
           </div>
         </div>
-
-        <div class="nf-col nf-col-right">
-          <div class="invoice-side">
-            <div class="card resumen-block">
-              <h3 class="resumen-title">Resumen de Cotización</h3>
-              <div class="resumen-line">
-                <span>Subtotal:</span>
-                <span>{{ moneda(totales().subTotal) }}</span>
-              </div>
-              <div class="resumen-line">
-                <span>Impuesto:</span>
-                <span>{{ moneda(totales().impuesto) }}</span>
-              </div>
-              <div class="resumen-line resumen-total">
-                <span>Total:</span>
-                <span>{{ moneda(totales().total) }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </form>
   }
 
-<p-dialog header="Enviar cotización por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '400px' }" [draggable]="false" [resizable]="false"
-  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true">
-  <div class="campo">
-    <label>Correo electrónico</label>
-    <input pInputText pSize="small" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)" placeholder="correo@ejemplo.com" style="width:100%" />
-  </div>
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
-    <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="guardando()" />
-  </ng-template>
-</p-dialog>
+  @if (zoomVisible()) {
+    <img [src]="zoomUrl()" class="img-zoom-overlay" [style.left.px]="zoomX()" [style.top.px]="zoomY()" />
+  }
+
+  <p-dialog header="Enviar cotización por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '400px' }" [draggable]="false" [resizable]="false"
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true">
+    <div class="campo">
+      <label>Correo electrónico</label>
+      <input pInputText pSize="small" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)" placeholder="correo@ejemplo.com" />
+    </div>
+    <ng-template pTemplate="footer">
+      <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+      <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="guardando()" />
+    </ng-template>
+  </p-dialog>
 </section>

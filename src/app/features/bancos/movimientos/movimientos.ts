@@ -50,6 +50,9 @@ export class MovimientosBancos implements OnInit {
   form!: FormGroup;
   editando = signal(false);
   editId = signal<number | null>(null);
+  // Signals espejo del form para que los computed() sean reactivos
+  tipomovActual = signal('DEPOSITO');
+  importeActual = signal(0);
 
   readonly TIPO_MOV_OPTIONS = [
     { label: 'Depósito', value: 'DEPOSITO' },
@@ -78,7 +81,11 @@ export class MovimientosBancos implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((tipo) => {
         this.form.patchValue({ dc_debitocredito: this.dcPorTipo(tipo) }, { emitEvent: false });
+        this.tipomovActual.set(tipo);
       });
+    this.form.get('importe')!.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((v) => this.importeActual.set(Number(v || 0)));
     this.cargarBancos();
     this.cargarMonedas();
     this.cargarFactoresCambio();
@@ -168,6 +175,8 @@ export class MovimientosBancos implements OnInit {
       concepto: '',
       factordecambio: 1,
     });
+    this.tipomovActual.set('DEPOSITO');
+    this.importeActual.set(0);
     this.editando.set(false);
     this.editId.set(null);
   }
@@ -187,6 +196,8 @@ export class MovimientosBancos implements OnInit {
       concepto: mov.concepto || '',
       factordecambio: mov.factordecambio || 1,
     });
+    this.tipomovActual.set(mov.tipomov);
+    this.importeActual.set(Number(mov.importe));
   }
 
   guardar() {
@@ -239,9 +250,16 @@ export class MovimientosBancos implements OnInit {
         this.limpiarForm();
         this.cargarMovimientos(cuenta.bcoctasId);
       },
-      error: () => {
+      error: (err: any) => {
         this.guardando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el movimiento' });
+        // El backend devuelve mensajes específicos (saldo insuficiente, validación):
+        // se muestran tal cual en vez de un genérico que oculta la causa.
+        const msg = err?.error?.message;
+        const detalle =
+          (Array.isArray(msg) ? msg.join(' · ') : msg) ||
+          err?.error?.error ||
+          'No se pudo guardar el movimiento';
+        this.msgs.add({ severity: 'error', summary: 'No se pudo guardar', detail: detalle });
       },
     });
   }
@@ -291,6 +309,13 @@ export class MovimientosBancos implements OnInit {
     return this.movimientos()
       .filter(m => m.sn_doc_anulado !== 'S' && m.bcomovimientosId !== excluirId)
       .reduce((suma, m) => suma + (m.dc_debitocredito === 'D' ? Number(m.importe) : -Number(m.importe)), 0);
+  });
+
+  /** true cuando el importe del formulario excede el saldo para una salida (retiro/transferencia/pago) */
+  readonly saldoInsuficiente = computed(() => {
+    if (this.dcPorTipo(this.tipomovActual()) !== 'C') return false;
+    const importe = this.importeActual();
+    return importe > 0 && this.saldoCuenta() < importe;
   });
 
   saldoTexto(): string {

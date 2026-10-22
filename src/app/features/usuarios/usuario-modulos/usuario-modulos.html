@@ -13,7 +13,7 @@
       <input
         pInputText
         type="text"
-        placeholder="Usuario o módulo..."
+        placeholder="Usuario, nombre o módulo..."
         [ngModel]="q()"
         (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()"
@@ -32,46 +32,76 @@
     </div>
   </div>
 
-  <p-table
-    [value]="filtered()"
+  <p-treeTable
+    [value]="nodos()"
     [loading]="cargando()"
-    dataKey="tusuariosmoduloId"
+    dataKey="key"
     [paginator]="true"
-    [rows]="20"
+    [rows]="10"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-    size="small"
+    styleClass="tt-modulos"
   >
     <ng-template pTemplate="header">
       <tr>
         <th>Usuario</th>
-        <th>Modulo</th>
-        <th style="width:5rem">Datos</th>
-        <th style="width:6rem">Procesos</th>
-        <th style="width:6rem">Reportes</th>
-        <th style="width:5rem">Estado</th>
-        <th style="width:6rem"></th>
+        <th>Nombre</th>
+        <th>Items</th>
+        <th style="width: 10rem">Acciones</th>
       </tr>
     </ng-template>
-    <ng-template pTemplate="body" let-i>
-      <tr>
-        <td class="font-bold">{{ i.usuario }}</td>
-        <td>{{ getModuloName(i.moduloId) }}</td>
-        <td><p-tag [value]="snLbl(i.submnudatos)" [severity]="snSev(i.submnudatos)" /></td>
-        <td><p-tag [value]="snLbl(i.submnurocesos)" [severity]="snSev(i.submnurocesos)" /></td>
-        <td><p-tag [value]="snLbl(i.submnueportes)" [severity]="snSev(i.submnueportes)" /></td>
-        <td><p-tag [value]="activoLbl(i.sn_activo)" [severity]="activoSev(i.sn_activo)" /></td>
-        <td>
-          <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(i.tusuariosmoduloId, $event)"
-            severity="warn" text size="small" rounded class="mr-1" />
-          <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(i, $event)"
-            severity="danger" text size="small" rounded />
-        </td>
-      </tr>
+
+    <ng-template pTemplate="body" let-rowNode let-node="node" let-rowData="rowData">
+      @if (node.data.tipo === 'usuario') {
+        <tr class="fila-usuario">
+          <td>
+            <p-treeTableToggler [rowNode]="rowNode" />
+            <span class="usuario-login">{{ node.data.usuario }}</span>
+          </td>
+          <td>{{ node.data.nombre }}</td>
+          <td>
+            <p-tag [value]="(node.data.totalModulos || 0) + ' módulos'" severity="info" />
+          </td>
+          <td>
+            <p-button
+              icon="pi pi-plus"
+              label="Asignar"
+              pTooltip="Asignar módulo a este usuario"
+              tooltipPosition="top"
+              severity="success"
+              text
+              size="small"
+              rounded
+              (onClick)="nuevo(rowData.usuario); $event.stopPropagation()"
+            />
+          </td>
+        </tr>
+      } @else {
+        <tr class="fila-modulo">
+          <td class="celda-modulo">
+            <div class="modulo-fila">
+              <span class="modulo-nombre">{{ rowData.moduloNombre }}</span>
+              <span class="permitir-label">Permitir</span>
+              <p-toggleswitch
+                [ngModel]="rowData.sn_activo === 'S'"
+                (ngModelChange)="toggleActivo(rowData, $event)"
+                inputId="perm-{{ rowData.id }}"
+                ariaLabel="Permitir módulo"
+              />
+            </div>
+          </td>
+          <td class="celda-vacia"></td>
+          <td class="celda-vacia"></td>
+          <td class="celda-vacia"></td>
+        </tr>
+      }
     </ng-template>
+
     <ng-template pTemplate="emptymessage">
-      <tr><td colspan="7" class="text-center p-3">No hay asignaciones que coincidan con los filtros.</td></tr>
+      <tr>
+        <td colspan="4" class="text-center p-3">No hay asignaciones que coincidan con los filtros.</td>
+      </tr>
     </ng-template>
-  </p-table>
+  </p-treeTable>
 </section>

@@ -12,6 +12,8 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { forkJoin } from 'rxjs';
@@ -46,10 +48,12 @@ interface FilaDet {
     InputNumberModule,
     SelectModule,
     TableModule,
-    ToolbarModule,
-    TagModule,
-    TooltipModule,
-    DialogModule,
+  ToolbarModule,
+  TagModule,
+  TooltipModule,
+  DialogModule,
+  IconFieldModule,
+  InputIconModule,
   ],
   providers: [DialogService],
   templateUrl: './cotizaciones-form.html',
@@ -88,8 +92,16 @@ export class CotizacionesForm implements OnInit {
   productosArray: Producto[] = [];
   productosFiltrados = signal<Producto[]>([]);
 
+  /** Zoom de imagen en hover (mismo patrón que nueva-factura) */
+  zoomVisible = signal(false);
+  zoomUrl = signal('');
+  zoomX = signal(0);
+  zoomY = signal(0);
+
   private existenciasMap = new Map<number, number>();
   private imagenesMap = new Map<number, string>();
+  /** tempresas.fechasistema — fecha del sistema de la empresa (PDF) */
+  private fechaSistema: string | Date | null = null;
   private tasaImpuesto = 0.15;
   private contadorFila = 0;
   private cotizacionId: number | null = null;
@@ -147,6 +159,7 @@ export class CotizacionesForm implements OnInit {
           next: (prods) => {
             this.productosArray = ((prods ?? []) as Producto[]).filter((p) => m.has(Number(p.produtoId)));
             this.filtrarProductos();
+            this.resolverDatosFilas();
           },
         });
       },
@@ -162,6 +175,7 @@ export class CotizacionesForm implements OnInit {
           }
         }
         this.imagenesMap = m;
+        this.resolverDatosFilas();
       },
     });
   }
@@ -195,7 +209,8 @@ export class CotizacionesForm implements OnInit {
             fila: ++this.contadorFila,
             productoId: Number(d.productoId) || null,
             codbarra: d.codbarra ?? '',
-            descripcion: d.codbarra ?? '',
+            // La descripción se resuelve cuando llegan los productos (puede llegar después)
+            descripcion: '',
             imagenUrl: this.imagenesMap.get(Number(d.productoId)) ?? null,
             estado: 'ALTA',
             cantidad: Number(d.cantidad) || 1,
@@ -205,6 +220,7 @@ export class CotizacionesForm implements OnInit {
           this.filas.update((f) => [...f, row]);
         }
         this.recalcularTotales();
+        this.resolverDatosFilas();
         this.cargando.set(false);
       },
       error: () => {
@@ -220,6 +236,8 @@ export class CotizacionesForm implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((emp) => {
         this.empresaNombre = emp?.descripcion || 'EMPRESA';
+        // Fecha del sistema de la empresa para el PDF (regla fechasistema)
+        this.fechaSistema = emp?.fechasistema ?? null;
       });
     this.api.get<any>('/companies/det', { empresaId })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -240,6 +258,48 @@ export class CotizacionesForm implements OnInit {
           )
         : this.productosArray,
     );
+  }
+
+  /**
+   * Resuelve datos de las filas que pueden llegar después que los detalles
+   * (cargas asíncronas en paralelo): descripción real del producto, imagen
+   * y estado según existencias (ALTA/BAJO/AGOTADO/SIN_STOCK).
+   */
+  private resolverDatosFilas() {
+    const actuales = this.filas();
+    if (!actuales.length) return;
+
+    const resueltas = actuales.map((row) => {
+      const producto =
+        this.productosArray.find((p) => Number(p.produtoId) === Number(row.productoId)) ??
+        this.productosArray.find(
+          (p) => (p.codbarra ?? '').trim() === (row.codbarra ?? '').trim(),
+        );
+      const r: FilaDet = { ...row };
+
+      if (!r.descripcion && producto) {
+        r.descripcion = producto.descripcion;
+      }
+      if (!r.imagenUrl && row.productoId != null) {
+        r.imagenUrl = this.imagenesMap.get(Number(row.productoId)) ?? null;
+      }
+      if (producto) {
+        const pid = Number(producto.produtoId);
+        const tieneRegistro = this.existenciasMap.has(pid);
+        const existencia = Number(this.existenciasMap.get(pid) ?? 0);
+        const stockMin = Number((producto as any).stockMinimo ?? 0);
+        r.estado = !tieneRegistro
+          ? 'SIN_STOCK'
+          : existencia <= 0
+            ? 'AGOTADO'
+            : stockMin > 0 && existencia <= stockMin
+              ? 'BAJO'
+              : 'ALTA';
+      }
+      return r;
+    });
+
+    this.filas.set(resueltas);
   }
 
   onBuscarProducto(event: Event) {
@@ -360,6 +420,23 @@ export class CotizacionesForm implements OnInit {
 
   moneda(n: number | undefined): string {
     return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
+  }
+
+  /** Zoom de imagen al pasar el mouse (overlay fijo junto al cursor). */
+  onImgHover(url: string, event: MouseEvent) {
+    this.zoomUrl.set(url);
+    this.zoomX.set(event.clientX + 12);
+    this.zoomY.set(event.clientY - 100);
+    this.zoomVisible.set(true);
+  }
+
+  onImgMove(event: MouseEvent) {
+    this.zoomX.set(event.clientX + 12);
+    this.zoomY.set(event.clientY - 100);
+  }
+
+  onImgLeave() {
+    this.zoomVisible.set(false);
   }
 
   volver() {
@@ -525,7 +602,8 @@ export class CotizacionesForm implements OnInit {
     const maeData = this.mae();
     const filasData = (this.filas() ?? []).filter((f: FilaDet) => f.productoId);
     const totalesData = this.totales() ?? { subTotal: 0, impuesto: 0, total: 0 };
-    const now = new Date();
+    // Fecha del sistema de la empresa (tempresas.fechasistema); fallback: fecha local
+    const fecha = this.fechaSistema ? new Date(this.fechaSistema) : new Date();
 
     const det = this.empresaDet();
     const rtn = det.find((d: any) => d.tipo === 'RTN')?.descripcion || '';
@@ -543,7 +621,7 @@ export class CotizacionesForm implements OnInit {
         { text: '\n' },
         { text: 'COTIZACION', style: 'header', alignment: 'center' },
         { text: '#' + (maeData?.poscotmaeId || 'Nueva'), style: 'subheader', alignment: 'center' },
-        { text: 'Fecha: ' + now.toLocaleDateString('es-HN'), alignment: 'right', margin: [0, 5] },
+        { text: 'Fecha: ' + fecha.toLocaleDateString('es-HN'), alignment: 'right', margin: [0, 5] },
         { text: '\n' },
         {
           columns: [

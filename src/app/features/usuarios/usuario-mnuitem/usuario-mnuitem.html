@@ -1,79 +1,161 @@
-<section class="page">
+﻿<section class="page">
   <header class="page-header">
     <div>
-      <h1 class="page-title">Menu Items por Usuario</h1>
-      <p class="page-subtitle">Asignación de items de menú por usuario y módulo</p>
+      <h1 class="page-title">Menú por Usuario</h1>
+      <p class="page-subtitle">Árbol de items de menú de cada usuario (raíz → módulo → submenú)</p>
     </div>
-    <p-button label="Asignar menu item" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+    <div class="header-filtros">
+      <div class="campo">
+        <label>Usuario</label>
+        <p-multiselect
+          [options]="usuariosOpciones()"
+          [ngModel]="filtroUsuarios()"
+          (ngModelChange)="onFiltroUsuarios($event)"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar..."
+          size="small"
+          styleClass="w-full"
+          filter
+          filterBy="label"
+          filterPlaceholder="Buscar..."
+          [showToggleAll]="false"
+          [appendTo]="'body'"
+        />
+      </div>
+      <div class="campo">
+        <label>Módulo</label>
+        <p-multiselect
+          [options]="modulosOpciones()"
+          [ngModel]="filtroModulos()"
+          (ngModelChange)="onFiltroModulos($event)"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar..."
+          size="small"
+          styleClass="w-full"
+          filter
+          filterBy="label"
+          filterPlaceholder="Buscar..."
+          [showToggleAll]="false"
+          [appendTo]="'body'"
+        />
+      </div>
+      <p-button label="Nuevo menu item" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+    </div>
   </header>
 
-  <div class="filtros card">
-    <div class="campo">
-      <label>Buscar</label>
-      <input
-        pInputText
-        type="text"
-        placeholder="Usuario, item, ruta o módulo..."
-        [ngModel]="q()"
-        (ngModelChange)="q.set($event)"
-        (keyup.enter)="buscar()"
-      />
-    </div>
-    <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
-      <p-button
-        label="Limpiar"
-        icon="pi pi-times"
-        severity="secondary"
-        text
-        size="small"
-        (onClick)="limpiarFiltros()"
-      />
-    </div>
-  </div>
-
-  <p-table
-    [value]="filtered()"
+  <p-treeTable
+    [value]="nodos()"
     [loading]="cargando()"
-    dataKey="tusuariomnuitemsId"
+    dataKey="key"
     [paginator]="true"
-    [rows]="20"
+    [rows]="10"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-    size="small"
+    styleClass="tt-mnuitem"
   >
     <ng-template pTemplate="header">
       <tr>
-        <th>Usuario</th>
-        <th>Modulo</th>
-        <th>Label</th>
-        <th>Nombre</th>
+        <th>Item</th>
         <th>Ruta</th>
-        <th style="width:4rem">Nivel</th>
-        <th style="width:5rem">Estado</th>
-        <th style="width:6rem"></th>
+        <th>Módulo</th>
+        <th style="width: 5rem">Nivel</th>
+        <th style="width: 6rem">Estado</th>
+        <th style="width: 9rem">Acciones</th>
       </tr>
     </ng-template>
-    <ng-template pTemplate="body" let-i>
-      <tr>
-        <td class="font-bold">{{ i.usuario }}</td>
-        <td>{{ getModuloName(i.moduloId) }}</td>
-        <td>{{ i.labelItem }}</td>
-        <td>{{ i.nameItem }}</td>
-        <td>{{ i.routerLink || '-' }}</td>
-        <td class="text-center">{{ i.levelId }}</td>
-        <td><p-tag [value]="activoLbl(i.sn_activo)" [severity]="activoSev(i.sn_activo)" /></td>
-        <td>
-          <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(i.tusuariomnuitemsId, $event)"
-            severity="warn" text size="small" rounded class="mr-1" />
-          <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(i, $event)"
-            severity="danger" text size="small" rounded />
-        </td>
-      </tr>
+
+    <ng-template pTemplate="body" let-rowNode let-node="node" let-rowData="rowData">
+      @if (node.data.tipo === 'usuario') {
+        <tr class="fila-usuario">
+          <td>
+            <p-treeTableToggler [rowNode]="rowNode" />
+            <span class="usuario-login">{{ rowData.usuario }}</span>
+            <span class="usuario-nombre">{{ rowData.nombre }}</span>
+          </td>
+          <td></td>
+          <td>
+            <p-tag [value]="(rowData.totalItems || 0) + ' items'" severity="info" />
+          </td>
+          <td></td>
+          <td></td>
+          <td>
+            <p-button
+              icon="pi pi-copy"
+              label="Clonar"
+              pTooltip="Clonar el menú de admin hacia este usuario"
+              tooltipPosition="top"
+              severity="success"
+              text
+              size="small"
+              rounded
+              [loading]="clonando() === rowData.usuario"
+              (onClick)="clonarMenu(rowData.usuario, $event)"
+            />
+          </td>
+        </tr>
+      } @else {
+        <tr class="fila-item" [class.item-inactivo]="rowData.sn_activo === 'N'">
+          <td class="celda-item">
+            <p-treeTableToggler [rowNode]="rowNode" />
+            @if (iconoClase(rowData.icon); as cls) {
+              <i [ngClass]="cls" class="item-icono"></i>
+            }
+            <span class="item-label">{{ rowData.label }}</span>
+            <span class="item-nombre">{{ rowData.nameItem }}</span>
+          </td>
+          <td>
+            @if (rowData.ruta) {
+              <code class="ruta-badge">{{ rowData.ruta }}</code>
+            } @else {
+              <span class="text-muted">—</span>
+            }
+          </td>
+          <td>
+            <p-tag [value]="rowData.moduloNombre" severity="secondary" />
+          </td>
+          <td class="text-center">
+            <p-tag [value]="rowData.levelId + ''" [severity]="nivelSev(rowData.levelId)" />
+          </td>
+          <td>
+            <p-toggleswitch
+              [ngModel]="rowData.sn_activo === 'S'"
+              (ngModelChange)="toggleActivo(rowData, $event)"
+              inputId="act-{{ rowData.id }}"
+              ariaLabel="Activo en el menú"
+            />
+          </td>
+          <td>
+            <p-button
+              icon="pi pi-pencil"
+              pTooltip="Editar"
+              (onClick)="editar(rowData.id, $event)"
+              severity="warn"
+              text
+              size="small"
+              rounded
+              class="mr-1"
+            />
+            <p-button
+              icon="pi pi-trash"
+              pTooltip="Eliminar"
+              (onClick)="eliminar(rowData, $event)"
+              severity="danger"
+              text
+              size="small"
+              rounded
+            />
+          </td>
+        </tr>
+      }
     </ng-template>
+
     <ng-template pTemplate="emptymessage">
-      <tr><td colspan="8" class="text-center p-3">No hay items que coincidan con los filtros.</td></tr>
+      <tr>
+        <td colspan="6" class="text-center p-3">No hay items de menú que coincidan con los filtros.</td>
+      </tr>
     </ng-template>
-  </p-table>
+  </p-treeTable>
 </section>

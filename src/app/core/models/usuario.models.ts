@@ -56,6 +56,10 @@ export interface UsuariosMnuItem {
   iconItem?: string;
   routerLink?: string;
   sn_activo: 'S' | 'N';
+  /** Orden del item dentro de su nivel (alias del backend: `zorden` como `zordenItem`) */
+  zordenItem?: number;
+  /** Orden del módulo (alias del backend: `tmodulos.zorden` como `zordenMod`) */
+  zordenMod?: number;
   usuarioCreated: string;
   usuarioUpdated?: string;
   fechaUpdated?: Date;

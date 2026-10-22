@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -15,7 +15,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
-import { CompraPendientePago, ChequeEmitido, BcoCta } from '../../../core/models/bancos.models';
+import { CompraPendientePago, ChequeEmitido, BcoCta, BcoMovimiento } from '../../../core/models/bancos.models';
 import { numeroALetras } from '../../../core/utils/numeros-a-letras';
 
 @Component({
@@ -41,8 +41,10 @@ export class ChequesBancos implements OnInit {
   cuentas = signal<BcoCta[]>([]);
   facturas = signal<CompraPendientePago[]>([]);
   chequesGenerados = signal<ChequeEmitido[]>([]);
+  movimientos = signal<BcoMovimiento[]>([]);
   cuentaSeleccionada = signal<BcoCta | null>(null);
   cargando = signal(false);
+  cargandoMovimientos = signal(false);
   emitando = signal(false);
   busqueda = signal('');
   mostrarImpresion = signal(false);
@@ -89,11 +91,22 @@ export class ChequesBancos implements OnInit {
     if (cuentaId) {
       const cuenta = this.cuentas().find(c => c.bcoctasId === cuentaId);
       this.cuentaSeleccionada.set(cuenta || null);
+      this.cargarMovimientos(cuentaId);
       this.cargarFacturasPendientes();
     } else {
       this.cuentaSeleccionada.set(null);
       this.facturas.set([]);
+      this.movimientos.set([]);
     }
+  }
+
+  cargarMovimientos(bcoctasId: number) {
+    this.cargandoMovimientos.set(true);
+    this.api.get<any[]>('/bancos/movimientos', { bcoctasId: String(bcoctasId) })
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (data) => { this.movimientos.set(data || []); this.cargandoMovimientos.set(false); },
+        error: () => { this.cargandoMovimientos.set(false); },
+      });
   }
 
   cargarFacturasPendientes() {
@@ -127,6 +140,27 @@ export class ChequesBancos implements OnInit {
 
   get totalSeleccionado(): number {
     return this.facturasSeleccionadas.reduce((sum, f) => sum + (f._montoPago || f.total), 0);
+  }
+
+  /**
+   * Saldo de la cuenta seleccionada: Σ Débitos − Σ Créditos,
+   * excluyendo movimientos anulados.
+   */
+  readonly saldoCuenta = computed(() => {
+    return this.movimientos()
+      .filter(m => m.sn_doc_anulado !== 'S')
+      .reduce((suma, m) => suma + (m.dc_debitocredito === 'D' ? Number(m.importe) : -Number(m.importe)), 0);
+  });
+
+  /** true cuando el total a pagar excede el saldo de la cuenta */
+  readonly saldoInsuficiente = computed(() => {
+    const total = this.totalSeleccionado;
+    return total > 0 && this.saldoCuenta() < total;
+  });
+
+  saldoTexto(): string {
+    if (this.cargandoMovimientos()) return 'Cargando…';
+    return this.formatCurrency(this.saldoCuenta());
   }
 
   // Agrupar por proveedor
@@ -180,7 +214,17 @@ export class ChequesBancos implements OnInit {
       return;
     }
 
+    // Validación de saldo antes de abrir el diálogo de confirmación
     const total = this.totalSeleccionado;
+    if (this.saldoCuenta() < total) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Saldo insuficiente',
+        detail: `Saldo actual ${this.formatCurrency(this.saldoCuenta())} — total a pagar ${this.formatCurrency(total)}`,
+      });
+      return;
+    }
+
     const texto = grupos.map(g => `${g.proveedorNombre}: L ${g.total.toFixed(2)}`).join('\n');
 
     this.confirmMessage.set(`Se emitirán ${grupos.length} cheque(s) por un total de L ${total.toFixed(2)}:\n\n${texto}`);
@@ -227,7 +271,12 @@ export class ChequesBancos implements OnInit {
       },
       error: (err) => {
         this.emitando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al emitir cheques' });
+        const msg = err?.error?.message;
+        const detalle =
+          (Array.isArray(msg) ? msg.join(' · ') : msg) ||
+          err?.error?.error ||
+          'Error al emitir cheques';
+        this.msgs.add({ severity: 'error', summary: 'No se pudo emitir', detail: detalle });
       },
     });
   }
