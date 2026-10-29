@@ -300,6 +300,21 @@
                       />
                     </div>
 
+                    <div class="campo">
+                      <label for="sn_droga">Droga / Psicotrópico</label>
+                      <p-select
+                        size="small"
+                        id="sn_droga"
+                        formControlName="sn_droga"
+                        [options]="snControladoOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Regulado como droga"
+                        styleClass="w-full"
+                        [appendTo]="'body'"
+                      />
+                    </div>
+
                     @if (esEdicion()) {
                       <div class="campo">
                         <label>Estado <span class="req">*</span></label>

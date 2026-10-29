@@ -15,11 +15,12 @@ import { TagModule } from 'primeng/tag';
 import { MessageService } from 'primeng/api';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { CxcHistorico } from '../../../core/models/cxc.models';
+import { CxcHistorico, CxcCliente } from '../../../core/models/cxc.models';
 
 @Component({
   selector: 'app-historico-manager',
   standalone: true,
+  host: { class: 'historico-manager' },
   imports: [
     CommonModule,
     FormsModule,
@@ -43,7 +44,9 @@ export class HistoricoManager implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   // ===== FILTROS =====
-  cliente = signal('');
+  /** Nombre exacto del cliente (razón social) — el backend filtra por LIKE */
+  cliente = signal<string | null>(null);
+  clienteOpciones = signal<{ label: string; value: string }[]>([]);
   fechaDesde = signal<string | null>(null);
   fechaHasta = signal<string | null>(null);
 
@@ -68,13 +71,33 @@ export class HistoricoManager implements OnInit {
   ];
 
   ngOnInit() {
+    this.cargarClientes();
     this.cargarHistorico();
+  }
+
+  private cargarClientes() {
+    this.service.getClientes(1, 1000).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(15000),
+      catchError(() => of({ data: [] as CxcCliente[], total: 0 })),
+    ).subscribe((res) => {
+      const opciones = (res?.data ?? [])
+        .filter((c) => c.sn_activo !== 'N')
+        .map((c) => {
+          const label = (c.razonsocial && c.razonsocial.trim()) ||
+            `${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim();
+          return { label, value: label };
+        })
+        .filter((o) => o.label !== '')
+        .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+      this.clienteOpciones.set(opciones);
+    });
   }
 
   private cargarHistorico() {
     this.cargando.set(true);
     this.service
-      .getHistoricoConFiltros('', this.cliente(), this.fechaDesde(), this.fechaHasta())
+      .getHistoricoConFiltros('', this.cliente() ?? '', this.fechaDesde(), this.fechaHasta())
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         timeout(15000),
@@ -104,7 +127,7 @@ export class HistoricoManager implements OnInit {
   }
 
   limpiarFiltros() {
-    this.cliente.set('');
+    this.cliente.set(null);
     this.fechaDesde.set(null);
     this.fechaHasta.set(null);
     this.selectedRow = null;

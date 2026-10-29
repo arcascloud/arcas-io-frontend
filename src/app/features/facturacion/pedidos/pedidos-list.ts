@@ -11,6 +11,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { PedidosVirtualService } from '../pedidos-virtual/pedidos-virtual.service';
 import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 
@@ -23,6 +24,7 @@ import { FacturaImpresionService } from '../../../core/services/factura-impresio
 })
 export class PedidosList implements OnInit {
   private api = inject(ApiService);
+  private auth = inject(AuthService);
   private router = inject(Router);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
@@ -78,7 +80,12 @@ export class PedidosList implements OnInit {
   limpiar() { this.q.set(''); this.filtrar(); }
 
   editar(id: number) {
-    this.router.navigate(['/facturacion/pedidos/editar', id]);
+    const user = this.auth.currentUser();
+    if (user?.sn_cliente === 'S') {
+      this.router.navigate(['/facturacion/pedidos-virtual', id]);
+    } else {
+      this.router.navigate(['/facturacion/pedidos/editar', id]);
+    }
   }
 
   /**

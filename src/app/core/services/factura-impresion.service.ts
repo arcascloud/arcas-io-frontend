@@ -168,7 +168,7 @@ export class FacturaImpresionService {
    * es la forma confiable de disparar la impresión sin abrir pestañas
    * visibles. Si `print()` falla, se respalda abriendo el PDF en pestaña.
    */
-  private imprimirBlobEnIframe(blob: Blob): void {
+  imprimirBlobEnIframe(blob: Blob): void {
     const url = URL.createObjectURL(blob);
     const iframe = document.createElement('iframe');
     iframe.setAttribute('aria-hidden', 'true');
@@ -1134,7 +1134,7 @@ export class FacturaImpresionService {
    * métodos. Sin ellos el ticket lanza "Font 'Courier' ... is not defined" y
    * la carta "File 'Roboto-Regular.ttf' not found in virtual file system".
    */
-  private cargarPdfMake(): Promise<any> {
+  cargarPdfMake(): Promise<any> {
     if (!this.pdfMakeInit) {
       this.pdfMakeInit = this.inicializarPdfMake();
     }

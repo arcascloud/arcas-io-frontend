@@ -327,6 +327,8 @@
 
 .nf-totales {
 
+  background: var(--master-background);
+    border-radius: 8px;
   .p-card-body,
   .card-body {
     padding: 0;
@@ -343,7 +345,7 @@
     flex-wrap: wrap;
     gap: 0.3rem;
     padding: 0.2rem 1rem;
-    border-right: 1px solid var(--c-border);
+    border-right: 1px solid var(--master-background);
   }
 
   .nf-totales-col-data {
@@ -379,7 +381,7 @@
 }
 
 .nf-total-grand {
-  border-left: 1px solid var(--c-border);
+  border-left: 1px solid var(--master-background);
   padding-left: 1rem;
 
   >div:last-child {
@@ -722,4 +724,7 @@
 // según PrimeNG #17000) — se oculta completamente. ::ng-deep porque el panel lo crea Dialog.
 ::ng-deep .tp-hl-dialog .p-dialog-footer {
   display: none;
+}
+.empty-row td {
+  height: 45px;
 }

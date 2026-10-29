@@ -1,0 +1,38 @@
+Los tres casos que mencionas son distintos, así que cada uno necesita una estrategia diferente.
+
+1. Alto costo y alta ganancia unitaria (ej. cuerpo de aceleración)
+
+El problema aquí es capital inmovilizado, no falta de demanda.
+
+Venta bajo pedido (drop-shipping interno): mantén el producto en el catálogo, pero no en stock. Se pide al proveedor cuando el cliente lo solicita, con entrega de 24 a 72 horas. Para ello necesitas tener pactado el tiempo de entrega con el proveedor.
+Stock consignado: el proveedor deja la pieza en tu bodega y solo la pagas cuando se vende.
+Servicio instalado: véndelo como paquete (pieza + instalación + limpieza + garantía). Así el cliente percibe valor y no solo precio.
+Financiamiento: cuotas o crédito propio en piezas caras. Esto se acopla muy bien con tu experiencia en sistemas de préstamos y tarjetas.
+Cotización proactiva: si un cliente trae un vehículo por diagnóstico, el sistema sugiere las piezas probables y genera la cotización en el momento.
+Mínimo de stock = 1 o 0: define reglas de reposición específicas para estos productos, no las mismas que para el aceite.
+2. Poco uso frecuente, costo bajo o medio (ej. cargador de batería)
+
+Aquí lo que falla es la visibilidad y el momento de compra.
+
+Combos y ventas cruzadas: "batería + cargador", "kit de emergencia" (cables pasa corriente, cargador, linterna).
+Alquiler o préstamo: para clientes de taller que lo usan una vez al año.
+Temporadas: promoverlo en época de lluvias o antes de vacaciones, cuando las baterías fallan más.
+Venta sugerida en caja: el sistema o el vendedor lo ofrece cuando se vende una batería.
+Precio de gancho: margen reducido, pero atrae al cliente a la tienda y vende otros productos.
+3. Producto que simplemente no rota
+Clasificación ABC/XYZ: A (alto valor y rotación), B (medio), C (baja rotación). Los productos C se revisan cada trimestre.
+Liquidación escalonada: descuento del 10 % a los 90 días sin movimiento, 20 % a los 180 y 30 % a los 270, o venta por lote.
+Venta mayorista a talleres: ofrece precio especial por volumen a talleres pequeños que no tienen capital para stock propio.
+Devolución al proveedor o cambio por otros productos de mayor rotación.
+Canal en línea o marketplace: una pieza que no se vende en tu zona puede venderse en otra.
+Cómo ayudaría tu sistema
+
+Si el ERP ya registra ventas e inventario, puedes automatizar esto con reportes:
+
+Índice de rotación = ventas del período / inventario promedio.
+Días sin movimiento por producto, con alerta a 60, 90 y 180 días.
+Capital inmovilizado: costo × cantidad de los productos sin rotación.
+Sugerencia automática: según clasificación (ej. "bajo pedido", "combo", "liquidar").
+Punto de reorden dinámico según el histórico de ventas de cada producto.
+
+Si quieres, puedo ayudarte a diseñar esto como módulo: las consultas JPA para calcular rotación y días sin movimiento, el endpoint en Spring Boot y la pantalla en Angular con tabla y gráficos. ¿Te gustaría empezar por ahí o prefieres profundizar primero en alguna de las estrategias comerciales?

@@ -1540,3 +1540,140 @@ Pagada*    Items  Total a Pagar   Anulada          <Generar planilla>
 
 ### Pendiente
 - Verificar en browser: planilla autorizada → botón "Contabilizar planilla" → tag "Contabilizada" + `partidaId` visible (la respuesta actualiza `maeActual`; quizá convenga mostrar el # de partida en el tag o un link al libro diario).
+
+## Bitacora - 23/10/2026 (Galeria tienda: bug de navegacion de imagenes - fix)
+
+### Sintoma
+- Al abrir la galeria de un producto (`facturacion/tienda`, boton pi-images en la card) y clickear miniaturas o flechas, el contador avanzaba (`1/3` -> `2/3` -> `3/3`) pero la imagen grande **nunca cambiaba** (se quedaba en la primera).
+
+### Diagnostico (repro E2E con Chrome headless + puppeteer-core en Temp\opencode)
+- Login admin -> tienda -> producto 7501234567894 (produtoId=5, unico con 3 imagenes activas en `productoimg`; los demas tienen 1 sola).
+- Inspeccion con `ng.getComponent`: tras el click, TODOS los componentes internos tenian el indice correcto (`Galleria`, `GalleriaContent`, `GalleriaItem`, `GalleriaThumbnails` en `_activeIndex=1`; `GalleriaItemSlot._item` = imagen nueva 30375 chars) pero el `<img>` del DOM seguia con 22915 y **`slot.context.$implicit` = 22915 (congelado)**.
+
+### Causa raiz: bug de PrimeNG 21.2.13 (`primeng-galleria.mjs`)
+- El template del **item** slot NO pasa `type`: `<div pGalleriaItemSlot [item]="activeItem" [templates]="templates">` - mientras caption/header/footer si llevan `type="caption"/"header"/"footer"` y la clase declara `type;` sin default -> **undefined**.
+- `GalleriaItemSlot.set item()`: `if (item.getType() === this.type)` -> `'item' === undefined` -> **nunca matchea** -> `this.context = { $implicit: this.item }` solo se ejecuta en la rama else (`templates` vacio, primer render). Resultado: el context queda congelado con la primera imagen para siempre.
+- No afecta a las miniaturas: cada thumbnail slot recibe su item fijo una sola vez (type="thumbnail" si esta bien declarado en GalleriaThumbnails).
+
+### Fix (`tienda-virtual.html`, seccion del p-galleria)
+- El template `pTemplate="item"` **ignora `let-item`** (el `$implicit` roto) y renderiza desde nuestros signals, que si navegan via `(activeIndexChange)`:
+  `<img [src]="galeriaImagenes()[galeriaIndice()]" [alt]="galeriaTitulo()" class="galeria-item-img" />`
+- Verificacion puppeteer post-fix: `1/3 img 22915` -> thumb #2 -> `2/3 img 30375` -> flecha -> `3/3 img 26315`. Miniaturas y flechas OK.
+- Build development OK (75s).
+
+### Nota de datos
+- Solo el produtoId=5 tiene 3 imagenes activas; los demas productos tienen 1 sola imagen -> la galeria oculta flechas/miniaturas con `length > 1` (comportamiento esperado, contador muestra `1 / 1`).
+
+### Addendum: sin efecto carrusel (peticion del usuario)
+- El slide del Galleria es un `style.transition = 'transform 500ms ease'` **inline** que PrimeNG aplica en cada navegacion al items-container (hardcodeado en `GalleriaItem.step`, no hay input para desactivarlo).
+- Fix en `tienda-virtual.scss` (seccion `.tienda-galleria`): `::ng-deep .p-galleria-items-container, ::ng-deep .p-galleria-thumbnail-items { transition: none !important; }` — `!important` en stylesheet gana sobre el inline sin `!important`.
+- Verificado puppeteer: `transitionDuration: 0s`, `transitionProperty: none`; a los 60ms tras el clic la imagen ya es la nueva (sin transicion intermedia). Navegacion miniaturas + flechas OK.
+
+## Bitacora - 23/10/2026 (Pedidos virtual: galeria replicada desde tienda)
+
+### Peticion
+- Replicar las mejoras de tienda virtual en `/facturacion/pedidos-virtual` sin arruinar nada.
+
+### Lo que ya tenia pedidos-virtual (sin cambios)
+- `formatearPrecio` es-HN (millares) y `resolverImagen` ya existian.
+- Cards grid/list, ofertas, FAB carrito, checkout, guardar pedido: intactos.
+
+### Cambios aplicados (espejo exacto de tienda)
+- **`pedidos-virtual.ts`**: import + `GalleriaModule` en imports; signals `dialogGaleria`/`galeriaTitulo`/`galeriaImagenes`/`galeriaIndice`/`galeriaCargando`, `galeriaCache` (Map), `galeriaResponsiveOptions`; metodo `abrirGaleria()` identico al de la tienda (principal primero, lazy `/inventario/productos-img` con dedupe + filtro `sn_activo !== 'N'` + cache).
+- **`pedidos-virtual.html`**:
+  - Card grid: boton galeria (`pi-images`, text secondary) + carrito envueltos en `.card-acciones`.
+  - Vista lista: boton galeria antes del carrito en `.list-accion`.
+  - Dialogo galeria completo (header con titulo/contador, loading, vacio, `p-galleria` con workaround bug PrimeNG 21.2.13 - item template sin `let-item`, render desde signals - y footer Cerrar).
+- **`pedidos-virtual.scss`**: `.card-acciones` (flex gap 0.15rem), `.list-accion` (flex gap 0.35rem), seccion `.tienda-galleria` completa (item img, thumbnails, **`transition: none !important`** anti-carrusel).
+
+### Verificacion E2E (puppeteer, `/facturacion/pedidos-virtual`)
+- Login OK -> cards con `.card-acciones` OK.
+- Galeria Corolla: abre `1 / 3`, 3 miniaturas, `transitionDuration: 0s` (sin carrusel).
+- Thumb #2 a los 60ms: `2 / 3` con imagen nueva (30375 chars) - cambio instantaneo OK.
+- Flecha siguiente: `3 / 3` (26315 chars) OK. Sin errores JS.
+- Build development OK (57s).
+
+### Addendum: cards mas grandes en pedidos-virtual (mismo tamano que tienda)
+- `pedidos-virtual.scss` `.productos-grid`/`.producto-card` igualados a tienda:
+  - grid `minmax(220px -> 300px, 1fr)`, gap `1rem -> 1.25rem`, `contain-intrinsic-size: 0 320px -> 0 440px`
+  - `.card-body` padding `0.75rem -> 1rem`
+  - `.card-titulo` `0.85rem -> 0.95rem` + color `var(--c-text)`
+  - `.card-desc` `0.75rem -> 0.8rem`
+  - `.card-precio` `1rem -> 1.15rem`
+- Media query mobile ya era identica (1fr + card horizontal 100px) - sin cambios.
+- Verificado puppeteer en 1440px: card 333x489, 3 columnas, gap 20px (identico a tienda). Screenshot OK.
+
+
+---
+
+## Bitacora - 23/10/2026 (NavegacionService: fix enlace externo + migracion selectiva de volver())
+
+### Problema de origen
+`NavegacionService.volver()` original usaba `window.history.length > 1` para decidir si podia regresar. Si el usuario llegaba al ERP desde un enlace externo (WhatsApp, correo), history.length incluia esa pagina externa y `location.back()` **sacaba a la persona de la aplicacion** (se iba a WhatsApp/otra pestana).
+
+### Fix del servicio (`core/services/navegacion.service.ts`)
+- Cuenta `NavigationEnd` completados dentro de la app (`navegaciones`), la 1a es la carga inicial.
+- `get puedeRegresar` = `navegaciones > 1` (historial interno real, no del browser).
+- `volver(fallback: string[] | string = ['/'])`: si hay pantalla anterior dentro de la app -> `location.back()` (preserva estado de la lista: filtros, pagina); si no -> `router.navigate(fallback)`.
+- Compatible con los 9 llamadores existentes (todos pasan `string[]`); 0 usos de `location.back()` fuera del servicio.
+
+### Migracion selectiva de volver() - 4 archivos (criterio: formulario multi-origen o ruta fija nombrada)
+| Componente | Antes | Ahora | Origen(es) |
+|---|---|---|---|
+| `cotizaciones-form.ts` | `router.navigate(['/facturacion/cotizaciones'])` | `nav.volver([...cotizaciones])` | lista cotizaciones + deep link |
+| `empleado-tipo-mov-manager.ts` | `router.navigate(['/planilla/empleado-tipo-mov'])` | `nav.volver([...empleado-tipo-mov])` | 4: lista tipo-mov, empleados, retenciones, ingresos-rev |
+| `empleado-form.ts` | `router.navigate(['../'])` | `nav.volver([...empleados])` | lista empleados + desde tipo-mov |
+| `consulta-factura-detalle.ts` | `router.navigate(['/facturacion/consultas'])` | `nav.volver([...consultas])` (solo rama sin partida) | lista consultas + anular-facturas + desde partida contable |
+
+- `consulta-factura-detalle`: rama `partidaId` se conservo con navigate explicito (la partida viaja en queryParam, no en el historial).
+- `empleado-form`: limpieza de imports (`Router` dejo de usarse).
+- **NO migrados** (single-origen, `['../']` correcto): usuario-form, modulo-form, usuario-mnuitem/modauth/modulos/roles-form, producto-form, proveedor-form, catalogo-form (rama embebida con `finalized.emit()` intacta).
+- **NO tocados** (solo limpieza de estado, sin navegacion): bancos-manager, movimientos, compras-manager, ajustes, consulta-compras, requisiciones, toma-inventarios, traslados.
+
+### Verificacion
+- `ng build --configuration development` OK (63s, sin errores).
+- **E2E `test-nav-volver.js` (puppeteer): 11/11 PASS**
+  - Deep link a los 4 formularios (historial vacio) -> Volver cae al fallback de su lista, nunca sale de la app.
+  - Lista -> editar -> Volver -> `location.back()` regresa a la lista (cotizaciones y empleados).
+- Backend `:3000` verificado con build nuevo (proceso posterior al `nest build`), sin reinicio pendiente.
+
+### Contexto de la misma sesion (previo a la navegacion)
+- **Combos**: sync de precios stale backfilleado via PUT (4 dets OK) + validacion precio-minimo `cstounit x 1.03` backend/frontend.
+- **Kardex empresa 2**: fix de concatenacion de strings (`300 + "10.00"` -> `"30010.00"`) con `Number()` en `registrarEntrada`/`registrarSalida`; renombres de columna a las reales (`existencia_anterior`, `exisencia_actual`); reparacion de datos via `POST /inventario/kardex/recalcular`; auditoria `audit-kardex.js` 62/62 checks OK.
+- **createKardex** (CRUD genérico muerto sin validacion de saldos) eliminado de `inventario.service.ts`.
+- **consulta-facturas.scss**: columna Acciones alineada justificada (Ver izquierda / WhatsApp derecha).
+
+### Pendiente
+- Bug `sn_doc_anulado` vs `sn_anulado` (facturacion) y validacion de activacion de tarjeta de crédito: sin tocar.
+- Typo de columna `exisencia_actual` (renombrar = ALTER TABLE, requiere aprobacion explicita).
+
+## Bitacora - 23/10/2026 (Movimientos CxC: boton "Volver al historico" + fix overflow horizontal)
+
+### Peticion
+Al abrir un movimiento desde `/cxc/historico` (boton Ver), no habia forma de regresar al historico. El usuario paso la URL de `/cxc/movimientos` para revisarla.
+
+### Boton "Volver al historico" (`cxc/movimientos/`)
+- **`movimientos-manager.ts`**: `inject(NavegacionService)` + senal publica `desdeHistorico` que solo se activa en la rama `?clienteId=` (deep link desde historico). La rama `?movimientoId=&partidaId=` (desde copdamae) NO la activa. `volverAHistorico()` = `nav.volver(['/cxc/historico'])` (si hay historial interno hace `location.back()`, si no fallback directo).
+- **`movimientos-manager.html`**: `@if (partidaId()) { barra partida } @else if (desdeHistorico()) { barra historico }` - icono `pi-history`, texto "Movimiento abierto desde el Historico de Clientes" y boton `p-button label="Volver al historico"`. Estilos `.barra-origen` ya existian en el scss.
+- El flag privado `vieneDeHistorico` (carga de datos: cliente unico en la lista) quedo intacto.
+
+### Fix overflow horizontal preexistente (descubierto al revisar la pantalla)
+- **Sintoma**: al seleccionar cualquier cliente, `.layout-main` (flex item sin `min-width:0`) crecia a min-content (1341px) -> overflow de pagina ~85px -> columna derecha y boton cortados. Confirmado empirico: pasaba TAMBIEN sin la barra nueva.
+- **Fix**: `min-width: 0` en `.layout-main` (`main-layout.scss`) y en `.left-column` (`movimientos-manager.scss`). La columna izquierda encoje, la derecha (ficha del cliente) queda visible.
+
+### Tabla de movimientos: Acciones cabia completa (913px -> 820px)
+- Tras el fix, la tabla (9 columnas) media 913px contra 820px de contenedor -> columna "Acciones" quedaba fuera (scroll interno de PrimeNG la ocultaba).
+- Diagnostico empirico: padding y `width` de `<th>` NO servian - lo gana PrimeNG `.p-datatable-sm` (td = `3.2px 1.28px`) y los hints de ancho se ignoran bajo restriccion. La columna gorda era **Concepto = 246px** (`min-content` limitado por `max-width: 16rem` + `nowrap`).
+- **Fix**: `.mov-concepto` `max-width: 16rem -> 9rem` + `[title]="m.concepto"` en el td (hover muestra el texto completo). Revertidos el intento de padding/hints (inertes).
+- Resultado: tabla = 820px = contenedor, `scrollWidth == clientWidth`, 9/9 columnas visibles, "Acciones" con icono anular accesible.
+
+### Verificacion
+- **E2E `test-volver-historico.js`: 11/11 PASS** (T1 flujo real historico -> Ver -> barra -> volver; T2 deep link `?clienteId` con fallback; T3 `?partidaId` muestra barra de partida y NO la de historico, sin errores JS).
+- Mediciones post-fix en las 4 rutas (A/B/C/D): `overflow=0`, right-col visible.
+- Regresion 10 rutas (dashboard, facturas, consultas, cxc/clientes, cxc/historico, cxc/movimientos, cxp/movimientos, copdamae, productos, tienda): todas `overflow=0`, ninguna columna derecha cortada.
+- Captura final: barra + boton completos, tabla con Acciones visible, ficha del cliente entera.
+- `ng build --configuration development` OK (81s).
+
+### Pendiente
+- Bug `sn_doc_anulado` vs `sn_anulado` (facturacion) y validacion de activacion de tarjeta de credito: sin tocar.
+- Typo de columna `exisencia_actual` (renombrar = ALTER TABLE, requiere aprobacion explicita).

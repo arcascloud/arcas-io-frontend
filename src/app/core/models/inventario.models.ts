@@ -1,7 +1,9 @@
 export interface Categoria {
   categoriaId: number;
   descripcion: string;
+  deptoId: number;
   sn_activo: 'S' | 'N';
+  tipo_giro: 'C' | 'F' | 'R';
   empresaId: number;
   usuarioCreated: string;
   usuarioUpdated?: string;
@@ -29,6 +31,8 @@ export interface Producto {
   sn_activo: 'S' | 'N';
   /** Producto controlado (fármacos, material agroindustrial) */
   sn_controlado?: 'S' | 'N';
+  /** Producto regulado como droga o psicotrópico */
+  sn_droga?: 'S' | 'N';
   empresaId: number;
   usuarioCreated: string;
   usuarioUpdated?: string;
@@ -86,8 +90,8 @@ export interface Kardex {
   existencia: number;
   costoUnitario: number;
   subTotal: number;
-  saldoAnterior: number;
-  saldoActual: number;
+  existencia_anterior: number;
+  exisencia_actual: number;
   costoTotal: number;
   costoUSD: number;
   subTotalUSD: number;
@@ -104,6 +108,7 @@ export interface Departamento {
   deptoId: number;
   descripcion: string;
   zorden: number;
+  tipo_giro: 'C' | 'F' | 'R';
   sn_activo: 'S' | 'N';
   empresaId: number;
   usuarioCreated: string;

@@ -111,19 +111,18 @@ export class CotizacionesList implements OnInit {
     });
   }
 
+  /** Número de cotización con relleno de ceros a 6 posiciones (1 → 000001) */
+  nroCotizacion(id: number | string | null | undefined): string {
+    return String(id ?? '').padStart(6, '0');
+  }
+
   fechaCorta(fecha: string | Date): string {
     if (!fecha) return '-';
     const d = new Date(fecha);
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yy = String(d.getFullYear()).slice(-2);
-    return `${dd}/${mm}/${yy}`;
-  }
-
-  horaCorta(fecha: string | Date): string {
-    if (!fecha) return '-';
-    const d = new Date(fecha);
-    return d.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
+    const yyyy = String(d.getFullYear());
+    return `${dd}/${mm}/${yyyy}`;
   }
 
   moneda(n: number | undefined): string {

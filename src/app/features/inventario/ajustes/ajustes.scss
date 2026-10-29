@@ -70,14 +70,13 @@
 }
 
 .campo-codbarra { flex: 3; }
-.campo-cantidad { flex: 1; min-width: 100px; }
-.campo-costo { flex: 1; min-width: 100px; }
+.campo-cantidad { flex: 1; min-width: 130px; }
 .campo-btn { flex: 0; padding-bottom: 0.15rem; }
 
 .producto-encontrado {
   margin-top: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: var(--c-surface-ground, #f8fafc);
+  background: var(--c-bg);
   border-radius: 0.375rem;
   border: 1px solid var(--c-border, #e2e8f0);
   font-size: 0.85rem;
@@ -96,8 +95,7 @@
   }
 
   .campo-codbarra,
-  .campo-cantidad,
-  .campo-costo {
+  .campo-cantidad {
     flex: 1 1 100%;
     min-width: 100%;
   }

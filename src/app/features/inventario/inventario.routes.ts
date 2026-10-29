@@ -74,6 +74,11 @@ export const INVENTARIO_ROUTES: Routes = [
   { path: 'proveedores/nuevo', loadComponent: () => import('./proveedores/proveedor-form').then(m => m.ProveedorForm) },
   { path: 'proveedores/editar/:id', loadComponent: () => import('./proveedores/proveedor-form').then(m => m.ProveedorForm) },
 
+  // Departamentos (tinvdeptos)
+  { path: 'deptos', data: { nombre: 'deptos' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then(m => m.CatalogoGenerico) },
+  { path: 'deptos/nuevo', data: { nombre: 'deptos' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'deptos/editar/:id', data: { nombre: 'deptos' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+
   // Existencias (read-only)
   { path: 'existencias', loadComponent: () => import('./existencias/existencias').then(m => m.Existencias) },
 

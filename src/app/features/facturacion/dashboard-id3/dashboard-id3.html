@@ -1,0 +1,385 @@
+<section class="page dash3">
+  <header class="page-header">
+    <div class="page-header-text">
+      <h1 class="page-title">Dashboard de Ventas</h1>
+      <p class="page-subtitle">KPIs de facturación: contado vs crédito, vendedores, evolución, cobranza y rentabilidad</p>
+    </div>
+    @if (datos(); as d) {
+      <div class="hdr-periodo">
+        <span class="hdr-periodo-valor">{{ d.referencia.etiquetaMes }}</span>
+        <span class="hdr-periodo-sub">{{ d.referencia.etiquetaVentana }}</span>
+      </div>
+    }
+  </header>
+
+  <!-- FILTROS -->
+  <div class="filtros">
+    <div class="filtros-fila">
+      <div class="campo">
+        <label>Año</label>
+        <p-select size="small" [options]="anioOps()" [ngModel]="anioSel()" (ngModelChange)="anioSel.set($event)"
+          placeholder="Todos" styleClass="w-full" [appendTo]="'body'" showClear filter></p-select>
+      </div>
+      <div class="campo">
+        <label>Mes</label>
+        <p-select size="small" [options]="mesOps()" [ngModel]="mesSel()" (ngModelChange)="mesSel.set($event)"
+          placeholder="Todo el año" styleClass="w-full" [appendTo]="'body'" showClear></p-select>
+      </div>
+      <div class="campo">
+        <label>Sucursal / Canal</label>
+        <p-select size="small" [options]="sucursalOps()" [ngModel]="sucursalSel()" (ngModelChange)="sucursalSel.set($event)"
+          placeholder="Todas" styleClass="w-full" [appendTo]="'body'" showClear filter></p-select>
+      </div>
+      <div class="campo">
+        <label>Categoría de producto</label>
+        <p-select size="small" [options]="categoriaOps()" [ngModel]="categoriaSel()" (ngModelChange)="categoriaSel.set($event)"
+          placeholder="Todas" styleClass="w-full" [appendTo]="'body'" showClear filter></p-select>
+      </div>
+    </div>
+    <div class="filtros-acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" [raised]="true" severity="success"
+        [loading]="cargando()" (onClick)="buscar()"></p-button>
+      <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
+        (onClick)="limpiarFiltros()"></p-button>
+    </div>
+  </div>
+
+  @if (datos(); as d) {
+    <!-- ===== FILA 1 — Tarjetas KPI ===== -->
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi-label">Ventas totales</span>
+        <span class="kpi-valor">{{ fmt(d.resumen.ventasTotales) }}</span>
+        <span class="kpi-sub">{{ fmtEntero(d.resumen.numFacturas) }} comprobantes · Ticket promedio {{ fmt(d.resumen.ticketPromedio) }}</span>
+      </div>
+      <div class="kpi kpi--contado">
+        <span class="kpi-label">Ventas al contado</span>
+        <span class="kpi-valor">{{ fmt(d.contadoCredito.contado) }}</span>
+        <span class="kpi-sub">{{ pct(d.contadoCredito.pctContado) }} del total · {{ fmtEntero(d.contadoCredito.numContado) }} facturas</span>
+      </div>
+      <div class="kpi kpi--credito">
+        <span class="kpi-label">Ventas al crédito</span>
+        <span class="kpi-valor">{{ fmt(d.contadoCredito.credito) }}</span>
+        <span class="kpi-sub">{{ pct(d.contadoCredito.pctCredito) }} del total · {{ fmtEntero(d.contadoCredito.numCredito) }} facturas</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Utilidad bruta</span>
+        <span class="kpi-valor">{{ fmt(d.resumen.utilidadBruta) }}</span>
+        <span class="kpi-sub">Margen bruto {{ pct(d.resumen.margenBruto) }} · COGS {{ fmt(d.resumen.cogs) }}</span>
+      </div>
+      <div class="kpi" pTooltip="{{ d.dso.base }}" tooltipPosition="top">
+        <span class="kpi-label">DSO (días de cobro)</span>
+        <span class="kpi-valor">{{ d.dso.dias != null ? d.dso.dias + ' días' : '—' }}</span>
+        <span class="kpi-sub">{{ d.dso.muestras > 0 ? d.dso.muestras + ' facturas de crédito cobradas' : 'Sin facturas de crédito cobradas' }}</span>
+      </div>
+      <div class="kpi kpi--alerta">
+        <span class="kpi-label">Cartera vencida</span>
+        <span class="kpi-valor">{{ fmt(d.aging.carteraVencida) }}</span>
+        <span class="kpi-sub">{{ pct(d.aging.pctVencido) }} de {{ fmt(d.aging.carteraTotal) }} en cartera · {{ fmtEntero(d.aging.documentosVencidos) }} docs.</span>
+      </div>
+    </div>
+
+    <!-- ===== WIDGET A + E ===== -->
+    <div class="grid-2">
+      <div class="widget">
+        <div class="widget-hdr">
+          <h3>A. Ventas al Contado vs. Ventas al Crédito</h3>
+          <span class="widget-nota">% de participación sobre el total facturado</span>
+        </div>
+        <div class="widget-body split-a">
+          <div class="chart-box chart-box--square">
+            @if (tieneVentas()) {
+              <canvas id="chartContadoCredito"></canvas>
+            } @else {
+              <div class="vacio">Sin ventas en el período</div>
+            }
+          </div>
+          <div class="mini-lista">
+            <div class="mini mini--contado">
+              <span class="mini-label">Contado</span>
+              <span class="mini-valor">{{ fmt(d.contadoCredito.contado) }}</span>
+              <span class="mini-sub">{{ pct(d.contadoCredito.pctContado) }} · {{ fmtEntero(d.contadoCredito.numContado) }} facturas</span>
+            </div>
+            <div class="mini mini--credito">
+              <span class="mini-label">Crédito</span>
+              <span class="mini-valor">{{ fmt(d.contadoCredito.credito) }}</span>
+              <span class="mini-sub">{{ pct(d.contadoCredito.pctCredito) }} · {{ fmtEntero(d.contadoCredito.numCredito) }} facturas</span>
+            </div>
+            <div class="mini">
+              <span class="mini-label">Crédito neto</span>
+              <span class="mini-valor">{{ fmt(d.contadoCredito.netoCredito) }}</span>
+              <span class="mini-sub">Crédito bruto − descuentos del período</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="widget">
+        <div class="widget-hdr">
+          <h3>E. Utilidad Bruta y Margen por Categoría</h3>
+          <span class="widget-nota">Ventas − COGS (costo de adquisición)</span>
+        </div>
+        <div class="widget-body">
+          <div class="utilidad-block">
+            <div class="utilidad-monto">
+              <span class="mini-label">Utilidad bruta</span>
+              <span class="utilidad-valor">{{ fmt(d.resumen.utilidadBruta) }}</span>
+            </div>
+            <div class="utilidad-margen">
+              <span class="mini-label">Margen bruto</span>
+              <span class="utilidad-valor" [class.negativo]="(d.resumen.margenBruto ?? 0) < 0">{{ pct(d.resumen.margenBruto) }}</span>
+            </div>
+            <div class="utilidad-margen">
+              <span class="mini-label">COGS</span>
+              <span class="utilidad-valor utilidad-valor--sm">{{ fmt(d.resumen.cogs) }}</span>
+            </div>
+          </div>
+          <div class="chart-box chart-box--alt">
+            @if (tieneCategorias()) {
+              <canvas id="chartMargen"></canvas>
+            } @else {
+              <div class="vacio">Sin líneas de detalle en el período</div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WIDGET B ===== -->
+    <div class="widget">
+      <div class="widget-hdr">
+        <h3>B. Ventas por Vendedor</h3>
+        <span class="widget-nota">Productividad y ticket promedio por integrante del equipo</span>
+      </div>
+      <div class="widget-body split-b">
+        <div class="chart-box chart-box--vendedor">
+          @if (tieneVendedores()) {
+            <canvas id="chartVendedores"></canvas>
+          } @else {
+            <div class="vacio">Sin ventas en el período</div>
+          }
+        </div>
+        <div class="tabla-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Vendedor</th>
+                <th class="num">Comprobantes</th>
+                <th class="num">Ventas</th>
+                <th class="num">Ticket promedio</th>
+                <th class="num">Participación</th>
+                <th class="num">Meta</th>
+                <th class="num">Cumplimiento</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of d.vendedores; track v.gestorId ?? 'sin') {
+                <tr>
+                  <td>{{ v.nombre }}</td>
+                  <td class="num">{{ fmtEntero(v.comprobantes) }}</td>
+                  <td class="num">{{ fmt(v.ventas) }}</td>
+                  <td class="num">{{ fmt(v.ticketPromedio) }}</td>
+                  <td class="num">{{ pct(v.pctParticipacion) }}</td>
+                  <td class="num muted">{{ v.meta != null ? fmt(v.meta) : '—' }}</td>
+                  <td class="num muted">{{ v.cumplimiento != null ? pct(v.cumplimiento) : '—' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="vacio-fila">Sin ventas en el período seleccionado</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <p class="nota-pie">No existe tabla de metas por vendedor en el ERP: las columnas Meta y Cumplimiento
+            muestran «—» hasta que se defina la tabla de metas.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WIDGET C ===== -->
+    <div class="widget">
+      <div class="widget-hdr">
+        <h3>C. Ventas por Meses (evolución de 12 meses)</h3>
+        <div class="badges">
+          <span class="badge" [class]="claseVariacion(d.comparativo.mom)">
+            Mes anterior: {{ pctSigno(d.comparativo.mom) }}
+          </span>
+          <span class="badge" [class]="claseVariacion(d.comparativo.yoy)">
+            Mismo mes año anterior: {{ pctSigno(d.comparativo.yoy) }}
+          </span>
+          <span class="badge neutro">Mes: {{ fmt(d.comparativo.actual) }} · Anterior: {{ fmt(d.comparativo.anterior) }} · Año anterior: {{ fmt(d.comparativo.mismoMesAnioAnterior) }}</span>
+        </div>
+      </div>
+      <div class="widget-body">
+        <div class="chart-box chart-box--meses">
+          <canvas id="chartMeses"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WIDGET D ===== -->
+    <div class="widget">
+      <div class="widget-hdr">
+        <h3>D. Facturas Vencidas y Análisis de Cobranza</h3>
+        <span class="widget-nota">Antigüedad de saldos (AR Aging) al día de la fecha del sistema: {{ fecha(d.referencia.fecha) }}</span>
+      </div>
+      <div class="widget-body split-d">
+        <div class="tabla-wrap">
+          <table class="tbl tbl--aging">
+            <thead>
+              <tr>
+                <th>Rango</th>
+                <th>Días de mora</th>
+                <th class="num">Documentos</th>
+                <th class="num">Monto</th>
+                <th class="num">% cartera</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of d.aging.rangos; track r.key) {
+                <tr [class.fila-vencida]="r.key !== 'porVencer' && r.monto > 0">
+                  <td>{{ r.rango }}</td>
+                  <td class="muted">{{ r.dias }}</td>
+                  <td class="num">{{ fmtEntero(r.documentos) }}</td>
+                  <td class="num">{{ fmt(r.monto) }}</td>
+                  <td class="num">{{ d.aging.carteraTotal > 0 ? pct((r.monto / d.aging.carteraTotal) * 100) : '0.0%' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td><strong>Cartera total</strong></td>
+                <td></td>
+                <td class="num"><strong>{{ fmtEntero(d.aging.documentosVencidos + d.aging.rangos[0].documentos) }}</strong></td>
+                <td class="num"><strong>{{ fmt(d.aging.carteraTotal) }}</strong></td>
+                <td class="num"><strong>100.0%</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="cobranza-kpis">
+          <div class="kpi kpi--alerta">
+            <span class="kpi-label">Cartera vencida</span>
+            <span class="kpi-valor">{{ fmt(d.aging.carteraVencida) }}</span>
+            <span class="kpi-sub">{{ pct(d.aging.pctVencido) }} de la cartera · {{ fmtEntero(d.aging.documentosVencidos) }} documentos</span>
+          </div>
+          <div class="kpi">
+            <span class="kpi-label">Por vencer</span>
+            <span class="kpi-valor">{{ fmt(d.aging.carteraPorVencer) }}</span>
+            <span class="kpi-sub">Documentos al día</span>
+          </div>
+          <div class="kpi kpi--ok">
+            <span class="kpi-label">Cobrado</span>
+            <span class="kpi-valor">{{ fmt(d.aging.montoCobrado) }}</span>
+            <span class="kpi-sub">{{ fmtEntero(d.aging.documentosCobrados) }} facturas de crédito canceladas</span>
+          </div>
+          <div class="kpi" pTooltip="{{ d.dso.base }}" tooltipPosition="top">
+            <span class="kpi-label">DSO</span>
+            <span class="kpi-valor">{{ d.dso.dias != null ? d.dso.dias + ' días' : '—' }}</span>
+            <span class="kpi-sub">Tiempo promedio de cobro</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WIDGET F + G ===== -->
+    <div class="grid-2 grid-2--productos">
+      <div class="widget">
+        <div class="widget-hdr">
+          <h3>F. Top 25 Productos Más Vendidos (Pareto 80/20)</h3>
+          <span class="widget-nota">Barras: ingresos · Línea: % acumulado</span>
+        </div>
+        <div class="widget-body">
+          <div class="chart-box chart-box--pareto">
+            @if (tienePareto()) {
+              <canvas id="chartPareto"></canvas>
+            } @else {
+              <div class="vacio">Sin productos vendidos en el período</div>
+            }
+          </div>
+          <div class="tabla-wrap tabla-wrap--scroll">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th class="num">Cant.</th>
+                  <th class="num">Ingresos</th>
+                  <th class="num">% acum.</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of d.topProductos; track p.productoId; let i = $index) {
+                  @if (p.ingresos > 0) {
+                    <tr>
+                      <td class="muted">{{ i + 1 }}</td>
+                      <td>
+                        <span class="prod-desc">{{ p.descripcion }}</span>
+                        <span class="prod-cod">{{ p.codbarra }}</span>
+                      </td>
+                      <td>{{ p.categoria }}</td>
+                      <td class="num">{{ fmtEntero(p.cantidad) }}</td>
+                      <td class="num">{{ fmt(p.ingresos) }}</td>
+                      <td class="num">{{ acumuladoTop($index, d) }}</td>
+                    </tr>
+                  }
+                } @empty {
+                  <tr><td colspan="6" class="vacio-fila">Sin productos vendidos</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="widget">
+        <div class="widget-hdr">
+          <h3>G. Bottom 25 Productos (baja rotación / dormidos)</h3>
+          <span class="widget-nota">Capital inmovilizado — descuentos, promociones o liquidación</span>
+        </div>
+        <div class="widget-body">
+          <div class="tabla-wrap tabla-wrap--scroll">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th class="num">Cant.</th>
+                  <th class="num">Ingresos</th>
+                  <th class="num">Última venta</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of d.bottomProductos; track p.productoId) {
+                  <tr [class.dormido]="p.ingresos === 0">
+                    <td>
+                      <span class="prod-desc">{{ p.descripcion }}</span>
+                      <span class="prod-cod">{{ p.codbarra }}</span>
+                    </td>
+                    <td>{{ p.categoria }}</td>
+                    <td class="num">{{ fmtEntero(p.cantidad) }}</td>
+                    <td class="num">{{ fmt(p.ingresos) }}</td>
+                    <td class="num">
+                      {{ fecha(p.ultimaVenta) }}
+                      @if (p.diasSinVenta != null) {
+                        <span class="prod-cod">hace {{ fmtEntero(p.diasSinVenta) }} días</span>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="5" class="vacio-fila">Sin productos en el catálogo</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="cargando">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando dashboard…</span>
+    </div>
+  }
+</section>

@@ -1,0 +1,216 @@
+<div class="layout-wrapper">
+  <!-- Menú Drill-Down (Departamentos -> Categorías con botón Volver) en p-drawer a la izquierda -->
+  <p-drawer [(visible)]="menuVisible"
+     position="left" styleClass="departamentos-drawer">
+    <ng-template #header>
+      <div class="flex items-center gap-2">
+        <p-avatar  image="assets/images/toyota.png" shape="circle" />
+        <span class="sidebar-title">TOYOTA</span>
+      </div>
+    </ng-template>
+    <app-sidebar-drilldown />
+  </p-drawer>
+
+  <!-- Main -->
+  <div class="layout-main">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <p-button
+          id="btnShowDrawer"
+          icon="pi pi-bars"
+          (onClick)="menuVisible = true"
+          severity="contrast"
+          rounded="true"
+          variant="text"
+          iconOnly
+          size="small"
+          styleClass="botton-bg-transparente sidebar-toggle"
+          pTooltip="Departamentos"
+        ></p-button>
+        <div class="topbar-brand">
+          <img src="assets/images/toyota.png" alt="TOYOTA" class="brand-logo" />
+          <span class="sidebar-title">TOYOTA</span>
+        </div>
+      </div>
+      <div class="topbar-center">
+        <p-autoComplete
+          [ngModel]="busquedaTopbar()"
+          (ngModelChange)="busquedaTopbar.set($event)"
+          [suggestions]="sugerenciasTopbar()"
+          (completeMethod)="filterProductos($event)"
+          field="descripcion"
+          placeholder="Buscar productos..."
+          styleClass="topbar-search"
+          [inputStyle]="{ width: '100%' }"
+          [dropdown]="true"
+          [forceSelection]="false"
+          [showClear]="true"
+          [appendTo]="'body'"
+          (onSelect)="onProductoSelect($event)"
+          (onClear)="onTopbarClear()"
+          (onInputKeydown)="onTopbarKeydown($event)"
+        >
+          <ng-template let-producto pTemplate="item">
+            <div class="flex align-items-center gap-2 py-1">
+              @if (producto.imagen) {
+              <img
+                [src]="resolverImagenTopbar(producto.imagen)"
+                width="32"
+                height="32"
+                class="topbar-search-img"
+              />
+              } @else {
+              <i class="pi pi-box topbar-search-icon"></i>
+              }
+              <div class="flex flex-column">
+                <span class="font-bold text-xs">{{ producto.descripcion }}</span>
+                <span class="text-xs text-muted-color"
+                  >Cód: {{ producto.codbarra || 'N/A' }} | Precio: {{
+                  formatearPrecioTopbar(producto.precioventa) }}</span
+                >
+              </div>
+            </div>
+          </ng-template>
+        </p-autoComplete>
+      </div>
+      <div class="topbar-right">
+        <!-- Abre el login headless (estilo login) -->
+        @if (carritoState.totalItems() > 0 && !carritoState.carritoOpen()) {
+        <p-overlaybadge
+          id="btnshopping"
+          [value]="carritoState.totalItems()"
+          pTooltip="Carrito de compras"
+          badgeSize="small"
+          severity="success"
+        >
+          <i
+            class="fa-solid fa-cart-shopping"
+            style="font-size: 1.25rem; cursor: pointer"
+            (click)="carritoState.abrir()"
+          ></i>
+        </p-overlaybadge>
+        }
+
+        <!-- Menú de usuario (p-popover): login/registro sin sesión, cerrar sesión con sesión -->
+        <p-button
+          type="button"
+          pTooltip="Usuario/Cesión"
+          tooltipPosition="left"
+          (onClick)="alternarUsuario($event)"
+          [rounded]="true"
+          [text]="true"
+        >
+          <i class="fa-regular fa-circle-user" style="font-size: 1.45rem"></i>
+        </p-button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="layout-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<!-- Globales: notificaciones y confirmaciones -->
+<p-toast />
+<p-confirmdialog />
+
+<!-- Menú de usuario del topbar (anclado al botón circle-user) -->
+<p-popover #popUsuario styleClass="usuario-popover">
+  <div class="usuario-menu">
+    @if (usuario(); as u) {
+      <!-- Con sesión: identidad + cerrar sesión -->
+      <div class="usuario-menu-cabecera">
+        <p-avatar [label]="(u.nombre || u.usuario).charAt(0).toUpperCase()" shape="circle" />
+        <div class="usuario-menu-info">
+          <span class="usuario-menu-nombre">{{ u.nombre || u.usuario }}</span>
+          <span class="usuario-menu-email">{{ u.email || 'Sin correo' }}</span>
+        </div>
+      </div>
+      @if (esCliente()) {
+        <!-- Solo clientes con sesión: acceso al CRM de pedidos -->
+        <div class="usuario-menu-separador"></div>
+        <button type="button" class="usuario-menu-item" (click)="irAPedidosDesdePopover()">
+          <i class="pi pi-shopping-cart"></i>
+          <span>Pedidos</span>
+        </button>
+      }
+      <div class="usuario-menu-separador"></div>
+      <button type="button" class="usuario-menu-item" (click)="abrirCambiarPassword()">
+        <i class="pi pi-key"></i>
+        <span>Cambiar contraseña</span>
+      </button>
+      <div class="usuario-menu-separador"></div>
+      <button type="button" class="usuario-menu-item usuario-menu-item--salir" (click)="cerrarSesionDesdePopover()">
+        <i class="pi pi-sign-out"></i>
+        <span>Cerrar sesión</span>
+      </button>
+    } @else {
+      <!-- Sin sesión: iniciar sesión / registrarse -->
+      <button type="button" class="usuario-menu-item" (click)="loginDesdePopover()">
+        <i class="pi pi-sign-in"></i>
+        <span>Iniciar sesión</span>
+      </button>
+      <button type="button" class="usuario-menu-item" (click)="registroDesdePopover()">
+        <i class="pi pi-user-plus"></i>
+        <span>Registrarse</span>
+      </button>
+    }
+  </div>
+</p-popover>
+
+<!-- Navegación rápida global (Ctrl+Alt+1) -->
+<app-quick-nav />
+
+<!-- Login headless (diálogo estilo login) — botón "Cuenta" del topbar -->
+<app-login-dialog
+  #loginDlg
+  [tipoPersona]="'C'"
+  (tipoPersonaChange)="(0)"
+  (registro)="registroDlg.abrir()"
+/>
+
+<!-- Registro headless (diálogo estilo login) — botón "Registrarse" del login -->
+<app-registro-dialog #registroDlg (solicitarLogin)="loginDlg.abrir()" />
+
+<!-- Diálogo para cambiar contraseña -->
+<p-dialog header="Cambiar contraseña" [(visible)]="dialogCambiarPassword" [modal]="true" [draggable]="false"
+  [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  styleClass="w-full max-w-25rem">
+  <div class="flex flex-column gap-3 pt-2">
+    <div class="campo">
+      <label class="block font-semibold mb-1 text-sm">Nueva contraseña *</label>
+      <p-password [(ngModel)]="passwordNueva" [toggleMask]="true" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" placeholder="Mínimo 8 caracteres" />
+      <ul class="pwd-rules">
+        <li [class.ok]="pwdLargo">
+          <i class="pi" [class.pi-check]="pwdLargo" [class.pi-times]="!pwdLargo"></i>
+          Mínimo 8 caracteres
+        </li>
+        <li [class.ok]="pwdMayuscula">
+          <i class="pi" [class.pi-check]="pwdMayuscula" [class.pi-times]="!pwdMayuscula"></i>
+          Al menos 1 mayúscula
+        </li>
+        <li [class.ok]="pwdDigito">
+          <i class="pi" [class.pi-check]="pwdDigito" [class.pi-times]="!pwdDigito"></i>
+          Al menos 1 número
+        </li>
+        <li [class.ok]="pwdEspecial">
+          <i class="pi" [class.pi-check]="pwdEspecial" [class.pi-times]="!pwdEspecial"></i>
+          Al menos 1 carácter especial
+        </li>
+      </ul>
+    </div>
+    <div class="campo">
+      <label class="block font-semibold mb-1 text-sm">Confirmar contraseña *</label>
+      <p-password [(ngModel)]="passwordConfirm" [toggleMask]="true" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" placeholder="Repita la nueva contraseña" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" size="small" rounded variant="text" severity="secondary"
+      [disabled]="cambiandoPassword" (onClick)="dialogCambiarPassword = false" />
+    <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" [raised]="true" [rounded]="true"
+      severity="success" [loading]="cambiandoPassword" (onClick)="guardarPassword()" />
+  </ng-template>
+</p-dialog>

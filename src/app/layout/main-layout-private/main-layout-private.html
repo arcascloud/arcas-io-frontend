@@ -1,0 +1,178 @@
+<div class="layout-wrapper" [class.sidebar-hidden]="sidebarHidden()" [class.sidebar-open]="mobileSidebarOpen()">
+  <!-- Sidebar overlay (mobile only) -->
+  <div class="sidebar-overlay" (click)="mobileSidebarOpen.set(false)"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+
+        <img src="assets/images/toyota.png" alt="WebStore" class="sidebar-logo-img" />
+        <span class="sidebar-title">TOYOTA</span>
+      </div>
+      <button class="sidebar-pin" [class.visible]="!sidebarHidden()" [class.pinned]="pinned()" (click)="togglePin()"
+        title="Fijar sidebar"></button>
+      <button class="sidebar-close-mobile" (click)="mobileSidebarOpen.set(false)" title="Cerrar menú">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="sidebar-menu" (click)="onMenuClick($event)">
+      <div class="sidebar-user">
+        <i class="pi pi-user" style="font-size: 2rem; margin-top: -5px;"></i>
+        <div class="sidebar-user-info">
+          <span class="sidebar-user-name">{{ user()?.nombre }}</span>
+          <span class="sidebar-user-role">{{ user()?.rol }}</span>
+        </div>
+      </div>
+      <p-panelmenu [model]="menuItems()" class="w-full md:w-80" />
+
+ <!--
+      <div class="sidebar-footer">
+      </div>
+    -->
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="layout-main">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <p-button [icon]="toggleIcon" (onClick)="toggleSidebar()"
+          severity="secondary" raised="true" iconOnly rounded size="small"
+          class="sidebar-toggle"></p-button>
+      </div>
+      <div class="topbar-right">
+
+
+        <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-search"
+          (onClick)="quickNav.abrir()" size="small" iconOnly
+          pTooltip="Navegación rápida (Ctrl+Alt+1)" tooltipPosition="bottom" />
+
+         <!-- Menú de usuario (p-popover): login/registro sin sesión, cerrar sesión con sesión -->
+         <p-button
+           type="button"
+           pTooltip="Usuario/Sesión"
+           tooltipPosition="left"
+           (onClick)="alternarUsuario($event)"
+           [rounded]="true"
+           [text]="true"
+         >
+           <i class="fa-regular fa-circle-user" style="font-size: 1.45rem"></i>
+         </p-button>
+
+<!--
+        <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-sign-out" (onClick)="cerrarSesion()"
+          size="small" iconOnly pTooltip="Presione para salir de la app" tooltipPosition="bottom" />
+-->
+      </div>
+    </header>
+
+
+    <!-- Content -->
+    <main class="layout-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<!-- Globales: notificaciones y confirmaciones -->
+<p-toast />
+<p-confirmdialog />
+
+<!-- Navegación rápida global (Ctrl+Alt+1) -->
+<app-quick-nav />
+
+<!-- Login headless (diálogo estilo login) — botón "Cuenta" del topbar -->
+<app-login-dialog
+  #loginDlg
+  [tipoPersona]="tipoPersona()"
+  (tipoPersonaChange)="onTipoPersonaChange($event)"
+  (registro)="registroDlg.abrir()"
+/>
+
+<!-- Menú de usuario del topbar (anclado al botón circle-user) -->
+<p-popover #popUsuario styleClass="usuario-popover">
+  <div class="usuario-menu">
+    @if (user(); as u) {
+      <!-- Con sesión: identidad + cerrar sesión -->
+      <div class="usuario-menu-cabecera">
+        <p-avatar [label]="(u.nombre || u.usuario).charAt(0).toUpperCase()" shape="circle" />
+        <div class="usuario-menu-info">
+          <span class="usuario-menu-nombre">{{ u.nombre || u.usuario }}</span>
+          <span class="usuario-menu-email">{{ u.email || 'Sin correo' }}</span>
+        </div>
+      </div>
+      @if (esClienteLogueado()) {
+        <!-- Solo clientes con sesión: acceso al CRM de pedidos -->
+        <div class="usuario-menu-separador"></div>
+        <button type="button" class="usuario-menu-item" (click)="irAPedidosDesdePopover()">
+          <i class="pi pi-shopping-cart"></i>
+          <span>Pedidos</span>
+        </button>
+      }
+      <div class="usuario-menu-separador"></div>
+      <button type="button" class="usuario-menu-item"
+          (click)="abrirCambiarPassword()">
+        <i class="pi pi-key"></i>
+        <span>Cambiar contraseña</span>
+      </button>
+      <div class="usuario-menu-separador"></div>
+      <button type="button" class="usuario-menu-item usuario-menu-item--salir" (click)="cerrarSesionDesdePopover()">
+        <i class="pi pi-sign-out"></i>
+        <span>Cerrar sesión</span>
+      </button>
+    } @else {
+      <!-- Sin sesión: iniciar sesión / registrarse -->
+      <button type="button" class="usuario-menu-item" (click)="loginDesdePopover()">
+        <i class="pi pi-sign-in"></i>
+        <span>Iniciar sesión</span>
+      </button>
+      <button type="button" class="usuario-menu-item" (click)="registroDesdePopover()">
+        <i class="pi pi-user-plus"></i>
+        <span>Registrarse</span>
+      </button>
+    }
+  </div>
+</p-popover>
+
+<!-- Diálogo para cambiar contraseña -->
+<p-dialog header="Cambiar contraseña" [(visible)]="dialogCambiarPassword" [modal]="true" [draggable]="false"
+  [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  styleClass="w-full max-w-25rem">
+  <div class="flex flex-column gap-3 pt-2">
+    <div class="campo">
+      <label class="block font-semibold mb-1 text-sm">Nueva contraseña *</label>
+      <p-password [(ngModel)]="passwordNueva" [toggleMask]="true" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" placeholder="Mínimo 8 caracteres" />
+      <ul class="pwd-rules">
+        <li [class.ok]="pwdLargo">
+          <i class="pi" [class.pi-check]="pwdLargo" [class.pi-times]="!pwdLargo"></i>
+          Mínimo 8 caracteres
+        </li>
+        <li [class.ok]="pwdMayuscula">
+          <i class="pi" [class.pi-check]="pwdMayuscula" [class.pi-times]="!pwdMayuscula"></i>
+          Al menos 1 mayúscula
+        </li>
+        <li [class.ok]="pwdDigito">
+          <i class="pi" [class.pi-check]="pwdDigito" [class.pi-times]="!pwdDigito"></i>
+          Al menos 1 número
+        </li>
+        <li [class.ok]="pwdEspecial">
+          <i class="pi" [class.pi-check]="pwdEspecial" [class.pi-times]="!pwdEspecial"></i>
+          Al menos 1 carácter especial
+        </li>
+      </ul>
+    </div>
+    <div class="campo">
+      <label class="block font-semibold mb-1 text-sm">Confirmar contraseña *</label>
+      <p-password [(ngModel)]="passwordConfirm" [toggleMask]="true" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" placeholder="Repita la nueva contraseña" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" size="small" rounded variant="text" severity="secondary"
+      [disabled]="cambiandoPassword" (onClick)="dialogCambiarPassword = false" />
+    <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" [raised]="true" [rounded]="true"
+      severity="success" [loading]="cambiandoPassword" (onClick)="guardarPassword()" />
+  </ng-template>
+</p-dialog>

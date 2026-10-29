@@ -14,6 +14,7 @@ import { TagModule } from 'primeng/tag';
 import { MessageService } from 'primeng/api';
 import { CxpService } from '../../../core/services/cxp.service';
 import { CxPHistorico } from '../../../core/models/cxp.models';
+import { Proveedor } from '../../../core/models/inventario.models';
 
 @Component({
   selector: 'app-cxp-historico-manager',
@@ -40,7 +41,9 @@ export class CxpHistoricoManager implements OnInit {
   private router = inject(Router);
 
   // ===== FILTROS =====
-  proveedor = signal('');
+  /** Nombre exacto del proveedor (razón social) — el backend filtra por LIKE */
+  proveedor = signal<string | null>(null);
+  proveedorOpciones = signal<{ label: string; value: string }[]>([]);
   fechaDesde = signal<string | null>(null);
   fechaHasta = signal<string | null>(null);
 
@@ -64,14 +67,34 @@ export class CxpHistoricoManager implements OnInit {
   ];
 
   ngOnInit() {
+    this.cargarProveedores();
     this.cargarHistorico();
+  }
+
+  private cargarProveedores() {
+    this.service.getProveedores().pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(15000),
+      catchError(() => of([] as Proveedor[])),
+    ).subscribe((lista) => {
+      const opciones = (lista ?? [])
+        .filter((p) => p.sn_activo !== 'N')
+        .map((p) => {
+          const label = (p.razonsocial && p.razonsocial.trim()) ||
+            `${p.nombres ?? ''} ${p.apellidos ?? ''}`.trim();
+          return { label, value: label };
+        })
+        .filter((o) => o.label !== '')
+        .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+      this.proveedorOpciones.set(opciones);
+    });
   }
 
   private cargarHistorico() {
     this.cargando.set(true);
     this.service.getHistoricoConFiltros(
       '',
-      this.proveedor(),
+      this.proveedor() ?? '',
       this.fechaDesde(),
       this.fechaHasta(),
     ).pipe(
@@ -98,7 +121,7 @@ export class CxpHistoricoManager implements OnInit {
   }
 
   limpiarFiltros() {
-    this.proveedor.set('');
+    this.proveedor.set(null);
     this.fechaDesde.set(null);
     this.fechaHasta.set(null);
     this.selectedRow = null;

@@ -28,6 +28,9 @@
 
 .left-column {
   flex: 1;
+  // min-width:0 → la columna izquierda encoje (flex min-width:auto no lo permitía)
+  // y la columna derecha (ficha/buscador) queda visible sin salirse de la pantalla
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background: var(--c-bg);
@@ -621,7 +624,10 @@
 }
 
 .mov-concepto {
-  max-width: 16rem;
+  // Cap ajustado a 9rem: con 16rem el min-content de la columna (nowrap)
+  // forzaba la tabla a 913px y "Acciones" quedaba fuera de los 820px
+  // disponibles (scroll horizontal interno). 9rem → tabla ≈810px, cabe completa.
+  max-width: 9rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

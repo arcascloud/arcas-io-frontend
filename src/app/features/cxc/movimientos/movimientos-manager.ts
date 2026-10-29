@@ -22,6 +22,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { TableModule } from 'primeng/table';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 import { CxcCliente, CxcMovimiento } from '../../../core/models/cxc.models';
 
@@ -60,9 +61,17 @@ export class MovimientosManager implements OnInit {
   private catalogService = inject(CatalogoParametrosService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private nav = inject(NavegacionService);
 
   /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
   partidaId = signal<number | null>(null);
+
+  /**
+   * Origen: Histórico de Clientes (?clienteId sin partida contable).
+   * Controla la barra "Volver al histórico"; el flag privado vieneDeHistorico
+   * solo gobierna la carga de datos (cliente único en la lista).
+   */
+  readonly desdeHistorico = signal(false);
 
   // ===== CLIENTES =====
   data = signal<CxcCliente[]>([]);
@@ -226,6 +235,7 @@ export class MovimientosManager implements OnInit {
       if (!isNaN(id) && id > 0) {
         // Viene de historico: auto-cargar SOLO este cliente
         this.vieneDeHistorico = true;
+        this.desdeHistorico.set(true);
         this.autoSelectCliente(id, movimientoState);
         return;
       }
@@ -241,6 +251,11 @@ export class MovimientosManager implements OnInit {
     this.router.navigate(['/contabilidad/copdamae'], {
       queryParams: { partidaId: this.partidaId() },
     });
+  }
+
+  /** Regresa al Histórico de Clientes desde el que se abrió este movimiento. */
+  volverAHistorico(): void {
+    this.nav.volver(['/cxc/historico']);
   }
 
   /**

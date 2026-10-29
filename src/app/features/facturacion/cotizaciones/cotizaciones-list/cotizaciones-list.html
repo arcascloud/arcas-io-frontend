@@ -37,7 +37,6 @@
         <tr>
           <th style="width:6rem"># Cotización</th>
           <th style="width:6rem">Fecha</th>
-          <th style="width:5rem" class="th-hora">Hora</th>
           <th>Cliente</th>
           <th style="width:8rem">Atendió</th>
           <th style="width:6rem">Estado</th>
@@ -47,10 +46,9 @@
       <ng-template #body let-item>
         <tr (click)="editar(item.poscotmaeId)" class="fila-click" [class.row-anulada]="item.sn_estadocarrito === 'X'">
           <td>
-            <span class="nro-factura">{{ item.poscotmaeId }}</span>
+            <span class="nro-factura">{{ nroCotizacion(item.poscotmaeId) }}</span>
           </td>
           <td>{{ fechaCorta(item.fecharegistro) }}</td>
-          <td class="hora-cell">{{ horaCorta(item.fecharegistro) }}</td>
           <td>
             <span class="cliente-nombre">{{ item.Nombrecliente || 'Sin cliente' }}</span>
           </td>

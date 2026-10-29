@@ -1,0 +1,215 @@
+keyItem|categoria|departamento
+1-1|Sedan|Automotríz
+1-2|Suv|Automotríz
+1-3|Crossovers|Automotríz
+1-4|Camioneta|Automotríz
+1-24|Herramientas vehiculos|Automotríz
+1-25|Aceites y Lubricantes|Automotríz
+1-27|Cobertor|Automotríz
+1-28|Limpiadores y Ceras|Automotríz
+1-29|Repuesto para motor|Automotríz
+1-30|Llantas para vehiculos|Automotríz
+1-31|Llantas para motocicleta|Automotríz
+1-32|Accesorios para vehiculos|Automotríz
+1-33|Baterias para vehiculos|Automotríz
+1-34|Baterias para motocicleta|Automotríz
+1-35|Amortiguadores para vehiculos|Automotríz
+1-36|Sistema de dirección y suspension|Automotríz
+1-37|Sistema de Calecfacción y aire acondicionado|Automotríz
+1-38|Sistema de transmision y Embrague|Automotríz
+2-39|Aislantes|Construcción
+2-40|Angulos|Construcción
+2-41|Bloque de vidrios|Construcción
+2-42|Cemento y agregados|Construcción
+2-43|Ceramica y accesorios|Construcción
+2-44|Chalecos|Construcción
+2-45|Cinta de privacidad|Construcción
+2-46|Marcos y Accesorios|Construcción
+2-47|Panel|Construcción
+2-48|Puertas de madera|Construcción
+2-49|Puertas de metal|Construcción
+2-50|Puertas termoformadas|Construcción
+2-51|Tabla yeso y accesorios|Construcción
+2-52|Varilla de construccion|Construcción
+2-53|Varilla de electrica|Construcción
+2-54| Ventanas y accesorios|Construcción
+4-61|Compresores|Equipos industriales
+4-62|Herramientas Neumáticas|Equipos industriales
+4-63|Motores Eléctricos y Accesorios|Equipos industriales
+4-64|Soldadoras|Equipos industriales
+4-65|Suministros|Equipos industriales
+5-66|Accesorios para Puertas|Ferretería y Herrajes
+5-67|Alambres, Ganchos y Accesorios|Ferretería y Herrajes
+5-68|Bisagras|Ferretería y Herrajes
+5-70|Brazos Hidráulicos|Ferretería y Herrajes
+5-71|Candados|Ferretería y Herrajes
+5-73|Cuñas|Ferretería y Herrajes
+5-74|Escuadras , Rieles y Repisas|Ferretería y Herrajes
+5-75|Hierro Forjado Decorativo|Ferretería y Herrajes
+5-76|Llaveros y Organizadores|Ferretería y Herrajes
+5-78|Llavines, Cerraduras y Accesorios|Ferretería y Herrajes
+5-79|Pasadores y Portacandados|Ferretería y Herrajes
+5-80|Perillas y Llamadores|Ferretería y Herrajes
+5-81|Rodos, Patas y Tapones|Ferretería y Herrajes
+6-82|Bombas, Tanques y Accesorios|Fontanería
+6-83|Compuestos y Pegamentos|Fontanería
+6-84|Lavatrastos y Accesorios|Fontanería
+6-85|Limpiadores / Destapadores|Fontanería
+6-86|Pilas, Tinas y Accesorios|Fontanería
+6-87|Repuestos|Fontanería
+6-88|Silicon|Fontanería
+6-89|Tubería, Válvulas y Llaves|Fontanería
+7-90|Atornilladores|Herramientas Electricas
+7-91|Cautines|Herramientas Electricas
+7-92|Cepillos|Herramientas Electricas
+7-93|Demoledor|Herramientas Electricas
+7-94|Detectores / Receptores Laser|Herramientas Electricas
+7-95|Dremel|Herramientas Electricas
+7-96|Esmeriles / Pulidoras|Herramientas Electricas
+7-97|lijadora|Herramientas Electricas
+7-98|Llaves de Impacto|Herramientas Electricas
+7-99|Medidores de Distancia|Herramientas Electricas
+7-100|Pistolas de Calor|Herramientas Electricas
+7-101|Rotomartillos|Herramientas Electricas
+7-102|Routers|Herramientas Electricas
+7-104|Sierras Caladoras|Herramientas Electricas
+7-105|Sierras Circulares|Herramientas Electricas
+7-106|Sierras Sable|Herramientas Electricas
+7-107|Taladros|Herramientas Electricas
+7-108|Topómetro|Herramientas Electricas
+7-109|Vibradores para Concreto|Herramientas Electricas
+8-110|Albañilería|Herramientas Manuales
+8-111|Azadones y Pujaguantes|Herramientas Manuales
+8-112|Barras|Herramientas Manuales
+8-113|Cajas para herramientas|Herramientas Manuales
+8-114|Cepillos de Alambre|Herramientas Manuales
+8-115|Cinceles|Herramientas Manuales
+8-117|Cintas Métricas|Herramientas Manuales
+8-118|Cubos y Accesorios|Herramientas Manuales
+8-119|Cuchillas Utilitarias|Herramientas Manuales
+8-120|Destornilladores|Herramientas Manuales
+8-121|Engrapadoras y Clavadoras|Herramientas Manuales
+8-122|Escaleras|Herramientas Manuales
+8-123|Escuadras y Calibradores|Herramientas Manuales
+8-124|Extractores|Herramientas Manuales
+8-125|Formones, Gubias y Cepillos|Herramientas Manuales
+8-126|Guantes|Herramientas Manuales
+8-127|Hachas|Herramientas Manuales
+8-128|Lijadoras y Lijas|Herramientas Manuales
+8-129|Limas y Piedras para afilar|Herramientas Manuales
+8-130|Llaves|Herramientas Manuales
+8-131|Machetes|Herramientas Manuales
+8-133|Martillos, Almadanas y Cinceles|Herramientas Manuales
+8-134|Niveles y Accesorios|Herramientas Manuales
+8-135|Palas|Herramientas Manuales
+8-136|Piochas|Herramientas Manuales
+8-137|Prensas|Herramientas Manuales
+8-138|Rastrillos|Herramientas Manuales
+8-139|Recogedores para Frutas|Herramientas Manuales
+8-140|Remachadoras y Remaches|Herramientas Manuales
+8-141|Serruchos|Herramientas Manuales
+8-142|Sierras y Marcos|Herramientas Manuales
+8-143|Tapacargas|Herramientas Manuales
+8-144|Tecles|Herramientas Manuales
+8-145|Tenazas y Alicates|Herramientas Manuales
+8-146|Tijeras|Herramientas Manuales
+8-147|Trocos|Herramientas Manuales
+8-148|Ventosas|Herramientas Manuales
+9-149|Básculas y Balanzas|Hogar
+9-150|Basureros y Bolsas para Basura|Hogar
+9-151|Cajas y Contenedores Plásticos|Hogar
+9-152|ceramica|Hogar
+9-153|Cortinas, Cortineros y Accesorios|Hogar
+9-154|Cosmetiquera|Hogar
+9-155|Detergentes|Hogar
+9-156|Electrodomésticos y Repuestos|Hogar
+9-157|Empaque|Hogar
+9-158|Esponjas y Gamuzas|Hogar
+9-159|Ganchos y Cintas Adhesivas|Hogar
+9-160|Lamina|Hogar
+9-161|Productos de Limpieza|Hogar
+9-162|Pulidores para Muebles|Hogar
+9-163|Repisas|Hogar
+9-164|Utensilios de Cocina|Hogar
+10-165|Bombillos|Iluminación
+10-166|Lámparas|Iluminación
+10-167|Lámparas / Ventilador|Iluminación
+10-168|Lámparas Solares|Iluminación
+10-169|Reflectores|Iluminación
+10-170|Tubos Fluorescentes|Iluminación
+10-171|Tubos Led|Iluminación
+11-172|Bombas|Jardinería
+11-173|Corta Césped y Accesorios|Jardinería
+11-174|Fertilizantes|Jardinería
+11-175|Herramientas para Jardinería|Jardinería
+11-176|Insecticidas y Fungicidas|Jardinería
+11-177|Mangueras y Accesorios|Jardinería
+11-178|Maseteras y accesorios|Jardinería
+11-179|Paja, Musgo y Acondicionadores|Jardinería
+11-180|Pistolas / Aspersores|Jardinería
+11-182|
+Regaderas|Jardinería
+11-184|Semillas|Jardinería
+12-5|Entradas|Restaurante
+12-6|Ensaladas|Restaurante
+12-7|Platillos|Restaurante
+12-8|Pasta a la carta|Restaurante
+12-9|Vegetales|Restaurante
+12-10|Salsas|Restaurante
+12-11|Carnes|Restaurante
+12-12|Pescado y Mariscos|Restaurante
+12-13|Complementos|Restaurante
+12-14|Infantil|Restaurante
+12-15|Gaseosa|Restaurante
+12-16|Cervezas|Restaurante
+12-17|Ron|Restaurante
+12-18|Whiski|Restaurante
+12-19|Malteadas|Restaurante
+12-20|Licuados|Restaurante
+12-21|Helados|Restaurante
+12-22|Postreas|Restaurante
+12-23|Sopas|Restaurante
+13-185|Accesorios para Baño|Loza sanitaria
+13-186|Duchas, Calentadores y Accesorios|Loza sanitaria
+13-187|Grifos, Regaderas y Accesorios|Loza sanitaria
+13-188|Loza Sanitaria y Accesorios|Loza sanitaria
+14-189|Útiles y Accesorios|Utiles escolares
+15-190|Cajas de Seguridad|Oficina
+15-191|Accesorios para Computadora|Oficina
+16-192|Barnices, Selladores y Tintes|Pintura y Accesorios
+16-194|Cintas adhesivas|Pintura y Accesorios
+16-195|Comejenol|Pintura y Accesorios
+16-196|Escofinas|Pintura y Accesorios
+16-197|Espátulas y Cuchillas|Pintura y Accesorios
+16-198|Impermeabilizantes|Pintura y Accesorios
+16-199|Masillas y Adhesivos|Pintura y Accesorios
+16-200|Mezcladores|Pintura y Accesorios
+16-201|Pegamentos|Pintura y Accesorios
+16-202|Pinturas en Spray|Pintura y Accesorios
+16-203|Pinturas Latex|Pintura y Accesorios
+16-204|Pistolas para Pintar|Pintura y Accesorios
+16-205|Plásticos, Papeles y Trapos|Pintura y Accesorios
+16-206|Preservantes, Silicones y Selladores|Pintura y Accesorios
+16-207|Removedores|Pintura y Accesorios
+16-208|Rodillos, Felpas, Bandejas y Brochas|Pintura y Accesorios
+16-209|Thinners, Diluyentes y Limpiadores|Pintura y Accesorios
+17-210|Materiales para Seguidad|Seguridad
+17-211|Seguridad Personal|Seguridad
+17-212|Señalización|Seguridad
+18-213|Accesorios para Cable|Tornillos, lazos y cadenas
+18-214|Anclajes y Tacos|Tornillos, lazos y cadenas
+18-215|Arandelas|Tornillos, lazos y cadenas
+18-216|Armellas y Aldabas|Tornillos, lazos y cadenas
+18-217|Cadenas y Accesorios|Tornillos, lazos y cadenas
+18-219|Clavos|Tornillos, lazos y cadenas
+18-220|Lazos y Cuerdas|Tornillos, lazos y cadenas
+18-221|Mariposas|Tornillos, lazos y cadenas
+18-222|Tachuelas|Tornillos, lazos y cadenas
+18-223|Tensores|Tornillos, lazos y cadenas
+18-224|Tornillos|Tornillos, lazos y cadenas
+18-225|Tuercas|Tornillos, lazos y cadenas
+23-55|Extensiones Eléctricas|Accesorios de Electricidad
+23-56|Materiales Eléctricos|Accesorios de Electricidad
+23-57|Rengletas|Accesorios de Electricidad
+23-58|Ventilación y Accesorios|Accesorios de Electricidad
+23-59|Ventiladores|Accesorios de Electricidad

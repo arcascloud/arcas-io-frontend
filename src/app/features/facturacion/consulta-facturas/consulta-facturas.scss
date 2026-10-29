@@ -128,17 +128,22 @@
 }
 
 .acciones-header {
-  text-align: center !important;
+  // Justificada: el rótulo inicia donde inicia la 1ra acción
+  text-align: left !important;
 }
 
 .acciones-cell {
-  text-align: center !important;
+  text-align: left !important;
 }
 
 .acciones-row {
   display: flex;
   gap: 0.15rem;
-  justify-content: center;
+  width: 100%;
+  // Justificada: distribuye las acciones de borde a borde de la celda para
+  // que se alineen en columna entre filas (Ver a la izquierda, WhatsApp a la
+  // derecha) aunque una fila tenga 3 botones y otra 4.
+  justify-content: space-between;
 }
 
 .tag-sm {

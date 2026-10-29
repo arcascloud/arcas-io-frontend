@@ -1,0 +1,51 @@
+<div class="drilldown-menu">
+  @if (!deptoActivo()) {
+    <!-- VISTA 1: Lista de Departamentos -->
+    <div class="drilldown-header">
+      <i class="fa-solid fa-layer-group"></i>
+      <span class="drilldown-title">Departamentos</span>
+    </div>
+    <div class="drilldown-list">
+      @for (depto of deptos(); track depto.deptoId) {
+        <button class="drilldown-item" (click)="seleccionarDepto(depto)">
+          <div class="item-content">
+            <i class="fa-solid fa-folder"></i>
+            <span>{{ depto.descripcion }}</span>
+          </div>
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
+      } @empty {
+        <div class="p-3 text-center text-muted text-sm">Cargando departamentos...</div>
+      }
+    </div>
+  } @else {
+    <!-- VISTA 2: Encabezado del Departamento + Categorías Apiladas con Back-History -->
+    <div class="drilldown-header with-back">
+      <p-button
+        icon="pi pi-chevron-left"
+        [rounded]="true"
+        [text]="true"
+        size="large"
+        severity="secondary"
+          (onClick)="volver()"
+        pTooltip="Volver a departamentos"
+        tooltipPosition="right" />
+      <span class="drilldown-title truncate cursor-pointer hover:text-primary transition-colors" (click)="filtrarDeptoCompleto()" [title]="'Ver todo en ' + deptoActivo()?.descripcion">
+        {{ deptoActivo()?.descripcion }}
+      </span>
+    </div>
+    <div class="drilldown-list">
+      @for (cat of categoriasFiltradas(); track cat.categoriaId) {
+        <button class="drilldown-item" (click)="seleccionarCategoria(cat)">
+          <div class="item-content">
+            <i class="fa-solid fa-tag"></i>
+            <span>{{ cat.descripcion }}</span>
+          </div>
+          <i class="fa-solid fa-angle-right text-xs"></i>
+        </button>
+      } @empty {
+        <div class="p-3 text-center text-muted text-sm">No hay categorías en este departamento</div>
+      }
+    </div>
+  }
+</div>

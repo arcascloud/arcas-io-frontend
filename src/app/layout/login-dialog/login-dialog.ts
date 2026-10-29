@@ -15,7 +15,9 @@ import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { Message } from 'primeng/message';
 import { MessageService } from 'primeng/api';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, RUTAS_CLIENTE } from '../../core/services/auth.service';
+import { LoadingStateService } from '../../core/services/loading-state.service';
+import { Router } from '@angular/router';
 
 /**
  * Login en diálogo HEADLESS (PrimeNG Dialog → <ng-template #headless>).
@@ -49,6 +51,8 @@ export class LoginDialog {
   private auth = inject(AuthService);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+  private router = inject(Router);
+  private loadingState = inject(LoadingStateService);
 
   /** Misma clave de persistencia que el drawer en main-layout (preferencia compartida) */
   private static readonly CLAVE_RECORDAR = 'drawer_login_preferencias';
@@ -65,6 +69,8 @@ export class LoginDialog {
   readonly tipoPersonaChange = output<string>();
   /** Notifica a MainLayout que se debe abrir el diálogo de registro */
   readonly registro = output<void>();
+  /** Notifica al padre que el login fue exitoso (ej: tienda virtual retoma el checkout) */
+  readonly loginExito = output<void>();
 
   usuario = signal('');
   password = signal('');
@@ -291,6 +297,31 @@ export class LoginDialog {
             summary: 'Sesión iniciada',
             detail: `Bienvenido ${res.usuario?.nombre || usuario}`,
           });
+
+          // ── Switch de layout según sn_cliente (28/10/2026) ──
+          // Vale para VALIDAR_SESSION='N' y 'S': el switch es por tipo de
+          // usuario, no por el modo de validación.
+          // Caso 1 sn_cliente='N' (empleado) → main-layout-private + Dashboard
+          // Caso 2 sn_cliente='S' (cliente) → main-layout-public + Tienda
+          const esERP = res.usuario?.sn_cliente !== 'S' && res.usuario?.tipoPersona !== 'C';
+          if (esERP) {
+            this.loadingState.mostrar('Cargando panel ERP...');
+            this.router.navigate(['/dashboard']);
+          } else {
+            // CRM/cliente → layout público. Se emite loginExito (la tienda
+            // retoma el checkout) Y se navega si la URL actual no es de
+            // cliente: los guards solo se re-evalúan en navegaciones, sin
+            // esto seguirías viendo el layout privado donde estabas.
+            this.loginExito.emit();
+            const url = this.router.url.split('?')[0];
+            const enRutaCliente = RUTAS_CLIENTE.some(
+              (r) => url === r || url.startsWith(r + '/'),
+            );
+            if (!enRutaCliente) {
+              this.loadingState.mostrar('Cargando tienda...');
+              this.router.navigate(['/facturacion/tienda']);
+            }
+          }
         },
         error: (err) => {
           this.loading.set(false);

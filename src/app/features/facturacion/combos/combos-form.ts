@@ -359,10 +359,11 @@ export class CombosForm implements OnInit {
         `${i.descripcion} (${this.formatearPrecio(i.precioventa)} < ${this.formatearPrecio(this.precioMinimo(i))})`
       ).join(', ');
       this.msgs.add({
-        severity: 'warn',
+        severity: 'error',
         summary: 'Precios por debajo del mínimo',
-        detail: `${nombres} — costo + 3%`,
+        detail: `${nombres} — no se puede vender por debajo de costo + 3%`,
       });
+      return;
     }
 
     const maeBody = {

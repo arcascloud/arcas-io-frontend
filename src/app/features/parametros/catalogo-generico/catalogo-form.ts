@@ -297,6 +297,15 @@ export class CatalogoForm implements OnInit, OnChanges {
     if (this.catalogoNombre) {
       // Modo embebido: emitir evento para que el padre cierre
       this.finalized.emit();
+      return;
+    }
+    // Ir a la lista del catálogo (config.ruta). `['../']` desde `cat/editar/:id`
+    // sube solo el `:id` → queda `cat/editar` (ruta inexistente) → wildcard
+    // del módulo → redirige a otra pantalla (ej: productos).
+    const ruta = this.config?.ruta;
+    const url = this.router.url.split('?')[0];
+    if (ruta && (url === ruta || url.startsWith(ruta + '/'))) {
+      this.router.navigate([ruta]);
     } else {
       this.router.navigate(['../'], { relativeTo: this.route });
     }

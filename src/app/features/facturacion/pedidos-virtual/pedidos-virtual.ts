@@ -14,6 +14,7 @@ import { CommonModule } from '@angular/common';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import { GalleriaModule } from 'primeng/galleria';
 import { PedidosVirtualService } from './pedidos-virtual.service';
 import { ProductoTienda, PedidoItem, CheckoutPedido } from '../../../core/models/pedido.models';
 import { AuthService } from '../../../core/services/auth.service';
@@ -27,7 +28,7 @@ import { NavegacionService } from '../../../core/services/navegacion.service';
   imports: [
     CommonModule, FormsModule, DataViewModule, ButtonModule, DialogModule,
     InputNumberModule, InputTextModule, InputMaskModule, SelectModule, TagModule, ToastModule,
-    TooltipModule, MessageModule,
+    TooltipModule, MessageModule, GalleriaModule,
   ],
   providers: [],
   templateUrl: './pedidos-virtual.html',
@@ -35,7 +36,7 @@ import { NavegacionService } from '../../../core/services/navegacion.service';
 })
 export class PedidosVirtual implements OnInit {
   private pedidosService = inject(PedidosVirtualService);
-  private auth = inject(AuthService);
+  public auth = inject(AuthService);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private api = inject(ApiService);
@@ -57,6 +58,22 @@ export class PedidosVirtual implements OnInit {
   formaspago = signal<{ label: string; value: number }[]>([]);
   tarjetaError = signal<string | null>(null);
   pedidoOpen = signal(false);
+
+  // ==================== Galería de imágenes ====================
+  dialogGaleria = signal(false);
+  galeriaTitulo = signal('');
+  galeriaImagenes = signal<string[]>([]);
+  galeriaIndice = signal(0);
+  galeriaCargando = signal(false);
+  /** Cache productoId → imágenes (evita re-fetch al reabrir) */
+  private galeriaCache = new Map<number, string[]>();
+
+  /** Opciones responsive del Galleria (patrón doc PrimeNG) */
+  readonly galeriaResponsiveOptions = [
+    { breakpoint: '1024px', numVisible: 5 },
+    { breakpoint: '768px', numVisible: 3 },
+    { breakpoint: '560px', numVisible: 2 },
+  ];
 
   //── Guardar pedido (facturación a futuro) ──
   dialogGuardarPedido = signal(false);
@@ -82,8 +99,27 @@ export class PedidosVirtual implements OnInit {
   private impuestoId: number | null = null;
 
   categorias = computed(() => {
-    const cats = new Set(this.productos().map(p => p.categoria).filter(Boolean));
-    return [{ label: 'Todos', value: null }, ...Array.from(cats).map(c => ({ label: c!, value: c! }))];
+    // Derivación explícita: categoría -> {descripción, giro}.
+    // Los productos ya vienen filtrados por el backend a giro='C', pero quedan autónomas
+    // del filtro porgiro para que la lista sea inequívoca y no dependa de la lógica de la url.
+    const map = new Map<number, { descripcion: string; giro: string }>();
+    for (const p of this.productos()) {
+      if (!p.categoriaId) continue;
+      const prev = map.get(p.categoriaId);
+      if (!prev) {
+        map.set(p.categoriaId, { descripcion: p.categoria || '', giro: (p as any).tipo_giro || '' });
+      } else {
+        prev.descripcion = p.categoria || prev.descripcion;
+        prev.giro = (p as any).tipo_giro || prev.giro;
+      }
+    }
+
+    // Solo categorías de giro parametrizado ('C' para estos dos componentes).
+    const items = Array.from(map.values())
+      .filter((x) => x.giro === 'C')
+      .sort((a, b) => a.descripcion.localeCompare(b.descripcion))
+      .map((x) => ({ label: x.descripcion, value: x.descripcion }));
+    return [{ label: 'Todos', value: null }, ...items];
   });
   categoriaFiltro = signal<string | null>(null);
   ordenarPor = signal<string>('default');
@@ -490,10 +526,9 @@ export class PedidosVirtual implements OnInit {
       this.messageService.add({ severity: 'warn', summary: 'Pedido vacío', detail: 'Agrega productos antes de guardar' });
       return;
     }
-    const datos = this.pedidoDatosCliente();
-    // Precarga solo si tiene un nombre real (no el "Cliente Pedido" por defecto)
-    this.guardarNombre.set(datos?.nombre && datos.nombre !== 'Cliente Pedido' ? datos.nombre : '');
-    this.guardarTelefono.set(datos?.tel ?? '');
+    const user = this.auth.currentUser();
+    this.guardarNombre.set(user?.nombre || 'Cliente Tienda');
+    this.guardarTelefono.set('Registrado');
     this.dialogGuardarPedido.set(true);
   }
 
@@ -538,10 +573,11 @@ export class PedidosVirtual implements OnInit {
       this.messageService.add({ severity: 'warn', summary: 'Pedido vacío', detail: 'Agrega productos antes de facturar' });
       return;
     }
+    const user = this.auth.currentUser();
     this.checkout = {
       pospedmaeId: this.pedidoId()!,
-      nombrecliente: 'Cliente Pedido',
-      nrotelefono: '',
+      nombrecliente: user?.nombre || 'Cliente Tienda',
+      nrotelefono: 'Registrado',
       formapagoId: this.formaspago().length > 0 ? this.formaspago()[0].value : 0,
       efectivo_recibido: this.totalPedido(),
       nrotarjeta: '',
@@ -662,6 +698,54 @@ export class PedidosVirtual implements OnInit {
     if (item.imagen) return this.resolverImagen(item.imagen);
     const prod = this.productos().find(p => p.produtoId === Number(item.productoId));
     return prod?.imagen ? this.resolverImagen(prod.imagen) : '';
+  }
+
+  // ==================== Galería de imágenes ====================
+  abrirGaleria(producto: ProductoTienda): void {
+    const principal: string[] = producto.imagen ? [this.resolverImagen(producto.imagen)] : [];
+    const id = Number(producto.produtoId);
+
+    this.galeriaTitulo.set(producto.descripcion || producto.codbarra || 'Producto');
+    this.galeriaIndice.set(0);
+    this.galeriaImagenes.set(principal);
+    this.galeriaCargando.set(false);
+    this.dialogGaleria.set(true);
+
+    const cacheado = this.galeriaCache.get(id);
+    if (cacheado && cacheado.length) {
+      this.galeriaImagenes.set(cacheado);
+      return;
+    }
+
+    this.galeriaCargando.set(true);
+    this.api
+      .get<{ productoId: number; img: string; sn_activo?: string }[]>('/inventario/productos-img', { productoId: id })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const vistos = new Set<string>();
+          const imgs: string[] = [];
+          for (const r of Array.isArray(res) ? res : []) {
+            if (!r?.img || r.sn_activo === 'N') continue;
+            const url = this.resolverImagen(r.img);
+            if (!vistos.has(url)) {
+              vistos.add(url);
+              imgs.push(url);
+            }
+          }
+          // La imagen principal (la de la card) va primero
+          const ordenadas = principal.length
+            ? [principal[0], ...imgs.filter(u => u !== principal[0])]
+            : imgs;
+          if (ordenadas.length) this.galeriaCache.set(id, ordenadas);
+          this.galeriaImagenes.set(ordenadas);
+          this.galeriaCargando.set(false);
+        },
+        error: () => {
+          this.galeriaCargando.set(false);
+          this.messageService.add({ severity: 'error', summary: 'Galería', detail: 'No se pudieron cargar las imágenes' });
+        },
+      });
   }
 
   /** Formato Lempiras con separador de miles y 2 decimales (ej: L 1,250.00) */

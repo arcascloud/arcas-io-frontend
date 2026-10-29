@@ -1,3 +1,55 @@
+// ===== FILTROS =====
+.filtros {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.filtros-fila {
+  display: grid;
+  gap: 1rem;
+  align-items: end;
+  justify-content: start;
+  width: 100%;
+}
+
+.filtros-fila--persona {
+  grid-template-columns: minmax(0, 30rem);
+}
+
+.filtros-fila--fechas {
+  grid-template-columns: repeat(2, minmax(0, 15rem));
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+
+  label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.filtros-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .filtros-fila {
+    grid-template-columns: 1fr;
+  }
+}
+
 .tabla.card {
   background: var(--c-surface);
   border: 1px solid var(--c-border);

@@ -215,6 +215,17 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
         },
         requerido: true,
       },
+      {
+        key: 'descuentoId',
+        label: 'Descuento',
+        tipo: 'select',
+        cargaOpciones: {
+          url: '/facturacion/descuentos',
+          labelCampo: 'descripcion',
+          valueCampo: 'descuentoId',
+        },
+        requerido: false,
+      },
     ],
     camposDet: [
       { key: 'productoId', label: 'Producto', tipo: 'texto', requerido: true },
@@ -757,3 +768,160 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
     ],
   },
 };
+
+// =====================================================================
+// Dashboard de Ventas / KPIs — GET /facturacion/dashboard (dashboardId3)
+// =====================================================================
+
+/** Opción genérica de select. */
+export interface OpcionSel {
+  label: string;
+  value: number | null;
+}
+
+export interface DashboardReferencia {
+  anio: number;
+  mes: number;
+  fecha: string;
+  etiquetaMes: string;
+  etiquetaVentana: string;
+}
+
+export interface DashboardResumen {
+  numFacturas: number;
+  numContado: number;
+  numCredito: number;
+  ventasTotales: number;
+  contado: number;
+  credito: number;
+  subTotal: number;
+  impuesto: number;
+  descuento: number;
+  cogs: number;
+  utilidadBruta: number;
+  margenBruto: number | null;
+  pctContado: number;
+  pctCredito: number;
+  ticketPromedio: number;
+}
+
+/** Widget A — contado vs crédito. */
+export interface DashboardContadoCredito {
+  contado: number;
+  credito: number;
+  numContado: number;
+  numCredito: number;
+  pctContado: number;
+  pctCredito: number;
+  netoCredito: number;
+}
+
+/** Widget B — ventas por vendedor. `meta` y `cumplimiento` son null (no existe tabla de metas). */
+export interface DashboardVendedor {
+  gestorId: number | null;
+  nombre: string;
+  ventas: number;
+  comprobantes: number;
+  ticketPromedio: number;
+  meta: number | null;
+  cumplimiento: number | null;
+  pctParticipacion: number;
+}
+
+/** Widget C — un mes de la ventana de 12 meses. */
+export interface DashboardMes {
+  anio: number;
+  mes: number;
+  ym: string;
+  etiqueta: string;
+  ventas: number;
+  contado: number;
+  credito: number;
+  comprobantes: number;
+  acumulado: number;
+}
+
+export interface DashboardComparativo {
+  actual: number;
+  anterior: number;
+  mismoMesAnioAnterior: number;
+  mom: number | null;
+  yoy: number | null;
+}
+
+/** Widget D — rango de antigüedad de saldos (AR Aging). */
+export interface DashboardRango {
+  key: string;
+  rango: string;
+  dias: string;
+  desde: number | null;
+  hasta: number | null;
+  monto: number;
+  documentos: number;
+}
+
+export interface DashboardAging {
+  rangos: DashboardRango[];
+  carteraTotal: number;
+  carteraVencida: number;
+  carteraPorVencer: number;
+  documentosVencidos: number;
+  documentosCobrados: number;
+  montoCobrado: number;
+  pctVencido: number;
+}
+
+export interface DashboardDso {
+  dias: number | null;
+  muestras: number;
+  base: string;
+}
+
+/** Widget E — margen por categoría. */
+export interface DashboardCategoriaMargen {
+  categoriaId: number;
+  categoria: string;
+  ventas: number;
+  cogs: number;
+  utilidad: number;
+  margen: number | null;
+}
+
+/** Widgets F/G — producto del catálogo en el período (ingresos 0 = "dormido"). */
+export interface DashboardProducto {
+  productoId: number;
+  codbarra: string | null;
+  descripcion: string;
+  categoriaId: number;
+  categoria: string;
+  cantidad: number;
+  ingresos: number;
+  comprobantes: number;
+  costoUnitario: number;
+  cogs: number;
+  utilidad: number;
+  ultimaVenta: string | null;
+  diasSinVenta: number | null;
+}
+
+export interface DashboardOpciones {
+  anios: number[];
+  sucursales: { Idsucursal: number; descripcion: string }[];
+  categorias: { categoriaId: number; descripcion: string }[];
+}
+
+export interface DashboardVentas {
+  referencia: DashboardReferencia;
+  resumen: DashboardResumen;
+  contadoCredito: DashboardContadoCredito;
+  vendedores: DashboardVendedor[];
+  meses: DashboardMes[];
+  comparativo: DashboardComparativo;
+  aging: DashboardAging;
+  dso: DashboardDso;
+  categoriaMargen: DashboardCategoriaMargen[];
+  topProductos: DashboardProducto[];
+  bottomProductos: DashboardProducto[];
+  opciones: DashboardOpciones;
+  filtros: { anio: number | null; mes: number | null; sucursalId: number | null; categoriaId: number | null };
+}

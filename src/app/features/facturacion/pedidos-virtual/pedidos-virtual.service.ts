@@ -3,115 +3,100 @@ import { Observable, of, tap, shareReplay } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { ProductoTienda, Pedido, PedidoItem, CheckoutPedido, CheckoutPedidoResponse } from '../../../core/models/pedido.models';
 
-const PRODUCTOS_CACHE_KEY = 'pedidos_productos_v1';
-const PRODUCTOS_CACHE_TTL = 60 * 1000; // 1 minuto
+/**
+ * Origen de la solicitud → clave de caché distinta (para evitar colisiones
+ * con /facturacion/tienda que comparten el endpoint /inventario/tienda/productos).
+ *  - 'tienda': => lógica parametrizada (tipo_de_giro_tienda='C'), SOLO pedidos-virtual
+ *  - 'all': => sin filtro, sirve para diagnostico/testing (no se usa en la app)
+ */
+type OrigenCache = 'tienda' | 'all';
 
-interface ProductosCache {
+interface CacheEntry {
   data: ProductoTienda[];
-  timestamp: number;
+  ts: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class PedidosVirtualService {
   private api = inject(ApiService);
-  private productosCache$: Observable<ProductoTienda[]> | null = null;
+  private readonly TTL = 60 * 1000; // 1 minuto
+  private cacheStore = new Map<OrigenCache, CacheEntry>();
 
+  /** Productos para pedidos-virtual (con imagen y stock). Filtro parametrizado 'C'. */
   getProductos(forceRefresh = false): Observable<ProductoTienda[]> {
-    if (forceRefresh) {
-      this.invalidateCache();
+    const key: OrigenCache = 'tienda'; // pedidos-virtual aplica el filtro 'C' parametrizado
+
+    if (!forceRefresh) {
+      const hit = this.cacheStore.get(key);
+      if (hit && Date.now() - hit.ts <= this.TTL) {
+        return of(hit.data).pipe(shareReplay(1));
+      }
     }
 
-    if (this.productosCache$) return this.productosCache$;
-
-    const cached = this.leerCache();
-    if (cached) {
-      this.productosCache$ = of(cached).pipe(shareReplay(1));
-      return this.productosCache$;
-    }
-
-    this.productosCache$ = this.api.get<ProductoTienda[]>('/inventario/tienda/productos').pipe(
-      tap(data => this.escribirCache(data)),
-      shareReplay(1),
-    );
-    return this.productosCache$;
+    const src = this.api.get<ProductoTienda[]>('/inventario/tienda/productos', { origen: key })
+      .pipe(tap((data) => this.save(key, data)), shareReplay(1));
+    return src;
   }
 
   invalidateCache() {
-    this.productosCache$ = null;
-    try { localStorage.removeItem(PRODUCTOS_CACHE_KEY); } catch {}
-  }
-
-  private leerCache(): ProductoTienda[] | null {
+    this.cacheStore.clear();
     try {
-      const raw = localStorage.getItem(PRODUCTOS_CACHE_KEY);
-      if (!raw) return null;
-      const cache: ProductosCache = JSON.parse(raw);
-      if (Date.now() - cache.timestamp > PRODUCTOS_CACHE_TTL) {
-        localStorage.removeItem(PRODUCTOS_CACHE_KEY);
-        return null;
+      const store = localStorage as unknown as Storage;
+      for (let i = store.length - 1; i >= 0; i--) {
+        const k = store.key(i);
+        if (k && (k.startsWith('pedidos_productos_v1_') || k === 'pedidos_productos_v1')) {
+          store.removeItem(k);
+        }
       }
-      return cache.data;
     } catch {
-      return null;
+      /* ignore */
     }
   }
 
-  private escribirCache(data: ProductoTienda[]) {
+  private save(key: OrigenCache, data: ProductoTienda[]) {
     try {
-      const cache: ProductosCache = { data, timestamp: Date.now() };
-      localStorage.setItem(PRODUCTOS_CACHE_KEY, JSON.stringify(cache));
-    } catch {}
+      this.cacheStore.set(key, { data, ts: Date.now() });
+      localStorage.setItem(`pedidos_productos_v1_${key}`, JSON.stringify({ data, ts: Date.now() }));
+    } catch { /* ignore */ }
   }
 
-  crearPedido(nombrecliente: string, nrotelefono: string): Observable<Pedido> {
-    return this.api.post<Pedido>('/facturacion/pedidos', {
-      nombrecliente,
-      nrotelefono: nrotelefono || 'N/A',
-      sn_enviogratis: 'N',
-      sn_facturado: 'N',
+  // ===================== Pedido =====================
+
+  getPedido(pedidoId: number): Observable<Pedido & { items?: PedidoItem[] }> {
+    return this.api.get<Pedido & { items: PedidoItem[] }>(`/facturacion/pedidos/${pedidoId}`);
+  }
+
+  getPedidoItems(pospedmaeId: number): Observable<PedidoItem[]> {
+    return this.api.get<PedidoItem[]>(`/facturacion/pedidos-det/pedido/${pospedmaeId}`);
+  }
+
+  agregarItem(payload: any): Observable<any> {
+    return this.api.post<void>('/facturacion/pedidos-det', payload).pipe(
+      tap(() => this.invalidateCache()),
+    );
+  }
+
+  eliminarItem(pospeddetId: number): Observable<any> {
+    // ApiService.delete(path, id) agrega /${id}: la ruta va SIN el id
+    return this.api.delete('/facturacion/pedidos-det', pospeddetId).pipe(
+      tap(() => this.invalidateCache()),
+    );
+  }
+
+  crearPedido(nombrecliente: string, telefono: string): Observable<{ pospedmaeId: number }> {
+    return this.api.post<{ pospedmaeId: number }>('/facturacion/pedidos', {
+      nombrecliente: nombrecliente || 'Cliente Tienda',
+      nrotelefono: telefono || 'N/A',
     });
   }
 
-  agregarItem(payload: {
-    pospedmaeId: number;
-    productoId: number;
-    codbarra: string;
-    cantidad: number;
-    precioventa: number;
-    subtotal: number;
-    descuento: number;
-    impuesto: number;
-    nrofila: number;
-  }): Observable<PedidoItem> {
-    return this.api.post<PedidoItem>('/facturacion/pedidos-det', payload);
+  actualizarPedido(id: number, payload: any): Observable<any> {
+    return this.api.put<void>('/facturacion/pedidos', id, payload).pipe(
+      tap(() => this.invalidateCache()),
+    );
   }
 
-  getPedidoItems(pedidoId: number): Observable<PedidoItem[]> {
-    return this.api.get<PedidoItem[]>(`/facturacion/pedidos-det/pedido/${pedidoId}`);
-  }
-
-  eliminarItem(detId: number): Observable<any> {
-    return this.api.delete<any>('/facturacion/pedidos-det', detId);
-  }
-
-  eliminarPedido(pedidoId: number): Observable<any> {
-    return this.api.delete<any>('/facturacion/pedidos', pedidoId);
-  }
-
-  checkout(pago: CheckoutPedido): Observable<CheckoutPedidoResponse> {
-    return this.api.post<CheckoutPedidoResponse>('/facturacion/pedidos/checkout', pago, { sinContexto: true });
-  }
-
-  getPedido(pedidoId: number): Observable<Pedido> {
-    return this.api.get<Pedido>(`/facturacion/pedidos/${pedidoId}`);
-  }
-
-  /** Actualiza datos del pedido (nombre/teléfono del cliente) — PUT /facturacion/pedidos/:id */
-  actualizarPedido(pedidoId: number, datos: { nombrecliente?: string; nrotelefono?: string }): Observable<Pedido> {
-    return this.api.put<Pedido>('/facturacion/pedidos', pedidoId, datos);
-  }
-
-  getPedidoItemsByPedidoId(pedidoId: number): Observable<PedidoItem[]> {
-    return this.api.get<PedidoItem[]>(`/facturacion/pedidos-det/pedido/${pedidoId}`);
+  checkout(p: any): Observable<CheckoutPedidoResponse> {
+    return this.api.post<CheckoutPedidoResponse>('/facturacion/pedidos/checkout', p);
   }
 }

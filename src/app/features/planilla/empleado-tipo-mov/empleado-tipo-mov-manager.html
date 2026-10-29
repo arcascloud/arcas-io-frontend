@@ -1,7 +1,7 @@
 <section class="page">
   <header class="page-header">
     <div>
-      <h1 class="page-title">Afectaciones Económicas</h1>
+      <h1 class="page-title">Obligaciones y Bonificaciones</h1>
       <p class="page-subtitle">
         @if (empleado(); as emp) {
           {{ emp.nombres }} {{ emp.apellidos }} — DNI: {{ emp.nrodocumento }}
@@ -160,7 +160,7 @@
     @if (ingresos().length > 0) {
       <div class="card mb-3">
         <h3 class="seccion-title seccion-ingreso">
-          <i class="pi pi-arrow-up"></i> Ingresos
+          <i class="pi pi-arrow-up"></i> Bonificaciones
         </h3>
         @if (fichaEmpleado(); as ficha) {
           <div class="empleado-ficha">
@@ -246,7 +246,7 @@
     @if (egresos().length > 0) {
       <div class="card mb-3">
         <h3 class="seccion-title seccion-egreso">
-          <i class="pi pi-arrow-down"></i> Egresos
+          <i class="pi pi-arrow-down"></i> Obligaciones
         </h3>
         @if (fichaEmpleado(); as ficha) {
           <div class="empleado-ficha">

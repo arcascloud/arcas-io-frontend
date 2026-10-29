@@ -68,7 +68,6 @@ export class Ajustes implements OnInit {
     productoId: [null as number | null],
     descripcion: [''],
     cantidad: [1, [Validators.required, Validators.min(0.01)]],
-    costoUnitario: [0],
   });
 
   ngOnInit() {
@@ -122,7 +121,7 @@ export class Ajustes implements OnInit {
 
   nuevoMae() {
     this.formMae.reset({ concepto: '', bodegaId: null, sn_entrada: 'S' });
-    this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1, costoUnitario: 0 });
+    this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1 });
     this.codBusqueda.set('');
     this.detalles.set([]);
     this.seleccionado.set({ invmovmaeid: 0, sn_procesado: 'N', sn_anulado: 'N', concepto: '', bodegaId: 0 });
@@ -163,7 +162,6 @@ export class Ajustes implements OnInit {
         productoId: prod.produtoId,
         codbarra: prod.codbarra,
         descripcion: prod.descripcion,
-        costoUnitario: prod.cstounit || 0,
       });
     } else {
       this.msgs.add({ severity: 'warn', summary: 'No encontrado', detail: 'Producto no encontrado por código de barras' });
@@ -181,32 +179,32 @@ export class Ajustes implements OnInit {
     });
     this.ref.onClose.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: any) => {
       if (data && 'codbarra' in data) {
-        this.agregarDirecto(data);
+        this.seleccionarProducto(data);
       }
     });
   }
 
-  agregarDirecto(prod: any) {
+  /**
+   * Producto elegido en el helper: se carga en el formulario y se deja el
+   * cursor en CANTIDAD para digitarla y confirmar con el botón "+".
+   */
+  seleccionarProducto(prod: any) {
     const mae = this.seleccionado();
     if (!mae || !mae.invmovmaeid) {
       this.msgs.add({ severity: 'warn', summary: 'Atención', detail: 'Primero guarde el encabezado del ajuste' });
       return;
     }
-    this.guardando.set(true);
-    this.service.createDet({
-      invmovmaeid: mae.invmovmaeid,
-      bodegaId: mae.bodegaId,
+    this.formDet.patchValue({
+      productoId: prod.productoId ?? prod.produtoId ?? null,
       codbarra: prod.codbarra,
+      descripcion: prod.descripcion,
       cantidad: 1,
-      sn_entrada: mae.sn_entrada || 'S',
-      empresaId: mae.empresaId,
-    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.guardando.set(false);
-        this.msgs.add({ severity: 'success', summary: 'Agregado', detail: prod.descripcion });
-        this.cargarDetalles(mae.invmovmaeid);
-      },
-      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar' }); },
+    });
+    this.codBusqueda.set(prod.codbarra || '');
+    setTimeout(() => {
+      const input = document.getElementById('cant-ajuste') as HTMLInputElement | null;
+      input?.focus();
+      input?.select();
     });
   }
 
@@ -229,7 +227,7 @@ export class Ajustes implements OnInit {
       next: () => {
         this.guardando.set(false);
         this.msgs.add({ severity: 'success', summary: 'Agregado', detail: 'Item agregado' });
-        this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1, costoUnitario: 0 });
+        this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1 });
         this.codBusqueda.set('');
         this.cargarDetalles(mae.invmovmaeid);
       },

@@ -37,7 +37,6 @@
 .nf-toolbar p-iconfield {
   flex: 1;
   min-width: 0;
-
   // El icono es un <p-button> (no un <i>): centrarlo verticalmente real.
   // Sustituye el centrado de PrimeNG (top:50% + margin-top) que deja el
   // botón desplazado hacia abajo por ser más alto que el icono suelto.
@@ -59,6 +58,26 @@
   }
 }
 
+// Fila del buscador: input de búsqueda + select Descuento a la par
+.buscador-fila {
+  display: flex;
+  align-items: flex-end; // base del input alineada con la base del select
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+
+  p-iconfield {
+    flex: 1 1 auto;
+    width: auto; // anula w-full cuando hay select al lado
+    min-width: 0;
+  }
+
+  .campo-descuento {
+    flex: 0 0 16rem;
+    width: 16rem;
+    min-width: 0;
+  }
+}
 .toolbar-campos {
   display: grid;
   // Fila 1: Nombre Cliente + Dirección · Fila 2: Atendió + Gestor
@@ -142,12 +161,11 @@
 }
 
 .img-producto {
-  mix-blend-mode: multiply;
-  background: transparent;
+  background: var(--c-bg-white);
   border-radius: 7px;
   object-fit: contain;
-  width: 42px;
-  height: 42px;
+  width: 52px;
+    height: 52px;
   cursor: zoom-in;
 }
 
@@ -161,7 +179,7 @@
   width: 250px;
   height: 250px;
   object-fit: contain;
-  background: var(--c-surface);
+  background: var(--c-bg-white);
   border: 2px solid var(--c-border);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
@@ -202,7 +220,7 @@
   .nf-totales-col-data {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.15rem 1.5rem;
     padding: 0.4rem 1rem;
   }
@@ -289,9 +307,17 @@
     }
   }
 
-  // Buscador: ocupa todo el ancho (el botón queda dentro del input)
-  .nf-toolbar p-iconfield {
-    width: 100%;
+                                                                                                                                                                                                                                                                // Buscador + Descuento: se apilan (buscador arriba, select abajo full width)
+                                                                                                                                                                                                                                                                .buscador-fila {
+                                                                                                                                                                                                                                                                  flex-wrap: wrap;
+                                                                                                                                
+                                                                                                                                                                                                                                                                  p-iconfield {
+                                                                                                                                                                                                                                                                    flex: 1 1 100%;
+                                                                                                                                                                                                                                                                    width: 100%;
+    .campo-descuento {
+        flex: 1 1 100%;
+        width: 100%;
+      }
   }
 
   // Totales: apilados (evita que el dinero se corten en pantallas chicas)
@@ -330,4 +356,82 @@
   .col-cantidad {
     width: 5rem;
   }
+}
+}
+
+// ==================== Dialog Correo ====================
+
+.correo-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  i {
+    color: var(--c-primary);
+  }
+}
+
+.correo-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.correo-preview-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: var(--c-error);
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.correo-preview-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.correo-preview-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.correo-preview-sub {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.correo-preview-hint {
+  font-size: 0.72rem;
+  color: var(--c-text-muted);
+}
+
+.correo-campo {
+  p-iconfield {
+    width: 100%;
+  }
+
+  .correo-input {
+    width: 100%;
+  }
+}
+
+.correo-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }

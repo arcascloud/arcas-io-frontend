@@ -113,11 +113,10 @@ export class CombosList implements OnInit {
     return item.descripcion || `Combo #${item.poscbomaeId}`;
   }
 
-  filas(item: any) {
-    return [
-      { label: 'Vigente desde', value: item.fec_vig_desde ? new Date(item.fec_vig_desde).toLocaleDateString() : '-' },
-      { label: 'Vigente hasta', value: item.fec_vig_hasta ? new Date(item.fec_vig_hasta).toLocaleDateString() : '-' },
-    ];
+  vigencia(item: any): string {
+    const desde = item.fec_vig_desde ? new Date(item.fec_vig_desde).toLocaleDateString() : '-';
+    const hasta = item.fec_vig_hasta ? new Date(item.fec_vig_hasta).toLocaleDateString() : '-';
+    return `Válido desde el: ${desde} al: ${hasta}`;
   }
 
   resolverImagen(img: string | null): string {

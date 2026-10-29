@@ -1,11 +1,12 @@
 ﻿import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { Message } from 'primeng/message';
 import { AuthService } from '../../../core/services/auth.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -17,6 +18,20 @@ import { AuthService } from '../../../core/services/auth.service';
 export class Login {
   private auth = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+
+  /** Ruta de origen (authGuard la pasa como ?returnUrl=): tras login se
+   *  vuelve a ella en vez de ir siempre al dashboard (ej: tienda virtual). */
+  private readonly returnUrl =
+    this.route.snapshot.queryParamMap.get('returnUrl') || '/';
+
+  constructor() {
+    // Con VALIDAR_SESSION='N' la pantalla de login no existe: nunca se
+    // muestra /login, se redirige a la tienda.
+    if (environment.VALIDAR_SESSION === 'N') {
+      this.router.navigate(['/facturacion/tienda']);
+    }
+  }
 
   usuario = '';
   password = '';
@@ -35,7 +50,7 @@ export class Login {
 
     this.auth.loginRaw(payload).subscribe({
       next: () => {
-        this.router.navigateByUrl('/');
+        this.router.navigateByUrl(this.returnUrl);
       },
       error: (err) => {
         this.loading.set(false);

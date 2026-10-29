@@ -1,0 +1,139 @@
+
+
+
+
+# Restaurante — cómo integrarlo en Arcas Software
+
+El componente reutiliza los endpoints de **pedidos** que ya existen
+(`/facturacion/pedidos`, `/pedidos-det`, `/pedidos/checkout`). Una orden del
+restaurante es un pedido (`pospedmae`) con una mesa asignada, y "Pagar ahora"
+usa el mismo `checkoutPedido` que ya convierte un pedido en factura.
+
+Solo hacen falta **dos columnas nuevas** en `pospedmae`.
+
+## 1. Base de datos (MySQL, `synchronize: false` → DDL manual)
+
+```sql
+ALTER TABLE pospedmae
+  ADD COLUMN nromesa INT NULL AFTER nrotelefono,
+  ADD COLUMN sn_entregado ENUM('S','N') NOT NULL DEFAULT 'N' AFTER nromesa;
+
+-- Para listar rápido las órdenes abiertas de una empresa
+CREATE INDEX idx_pospedmae_mesa ON pospedmae (empresaId, sn_facturado, nromesa);
+```
+
+Los pedidos existentes quedan con `nromesa = NULL` y `sn_entregado = 'N'`, así que
+**no aparecen** en la pantalla de restaurante (solo se muestran las órdenes con
+mesa o las recién creadas sin mesa).
+
+## 2. Entidad `pospedmae.entity.ts`
+
+Junto a las demás columnas:
+
+```ts
+@ApiProperty({ required: false, description: 'Número de mesa (restaurante). NULL = sin mesa' })
+@Column({ type: 'int', nullable: true })
+nromesa: number | null;
+
+@ApiProperty({ enum: ['S', 'N'], required: false, description: 'S = pedido entregado a la mesa' })
+@Column({ type: 'enum', enum: ['S', 'N'], default: 'N' })
+sn_entregado: string;
+```
+
+## 3. DTOs en `facturacion.dto.ts`
+
+En **`CreatePosPedMaeDto`** y en **`UpdatePosPedMaeDto`** (el ValidationPipe rechaza
+o descarta los campos que no estén declarados):
+
+```ts
+@ApiProperty({ required: false, description: 'Número de mesa del restaurante' })
+@IsNumber() @IsOptional()
+nromesa?: number | null;
+
+@ApiProperty({ required: false, enum: ['S', 'N'] })
+@IsIn(['S', 'N']) @IsOptional()
+sn_entregado?: string;
+```
+
+Importa `IsIn` de `class-validator` si todavía no está en el archivo.
+
+No hace falta tocar `createPedido` ni `updatePedido`: el primero ya fuerza
+`sn_facturado = 'N'` y el segundo acepta actualizaciones parciales y recalcula
+los totales desde el detalle.
+
+## 4. Frontend
+
+Copia los 5 archivos a `src/app/features/facturacion/restaurante/`:
+
+```
+restaurante.ts · restaurante.html · restaurante.scss
+restaurante.models.ts · restaurante.service.ts
+```
+
+Ruta en `facturacion.routes.ts`, antes del `'**'`:
+
+```ts
+{
+  path: 'restaurante',
+  loadComponent: () =>
+    import('./restaurante/restaurante').then((m) => m.Restaurante),
+},
+```
+
+Si el menú sale de la tabla de menús del ERP, crea la opción apuntando a
+`/facturacion/restaurante`.
+
+## 5. Qué verificar con una orden de prueba
+
+1. **ISV.** El cálculo por línea copia el criterio de `pedido-form`
+   (`subtotal` = bruto, `impuesto` según `param-fac` y el catálogo de impuestos).
+   Crea una orden con 2 o 3 productos y compara subtotal, ISV y total con los de
+   un pedido igual hecho desde Pedidos.
+2. **Productos.** La pantalla usa `/inventario/tienda/productos` (el mismo de la
+   tienda virtual, con caché de 1 minuto). Solo aparecen los productos marcados
+   para tienda. Si el restaurante necesita otro catálogo, hay que cambiar esa
+   llamada en `restaurante.ts` (`cargarProductos`).
+3. **Existencia.** `VALIDAR_EXISTENCIA = true` (arriba de `restaurante.ts`) impide
+   agregar productos sin stock. Cámbialo a `false` si los platos preparados no
+   llevan kardex.
+4. **Cobro.** `Pagar ahora` llama a `/facturacion/pedidos/checkout` con la forma de
+   pago y el efectivo recibido. No captura datos de tarjeta; si hacen falta,
+   hay que reutilizar los campos del checkout de la tienda.
+5. **Mesas.** El número de mesas está en `NUM_MESAS` (15) en `restaurante.models.ts`.
+
+## 6. Lo que esta primera versión no incluye
+
+- Impresión de comanda para cocina.
+- Ofertas y descuentos.
+- Actualización automática cuando otro cajero crea órdenes: la lista se carga
+  al abrir la pantalla.
+- Cambio de mesa o unión de cuentas.
+
+
+
+Ya tengo lo necesario del proyecto (pedidos, productos de la tienda, estilos). Ahora reviso la guía de diseño frontend y armo los archivos del componente.
+
+Ejecutó 14 comandos, se crearon 6 archivos, leyó un archivo · 3 notas
+
+Te armé el componente de restaurante con las tres columnas: productos al 55%, mesas al 20% y orden al 25%. La pantalla es restaurante.html, con su lógica en restaurante.ts y los estilos en restaurante.scss. Compilé el código con Angular 22 y PrimeNG 21 en modo estricto, incluida la plantilla, y el SCSS también compila. No lo probé en el navegador ni contra tu backend.
+
+Cómo funciona
+
+Columna 1 (productos): categorías arriba y tarjetas con imagen, 3 o más por fila. Al tocar una tarjeta, el producto se agrega a la orden activa. Un número verde en la tarjeta indica cuántas unidades lleva esa orden.
+Columna 2 (mesas): el p-drawer fijo a la derecha ocupa el 45% y se divide en 20% (mesas) y 25% (orden).
+Nueva orden: crea la orden (con su número) y deja la pantalla esperando que elijas una mesa. Las mesas libres se marcan con borde punteado.
+Las 15 mesas: son p-button redondos. Gris significa libre y verde significa con orden. Al tocar una mesa verde, su pedido se abre en la columna 3 para agregar más productos.
+Por entregar: lista las mesas cuyo pedido no se ha entregado, la más antigua primero, con "hace X min" y un botón para marcarlas entregadas.
+Columna 3 (orden): líneas con imagen, cantidades con + y −, subtotal, ISV y total. "Pagar ahora" abre un diálogo de cobro y factura la orden. Al facturar, la mesa vuelve a gris.
+Pantallas angostas: el drawer pasa a ocupar todo el ancho y se abre con un botón flotante.
+
+Cómo se integra: las órdenes usan tus endpoints de pedidos y el pedidos/checkout que ya convierte un pedido en factura. Solo necesitas dos columnas nuevas en pospedmae: nromesa y sn_entregado. CAMBIOS-BACKEND.md trae el SQL, los cambios de entidad y DTO, y la ruta.
+
+Por revisar con una orden de prueba
+
+ISV: copia el criterio de pedido-form. Compara el total con un pedido igual hecho desde Pedidos.
+Productos: usa los de la tienda virtual (/inventario/tienda/productos). Si el restaurante necesita otro catálogo, hay que cambiar esa llamada.
+Existencia: no deja agregar productos sin stock. Si tus platos no llevan kardex, pon VALIDAR_EXISTENCIA = false.
+Entendí así tu descripción: gris es mesa libre, verde es mesa con orden, y primero se crea la orden y luego se le asigna el círculo.
+
+No incluye todavía: impresión de comanda, ofertas, ni actualización automática cuando otro cajero crea órdenes (la lista se carga al abrir la pantalla).

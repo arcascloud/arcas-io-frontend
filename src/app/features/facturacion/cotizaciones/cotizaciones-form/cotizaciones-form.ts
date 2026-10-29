@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+﻿import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -19,7 +19,9 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
 import { FacturacionService } from '../../../../core/services/facturacion.service';
+import { FacturaImpresionService } from '../../../../core/services/factura-impresion.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { NavegacionService } from '../../../../core/services/navegacion.service';
 import { Producto } from '../../../../core/models/inventario.models';
 import { ProductosHelperList } from '../../../helpers/productos';
 import { FooterHelper } from '../../../helpers/footer';
@@ -34,6 +36,8 @@ interface FilaDet {
   cantidad: number;
   precio: number;
   subTotal: number;
+  /** Importe del descuento de la línea (poscotdet.descuento) */
+  descuento: number;
 }
 
 @Component({
@@ -65,9 +69,11 @@ export class CotizacionesForm implements OnInit {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   private service = inject(FacturacionService);
+  private impresion = inject(FacturaImpresionService);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
+  private nav = inject(NavegacionService);
   ref: DynamicDialogRef | undefined;
 
   form!: FormGroup;
@@ -78,9 +84,10 @@ export class CotizacionesForm implements OnInit {
   titulo = signal('Nueva Cotizacion');
 
   gestores = signal<any[]>([]);
+  descuentos = signal<any[]>([]);
 
   filas = signal<FilaDet[]>([]);
-  totales = signal({ subTotal: 0, impuesto: 0, total: 0 });
+  totales = signal({ subTotal: 0, descuento: 0, impuesto: 0, total: 0 });
   mae = signal<any>(null);
 
   qProducto = signal('');
@@ -89,6 +96,7 @@ export class CotizacionesForm implements OnInit {
   empresaDet = signal<any[]>([]);
   empresaNombre = 'EMPRESA';
   emailDestino = signal('');
+  emailValido = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.emailDestino().trim()));
   productosArray: Producto[] = [];
   productosFiltrados = signal<Producto[]>([]);
 
@@ -100,6 +108,8 @@ export class CotizacionesForm implements OnInit {
 
   private existenciasMap = new Map<number, number>();
   private imagenesMap = new Map<number, string>();
+  /** descuentoId → porcentaje (tposdescuentos) para el cálculo por línea */
+  private descuentosMap = new Map<number, number>();
   /** tempresas.fechasistema — fecha del sistema de la empresa (PDF) */
   private fechaSistema: string | Date | null = null;
   private tasaImpuesto = 0.15;
@@ -111,6 +121,7 @@ export class CotizacionesForm implements OnInit {
   ngOnInit() {
     this.buildForm();
     this.cargarGestores();
+    this.cargarDescuentos();
     this.cargarProductos();
     this.cargarEmpresa();
 
@@ -130,6 +141,7 @@ export class CotizacionesForm implements OnInit {
       direccion: ['', Validators.required],
       atendio: ['', Validators.required],
       gestorId: [null as number | null, Validators.required],
+      descuentoId: [null as number | null],
     });
   }
 
@@ -143,6 +155,49 @@ export class CotizacionesForm implements OnInit {
         })));
       },
     });
+  }
+
+  /** Catálogo de descuentos (tposdescuentos) — mismo criterio que Nueva Factura */
+  private cargarDescuentos() {
+    this.api.get<any>('/facturacion/descuentos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
+      const items = res?.value ?? res ?? [];
+      this.descuentosMap.clear();
+      for (const d of items ?? []) {
+        this.descuentosMap.set(d.descuentoId, Number(d.porcentaje) || 0);
+      }
+      this.descuentos.set(
+        (items ?? [])
+          .filter((d: any) => d.sn_activo === 'S')
+          .map((d: any) => ({ label: d.descripcion, value: d.descuentoId })),
+      );
+      // El catálogo puede llegar después de las filas: recalcula descuentos
+      this.recalcularDescuentosLineas();
+    });
+  }
+
+  /** % del descuento seleccionado en el cabecera */
+  pctDescuento(): number {
+    const id = Number(this.form?.get('descuentoId')?.value);
+    return id ? this.descuentosMap.get(id) ?? 0 : 0;
+  }
+
+  /** Recalcula el descuento de todas las líneas (al cambiar el descuento del cabecera) */
+  onDescuentoChange() {
+    this.recalcularDescuentosLineas();
+  }
+
+  private recalcularDescuentosLineas() {
+    if (!this.filas().length) return;
+    this.filas.update((f) =>
+      f.map((r) => ({ ...r, descuento: this.calcularDescuentoLinea(r.subTotal ?? 0) })),
+    );
+    this.recalcularTotales();
+  }
+
+  /** Importe del descuento de una línea: bruto × % / 100 (2 decimales) */
+  private calcularDescuentoLinea(bruto: number): number {
+    const pct = this.pctDescuento();
+    return pct ? Math.round(bruto * pct) / 100 : 0;
   }
 
   private cargarProductos() {
@@ -189,6 +244,7 @@ export class CotizacionesForm implements OnInit {
           direccion: mae.direccion,
           atendio: mae.atendio,
           gestorId: mae.gestorId,
+          descuentoId: mae.descuentoId ?? null,
         });
         this.cargarDetalles(id);
       },
@@ -216,6 +272,7 @@ export class CotizacionesForm implements OnInit {
             cantidad: Number(d.cantidad) || 1,
             precio: Number(d.precio) || 0,
             subTotal: Number(d.subTotal) || 0,
+            descuento: Number(d.descuento) || 0,
           };
           this.filas.update((f) => [...f, row]);
         }
@@ -375,6 +432,7 @@ export class CotizacionesForm implements OnInit {
       cantidad: 1,
       precio: Number(p.precioventa) || 0,
       subTotal: Number(p.precioventa) || 0,
+      descuento: 0,
     };
     this.filas.update((f) => [...f, row]);
     this.recalcularFila(row);
@@ -389,18 +447,24 @@ export class CotizacionesForm implements OnInit {
     const cantidad = row.cantidad ?? 0;
     const precio = row.precio ?? 0;
     row.subTotal = Math.round(cantidad * precio * 100) / 100;
+    row.descuento = this.calcularDescuentoLinea(row.subTotal);
     this.filas.update((f) => [...f]);
     this.recalcularTotales();
   }
 
   recalcularTotales() {
     let subTotal = 0;
+    let descuento = 0;
     for (const r of this.filas()) {
       subTotal += r.subTotal ?? 0;
+      descuento += r.descuento ?? 0;
     }
+    subTotal = Math.round(subTotal * 100) / 100;
+    descuento = Math.round(descuento * 100) / 100;
+    // ISV sobre el bruto (mismo patrón que Facturación): total = sub + ISV − descuento
     const impuesto = Math.round(subTotal * this.tasaImpuesto * 100) / 100;
-    const total = Math.round((subTotal + impuesto) * 100) / 100;
-    this.totales.set({ subTotal, impuesto, total });
+    const total = Math.round((subTotal + impuesto - descuento) * 100) / 100;
+    this.totales.set({ subTotal, descuento, impuesto, total });
   }
 
   invalid(ctrl: string): boolean {
@@ -440,7 +504,7 @@ export class CotizacionesForm implements OnInit {
   }
 
   volver() {
-    this.router.navigate(['/facturacion/cotizaciones']);
+    this.nav.volver(['/facturacion/cotizaciones']);
   }
 
   guardar() {
@@ -461,6 +525,7 @@ export class CotizacionesForm implements OnInit {
       direccion: raw.direccion,
       atendio: raw.atendio,
       gestorId: raw.gestorId,
+      descuentoId: raw.descuentoId ?? null,
     };
 
     this.guardando.set(true);
@@ -504,6 +569,7 @@ export class CotizacionesForm implements OnInit {
         cantidad: r.cantidad ?? 0,
         precio: r.precio ?? 0,
         subTotal: r.subTotal,
+        descuento: r.descuento ?? 0,
         empresaId,
       }),
     );
@@ -531,38 +597,65 @@ export class CotizacionesForm implements OnInit {
   // ==================== PDF / Correo / WhatsApp ====================
 
   async imprimirPDF(): Promise<void> {
-    const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-    const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-    pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-    pdfMake.createPdf(this.buildPdfDefinition()).print();
+    try {
+      const pdfMake = await this.impresion.cargarPdfMake();
+      const blob: Blob = await pdfMake.createPdf(this.buildPdfDefinition()).getBlob();
+      this.impresion.imprimirBlobEnIframe(blob);
+    } catch {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el PDF' });
+    }
   }
 
   async descargarPDF(): Promise<void> {
-    const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-    const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-    pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-    const id = this.mae()?.poscotmaeId || 'nueva';
-    pdfMake.createPdf(this.buildPdfDefinition()).download('cotizacion-' + id + '.pdf');
+    try {
+      const pdfMake = await this.impresion.cargarPdfMake();
+      const id = this.mae()?.poscotmaeId;
+      const nro = id ? String(id).padStart(6, '0') : 'nueva';
+      pdfMake.createPdf(this.buildPdfDefinition()).download('cotizacion-' + nro + '.pdf');
+    } catch {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el PDF' });
+    }
   }
 
   async compartir(): Promise<void> {
     try {
-      const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-      const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-      const id = this.mae()?.poscotmaeId || 'nueva';
-      const blob = await new Promise<Blob>((resolve) => {
-        (pdfMake as any).createPdf(this.buildPdfDefinition()).getBlob(resolve);
-      });
-      const file = new File([blob], 'cotizacion-' + id + '.pdf', { type: 'application/pdf' });
-      if (navigator.share) {
-        await navigator.share({ files: [file], title: 'Cotizacion #' + id });
+      const pdfMake = await this.impresion.cargarPdfMake();
+      const id = this.mae()?.poscotmaeId;
+      const nro = id ? String(id).padStart(6, '0') : 'nueva';
+      const nombre = 'cotizacion-' + nro + '.pdf';
+      const texto = 'Cotización #' + nro + ' - ' + this.empresaNombre;
+
+      // pdfmake 0.3: getBlob() devuelve una Promesa (el callback de 0.2 ya no aplica)
+      const blob: Blob = await pdfMake.createPdf(this.buildPdfDefinition()).getBlob();
+      const file = new File([blob], nombre, { type: 'application/pdf' });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Cotización #' + nro, text: texto });
       } else {
-        this.msgs.add({ severity: 'warn', summary: 'No disponible', detail: 'Web Share API no soportada' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombre;
+        a.click();
+        URL.revokeObjectURL(url);
+        const win = window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+        if (win) {
+          this.msgs.add({
+            severity: 'info',
+            summary: 'PDF descargado',
+            detail: 'WhatsApp abierto — adjunte el archivo en el chat',
+          });
+        } else {
+          this.msgs.add({
+            severity: 'info',
+            summary: 'PDF descargado',
+            detail: 'El navegador bloqueó la pestaña de WhatsApp — ábralo manualmente',
+          });
+        }
       }
     } catch (e: any) {
       if (e?.name !== 'AbortError') {
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo compartir' });
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo compartir la cotización' });
       }
     }
   }
@@ -572,12 +665,21 @@ export class CotizacionesForm implements OnInit {
     this.dialogCorreo.set(true);
   }
 
+  correoNro(): string {
+    const id = this.mae()?.poscotmaeId;
+    return id ? String(id).padStart(6, '0') : 'Nueva';
+  }
+
+  correoCliente(): string {
+    return this.form.value.Nombrecliente || this.mae()?.Nombrecliente || 'Cliente sin asignar';
+  }
+
   enviarCorreo(): void {
-    const emailVal = this.emailDestino();
-    if (!emailVal || !emailVal.includes('@')) {
+    if (!this.emailValido()) {
       this.msgs.add({ severity: 'warn', summary: 'Correo invalido', detail: 'Ingrese un correo electronico valido' });
       return;
     }
+    const emailVal = this.emailDestino().trim();
     const id = this.mae()?.poscotmaeId;
     if (!id) {
       this.msgs.add({ severity: 'warn', summary: 'Sin cotizacion', detail: 'Guarde la cotizacion antes de enviar por correo' });
@@ -601,76 +703,184 @@ export class CotizacionesForm implements OnInit {
   private buildPdfDefinition(): any {
     const maeData = this.mae();
     const filasData = (this.filas() ?? []).filter((f: FilaDet) => f.productoId);
-    const totalesData = this.totales() ?? { subTotal: 0, impuesto: 0, total: 0 };
+    const totalesData = this.totales() ?? { subTotal: 0, descuento: 0, impuesto: 0, total: 0 };
     // Fecha del sistema de la empresa (tempresas.fechasistema); fallback: fecha local
     const fecha = this.fechaSistema ? new Date(this.fechaSistema) : new Date();
+    const dd = String(fecha.getDate()).padStart(2, '0');
+    const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+    const fechaTxt = `${dd}/${mm}/${fecha.getFullYear()}`;
+    const nroTxt = maeData?.poscotmaeId ? String(maeData.poscotmaeId).padStart(6, '0') : 'Nueva';
 
     const det = this.empresaDet();
     const rtn = det.find((d: any) => d.tipo === 'RTN')?.descripcion || '';
     const dirEmpresa = det.find((d: any) => d.tipo === 'DIRECCION')?.descripcion || '';
     const tel = det.find((d: any) => d.tipo === 'TELEFONO')?.descripcion || '';
 
+    const clienteTxt = maeData?.Nombrecliente || this.form.value.Nombrecliente || '';
+    const dirTxt = maeData?.direccion || this.form.value.direccion || '';
+    const atendioTxt = maeData?.atendio || this.form.value.atendio || '';
+    const gestorId = maeData?.gestorId ?? this.form.value.gestorId;
+    const gestorTxt = this.gestores().find((g: any) => g.value === gestorId)?.label || '';
+    const esAnulada = maeData?.sn_estadocarrito === 'X';
+
     return {
       pageSize: 'LETTER',
       pageMargins: [40, 60, 40, 60],
       content: [
-        { text: this.empresaNombre, style: 'header', alignment: 'center' },
-        { text: rtn ? 'RTN: ' + rtn : '', alignment: 'center', fontSize: 9 },
-        { text: dirEmpresa, alignment: 'center', fontSize: 9 },
-        { text: tel ? 'Tel: ' + tel : '', alignment: 'center', fontSize: 9 },
-        { text: '\n' },
-        { text: 'COTIZACION', style: 'header', alignment: 'center' },
-        { text: '#' + (maeData?.poscotmaeId || 'Nueva'), style: 'subheader', alignment: 'center' },
-        { text: 'Fecha: ' + fecha.toLocaleDateString('es-HN'), alignment: 'right', margin: [0, 5] },
-        { text: '\n' },
+        // ── Encabezado: empresa a la izquierda, Cotización/Fecha a la derecha (mismo nivel)
         {
           columns: [
-            { text: [
-              { text: 'Cliente: ', bold: true }, (maeData?.Nombrecliente || this.form.value.Nombrecliente || ''),
-              '\n', { text: 'Direccion: ', bold: true }, (maeData?.direccion || this.form.value.direccion || ''),
-              '\n', { text: 'Atendio: ', bold: true }, (maeData?.atendio || this.form.value.atendio || ''),
-            ], width: '*' },
+            {
+              stack: [
+                { text: this.empresaNombre, style: 'empresaNombre' },
+                { text: rtn ? 'RTN: ' + rtn : '', style: 'empresaInfo' },
+                { text: dirEmpresa, style: 'empresaInfo' },
+                { text: tel ? 'Tel: ' + tel : '', style: 'empresaInfo' },
+              ].filter((t: any) => t.text),
+              alignment: 'left',
+            },
+            {
+              stack: [
+                { text: 'Cotización: #' + nroTxt, style: 'docNum' },
+                { text: 'Fecha: ' + fechaTxt, style: 'empresaInfo' },
+              ],
+              alignment: 'right',
+            },
           ],
+          columnGap: 20,
         },
-        { text: '\n' },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 532, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }], margin: [0, 0, 0, 0] },
+        ...(esAnulada
+          ? [{ text: 'ANULADA', fontSize: 26, bold: true, color: '#dc2626', alignment: 'center', margin: [0, 8, 0, 0] }]
+          : []),
+
+        // ── Caja de datos del cliente
+        {
+          table: {
+            widths: ['*'],
+            body: [
+              [
+                {
+                  text: [
+                    { text: 'Cliente: ', bold: true }, clienteTxt, '\n',
+                    { text: 'Dirección: ', bold: true }, dirTxt, '\n',
+                    { text: 'Atendió: ', bold: true }, atendioTxt,
+                    ...(gestorTxt ? ['\n', { text: 'Gestor: ', bold: true }, gestorTxt] : []),
+                  ],
+                  margin: [8, 6, 8, 6],
+                },
+              ],
+            ],
+          },
+          layout: {
+            fillColor: '#f8fafc',
+            hLineColor: () => '#e2e8f0',
+            vLineWidth: () => 0,
+            hLineWidth: () => 1,
+            paddingLeft: () => 0,
+            paddingRight: () => 0,
+            paddingTop: () => 0,
+            paddingBottom: () => 0,
+          },
+          margin: [0, 0, 0, 0],
+        },
+
+        // ── Detalle de artículos (con descuento por línea)
         {
           table: {
             headerRows: 1,
-            widths: ['*', 'auto', 'auto', 'auto'],
+            widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto'],
             body: [
               [
-                { text: 'Producto', style: 'tableHeader' },
+                { text: 'Cód.', style: 'tableHeader' },
+                { text: 'Descripción', style: 'tableHeader' },
                 { text: 'Precio', style: 'tableHeader', alignment: 'right' },
                 { text: 'Cant.', style: 'tableHeader', alignment: 'right' },
+                { text: 'Descuento', style: 'tableHeader', alignment: 'right' },
                 { text: 'Subtotal', style: 'tableHeader', alignment: 'right' },
               ],
               ...filasData.map((f: FilaDet) => [
-                f.descripcion || f.codbarra,
-                'L ' + Number(f.precio).toFixed(2),
-                '' + Number(f.cantidad),
-                'L ' + Number(f.subTotal).toFixed(2),
+                { text: f.codbarra || '', color: '#64748b' },
+                { text: f.descripcion || f.codbarra || '' },
+                { text: 'L ' + Number(f.precio).toFixed(2), alignment: 'right' },
+                { text: '' + Number(f.cantidad), alignment: 'right' },
+                {
+                  text: Number(f.descuento) > 0 ? '- L ' + Number(f.descuento).toFixed(2) : '',
+                  alignment: 'right',
+                  color: '#dc2626',
+                },
+                { text: 'L ' + Number(f.subTotal).toFixed(2), alignment: 'right' },
               ]),
             ],
           },
-          layout: 'lightHorizontalLines',
+          layout: {
+            hLineColor: () => '#e2e8f0',
+            vLineWidth: () => 0,
+            hLineWidth: () => 1,
+            paddingLeft: () => 6,
+            paddingRight: () => 6,
+            paddingTop: () => 4,
+            paddingBottom: () => 0,
+            fillColor: (i: number) => (i > 0 && i % 2 === 0 ? '#f8fafc' : null),
+          },
+          margin: [0, 0, 0, 0],
         },
-        { text: '\n' },
+
+        // ── Totales (GRAN TOTAL resaltado)
         {
           alignment: 'right',
-          columns: [
-            { width: '*', text: '' },
-            { width: 200, text: [
-              { text: 'Subtotal: ', bold: true }, 'L ' + Number(totalesData.subTotal).toFixed(2),
-              '\n', { text: 'ISV 15%: ', bold: true }, 'L ' + Number(totalesData.impuesto).toFixed(2),
-              '\n', { text: 'TOTAL: ', bold: true, fontSize: 14 }, { text: 'L ' + Number(totalesData.total).toFixed(2), bold: true, fontSize: 14, color: '#10b981' },
-            ] },
-          ],
+          table: {
+            widths: ['auto', 130],
+            body: [
+              [
+                { text: 'Subtotal', bold: true, color: '#475569' },
+                { text: 'L ' + Number(totalesData.subTotal).toFixed(2), alignment: 'right' },
+              ],
+              [
+                { text: 'Descuento' + (this.pctDescuento() ? ' (' + this.pctDescuento() + '%)' : ''), bold: true, color: '#475569' },
+                { text: '- L ' + Number(totalesData.descuento ?? 0).toFixed(2), alignment: 'right', color: '#dc2626' },
+              ],
+              [
+                { text: 'ISV 15%', bold: true, color: '#475569' },
+                { text: 'L ' + Number(totalesData.impuesto).toFixed(2), alignment: 'right' },
+              ],
+              [
+                { text: 'GRAN TOTAL', bold: true, color: '#1e293b' },
+                {
+                  text: 'L ' + Number(totalesData.total).toFixed(2),
+                  alignment: 'right',
+                  bold: true,
+                  color: '#1e293b',
+                  fontSize: 13,
+                },
+              ],
+            ],
+          },
+          layout: {
+            hLineColor: () => '#e2e8f0',
+            vLineWidth: () => 0,
+            hLineWidth: () => 1,
+            paddingLeft: () => 8,
+            paddingRight: () => 8,
+            paddingTop: () => 4,
+            paddingBottom: () => 0,
+          },
+        },
+
+        // ── Pie
+        { text: 'Gracias por su preferencia', style: 'pieGracias', margin: [0, 0, 0, 2] },
+        {
+          text: 'Cotización válida por 15 días a partir de la fecha de emisión. Precios en Lempiras (HNL).',
+          style: 'pieInfo',
         },
       ],
       styles: {
-        header: { fontSize: 20, bold: true },
-        subheader: { fontSize: 14, margin: [0, 5] },
-        tableHeader: { bold: true, fontSize: 10, color: 'white', fillColor: '#10b981' },
+        empresaNombre: { fontSize: 15, bold: true, color: '#1e293b' },
+        empresaInfo: { fontSize: 9, color: '#475569' },
+        docNum: { fontSize: 12, bold: true, color: '#1e293b' },
+        tableHeader: { bold: true, fontSize: 9, color: '#1e293b' },
+        pieGracias: { fontSize: 11, bold: true, color: '#1e293b', alignment: 'center' },
+        pieInfo: { fontSize: 8, color: '#64748b', alignment: 'center' },
       },
       defaultStyle: { fontSize: 10 },
     };

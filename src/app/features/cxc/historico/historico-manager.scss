@@ -1,44 +1,89 @@
-.historico-manager {
-  .filtros.card {
-    background: var(--c-surface-ground);
-    border: 1px solid var(--c-border);
-    border-radius: 8px;
-    padding: 1rem 1.5rem;
-  }
+// ===== FILTROS =====
+// Nota: reglas planas a propósito — con encapsulation emulated, un selector
+// anidado bajo .historico-manager nunca matchea el host (no lleva _ngcontent propio).
+.filtros {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+  width: 100%;
+}
 
-  .tabla.card {
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: 8px;
-    overflow: hidden;
-  }
+.filtros-fila {
+  display: grid;
+  gap: 1rem;
+  align-items: end;
+  justify-content: start;
+  width: 100%;
+}
 
-  .detalle.card {
-    background: var(--c-surface-ground);
-    border: 1px solid var(--c-border);
-    border-radius: 8px;
-    padding: 1.5rem;
-  }
+.filtros-fila--persona {
+  grid-template-columns: minmax(0, 30rem);
+}
 
-  .p-field label {
+.filtros-fila--fechas {
+  grid-template-columns: repeat(2, minmax(0, 15rem));
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+
+  label {
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--c-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
+}
 
-  .p-field input[disabled],
-  .p-field p-select[disabled] {
-    background: var(--c-surface) !important;
-    opacity: 0.8;
-  }
+.filtros-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
 
-  .font-bold {
-    font-weight: 700;
+@media (max-width: 640px) {
+  .filtros-fila {
+    grid-template-columns: 1fr;
   }
+}
 
-  .selected-row {
-    background-color: rgba(12, 128, 89, 0.062) !important;
-  }
+.tabla.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.detalle.card {
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.p-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.p-field input[disabled],
+.p-field p-select[disabled] {
+  background: var(--c-surface) !important;
+  opacity: 0.8;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.selected-row {
+  background-color: rgba(12, 128, 89, 0.062) !important;
 }

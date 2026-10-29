@@ -9,6 +9,16 @@
       <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
         variant="text" [rounded]="true" (onClick)="volverAPartida()" />
     </div>
+  } @else if (desdeHistorico()) {
+    <!-- Origen: esta pantalla se abrió desde el Histórico de Clientes -->
+    <div class="barra-origen">
+      <span class="barra-origen__texto">
+        <i class="pi pi-history"></i>
+        Movimiento abierto desde el Histórico de Clientes
+      </span>
+      <p-button label="Volver al histórico" icon="pi pi-arrow-left" size="small" severity="secondary"
+        variant="text" [rounded]="true" (onClick)="volverAHistorico()" />
+    </div>
   }
 
   <div class="split-layout">
@@ -190,7 +200,7 @@
                         styleClass="tag-sm" />
                     </td>
                     <td>{{ m.nroreferencia || '—' }}</td>
-                    <td class="mov-concepto">{{ m.concepto }}</td>
+                    <td class="mov-concepto" [title]="m.concepto">{{ m.concepto }}</td>
                     <td class="text-right">{{ moneda(m.importe) }}</td>
                     <td>
                       @if (m.sn_doc_anulado === 'S') {

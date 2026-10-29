@@ -14,8 +14,10 @@ const apiUrl = direct || fromProvider || 'http://localhost:3000/api';
 
 const production = process.env.PRODUCTION === 'true' || process.env.NODE_ENV === 'production';
 const currencySymbol = process.env.CURRENCY_SYMBOL || 'L ';
+const validarSession = process.env.VALIDAR_SESSION || 'N';
+const empresaId = parseInt(process.env.EMPRESA_ID || '2', 10);
 
-const envConfigFile = `export const environment = {\n  production: ${production},\n  apiUrl: '${apiUrl}',\n  currencySymbol: '${currencySymbol}',\n};\n`;
+const envConfigFile = `export const environment = {\n  production: ${production},\n  apiUrl: '${apiUrl}',\n  currencySymbol: '${currencySymbol}',\n  VALIDAR_SESSION: '${validarSession}',\n  empresaId: ${empresaId},\n};\n`;
 
 fs.writeFileSync(targetPath, envConfigFile);
 console.log(`environment generated -> ${targetPath}`);

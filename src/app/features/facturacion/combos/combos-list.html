@@ -50,23 +50,16 @@
           >
             <div class="combo-item-header">
               <span class="combo-item-title">{{ titulo(item) }}</span>
+              <span class="combo-item-fecha">{{ vigencia(item) }}</span>
               <div class="combo-item-actions">
                 <button
                   class="combo-action-btn"
-                  pTooltip="Editar"
+                  pTooltip="Detalle"
                   (click)="editar(item.poscbomaeId, $event)"
                 >
                   <i class="pi pi-pencil"></i>
                 </button>
               </div>
-            </div>
-            <div class="combo-item-body">
-              @for (f of filas(item); track f.label) {
-                <div class="combo-item-row">
-                  <span class="combo-item-label">{{ f.label }}</span>
-                  <span class="combo-item-value">{{ f.value }}</span>
-                </div>
-              }
             </div>
           </div>
         } @empty {

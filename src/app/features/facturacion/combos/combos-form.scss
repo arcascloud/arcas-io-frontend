@@ -2,10 +2,16 @@
   display: block;
 }
 
+.card.form-grid {
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: 10px;
+  background: var(--c-bg);
+}
+
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem 1.5rem;
   padding: 0.75rem 1rem;
 }
 
@@ -27,10 +33,20 @@
   }
 }
 
-/* ===== Layout 2 columnas ===== */
+/* Celda de botones (fila de Descuento) — debe ir después de .campo */
+.campo.campo-acciones {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: end;
+  gap: 0.5rem;
+  padding-bottom: 0.15rem;
+}
+
+/* ===== Layout 2 columnas (50% / 50%) ===== */
 .combo-layout {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
   align-items: start;
   margin-top: 1.25rem;
@@ -61,7 +77,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  white-space: nowrap;
 
   i { color: var(--c-primary); }
 }
@@ -479,13 +494,6 @@
   overflow-y: auto;
 }
 
-.acciones-form {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-
 .tag-sm {
   font-size: 0.65rem !important;
   padding: 0.15rem 0.4rem !important;
@@ -506,6 +514,18 @@
 @media (max-width: 600px) {
   .combo-layout {
     grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campo.campo-acciones {
+    justify-content: stretch;
+  }
+
+  .campo.campo-acciones p-button {
+    flex: 1;
   }
 
   .catalogo-header {

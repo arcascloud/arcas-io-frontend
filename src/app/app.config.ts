@@ -53,11 +53,11 @@ const ArcasPreset = definePreset(Aura, {
         primary: {
           color: '{primary.700}',
           contrastColor: '{surface.800}',
-          hoverColor: '{primary.700}', /* color de input */
+          hoverColor: '{primary.700}' /* color de input */,
           activeColor: '{primary.700}',
         },
         highlight: {
-          background: 'color-mix(in srgb, {primary.400}, transparent 84%)',
+          background: 'color-mix(in srgb, {primary.200}, transparent 84%)',
           focusBackground: 'color-mix(in srgb, {primary.400}, transparent 76%)',
           color: 'rgba(255, 255, 255, 0.88)',
           focusColor: 'rgba(255,255,255,.98)',

@@ -1,5 +1,7 @@
-import { Component, OnInit, inject, signal, computed, DestroyRef, NgZone } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, model, DestroyRef, NgZone, ViewChild, effect } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
+import { filter, forkJoin } from 'rxjs';
 import { DataViewModule } from 'primeng/dataview';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -11,14 +13,23 @@ import { TagModule } from 'primeng/tag';
 import { MessageModule } from 'primeng/message';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { MessageService } from 'primeng/api';
+import { MessageService, MenuItem } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
+import { GalleriaModule } from 'primeng/galleria';
+import { BreadcrumbModule } from 'primeng/breadcrumb';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { TiendaService } from './tienda.service';
+import { TiendaFiltroService } from '../../../core/services/tienda-filtro.service';
+import { CategoriasService } from '../../../core/services/categorias.service';
 import { ProductoTienda, CarritoItem, CheckoutPago } from '../../../core/models/tienda.models';
+import { Categoria } from '../../../core/models/inventario.models';
 import { AuthService } from '../../../core/services/auth.service';
+import { CarritoStateService } from '../../../core/services/carrito-state.service';
 import { ApiService } from '../../../core/services/api.service';
+import { LoginDialog } from '../../../layout/login-dialog/login-dialog';
+import { RegistroDialog } from '../../../layout/registro-dialog/registro-dialog';
 
 @Component({
   selector: 'app-tienda-virtual',
@@ -26,7 +37,8 @@ import { ApiService } from '../../../core/services/api.service';
   imports: [
     CommonModule, FormsModule, DataViewModule, ButtonModule, DialogModule,
     InputNumberModule, InputTextModule, InputMaskModule, SelectModule, TagModule, ToastModule,
-    BadgeModule, TooltipModule, MessageModule,
+    BadgeModule, TooltipModule, MessageModule, GalleriaModule, BreadcrumbModule, MultiSelectModule,
+    LoginDialog, RegistroDialog,
   ],
   providers: [],
   templateUrl: './tienda-virtual.html',
@@ -37,24 +49,98 @@ export class TiendaVirtual implements OnInit {
   private auth = inject(AuthService);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+  private carritoState = inject(CarritoStateService);
   private api = inject(ApiService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  readonly filtroService = inject(TiendaFiltroService);
+  private categoriasService = inject(CategoriasService);
 
   /** true si hay sesión activa — el botón "Pagar" solo se habilita autenticado (tienda es pública) */
   readonly autenticado = this.auth.isAuthenticated;
+
+  /** Login/registro en diálogo: el visitante agrega al carrito libre, pero pagar exige sesión */
+  @ViewChild('loginGate') loginGate?: LoginDialog;
+  @ViewChild('registroGate') registroGate?: RegistroDialog;
+
+  allCategorias = signal<Categoria[]>([]);
+
+  readonly breadcrumbHome: MenuItem = {
+    icon: 'pi pi-home',
+    command: () => this.resetFiltros(),
+  };
+
+  breadcrumbItems = computed<MenuItem[]>(() => {
+    const catNombres = this.filtroService.categoriaNombres();
+    const depNombre = this.filtroService.deptoNombre();
+    const items: MenuItem[] = [];
+
+    if (depNombre) {
+      items.push({ label: depNombre });
+    }
+    if (catNombres && catNombres.length > 0) {
+      items.push({ label: catNombres.join(', ') });
+    }
+    if (items.length === 0) {
+      items.push({ label: 'Todos los productos' });
+    }
+    return items;
+  });
+
+  resetFiltros() {
+    this.filtroService.limpiarFiltros();
+    this.busqueda.set('');
+  }
+
+  onCategoriasChange(categoriaIds: any) {
+    const ids = Array.isArray(categoriaIds) ? categoriaIds.map(Number) : (categoriaIds != null && categoriaIds !== '' ? [Number(categoriaIds)] : []);
+    const cats = this.allCategorias().filter(c => ids.includes(Number(c.categoriaId)));
+    const nombres = cats.length > 0 ? cats.map(c => c.descripcion) : this.productos().filter(p => ids.includes(Number(p.categoriaId))).map(p => p.categoria).filter((n): n is string => !!n);
+    this.filtroService.setFiltros(
+      ids,
+      this.filtroService.deptoId(),
+      nombres,
+      this.filtroService.deptoNombre()
+    );
+  }
 
   productos = signal<ProductoTienda[]>([]);
   carritoItems = signal<CarritoItem[]>([]);
   carritoId = signal<number | null>(null);
   busqueda = signal<string>('');
+
+  categoriaIdFiltro = signal<number | null>(null);
+  deptoIdFiltro = signal<number | null>(null);
   layout = signal<'grid' | 'list'>('grid');
   cargando = signal(false);
   cargandoCarrito = signal(false);
 
-  dialogCheckout = signal(false);
+  // model() en vez de signal(): [(visible)] de PrimeNG es binding de dos vías —
+  // con signal() plano, visibleChange() SOBREESCRIBE la señal con un booleano
+  // y el siguiente .set(true) truena ("no abre el diálogo").
+  dialogCheckout = model(false);
   procesando = signal(false);
   tarjetasCredito = signal<{ label: string; value: number }[]>([]);
   tarjetaError = signal<string | null>(null);
-  carritoOpen = signal(false);
+  /** Señal del carrito compartida con el topbar (CarritoStateService) */
+  readonly carritoOpen = this.carritoState.carritoOpen;
+
+  // ==================== Galería de imágenes ====================
+  dialogGaleria = model(false);
+  galeriaTitulo = signal('');
+  galeriaImagenes = signal<string[]>([]);
+  galeriaIndice = signal(0);
+  galeriaCargando = signal(false);
+  /** Cache productoId → imágenes (evita re-fetch al reabrir) */
+  private galeriaCache = new Map<number, string[]>();
+  private galeriaSub: any = null;
+
+  /** Opciones responsive del Galleria (patrón doc PrimeNG) */
+  readonly galeriaResponsiveOptions = [
+    { breakpoint: '1024px', numVisible: 5 },
+    { breakpoint: '768px', numVisible: 4 },
+    { breakpoint: '560px', numVisible: 3 },
+  ];
 
   /** Mapa productoId → precio con descuento de promo/oferta */
   private mapaOfertas = new Map<number, number>();
@@ -64,10 +150,16 @@ export class TiendaVirtual implements OnInit {
   // Image cache removed — browser handles caching natively
 
   categorias = computed(() => {
-    const cats = new Set(this.productos().map(p => p.categoria).filter(Boolean));
-    return [{ label: 'Todos', value: null }, ...Array.from(cats).map(c => ({ label: c!, value: c! }))];
+    const depId = this.filtroService.deptoId();
+    let cats = this.allCategorias();
+    if (depId) {
+      cats = cats.filter((c) => Number(c.deptoId) === Number(depId));
+    }
+    return cats
+      .filter((x) => x.sn_activo === 'S')
+      .sort((a, b) => a.descripcion.localeCompare(b.descripcion))
+      .map((x) => ({ label: x.descripcion, value: x.categoriaId }));
   });
-  categoriaFiltro = signal<string | null>(null);
   ordenarPor = signal<string>('default');
   soloOfertas = signal(false);
 
@@ -81,13 +173,19 @@ export class TiendaVirtual implements OnInit {
 
   productosFiltrados = computed(() => {
     let lista = this.productos();
-    const cat = this.categoriaFiltro();
+    const catIds = this.filtroService.categoriaIds();
+    const depId = this.filtroService.deptoId();
     const busq = this.busqueda().toLowerCase();
     const orden = this.ordenarPor();
     const soloOfertas = this.soloOfertas();
 
     if (soloOfertas) lista = lista.filter(p => this.esOferta(p));
-    if (cat) lista = lista.filter(p => p.categoria === cat);
+    if (catIds && catIds.length > 0) {
+      lista = lista.filter(p => catIds.map(Number).includes(Number(p.categoriaId)));
+    }
+    if (depId) {
+      lista = lista.filter(p => Number(p.deptoId) === Number(depId) || Number(p.categoriaDeptoId) === Number(depId));
+    }
     if (busq) lista = lista.filter(p =>
       p.descripcion?.toLowerCase().includes(busq) ||
       p.codbarra?.toLowerCase().includes(busq)
@@ -106,6 +204,11 @@ export class TiendaVirtual implements OnInit {
   totalItems = computed(() => this.carritoItems().reduce((sum, i) => sum + Number(i.cantidad), 0));
   totalCarrito = computed(() => this.carritoItems().reduce((sum, i) => sum + Number(i.subTotal), 0));
 
+  /** Sincroniza totalItems al servicio compartido para que el topbar lo muestre */
+  private _syncCarrito = effect(() => {
+    this.carritoState.setTotalItems(this.totalItems());
+  });
+
   checkout: CheckoutPago & { nrotarjeta?: string; tarjetacreditoId?: number; fechaexpiracion?: string; cvv?: string } = {
     poscotmaeId: 0,
     nombrecliente: '',
@@ -119,6 +222,19 @@ export class TiendaVirtual implements OnInit {
   };
 
   ngOnInit() {
+    // Búsqueda enviada desde el buscador global del topbar (?buscar=texto)
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const buscar = params.get('buscar');
+        if (buscar) this.busqueda.set(buscar);
+      });
+    this.categoriasService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cats) => this.allCategorias.set(cats),
+        error: () => {},
+      });
     this.cargarProductos();
     this.cargarTarjetasCredito();
     this.cargarOfertas();
@@ -126,7 +242,7 @@ export class TiendaVirtual implements OnInit {
 
   cargarProductos() {
     this.cargando.set(true);
-    this.tiendaService.getProductos(true)
+    this.tiendaService.getProductos(true, 'tienda')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
@@ -239,7 +355,10 @@ export class TiendaVirtual implements OnInit {
 
   async crearCarrito() {
     return new Promise<void>((resolve) => {
-      this.tiendaService.crearCarrito('Cliente Tienda', '', 'Tienda Virtual', 1)
+      const user = this.auth.currentUser();
+      const gestorId = user?.usuarioId || 1;
+      const atendio = user?.nombre || 'Tienda Online';
+      this.tiendaService.crearCarrito('Cliente Tienda', 'N/A', atendio, gestorId)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (carrito) => {
@@ -316,10 +435,48 @@ export class TiendaVirtual implements OnInit {
       .subscribe(() => this.recargarItems());
   }
 
+  // Modal de confirmación "Vaciar carrito" — NO se usa ConfirmationService de
+  // PrimeNG porque en zoneless su estado interno no dispara change detection
+  // y el modal no se dibuja. Un p-dialog + señal funciona siempre.
+  dialogVaciar = model(false);
+
+  confirmarVaciarCarrito() {
+    const items = this.carritoItems();
+    if (!items.length || this.cargandoCarrito()) return;
+    this.dialogVaciar.set(true);
+  }
+
+  /** Elimina TODOS los items del carrito en paralelo (forkJoin) */
+  vaciarCarrito() {
+    const items = this.carritoItems();
+    if (!items.length) return;
+    this.dialogVaciar.set(false);
+    this.cargandoCarrito.set(true);
+    forkJoin(items.map(i => this.tiendaService.eliminarItem(i.poscotdetId)))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.carritoItems.set([]);
+          this.cargandoCarrito.set(false);
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Carrito vaciado',
+            detail: 'Se eliminaron todos los productos del carrito',
+          });
+        },
+        error: () => {
+          this.cargandoCarrito.set(false);
+          this.recargarItems();
+        },
+      });
+  }
+
   abrirCheckout() {
-    // Tienda pública: visitantes navegan libre, pero pagar exige sesión
+    // Tienda pública: visitantes navegan y agregan al carrito libre, pero
+    // pagar exige sesión → se abre el diálogo de login (con opción a registro).
+    // Tras login exitoso el LoginDialog emite `loginExito` → se retoma el checkout.
     if (!this.auth.isAuthenticated()) {
-      this.messageService.add({ severity: 'warn', summary: 'Sesión requerida', detail: 'Inicie sesión para poder pagar' });
+      this.loginGate?.abrir();
       return;
     }
     if (this.carritoItems().length === 0) {
@@ -417,8 +574,69 @@ export class TiendaVirtual implements OnInit {
     return prod?.imagen ? this.resolverImagen(prod.imagen) : '';
   }
 
+  // ==================== Galería de imágenes ====================
+  galeriaNumVisible(): number {
+    if (typeof window === 'undefined') return 5;
+    const w = window.innerWidth;
+    if (w <= 560) return 3;
+    if (w <= 768) return 4;
+    return 5;
+  }
+
+  abrirGaleria(producto: ProductoTienda): void {
+    if (this.galeriaSub) {
+      this.galeriaSub.unsubscribe();
+      this.galeriaSub = null;
+    }
+
+    const principal: string[] = producto.imagen ? [this.resolverImagen(producto.imagen)] : [];
+    const id = Number(producto.produtoId);
+
+    this.galeriaTitulo.set(producto.descripcion || producto.codbarra || 'Producto');
+    this.galeriaIndice.set(0);
+    this.galeriaImagenes.set(principal);
+    this.galeriaCargando.set(false);
+    this.dialogGaleria.set(true);
+
+    const cacheado = this.galeriaCache.get(id);
+    if (cacheado && cacheado.length) {
+      this.galeriaImagenes.set(cacheado);
+      return;
+    }
+
+    this.galeriaCargando.set(true);
+    this.galeriaSub = this.api
+      .get<{ productoId: number; img: string; sn_activo?: string }[]>('/inventario/productos-img', { productoId: id })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const vistos = new Set<string>();
+          const imgs: string[] = [];
+          for (const r of Array.isArray(res) ? res : []) {
+            if (!r?.img || r.sn_activo === 'N') continue;
+            const url = this.resolverImagen(r.img);
+            if (!vistos.has(url)) {
+              vistos.add(url);
+              imgs.push(url);
+            }
+          }
+          // La imagen principal (la de la card) va primero
+          const ordenadas = principal.length
+            ? [principal[0], ...imgs.filter(u => u !== principal[0])]
+            : imgs;
+          if (ordenadas.length) this.galeriaCache.set(id, ordenadas);
+          this.galeriaImagenes.set(ordenadas);
+          this.galeriaCargando.set(false);
+        },
+        error: () => {
+          this.galeriaCargando.set(false);
+          this.messageService.add({ severity: 'error', summary: 'Galería', detail: 'No se pudieron cargar las imágenes' });
+        },
+      });
+  }
+
   formatearPrecio(precio: number | string): string {
-    return `L ${Number(precio).toFixed(2)}`;
+    return `L ${Number(precio).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   validarLuhn(numero: string): boolean {

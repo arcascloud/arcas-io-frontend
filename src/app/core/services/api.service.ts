@@ -46,7 +46,9 @@ export class ApiService {
    */
   private withEmpresa(params?: Record<string, string | number>): HttpParams {
     let p = new HttpParams();
-    const empresaId = this.auth.currentUser()?.empresaId;
+    // Sesión activa → empresaId del usuario; visitante sin sesión (tienda
+    // pública) → fallback a environment.empresaId.
+    const empresaId = this.auth.currentUser()?.empresaId ?? environment.empresaId;
     if (empresaId) {
       p = p.set('empresaId', empresaId.toString());
     }
@@ -73,8 +75,10 @@ export class ApiService {
     const user = this.auth.currentUser();
 
     if (!opts?.sinContexto && !ApiService.SIN_EMPRESA.includes(path)) {
-      if (user?.empresaId != null && out['empresaId'] === undefined) {
-        out['empresaId'] = user.empresaId;
+      // Sesión activa → empresaId del usuario; sin sesión → environment.empresaId
+      const empresaId = user?.empresaId ?? environment.empresaId;
+      if (empresaId != null && out['empresaId'] === undefined) {
+        out['empresaId'] = empresaId;
       }
     }
     if (!opts?.sinContexto && ApiService.CON_SUCURSAL.includes(path)) {

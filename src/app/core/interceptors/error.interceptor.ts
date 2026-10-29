@@ -11,7 +11,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       // Evitamos mostrar Toast para un 401: logout() limpia signals +
-      // localStorage + navega a /login (el interceptor ya no debe hacerlo a mano).
+      // localStorage/sessionStorage/cookies + navega según VALIDAR_SESSION
+      // ('S' → /login, 'N' → /facturacion/tienda; el interceptor ya no debe hacerlo a mano).
       if (error.status === 401) {
         auth.logout();
       } else {

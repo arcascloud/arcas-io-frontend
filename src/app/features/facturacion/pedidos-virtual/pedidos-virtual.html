@@ -159,8 +159,12 @@
             } @else {
             <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
             }
-            <p-button icon="pi pi-cart-plus" [rounded]="true" [raised]="true" variant="text"
-              [disabled]="producto.existencia <= 0" (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
+            <div class="card-acciones">
+              <p-button icon="pi pi-images" [rounded]="true" [raised]="true" variant="text" severity="secondary"
+                (click)="abrirGaleria(producto)" pTooltip="Ver galería" />
+              <p-button icon="pi pi-cart-plus" [rounded]="true" [raised]="true" variant="text"
+                [disabled]="producto.existencia <= 0" (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
+            </div>
           </div>
         </div>
       </div>
@@ -206,6 +210,8 @@
           }
         </div>
         <div class="list-accion">
+          <p-button icon="pi pi-images" [rounded]="true" variant="text" severity="secondary"
+            (click)="abrirGaleria(producto)" pTooltip="Ver galería" />
           <p-button icon="pi pi-cart-plus" [rounded]="true" [disabled]="producto.existencia <= 0"
             (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
         </div>
@@ -228,6 +234,66 @@
 </button>
 }
 
+<p-dialog
+  [(visible)]="dialogGaleria"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: isMobile() ? '95vw' : '720px' }"
+  [breakpoints]="{ '960px': '85vw', '640px': '95vw' }"
+>
+  <ng-template pTemplate="header">
+    <div class="galeria-header">
+      <i class="pi pi-images"></i>
+      <span class="galeria-titulo">{{ galeriaTitulo() }}</span>
+      @if (galeriaImagenes().length > 0) {
+        <span class="galeria-count">{{ galeriaIndice() + 1 }} / {{ galeriaImagenes().length }}</span>
+      }
+    </div>
+  </ng-template>
+
+  @if (galeriaCargando() && galeriaImagenes().length === 0) {
+    <div class="galeria-loading">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando imágenes...</span>
+    </div>
+  } @else if (galeriaImagenes().length === 0) {
+    <div class="galeria-vacia">
+      <i class="pi pi-image"></i>
+      <span>Este producto no tiene imágenes disponibles</span>
+    </div>
+  } @else {
+    <p-galleria
+      [value]="galeriaImagenes()"
+      [activeIndex]="galeriaIndice()"
+      (activeIndexChange)="galeriaIndice.set($event)"
+      [numVisible]="5"
+      [responsiveOptions]="galeriaResponsiveOptions"
+      [circular]="true"
+      [showItemNavigators]="galeriaImagenes().length > 1"
+      [showThumbnailNavigators]="galeriaImagenes().length > 1"
+      [showThumbnails]="galeriaImagenes().length > 1"
+      [showIndicators]="false"
+      class="tienda-galleria"
+    >
+      <!-- Workaround bug PrimeNG 21.2.13: el item slot no pasa type="item",
+           el setter de GalleriaItemSlot nunca actualiza context.$implicit y
+           let-item queda congelado con la primera imagen. Se renderiza desde
+           nuestros signals (galeriaIndice/galeriaImagenes) que sí navegan. -->
+      <ng-template pTemplate="item">
+        <img [src]="galeriaImagenes()[galeriaIndice()]" [alt]="galeriaTitulo()" class="galeria-item-img" />
+      </ng-template>
+      <ng-template pTemplate="thumbnail" let-item>
+        <img [src]="item" [alt]="galeriaTitulo()" />
+      </ng-template>
+    </p-galleria>
+  }
+
+  <ng-template pTemplate="footer">
+    <p-button label="Cerrar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogGaleria.set(false)" />
+  </ng-template>
+</p-dialog>
+
 <p-dialog header="Facturar Pedido" [(visible)]="dialogCheckout" [modal]="true"
   [style]="{ width: isMobile() ? '100vw' : '70vw', marginTop: '0', maxHeight: isMobile() ? '100dvh' : '100vh' }"
   [styleClass]="'checkout-dialog' + (isMobile() ? ' checkout-mobile' : '')" [closable]="!procesando()">
@@ -235,15 +301,10 @@
     <div class="checkout-form">
       <div class="checkout-fields">
         <h3 class="section-title"><i class="pi pi-user"></i> Información del Cliente</h3>
-        <div class="campo">
-          <label>Nombre completo *</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.nombrecliente" placeholder="Nombre del cliente"
-            class="w-full" />
-        </div>
-        <div class="campo">
-          <label>Teléfono</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.nrotelefono" placeholder="Teléfono del cliente"
-            class="w-full" />
+        <div class="campo p-3 bg-surface-ground border-round mb-2">
+          <div class="text-sm text-color-secondary">Cliente autenticado:</div>
+          <div class="font-bold text-lg text-primary">{{ auth.currentUser()?.nombre || 'Cliente Tienda' }}</div>
+          <div class="text-xs text-color-secondary mt-1"><i class="pi pi-check-circle text-green-500"></i> Nombre y teléfono obtenidos automáticamente de su perfil (tusuariosinfo)</div>
         </div>
 
         <h3 class="section-title"><i class="pi pi-wallet"></i> Forma de Pago</h3>
@@ -346,15 +407,10 @@
   [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
   [style]="{ width: isMobile() ? '95vw' : '30rem' }">
   <div class="guardar-fields">
-    <div class="campo">
-      <label>Nombre completo *</label>
-      <input pInputText pSize="small" [ngModel]="guardarNombre()" (ngModelChange)="guardarNombre.set($event)"
-        placeholder="Nombre del cliente" class="w-full" (keyup.enter)="guardarPedido()" />
-    </div>
-    <div class="campo">
-      <label>Teléfono</label>
-      <input pInputText pSize="small" [ngModel]="guardarTelefono()" (ngModelChange)="guardarTelefono.set($event)"
-        placeholder="Teléfono del cliente" class="w-full" />
+    <div class="campo p-3 bg-surface-ground border-round mb-2">
+      <div class="text-sm text-color-secondary">Cliente autenticado:</div>
+      <div class="font-bold text-lg text-primary">{{ auth.currentUser()?.nombre || 'Cliente Tienda' }}</div>
+      <div class="text-xs text-color-secondary mt-1"><i class="pi pi-check-circle text-green-500"></i> Nombre y teléfono obtenidos automáticamente de su perfil (tusuariosinfo)</div>
     </div>
   </div>
   <ng-template pTemplate="footer">

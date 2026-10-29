@@ -118,10 +118,29 @@
 }
 
 .login-form {
+  // Fondo de los inputs TRANSPARENTE: se ve el fondo del card (--c-bg-login).
+  // Se sobrescriben los tokens de PrimeNG solo dentro de este formulario (las variables
+  // CSS se heredan, no hace falta ::ng-deep). Para usar el color sólido del contenedor
+  // en lugar de transparente, cambia "transparent" por var(--c-bg-login).
+  --p-inputtext-background: transparent;
+  --p-inputtext-disabled-background: transparent;
+  --p-inputtext-filled-background: transparent;
+  --p-inputtext-filled-hover-background: transparent;
+  --p-inputtext-filled-focus-background: transparent;
+
   display: flex;
   flex-direction: column;
   gap: 1rem;
 
+// Fondo de los inputs TRANSPARENTE: se ve el fondo del card (--c-bg-login).
+  // Se sobrescriben los tokens de PrimeNG solo dentro de este formulario (las variables
+  // CSS se heredan, no hace falta ::ng-deep). Para usar el color sólido del contenedor
+  // en lugar de transparente, cambia "transparent" por var(--c-bg-login).
+  --p-inputtext-background: transparent;
+  --p-inputtext-disabled-background: transparent;
+  --p-inputtext-filled-background: transparent;
+  --p-inputtext-filled-hover-background: transparent;
+  --p-inputtext-filled-focus-background: transparent;
   .campo {
     display: flex;
     flex-direction: column;
@@ -144,8 +163,8 @@
       .p-password-input {
         width: 100%;
       }
-
       .p-password {
+          background: transparent;
         border-radius: var(--radius-sm);
         color: var(--c-text-muted);
         overflow: hidden;

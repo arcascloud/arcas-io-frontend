@@ -28,6 +28,12 @@ export interface AuthUser {
    * tienda/pedidos), 'E' = empleado (acceso completo al ERP).
    */
   tipoPersona?: 'C' | 'E';
+  /**
+   * Flag de `tusuariosinfo`:
+   * - `'S'` → usuario CRM/cliente → `main-layout-public`
+   * - `'N'` → usuario ERP → `main-layout-private`
+   */
+  sn_cliente?: 'S' | 'N';
 }
 
 /**
@@ -99,6 +105,17 @@ export class AuthService {
   readonly esCliente = computed(() => this.user()?.tipoPersona === 'C');
 
   /**
+   * true si el usuario es ERP → `main-layout-private`.
+   * Regla: `sn_cliente !== 'S'` (vacío/undefined se considera ERP por defecto
+   * para no romper sesiones antiguas guardadas en localStorage).
+   */
+  readonly esERP = computed(() => {
+    const u = this.user();
+    if (!u) return false;
+    return u.sn_cliente !== 'S';
+  });
+
+  /**
    * Autentica al usuario con credenciales
    * @param usuario - Nombre de usuario
    * @param password - Contraseña
@@ -149,14 +166,47 @@ export class AuthService {
   }
 
   /**
-   * Cierra la sesión del usuario, limpia localStorage y redirige a login
+   * Cierra la sesión de quien sea:
+   * 1. Limpieza TOTAL — localStorage, sessionStorage y cookies (evita
+   *    falsos positivos de sesión al re-ingresar).
+   * 2. Destino según `VALIDAR_SESSION`:
+   *    - `'N'` → `facturacion/tienda` (NUNCA /login ni /dashboard)
+   *    - `'S'` → `/login` (NUNCA la tienda)
    */
   logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    this.limpiarSesion();
     this.token.set(null);
     this.user.set(null);
-    this.router.navigate(['/login']);
+    const destino: string[] =
+      environment.VALIDAR_SESSION === 'N'
+        ? ['/facturacion/tienda']
+        : ['/login'];
+    this.router.navigate(destino);
+  }
+
+  /**
+   * Elimina TODO rastro de sesión: localStorage completo (token, usuario,
+   * preferencias, contraseña recordada, carrito, ventas suspendidas…),
+   * sessionStorage y todas las cookies del documento.
+   */
+  private limpiarSesion(): void {
+    try {
+      localStorage.clear();
+    } catch {
+      // storage no disponible → se ignora
+    }
+    try {
+      sessionStorage.clear();
+    } catch {
+      // storage no disponible → se ignora
+    }
+    document.cookie.split(';').forEach((cookie) => {
+      const eq = cookie.indexOf('=');
+      const nombre = (eq > 0 ? cookie.substring(0, eq) : cookie).trim();
+      if (nombre) {
+        document.cookie = `${nombre}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      }
+    });
   }
 
   /**

@@ -130,6 +130,13 @@ export class NuevaFactura implements OnInit {
   filas = signal<FilaDet[]>([]);
   pagos = signal<PagoFactura[]>([]);
 
+  readonly MIN_ROWS = 9;
+
+  get emptyRows(): any[] {
+    const missingRows = this.MIN_ROWS - this.filas().length;
+    return missingRows > 0 ? new Array(missingRows) : [];
+  }
+
   // ── TodoPago: link de pago de la última factura facturada ──
   linkPago = signal<TodoPagoLink | null>(null);
   linkStatus = signal<string>('pending');

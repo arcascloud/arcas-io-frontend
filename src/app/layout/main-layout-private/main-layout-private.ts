@@ -1,4 +1,5 @@
-﻿import { Component, DestroyRef, inject, signal, computed } from '@angular/core';
+﻿import { Component, DestroyRef, inject, signal, computed, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -12,11 +13,14 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { TooltipModule } from 'primeng/tooltip';
+import { Popover, PopoverModule } from 'primeng/popover';
+import { DialogModule } from 'primeng/dialog';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { Message } from 'primeng/message';
 import { AuthService } from '../../core/services/auth.service';
 import { MenuConfigService } from '../../core/services/menu-config.service';
 import { QuickNavService } from '../../core/services/quick-nav.service';
+import { ApiService } from '../../core/services/api.service';
 import { Drawer, DrawerModule } from 'primeng/drawer';
 import { QuickNav } from '../quick-nav/quick-nav';
 import { LoginDialog } from '../login-dialog/login-dialog';
@@ -47,22 +51,30 @@ interface Opcion {
     TooltipModule,
     Message,
     DrawerModule,
+    PopoverModule,
+    DialogModule,
     QuickNav,
     LoginDialog,
     RegistroDialog,
   ],
-  templateUrl: './main-layout.html',
-  styleUrl: './main-layout.scss',
+  templateUrl: './main-layout-private.html',
+  styleUrl: './main-layout-private.scss',
 })
-export class MainLayout {
+export class MainPrivateLayout {
   private auth = inject(AuthService);
   private confirm = inject(ConfirmationService);
   private msgs = inject(MessageService);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
   private menuConfig = inject(MenuConfigService);
+  private api = inject(ApiService);
   /** Instancia del servicio de navegación rápida (botón del topbar) */
   readonly quickNav = inject(QuickNavService);
+
+  /** Menú de usuario del topbar (p-popover) */
+  @ViewChild('popUsuario') popUsuario?: Popover;
+  @ViewChild('loginDlg') loginDlg?: LoginDialog;
+  @ViewChild('registroDlg') registroDlg?: RegistroDialog;
 
   mobileSidebarOpen = signal(false);
   sidebarHidden = signal(false);
@@ -98,6 +110,11 @@ export class MainLayout {
     return this.tipoPersona() === 'C';
   }
 
+  readonly esClienteLogueado = (): boolean => {
+    const u = this.user();
+    return u != null && (u.tipoPersona === 'C' || u.sn_cliente === 'S');
+  };
+
   /** Checkbox "Es cliente": marca/desmarca y sincroniza el tipo de persona del topbar */
   onEsClienteChange(esCliente: boolean) {
     this.tipoPersona.set(esCliente ? 'C' : 'E');
@@ -114,21 +131,21 @@ export class MainLayout {
   private guardarPreferencias() {
     if (this.recordar()) {
       localStorage.setItem(
-        MainLayout.CLAVE_RECORDAR,
+        MainPrivateLayout.CLAVE_RECORDAR,
         JSON.stringify({
           usuario: this.loginUsuario(),
           tipoPersona: this.tipoPersona(),
         }),
       );
     } else {
-      localStorage.removeItem(MainLayout.CLAVE_RECORDAR);
+      localStorage.removeItem(MainPrivateLayout.CLAVE_RECORDAR);
     }
   }
 
   /** Restaura la selección guardada al iniciar (si el usuario pidió recordar) */
   private cargarPreferencias() {
     try {
-      const raw = localStorage.getItem(MainLayout.CLAVE_RECORDAR);
+      const raw = localStorage.getItem(MainPrivateLayout.CLAVE_RECORDAR);
       if (!raw) return;
       const data = JSON.parse(raw);
       if (data?.usuario) this.loginUsuario.set(String(data.usuario));
@@ -266,7 +283,92 @@ export class MainLayout {
       .slice(0, 2);
   }
 
+  // ==================== Menú de usuario (p-popover) ====================
+
+  alternarUsuario(event: Event) {
+    this.popUsuario?.toggle(event);
+  }
+
+  loginDesdePopover() {
+    this.popUsuario?.hide();
+    this.loginDlg?.abrir();
+  }
+
+  registroDesdePopover() {
+    this.popUsuario?.hide();
+    this.registroDlg?.abrir();
+  }
+
+  irAPedidosDesdePopover() {
+    this.popUsuario?.hide();
+    this.router.navigate(['/facturacion/pedidos-virtual']);
+  }
+
+  // ==================== Cambiar Contraseña ====================
+
+  dialogCambiarPassword: boolean = false;
+  passwordNueva: string = '';
+  passwordConfirm: string = '';
+  cambiandoPassword: boolean = false;
+
+  abrirCambiarPassword() {
+    this.popUsuario?.hide();
+    this.passwordNueva = '';
+    this.passwordConfirm = '';
+    this.dialogCambiarPassword = true;
+  }
+
+  get pwdLargo(): boolean {
+    return this.passwordNueva.length >= 8;
+  }
+  get pwdMayuscula(): boolean {
+    return /[A-ZÁÉÍÓÚÜÑ]/.test(this.passwordNueva);
+  }
+  get pwdDigito(): boolean {
+    return /[0-9]/.test(this.passwordNueva);
+  }
+  get pwdEspecial(): boolean {
+    return /[.,!@#$%^&*()=+~/?;:ñÑ]/.test(this.passwordNueva);
+  }
+  get pwdValida(): boolean {
+    return this.pwdLargo && this.pwdMayuscula && this.pwdDigito && this.pwdEspecial;
+  }
+
+  guardarPassword() {
+    const nueva = this.passwordNueva.trim();
+    const confirm = this.passwordConfirm.trim();
+    if (!this.pwdValida) {
+      this.msgs.add({ severity: 'warn', summary: 'Contraseña no cumple requisitos', detail: 'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.' });
+      return;
+    }
+    if (nueva !== confirm) {
+      this.msgs.add({ severity: 'warn', summary: 'No coinciden', detail: 'La confirmación de contraseña no coincide.' });
+      return;
+    }
+
+    this.cambiandoPassword = true;
+    this.api.putBase('/users/password/actualizar', { passwordNueva: nueva })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.cambiandoPassword = false;
+          this.dialogCambiarPassword = false;
+          this.msgs.add({ severity: 'success', summary: 'Contraseña actualizada', detail: 'Tu contraseña ha sido cambiada exitosamente' });
+        },
+        error: (err) => {
+          this.cambiandoPassword = false;
+          const msg = err.error?.message || 'No se pudo actualizar la contraseña';
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: msg });
+        },
+      });
+  }
+
   cerrarSesion() {
+    this.cerrarSesionDesdePopover();
+  }
+
+  cerrarSesionDesdePopover() {
+    this.popUsuario?.hide();
     this.confirm.confirm({
       header: 'Cerrar sesión',
       message: '¿Estás seguro de cerrar la sesión actual?',

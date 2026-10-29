@@ -14,6 +14,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { PlanillaService } from '../../../core/services/planilla.service';
 import { ApiService } from '../../../core/services/api.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 import { PlanillaEmpleado } from '../../../core/models/planilla.models';
 
 interface PlTipoMov {
@@ -56,6 +57,7 @@ export class EmpleadoTipoMovManager implements OnInit {
   private router = inject(Router);
   private service = inject(PlanillaService);
   private api = inject(ApiService);
+  private nav = inject(NavegacionService);
   private msgs = inject(MessageService);
 
   cargando = signal(false);
@@ -349,7 +351,7 @@ export class EmpleadoTipoMovManager implements OnInit {
   }
 
   volver() {
-    this.router.navigate(['/planilla/empleado-tipo-mov']);
+    this.nav.volver(['/planilla/empleado-tipo-mov']);
   }
 
   editarEmpleado() {

@@ -1504,6 +1504,17 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'pi-tags',
     campos: [
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+      {
+        key: 'tipo_giro',
+        label: 'Tipo Giro',
+        tipo: 'select',
+        opciones: [
+          { label: 'Comercio', value: 'C' },
+          { label: 'Farmacias', value: 'F' },
+          { label: 'Restaurante', value: 'R' },
+        ],
+        requerido: true,
+      },
     ],
   },
   marcas: {
@@ -1617,6 +1628,29 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'pi-hashtag',
     campos: [
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
+  },
+  deptos: {
+    ruta: '/inventario/deptos',
+    titulo: 'Departamentos',
+    tituloSingular: 'Departamento',
+    subtitulo: 'Departamentos de inventario',
+    idKey: 'deptoId',
+    icono: 'pi-folder',
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+      { key: 'zorden', label: 'Orden', tipo: 'numero', requerido: true },
+      {
+        key: 'tipo_giro',
+        label: 'Tipo Giro',
+        tipo: 'select',
+        opciones: [
+          { label: 'Comercio', value: 'C' },
+          { label: 'Farmacias', value: 'F' },
+          { label: 'Restaurante', value: 'R' },
+        ],
+        requerido: true,
+      },
     ],
   },
 };

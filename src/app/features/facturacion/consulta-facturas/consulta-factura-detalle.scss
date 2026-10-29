@@ -176,7 +176,9 @@
   border-collapse: collapse;
 
   thead tr {
-    background: var(--c-primary);
+    background: var(--c-bg-table-header);
+      border-top: 1px solid var(--for-border-color-alls);
+      border-bottom: 1px solid var(--for-border-color-alls);
   }
 
   th {
@@ -198,7 +200,7 @@
     padding: 0.55rem 0.75rem;
     font-size: 0.85rem;
     color: var(--c-text);
-    border-bottom: 1px solid var(--c-border);
+    border-bottom: 1px solid var(--for-border-color-alls);
 
     &.col-num { text-align: center; color: var(--c-text-muted); font-size: 0.8rem; }
     &.col-cant { text-align: center; }
@@ -252,7 +254,7 @@
 }
 
 .totals-grand {
-  border-top: 2px solid var(--c-primary);
+  border-top: 2px solid var(--for-border-color-alls);
   margin-top: 0.35rem;
   padding-top: 0.5rem;
 
@@ -275,7 +277,7 @@
   gap: 0.15rem;
   margin-top: 0.6rem;
   padding-top: 0.5rem;
-  border-top: 1px dashed var(--c-border);
+  border-top: 1px solid var(--for-border-color-alls);
 
   .totals-letras-label {
     font-size: 0.75rem;
@@ -319,7 +321,7 @@
   gap: 2rem;
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px dashed var(--c-border);
+  border-top: 1px solid var(--for-border-color-alls);
 }
 
 .pago-item {
@@ -347,9 +349,9 @@
 .invoice-cai-block {
   margin-top: 1.25rem;
   padding: 0.6rem 0.85rem;
-  border: 1px dashed var(--c-border);
+  border: 1px solid var(--for-border-color-alls);
   border-radius: 6px;
-  background: var(--c-surface-ground, #f8fafc);
+  background: var(--c-surface-ground, --cg-bg);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 0.35rem 1.25rem;

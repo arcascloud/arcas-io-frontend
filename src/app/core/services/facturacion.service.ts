@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
+import { DashboardVentas } from '../models/facturacion.models';
 
 @Injectable({ providedIn: 'root' })
 export class FacturacionService {
@@ -76,5 +77,24 @@ export class FacturacionService {
    */
   updateDet<T>(ruta: string, id: number, payload: unknown): Observable<T> {
     return this.api.put<T>(ruta, id, payload);
+  }
+
+  /**
+   * Dashboard de ventas y KPIs (dashboardId3).
+   * Los filtros nulos/undefined se omiten (ApiService manda 'undefined' si no se filtra).
+   * @param params - anio, mes (1-12), sucursalId y categoriaId opcionales
+   */
+  getDashboardVentas(params: {
+    anio?: number | null;
+    mes?: number | null;
+    sucursalId?: number | null;
+    categoriaId?: number | null;
+  }): Observable<DashboardVentas> {
+    const p: Record<string, string | number> = {};
+    if (params?.anio != null) p['anio'] = params.anio;
+    if (params?.mes != null) p['mes'] = params.mes;
+    if (params?.sucursalId != null) p['sucursalId'] = params.sucursalId;
+    if (params?.categoriaId != null) p['categoriaId'] = params.categoriaId;
+    return this.api.get<DashboardVentas>('/facturacion/dashboard', p);
   }
 }

@@ -12,6 +12,7 @@ import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { FacturaImpresionService, FacturaImpresionData } from '../../../core/services/factura-impresion.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 import { numeroALetras } from '../../../core/utils/numeros-a-letras';
 
 @Component({
@@ -29,6 +30,7 @@ export class ConsultaFacturaDetalle implements OnInit {
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
   private impresion = inject(FacturaImpresionService);
+  private nav = inject(NavegacionService);
 
   /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
   partidaId = signal<number | null>(null);
@@ -84,12 +86,13 @@ export class ConsultaFacturaDetalle implements OnInit {
 
   volver() {
     // Si vino de una partida contable, regresa al detalle de esa partida
+    // (la partida viaja en la URL, no en el historial: se navega explícito)
     const partida = this.partidaId();
     if (partida) {
       this.router.navigate(['/contabilidad/copdamae'], { queryParams: { partidaId: partida } });
       return;
     }
-    this.router.navigate(['/facturacion/consultas']);
+    this.nav.volver(['/facturacion/consultas']);
   }
 
   moneda(n: number | undefined): string {

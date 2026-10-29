@@ -131,14 +131,9 @@
             </div>
             <div class="campo campo-cantidad">
               <label>Cantidad</label>
-              <p-inputNumber formControlName="cantidad" [min]="0.01" mode="decimal" [minFractionDigits]="2"
-                [maxFractionDigits]="2" size="small" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
-            </div>
-            <div class="campo campo-costo">
-              <label>Costo U.</label>
-              <p-inputNumber formControlName="costoUnitario" [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'"
-                [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" size="small"
-                [inputStyle]="{ 'width': '100%' }" styleClass="w-full" [readonly]="true" />
+              <p-inputNumber inputId="cant-ajuste" formControlName="cantidad" [min]="0.01" mode="decimal"
+                [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" size="small"
+                [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
             </div>
             <div class="campo-btn">
               <p-button icon="pi pi-plus" size="small" rounded severity="success" (onClick)="buscarProducto(); agregarItem()"
@@ -148,7 +143,6 @@
           @if (formDet.value.descripcion) {
             <div class="producto-encontrado">
               <span class="font-bold">{{ formDet.value.descripcion }}</span>
-              <span class="text-sm text-color-secondary"> | Costo: {{ moneda(formDet.value.costoUnitario) }}</span>
             </div>
           }
         </div>

@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanMatchFn, Router, UrlTree } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { environment } from '../../../environments/environment';
 import {
   AuthService,
   RUTAS_CLIENTE,
@@ -49,11 +50,21 @@ export const authGuard: CanMatchFn = async (_route, segments) => {
   const menuService = inject(MenuConfigService);
   const msgs = inject(MessageService);
 
+  const ruta = rutaIntentada(segments);
+
+  // ══ VALIDAR_SESSION='N' — modo sin validación de sesión ══
+  // No se exige sesión ni permisos, y NO se intercepta la raíz:
+  // cada layout maneja su redirect interno (privado → dashboard si hay
+  // empleado; público → facturacion/tienda si no hay sesión).
+  // Nunca se redirige a /login. "Nunca ir al Dashboard / /login" es
+  // exclusivo del destino del logout (AuthService.logout()).
+  if (environment.VALIDAR_SESSION === 'N') {
+    return true;
+  }
+
   const isAuthenticated = await new Promise<boolean>((resolve) => {
     authService.checkStatus().subscribe(resolve);
   });
-
-  const ruta = rutaIntentada(segments);
 
   // Sin sesión: la tienda es pública (browse de visitante); todo lo demás → login
   if (!isAuthenticated) {
@@ -61,8 +72,8 @@ export const authGuard: CanMatchFn = async (_route, segments) => {
     if (publica) {
       return true;
     }
-    router.navigateByUrl('/login');
-    return false;
+    // returnUrl: tras login se vuelve a la ruta intentada (no siempre al dashboard)
+    return router.createUrlTree(['/login'], { queryParams: { returnUrl: ruta } });
   }
 
   // Clientes (tipoPersona 'C' según datos del backend): solo rutas de

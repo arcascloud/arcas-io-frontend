@@ -7,29 +7,32 @@
   </header>
 
   <!-- FILTROS -->
-  <div class="grid">
-    <div class="col-fixed" style="width:50%">
-      <label>Proveedor</label>
-      <input pInputText pSize="small" [ngModel]="proveedor()" (ngModelChange)="proveedor.set($event)"
-        placeholder="Nombre o razon social" fluid />
-    </div>
-    <div class="col">
-      <label>Desde</label>
-      <p-datepicker size="small" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" dateFormat="dd/mm/yy"
-        [showIcon]="true" styleClass="w-full"></p-datepicker>
-      <label>Hasta</label>
-      <p-datepicker size="small" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" dateFormat="dd/mm/yy"
-        [showIcon]="true" styleClass="w-full"></p-datepicker>
-    </div>
-  </div>
-  <div class="grid">
-    <div class="col">
-      <div class="gap-2">
-        <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" [raised]="true"
-          severity="success"></p-button>
-        <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
-          (onClick)="limpiarFiltros()"></p-button>
+  <div class="filtros">
+    <div class="filtros-fila filtros-fila--persona">
+      <div class="campo">
+        <label>Proveedor</label>
+        <p-select size="small" [options]="proveedorOpciones()" [ngModel]="proveedor()"
+          (ngModelChange)="proveedor.set($event)" placeholder="Seleccionar proveedor" showClear filter
+          filterBy="label" styleClass="w-full" [appendTo]="'body'"></p-select>
       </div>
+    </div>
+    <div class="filtros-fila filtros-fila--fechas">
+      <div class="campo">
+        <label>Desde</label>
+        <p-datepicker size="small" appendTo="body" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)"
+          dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+      </div>
+      <div class="campo">
+        <label>Hasta</label>
+        <p-datepicker size="small" appendTo="body" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)"
+          dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+      </div>
+    </div>
+    <div class="filtros-acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" [raised]="true"
+        severity="success"></p-button>
+      <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
+        (onClick)="limpiarFiltros()"></p-button>
     </div>
   </div>
 

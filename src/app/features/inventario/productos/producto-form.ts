@@ -157,8 +157,10 @@ export class ProductoForm implements OnInit {
       // NOT NULL en BD + FK a ttipoimpuestos → obligatorio
       impuestoId: [null as number | null, Validators.required],
 
-      // Producto controlado (fármacos, material agroindustrial) → default 'N'
-      sn_controlado: ['N' as 'S' | 'N'],
+       // Producto controlado (fármacos, material agroindustrial) → default 'N'
+       sn_controlado: ['N' as 'S' | 'N'],
+       // Producto regulado como droga o psicotrópico → default 'N'
+       sn_droga: ['N' as 'S' | 'N'],
     });
 
     this.atributoForm = this.fb.group({
@@ -194,6 +196,7 @@ export class ProductoForm implements OnInit {
             impuestoId: p.impuestoId,
             sn_activo: p.sn_activo === 'S' ? 'S' : 'N',
             sn_controlado: p.sn_controlado === 'S' ? 'S' : 'N',
+            sn_droga: p.sn_droga === 'S' ? 'S' : 'N',
             // 20261015 ARFM clasificación: los productos antiguos traen 0 →
             // se dejan en null para que el select quede vacío y el usuario
             // asigne el valor real (los 3 campos son obligatorios).
@@ -602,6 +605,7 @@ export class ProductoForm implements OnInit {
           pasilloId: raw.pasilloId,
           impuestoId: raw.impuestoId,
           sn_controlado: raw.sn_controlado || 'N',
+          sn_droga: raw.sn_droga || 'N',
           sn_activo: raw.sn_activo || 'S',
         }
       : {
@@ -619,6 +623,7 @@ export class ProductoForm implements OnInit {
           pasilloId: raw.pasilloId,
           impuestoId: raw.impuestoId,
           sn_controlado: raw.sn_controlado || 'N',
+          sn_droga: raw.sn_droga || 'N',
           empresaId: this.auth.currentUser()?.empresaId,
           sn_activo: 'S',
         };

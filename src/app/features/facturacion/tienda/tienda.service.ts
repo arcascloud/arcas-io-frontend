@@ -1,101 +1,109 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, of, tap, shareReplay } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
-import { ProductoTienda, Carrito, CarritoItem, CheckoutPago, CheckoutResponse } from '../../../core/models/tienda.models';
+import { ProductoTienda, CarritoItem, CheckoutPago, CheckoutResponse } from '../../../core/models/tienda.models';
 
-const PRODUCTOS_CACHE_KEY = 'tienda_productos_v1';
-const PRODUCTOS_CACHE_TTL = 60 * 1000; // 1 minuto
+/**
+ * Origen de la solicitud -> clave de caché distinta (para evitar colisiones
+ * entre /facturacion/tienda y /facturacion/restaurante que comparten el endpoint).
+ *  - 'tienda': => lógica parametrizada (tipo_de_giro_tienda='C'), SOLO este componente
+ *  - 'restaurante': => lógica R original (sin filtro), NUNCA se modifica
+ */
+type OrigenCache = 'tienda' | 'restaurante' | 'all';
 
-interface ProductosCache {
+interface CacheEntry {
   data: ProductoTienda[];
-  timestamp: number;
+  ts: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class TiendaService {
   private api = inject(ApiService);
-  private productosCache$: Observable<ProductoTienda[]> | null = null;
+  private readonly TTL = 60 * 1000; // 1 minuto
+  private cacheStore = new Map<OrigenCache, CacheEntry>();
 
-  getProductos(forceRefresh = false): Observable<ProductoTienda[]> {
-    if (forceRefresh) {
-      this.invalidateCache();
+  /** Productos para tienda virtual (con imagen y stock). Filtro por origen parametrizado 'C'. */
+  getProductos(
+    forceRefresh = false,
+    origen: OrigenCache = 'all',
+  ): Observable<ProductoTienda[]> {
+    const key = origen || 'all';
+
+    if (!forceRefresh) {
+      const hit = this.cacheStore.get(key);
+      if (hit && Date.now() - hit.ts <= this.TTL) {
+        return of(hit.data).pipe(shareReplay(1));
+      }
     }
 
-    if (this.productosCache$) return this.productosCache$;
-
-    const cached = this.leerCache();
-    if (cached) {
-      this.productosCache$ = of(cached).pipe(shareReplay(1));
-      return this.productosCache$;
-    }
-
-    this.productosCache$ = this.api.get<ProductoTienda[]>('/inventario/tienda/productos').pipe(
-      tap(data => this.escribirCache(data)),
+    const src = this.api.get<ProductoTienda[]>(
+      '/inventario/tienda/productos',
+      key === 'all' ? undefined : { origen: key },
+    ).pipe(
+      tap((data) => this.save(key, data)),
       shareReplay(1),
     );
-    return this.productosCache$;
+    return src;
   }
 
   invalidateCache() {
-    this.productosCache$ = null;
-    try { localStorage.removeItem(PRODUCTOS_CACHE_KEY); } catch {}
-  }
-
-  private leerCache(): ProductoTienda[] | null {
+    this.cacheStore.clear();
     try {
-      const raw = localStorage.getItem(PRODUCTOS_CACHE_KEY);
-      if (!raw) return null;
-      const cache: ProductosCache = JSON.parse(raw);
-      if (Date.now() - cache.timestamp > PRODUCTOS_CACHE_TTL) {
-        localStorage.removeItem(PRODUCTOS_CACHE_KEY);
-        return null;
+      const store = localStorage as unknown as Storage;
+      for (let i = store.length - 1; i >= 0; i--) {
+        const k = store.key(i);
+        if (k && k.startsWith('tienda_productos_v1_')) store.removeItem(k);
       }
-      return cache.data;
     } catch {
-      return null;
+      /* ignore */
     }
   }
 
-  private escribirCache(data: ProductoTienda[]) {
+  private save(key: OrigenCache, data: ProductoTienda[]) {
     try {
-      const cache: ProductosCache = { data, timestamp: Date.now() };
-      localStorage.setItem(PRODUCTOS_CACHE_KEY, JSON.stringify(cache));
-    } catch {}
+      this.cacheStore.set(key, { data, ts: Date.now() });
+      localStorage.setItem(
+        `tienda_productos_v1_${key}`,
+        JSON.stringify({ data, ts: Date.now() }),
+      );
+    } catch {
+      /* localStorage deshabilitado */
+    }
   }
 
-  crearCarrito(nombre: string, direccion: string, atendio: string, gestorId: number): Observable<Carrito> {
-    return this.api.post<Carrito>('/facturacion/cotizaciones', {
-      Nombrecliente: nombre,
+  // ===================== Carrito =====================
+
+  getCarritoItems(carritoId: number): Observable<CarritoItem[]> {
+    return this.api.get<CarritoItem[]>(`/facturacion/cotizaciones-det/mae/${carritoId}`);
+  }
+
+  crearCarrito(
+    nombrecliente: string,
+    direccion: string,
+    atendio: string,
+    gestorId: number,
+  ): Observable<{ poscotmaeId: number }> {
+    return this.api.post<{ poscotmaeId: number }>('/facturacion/cotizaciones', {
+      Nombrecliente: nombrecliente || 'Cliente Tienda',
       direccion: direccion || 'N/A',
-      atendio,
-      gestorId,
+      atendio: atendio || 'Tienda Online',
+      gestorId: Number(gestorId) || 1,
     });
   }
 
-  agregarItem(payload: {
-    poscotmaeId: number;
-    productoId: string;
-    codbarra: string;
-    cantidad: number;
-    precio: number;
-    subTotal: number;
-  }): Observable<CarritoItem> {
-    return this.api.post<CarritoItem>('/facturacion/cotizaciones-det', payload);
+  agregarItem(payload: any): Observable<void> {
+    return this.api.post<void>('/facturacion/cotizaciones-det', payload).pipe(
+      tap(() => this.invalidateCache()),
+    );
   }
 
-  getCarritoItems(maeId: number): Observable<CarritoItem[]> {
-    return this.api.get<CarritoItem[]>(`/facturacion/cotizaciones-det/mae/${maeId}`);
+  eliminarItem(poscotdetId: number): Observable<any> {
+    return this.api.delete('/facturacion/cotizaciones-det', poscotdetId).pipe(
+      tap(() => this.invalidateCache()),
+    );
   }
 
-  eliminarItem(detId: number): Observable<any> {
-    return this.api.delete<any>('/facturacion/cotizaciones-det', detId);
-  }
-
-  eliminarCarrito(maeId: number): Observable<any> {
-    return this.api.delete<any>('/facturacion/cotizaciones', maeId);
-  }
-
-  checkout(pago: CheckoutPago): Observable<CheckoutResponse> {
-    return this.api.post<CheckoutResponse>('/facturacion/tienda/checkout', pago, { sinContexto: true });
+  checkout(p: any): Observable<CheckoutResponse> {
+    return this.api.post<CheckoutResponse>('/facturacion/tienda/checkout', p);
   }
 }

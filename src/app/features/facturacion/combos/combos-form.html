@@ -89,12 +89,25 @@
             size="small"
           />
         </div>
+
+        <div class="campo campo-acciones">
+          <p-button
+            type="button"
+            label="Cancelar"
+            icon="pi pi-times"
+            severity="secondary"
+            size="small"
+            rounded
+            (onClick)="volver()"
+          />
+          <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+        </div>
       </div>
 
       <div class="combo-layout">
         <div class="combo-catalogo">
           <div class="catalogo-header">
-            <h2 class="section-title"><i class="pi pi-box"></i> Productos Disponibles</h2>
+            <h2 class="section-title"><i class="pi pi-box"></i> Seleccion uno o varios productos para agregar al combo de ofertas y descuentos</h2>
             <div class="search-box">
               <i class="pi pi-search search-icon"></i>
               <input
@@ -250,18 +263,6 @@
         </div>
       </div>
 
-      <div class="acciones-form">
-        <p-button
-          type="button"
-          label="Cancelar"
-          icon="pi pi-times"
-          severity="secondary"
-          size="small"
-          rounded
-          (onClick)="volver()"
-        />
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
-      </div>
     </form>
   }
 </section>

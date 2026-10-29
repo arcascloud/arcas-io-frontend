@@ -1,0 +1,303 @@
+<p-toast />
+
+<div class="rest-layout" [class.rest-angosta]="estrecha()">
+  <!-- ═════════ Columna 1 · Productos (55%) ═════════ -->
+  <section class="rest-productos" aria-label="Productos">
+    <nav class="rest-categorias" aria-label="Categorías">
+      <button type="button" class="cat-chip" [class.activa]="categoriaActiva() === null" (click)="categoriaActiva.set(null)">
+        Todos
+      </button>
+      @for (c of categorias(); track c) {
+        <button type="button" class="cat-chip" [class.activa]="categoriaActiva() === c" (click)="categoriaActiva.set(c)">
+          {{ c }}
+        </button>
+      }
+    </nav>
+
+    @if (cargandoProductos()) {
+      <div class="rest-estado">
+        <i class="pi pi-spin pi-spinner"></i>
+        <p>Cargando productos...</p>
+      </div>
+    } @else {
+      <div class="rest-grid">
+        @for (p of productosFiltrados(); track p.produtoId) {
+          @let enOrden = cantidadPorProducto().get(p.produtoId) ?? 0;
+          <button
+            type="button"
+            class="prod-card"
+            [disabled]="p.existencia <= 0"
+            [attr.aria-label]="'Agregar ' + p.descripcion + ' a la orden'"
+            (click)="agregarProducto(p)"
+          >
+            <span class="prod-imagen">
+              @if (p.imagen) {
+                <img [src]="resolverImagen(p.imagen)" [alt]="p.descripcion" loading="lazy" />
+              } @else {
+                <i class="pi pi-images sin-imagen"></i>
+              }
+              @if (enOrden > 0) {
+                <span class="prod-badge" aria-label="{{ enOrden }} en la orden">{{ enOrden }}</span>
+              }
+            </span>
+            <span class="prod-info">
+              <span class="prod-categoria">{{ p.categoria || 'Sin categoría' }}</span>
+              <span class="prod-nombre">{{ p.descripcion }}</span>
+              <span class="prod-pie">
+                <span class="prod-precio">{{ formatearPrecio(p.precioventa) }}</span>
+                @if (p.existencia > 0) {
+                  <p-tag [value]="'Existencia: ' + p.existencia" severity="info" />
+                } @else {
+                  <p-tag value="Sin stock" severity="danger" />
+                }
+              </span>
+            </span>
+          </button>
+        } @empty {
+          <div class="rest-estado rest-vacio">
+            <i class="pi pi-inbox"></i>
+            <p>No hay productos en esta categoría</p>
+          </div>
+        }
+      </div>
+    }
+  </section>
+</div>
+
+<!-- ═════════ Columnas 2 y 3 · Drawer derecho (45% = 20% + 25%) ═════════ -->
+<p-drawer
+  [(visible)]="drawerVisible"
+  position="right"
+  [modal]="estrecha()"
+  [dismissible]="estrecha()"
+  [closeOnEscape]="estrecha()"
+  [showCloseIcon]="false"
+  [blockScroll]="false"
+  [style]="{ width: estrecha() ? '100%' : '40%' }"
+  styleClass="rest-drawer"
+>
+  <ng-template #headless>
+    <div class="rest-drawer-body">
+      <!-- Columna 2 · Mesas primero, Pedidos después -->
+      <section class="col-mesas" aria-label="Mesas y pedidos">
+        <header class="col-cabecera">
+          <h2 class="col-titulo">Mesas</h2>
+          @if (estrecha()) {
+            <p-button icon="pi pi-times" [rounded]="true" [text]="true" severity="secondary" aria-label="Cerrar panel" (onClick)="drawerVisible.set(false)" />
+          }
+        </header>
+
+        <div class="mesas-grid">
+          @for (m of mesas(); track m.nro) {
+            <p-button
+              [label]="'' + m.nro"
+              [rounded]="true"
+              [styleClass]="claseMesa(m)"
+              [pTooltip]="tituloMesa(m)"
+              tooltipPosition="top"
+              [attr.aria-label]="tituloMesa(m)"
+              (onClick)="clickMesa(m)"
+            />
+          }
+        </div>
+        <p class="mesas-leyenda">
+          <span class="punto libre"></span> Libre
+          <span class="punto seleccionada"></span> Seleccionada
+          <span class="punto ocupada"></span> Con orden
+        </p>
+
+        <div class="pedidos-cabecera">
+          <h3 class="col-subtitulo">
+            Pedidos
+            <span class="conteo">{{ pedidos().length }}</span>
+          </h3>
+          <p-button
+            label="Nueva orden"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            [disabled]="ocupado() || mesaSeleccionada() == null"
+            pTooltip="Elija una mesa libre primero"
+            tooltipPosition="left"
+            (onClick)="nuevaOrden()"
+          />
+        </div>
+
+        @if (mesaSeleccionada() != null) {
+          <p class="aviso-mesa" role="status">
+            Mesa {{ mesaSeleccionada() }} seleccionada — pulse "Nueva orden".
+          </p>
+        }
+
+        @if (pedidos().length === 0) {
+          <p class="vacio-texto">Sin pedidos. Seleccione una mesa libre y pulse "Nueva orden".</p>
+        } @else {
+          <ul class="pendientes">
+            @for (o of pedidos(); track o.pospedmaeId) {
+              <li class="pendiente" [class.seleccionada]="o.pospedmaeId === ordenActivaId()">
+                <button type="button" class="pendiente-info" (click)="seleccionarOrden(o.pospedmaeId)">
+                  <strong>Mesa {{ o.nromesa }}</strong>
+                  <span>
+                    Orden #{{ o.pospedmaeId }} · hace {{ minutos(o) }} min@if (o.sn_entregado === 'S') { · entregado }
+                  </span>
+                </button>
+                @if (o.sn_entregado === 'N') {
+                  <p-button
+                    icon="pi pi-check"
+                    [rounded]="true"
+                    [text]="true"
+                    severity="success"
+                    pTooltip="Marcar como entregado"
+                    [attr.aria-label]="'Marcar la mesa ' + o.nromesa + ' como entregada'"
+                    [disabled]="ocupado()"
+                    (onClick)="marcarEntregada(o)"
+                  />
+                }
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <!-- Columna 3 · Orden (25%) -->
+      <section class="col-orden" aria-label="Orden actual">
+        @if (ordenActiva(); as o) {
+          <header class="col-cabecera">
+            <h2 class="col-titulo">Orden #{{ o.pospedmaeId }}</h2>
+            <span class="orden-mesa" [class.sin-mesa]="o.nromesa == null">
+              {{ o.nromesa != null ? 'Mesa ' + o.nromesa : 'Sin mesa' }}
+            </span>
+          </header>
+
+          <div class="orden-items">
+            @for (item of items(); track item.pospeddetId) {
+              @let info = infoItem(item);
+              <div class="orden-item">
+                <div class="orden-item-img">
+                  @if (info.imagen) {
+                    <img [src]="info.imagen" [alt]="info.nombre" loading="lazy" />
+                  } @else {
+                    <i class="pi pi-image"></i>
+                  }
+                </div>
+                <div class="orden-item-datos">
+                  <span class="orden-item-nombre">{{ info.nombre }}</span>
+                  <span class="orden-item-precio">{{ formatearPrecio(item.precioventa) }}</span>
+                  <div class="orden-item-cant">
+                    <button type="button" class="qty-btn" aria-label="Quitar uno" [disabled]="ocupado()" (click)="decrementar(item)">
+                      <i class="pi pi-minus"></i>
+                    </button>
+                    <span class="qty-valor">{{ item.cantidad }}</span>
+                    <button type="button" class="qty-btn" aria-label="Agregar uno" [disabled]="ocupado()" (click)="incrementar(item)">
+                      <i class="pi pi-plus"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="orden-item-lado">
+                  <span class="orden-item-total">{{ formatearPrecio(totalLinea(item)) }}</span>
+                  <button type="button" class="item-quitar" aria-label="Quitar de la orden" [disabled]="ocupado()" (click)="quitar(item)">
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              <div class="rest-estado rest-vacio">
+                <i class="pi pi-shopping-cart"></i>
+                <p>Toque un producto para agregarlo.</p>
+              </div>
+            }
+          </div>
+
+          <footer class="orden-pie">
+            <div class="linea"><span>Subtotal</span><span>{{ formatearPrecio(o.subTotal) }}</span></div>
+            <div class="linea"><span>ISV</span><span>{{ formatearPrecio(o.impuesto) }}</span></div>
+            <div class="linea total"><span>Total</span><strong>{{ formatearPrecio(o.total) }}</strong></div>
+
+            @if (items().length && o.sn_entregado === 'N') {
+              <p-button
+                label="Marcar entregada"
+                icon="pi pi-check"
+                severity="secondary"
+                [outlined]="true"
+                [fluid]="true"
+                [disabled]="ocupado()"
+                (onClick)="marcarEntregada(o)"
+              />
+            }
+            @if (!items().length) {
+              <p-button label="Cancelar orden" icon="pi pi-trash" severity="danger" [text]="true" [fluid]="true" [disabled]="ocupado()" (onClick)="cancelarOrdenVacia()" />
+            } @else {
+              <p-button label="Pagar ahora" icon="pi pi-check" severity="success" [fluid]="true" [disabled]="ocupado()" (onClick)="abrirPago()" />
+            }
+          </footer>
+        } @else {
+          <header class="col-cabecera"><h2 class="col-titulo">Orden</h2></header>
+          <div class="rest-estado rest-vacio">
+            <i class="pi pi-receipt"></i>
+            <p>Seleccione una mesa con orden para ver su detalle, o elija una mesa libre y pulse "Nueva orden".</p>
+          </div>
+        }
+      </section>
+    </div>
+  </ng-template>
+</p-drawer>
+
+@if (estrecha() && !drawerVisible()) {
+  <button type="button" class="rest-fab" aria-label="Abrir mesas y orden" (click)="drawerVisible.set(true)">
+    <i class="pi pi-receipt"></i>
+    @if (totalItemsOrden() > 0) {
+      <span class="rest-fab-badge">{{ totalItemsOrden() }}</span>
+    }
+  </button>
+}
+
+<!-- ═════════ Cobro ═════════ -->
+<p-dialog
+  header="Cobrar orden"
+  [(visible)]="dialogPago"
+  [modal]="true"
+  [closable]="!ocupado()"
+  [style]="{ width: 'min(26rem, 94vw)' }"
+>
+  @if (ordenActiva(); as o) {
+    <div class="pago-resumen">
+      <span>Mesa {{ o.nromesa }} · Orden #{{ o.pospedmaeId }}</span>
+      <strong>{{ formatearPrecio(o.total) }}</strong>
+    </div>
+
+    <div class="pago-campo">
+      <label for="pago-forma">Forma de pago</label>
+      <p-select
+        inputId="pago-forma"
+        [options]="formasPago()"
+        optionLabel="label"
+        optionValue="value"
+        [(ngModel)]="pagoFormapagoId"
+        [fluid]="true"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="pago-campo">
+      <label for="pago-efectivo">Efectivo recibido (opcional)</label>
+      <p-inputnumber
+        inputId="pago-efectivo"
+        [(ngModel)]="pagoEfectivo"
+        mode="decimal"
+        prefix="L "
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        [fluid]="true"
+      />
+    </div>
+
+    @if (pagoEfectivo) {
+      <div class="pago-cambio">Cambio: <strong>{{ formatearPrecio(cambio()) }}</strong></div>
+    }
+  }
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" [disabled]="ocupado()" (onClick)="dialogPago.set(false)" />
+    <p-button label="Facturar" icon="pi pi-check" severity="success" [loading]="ocupado()" [disabled]="pagoFormapagoId == null" (onClick)="confirmarPago()" />
+  </ng-template>
+</p-dialog>

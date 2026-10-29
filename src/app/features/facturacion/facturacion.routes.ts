@@ -41,6 +41,16 @@ export const FACTURACION_ROUTES: Routes = [
       import('./pedidos-virtual/pedidos-virtual').then((m) => m.PedidosVirtual),
   },
   {
+    path: 'pedidos-virtual/:id',
+    loadComponent: () =>
+      import('./pedidos-virtual/pedidos-virtual').then((m) => m.PedidosVirtual),
+  },
+  {
+    path: 'dashboardId3',
+    loadComponent: () =>
+      import('./dashboard-id3/dashboard-id3').then((m) => m.DashboardId3Component),
+  },
+  {
     path: 'consultas',
     loadComponent: () =>
       import('./consulta-facturas/consulta-facturas').then((m) => m.ConsultaFacturas),
@@ -94,6 +104,11 @@ export const FACTURACION_ROUTES: Routes = [
     path: 'todopago',
     loadComponent: () =>
       import('./todopago/todopago').then((m) => m.TodoPago),
+  },
+  {
+    path: 'restaurante',
+    loadComponent: () =>
+      import('./restaurante/restaurante').then((m) => m.Restaurante),
   },
   { path: '**', redirectTo: 'consultas' },
 ];

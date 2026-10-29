@@ -1,0 +1,745 @@
+/*
+  Restaurante — 3 columnas: productos 60% | mesas 20% | orden 20%.
+  Las columnas 2 y 3 viven dentro del p-drawer (40% del ancho): 1fr + 1fr = 20% : 20%.
+  Usa las variables --c-* del tema de Arcas (igual que tienda-virtual).
+*/
+
+$drawer-width: 40%;
+$bp-angosto: 992px;
+$mesa-size: 2.75rem;
+
+:host {
+  display: block;
+}
+
+.rest-layout {
+  min-height: 100vh;
+  background: var(--c-surface-ground);
+}
+
+/* ═════════ Columna 1 · Productos ═════════ */
+.rest-productos {
+  width: calc(100% - #{$drawer-width});
+  padding: 1rem 1.25rem 2rem;
+  box-sizing: border-box;
+}
+
+.rest-angosta .rest-productos {
+  width: 100%;
+  padding: 0.75rem 0.75rem 6rem; // espacio para el botón flotante
+}
+
+.rest-categorias {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.cat-chip {
+  flex: 0 0 auto;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: var(--c-surface-ground);
+  }
+
+  &.activa {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    color: #fff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Al menos 3 productos por fila en el 55% del ancho */
+.rest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.rest-angosta .rest-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.prod-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--c-card-background);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.99);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--c-primary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .prod-imagen {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #f1f5f9;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      mix-blend-mode: multiply;
+    }
+
+    .sin-imagen {
+      font-size: 2.5rem;
+      color: #cbd5e1;
+    }
+  }
+
+  .prod-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    padding: 0 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--c-success);
+    color: #052e16;
+    font-size: 0.85rem;
+    font-weight: 800;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+
+  .prod-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.75rem;
+  }
+
+  .prod-categoria {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--c-card-color-text);
+  }
+
+  .prod-nombre {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--c-text);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .prod-pie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
+  }
+
+  .prod-precio {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-card-color-text);
+  }
+}
+
+.rest-estado {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 3rem 1rem;
+  color: var(--c-text-muted);
+  text-align: center;
+
+  i {
+    font-size: 2rem;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  &.rest-vacio i {
+    color: var(--c-text-muted);
+    opacity: 0.7;
+  }
+}
+
+/* ═════════ Drawer (columnas 2 y 3) ═════════ */
+:host ::ng-deep .rest-drawer {
+  background: var(--c-surface);
+  border-left: 1px solid var(--c-border);
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.06);
+}
+
+.rest-drawer-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr; // 20% : 20% del ancho total
+  height: 100%;
+  min-height: 0;
+}
+
+.col-mesas,
+.col-orden {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 0;
+  min-width: 0;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.col-orden {
+  border-left: 1px solid var(--c-border);
+}
+
+.col-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.col-titulo {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.col-subtitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--c-text);
+
+  .conteo {
+    min-width: 1.4rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--c-text-muted);
+  }
+}
+
+.aviso-mesa {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px dashed var(--c-primary);
+  background: color-mix(in srgb, var(--c-primary) 10%, transparent);
+  font-size: 0.85rem;
+  color: var(--c-text);
+}
+
+/* ── Mesas: botones redondos ── */
+.mesas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(#{$mesa-size}, 1fr));
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+// Los colores se pasan con los tokens de p-button para que respeten hover y active
+:host ::ng-deep .mesa-btn.p-button {
+  width: $mesa-size;
+  height: $mesa-size;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0.95rem;
+  font-weight: 700;
+
+  // Libre = gris
+  --p-button-primary-background: color-mix(in srgb, var(--c-text-muted) 25%, var(--c-surface));
+  --p-button-primary-hover-background: color-mix(in srgb, var(--c-text-muted) 38%, var(--c-surface));
+  --p-button-primary-active-background: color-mix(in srgb, var(--c-text-muted) 45%, var(--c-surface));
+  --p-button-primary-border-color: var(--c-border);
+  --p-button-primary-hover-border-color: var(--c-border);
+  --p-button-primary-active-border-color: var(--c-border);
+  --p-button-primary-color: var(--c-text);
+  --p-button-primary-hover-color: var(--c-text);
+  --p-button-primary-active-color: var(--c-text);
+
+  // Con orden = verde
+  &.mesa-ocupada {
+    --p-button-primary-background: var(--c-success);
+    --p-button-primary-hover-background: color-mix(in srgb, var(--c-success) 85%, #000);
+    --p-button-primary-active-background: color-mix(in srgb, var(--c-success) 75%, #000);
+    --p-button-primary-border-color: var(--c-success);
+    --p-button-primary-hover-border-color: var(--c-success);
+    --p-button-primary-active-border-color: var(--c-success);
+    --p-button-primary-color: #052e16;
+    --p-button-primary-hover-color: #052e16;
+    --p-button-primary-active-color: #052e16;
+  }
+
+  // Orden que se está viendo
+  &.mesa-activa {
+    box-shadow: 0 0 0 3px var(--c-surface), 0 0 0 5px var(--c-success);
+  }
+
+  // Mesa libre elegida para crear la orden (pendiente de "Nueva orden")
+  &.mesa-seleccionada {
+    outline: 2px dashed var(--c-primary);
+    outline-offset: 2px;
+    --p-button-primary-background: color-mix(in srgb, var(--c-primary) 18%, var(--c-surface));
+    --p-button-primary-hover-background: color-mix(in srgb, var(--c-primary) 28%, var(--c-surface));
+    --p-button-primary-color: var(--c-primary);
+    --p-button-primary-border-color: var(--c-primary);
+  }
+}
+
+.mesas-leyenda {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+
+  .punto {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    border: 1px solid var(--c-border);
+
+    &.libre {
+      background: color-mix(in srgb, var(--c-text-muted) 30%, var(--c-surface));
+    }
+
+    &.seleccionada {
+      background: color-mix(in srgb, var(--c-primary) 25%, var(--c-surface));
+      border-color: var(--c-primary);
+      margin-left: 0.4rem;
+    }
+
+    &.ocupada {
+      background: var(--c-success);
+      border-color: var(--c-success);
+      margin-left: 0.4rem;
+    }
+  }
+}
+
+/* ── Cabecera de Pedidos: título + botón "Nueva orden" ── */
+.pedidos-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--c-border);
+
+  .col-subtitulo {
+    margin: 0;
+  }
+}
+
+/* ── Por entregar ── */
+.vacio-texto {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+}
+
+.pendientes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pendiente {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.6rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface-ground);
+
+  &.seleccionada {
+    border-color: var(--c-success);
+  }
+
+  .pendiente-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0.25rem 0;
+    border: none;
+    background: none;
+    color: var(--c-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    strong {
+      font-size: 0.85rem;
+    }
+
+    span {
+      font-size: 0.72rem;
+      color: var(--c-text-muted);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--c-primary);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+  }
+}
+
+/* ═════════ Columna 3 · Orden ═════════ */
+.orden-mesa {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--c-success);
+  color: #052e16;
+  font-size: 0.8rem;
+  font-weight: 700;
+
+  &.sin-mesa {
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    color: var(--c-text-muted);
+  }
+}
+
+.orden-items {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.orden-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  border-radius: 10px;
+  background: var(--c-surface-ground);
+
+  .orden-item-img {
+    flex: 0 0 3.25rem;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cbd5e1;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .orden-item-datos {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .orden-item-nombre {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .orden-item-precio {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+  }
+
+  .orden-item-cant {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.25rem;
+  }
+
+  .orden-item-lado {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+
+  .orden-item-total {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    white-space: nowrap;
+  }
+}
+
+.qty-btn,
+.item-quitar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:focus-visible {
+    outline: 2px solid var(--c-primary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.qty-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 6px;
+  font-size: 0.65rem;
+
+  &:hover:not(:disabled) {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    color: #fff;
+  }
+}
+
+.qty-valor {
+  min-width: 1.4rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.item-quitar {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+
+  &:hover:not(:disabled) {
+    color: var(--c-error);
+    background: #fef2f2;
+  }
+}
+
+.orden-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+
+  .linea {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+    &.total {
+      padding-top: 0.25rem;
+      font-size: 1.05rem;
+      color: var(--c-text);
+    }
+  }
+}
+
+/* ═════════ Botón flotante (pantallas angostas) ═════════ */
+.rest-fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--c-primary);
+  color: #fff;
+  font-size: 1.4rem;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+
+  &:focus-visible {
+    outline: 3px solid var(--c-text);
+    outline-offset: 3px;
+  }
+
+  .rest-fab-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 0.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--c-error);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+}
+
+/* ═════════ Cobro ═════════ */
+.pago-resumen {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: var(--c-surface-ground);
+  color: var(--c-text);
+
+  strong {
+    font-size: 1.3rem;
+  }
+}
+
+.pago-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.9rem;
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+}
+
+.pago-cambio {
+  font-size: 0.95rem;
+  color: var(--c-text);
+}
+
+/* ═════════ Pantallas angostas: el drawer ocupa todo y apila las columnas ═════════ */
+@media (max-width: $bp-angosto) {
+  .rest-drawer-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow-y: auto;
+  }
+
+  .col-mesas,
+  .col-orden {
+    overflow-y: visible;
+  }
+
+  .col-orden {
+    border-left: none;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .mesas-grid {
+    grid-template-columns: repeat(auto-fill, minmax(#{$mesa-size}, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prod-card,
+  .cat-chip,
+  .qty-btn {
+    transition: none;
+  }
+}

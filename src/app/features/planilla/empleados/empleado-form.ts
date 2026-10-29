@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -13,6 +13,7 @@ import { MessageService } from 'primeng/api';
 import { PlanillaService } from '../../../core/services/planilla.service';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 
 @Component({
   selector: 'app-empleado-form',
@@ -33,11 +34,11 @@ import { AuthService } from '../../../core/services/auth.service';
 export class EmpleadoForm implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
   private service = inject(PlanillaService);
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private msgs = inject(MessageService);
+  private nav = inject(NavegacionService);
   private destroyRef = inject(DestroyRef);
 
   esEdicion = signal(false);
@@ -244,7 +245,7 @@ export class EmpleadoForm implements OnInit {
   }
 
   volver() {
-    this.router.navigate(['../'], { relativeTo: this.route });
+    this.nav.volver(['/planilla/empleados']);
   }
 
   /**

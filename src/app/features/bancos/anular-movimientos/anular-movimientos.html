@@ -1,11 +1,11 @@
 <p-toast />
-<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '450px' }" />
 
 <section class="page">
   <header class="page-header">
     <div>
-      <h1 class="page-title">Anulación de Movimientos</h1>
-      <p class="page-subtitle">Anular movimientos bancarios registrados</p>
+      <h1 class="page-title">Anulación de Cheques</h1>
+      <p class="page-subtitle">Anulación de cheques emitidos y reversión en Cuentas por Pagar</p>
     </div>
   </header>
 
@@ -33,50 +33,51 @@
     </div>
   </div>
 
-  <!-- ═══ Tabla de movimientos ═══ -->
+  <!-- ═══ Tabla de cheques ═══ -->
   <div class="card mb-3">
-    <p-table [value]="movimientos()" [loading]="cargando()" size="small"
+    <p-table [value]="cheques()" [loading]="cargando()" size="small"
       [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15, 25, 50]"
       [showCurrentPageReport]="true"
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
       <ng-template pTemplate="header">
         <tr>
-          <th style="width: 10rem">Fecha</th>
-          <th>Tipo</th>
-          <th>D/C</th>
-          <th>Referencia</th>
-          <th>Concepto</th>
+          <th style="width: 8rem">Nro. Cheque</th>
+          <th style="width: 8rem">Fecha</th>
+          <th>Cuenta</th>
+          <th>Beneficiario / Concepto</th>
           <th style="width: 10rem" class="text-right">Importe</th>
           <th style="width: 6rem" class="text-center">Estado</th>
-          <th style="width: 5rem" class="text-center">Acción</th>
+          <th style="width: 6rem" class="text-center">Acción</th>
         </tr>
       </ng-template>
-      <ng-template pTemplate="body" let-mov>
-        <tr [class.row-anulada]="mov.sn_doc_anulado === 'S'">
-          <td>{{ formatFecha(mov.fecharegistro) }}</td>
-          <td><p-tag [value]="tipoMovLabel(mov.tipomov)" [severity]="tipoMovSeverity(mov.tipomov)" styleClass="tag-sm" /></td>
-          <td><p-tag [value]="dcLabel(mov.dc_debitocredito)" [severity]="dcSeverity(mov.dc_debitocredito)" styleClass="tag-sm" /></td>
-          <td>{{ mov.nroreferencia || '-' }}</td>
-          <td>{{ mov.concepto || '-' }}</td>
-          <td class="text-right font-bold">{{ formatCurrency(mov.importe) }}</td>
+      <ng-template pTemplate="body" let-cheque>
+        <tr [class.row-anulada]="cheque.sn_doc_anulado === 'S'">
+          <td class="font-bold">{{ cheque.nrochq }}</td>
+          <td>{{ formatFecha(cheque.fecharegistro) }}</td>
+          <td>{{ cheque.nrocuenta }} <span class="text-muted">({{ cheque.bancoNombre }})</span></td>
+          <td>
+            <div class="font-bold">{{ beneficiarioDe(cheque) }}</div>
+            <div class="text-sm text-muted">{{ cheque.concepto }}</div>
+          </td>
+          <td class="text-right font-bold">{{ formatCurrency(cheque.importe) }}</td>
           <td class="text-center">
-            @if (mov.sn_doc_anulado === 'S') {
+            @if (cheque.sn_doc_anulado === 'S') {
               <p-tag value="Anulado" severity="danger" styleClass="tag-sm" />
             } @else {
               <p-tag value="Activo" severity="success" styleClass="tag-sm" />
             }
           </td>
           <td class="text-center">
-            @if (mov.sn_doc_anulado !== 'S') {
+            @if (cheque.sn_doc_anulado !== 'S') {
               <p-button icon="pi pi-ban" size="small" variant="text" [rounded]="true" severity="danger"
-                pTooltip="Anular" (click)="anular(mov)" />
+                pTooltip="Anular cheque" (click)="anular(cheque)" />
             }
           </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="8" class="text-center p-3">No hay movimientos para esta cuenta.</td>
+          <td colspan="7" class="text-center p-3">No hay cheques registrados.</td>
         </tr>
       </ng-template>
     </p-table>

@@ -95,10 +95,13 @@
   --color-texto-label: rgba(255, 255, 255, 0.4);
   --color-texto-input: rgba(255, 255, 255, 0.808);
   --master-background: #213341;
-  --datatable-row-hover-background: #305f5de7;
+  --datatable-row-hover-background: #285856e7;
+    --datatable-row-striped-background: #1f2f3a;
   --texto-secundario: #2c4d6f;
   --select-row: #93b7d3;
   --for-border-color-alls: #39495b;
+  --color1: #243347;
+    --color2: #1E293B;
 
   /* ===== Design tokens ===== */
   --c-bg: #1e2e3b;
@@ -219,7 +222,7 @@
     /* Valor más compacto que el predeterminado */
 
     /* Cambiar el color de fondo para las filas impares/pares alternadas */
-      --p-datatable-row-striped-background: var(--p-form-field-background);
+      --p-datatable-row-striped-background: var(--datatable-row-striped-background);
 
       /* Color de fila seleccionada */
       --p-datatable-row-selected-background: var(--c-text-muted);
@@ -287,6 +290,23 @@
   --p-togglebutton-checked-background: var(--c-bg);
   --p-togglebutton-content-checked-background: var(--c-bg);
   --p-togglebutton-checked-border-color: var(--c-bg);
+}
+.botton-bg-transparente {
+  background: transparent;
+  color: var(--c-bg-white);
+
+  --p-button-contrast-background: transparent;
+  --p-button-contrast-border-color: var(--c-bg-black);
+  --p-button-contrast-color: var(--c-bg-white);
+}
+
+.inputtext-transparente {
+  background: transparent;
+  color: var(--c-bg-white);
+  border-color: var(--c-bg-white);
+  --p-inputtext-background: transparent;
+  --p-inputtext-border-color: var(--c-bg-white);
+  --p-inputtext-color: var(--c-bg-white);
 }
 body {
   font-family: var(--font-family);

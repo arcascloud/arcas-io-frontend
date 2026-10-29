@@ -47,6 +47,14 @@
   text-align: center;
 }
 
+.text-muted {
+  color: var(--c-text-muted);
+}
+
+.text-sm {
+  font-size: 0.8rem;
+}
+
 .row-anulada {
   opacity: 0.5;
   text-decoration: line-through;

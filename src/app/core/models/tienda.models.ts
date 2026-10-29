@@ -8,6 +8,9 @@ export interface ProductoTienda {
   existencia: number;
   categoria?: string;
   categoriaId: number;
+  deptoId?: number;
+  categoriaDeptoId?: number;
+  tipo_giro?: string;
 }
 
 export interface Carrito {
