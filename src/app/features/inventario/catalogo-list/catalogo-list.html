@@ -22,7 +22,7 @@
         pInputText type="text"
         pSize="small"
         placeholder="Buscar..." [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
-        (keyup.enter)="buscar()" />
+        (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" />
     </div>
     <div class="campo acciones">
       <p-button label="Buscar"

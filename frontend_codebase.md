@@ -1,5 +1,5 @@
 # ERP Arcas - Código Fuente Completo
-> Generado automáticamente el 22/10/2026, 5:25:29 p. m.
+> Generado automáticamente el 29/10/2026, 11:49:20 a. m.
 
 ---
 
@@ -179,7 +179,18 @@
 
 ---
 
-## 📄 src\app\app.config - copia.ts
+## 📄 src\.vscode\settings.json
+
+```json
+{
+    "angular.enable-strict-mode-prompt": false
+}
+
+```
+
+---
+
+## 📄 src\app\app.config.basic.ts
 
 ```typescript
 import {
@@ -313,11 +324,11 @@ const ArcasPreset = definePreset(Aura, {
         primary: {
           color: '{primary.700}',
           contrastColor: '{surface.800}',
-          hoverColor: '{primary.700}', /* color de input */
+          hoverColor: '{primary.700}' /* color de input */,
           activeColor: '{primary.700}',
         },
         highlight: {
-          background: 'color-mix(in srgb, {primary.400}, transparent 84%)',
+          background: 'color-mix(in srgb, {primary.200}, transparent 84%)',
           focusBackground: 'color-mix(in srgb, {primary.400}, transparent 76%)',
           color: 'rgba(255, 255, 255, 0.88)',
           focusColor: 'rgba(255,255,255,.98)',
@@ -389,59 +400,97 @@ export const appConfig: ApplicationConfig = {
 ```typescript
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
-import { MainLayout } from './layout/main-layout/main-layout';
+import { erpLayoutGuard } from './core/guards/layout.guard';
+import { MainPrivateLayout } from './layout/main-layout-private/main-layout-private';
+import { MainLayoutPublic } from './layout/main-layout-public/main-layout-public';
+
+/**
+ * Hijos compartidos por AMBOS layouts (ERP y público/CRM).
+ * La diferencia entre rutas está en el componente raíz
+ * (MainPrivateLayout vs MainLayoutPublic) y en el redirect inicial.
+ */
+const sharedChildren: Routes = [
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
+  },
+  {
+    path: 'inventario',
+    loadChildren: () =>
+      import('./features/inventario/inventario.routes').then((m) => m.INVENTARIO_ROUTES),
+  },
+  {
+    path: 'bancos',
+    loadChildren: () => import('./features/bancos/bancos.routes').then((m) => m.BANCOS_ROUTES),
+  },
+  {
+    path: 'facturacion',
+    loadChildren: () =>
+      import('./features/facturacion/facturacion.routes').then((m) => m.FACTURACION_ROUTES),
+  },
+  // Atajos raíz → módulo de facturación
+  { path: 'tienda', redirectTo: 'facturacion/tienda', pathMatch: 'full' },
+  { path: 'pedidos', redirectTo: 'facturacion/pedidos-virtual', pathMatch: 'full' },
+  {
+    path: 'cxc',
+    loadChildren: () => import('./features/cxc/cxc.routes').then((m) => m.CXC_ROUTES),
+  },
+  {
+    path: 'cxp',
+    loadChildren: () => import('./features/cxp/cxp.routes').then((m) => m.CXP_ROUTES),
+  },
+  {
+    path: 'planilla',
+    loadChildren: () =>
+      import('./features/planilla/planilla.routes').then((m) => m.PLANILLA_ROUTES),
+  },
+  {
+    path: 'contabilidad',
+    loadChildren: () =>
+      import('./features/contabilidad/contabilidad.routes').then((m) => m.CONTABILIDAD_ROUTES),
+  },
+  {
+    path: 'configuracion',
+    loadChildren: () =>
+      import('./features/configuracion/configuracion.routes').then(
+        (m) => m.CONFIGURACION_ROUTES,
+      ),
+  },
+  { path: '**', redirectTo: 'dashboard' },
+];
 
 export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
   },
+
+  // ══════════════════════════════════════════════════════════════
+  // RUTA ERP — sn_cliente !== 'S' → main-layout-private
+  // erpLayoutGuard filtra: sin sesión o sn_cliente='S' → false
+  // (Angular prueba la siguiente ruta raíz = layout público)
+  // ══════════════════════════════════════════════════════════════
   {
     path: '',
-    component: MainLayout,
-    canMatch: [authGuard],
+    component: MainPrivateLayout,
+    canMatch: [erpLayoutGuard, authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      {
-        path: 'dashboard',
-        loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
-      },
-      {
-        path: 'inventario',
-        loadChildren: () => import('./features/inventario/inventario.routes').then((m) => m.INVENTARIO_ROUTES),
-      },
-      {
-        path: 'bancos',
-        loadChildren: () => import('./features/bancos/bancos.routes').then((m) => m.BANCOS_ROUTES),
-      },
-      {
-        path: 'facturacion',
-        loadChildren: () => import('./features/facturacion/facturacion.routes').then((m) => m.FACTURACION_ROUTES),
-      },
-      // Atajos raíz → módulo de facturación
-      { path: 'tienda', redirectTo: 'facturacion/tienda', pathMatch: 'full' },
-      { path: 'pedidos', redirectTo: 'facturacion/pedidos-virtual', pathMatch: 'full' },
-      {
-        path: 'cxc',
-        loadChildren: () => import('./features/cxc/cxc.routes').then((m) => m.CXC_ROUTES),
-      },
-      {
-        path: 'cxp',
-        loadChildren: () => import('./features/cxp/cxp.routes').then((m) => m.CXP_ROUTES),
-      },
-      {
-        path: 'planilla',
-        loadChildren: () => import('./features/planilla/planilla.routes').then((m) => m.PLANILLA_ROUTES),
-      },
-      {
-        path: 'contabilidad',
-        loadChildren: () => import('./features/contabilidad/contabilidad.routes').then((m) => m.CONTABILIDAD_ROUTES),
-      },
-      {
-        path: 'configuracion',
-        loadChildren: () => import('./features/configuracion/configuracion.routes').then((m) => m.CONFIGURACION_ROUTES),
-      },
-      { path: '**', redirectTo: 'dashboard' },
+      ...sharedChildren,
+    ],
+  },
+
+  // ══════════════════════════════════════════════════════════════
+  // RUTA PÚBLICA / CRM — sn_cliente='S' o visitante sin sesión
+  // → main-layout-public (la raíz entra a la tienda)
+  // ══════════════════════════════════════════════════════════════
+  {
+    path: '',
+    component: MainLayoutPublic,
+    canMatch: [authGuard],
+    children: [
+      { path: '', redirectTo: 'facturacion/tienda', pathMatch: 'full' },
+      ...sharedChildren,
     ],
   },
 ];
@@ -453,15 +502,41 @@ export const routes: Routes = [
 ## 📄 src\app\app.ts
 
 ```typescript
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, OnInit, inject } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
+import { Loading } from './shared/loading/loading';
+import { LoadingStateService } from './core/services/loading-state.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  template: '<router-outlet />',
+  imports: [RouterOutlet, Loading],
+  template: `
+    @if (loadingState.visible()) {
+      <app-loading [gif]="'cargando.gif'" [texto]="loadingState.texto()" />
+    } @else {
+      <router-outlet />
+    }
+  `,
 })
-export class App {}
+export class App implements OnInit {
+  private router = inject(Router);
+  readonly loadingState = inject(LoadingStateService);
+
+  ngOnInit(): void {
+    // F5: mostrar GIF mientras se determina el layout desde localStorage
+    this.loadingState.mostrar('Cargando...');
+
+    // Oculta el GIF en la PRIMERA navegación completada
+    this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe(() => {
+        if (this.loadingState.visible()) {
+          setTimeout(() => this.loadingState.ocultar(), 300);
+        }
+      });
+  }
+}
 
 ```
 
@@ -473,6 +548,7 @@ export class App {}
 import { inject } from '@angular/core';
 import { CanMatchFn, Router, UrlTree } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { environment } from '../../../environments/environment';
 import {
   AuthService,
   RUTAS_CLIENTE,
@@ -521,11 +597,21 @@ export const authGuard: CanMatchFn = async (_route, segments) => {
   const menuService = inject(MenuConfigService);
   const msgs = inject(MessageService);
 
+  const ruta = rutaIntentada(segments);
+
+  // ══ VALIDAR_SESSION='N' — modo sin validación de sesión ══
+  // No se exige sesión ni permisos, y NO se intercepta la raíz:
+  // cada layout maneja su redirect interno (privado → dashboard si hay
+  // empleado; público → facturacion/tienda si no hay sesión).
+  // Nunca se redirige a /login. "Nunca ir al Dashboard / /login" es
+  // exclusivo del destino del logout (AuthService.logout()).
+  if (environment.VALIDAR_SESSION === 'N') {
+    return true;
+  }
+
   const isAuthenticated = await new Promise<boolean>((resolve) => {
     authService.checkStatus().subscribe(resolve);
   });
-
-  const ruta = rutaIntentada(segments);
 
   // Sin sesión: la tienda es pública (browse de visitante); todo lo demás → login
   if (!isAuthenticated) {
@@ -533,8 +619,8 @@ export const authGuard: CanMatchFn = async (_route, segments) => {
     if (publica) {
       return true;
     }
-    router.navigateByUrl('/login');
-    return false;
+    // returnUrl: tras login se vuelve a la ruta intentada (no siempre al dashboard)
+    return router.createUrlTree(['/login'], { queryParams: { returnUrl: ruta } });
   }
 
   // Clientes (tipoPersona 'C' según datos del backend): solo rutas de
@@ -575,6 +661,51 @@ export const authGuard: CanMatchFn = async (_route, segments) => {
   });
   const destino: UrlTree = router.createUrlTree(['/dashboard']);
   return destino;
+};
+
+```
+
+---
+
+## 📄 src\app\core\guards\layout.guard.ts
+
+```typescript
+import { inject } from '@angular/core';
+import { CanMatchFn } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+
+/**
+ * Decide si la ruta raíz usa `main-layout-private` (ERP).
+ *
+ * Regla (definida por el usuario, 29/10/2026):
+ * - El switch de layouts depende SOLO del tipo de usuario, NO de
+ *   `VALIDAR_SESSION` (aplica igual en modo 'N' y 'S'):
+ *   - Sin sesión → `false` → `main-layout-public` (startPage / logout
+ *     con 'N' aterriza en `facturacion/tienda` con layout público)
+ *   - Cliente (`sn_cliente='S'` o `tipoPersona='C'`) → `main-layout-public`
+ *   - Empleado (`sn_cliente='N'`) → `main-layout-private` (Dashboard)
+ * - Con 'N' la diferencia está en `authGuard`: no exige sesión ni permisos.
+ *
+ * `canMatch` devuelve:
+ * - `true`  → la ruta ERP coincide y se renderiza `MainPrivateLayout`
+ * - `false` → Angular prueba la siguiente ruta raíz (layout público)
+ */
+export const erpLayoutGuard: CanMatchFn = () => {
+  const auth = inject(AuthService);
+  const user = auth.currentUser();
+
+  // Sin sesión → layout público (startPage / logout → tienda con layout público)
+  if (!user) return false;
+
+  // Cliente por tipoPersona ('C') → layout público (cubre sesiones viejas
+  // en localStorage que no tienen sn_cliente porque se crearon antes del cambio)
+  if (user.tipoPersona === 'C') return false;
+
+  // sn_cliente = 'S' → CRM → layout público
+  if (user.sn_cliente === 'S') return false;
+
+  // Cualquier otro caso (sn_cliente = 'N', vacío o indefinido) → ERP
+  return true;
 };
 
 ```
@@ -622,7 +753,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       // Evitamos mostrar Toast para un 401: logout() limpia signals +
-      // localStorage + navega a /login (el interceptor ya no debe hacerlo a mano).
+      // localStorage/sessionStorage/cookies + navega según VALIDAR_SESSION
+      // ('S' → /login, 'N' → /facturacion/tienda; el interceptor ya no debe hacerlo a mano).
       if (error.status === 401) {
         auth.logout();
       } else {
@@ -2257,6 +2389,17 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'pi-tags',
     campos: [
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+      {
+        key: 'tipo_giro',
+        label: 'Tipo Giro',
+        tipo: 'select',
+        opciones: [
+          { label: 'Comercio', value: 'C' },
+          { label: 'Farmacias', value: 'F' },
+          { label: 'Restaurante', value: 'R' },
+        ],
+        requerido: true,
+      },
     ],
   },
   marcas: {
@@ -2370,6 +2513,29 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     icono: 'pi-hashtag',
     campos: [
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+    ],
+  },
+  deptos: {
+    ruta: '/inventario/deptos',
+    titulo: 'Departamentos',
+    tituloSingular: 'Departamento',
+    subtitulo: 'Departamentos de inventario',
+    idKey: 'deptoId',
+    icono: 'pi-folder',
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+      { key: 'zorden', label: 'Orden', tipo: 'numero', requerido: true },
+      {
+        key: 'tipo_giro',
+        label: 'Tipo Giro',
+        tipo: 'select',
+        opciones: [
+          { label: 'Comercio', value: 'C' },
+          { label: 'Farmacias', value: 'F' },
+          { label: 'Restaurante', value: 'R' },
+        ],
+        requerido: true,
+      },
     ],
   },
 };
@@ -4216,6 +4382,163 @@ export const MAESTRO_DETALLE: Record<string, MaestroDetalleConfig> = {
   },
 };
 
+// =====================================================================
+// Dashboard de Ventas / KPIs — GET /facturacion/dashboard (dashboardId3)
+// =====================================================================
+
+/** Opción genérica de select. */
+export interface OpcionSel {
+  label: string;
+  value: number | null;
+}
+
+export interface DashboardReferencia {
+  anio: number;
+  mes: number;
+  fecha: string;
+  etiquetaMes: string;
+  etiquetaVentana: string;
+}
+
+export interface DashboardResumen {
+  numFacturas: number;
+  numContado: number;
+  numCredito: number;
+  ventasTotales: number;
+  contado: number;
+  credito: number;
+  subTotal: number;
+  impuesto: number;
+  descuento: number;
+  cogs: number;
+  utilidadBruta: number;
+  margenBruto: number | null;
+  pctContado: number;
+  pctCredito: number;
+  ticketPromedio: number;
+}
+
+/** Widget A — contado vs crédito. */
+export interface DashboardContadoCredito {
+  contado: number;
+  credito: number;
+  numContado: number;
+  numCredito: number;
+  pctContado: number;
+  pctCredito: number;
+  netoCredito: number;
+}
+
+/** Widget B — ventas por vendedor. `meta` y `cumplimiento` son null (no existe tabla de metas). */
+export interface DashboardVendedor {
+  gestorId: number | null;
+  nombre: string;
+  ventas: number;
+  comprobantes: number;
+  ticketPromedio: number;
+  meta: number | null;
+  cumplimiento: number | null;
+  pctParticipacion: number;
+}
+
+/** Widget C — un mes de la ventana de 12 meses. */
+export interface DashboardMes {
+  anio: number;
+  mes: number;
+  ym: string;
+  etiqueta: string;
+  ventas: number;
+  contado: number;
+  credito: number;
+  comprobantes: number;
+  acumulado: number;
+}
+
+export interface DashboardComparativo {
+  actual: number;
+  anterior: number;
+  mismoMesAnioAnterior: number;
+  mom: number | null;
+  yoy: number | null;
+}
+
+/** Widget D — rango de antigüedad de saldos (AR Aging). */
+export interface DashboardRango {
+  key: string;
+  rango: string;
+  dias: string;
+  desde: number | null;
+  hasta: number | null;
+  monto: number;
+  documentos: number;
+}
+
+export interface DashboardAging {
+  rangos: DashboardRango[];
+  carteraTotal: number;
+  carteraVencida: number;
+  carteraPorVencer: number;
+  documentosVencidos: number;
+  documentosCobrados: number;
+  montoCobrado: number;
+  pctVencido: number;
+}
+
+export interface DashboardDso {
+  dias: number | null;
+  muestras: number;
+  base: string;
+}
+
+/** Widget E — margen por categoría. */
+export interface DashboardCategoriaMargen {
+  categoriaId: number;
+  categoria: string;
+  ventas: number;
+  cogs: number;
+  utilidad: number;
+  margen: number | null;
+}
+
+/** Widgets F/G — producto del catálogo en el período (ingresos 0 = "dormido"). */
+export interface DashboardProducto {
+  productoId: number;
+  codbarra: string | null;
+  descripcion: string;
+  categoriaId: number;
+  categoria: string;
+  cantidad: number;
+  ingresos: number;
+  comprobantes: number;
+  costoUnitario: number;
+  cogs: number;
+  utilidad: number;
+  ultimaVenta: string | null;
+  diasSinVenta: number | null;
+}
+
+export interface DashboardOpciones {
+  anios: number[];
+  sucursales: { Idsucursal: number; descripcion: string }[];
+  categorias: { categoriaId: number; descripcion: string }[];
+}
+
+export interface DashboardVentas {
+  referencia: DashboardReferencia;
+  resumen: DashboardResumen;
+  contadoCredito: DashboardContadoCredito;
+  vendedores: DashboardVendedor[];
+  meses: DashboardMes[];
+  comparativo: DashboardComparativo;
+  aging: DashboardAging;
+  dso: DashboardDso;
+  categoriaMargen: DashboardCategoriaMargen[];
+  topProductos: DashboardProducto[];
+  bottomProductos: DashboardProducto[];
+  opciones: DashboardOpciones;
+  filtros: { anio: number | null; mes: number | null; sucursalId: number | null; categoriaId: number | null };
+}
+
 ```
 
 ---
@@ -4311,7 +4634,9 @@ export interface EstadoFechaSistema {
 export interface Categoria {
   categoriaId: number;
   descripcion: string;
+  deptoId: number;
   sn_activo: 'S' | 'N';
+  tipo_giro: 'C' | 'F' | 'R';
   empresaId: number;
   usuarioCreated: string;
   usuarioUpdated?: string;
@@ -4339,6 +4664,8 @@ export interface Producto {
   sn_activo: 'S' | 'N';
   /** Producto controlado (fármacos, material agroindustrial) */
   sn_controlado?: 'S' | 'N';
+  /** Producto regulado como droga o psicotrópico */
+  sn_droga?: 'S' | 'N';
   empresaId: number;
   usuarioCreated: string;
   usuarioUpdated?: string;
@@ -4396,8 +4723,8 @@ export interface Kardex {
   existencia: number;
   costoUnitario: number;
   subTotal: number;
-  saldoAnterior: number;
-  saldoActual: number;
+  existencia_anterior: number;
+  exisencia_actual: number;
   costoTotal: number;
   costoUSD: number;
   subTotalUSD: number;
@@ -4414,6 +4741,7 @@ export interface Departamento {
   deptoId: number;
   descripcion: string;
   zorden: number;
+  tipo_giro: 'C' | 'F' | 'R';
   sn_activo: 'S' | 'N';
   empresaId: number;
   usuarioCreated: string;
@@ -5170,6 +5498,72 @@ export interface PlanillaMae {
 
 ---
 
+## 📄 src\app\core\models\restaurante.models.ts
+
+```typescript
+/** Cantidad de mesas del salón (luego se puede mover a un parámetro de empresa). */
+export const NUM_MESAS = 15;
+
+/** Nombre provisional de una orden que todavía no tiene mesa. */
+export const NOMBRE_ORDEN_PENDIENTE = 'Orden de restaurante';
+
+/** Una orden del restaurante = un pedido (pospedmae) con mesa asignada. */
+export interface OrdenRestaurante {
+  pospedmaeId: number;
+  fecharegistro: string;
+  nombrecliente: string;
+  /** null = orden creada pero todavía sin mesa */
+  nromesa: number | null;
+  /** 'S' cuando el pedido ya fue llevado a la mesa */
+  sn_entregado: 'S' | 'N';
+  /** 'S' cuando ya se convirtió en factura (la mesa queda libre) */
+  sn_facturado: 'S' | 'N';
+  subTotal: number;
+  impuesto: number;
+  total: number;
+}
+
+/** Línea de la orden (pospeddet). */
+export interface OrdenItem {
+  pospeddetId: number;
+  pospedmaeId: number;
+  productoId: number;
+  codbarra: string;
+  cantidad: number;
+  precioventa: number;
+  impuesto: number;
+  /** Bruto de la línea: cantidad × precio (igual que pedido-form) */
+  subtotal: number;
+  nrofila: number;
+}
+
+export interface MesaVista {
+  nro: number;
+  orden: OrdenRestaurante | null;
+}
+
+export interface ConfigISV {
+  /** 0.15 = 15% */
+  tasa: number;
+  /** true = el precio de venta ya incluye ISV */
+  incluido: boolean;
+}
+
+export interface PagoOrden {
+  formapagoId: number;
+  efectivo_recibido?: number;
+}
+
+export interface FacturaResultado {
+  facturaId: number;
+  nrofactura: number;
+  total: number;
+}
+
+```
+
+---
+
 ## 📄 src\app\core\models\settings.models.ts
 
 ```typescript
@@ -5249,6 +5643,9 @@ export interface ProductoTienda {
   existencia: number;
   categoria?: string;
   categoriaId: number;
+  deptoId?: number;
+  categoriaDeptoId?: number;
+  tipo_giro?: string;
 }
 
 export interface Carrito {
@@ -5568,7 +5965,9 @@ export class ApiService {
    */
   private withEmpresa(params?: Record<string, string | number>): HttpParams {
     let p = new HttpParams();
-    const empresaId = this.auth.currentUser()?.empresaId;
+    // Sesión activa → empresaId del usuario; visitante sin sesión (tienda
+    // pública) → fallback a environment.empresaId.
+    const empresaId = this.auth.currentUser()?.empresaId ?? environment.empresaId;
     if (empresaId) {
       p = p.set('empresaId', empresaId.toString());
     }
@@ -5595,8 +5994,10 @@ export class ApiService {
     const user = this.auth.currentUser();
 
     if (!opts?.sinContexto && !ApiService.SIN_EMPRESA.includes(path)) {
-      if (user?.empresaId != null && out['empresaId'] === undefined) {
-        out['empresaId'] = user.empresaId;
+      // Sesión activa → empresaId del usuario; sin sesión → environment.empresaId
+      const empresaId = user?.empresaId ?? environment.empresaId;
+      if (empresaId != null && out['empresaId'] === undefined) {
+        out['empresaId'] = empresaId;
       }
     }
     if (!opts?.sinContexto && ApiService.CON_SUCURSAL.includes(path)) {
@@ -5726,6 +6127,12 @@ export interface AuthUser {
    * tienda/pedidos), 'E' = empleado (acceso completo al ERP).
    */
   tipoPersona?: 'C' | 'E';
+  /**
+   * Flag de `tusuariosinfo`:
+   * - `'S'` → usuario CRM/cliente → `main-layout-public`
+   * - `'N'` → usuario ERP → `main-layout-private`
+   */
+  sn_cliente?: 'S' | 'N';
 }
 
 /**
@@ -5797,6 +6204,17 @@ export class AuthService {
   readonly esCliente = computed(() => this.user()?.tipoPersona === 'C');
 
   /**
+   * true si el usuario es ERP → `main-layout-private`.
+   * Regla: `sn_cliente !== 'S'` (vacío/undefined se considera ERP por defecto
+   * para no romper sesiones antiguas guardadas en localStorage).
+   */
+  readonly esERP = computed(() => {
+    const u = this.user();
+    if (!u) return false;
+    return u.sn_cliente !== 'S';
+  });
+
+  /**
    * Autentica al usuario con credenciales
    * @param usuario - Nombre de usuario
    * @param password - Contraseña
@@ -5847,14 +6265,47 @@ export class AuthService {
   }
 
   /**
-   * Cierra la sesión del usuario, limpia localStorage y redirige a login
+   * Cierra la sesión de quien sea:
+   * 1. Limpieza TOTAL — localStorage, sessionStorage y cookies (evita
+   *    falsos positivos de sesión al re-ingresar).
+   * 2. Destino según `VALIDAR_SESSION`:
+   *    - `'N'` → `facturacion/tienda` (NUNCA /login ni /dashboard)
+   *    - `'S'` → `/login` (NUNCA la tienda)
    */
   logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    this.limpiarSesion();
     this.token.set(null);
     this.user.set(null);
-    this.router.navigate(['/login']);
+    const destino: string[] =
+      environment.VALIDAR_SESSION === 'N'
+        ? ['/facturacion/tienda']
+        : ['/login'];
+    this.router.navigate(destino);
+  }
+
+  /**
+   * Elimina TODO rastro de sesión: localStorage completo (token, usuario,
+   * preferencias, contraseña recordada, carrito, ventas suspendidas…),
+   * sessionStorage y todas las cookies del documento.
+   */
+  private limpiarSesion(): void {
+    try {
+      localStorage.clear();
+    } catch {
+      // storage no disponible → se ignora
+    }
+    try {
+      sessionStorage.clear();
+    } catch {
+      // storage no disponible → se ignora
+    }
+    document.cookie.split(';').forEach((cookie) => {
+      const eq = cookie.indexOf('=');
+      const nombre = (eq > 0 ? cookie.substring(0, eq) : cookie).trim();
+      if (nombre) {
+        document.cookie = `${nombre}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      }
+    });
   }
 
   /**
@@ -5930,6 +6381,47 @@ export class BodegasService {
 
 ---
 
+## 📄 src\app\core\services\carrito-state.service.ts
+
+```typescript
+import { Injectable, signal } from '@angular/core';
+
+/**
+ * Estado global del carrito de compras de la tienda virtual.
+ * Permite que el topbar (main-layout-public) muestre/abra el carrito
+ * sin acoplarse al componente tienda-virtual.
+ */
+@Injectable({ providedIn: 'root' })
+export class CarritoStateService {
+  /** Total de ítems en el carrito */
+  readonly totalItems = signal(0);
+
+  /** true cuando el sidebar del carrito está abierto */
+  readonly carritoOpen = signal(false);
+
+  /** Actualiza el total de ítems desde tienda-virtual */
+  setTotalItems(cantidad: number): void {
+    this.totalItems.set(cantidad);
+  }
+
+  /** Abre/cierra el carrito */
+  abrir(): void {
+    this.carritoOpen.set(true);
+  }
+
+  cerrar(): void {
+    this.carritoOpen.set(false);
+  }
+
+  toggle(): void {
+    this.carritoOpen.update((v) => !v);
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\core\services\catalogo-parametros.service.ts
 
 ```typescript
@@ -5981,6 +6473,111 @@ export class CatalogoParametrosService {
    */
   update<T>(ruta: string, id: number | string, payload: unknown, sinContexto = false): Observable<T> {
     return this.api.put<T>(ruta, id, payload, { sinContexto });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\core\services\categoria-tree-menu.service.ts
+
+```typescript
+import { Injectable, inject, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
+import { TreeNode } from 'primeng/api';
+import { DepartamentosService } from './departamentos.service';
+import { CategoriasService } from './categorias.service';
+
+export interface CategoriaTreeNode extends TreeNode {
+  key?: string;
+  label?: string;
+  data?: any;
+  icon?: string;
+  children?: CategoriaTreeNode[];
+  selectable?: boolean; // false para padres oculta el checkbox automáticamente en p-tree
+}
+
+/**
+ * Servicio para construir el árbol de categorías agrupadas por departamento
+ * basado en la relación entre `tinvcategoria` y `tinvdeptos`, diseñado como signal
+ * para integración en layouts y componentes (ej. main-layout.ts).
+ */
+@Injectable({
+  providedIn: 'root',
+})
+export class CategoriaTreeMenuService {
+  private deptosService = inject(DepartamentosService);
+  private categoriasService = inject(CategoriasService);
+
+  /** Signal principal que contiene los nodos del árbol estructurados */
+  readonly treeNodes = signal<CategoriaTreeNode[]>([]);
+  
+  /** Signal de estado de carga */
+  readonly loading = signal<boolean>(false);
+
+  /** Signal para los elementos seleccionados en el árbol */
+  readonly selectedNodes = signal<TreeNode | TreeNode[] | null>(null);
+
+  constructor() {
+    this.cargarArbolCategorias();
+  }
+
+  /**
+   * Carga los departamentos y categorías filtrando por empresa y usuario,
+   * emulando la consulta SQL y asignando `selectable: false` a los nodos padres
+   * para ocultar sus checkboxes según la documentación de PrimeNG.
+   */
+  cargarArbolCategorias() {
+    this.loading.set(true);
+
+    forkJoin({
+      deptos: this.deptosService.getAll(),
+      categorias: this.categoriasService.getAll(),
+    }).subscribe({
+      next: ({ deptos, categorias }) => {
+        const nodos: CategoriaTreeNode[] = deptos
+          .map((depto) => {
+            const deptoId = depto.deptoId;
+            const deptoCategorias = categorias.filter((cat) => cat.deptoId === deptoId);
+
+            // Aplicando la lógica INNER JOIN (solo departamentos que tienen categorías)
+            if (deptoCategorias.length === 0) return null;
+
+            const children: CategoriaTreeNode[] = deptoCategorias.map((cat) => ({
+              key: `${deptoId}-${cat.categoriaId}`, // keyItem equivalente a CONCAT(deptoId, '-', categoriaId)
+              label: cat.descripcion,
+              data: {
+                categoriaId: cat.categoriaId,
+                deptoId: deptoId,
+                departamento: depto.descripcion,
+                categoria: cat.descripcion,
+              },
+              icon: 'pi pi-tag',
+              selectable: true, // Hijo con checkbox habilitado
+            }));
+
+            const padre: CategoriaTreeNode = {
+              key: String(deptoId),
+              label: depto.descripcion,
+              icon: 'pi pi-folder',
+              expanded: true,
+              selectable: false, // 🚨 CLAVE: Esto oculta el checkbox en el nodo padre (departamento)
+              children: children,
+            };
+
+            return padre;
+          })
+          .filter((n): n is CategoriaTreeNode => n !== null);
+
+        this.treeNodes.set(nodos);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Error al cargar el árbol de categorías por departamento:', err);
+        this.loading.set(false);
+      },
+    });
   }
 }
 
@@ -7679,7 +8276,7 @@ export class FacturaImpresionService {
    * es la forma confiable de disparar la impresión sin abrir pestañas
    * visibles. Si `print()` falla, se respalda abriendo el PDF en pestaña.
    */
-  private imprimirBlobEnIframe(blob: Blob): void {
+  imprimirBlobEnIframe(blob: Blob): void {
     const url = URL.createObjectURL(blob);
     const iframe = document.createElement('iframe');
     iframe.setAttribute('aria-hidden', 'true');
@@ -8645,7 +9242,7 @@ export class FacturaImpresionService {
    * métodos. Sin ellos el ticket lanza "Font 'Courier' ... is not defined" y
    * la carta "File 'Roboto-Regular.ttf' not found in virtual file system".
    */
-  private cargarPdfMake(): Promise<any> {
+  cargarPdfMake(): Promise<any> {
     if (!this.pdfMakeInit) {
       this.pdfMakeInit = this.inicializarPdfMake();
     }
@@ -8724,6 +9321,7 @@ export class FacturaImpresionService {
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
+import { DashboardVentas } from '../models/facturacion.models';
 
 @Injectable({ providedIn: 'root' })
 export class FacturacionService {
@@ -8799,6 +9397,25 @@ export class FacturacionService {
    */
   updateDet<T>(ruta: string, id: number, payload: unknown): Observable<T> {
     return this.api.put<T>(ruta, id, payload);
+  }
+
+  /**
+   * Dashboard de ventas y KPIs (dashboardId3).
+   * Los filtros nulos/undefined se omiten (ApiService manda 'undefined' si no se filtra).
+   * @param params - anio, mes (1-12), sucursalId y categoriaId opcionales
+   */
+  getDashboardVentas(params: {
+    anio?: number | null;
+    mes?: number | null;
+    sucursalId?: number | null;
+    categoriaId?: number | null;
+  }): Observable<DashboardVentas> {
+    const p: Record<string, string | number> = {};
+    if (params?.anio != null) p['anio'] = params.anio;
+    if (params?.mes != null) p['mes'] = params.mes;
+    if (params?.sucursalId != null) p['sucursalId'] = params.sucursalId;
+    if (params?.categoriaId != null) p['categoriaId'] = params.categoriaId;
+    return this.api.get<DashboardVentas>('/facturacion/dashboard', p);
   }
 }
 
@@ -8978,6 +9595,39 @@ export class KardexService {
    */
   getOne(id: number): Observable<Kardex> {
     return this.api.getOne<Kardex>(this.path, id);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\core\services\loading-state.service.ts
+
+```typescript
+import { Injectable, signal } from '@angular/core';
+
+/**
+ * Estado global de la pantalla de carga (GIF).
+ * Usado por:
+ * - `app.ts` al iniciar (F5) → determina layout desde localStorage
+ * - `login-dialog` tras login → mientras cambia el layout
+ */
+@Injectable({ providedIn: 'root' })
+export class LoadingStateService {
+  /** true → se muestra el overlay con GIF */
+  readonly visible = signal(false);
+
+  /** Texto debajo del GIF */
+  readonly texto = signal('Cargando...');
+
+  mostrar(texto = 'Cargando...'): void {
+    this.texto.set(texto);
+    this.visible.set(true);
+  }
+
+  ocultar(): void {
+    this.visible.set(false);
   }
 }
 
@@ -9321,18 +9971,39 @@ export class ModulosService {
 ```typescript
 import { Injectable, inject } from '@angular/core';
 import { Location } from '@angular/common';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class NavegacionService {
   private location = inject(Location);
   private router = inject(Router);
 
-  volver(fallback: string[]) {
-    if (window.history.length > 1) {
+  /**
+   * Navegaciones completadas dentro de la app (la 1ª es la carga inicial).
+   * Se usa en vez de window.history.length > 1: si el usuario llega al ERP
+   * desde un enlace externo (WhatsApp, correo), history.length incluye esa
+   * página externa y location.back() sacaría a la persona de la aplicación.
+   */
+  private navegaciones = 0;
+
+  constructor() {
+    this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe(() => this.navegaciones++);
+  }
+
+  /** True si hay una pantalla anterior dentro de la app. */
+  get puedeRegresar(): boolean {
+    return this.navegaciones > 1;
+  }
+
+  /** Regresa a la pantalla anterior; si no hay, va a la ruta de respaldo. */
+  volver(fallback: string[] | string = ['/']) {
+    if (this.puedeRegresar) {
       this.location.back();
     } else {
-      this.router.navigate(fallback);
+      this.router.navigate(Array.isArray(fallback) ? fallback : [fallback]);
     }
   }
 }
@@ -11273,6 +11944,233 @@ export class RequisicionInventarioService {
 
 ---
 
+## 📄 src\app\core\services\restaurante.service.ts
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { Observable, forkJoin, of, map, switchMap, catchError, shareReplay } from 'rxjs';
+import { ApiService } from './api.service';
+import {
+  ConfigISV,
+  FacturaResultado,
+  OrdenItem,
+  OrdenRestaurante,
+  PagoOrden,
+} from '../models/restaurante.models';
+
+/**
+ * Órdenes del restaurante sobre los endpoints de PEDIDOS que ya existen
+ * (/facturacion/pedidos, /pedidos-det y /pedidos/checkout).
+ * ApiService inyecta empresaId e Idsucursal, igual que en pedido-form.
+ *
+ * Requiere las columnas nuevas pospedmae.nromesa y pospedmae.sn_entregado
+ * (ver CAMBIOS-BACKEND.md).
+ */
+@Injectable({ providedIn: 'root' })
+export class RestauranteService {
+  private api = inject(ApiService);
+  private isv$: Observable<ConfigISV> | null = null;
+
+  private round2 = (n: number) => Math.round(n * 100) / 100;
+
+  /** ISV: mismo criterio que pedido-form (param-fac módulo 3 + catálogo de impuestos). */
+  cargarISV(): Observable<ConfigISV> {
+    if (!this.isv$) {
+      this.isv$ = forkJoin({
+        impuestos: this.api.get<any[]>('/parametros/impuestos').pipe(catchError(() => of([] as any[]))),
+        param: this.api.get<any>('/parametros/parametros/objeto?moduloId=3').pipe(catchError(() => of(null))),
+      }).pipe(
+        map(({ impuestos, param }) => {
+          const lista = impuestos ?? [];
+          const impuestoId = Number(param?.impuestoId) || null;
+          const activo =
+            lista.find((i) => i.impuestoId === impuestoId && i.sn_activo === 'S') ??
+            lista.find((i) => Number(i.moduloId) === 3 && i.sn_activo === 'S');
+          const pct = Number(activo?.porcentaje) || 0;
+          return { tasa: pct > 0 ? pct / 100 : 0, incluido: param?.sn_impuestoincluido === 'S' };
+        }),
+        shareReplay(1),
+      );
+    }
+    return this.isv$;
+  }
+
+  /** Bruto e ISV de una línea (sin descuentos ni venta exenta en esta primera versión). */
+  calcularLinea(cantidad: number, precio: number, cfg: ConfigISV): { bruto: number; impuesto: number } {
+    const bruto = this.round2(cantidad * precio);
+    const impuesto = cfg.incluido
+      ? this.round2((bruto * cfg.tasa) / (1 + cfg.tasa))
+      : this.round2(bruto * cfg.tasa);
+    return { bruto, impuesto };
+  }
+
+  // ───────────────────────── Órdenes ─────────────────────────
+
+  /**
+   * Órdenes abiertas del restaurante: sin facturar, de HOY y con mesa asignada
+   * (nromesa >= 1). Los pedidos "huérfanos" con mesa 0 o sin mesa —y los de días
+   * anteriores— no interesan y quedan fuera, igual que los pedidos de la tienda
+   * virtual que viven en la misma tabla.
+   */
+  getOrdenesAbiertas(): Observable<OrdenRestaurante[]> {
+    return this.api.get<any[]>('/facturacion/pedidos').pipe(
+      map((lista) => {
+        const hoy = new Date();
+        return (lista ?? [])
+          .filter((o) => {
+            if (o.sn_facturado !== 'N') return false;
+
+            const nromesa = o.nromesa != null ? Number(o.nromesa) : 0;
+            if (nromesa < 1) return false; // sin mesa real no es una orden de restaurante
+
+            const f = o.fecharegistro ? new Date(o.fecharegistro) : null;
+            if (!f || isNaN(f.getTime())) return false;
+            return (
+              f.getFullYear() === hoy.getFullYear() &&
+              f.getMonth() === hoy.getMonth() &&
+              f.getDate() === hoy.getDate()
+            );
+          })
+          .map((o) => this.normalizarOrden(o))
+          .sort((a, b) => (a.nromesa ?? 0) - (b.nromesa ?? 0));
+      }),
+    );
+  }
+
+  /** La orden nace YA con su mesa: nunca existe un pedido sin mesa (nromesa >= 1). */
+  crearOrden(nromesa: number): Observable<OrdenRestaurante> {
+    return this.api
+      .post<OrdenRestaurante>('/facturacion/pedidos', {
+        nombrecliente: `Mesa ${nromesa}`,
+        nrotelefono: 'N/A',
+        nromesa,
+        sn_entregado: 'N',
+      })
+      .pipe(map((o) => this.normalizarOrden(o)));
+  }
+
+  marcarEntregada(ordenId: number): Observable<OrdenRestaurante> {
+    return this.api
+      .put<OrdenRestaurante>('/facturacion/pedidos', ordenId, { sn_entregado: 'S' })
+      .pipe(map((o) => this.normalizarOrden(o)));
+  }
+
+  /** Solo se puede cancelar una orden sin líneas (el backend borra cabecera y detalle). */
+  cancelarOrden(ordenId: number): Observable<unknown> {
+    return this.api.delete('/facturacion/pedidos', ordenId);
+  }
+
+  getOrden(ordenId: number): Observable<OrdenRestaurante> {
+    return this.api
+      .get<OrdenRestaurante>(`/facturacion/pedidos/${ordenId}`)
+      .pipe(map((o) => this.normalizarOrden(o)));
+  }
+
+  // ───────────────────────── Líneas ─────────────────────────
+
+  getItems(ordenId: number): Observable<OrdenItem[]> {
+    return this.api
+      .get<OrdenItem[]>(`/facturacion/pedidos-det/pedido/${ordenId}`)
+      .pipe(map((lista) => (lista ?? []).map((d) => this.normalizarItem(d)).sort((a, b) => a.nrofila - b.nrofila)));
+  }
+
+  agregarItem(
+    ordenId: number,
+    producto: { productoId: number; codbarra: string; precio: number },
+    nrofila: number,
+  ): Observable<OrdenItem> {
+    return this.cargarISV().pipe(
+      switchMap((cfg) => {
+        const { bruto, impuesto } = this.calcularLinea(1, producto.precio, cfg);
+        return this.api.post<OrdenItem>('/facturacion/pedidos-det', {
+          pospedmaeId: ordenId,
+          productoId: producto.productoId,
+          codbarra: producto.codbarra || '',
+          cantidad: 1,
+          precioventa: producto.precio,
+          subtotal: bruto,
+          descuento: 0,
+          p_descuento: 0,
+          impuesto,
+          nrofila,
+        });
+      }),
+      map((d) => this.normalizarItem(d)),
+    );
+  }
+
+  cambiarCantidad(item: OrdenItem, cantidad: number): Observable<OrdenItem> {
+    return this.cargarISV().pipe(
+      switchMap((cfg) => {
+        const { bruto, impuesto } = this.calcularLinea(cantidad, item.precioventa, cfg);
+        return this.api.put<OrdenItem>('/facturacion/pedidos-det', item.pospeddetId, {
+          cantidad,
+          subtotal: bruto,
+          impuesto,
+        });
+      }),
+      map((d) => this.normalizarItem(d)),
+    );
+  }
+
+  quitarItem(item: OrdenItem): Observable<unknown> {
+    return this.api.delete('/facturacion/pedidos-det', item.pospeddetId);
+  }
+
+  // ───────────────────────── Cobro ─────────────────────────
+
+  /** Convierte la orden en factura (reusa /pedidos/checkout). */
+  facturar(orden: OrdenRestaurante, pago: PagoOrden): Observable<FacturaResultado> {
+    return this.api.post<FacturaResultado>('/facturacion/pedidos/checkout', {
+      pospedmaeId: orden.pospedmaeId,
+      nombrecliente: orden.nombrecliente || `Mesa ${orden.nromesa ?? ''}`.trim(),
+      formapagoId: pago.formapagoId,
+      efectivo_recibido: pago.efectivo_recibido,
+    });
+  }
+
+  getFormasPago(): Observable<{ label: string; value: number }[]> {
+    return this.api
+      .get<any[]>('/parametros/formas-pago')
+      .pipe(map((lista) => (lista ?? []).map((f) => ({ label: f.descripcion, value: f.formapagoId }))));
+  }
+
+  // ───────────────────────── Normalización ─────────────────────────
+  // MySQL devuelve los DECIMAL como string: se convierten una sola vez aquí.
+
+  private normalizarOrden(o: any): OrdenRestaurante {
+    return {
+      pospedmaeId: Number(o.pospedmaeId),
+      fecharegistro: o.fecharegistro,
+      nombrecliente: o.nombrecliente ?? '',
+      nromesa: o.nromesa == null ? null : Number(o.nromesa),
+      sn_entregado: o.sn_entregado === 'S' ? 'S' : 'N',
+      sn_facturado: o.sn_facturado === 'S' ? 'S' : 'N',
+      subTotal: Number(o.subTotal) || 0,
+      impuesto: Number(o.impuesto) || 0,
+      total: Number(o.total) || 0,
+    };
+  }
+
+  private normalizarItem(d: any): OrdenItem {
+    return {
+      pospeddetId: Number(d.pospeddetId),
+      pospedmaeId: Number(d.pospedmaeId),
+      productoId: Number(d.productoId),
+      codbarra: d.codbarra ?? '',
+      cantidad: Number(d.cantidad) || 0,
+      precioventa: Number(d.precioventa) || 0,
+      impuesto: Number(d.impuesto) || 0,
+      subtotal: Number(d.subtotal) || 0,
+      nrofila: Number(d.nrofila) || 0,
+    };
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\core\services\settings.service.ts
 
 ```typescript
@@ -11335,6 +12233,170 @@ export class SucursalesService {
 
   update(id: number, dto: Partial<Sucursal>): Observable<Sucursal> {
     return this.api.put<Sucursal>(this.path, id, dto);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\core\services\tienda-filtro.service.ts
+
+```typescript
+import { Injectable, signal } from '@angular/core';
+
+/**
+ * Servicio compartido para gestionar los filtros activos de categorías y departamento
+ * en la tienda virtual, permitiendo la comunicación reactiva entre el sidebar drill-down
+ * y la vista de productos sin necesidad de exponer parámetros GET en la URL.
+ */
+@Injectable({
+  providedIn: 'root',
+})
+export class TiendaFiltroService {
+  /** IDs de categorías seleccionadas actualmente para filtrar */
+  readonly categoriaIds = signal<number[]>([]);
+
+  /** ID de departamento seleccionado actualmente para filtrar */
+  readonly deptoId = signal<number | null>(null);
+
+  /** Nombres de las categorías seleccionadas */
+  readonly categoriaNombres = signal<string[]>([]);
+
+  /** Nombre del departamento seleccionado */
+  readonly deptoNombre = signal<string | null>(null);
+
+  /** Establece el filtro exclusivo por departamento (Caso 1: todo el depto) */
+  setFiltroDepto(depId: number | null, depNombre: string | null) {
+    this.deptoId.set(depId);
+    this.deptoNombre.set(depNombre ?? null);
+    this.categoriaIds.set([]);
+    this.categoriaNombres.set([]);
+  }
+
+  /** Establece los filtros activos con departamento y categorías específicas (Caso 2) */
+  setFiltros(catIds: number[], depId: number | null, catNombres?: string[], depNombre?: string | null) {
+    this.categoriaIds.set(catIds ?? []);
+    this.deptoId.set(depId);
+    this.categoriaNombres.set(catNombres ?? []);
+    this.deptoNombre.set(depNombre ?? null);
+  }
+
+  /** Limpia los filtros activos y muestra todos los productos (Caso 3.1) */
+  limpiarFiltros() {
+    this.categoriaIds.set([]);
+    this.deptoId.set(null);
+    this.categoriaNombres.set([]);
+    this.deptoNombre.set(null);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\core\services\tienda.service.ts
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { Observable, of, tap, shareReplay } from 'rxjs';
+import { ApiService } from './api.service';
+import { ProductoTienda, Carrito, CarritoItem, CheckoutPago, CheckoutResponse } from '../models/tienda.models';
+
+const PRODUCTOS_CACHE_KEY = 'tienda_productos_v1';
+const PRODUCTOS_CACHE_TTL = 60 * 1000; // 1 minuto
+
+interface ProductosCache {
+  data: ProductoTienda[];
+  timestamp: number;
+}
+
+@Injectable({ providedIn: 'root' })
+export class TiendaService {
+  private api = inject(ApiService);
+  private productosCache$: Observable<ProductoTienda[]> | null = null;
+
+  getProductos(forceRefresh = false): Observable<ProductoTienda[]> {
+    if (forceRefresh) {
+      this.invalidateCache();
+    }
+
+    if (this.productosCache$) return this.productosCache$;
+
+    const cached = this.leerCache();
+    if (cached) {
+      this.productosCache$ = of(cached).pipe(shareReplay(1));
+      return this.productosCache$;
+    }
+
+    this.productosCache$ = this.api.get<ProductoTienda[]>('/inventario/tienda/productos').pipe(
+      tap(data => this.escribirCache(data)),
+      shareReplay(1),
+    );
+    return this.productosCache$;
+  }
+
+  invalidateCache() {
+    this.productosCache$ = null;
+    try { localStorage.removeItem(PRODUCTOS_CACHE_KEY); } catch {}
+  }
+
+  private leerCache(): ProductoTienda[] | null {
+    try {
+      const raw = localStorage.getItem(PRODUCTOS_CACHE_KEY);
+      if (!raw) return null;
+      const cache: ProductosCache = JSON.parse(raw);
+      if (Date.now() - cache.timestamp > PRODUCTOS_CACHE_TTL) {
+        localStorage.removeItem(PRODUCTOS_CACHE_KEY);
+        return null;
+      }
+      return cache.data;
+    } catch {
+      return null;
+    }
+  }
+
+  private escribirCache(data: ProductoTienda[]) {
+    try {
+      const cache: ProductosCache = { data, timestamp: Date.now() };
+      localStorage.setItem(PRODUCTOS_CACHE_KEY, JSON.stringify(cache));
+    } catch {}
+  }
+
+  crearCarrito(nombre: string, direccion: string, atendio: string, gestorId: number): Observable<Carrito> {
+    return this.api.post<Carrito>('/facturacion/cotizaciones', {
+      Nombrecliente: nombre,
+      direccion: direccion || 'N/A',
+      atendio,
+      gestorId,
+    });
+  }
+
+  agregarItem(payload: {
+    poscotmaeId: number;
+    productoId: string;
+    codbarra: string;
+    cantidad: number;
+    precio: number;
+    subTotal: number;
+  }): Observable<CarritoItem> {
+    return this.api.post<CarritoItem>('/facturacion/cotizaciones-det', payload);
+  }
+
+  getCarritoItems(maeId: number): Observable<CarritoItem[]> {
+    return this.api.get<CarritoItem[]>(`/facturacion/cotizaciones-det/mae/${maeId}`);
+  }
+
+  eliminarItem(detId: number): Observable<any> {
+    return this.api.delete<any>('/facturacion/cotizaciones-det', detId);
+  }
+
+  eliminarCarrito(maeId: number): Observable<any> {
+    return this.api.delete<any>('/facturacion/cotizaciones', maeId);
+  }
+
+  checkout(pago: CheckoutPago): Observable<CheckoutResponse> {
+    return this.api.post<CheckoutResponse>('/facturacion/tienda/checkout', pago, { sinContexto: true });
   }
 }
 
@@ -12917,6 +13979,7 @@ export function numeroALetras(num: number): string {
             placeholder="Ingrese su usuario"
             [disabled]="loading()"
             autofocus
+            styleClass="inputtext-transparente"
 
           />
         </div>
@@ -12933,6 +13996,7 @@ export function numeroALetras(num: number): string {
             autocomplete="current-password"
             placeholder="Ingrese su contraseña"
             [disabled]="loading()"
+            styleClass="inputtext-transparente"
           />
         </div>
 
@@ -13079,10 +14143,29 @@ export function numeroALetras(num: number): string {
 }
 
 .login-form {
+  // Fondo de los inputs TRANSPARENTE: se ve el fondo del card (--c-bg-login).
+  // Se sobrescriben los tokens de PrimeNG solo dentro de este formulario (las variables
+  // CSS se heredan, no hace falta ::ng-deep). Para usar el color sólido del contenedor
+  // en lugar de transparente, cambia "transparent" por var(--c-bg-login).
+  --p-inputtext-background: transparent;
+  --p-inputtext-disabled-background: transparent;
+  --p-inputtext-filled-background: transparent;
+  --p-inputtext-filled-hover-background: transparent;
+  --p-inputtext-filled-focus-background: transparent;
+
   display: flex;
   flex-direction: column;
   gap: 1rem;
 
+// Fondo de los inputs TRANSPARENTE: se ve el fondo del card (--c-bg-login).
+  // Se sobrescriben los tokens de PrimeNG solo dentro de este formulario (las variables
+  // CSS se heredan, no hace falta ::ng-deep). Para usar el color sólido del contenedor
+  // en lugar de transparente, cambia "transparent" por var(--c-bg-login).
+  --p-inputtext-background: transparent;
+  --p-inputtext-disabled-background: transparent;
+  --p-inputtext-filled-background: transparent;
+  --p-inputtext-filled-hover-background: transparent;
+  --p-inputtext-filled-focus-background: transparent;
   .campo {
     display: flex;
     flex-direction: column;
@@ -13105,8 +14188,8 @@ export function numeroALetras(num: number): string {
       .p-password-input {
         width: 100%;
       }
-
       .p-password {
+          background: transparent;
         border-radius: var(--radius-sm);
         color: var(--c-text-muted);
         overflow: hidden;
@@ -13152,12 +14235,13 @@ export function numeroALetras(num: number): string {
 ```typescript
 ﻿import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { Message } from 'primeng/message';
 import { AuthService } from '../../../core/services/auth.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -13169,6 +14253,20 @@ import { AuthService } from '../../../core/services/auth.service';
 export class Login {
   private auth = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+
+  /** Ruta de origen (authGuard la pasa como ?returnUrl=): tras login se
+   *  vuelve a ella en vez de ir siempre al dashboard (ej: tienda virtual). */
+  private readonly returnUrl =
+    this.route.snapshot.queryParamMap.get('returnUrl') || '/';
+
+  constructor() {
+    // Con VALIDAR_SESSION='N' la pantalla de login no existe: nunca se
+    // muestra /login, se redirige a la tienda.
+    if (environment.VALIDAR_SESSION === 'N') {
+      this.router.navigate(['/facturacion/tienda']);
+    }
+  }
 
   usuario = '';
   password = '';
@@ -13187,7 +14285,7 @@ export class Login {
 
     this.auth.loginRaw(payload).subscribe({
       next: () => {
-        this.router.navigateByUrl('/');
+        this.router.navigateByUrl(this.returnUrl);
       },
       error: (err) => {
         this.loading.set(false);
@@ -13207,13 +14305,13 @@ export class Login {
 
 ```typescript
 <p-toast />
-<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '450px' }" />
 
 <section class="page">
   <header class="page-header">
     <div>
-      <h1 class="page-title">Anulación de Movimientos</h1>
-      <p class="page-subtitle">Anular movimientos bancarios registrados</p>
+      <h1 class="page-title">Anulación de Cheques</h1>
+      <p class="page-subtitle">Anulación de cheques emitidos y reversión en Cuentas por Pagar</p>
     </div>
   </header>
 
@@ -13241,50 +14339,51 @@ export class Login {
     </div>
   </div>
 
-  <!-- ═══ Tabla de movimientos ═══ -->
+  <!-- ═══ Tabla de cheques ═══ -->
   <div class="card mb-3">
-    <p-table [value]="movimientos()" [loading]="cargando()" size="small"
+    <p-table [value]="cheques()" [loading]="cargando()" size="small"
       [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15, 25, 50]"
       [showCurrentPageReport]="true"
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
       <ng-template pTemplate="header">
         <tr>
-          <th style="width: 10rem">Fecha</th>
-          <th>Tipo</th>
-          <th>D/C</th>
-          <th>Referencia</th>
-          <th>Concepto</th>
+          <th style="width: 8rem">Nro. Cheque</th>
+          <th style="width: 8rem">Fecha</th>
+          <th>Cuenta</th>
+          <th>Beneficiario / Concepto</th>
           <th style="width: 10rem" class="text-right">Importe</th>
           <th style="width: 6rem" class="text-center">Estado</th>
-          <th style="width: 5rem" class="text-center">Acción</th>
+          <th style="width: 6rem" class="text-center">Acción</th>
         </tr>
       </ng-template>
-      <ng-template pTemplate="body" let-mov>
-        <tr [class.row-anulada]="mov.sn_doc_anulado === 'S'">
-          <td>{{ formatFecha(mov.fecharegistro) }}</td>
-          <td><p-tag [value]="tipoMovLabel(mov.tipomov)" [severity]="tipoMovSeverity(mov.tipomov)" styleClass="tag-sm" /></td>
-          <td><p-tag [value]="dcLabel(mov.dc_debitocredito)" [severity]="dcSeverity(mov.dc_debitocredito)" styleClass="tag-sm" /></td>
-          <td>{{ mov.nroreferencia || '-' }}</td>
-          <td>{{ mov.concepto || '-' }}</td>
-          <td class="text-right font-bold">{{ formatCurrency(mov.importe) }}</td>
+      <ng-template pTemplate="body" let-cheque>
+        <tr [class.row-anulada]="cheque.sn_doc_anulado === 'S'">
+          <td class="font-bold">{{ cheque.nrochq }}</td>
+          <td>{{ formatFecha(cheque.fecharegistro) }}</td>
+          <td>{{ cheque.nrocuenta }} <span class="text-muted">({{ cheque.bancoNombre }})</span></td>
+          <td>
+            <div class="font-bold">{{ beneficiarioDe(cheque) }}</div>
+            <div class="text-sm text-muted">{{ cheque.concepto }}</div>
+          </td>
+          <td class="text-right font-bold">{{ formatCurrency(cheque.importe) }}</td>
           <td class="text-center">
-            @if (mov.sn_doc_anulado === 'S') {
+            @if (cheque.sn_doc_anulado === 'S') {
               <p-tag value="Anulado" severity="danger" styleClass="tag-sm" />
             } @else {
               <p-tag value="Activo" severity="success" styleClass="tag-sm" />
             }
           </td>
           <td class="text-center">
-            @if (mov.sn_doc_anulado !== 'S') {
+            @if (cheque.sn_doc_anulado !== 'S') {
               <p-button icon="pi pi-ban" size="small" variant="text" [rounded]="true" severity="danger"
-                pTooltip="Anular" (click)="anular(mov)" />
+                pTooltip="Anular cheque" (click)="anular(cheque)" />
             }
           </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="8" class="text-center p-3">No hay movimientos para esta cuenta.</td>
+          <td colspan="7" class="text-center p-3">No hay cheques registrados.</td>
         </tr>
       </ng-template>
     </p-table>
@@ -13347,6 +14446,14 @@ export class Login {
   text-align: center;
 }
 
+.text-muted {
+  color: var(--c-text-muted);
+}
+
+.text-sm {
+  font-size: 0.8rem;
+}
+
 .row-anulada {
   opacity: 0.5;
   text-decoration: line-through;
@@ -13378,7 +14485,20 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
-import { BcoMovimiento, BcoCta } from '../../../core/models/bancos.models';
+import { BcoCta } from '../../../core/models/bancos.models';
+
+interface ChequeRecord {
+  bcomovimientosId: number;
+  fecharegistro: string;
+  nrochq: string;
+  importe: number;
+  concepto: string;
+  sn_doc_anulado: string;
+  bcoctasId: number;
+  nrocuenta: string;
+  bancoNombre: string;
+  bancoId: number;
+}
 
 @Component({
   selector: 'app-anular-movimientos',
@@ -13400,21 +14520,14 @@ export class AnularMovimientos implements OnInit {
   // Datos
   bancos = signal<any[]>([]);
   cuentas = signal<BcoCta[]>([]);
-  movimientos = signal<BcoMovimiento[]>([]);
+  cheques = signal<ChequeRecord[]>([]);
   cuentaFiltro = signal<number | null>(null);
   cargando = signal(false);
-
-  readonly TIPO_MOV_OPTIONS = [
-    { label: 'Depósito', value: 'DEPOSITO' },
-    { label: 'Retiro', value: 'RETIRO' },
-    { label: 'Transferencia', value: 'TRANSFERENCIA' },
-    { label: 'Pago', value: 'PAGO' },
-  ];
 
   ngOnInit() {
     this.cargarBancos();
     this.cargarCuentas();
-    this.cargarTodos();
+    this.cargarCheques();
   }
 
   cargarBancos() {
@@ -13432,65 +14545,52 @@ export class AnularMovimientos implements OnInit {
     });
   }
 
-  cargarTodos() {
+  cargarCheques() {
     this.cargando.set(true);
-    this.api.get<any[]>('/bancos/movimientos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    const params: any = {};
+    if (this.cuentaFiltro()) {
+      params.bcoctasId = String(this.cuentaFiltro());
+    }
+    this.api.get<any[]>('/bancos/cheques', params).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
-        this.movimientos.set((data || []).map((m: any) => ({
-          ...m,
-          importe: Number(m.importe),
+        this.cheques.set((data || []).map((c: any) => ({
+          ...c,
+          importe: Number(c.importe),
         })));
         this.cargando.set(false);
       },
       error: () => {
         this.cargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los movimientos' });
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los cheques' });
       },
     });
   }
 
   onFiltroChange() {
-    const bcoctasId = this.cuentaFiltro();
-    if (!bcoctasId) {
-      this.cargarTodos();
-      return;
-    }
-    this.cargando.set(true);
-    this.api.get<any[]>('/bancos/movimientos', { bcoctasId: String(bcoctasId) })
-      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-        next: (data) => {
-          this.movimientos.set((data || []).map((m: any) => ({
-            ...m,
-            importe: Number(m.importe),
-          })));
-          this.cargando.set(false);
-        },
-        error: () => {
-          this.cargando.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los movimientos' });
-        },
-      });
+    this.cargarCheques();
   }
 
   // ── Anular ─────────────────────────────────────────────
 
-  anular(mov: BcoMovimiento) {
+  anular(cheque: ChequeRecord) {
     this.confirm.confirm({
-      message: `¿Anular el movimiento #${mov.bcomovimientosId}?`,
-      header: 'Confirmar anulación',
+      message: `¿Está seguro de anular el cheque N.° ${cheque.nrochq} por importe de ${this.formatCurrency(cheque.importe)}? Esta acción revertirá el pago en Cuentas por Pagar.`,
+      header: 'Confirmar anulación de cheque',
       icon: 'pi pi-exclamation-triangle',
       rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
-      acceptButtonProps: { label: 'Anular', severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      acceptButtonProps: { label: 'Anular Cheque', severity: 'danger', variant: 'text', size: 'small', rounded: true },
       accept: () => {
-        this.api.putBase(`/bancos/movimientos/${mov.bcomovimientosId}/anular?empresaId=${mov.empresaId}`, {})
+        this.api.putBase(`/bancos/movimientos/${cheque.bcomovimientosId}/anular`, {})
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: (res: any) => {
-              this.msgs.add({ severity: 'success', summary: 'Anulado', detail: res.mensaje || 'Movimiento anulado correctamente' });
-              this.onFiltroChange();
+              this.msgs.add({ severity: 'success', summary: 'Cheque Anulado', detail: res.mensaje || 'Cheque anulado correctamente' });
+              this.cargarCheques();
             },
-            error: () => {
-              this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo anular el movimiento' });
+            error: (err) => {
+              const msg = err?.error?.message;
+              const detalle = (Array.isArray(msg) ? msg.join(' · ') : msg) || err?.error?.error || 'No se pudo anular el cheque';
+              this.msgs.add({ severity: 'error', summary: 'Error al anular', detail: detalle });
             },
           });
       },
@@ -13499,33 +14599,15 @@ export class AnularMovimientos implements OnInit {
 
   // ── Helpers ─────────────────────────────────────────────
 
-  tipoMovLabel(tipo: string): string {
-    return this.TIPO_MOV_OPTIONS.find(o => o.value === tipo)?.label || tipo;
-  }
-
-  tipoMovSeverity(tipo: string): 'success' | 'warn' | 'info' | 'danger' {
-    switch (tipo) {
-      case 'DEPOSITO': return 'success';
-      case 'RETIRO': return 'warn';
-      case 'TRANSFERENCIA': return 'info';
-      case 'PAGO': return 'danger';
-      default: return 'info';
-    }
-  }
-
-  dcLabel(dc: string): string {
-    return dc === 'D' ? 'Débito' : 'Crédito';
-  }
-
-  dcSeverity(dc: string): 'danger' | 'success' {
-    return dc === 'D' ? 'danger' : 'success';
+  beneficiarioDe(cheque: ChequeRecord): string {
+    const match = cheque.concepto?.match(/^Pago a favor de (.+?), facturas:/);
+    return match ? match[1] : cheque.concepto || '';
   }
 
   formatFecha(fecha: string): string {
     if (!fecha) return '-';
-    return new Date(fecha).toLocaleString('es-HN', {
+    return new Date(fecha).toLocaleDateString('es-HN', {
       day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
     });
   }
 
@@ -14403,7 +15485,11 @@ export const BANCOS_ROUTES: Routes = [
       <h1 class="page-title">Emisión de Cheques</h1>
       <p class="page-subtitle">Pago consolidado a proveedores</p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex gap-2 align-items-center">
+      @if (facturasSeleccionadas.length > 0) {
+        <p-button size="small" label="Ver Resumen ({{ facturasSeleccionadas.length }})" icon="pi pi-list"
+          severity="success" [raised]="true" [rounded]="true" (click)="drawerResumenVisible.set(true)" />
+      }
       <a routerLink="/bancos/cheques/particulares">
         <p-button label="Cheque a Particular" icon="pi pi-user" size="small" variant="text" severity="secondary" [rounded]="true" />
       </a>
@@ -14512,49 +15598,6 @@ export const BANCOS_ROUTES: Routes = [
       </p-table>
     </div>
 
-    <!-- ═══ PASO 3: Resumen y emitir ═══ -->
-    @if (facturasSeleccionadas.length > 0) {
-      <div class="card mb-3">
-        <h5 class="mb-3">Resumen de Pago</h5>
-        <p-table [value]="proveedoresSeleccionados" size="small">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Proveedor</th>
-              <th style="width: 5rem" class="text-center">Facturas</th>
-              <th style="width: 10rem" class="text-right">Total a Pagar</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-grp>
-            <tr>
-              <td class="font-bold">{{ grp.proveedorNombre }}</td>
-              <td class="text-center">{{ grp.facturas.length }}</td>
-              <td class="text-right font-bold text-primary">{{ formatCurrency(grp.total) }}</td>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="summary">
-            <div class="flex justify-content-end align-items-center gap-3 p-2">
-              <span class="font-bold">Total General:</span>
-              <span class="text-xl font-bold text-primary">{{ formatCurrency(totalSeleccionado) }}</span>
-            </div>
-          </ng-template>
-        </p-table>
-
-        @if (saldoInsuficiente()) {
-          <div class="saldo-insuficiente-msg mb-3">
-            <i class="pi pi-exclamation-triangle"></i>
-            <span>Saldo insuficiente — saldo actual {{ saldoTexto() }}, total a pagar {{ formatCurrency(totalSeleccionado) }}</span>
-          </div>
-        }
-
-        <div class="form-actions">
-          <p-button size="small" label="Emitir Cheques" icon="pi pi-check-circle" severity="success"
-            variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
-            [disabled]="saldoInsuficiente()"
-            (click)="confirmarEmision()" />
-        </div>
-      </div>
-    }
-
     <!-- ═══ Cheques generados ═══ -->
     @if (chequesGenerados().length > 0) {
       <div class="card mb-3">
@@ -14589,6 +15632,55 @@ export const BANCOS_ROUTES: Routes = [
     </div>
   }
 </section>
+
+<!-- ═══ Drawer Resumen de Pago ═══ -->
+<p-drawer
+  [(visible)]="drawerResumenVisible"
+  header="Resumen de Pago"
+  position="left"
+  styleClass="resumen-drawer"
+  [style]="{ width: '420px', 'max-width': '90vw' }"
+>
+  <div class="flex flex-column gap-2 pt-1">
+    <p-table [value]="proveedoresSeleccionados" size="small">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Proveedor</th>
+          <th style="width: 5rem" class="text-center">Facturas</th>
+          <th style="width: 10rem" class="text-right">Total a Pagar</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-grp>
+        <tr>
+          <td class="font-bold">{{ grp.proveedorNombre }}</td>
+          <td class="text-center">{{ grp.facturas.length }}</td>
+          <td class="text-right font-bold text-primary">{{ formatCurrency(grp.total) }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <div class="p-2 bg-surface border-round flex justify-content-between align-items-center">
+      <span class="font-bold">Total General:</span>
+      <span class="text-lg font-bold text-primary">{{ formatCurrency(totalSeleccionado) }}</span>
+    </div>
+
+    @if (saldoInsuficiente()) {
+      <div class="saldo-insuficiente-msg">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>Saldo insuficiente — saldo actual {{ saldoTexto() }}, total a pagar {{ formatCurrency(totalSeleccionado) }}</span>
+      </div>
+    }
+
+    <!-- Botón emitir cheques apilado (vertical stack) -->
+    <div class="flex flex-column gap-1 mt-2 w-full">
+      <p-button size="small" label="Emitir Cheques" icon="pi pi-check-circle" severity="success"
+        variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
+        [disabled]="saldoInsuficiente() || facturasSeleccionadas.length === 0"
+        styleClass="w-full"
+        (click)="confirmarEmision()" />
+    </div>
+  </div>
+</p-drawer>
 
 <!-- ═══ Dialog Impresión de Cheque ═══ -->
 @if (mostrarImpresion() && chequeAImprimir()) {
@@ -14840,7 +15932,7 @@ export const BANCOS_ROUTES: Routes = [
 }
 
 .cheque-container {
-  background: white;
+  background: var(--c-bg);
   width: 21.59cm; /* Carta width */
   max-width: 100%;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
@@ -15114,6 +16206,25 @@ export const BANCOS_ROUTES: Routes = [
   }
 }
 
+/* ═══════════════ Drawer Resumen (full height bajo topbar) ═══════════════ */
+:host ::ng-deep .resumen-drawer {
+  top: 60px !important;
+  height: calc(100vh - 60px) !important;
+  max-height: none !important;
+  width: 420px;
+  max-width: 90vw;
+
+  .p-drawer-header {
+    background: var(--c-surface-ground, var(--c-bg));
+    border-bottom: 1px solid var(--c-border);
+    font-weight: 700;
+  }
+
+  .p-drawer-content {
+    background: var(--c-surface);
+    padding: 1rem;
+  }
+}
 ```
 
 ---
@@ -15136,6 +16247,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
+import { DrawerModule } from 'primeng/drawer';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { CompraPendientePago, ChequeEmitido, BcoCta, BcoMovimiento } from '../../../core/models/bancos.models';
@@ -15147,7 +16259,7 @@ import { numeroALetras } from '../../../core/utils/numeros-a-letras';
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule, RouterLink, TableModule, ButtonModule,
     InputTextModule, InputNumberModule, SelectModule, TagModule, TooltipModule,
-    ToastModule, DialogModule,
+    ToastModule, DialogModule, DrawerModule,
   ],
   templateUrl: './cheques.html',
   styleUrl: './cheques.scss',
@@ -15174,6 +16286,7 @@ export class ChequesBancos implements OnInit {
   chequeAImprimir = signal<ChequeEmitido | null>(null);
   dialogConfirmVisible = signal(false);
   confirmMessage = signal('');
+  drawerResumenVisible = signal(false);
 
   // Formulario
   form!: FormGroup;
@@ -15306,6 +16419,11 @@ export class ChequesBancos implements OnInit {
       factura._montoPago = factura.saldo ?? factura.total;
     }
     this.facturas.update(facturas => [...facturas]);
+    if (this.facturasSeleccionadas.length > 0) {
+      this.drawerResumenVisible.set(true);
+    } else {
+      this.drawerResumenVisible.set(false);
+    }
   }
 
   onMontoPagoChange(factura: CompraPendientePago, valor: number) {
@@ -15317,6 +16435,9 @@ export class ChequesBancos implements OnInit {
       factura._montoPago = 0.01;
     }
     this.facturas.update(facturas => [...facturas]);
+    if (this.facturasSeleccionadas.length > 0) {
+      this.drawerResumenVisible.set(true);
+    }
   }
 
   toggleTodas(event: any) {
@@ -15326,6 +16447,11 @@ export class ChequesBancos implements OnInit {
       _selected: checked,
       _montoPago: checked ? (f.saldo ?? f.total) : f._montoPago,
     })));
+    if (this.facturasSeleccionadas.length > 0) {
+      this.drawerResumenVisible.set(true);
+    } else {
+      this.drawerResumenVisible.set(false);
+    }
   }
 
   // ── Emisión ─────────────────────────────────────────────
@@ -15388,6 +16514,7 @@ export class ChequesBancos implements OnInit {
       next: (res) => {
         this.emitando.set(false);
         this.chequesGenerados.set(res.cheques || []);
+        this.drawerResumenVisible.set(false);
         this.msgs.add({ severity: 'success', summary: 'Éxito', detail: res.mensaje });
         this.facturas.set([]);
         this.cargarFacturasPendientes();
@@ -45104,47 +46231,33 @@ export const CXC_ROUTES: Routes = [
   </header>
 
   <!-- FILTROS -->
-  <div class="grid" style="width:50%">
-    <div class="col-fixed">
-      <label>Cliente</label>
-      <input pInputText pSize="small"
-      appendTo="body"
-      [ngModel]="cliente()" (ngModelChange)="cliente.set($event)"
-        placeholder="Nombre o razón social" fluid />
-    </div>
-</div>
-
-<div class="grid" style="width:100%">
-   <div class="col">
-      <label>Desde</label>
-      <p-datepicker size="small" appendTo="body"
-        [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" dateFormat="dd/mm/yy"
-        [showIcon]="true" styleClass="w-full"></p-datepicker>
-    </div>
-    <div class="col">
-      <label>Hasta</label>
-      <p-datepicker size="small"
-      appendTo="body"
-        [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" dateFormat="dd/mm/yy"
-        [showIcon]="true" styleClass="w-full"></p-datepicker>
-    </div>
-  </div>
-  <div class="grid">
-    <div class="col">
-      <div class="gap-2">
-        <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" [raised]="true"
-          severity="success"></p-button>
-        <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
-          (onClick)="limpiarFiltros()"></p-button>
+  <div class="filtros">
+    <div class="filtros-fila filtros-fila--persona">
+      <div class="campo">
+        <label>Cliente</label>
+        <p-select size="small" [options]="clienteOpciones()" [ngModel]="cliente()"
+          (ngModelChange)="cliente.set($event)" placeholder="Seleccionar cliente" showClear filter
+          filterBy="label" styleClass="w-full" [appendTo]="'body'"></p-select>
       </div>
-
-
     </div>
-
-  </div>
-
-
-  <div class="filtros card mb-3">
+    <div class="filtros-fila filtros-fila--fechas">
+      <div class="campo">
+        <label>Desde</label>
+        <p-datepicker size="small" appendTo="body" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)"
+          dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+      </div>
+      <div class="campo">
+        <label>Hasta</label>
+        <p-datepicker size="small" appendTo="body" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)"
+          dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+      </div>
+    </div>
+    <div class="filtros-acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" [raised]="true"
+        severity="success"></p-button>
+      <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
+        (onClick)="limpiarFiltros()"></p-button>
+    </div>
   </div>
 
   <!-- TABLA DE RESULTADOS -->
@@ -45303,49 +46416,94 @@ export const CXC_ROUTES: Routes = [
 ## 📄 src\app\features\cxc\historico\historico-manager.scss
 
 ```typescript
-.historico-manager {
-  .filtros.card {
-    background: var(--c-surface-ground);
-    border: 1px solid var(--c-border);
-    border-radius: 8px;
-    padding: 1rem 1.5rem;
-  }
+// ===== FILTROS =====
+// Nota: reglas planas a propósito — con encapsulation emulated, un selector
+// anidado bajo .historico-manager nunca matchea el host (no lleva _ngcontent propio).
+.filtros {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+  width: 100%;
+}
 
-  .tabla.card {
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: 8px;
-    overflow: hidden;
-  }
+.filtros-fila {
+  display: grid;
+  gap: 1rem;
+  align-items: end;
+  justify-content: start;
+  width: 100%;
+}
 
-  .detalle.card {
-    background: var(--c-surface-ground);
-    border: 1px solid var(--c-border);
-    border-radius: 8px;
-    padding: 1.5rem;
-  }
+.filtros-fila--persona {
+  grid-template-columns: minmax(0, 30rem);
+}
 
-  .p-field label {
+.filtros-fila--fechas {
+  grid-template-columns: repeat(2, minmax(0, 15rem));
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+
+  label {
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--c-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
+}
 
-  .p-field input[disabled],
-  .p-field p-select[disabled] {
-    background: var(--c-surface) !important;
-    opacity: 0.8;
-  }
+.filtros-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
 
-  .font-bold {
-    font-weight: 700;
+@media (max-width: 640px) {
+  .filtros-fila {
+    grid-template-columns: 1fr;
   }
+}
 
-  .selected-row {
-    background-color: rgba(12, 128, 89, 0.062) !important;
-  }
+.tabla.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.detalle.card {
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.p-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.p-field input[disabled],
+.p-field p-select[disabled] {
+  background: var(--c-surface) !important;
+  opacity: 0.8;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.selected-row {
+  background-color: rgba(12, 128, 89, 0.062) !important;
 }
 
 ```
@@ -45372,11 +46530,12 @@ import { TagModule } from 'primeng/tag';
 import { MessageService } from 'primeng/api';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { CxcHistorico } from '../../../core/models/cxc.models';
+import { CxcHistorico, CxcCliente } from '../../../core/models/cxc.models';
 
 @Component({
   selector: 'app-historico-manager',
   standalone: true,
+  host: { class: 'historico-manager' },
   imports: [
     CommonModule,
     FormsModule,
@@ -45400,7 +46559,9 @@ export class HistoricoManager implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   // ===== FILTROS =====
-  cliente = signal('');
+  /** Nombre exacto del cliente (razón social) — el backend filtra por LIKE */
+  cliente = signal<string | null>(null);
+  clienteOpciones = signal<{ label: string; value: string }[]>([]);
   fechaDesde = signal<string | null>(null);
   fechaHasta = signal<string | null>(null);
 
@@ -45425,13 +46586,33 @@ export class HistoricoManager implements OnInit {
   ];
 
   ngOnInit() {
+    this.cargarClientes();
     this.cargarHistorico();
+  }
+
+  private cargarClientes() {
+    this.service.getClientes(1, 1000).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(15000),
+      catchError(() => of({ data: [] as CxcCliente[], total: 0 })),
+    ).subscribe((res) => {
+      const opciones = (res?.data ?? [])
+        .filter((c) => c.sn_activo !== 'N')
+        .map((c) => {
+          const label = (c.razonsocial && c.razonsocial.trim()) ||
+            `${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim();
+          return { label, value: label };
+        })
+        .filter((o) => o.label !== '')
+        .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+      this.clienteOpciones.set(opciones);
+    });
   }
 
   private cargarHistorico() {
     this.cargando.set(true);
     this.service
-      .getHistoricoConFiltros('', this.cliente(), this.fechaDesde(), this.fechaHasta())
+      .getHistoricoConFiltros('', this.cliente() ?? '', this.fechaDesde(), this.fechaHasta())
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         timeout(15000),
@@ -45461,7 +46642,7 @@ export class HistoricoManager implements OnInit {
   }
 
   limpiarFiltros() {
-    this.cliente.set('');
+    this.cliente.set(null);
     this.fechaDesde.set(null);
     this.fechaHasta.set(null);
     this.selectedRow = null;
@@ -45528,6 +46709,16 @@ export class HistoricoManager implements OnInit {
       </span>
       <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
         variant="text" [rounded]="true" (onClick)="volverAPartida()" />
+    </div>
+  } @else if (desdeHistorico()) {
+    <!-- Origen: esta pantalla se abrió desde el Histórico de Clientes -->
+    <div class="barra-origen">
+      <span class="barra-origen__texto">
+        <i class="pi pi-history"></i>
+        Movimiento abierto desde el Histórico de Clientes
+      </span>
+      <p-button label="Volver al histórico" icon="pi pi-arrow-left" size="small" severity="secondary"
+        variant="text" [rounded]="true" (onClick)="volverAHistorico()" />
     </div>
   }
 
@@ -45710,7 +46901,7 @@ export class HistoricoManager implements OnInit {
                         styleClass="tag-sm" />
                     </td>
                     <td>{{ m.nroreferencia || '—' }}</td>
-                    <td class="mov-concepto">{{ m.concepto }}</td>
+                    <td class="mov-concepto" [title]="m.concepto">{{ m.concepto }}</td>
                     <td class="text-right">{{ moneda(m.importe) }}</td>
                     <td>
                       @if (m.sn_doc_anulado === 'S') {
@@ -45892,6 +47083,9 @@ export class HistoricoManager implements OnInit {
 
 .left-column {
   flex: 1;
+  // min-width:0 → la columna izquierda encoje (flex min-width:auto no lo permitía)
+  // y la columna derecha (ficha/buscador) queda visible sin salirse de la pantalla
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background: var(--c-bg);
@@ -46485,7 +47679,10 @@ export class HistoricoManager implements OnInit {
 }
 
 .mov-concepto {
-  max-width: 16rem;
+  // Cap ajustado a 9rem: con 16rem el min-content de la columna (nowrap)
+  // forzaba la tabla a 913px y "Acciones" quedaba fuera de los 820px
+  // disponibles (scroll horizontal interno). 9rem → tabla ≈810px, cabe completa.
+  max-width: 9rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -46545,6 +47742,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { TableModule } from 'primeng/table';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 import { CxcCliente, CxcMovimiento } from '../../../core/models/cxc.models';
 
@@ -46583,9 +47781,17 @@ export class MovimientosManager implements OnInit {
   private catalogService = inject(CatalogoParametrosService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private nav = inject(NavegacionService);
 
   /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
   partidaId = signal<number | null>(null);
+
+  /**
+   * Origen: Histórico de Clientes (?clienteId sin partida contable).
+   * Controla la barra "Volver al histórico"; el flag privado vieneDeHistorico
+   * solo gobierna la carga de datos (cliente único en la lista).
+   */
+  readonly desdeHistorico = signal(false);
 
   // ===== CLIENTES =====
   data = signal<CxcCliente[]>([]);
@@ -46749,6 +47955,7 @@ export class MovimientosManager implements OnInit {
       if (!isNaN(id) && id > 0) {
         // Viene de historico: auto-cargar SOLO este cliente
         this.vieneDeHistorico = true;
+        this.desdeHistorico.set(true);
         this.autoSelectCliente(id, movimientoState);
         return;
       }
@@ -46764,6 +47971,11 @@ export class MovimientosManager implements OnInit {
     this.router.navigate(['/contabilidad/copdamae'], {
       queryParams: { partidaId: this.partidaId() },
     });
+  }
+
+  /** Regresa al Histórico de Clientes desde el que se abrió este movimiento. */
+  volverAHistorico(): void {
+    this.nav.volver(['/cxc/historico']);
   }
 
   /**
@@ -51774,29 +52986,32 @@ export const CXP_ROUTES: Routes = [
   </header>
 
   <!-- FILTROS -->
-  <div class="grid">
-    <div class="col-fixed" style="width:50%">
-      <label>Proveedor</label>
-      <input pInputText pSize="small" [ngModel]="proveedor()" (ngModelChange)="proveedor.set($event)"
-        placeholder="Nombre o razon social" fluid />
-    </div>
-    <div class="col">
-      <label>Desde</label>
-      <p-datepicker size="small" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" dateFormat="dd/mm/yy"
-        [showIcon]="true" styleClass="w-full"></p-datepicker>
-      <label>Hasta</label>
-      <p-datepicker size="small" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" dateFormat="dd/mm/yy"
-        [showIcon]="true" styleClass="w-full"></p-datepicker>
-    </div>
-  </div>
-  <div class="grid">
-    <div class="col">
-      <div class="gap-2">
-        <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" [raised]="true"
-          severity="success"></p-button>
-        <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
-          (onClick)="limpiarFiltros()"></p-button>
+  <div class="filtros">
+    <div class="filtros-fila filtros-fila--persona">
+      <div class="campo">
+        <label>Proveedor</label>
+        <p-select size="small" [options]="proveedorOpciones()" [ngModel]="proveedor()"
+          (ngModelChange)="proveedor.set($event)" placeholder="Seleccionar proveedor" showClear filter
+          filterBy="label" styleClass="w-full" [appendTo]="'body'"></p-select>
       </div>
+    </div>
+    <div class="filtros-fila filtros-fila--fechas">
+      <div class="campo">
+        <label>Desde</label>
+        <p-datepicker size="small" appendTo="body" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)"
+          dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+      </div>
+      <div class="campo">
+        <label>Hasta</label>
+        <p-datepicker size="small" appendTo="body" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)"
+          dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+      </div>
+    </div>
+    <div class="filtros-acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" [raised]="true"
+        severity="success"></p-button>
+      <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
+        (onClick)="limpiarFiltros()"></p-button>
     </div>
   </div>
 
@@ -51954,6 +53169,58 @@ export const CXP_ROUTES: Routes = [
 ## 📄 src\app\features\cxp\historico\historico-manager.scss
 
 ```typescript
+// ===== FILTROS =====
+.filtros {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.filtros-fila {
+  display: grid;
+  gap: 1rem;
+  align-items: end;
+  justify-content: start;
+  width: 100%;
+}
+
+.filtros-fila--persona {
+  grid-template-columns: minmax(0, 30rem);
+}
+
+.filtros-fila--fechas {
+  grid-template-columns: repeat(2, minmax(0, 15rem));
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+
+  label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.filtros-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .filtros-fila {
+    grid-template-columns: 1fr;
+  }
+}
+
 .tabla.card {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
@@ -52013,6 +53280,7 @@ import { TagModule } from 'primeng/tag';
 import { MessageService } from 'primeng/api';
 import { CxpService } from '../../../core/services/cxp.service';
 import { CxPHistorico } from '../../../core/models/cxp.models';
+import { Proveedor } from '../../../core/models/inventario.models';
 
 @Component({
   selector: 'app-cxp-historico-manager',
@@ -52039,7 +53307,9 @@ export class CxpHistoricoManager implements OnInit {
   private router = inject(Router);
 
   // ===== FILTROS =====
-  proveedor = signal('');
+  /** Nombre exacto del proveedor (razón social) — el backend filtra por LIKE */
+  proveedor = signal<string | null>(null);
+  proveedorOpciones = signal<{ label: string; value: string }[]>([]);
   fechaDesde = signal<string | null>(null);
   fechaHasta = signal<string | null>(null);
 
@@ -52063,14 +53333,34 @@ export class CxpHistoricoManager implements OnInit {
   ];
 
   ngOnInit() {
+    this.cargarProveedores();
     this.cargarHistorico();
+  }
+
+  private cargarProveedores() {
+    this.service.getProveedores().pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(15000),
+      catchError(() => of([] as Proveedor[])),
+    ).subscribe((lista) => {
+      const opciones = (lista ?? [])
+        .filter((p) => p.sn_activo !== 'N')
+        .map((p) => {
+          const label = (p.razonsocial && p.razonsocial.trim()) ||
+            `${p.nombres ?? ''} ${p.apellidos ?? ''}`.trim();
+          return { label, value: label };
+        })
+        .filter((o) => o.label !== '')
+        .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+      this.proveedorOpciones.set(opciones);
+    });
   }
 
   private cargarHistorico() {
     this.cargando.set(true);
     this.service.getHistoricoConFiltros(
       '',
-      this.proveedor(),
+      this.proveedor() ?? '',
       this.fechaDesde(),
       this.fechaHasta(),
     ).pipe(
@@ -52097,7 +53387,7 @@ export class CxpHistoricoManager implements OnInit {
   }
 
   limpiarFiltros() {
-    this.proveedor.set('');
+    this.proveedor.set(null);
     this.fechaDesde.set(null);
     this.fechaHasta.set(null);
     this.selectedRow = null;
@@ -56041,12 +57331,11 @@ export class Dashboard {
         <tr>
           <th style="width:5rem"># Factura</th>
           <th style="width:6rem">Fecha</th>
-          <th style="width:4rem" class="th-hora">Hora</th>
-          <th>Cliente</th>
-          <th style="width:6rem">Tipo</th>
-          <th style="width:7rem">Total</th>
-          <th style="width:5rem">Anulada</th>
-          <th style="width:5rem">Contab.</th>
+          <th style="width:12rem">Cliente</th>
+          <th style="text-align: right; width:6rem">Tipo</th>
+          <th style="text-align: right; width:7rem">Total</th>
+          <th style="text-align: right; width:5rem">Anulada</th>
+          <th style="text-align: right; width:5rem">Contab.</th>
           <th style="width:8rem" class="acciones-header">Acciones</th>
         </tr>
       </ng-template>
@@ -56056,18 +57345,17 @@ export class Dashboard {
             <span class="nro-factura">{{ f.nrofactura }}</span>
           </td>
           <td>{{ fechaCorta(f.fecharegistro) }}</td>
-          <td class="hora-cell">{{ horaCorta(f.fecharegistro) }}</td>
           <td>
             <span class="cliente-nombre">{{ f.nombrecliente || 'Sin cliente' }}</span>
           </td>
-          <td>
+          <td class="text-right total-cell">
             <p-tag [value]="getTipoLabel(f.tipofactura)" [severity]="getTipoSeverity(f.tipofactura)" styleClass="tag-sm" />
           </td>
           <td class="text-right total-cell">{{ moneda(f.total) }}</td>
-          <td>
+          <td class="text-right total-cell">
             <p-tag [value]="f.sn_anulada === 'S' ? 'Si' : 'No'" [severity]="f.sn_anulada === 'S' ? 'danger' : 'success'" styleClass="tag-sm" />
           </td>
-          <td>
+          <td class="text-right total-cell">
             <p-tag [value]="f.sn_contabilizada === 'S' ? 'Si' : 'No'" [severity]="f.sn_contabilizada === 'S' ? 'info' : 'secondary'" styleClass="tag-sm" />
           </td>
           <td class="acciones-cell">
@@ -56565,12 +57853,25 @@ export class AnularFacturas implements OnInit {
             size="small"
           />
         </div>
+
+        <div class="campo campo-acciones">
+          <p-button
+            type="button"
+            label="Cancelar"
+            icon="pi pi-times"
+            severity="secondary"
+            size="small"
+            rounded
+            (onClick)="volver()"
+          />
+          <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+        </div>
       </div>
 
       <div class="combo-layout">
         <div class="combo-catalogo">
           <div class="catalogo-header">
-            <h2 class="section-title"><i class="pi pi-box"></i> Productos Disponibles</h2>
+            <h2 class="section-title"><i class="pi pi-box"></i> Seleccion uno o varios productos para agregar al combo de ofertas y descuentos</h2>
             <div class="search-box">
               <i class="pi pi-search search-icon"></i>
               <input
@@ -56726,18 +58027,6 @@ export class AnularFacturas implements OnInit {
         </div>
       </div>
 
-      <div class="acciones-form">
-        <p-button
-          type="button"
-          label="Cancelar"
-          icon="pi pi-times"
-          severity="secondary"
-          size="small"
-          rounded
-          (onClick)="volver()"
-        />
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
-      </div>
     </form>
   }
 </section>
@@ -56753,10 +58042,16 @@ export class AnularFacturas implements OnInit {
   display: block;
 }
 
+.card.form-grid {
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: 10px;
+  background: var(--c-bg);
+}
+
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem 1.5rem;
   padding: 0.75rem 1rem;
 }
 
@@ -56778,10 +58073,20 @@ export class AnularFacturas implements OnInit {
   }
 }
 
-/* ===== Layout 2 columnas ===== */
+/* Celda de botones (fila de Descuento) — debe ir después de .campo */
+.campo.campo-acciones {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: end;
+  gap: 0.5rem;
+  padding-bottom: 0.15rem;
+}
+
+/* ===== Layout 2 columnas (50% / 50%) ===== */
 .combo-layout {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
   align-items: start;
   margin-top: 1.25rem;
@@ -56812,7 +58117,6 @@ export class AnularFacturas implements OnInit {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  white-space: nowrap;
 
   i { color: var(--c-primary); }
 }
@@ -57230,13 +58534,6 @@ export class AnularFacturas implements OnInit {
   overflow-y: auto;
 }
 
-.acciones-form {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-
 .tag-sm {
   font-size: 0.65rem !important;
   padding: 0.15rem 0.4rem !important;
@@ -57257,6 +58554,18 @@ export class AnularFacturas implements OnInit {
 @media (max-width: 600px) {
   .combo-layout {
     grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campo.campo-acciones {
+    justify-content: stretch;
+  }
+
+  .campo.campo-acciones p-button {
+    flex: 1;
   }
 
   .catalogo-header {
@@ -57637,10 +58946,11 @@ export class CombosForm implements OnInit {
         `${i.descripcion} (${this.formatearPrecio(i.precioventa)} < ${this.formatearPrecio(this.precioMinimo(i))})`
       ).join(', ');
       this.msgs.add({
-        severity: 'warn',
+        severity: 'error',
         summary: 'Precios por debajo del mínimo',
-        detail: `${nombres} — costo + 3%`,
+        detail: `${nombres} — no se puede vender por debajo de costo + 3%`,
       });
+      return;
     }
 
     const maeBody = {
@@ -57805,23 +59115,16 @@ export class CombosForm implements OnInit {
           >
             <div class="combo-item-header">
               <span class="combo-item-title">{{ titulo(item) }}</span>
+              <span class="combo-item-fecha">{{ vigencia(item) }}</span>
               <div class="combo-item-actions">
                 <button
                   class="combo-action-btn"
-                  pTooltip="Editar"
+                  pTooltip="Detalle"
                   (click)="editar(item.poscbomaeId, $event)"
                 >
                   <i class="pi pi-pencil"></i>
                 </button>
               </div>
-            </div>
-            <div class="combo-item-body">
-              @for (f of filas(item); track f.label) {
-                <div class="combo-item-row">
-                  <span class="combo-item-label">{{ f.label }}</span>
-                  <span class="combo-item-value">{{ f.value }}</span>
-                </div>
-              }
             </div>
           </div>
         } @empty {
@@ -57909,7 +59212,7 @@ export class CombosForm implements OnInit {
 ```typescript
 .combo-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1rem;
   min-height: 70vh;
 }
@@ -57971,20 +59274,30 @@ export class CombosForm implements OnInit {
 
 .combo-item-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.25rem;
+  gap: 0.75rem;
 }
 
 .combo-item-title {
   font-weight: 600;
   font-size: 0.9rem;
   color: var(--c-text);
+  white-space: nowrap;
+}
+
+.combo-item-fecha {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .combo-item-actions {
   display: flex;
   gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .combo-action-btn {
@@ -58000,29 +59313,6 @@ export class CombosForm implements OnInit {
     color: var(--c-primary);
     border-color: var(--c-primary);
   }
-}
-
-.combo-item-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.combo-item-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.combo-item-label {
-  font-size: 0.75rem;
-  color: var(--c-text-muted);
-}
-
-.combo-item-value {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--c-text);
 }
 
 /* Columna derecha - Detalle */
@@ -58183,12 +59473,6 @@ export class CombosForm implements OnInit {
   padding: 1.5rem;
 }
 
-@media (max-width: 960px) {
-  .combo-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
 ```
 
 ---
@@ -58311,11 +59595,10 @@ export class CombosList implements OnInit {
     return item.descripcion || `Combo #${item.poscbomaeId}`;
   }
 
-  filas(item: any) {
-    return [
-      { label: 'Vigente desde', value: item.fec_vig_desde ? new Date(item.fec_vig_desde).toLocaleDateString() : '-' },
-      { label: 'Vigente hasta', value: item.fec_vig_hasta ? new Date(item.fec_vig_hasta).toLocaleDateString() : '-' },
-    ];
+  vigencia(item: any): string {
+    const desde = item.fec_vig_desde ? new Date(item.fec_vig_desde).toLocaleDateString() : '-';
+    const hasta = item.fec_vig_hasta ? new Date(item.fec_vig_hasta).toLocaleDateString() : '-';
+    return `Válido desde el: ${desde} al: ${hasta}`;
   }
 
   resolverImagen(img: string | null): string {
@@ -58348,12 +59631,8 @@ export class CombosList implements OnInit {
     <div class="header-actions">
       <p-button icon="pi pi-print" [rounded]="true"
       rainsed="true" label="Imprimir" size="small" (onClick)="imprimir()" pTooltip="Imprimir factura" severity="contrast" />
-      <p-button icon="pi pi-download" 
+      <p-button icon="pi pi-download"
       rainsed="true" [rounded]="true" label="PDF" severity="secondary" size="small" (onClick)="descargarPdf()" pTooltip="Descargar PDF" />
-      <p-button icon="pi pi-envelope" 
-      rainsed="true" [rounded]="true" label="Correo" severity="info" size="small" (onClick)="abrirDialogCorreo()" pTooltip="Enviar por correo" />
-      <p-button icon="pi pi-whatsapp" 
-      rainsed="true" [rounded]="true" label="WhatsApp" severity="success" size="small" (onClick)="compartir()" styleClass="btn-whatsapp" pTooltip="Compartir por WhatsApp" />
     </div>
   </header>
 
@@ -59103,6 +60382,7 @@ import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { FacturaImpresionService, FacturaImpresionData } from '../../../core/services/factura-impresion.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 import { numeroALetras } from '../../../core/utils/numeros-a-letras';
 
 @Component({
@@ -59120,6 +60400,7 @@ export class ConsultaFacturaDetalle implements OnInit {
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
   private impresion = inject(FacturaImpresionService);
+  private nav = inject(NavegacionService);
 
   /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
   partidaId = signal<number | null>(null);
@@ -59175,12 +60456,13 @@ export class ConsultaFacturaDetalle implements OnInit {
 
   volver() {
     // Si vino de una partida contable, regresa al detalle de esa partida
+    // (la partida viaja en la URL, no en el historial: se navega explícito)
     const partida = this.partidaId();
     if (partida) {
       this.router.navigate(['/contabilidad/copdamae'], { queryParams: { partidaId: partida } });
       return;
     }
-    this.router.navigate(['/facturacion/consultas']);
+    this.nav.volver(['/facturacion/consultas']);
   }
 
   moneda(n: number | undefined): string {
@@ -59400,12 +60682,11 @@ export class ConsultaFacturaDetalle implements OnInit {
         <tr>
           <th style="width: 5rem"># Factura</th>
           <th style="width: 6rem">Fecha</th>
-          <th style="width: 6rem" class="th-hora">Hora</th>
-          <th>Cliente</th>
-          <th style="width: 6rem">Tipo</th>
-          <th style="width: 7rem">Total</th>
-          <th style="width: 5rem">Anulada</th>
-          <th style="width: 5rem">Contab.</th>
+          <th style="width: 18rem">Cliente</th>
+          <th style="text-align: center; width: 6rem">Tipo</th>
+          <th style="text-align: center; width: 7rem">Total</th>
+          <th style="text-align: center; width: 5rem">Anulada</th>
+          <th style="text-align: center; width: 5rem">Contab.</th>
           <th style="width: 10rem" class="acciones-header">Acciones</th>
         </tr>
       </ng-template>
@@ -59419,26 +60700,25 @@ export class ConsultaFacturaDetalle implements OnInit {
             <span class="nro-factura">{{ f.nrofactura }}</span>
           </td>
           <td>{{ fechaCorta(f.fecharegistro) }}</td>
-          <td class="hora-cell">{{ horaCorta(f.fecharegistro) }}</td>
           <td>
             <span class="cliente-nombre">{{ f.nombrecliente || 'Sin cliente' }}</span>
           </td>
-          <td>
+          <td style="text-align: center;">
             <p-tag
               [value]="getTipoLabel(f.tipofactura)"
               [severity]="getTipoSeverity(f.tipofactura)"
               styleClass="tag-sm"
             />
           </td>
-          <td class="text-right total-cell">{{ moneda(f.total) }}</td>
-          <td>
+          <td class="text-right total-cell">{{ moneda(f.total) | number:'1.2-2' }}</td>
+          <td style="text-align: center;">
             <p-tag
               [value]="f.sn_anulada === 'S' ? 'Si' : 'No'"
               [severity]="f.sn_anulada === 'S' ? 'danger' : 'success'"
               styleClass="tag-sm"
             />
           </td>
-          <td>
+          <td style="text-align: center;">
             <p-tag
               [value]="f.sn_contabilizada === 'S' ? 'Si' : 'No'"
               [severity]="f.sn_contabilizada === 'S' ? 'info' : 'secondary'"
@@ -59831,17 +61111,22 @@ export class ConsultaFacturaDetalle implements OnInit {
 }
 
 .acciones-header {
-  text-align: center !important;
+  // Justificada: el rótulo inicia donde inicia la 1ra acción
+  text-align: left !important;
 }
 
 .acciones-cell {
-  text-align: center !important;
+  text-align: left !important;
 }
 
 .acciones-row {
   display: flex;
   gap: 0.15rem;
-  justify-content: center;
+  width: 100%;
+  // Justificada: distribuye las acciones de borde a borde de la celda para
+  // que se alineen en columna entre filas (Ver a la izquierda, WhatsApp a la
+  // derecha) aunque una fila tenga 3 botones y otra 4.
+  justify-content: space-between;
 }
 
 .tag-sm {
@@ -60160,7 +61445,7 @@ export class ConsultaFacturas implements OnInit {
     const d = new Date(fecha);
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yy = String(d.getFullYear()).slice(-2);
+    const yy = String(d.getFullYear());
     return `${dd}/${mm}/${yy}`;
   }
 
@@ -60542,15 +61827,42 @@ export class ConsultaFacturas implements OnInit {
     <img [src]="zoomUrl()" class="img-zoom-overlay" [style.left.px]="zoomX()" [style.top.px]="zoomY()" />
   }
 
-  <p-dialog header="Enviar cotización por correo" [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '400px' }" [draggable]="false" [resizable]="false"
+  <p-dialog [(visible)]="dialogCorreo" [modal]="true" [style]="{ width: '440px' }" [draggable]="false" [resizable]="false"
     [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true">
-    <div class="campo">
-      <label>Correo electrónico</label>
-      <input pInputText pSize="small" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)" placeholder="correo@ejemplo.com" />
+    <ng-template pTemplate="header">
+      <div class="correo-header">
+        <i class="pi pi-envelope"></i>
+        <span>Enviar cotización por correo</span>
+      </div>
+    </ng-template>
+
+    <div class="correo-preview">
+      <div class="correo-preview-icon"><i class="pi pi-file-pdf"></i></div>
+      <div class="correo-preview-info">
+        <span class="correo-preview-title">Cotización #{{ correoNro() }}</span>
+        <span class="correo-preview-sub">{{ correoCliente() }} · {{ moneda(totales().total) }}</span>
+        <span class="correo-preview-hint">Se enviará como PDF adjunto</span>
+      </div>
     </div>
+
+    <div class="campo correo-campo">
+      <label>Correo electrónico del destinatario <span class="req">*</span></label>
+      <p-iconfield>
+        <i class="pi pi-envelope"></i>
+        <input pInputText pSize="small" type="email" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
+          (keyup.enter)="emailValido() && enviarCorreo()" placeholder="correo@ejemplo.com" class="correo-input" />
+      </p-iconfield>
+      @if (emailDestino().trim().length > 0 && !emailValido()) {
+        <small class="err">Ingrese un correo electrónico válido</small>
+      }
+    </div>
+
     <ng-template pTemplate="footer">
-      <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
-      <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="guardando()" />
+      <div class="correo-footer">
+        <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+        <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()"
+          [loading]="guardando()" [disabled]="!emailValido()" />
+      </div>
     </ng-template>
   </p-dialog>
 </section>
@@ -60923,6 +62235,83 @@ export class ConsultaFacturas implements OnInit {
 }
 }
 
+// ==================== Dialog Correo ====================
+
+.correo-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  i {
+    color: var(--c-primary);
+  }
+}
+
+.correo-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.correo-preview-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: var(--c-error);
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.correo-preview-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.correo-preview-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.correo-preview-sub {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.correo-preview-hint {
+  font-size: 0.72rem;
+  color: var(--c-text-muted);
+}
+
+.correo-campo {
+  p-iconfield {
+    width: 100%;
+  }
+
+  .correo-input {
+    width: 100%;
+  }
+}
+
+.correo-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 ```
 
 ---
@@ -60930,7 +62319,7 @@ export class ConsultaFacturas implements OnInit {
 ## 📄 src\app\features\facturacion\cotizaciones\cotizaciones-form\cotizaciones-form.ts
 
 ```typescript
-﻿import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+﻿import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -60951,7 +62340,9 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
 import { FacturacionService } from '../../../../core/services/facturacion.service';
+import { FacturaImpresionService } from '../../../../core/services/factura-impresion.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { NavegacionService } from '../../../../core/services/navegacion.service';
 import { Producto } from '../../../../core/models/inventario.models';
 import { ProductosHelperList } from '../../../helpers/productos';
 import { FooterHelper } from '../../../helpers/footer';
@@ -60999,9 +62390,11 @@ export class CotizacionesForm implements OnInit {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   private service = inject(FacturacionService);
+  private impresion = inject(FacturaImpresionService);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
+  private nav = inject(NavegacionService);
   ref: DynamicDialogRef | undefined;
 
   form!: FormGroup;
@@ -61024,6 +62417,7 @@ export class CotizacionesForm implements OnInit {
   empresaDet = signal<any[]>([]);
   empresaNombre = 'EMPRESA';
   emailDestino = signal('');
+  emailValido = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.emailDestino().trim()));
   productosArray: Producto[] = [];
   productosFiltrados = signal<Producto[]>([]);
 
@@ -61431,7 +62825,7 @@ export class CotizacionesForm implements OnInit {
   }
 
   volver() {
-    this.router.navigate(['/facturacion/cotizaciones']);
+    this.nav.volver(['/facturacion/cotizaciones']);
   }
 
   guardar() {
@@ -61524,42 +62918,40 @@ export class CotizacionesForm implements OnInit {
   // ==================== PDF / Correo / WhatsApp ====================
 
   async imprimirPDF(): Promise<void> {
-    const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-    const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-    pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-    pdfMake.createPdf(this.buildPdfDefinition()).print();
+    try {
+      const pdfMake = await this.impresion.cargarPdfMake();
+      const blob: Blob = await pdfMake.createPdf(this.buildPdfDefinition()).getBlob();
+      this.impresion.imprimirBlobEnIframe(blob);
+    } catch {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el PDF' });
+    }
   }
 
   async descargarPDF(): Promise<void> {
-    const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-    const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-    pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
-    const id = this.mae()?.poscotmaeId || 'nueva';
-    pdfMake.createPdf(this.buildPdfDefinition()).download('cotizacion-' + id + '.pdf');
+    try {
+      const pdfMake = await this.impresion.cargarPdfMake();
+      const id = this.mae()?.poscotmaeId;
+      const nro = id ? String(id).padStart(6, '0') : 'nueva';
+      pdfMake.createPdf(this.buildPdfDefinition()).download('cotizacion-' + nro + '.pdf');
+    } catch {
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el PDF' });
+    }
   }
 
   async compartir(): Promise<void> {
     try {
-      const pdfMake: any = (await import('pdfmake/build/pdfmake')).default;
-      const pdfFonts: any = (await import('pdfmake/build/vfs_fonts')).default;
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts;
+      const pdfMake = await this.impresion.cargarPdfMake();
       const id = this.mae()?.poscotmaeId;
       const nro = id ? String(id).padStart(6, '0') : 'nueva';
       const nombre = 'cotizacion-' + nro + '.pdf';
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        (pdfMake as any)
-          .createPdf(this.buildPdfDefinition())
-          .getBlob((b: Blob) => resolve(b), (err: any) => reject(err));
-      });
+      const texto = 'Cotización #' + nro + ' - ' + this.empresaNombre;
+
+      // pdfmake 0.3: getBlob() devuelve una Promesa (el callback de 0.2 ya no aplica)
+      const blob: Blob = await pdfMake.createPdf(this.buildPdfDefinition()).getBlob();
       const file = new File([blob], nombre, { type: 'application/pdf' });
+
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        navigator
-          .share({
-            files: [file],
-            title: 'Cotización #' + nro,
-            text: 'Cotización #' + nro + ' - ' + this.empresaNombre,
-          })
-          .catch(() => {});
+        await navigator.share({ files: [file], title: 'Cotización #' + nro, text: texto });
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -61567,15 +62959,24 @@ export class CotizacionesForm implements OnInit {
         a.download = nombre;
         a.click();
         URL.revokeObjectURL(url);
-        this.msgs.add({
-          severity: 'info',
-          summary: 'PDF descargado',
-          detail: 'Ahora puedes compartirlo por WhatsApp',
-        });
+        const win = window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+        if (win) {
+          this.msgs.add({
+            severity: 'info',
+            summary: 'PDF descargado',
+            detail: 'WhatsApp abierto — adjunte el archivo en el chat',
+          });
+        } else {
+          this.msgs.add({
+            severity: 'info',
+            summary: 'PDF descargado',
+            detail: 'El navegador bloqueó la pestaña de WhatsApp — ábralo manualmente',
+          });
+        }
       }
     } catch (e: any) {
       if (e?.name !== 'AbortError') {
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el PDF' });
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo compartir la cotización' });
       }
     }
   }
@@ -61585,12 +62986,21 @@ export class CotizacionesForm implements OnInit {
     this.dialogCorreo.set(true);
   }
 
+  correoNro(): string {
+    const id = this.mae()?.poscotmaeId;
+    return id ? String(id).padStart(6, '0') : 'Nueva';
+  }
+
+  correoCliente(): string {
+    return this.form.value.Nombrecliente || this.mae()?.Nombrecliente || 'Cliente sin asignar';
+  }
+
   enviarCorreo(): void {
-    const emailVal = this.emailDestino();
-    if (!emailVal || !emailVal.includes('@')) {
+    if (!this.emailValido()) {
       this.msgs.add({ severity: 'warn', summary: 'Correo invalido', detail: 'Ingrese un correo electronico valido' });
       return;
     }
+    const emailVal = this.emailDestino().trim();
     const id = this.mae()?.poscotmaeId;
     if (!id) {
       this.msgs.add({ severity: 'warn', summary: 'Sin cotizacion', detail: 'Guarde la cotizacion antes de enviar por correo' });
@@ -62309,6 +63719,1464 @@ export const COTIZACIONES_ROUTES: Routes = [
 
 ---
 
+## 📄 src\app\features\facturacion\dashboard-id3\dashboard-id3.html
+
+```typescript
+<section class="page dash3">
+  <header class="page-header">
+    <div class="page-header-text">
+      <h1 class="page-title">Dashboard de Ventas</h1>
+      <p class="page-subtitle">KPIs de facturación: contado vs crédito, vendedores, evolución, cobranza y rentabilidad</p>
+    </div>
+    @if (datos(); as d) {
+      <div class="hdr-periodo">
+        <span class="hdr-periodo-valor">{{ d.referencia.etiquetaMes }}</span>
+        <span class="hdr-periodo-sub">{{ d.referencia.etiquetaVentana }}</span>
+      </div>
+    }
+  </header>
+
+  <!-- FILTROS -->
+  <div class="filtros">
+    <div class="filtros-fila">
+      <div class="campo">
+        <label>Año</label>
+        <p-select size="small" [options]="anioOps()" [ngModel]="anioSel()" (ngModelChange)="anioSel.set($event)"
+          placeholder="Todos" styleClass="w-full" [appendTo]="'body'" showClear filter></p-select>
+      </div>
+      <div class="campo">
+        <label>Mes</label>
+        <p-select size="small" [options]="mesOps()" [ngModel]="mesSel()" (ngModelChange)="mesSel.set($event)"
+          placeholder="Todo el año" styleClass="w-full" [appendTo]="'body'" showClear></p-select>
+      </div>
+      <div class="campo">
+        <label>Sucursal / Canal</label>
+        <p-select size="small" [options]="sucursalOps()" [ngModel]="sucursalSel()" (ngModelChange)="sucursalSel.set($event)"
+          placeholder="Todas" styleClass="w-full" [appendTo]="'body'" showClear filter></p-select>
+      </div>
+      <div class="campo">
+        <label>Categoría de producto</label>
+        <p-select size="small" [options]="categoriaOps()" [ngModel]="categoriaSel()" (ngModelChange)="categoriaSel.set($event)"
+          placeholder="Todas" styleClass="w-full" [appendTo]="'body'" showClear filter></p-select>
+      </div>
+    </div>
+    <div class="filtros-acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" [raised]="true" severity="success"
+        [loading]="cargando()" (onClick)="buscar()"></p-button>
+      <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
+        (onClick)="limpiarFiltros()"></p-button>
+    </div>
+  </div>
+
+  @if (datos(); as d) {
+    <!-- ===== FILA 1 — Tarjetas KPI ===== -->
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi-label">Ventas totales</span>
+        <span class="kpi-valor">{{ fmt(d.resumen.ventasTotales) }}</span>
+        <span class="kpi-sub">{{ fmtEntero(d.resumen.numFacturas) }} comprobantes · Ticket promedio {{ fmt(d.resumen.ticketPromedio) }}</span>
+      </div>
+      <div class="kpi kpi--contado">
+        <span class="kpi-label">Ventas al contado</span>
+        <span class="kpi-valor">{{ fmt(d.contadoCredito.contado) }}</span>
+        <span class="kpi-sub">{{ pct(d.contadoCredito.pctContado) }} del total · {{ fmtEntero(d.contadoCredito.numContado) }} facturas</span>
+      </div>
+      <div class="kpi kpi--credito">
+        <span class="kpi-label">Ventas al crédito</span>
+        <span class="kpi-valor">{{ fmt(d.contadoCredito.credito) }}</span>
+        <span class="kpi-sub">{{ pct(d.contadoCredito.pctCredito) }} del total · {{ fmtEntero(d.contadoCredito.numCredito) }} facturas</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Utilidad bruta</span>
+        <span class="kpi-valor">{{ fmt(d.resumen.utilidadBruta) }}</span>
+        <span class="kpi-sub">Margen bruto {{ pct(d.resumen.margenBruto) }} · COGS {{ fmt(d.resumen.cogs) }}</span>
+      </div>
+      <div class="kpi" pTooltip="{{ d.dso.base }}" tooltipPosition="top">
+        <span class="kpi-label">DSO (días de cobro)</span>
+        <span class="kpi-valor">{{ d.dso.dias != null ? d.dso.dias + ' días' : '—' }}</span>
+        <span class="kpi-sub">{{ d.dso.muestras > 0 ? d.dso.muestras + ' facturas de crédito cobradas' : 'Sin facturas de crédito cobradas' }}</span>
+      </div>
+      <div class="kpi kpi--alerta">
+        <span class="kpi-label">Cartera vencida</span>
+        <span class="kpi-valor">{{ fmt(d.aging.carteraVencida) }}</span>
+        <span class="kpi-sub">{{ pct(d.aging.pctVencido) }} de {{ fmt(d.aging.carteraTotal) }} en cartera · {{ fmtEntero(d.aging.documentosVencidos) }} docs.</span>
+      </div>
+    </div>
+
+    <!-- ===== WIDGET A + E ===== -->
+    <div class="grid-2">
+      <div class="widget">
+        <div class="widget-hdr">
+          <h3>A. Ventas al Contado vs. Ventas al Crédito</h3>
+          <span class="widget-nota">% de participación sobre el total facturado</span>
+        </div>
+        <div class="widget-body split-a">
+          <div class="chart-box chart-box--square">
+            @if (tieneVentas()) {
+              <canvas id="chartContadoCredito"></canvas>
+            } @else {
+              <div class="vacio">Sin ventas en el período</div>
+            }
+          </div>
+          <div class="mini-lista">
+            <div class="mini mini--contado">
+              <span class="mini-label">Contado</span>
+              <span class="mini-valor">{{ fmt(d.contadoCredito.contado) }}</span>
+              <span class="mini-sub">{{ pct(d.contadoCredito.pctContado) }} · {{ fmtEntero(d.contadoCredito.numContado) }} facturas</span>
+            </div>
+            <div class="mini mini--credito">
+              <span class="mini-label">Crédito</span>
+              <span class="mini-valor">{{ fmt(d.contadoCredito.credito) }}</span>
+              <span class="mini-sub">{{ pct(d.contadoCredito.pctCredito) }} · {{ fmtEntero(d.contadoCredito.numCredito) }} facturas</span>
+            </div>
+            <div class="mini">
+              <span class="mini-label">Crédito neto</span>
+              <span class="mini-valor">{{ fmt(d.contadoCredito.netoCredito) }}</span>
+              <span class="mini-sub">Crédito bruto − descuentos del período</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="widget">
+        <div class="widget-hdr">
+          <h3>E. Utilidad Bruta y Margen por Categoría</h3>
+          <span class="widget-nota">Ventas − COGS (costo de adquisición)</span>
+        </div>
+        <div class="widget-body">
+          <div class="utilidad-block">
+            <div class="utilidad-monto">
+              <span class="mini-label">Utilidad bruta</span>
+              <span class="utilidad-valor">{{ fmt(d.resumen.utilidadBruta) }}</span>
+            </div>
+            <div class="utilidad-margen">
+              <span class="mini-label">Margen bruto</span>
+              <span class="utilidad-valor" [class.negativo]="(d.resumen.margenBruto ?? 0) < 0">{{ pct(d.resumen.margenBruto) }}</span>
+            </div>
+            <div class="utilidad-margen">
+              <span class="mini-label">COGS</span>
+              <span class="utilidad-valor utilidad-valor--sm">{{ fmt(d.resumen.cogs) }}</span>
+            </div>
+          </div>
+          <div class="chart-box chart-box--alt">
+            @if (tieneCategorias()) {
+              <canvas id="chartMargen"></canvas>
+            } @else {
+              <div class="vacio">Sin líneas de detalle en el período</div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WIDGET B ===== -->
+    <div class="widget">
+      <div class="widget-hdr">
+        <h3>B. Ventas por Vendedor</h3>
+        <span class="widget-nota">Productividad y ticket promedio por integrante del equipo</span>
+      </div>
+      <div class="widget-body split-b">
+        <div class="chart-box chart-box--vendedor">
+          @if (tieneVendedores()) {
+            <canvas id="chartVendedores"></canvas>
+          } @else {
+            <div class="vacio">Sin ventas en el período</div>
+          }
+        </div>
+        <div class="tabla-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Vendedor</th>
+                <th class="num">Comprobantes</th>
+                <th class="num">Ventas</th>
+                <th class="num">Ticket promedio</th>
+                <th class="num">Participación</th>
+                <th class="num">Meta</th>
+                <th class="num">Cumplimiento</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of d.vendedores; track v.gestorId ?? 'sin') {
+                <tr>
+                  <td>{{ v.nombre }}</td>
+                  <td class="num">{{ fmtEntero(v.comprobantes) }}</td>
+                  <td class="num">{{ fmt(v.ventas) }}</td>
+                  <td class="num">{{ fmt(v.ticketPromedio) }}</td>
+                  <td class="num">{{ pct(v.pctParticipacion) }}</td>
+                  <td class="num muted">{{ v.meta != null ? fmt(v.meta) : '—' }}</td>
+                  <td class="num muted">{{ v.cumplimiento != null ? pct(v.cumplimiento) : '—' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="vacio-fila">Sin ventas en el período seleccionado</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <p class="nota-pie">No existe tabla de metas por vendedor en el ERP: las columnas Meta y Cumplimiento
+            muestran «—» hasta que se defina la tabla de metas.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WIDGET C ===== -->
+    <div class="widget">
+      <div class="widget-hdr">
+        <h3>C. Ventas por Meses (evolución de 12 meses)</h3>
+        <div class="badges">
+          <span class="badge" [class]="claseVariacion(d.comparativo.mom)">
+            Mes anterior: {{ pctSigno(d.comparativo.mom) }}
+          </span>
+          <span class="badge" [class]="claseVariacion(d.comparativo.yoy)">
+            Mismo mes año anterior: {{ pctSigno(d.comparativo.yoy) }}
+          </span>
+          <span class="badge neutro">Mes: {{ fmt(d.comparativo.actual) }} · Anterior: {{ fmt(d.comparativo.anterior) }} · Año anterior: {{ fmt(d.comparativo.mismoMesAnioAnterior) }}</span>
+        </div>
+      </div>
+      <div class="widget-body">
+        <div class="chart-box chart-box--meses">
+          <canvas id="chartMeses"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WIDGET D ===== -->
+    <div class="widget">
+      <div class="widget-hdr">
+        <h3>D. Facturas Vencidas y Análisis de Cobranza</h3>
+        <span class="widget-nota">Antigüedad de saldos (AR Aging) al día de la fecha del sistema: {{ fecha(d.referencia.fecha) }}</span>
+      </div>
+      <div class="widget-body split-d">
+        <div class="tabla-wrap">
+          <table class="tbl tbl--aging">
+            <thead>
+              <tr>
+                <th>Rango</th>
+                <th>Días de mora</th>
+                <th class="num">Documentos</th>
+                <th class="num">Monto</th>
+                <th class="num">% cartera</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of d.aging.rangos; track r.key) {
+                <tr [class.fila-vencida]="r.key !== 'porVencer' && r.monto > 0">
+                  <td>{{ r.rango }}</td>
+                  <td class="muted">{{ r.dias }}</td>
+                  <td class="num">{{ fmtEntero(r.documentos) }}</td>
+                  <td class="num">{{ fmt(r.monto) }}</td>
+                  <td class="num">{{ d.aging.carteraTotal > 0 ? pct((r.monto / d.aging.carteraTotal) * 100) : '0.0%' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td><strong>Cartera total</strong></td>
+                <td></td>
+                <td class="num"><strong>{{ fmtEntero(d.aging.documentosVencidos + d.aging.rangos[0].documentos) }}</strong></td>
+                <td class="num"><strong>{{ fmt(d.aging.carteraTotal) }}</strong></td>
+                <td class="num"><strong>100.0%</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="cobranza-kpis">
+          <div class="kpi kpi--alerta">
+            <span class="kpi-label">Cartera vencida</span>
+            <span class="kpi-valor">{{ fmt(d.aging.carteraVencida) }}</span>
+            <span class="kpi-sub">{{ pct(d.aging.pctVencido) }} de la cartera · {{ fmtEntero(d.aging.documentosVencidos) }} documentos</span>
+          </div>
+          <div class="kpi">
+            <span class="kpi-label">Por vencer</span>
+            <span class="kpi-valor">{{ fmt(d.aging.carteraPorVencer) }}</span>
+            <span class="kpi-sub">Documentos al día</span>
+          </div>
+          <div class="kpi kpi--ok">
+            <span class="kpi-label">Cobrado</span>
+            <span class="kpi-valor">{{ fmt(d.aging.montoCobrado) }}</span>
+            <span class="kpi-sub">{{ fmtEntero(d.aging.documentosCobrados) }} facturas de crédito canceladas</span>
+          </div>
+          <div class="kpi" pTooltip="{{ d.dso.base }}" tooltipPosition="top">
+            <span class="kpi-label">DSO</span>
+            <span class="kpi-valor">{{ d.dso.dias != null ? d.dso.dias + ' días' : '—' }}</span>
+            <span class="kpi-sub">Tiempo promedio de cobro</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WIDGET F + G ===== -->
+    <div class="grid-2 grid-2--productos">
+      <div class="widget">
+        <div class="widget-hdr">
+          <h3>F. Top 25 Productos Más Vendidos (Pareto 80/20)</h3>
+          <span class="widget-nota">Barras: ingresos · Línea: % acumulado</span>
+        </div>
+        <div class="widget-body">
+          <div class="chart-box chart-box--pareto">
+            @if (tienePareto()) {
+              <canvas id="chartPareto"></canvas>
+            } @else {
+              <div class="vacio">Sin productos vendidos en el período</div>
+            }
+          </div>
+          <div class="tabla-wrap tabla-wrap--scroll">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th class="num">Cant.</th>
+                  <th class="num">Ingresos</th>
+                  <th class="num">% acum.</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of d.topProductos; track p.productoId; let i = $index) {
+                  @if (p.ingresos > 0) {
+                    <tr>
+                      <td class="muted">{{ i + 1 }}</td>
+                      <td>
+                        <span class="prod-desc">{{ p.descripcion }}</span>
+                        <span class="prod-cod">{{ p.codbarra }}</span>
+                      </td>
+                      <td>{{ p.categoria }}</td>
+                      <td class="num">{{ fmtEntero(p.cantidad) }}</td>
+                      <td class="num">{{ fmt(p.ingresos) }}</td>
+                      <td class="num">{{ acumuladoTop($index, d) }}</td>
+                    </tr>
+                  }
+                } @empty {
+                  <tr><td colspan="6" class="vacio-fila">Sin productos vendidos</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="widget">
+        <div class="widget-hdr">
+          <h3>G. Bottom 25 Productos (baja rotación / dormidos)</h3>
+          <span class="widget-nota">Capital inmovilizado — descuentos, promociones o liquidación</span>
+        </div>
+        <div class="widget-body">
+          <div class="tabla-wrap tabla-wrap--scroll">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th class="num">Cant.</th>
+                  <th class="num">Ingresos</th>
+                  <th class="num">Última venta</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of d.bottomProductos; track p.productoId) {
+                  <tr [class.dormido]="p.ingresos === 0">
+                    <td>
+                      <span class="prod-desc">{{ p.descripcion }}</span>
+                      <span class="prod-cod">{{ p.codbarra }}</span>
+                    </td>
+                    <td>{{ p.categoria }}</td>
+                    <td class="num">{{ fmtEntero(p.cantidad) }}</td>
+                    <td class="num">{{ fmt(p.ingresos) }}</td>
+                    <td class="num">
+                      {{ fecha(p.ultimaVenta) }}
+                      @if (p.diasSinVenta != null) {
+                        <span class="prod-cod">hace {{ fmtEntero(p.diasSinVenta) }} días</span>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="5" class="vacio-fila">Sin productos en el catálogo</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="cargando">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando dashboard…</span>
+    </div>
+  }
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\dashboard-id3\dashboard-id3.scss
+
+```typescript
+// =====================================================================
+// Dashboard de Ventas (dashboardId3) — /facturacion/dashboardId3
+// =====================================================================
+
+.page.dash3 {
+  gap: 0.875rem;
+}
+
+.hdr-periodo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+
+  .hdr-periodo-valor {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--c-text);
+  }
+
+  .hdr-periodo-sub {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+  }
+}
+
+// ===== Filtros (mismo patrón de 3 filas de los históricos) =====
+.filtros {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+
+  .filtros-fila {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 16rem));
+    gap: 1rem;
+    align-items: end;
+    justify-content: start;
+    width: 100%;
+  }
+
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--c-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  .filtros-acciones {
+    display: flex;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .filtros .filtros-fila {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .filtros .filtros-fila {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ===== Tarjetas KPI =====
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  min-width: 0;
+
+  .kpi-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-text-muted);
+  }
+
+  .kpi-valor {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--c-text);
+    line-height: 1.15;
+    word-break: break-word;
+
+    &.negativo {
+      color: var(--c-error);
+    }
+  }
+
+  .kpi-sub {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+    line-height: 1.3;
+  }
+}
+
+.kpi--contado {
+  border-left: 3px solid var(--c-success, #10b981);
+}
+
+.kpi--credito {
+  border-left: 3px solid var(--c-warning, #f59e0b);
+}
+
+.kpi--alerta {
+  border-left: 3px solid var(--c-error, #ef4444);
+}
+
+.kpi--ok {
+  border-left: 3px solid var(--c-success, #10b981);
+}
+
+@media (max-width: 1400px) {
+  .kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+// ===== Widgets =====
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem;
+  width: 100%;
+}
+
+.widget {
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  overflow: hidden;
+  min-width: 0;
+
+  .widget-hdr {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--c-border);
+
+    h3 {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--c-text);
+    }
+  }
+
+  .widget-nota {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+  }
+
+  .widget-body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
+}
+
+.split-a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.split-b {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.split-d {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .grid-2,
+  .split-a,
+  .split-b,
+  .split-d {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ===== Charts =====
+.chart-box {
+  position: relative;
+  width: 100%;
+  height: 300px;
+}
+
+.chart-box--square {
+  height: 260px;
+}
+
+.chart-box--vendedor {
+  height: 260px;
+}
+
+.chart-box--meses {
+  height: 330px;
+}
+
+.chart-box--pareto {
+  height: 300px;
+}
+
+.chart-box--alt {
+  height: 240px;
+}
+
+// ===== Mini tarjetas (widget A) =====
+.mini-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+
+  .mini-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-text-muted);
+  }
+
+  .mini-valor {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--c-text);
+  }
+
+  .mini-sub {
+    font-size: 0.7rem;
+    color: var(--c-text-muted);
+  }
+}
+
+.mini--contado {
+  border-left: 3px solid var(--c-success, #10b981);
+}
+
+.mini--credito {
+  border-left: 3px solid var(--c-warning, #f59e0b);
+}
+
+// ===== Utilidad bruta (widget E) =====
+.utilidad-block {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+
+  .mini-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-text-muted);
+  }
+
+  .utilidad-valor {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--c-text);
+    line-height: 1.2;
+
+    &.negativo {
+      color: var(--c-error);
+    }
+
+    &--sm {
+      font-size: 1.1rem;
+    }
+  }
+
+  .utilidad-monto,
+  .utilidad-margen {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .utilidad-block {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ===== Badges de variación (widget C) =====
+.badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-ground);
+  color: var(--c-text);
+
+  &.positivo {
+    color: var(--c-success, #10b981);
+    border-color: var(--c-success, #10b981);
+  }
+
+  &.negativo {
+    color: var(--c-error, #ef4444);
+    border-color: var(--c-error, #ef4444);
+  }
+
+  &.neutro {
+    color: var(--c-text-muted);
+  }
+}
+
+// ===== Tablas =====
+.tabla-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.tabla-wrap--scroll {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+
+  th,
+  td {
+    padding: 0.45rem 0.6rem;
+    text-align: left;
+    border-bottom: 1px solid var(--c-border);
+    white-space: nowrap;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--c-surface-ground);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-text-muted);
+  }
+
+  tbody tr:hover {
+    background: rgba(16, 185, 129, 0.05);
+  }
+
+  tfoot td {
+    border-bottom: none;
+    background: var(--c-surface-ground);
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .muted {
+    color: var(--c-text-muted);
+  }
+
+  .vacio-fila {
+    text-align: center;
+    color: var(--c-text-muted);
+    padding: 1.25rem;
+  }
+}
+
+.fila-vencida td {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.dormido td {
+  color: var(--c-text-muted);
+}
+
+.prod-desc {
+  display: block;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.prod-cod {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--c-text-muted);
+}
+
+.nota-pie {
+  margin: 0.5rem 0 0;
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+}
+
+.cobranza-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .cobranza-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ===== Estados =====
+.vacio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  border: 1px dashed var(--c-border);
+  border-radius: 8px;
+}
+
+.cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 3rem 1rem;
+  color: var(--c-text-muted);
+  font-size: 0.9rem;
+}
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\dashboard-id3\dashboard-id3.ts
+
+```typescript
+﻿import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  DestroyRef,
+  Injector,
+  inject,
+  signal,
+  computed,
+  effect,
+  afterNextRender,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Chart, registerables, ChartConfiguration } from 'chart.js';
+import { SelectModule } from 'primeng/select';
+import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
+import { FacturacionService } from '../../../core/services/facturacion.service';
+import {
+  DashboardVentas,
+  OpcionSel,
+} from '../../../core/models/facturacion.models';
+
+Chart.register(...registerables);
+
+const MESES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+/** Colores de las series (coherentes con los tokens --c-* del tema). */
+const C = {
+  contado: '#10b981',
+  credito: '#f59e0b',
+  acumulado: '#3b82f6',
+  ventas: '#10b981',
+  vendedor: '#10b981',
+  vendedorAlt: '#6ee7b7',
+  margen: '#10b981',
+  margenBajo: '#ef4444',
+  pareto: '#10b981',
+  paretoLinea: '#f59e0b',
+  eje: '#64748b',
+  rejilla: '#e2e8f0',
+};
+
+/**
+ * Dashboard de Facturación (KPIs de ventas) — ruta `/facturacion/dashboardId3`.
+ *
+ * 7 componentes (chart.js puro, sin ng2-charts):
+ *  A. Ventas al Contado vs. Crédito (doughnut + 2 tarjetas KPI)
+ *  B. Ventas por Vendedor (barras horizontales + tabla de ticket/participación)
+ *  C. Ventas por Meses — ventana de 12 meses con MoM y YoY (barras apiladas + línea acumulada)
+ *  D. Facturas vencidas / Antigüedad de Saldos (AR Aging) + DSO
+ *  E. Utilidad Bruta (ventas − COGS) y margen % por categoría
+ *  F. Top 25 productos con diagrama de Pareto (acumulado al 80%)
+ *  G. Bottom 25 productos (baja rotación / "dormidos")
+ *
+ * Filtros interactivos: Año, Mes, Sucursal/Canal y Categoría de producto.
+ */
+@Component({
+  selector: 'app-dashboard-id3',
+  standalone: true,
+  imports: [CommonModule, FormsModule, SelectModule, ButtonModule, TooltipModule],
+  templateUrl: './dashboard-id3.html',
+  styleUrl: './dashboard-id3.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class DashboardId3Component implements OnInit, OnDestroy {
+  private facturacion = inject(FacturacionService);
+  private destroyRef = inject(DestroyRef);
+  private injector = inject(Injector);
+
+  readonly datos = signal<DashboardVentas | null>(null);
+  readonly cargando = signal(false);
+
+  // ===== Filtros =====
+  readonly anioSel = signal<number | null>(null);
+  readonly mesSel = signal<number | null>(null);
+  readonly sucursalSel = signal<number | null>(null);
+  readonly categoriaSel = signal<number | null>(null);
+
+  readonly anioOps = signal<OpcionSel[]>([]);
+  readonly mesOps = signal<OpcionSel[]>([]);
+  readonly sucursalOps = signal<OpcionSel[]>([]);
+  readonly categoriaOps = signal<OpcionSel[]>([]);
+
+  // ===== Estados vacíos =====
+  readonly tieneVentas = computed(() => (this.datos()?.resumen.ventasTotales ?? 0) > 0);
+  readonly tieneVendedores = computed(() => (this.datos()?.vendedores.length ?? 0) > 0);
+  readonly tieneCategorias = computed(() => (this.datos()?.categoriaMargen.length ?? 0) > 0);
+  readonly tieneTop = computed(() =>
+    (this.datos()?.topProductos ?? []).some((p) => p.ingresos > 0),
+  );
+  readonly tienePareto = computed(() => this.tieneTop());
+  readonly tieneCartera = computed(() => (this.datos()?.aging.carteraTotal ?? 0) > 0);
+
+  private charts: Chart[] = [];
+
+  /** Tras cada carga: pinta los canvas y (re)crea los charts. */
+  private _render = effect(() => {
+    const d = this.datos();
+    if (!d) return;
+    afterNextRender(() => this.renderizar(d), { injector: this.injector });
+  });
+
+  ngOnInit(): void {
+    this.mesOps.set([
+      { label: 'Todo el año', value: null },
+      ...MESES.map((m, i) => ({ label: m, value: i + 1 })),
+    ]);
+    this.cargar();
+  }
+
+  ngOnDestroy(): void {
+    this.destruirCharts();
+  }
+
+  cargar(): void {
+    this.cargando.set(true);
+    this.facturacion
+      .getDashboardVentas({
+        anio: this.anioSel(),
+        mes: this.mesSel(),
+        sucursalId: this.sucursalSel(),
+        categoriaId: this.categoriaSel(),
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (d) => this.aplicar(d),
+        error: () => this.cargando.set(false),
+      });
+  }
+
+  buscar(): void {
+    this.cargar();
+  }
+
+  limpiarFiltros(): void {
+    this.anioSel.set(null);
+    this.mesSel.set(null);
+    this.sucursalSel.set(null);
+    this.categoriaSel.set(null);
+    this.cargar();
+  }
+
+  private aplicar(d: DashboardVentas): void {
+    this.datos.set(d);
+    this.cargando.set(false);
+
+    const anios: OpcionSel[] = [{ label: 'Todos', value: null }];
+    const disponibles = d.opciones.anios?.length ? d.opciones.anios : [d.referencia.anio];
+    for (const a of [...new Set(disponibles)].sort((x, y) => y - x)) {
+      anios.push({ label: String(a), value: a });
+    }
+    this.anioOps.set(anios);
+
+    this.sucursalOps.set([
+      { label: 'Todas las sucursales', value: null },
+      ...d.opciones.sucursales.map((s) => ({ label: s.descripcion, value: s.Idsucursal })),
+    ]);
+    this.categoriaOps.set([
+      { label: 'Todas las categorías', value: null },
+      ...d.opciones.categorias.map((c) => ({ label: c.descripcion, value: c.categoriaId })),
+    ]);
+  }
+
+  // ===== Formatos =====
+
+  fmt(n: number | null | undefined): string {
+    if (n == null) return '—';
+    return new Intl.NumberFormat('es-HN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(n) || 0);
+  }
+
+  fmtEntero(n: number | null | undefined): string {
+    if (n == null) return '—';
+    return new Intl.NumberFormat('es-HN').format(Number(n) || 0);
+  }
+
+  pct(n: number | null | undefined): string {
+    if (n == null) return '—';
+    return `${new Intl.NumberFormat('es-HN', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }).format(Number(n) || 0)}%`;
+  }
+
+  /** Formato con signo para MoM/YoY (+12.5% / −8.0%). */
+  pctSigno(n: number | null | undefined): string {
+    if (n == null) return '—';
+    const v = Number(n) || 0;
+    return `${v > 0 ? '+' : ''}${this.pct(v)}`;
+  }
+
+  claseVariacion(n: number | null | undefined): string {
+    if (n == null) return 'neutro';
+    if (n > 0) return 'positivo';
+    if (n < 0) return 'negativo';
+    return 'neutro';
+  }
+
+  fecha(n: string | null): string {
+    if (!n) return '—';
+    const d = new Date(n);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('es-HN');
+  }
+
+  /** % acumulado de ingresos del Top 25 hasta la fila `i` (solo filas con ingresos > 0). */
+  acumuladoTop(i: number, d: DashboardVentas): string {
+    const total = d.topProductos.reduce((s, p) => s + p.ingresos, 0);
+    if (total <= 0) return '—';
+    let acum = 0;
+    for (let k = 0; k <= i; k++) acum += d.topProductos[k]?.ingresos ?? 0;
+    return this.pct(Math.round((acum / total) * 1000) / 10);
+  }
+
+  /** Formato compacto para ejes (1.2M, 345K). */
+  private compacto(n: number): string {
+    return new Intl.NumberFormat('es-HN', {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(n);
+  }
+
+  // ===== Charts =====
+
+  private canvas(id: string): HTMLCanvasElement | null {
+    return document.getElementById(id) as HTMLCanvasElement | null;
+  }
+
+  private baseOptions(): ChartConfiguration['options'] {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { boxWidth: 12, font: { size: 11 }, color: C.eje },
+        },
+      },
+    };
+  }
+
+  private renderizar(d: DashboardVentas): void {
+    this.destruirCharts();
+    this.graficoContadoCredito(d);
+    this.graficoVendedores(d);
+    this.graficoMeses(d);
+    this.graficoMargen(d);
+    this.graficoPareto(d);
+  }
+
+  /** Widget A — doughnut Contado vs Crédito. */
+  private graficoContadoCredito(d: DashboardVentas): void {
+    const el = this.canvas('chartContadoCredito');
+    if (!el) return;
+    const cc = d.contadoCredito;
+    if (cc.contado === 0 && cc.credito === 0) return;
+    this.charts.push(
+      new Chart(el, {
+        type: 'doughnut',
+        data: {
+          labels: ['Contado', 'Crédito'],
+          datasets: [
+            {
+              data: [cc.contado, cc.credito],
+              backgroundColor: [C.contado, C.credito],
+              borderColor: '#ffffff',
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '58%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: C.eje } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const total = cc.contado + cc.credito;
+                  const p = total > 0 ? (Number(ctx.parsed) / total) * 100 : 0;
+                  return ` ${ctx.label}: ${this.fmt(Number(ctx.parsed))} (${this.pct(p)})`;
+                },
+              },
+            },
+          },
+        },
+      }),
+    );
+  }
+
+  /** Widget B — barras horizontales de ventas por vendedor. */
+  private graficoVendedores(d: DashboardVentas): void {
+    const el = this.canvas('chartVendedores');
+    if (!el || !d.vendedores.length) return;
+    const v = d.vendedores;
+    this.charts.push(
+      new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: v.map((x) => x.nombre),
+          datasets: [
+            {
+              label: 'Ventas',
+              data: v.map((x) => x.ventas),
+              backgroundColor: v.map((_, i) => (i % 2 === 0 ? C.vendedor : C.vendedorAlt)),
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          ...this.baseOptions(),
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const row = v[ctx.dataIndex];
+                  return [
+                    ` Ventas: ${this.fmt(row.ventas)}`,
+                    ` Comprobantes: ${row.comprobantes}`,
+                    ` Ticket promedio: ${this.fmt(row.ticketPromedio)}`,
+                    ` Participación: ${this.pct(row.pctParticipacion)}`,
+                  ];
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: C.eje, font: { size: 10 }, callback: (val) => this.compacto(Number(val)) },
+              grid: { color: C.rejilla },
+            },
+            y: { ticks: { color: C.eje, font: { size: 11 } }, grid: { display: false } },
+          },
+        },
+      }),
+    );
+  }
+
+  /** Widget C — barras apiladas Contado/Crédito + línea de acumulado en 12 meses. */
+  private graficoMeses(d: DashboardVentas): void {
+    const el = this.canvas('chartMeses');
+    if (!el || !d.meses.length) return;
+    this.charts.push(
+      new Chart(el, {
+        data: {
+          labels: d.meses.map((m) => m.etiqueta),
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Contado',
+              data: d.meses.map((m) => m.contado),
+              backgroundColor: C.contado,
+              borderRadius: 3,
+              stack: 's',
+              yAxisID: 'y',
+            },
+            {
+              type: 'bar',
+              label: 'Crédito',
+              data: d.meses.map((m) => m.credito),
+              backgroundColor: C.credito,
+              borderRadius: 3,
+              stack: 's',
+              yAxisID: 'y',
+            },
+            {
+              type: 'line',
+              label: 'Acumulado',
+              data: d.meses.map((m) => m.acumulado),
+              borderColor: C.acumulado,
+              backgroundColor: C.acumulado,
+              borderWidth: 2,
+              pointRadius: 2,
+              tension: 0.3,
+              yAxisID: 'y1',
+            },
+          ],
+        },
+        options: {
+          ...this.baseOptions(),
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: C.eje } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${ctx.dataset.label}: ${this.fmt(Number(ctx.parsed.y))}`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              stacked: true,
+              ticks: { color: C.eje, font: { size: 10 } },
+              grid: { display: false },
+            },
+            y: {
+              stacked: true,
+              position: 'left',
+              ticks: { color: C.eje, font: { size: 10 }, callback: (v) => this.compacto(Number(v)) },
+              grid: { color: C.rejilla },
+            },
+            y1: {
+              position: 'right',
+              ticks: { color: C.acumulado, font: { size: 10 }, callback: (v) => this.compacto(Number(v)) },
+              grid: { display: false },
+            },
+          },
+        },
+      } as unknown as ChartConfiguration),
+    );
+  }
+
+  /** Widget E — barras del margen bruto (%) por categoría. */
+  private graficoMargen(d: DashboardVentas): void {
+    const el = this.canvas('chartMargen');
+    if (!el || !d.categoriaMargen.length) return;
+    const cats = d.categoriaMargen;
+    this.charts.push(
+      new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: cats.map((c) => c.categoria),
+          datasets: [
+            {
+              label: 'Margen bruto %',
+              data: cats.map((c) => c.margen ?? 0),
+              backgroundColor: cats.map((c) => ((c.margen ?? 0) >= 0 ? C.margen : C.margenBajo)),
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          ...this.baseOptions(),
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const c = cats[ctx.dataIndex];
+                  return [
+                    ` Margen: ${this.pct(c.margen)}`,
+                    ` Ventas: ${this.fmt(c.ventas)}`,
+                    ` COGS: ${this.fmt(c.cogs)}`,
+                    ` Utilidad: ${this.fmt(c.utilidad)}`,
+                  ];
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: C.eje, font: { size: 10 }, callback: (v) => `${v}%` },
+              grid: { color: C.rejilla },
+            },
+            y: { ticks: { color: C.eje, font: { size: 11 } }, grid: { display: false } },
+          },
+        },
+      }),
+    );
+  }
+
+  /** Widget F — Pareto: barras de ingresos por producto + línea de % acumulado. */
+  private graficoPareto(d: DashboardVentas): void {
+    const el = this.canvas('chartPareto');
+    if (!el) return;
+    const items = d.topProductos.filter((p) => p.ingresos > 0);
+    if (!items.length) return;
+    const total = items.reduce((s, p) => s + p.ingresos, 0);
+    let acum = 0;
+    const acumulado = items.map((p) => {
+      acum += p.ingresos;
+      return total > 0 ? Math.round((acum / total) * 1000) / 10 : 0;
+    });
+    this.charts.push(
+      new Chart(el, {
+        data: {
+          labels: items.map((p) => p.descripcion),
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Ingresos',
+              data: items.map((p) => p.ingresos),
+              backgroundColor: C.pareto,
+              borderRadius: 3,
+              yAxisID: 'y',
+            },
+            {
+              type: 'line',
+              label: '% acumulado',
+              data: acumulado,
+              borderColor: C.paretoLinea,
+              backgroundColor: C.paretoLinea,
+              borderWidth: 2,
+              pointRadius: 2,
+              tension: 0.2,
+              yAxisID: 'y1',
+            },
+          ],
+        },
+        options: {
+          ...this.baseOptions(),
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: C.eje } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) =>
+                  ctx.dataset.yAxisID === 'y1'
+                    ? ` Acumulado: ${this.pct(Number(ctx.parsed.y))}`
+                    : ` Ingresos: ${this.fmt(Number(ctx.parsed.y))}`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: C.eje, font: { size: 10 }, maxRotation: 60, minRotation: 45 },
+              grid: { display: false },
+            },
+            y: {
+              ticks: { color: C.eje, font: { size: 10 }, callback: (v) => this.compacto(Number(v)) },
+              grid: { color: C.rejilla },
+            },
+            y1: {
+              position: 'right',
+              min: 0,
+              max: 100,
+              ticks: { color: C.paretoLinea, font: { size: 10 }, callback: (v) => `${v}%` },
+              grid: { display: false },
+            },
+          },
+        },
+      } as unknown as ChartConfiguration),
+    );
+  }
+
+  private destruirCharts(): void {
+    for (const chart of this.charts) chart.destroy();
+    this.charts = [];
+  }
+}
+
+```
+
+---
+
 ## 📄 src\app\features\facturacion\facturacion.routes.ts
 
 ```typescript
@@ -62353,6 +65221,16 @@ export const FACTURACION_ROUTES: Routes = [
     path: 'pedidos-virtual',
     loadComponent: () =>
       import('./pedidos-virtual/pedidos-virtual').then((m) => m.PedidosVirtual),
+  },
+  {
+    path: 'pedidos-virtual/:id',
+    loadComponent: () =>
+      import('./pedidos-virtual/pedidos-virtual').then((m) => m.PedidosVirtual),
+  },
+  {
+    path: 'dashboardId3',
+    loadComponent: () =>
+      import('./dashboard-id3/dashboard-id3').then((m) => m.DashboardId3Component),
   },
   {
     path: 'consultas',
@@ -62408,6 +65286,11 @@ export const FACTURACION_ROUTES: Routes = [
     path: 'todopago',
     loadComponent: () =>
       import('./todopago/todopago').then((m) => m.TodoPago),
+  },
+  {
+    path: 'restaurante',
+    loadComponent: () =>
+      import('./restaurante/restaurante').then((m) => m.Restaurante),
   },
   { path: '**', redirectTo: 'consultas' },
 ];
@@ -63331,7 +66214,11 @@ export class MaestroDetalle implements OnInit {
           </div>
         </div>
 
-        <p-table [value]="filas()" size="small" [scrollable]="true" scrollHeight="280px"
+        <div style="height: calc(100vh - 280px);">
+
+        <p-table [value]="filas()" size="small"
+          [scrollable]="true" scrollHeight="flex"
+          stripedRows
           [tableStyle]="{ 'min-width': '50rem' }" styleClass="det-table" [rows]="5">
           <ng-template #header>
             <tr>
@@ -63408,12 +66295,27 @@ export class MaestroDetalle implements OnInit {
 
             </tr>
           </ng-template>
+          <ng-template #footer>
+            @for (empty of emptyRows; track $index) {
+              <tr class="empty-row">
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
+            }
+          </ng-template>
+
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="100" class="text-center p-3">Sin artículos. Agregue el primer artículo.</td>
+              <td colspan="100" class="text-center p-3">Sin producto. Agregue su primer producto.</td>
             </tr>
           </ng-template>
         </p-table>
+   </div>
 
 
 
@@ -64207,6 +67109,8 @@ export class MaestroDetalle implements OnInit {
 
 .nf-totales {
 
+  background: var(--master-background);
+    border-radius: 8px;
   .p-card-body,
   .card-body {
     padding: 0;
@@ -64223,7 +67127,7 @@ export class MaestroDetalle implements OnInit {
     flex-wrap: wrap;
     gap: 0.3rem;
     padding: 0.2rem 1rem;
-    border-right: 1px solid var(--c-border);
+    border-right: 1px solid var(--master-background);
   }
 
   .nf-totales-col-data {
@@ -64259,7 +67163,7 @@ export class MaestroDetalle implements OnInit {
 }
 
 .nf-total-grand {
-  border-left: 1px solid var(--c-border);
+  border-left: 1px solid var(--master-background);
   padding-left: 1rem;
 
   >div:last-child {
@@ -64603,6 +67507,10 @@ export class MaestroDetalle implements OnInit {
 ::ng-deep .tp-hl-dialog .p-dialog-footer {
   display: none;
 }
+.empty-row td {
+  height: 45px;
+}
+
 ```
 
 ---
@@ -64741,6 +67649,13 @@ export class NuevaFactura implements OnInit {
 
   filas = signal<FilaDet[]>([]);
   pagos = signal<PagoFactura[]>([]);
+
+  readonly MIN_ROWS = 9;
+
+  get emptyRows(): any[] {
+    const missingRows = this.MIN_ROWS - this.filas().length;
+    return missingRows > 0 ? new Array(missingRows) : [];
+  }
 
   // ── TodoPago: link de pago de la última factura facturada ──
   linkPago = signal<TodoPagoLink | null>(null);
@@ -69762,6 +72677,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { PedidosVirtualService } from '../pedidos-virtual/pedidos-virtual.service';
 import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 
@@ -69774,6 +72690,7 @@ import { FacturaImpresionService } from '../../../core/services/factura-impresio
 })
 export class PedidosList implements OnInit {
   private api = inject(ApiService);
+  private auth = inject(AuthService);
   private router = inject(Router);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
@@ -69829,7 +72746,12 @@ export class PedidosList implements OnInit {
   limpiar() { this.q.set(''); this.filtrar(); }
 
   editar(id: number) {
-    this.router.navigate(['/facturacion/pedidos/editar', id]);
+    const user = this.auth.currentUser();
+    if (user?.sn_cliente === 'S') {
+      this.router.navigate(['/facturacion/pedidos-virtual', id]);
+    } else {
+      this.router.navigate(['/facturacion/pedidos/editar', id]);
+    }
   }
 
   /**
@@ -69925,381 +72847,7 @@ export class PedidosList implements OnInit {
 
 ---
 
-## 📄 src\app\features\facturacion\pedidos-virtual\pedidos-virtual.html
-
-```typescript
-<p-toast />
-<div class="tienda-layout" [class.con-carrito]="totalItems() > 0 && !isMobile()">
-  @if (pedidoOpen()) {
-  <div class="cart-overlay" (click)="pedidoOpen.set(false)"></div>
-  }
-
-  @if (totalItems() > 0) {
-  <aside class="cart-sidebar" [class.open]="pedidoOpen()">
-    <div class="cart-header">
-      <div class="cart-header-left">
-        <i class="pi pi-shopping-cart"></i>
-        <span>Mi Pedido</span>
-      </div>
-      <div class="cart-header-right">
-        <span class="cart-count">{{ totalItems() }} item{{ totalItems() > 1 ? 's' : '' }}</span>
-        <button class="cart-close-mobile" (click)="pedidoOpen.set(false)">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-    </div>
-
-    <div class="cart-items">
-      @for (item of pedidoItems(); track trackByItemId($index, item)) {
-      <div class="cart-item">
-        <div class="cart-item-img">
-          @if (getItemImagen(item)) {
-          <img [src]="getItemImagen(item)" [alt]="item.descripcion" loading="lazy" />
-          } @else {
-          <div class="cart-item-placeholder"><i class="pi pi-image"></i></div>
-          }
-        </div>
-        <div class="cart-item-details">
-          <span class="cart-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
-          <span class="cart-item-price">{{ formatearPrecio(item.precioventa) }}</span>
-          <div class="cart-item-qty">
-            <button class="qty-btn" (click)="decrementar(item)" [disabled]="cargandoPedido()">
-              <i class="pi pi-minus"></i>
-            </button>
-            <span class="qty-value">{{ item.cantidad }}</span>
-            <button class="qty-btn" (click)="incrementar(item)" [disabled]="cargandoPedido()">
-              <i class="pi pi-plus"></i>
-            </button>
-          </div>
-        </div>
-        <div class="cart-item-right">
-          <span class="cart-item-subtotal">{{ formatearPrecio(item.subtotal) }}</span>
-          <button class="cart-item-remove" (click)="eliminarDelPedido(item)" pTooltip="Eliminar">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-      </div>
-      }
-    </div>
-
-    <div class="cart-summary">
-      <div class="summary-line">
-        <span>Subtotal</span>
-        <span>{{ formatearPrecio(subtotalPedido()) }}</span>
-      </div>
-      @if (tasaImpuestoPct > 0) {
-      <div class="summary-line">
-        <span>ISV ({{ tasaImpuestoPct }}%)</span>
-        <span>{{ formatearPrecio(isvPedido()) }}</span>
-      </div>
-      }
-      <div class="summary-line summary-total">
-        <span>Total</span>
-        <strong>{{ formatearPrecio(totalPedido()) }}</strong>
-      </div>
-      <div class="cart-actions">
-        <p-button label="Guardar pedido" icon="pi pi-save" severity="secondary" [fluid]="true"
-          [disabled]="cargandoPedido()" (click)="abrirGuardarPedido()" />
-        <p-button label="Facturar pedido" icon="pi pi-check" severity="success" [fluid]="true"
-          [disabled]="cargandoPedido()" (click)="abrirCheckout(); pedidoOpen.set(false)" />
-      </div>
-    </div>
-  </aside>
-  }
-
-  <main class="tienda-main">
-    <div class="tienda-toolbar">
-      <div class="toolbar-left">
-        <p-button icon="pi pi-arrow-left" label="Volver" size="small" [rounded]="true" variant="text"
-          severity="secondary" pTooltip="Volver al listado" (onClick)="volver()" />
-        <h2 class="toolbar-title"><i class="pi pi-shopping-cart"></i> Pedidos</h2>
-        <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's'
-          : '' }}</span>
-      </div>
-      <div class="toolbar-right">
-        <div class="search-box">
-          <i class="pi pi-search search-icon"></i>
-          <input pInputText [(ngModel)]="busqueda" placeholder="Buscar..." class="search-input" />
-        </div>
-        <p-select size="small" [(ngModel)]="categoriaFiltro" [options]="categorias()" optionLabel="label"
-          optionValue="value" placeholder="Categoría" styleClass="cat-select" />
-        <p-select size="small" [(ngModel)]="ordenarPor" [options]="opcionesOrden" optionLabel="label"
-          optionValue="value" styleClass="sort-select" />
-        <div class="view-toggles desktop-only">
-          <button class="view-btn" [class.active]="layout() === 'grid'" (click)="layout.set('grid')"
-            pTooltip="Cuadrícula">
-            <i class="pi pi-th-large"></i>
-          </button>
-          <button class="view-btn" [class.active]="layout() === 'list'" (click)="layout.set('list')" pTooltip="Lista">
-            <i class="pi pi-list"></i>
-          </button>
-        </div>
-        <p-button size="small" label="Ofertas" [rounded]="true" [raised]="true" variant="text" severity="success"
-          [class.active]="soloOfertas()" (click)="soloOfertas.set(!soloOfertas())" pTooltip="Solo ofertas">
-        </p-button>
-
-      </div>
-    </div>
-
-    @if (cargando()) {
-    <div class="loading-container">
-      <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: var(--c-primary)"></i>
-      <p>Cargando productos...</p>
-    </div>
-    }
-
-    @if (!cargando() && layout() === 'grid') {
-    <div class="productos-grid">
-      @for (producto of productosFiltrados(); track trackByProductoId($index, producto)) {
-      <div class="producto-card">
-        <div class="card-imagen">
-          @if (producto.imagen) {
-          <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
-          } @else {
-          <div class="sin-imagen">
-            <i class="pi pi-images"></i>
-          </div>
-          }
-
-          @if (esOferta(producto)) {
-          <p-tag [value]="'Oferta: -' + getPorcentajeDescuento(producto) + '%'" severity="success"
-            styleClass="tag-stock" />
-          }
-
-        </div>
-        <div class="card-body">
-          <div class="card-categoria">{{ producto.categoria || 'Sin categoría' }}</div>
-          <h3 class="card-titulo">{{ producto.codbarra }}</h3>
-          @if (producto.descripcion) {
-          <p class="card-desc">{{ producto.descripcion }}</p>
-          }
-          @if (producto.existencia > 0) {
-          <p-tag [value]="'Existencia: '+ producto.existencia " [severity]="getSeverity(producto.existencia)"
-            style="padding:0;" />
-          } @else {
-          <p-tag value="Sin stock" severity="danger" />
-          }
-
-          <div class="card-footer">
-            @if (esOferta(producto)) {
-            <span class="card-precio card-precio-oferta">
-              <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
-              {{ formatearPrecio(getPrecioOferta(producto)!) }}
-            </span>
-            } @else {
-            <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
-            }
-            <p-button icon="pi pi-cart-plus" [rounded]="true" [raised]="true" variant="text"
-              [disabled]="producto.existencia <= 0" (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
-          </div>
-        </div>
-      </div>
-      } @empty {
-      <div class="sin-productos">
-        <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
-        <p>No se encontraron productos</p>
-      </div>
-      }
-    </div>
-    }
-
-    @if (!cargando() && layout() === 'list') {
-    <div class="productos-list">
-      @for (producto of productosFiltrados(); track trackByProductoId($index, producto)) {
-      <div class="producto-list-row">
-        <div class="list-imagen">
-          @if (producto.imagen) {
-          <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
-          } @else {
-          <div class="sin-imagen-sm"><i class="pi pi-images"></i></div>
-          }
-        </div>
-        <div class="list-info">
-          <span class="list-categoria">{{ producto.categoria || 'Sin categoría' }}</span>
-          <h4>{{ producto.descripcion }}</h4>
-          @if (producto.descripcion_corta) {
-          <span class="list-desc">{{ producto.descripcion_corta }}</span>
-          }
-        </div>
-        <div class="list-stock">
-          <p-tag [value]="producto.existencia > 0 ? producto.existencia + ' disp.' : 'Sin stock'"
-            [severity]="getSeverity(producto.existencia)" />
-        </div>
-        <div class="list-precio">
-          @if (esOferta(producto)) {
-          <span class="card-precio-oferta">
-            <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
-            {{ formatearPrecio(getPrecioOferta(producto)!) }}
-          </span>
-          } @else {
-          {{ formatearPrecio(producto.precioventa) }}
-          }
-        </div>
-        <div class="list-accion">
-          <p-button icon="pi pi-cart-plus" [rounded]="true" [disabled]="producto.existencia <= 0"
-            (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
-        </div>
-      </div>
-      } @empty {
-      <div class="sin-productos">
-        <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
-        <p>No se encontraron productos</p>
-      </div>
-      }
-    </div>
-    }
-  </main>
-</div>
-
-@if (totalItems() > 0 && !pedidoOpen()) {
-<button class="cart-fab" (click)="pedidoOpen.set(true)">
-  <i class="pi pi-shopping-cart"></i>
-  <span class="cart-fab-badge">{{ totalItems() }}</span>
-</button>
-}
-
-<p-dialog header="Facturar Pedido" [(visible)]="dialogCheckout" [modal]="true"
-  [style]="{ width: isMobile() ? '100vw' : '70vw', marginTop: '0', maxHeight: isMobile() ? '100dvh' : '100vh' }"
-  [styleClass]="'checkout-dialog' + (isMobile() ? ' checkout-mobile' : '')" [closable]="!procesando()">
-  <div class="checkout-layout">
-    <div class="checkout-form">
-      <div class="checkout-fields">
-        <h3 class="section-title"><i class="pi pi-user"></i> Información del Cliente</h3>
-        <div class="campo">
-          <label>Nombre completo *</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.nombrecliente" placeholder="Nombre del cliente"
-            class="w-full" />
-        </div>
-        <div class="campo">
-          <label>Teléfono</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.nrotelefono" placeholder="Teléfono del cliente"
-            class="w-full" />
-        </div>
-
-        <h3 class="section-title"><i class="pi pi-wallet"></i> Forma de Pago</h3>
-        <div class="campo">
-          <label>Forma de pago *</label>
-          <p-select size="small" [(ngModel)]="checkout.formapagoId" [options]="formaspago()"
-            placeholder="Seleccionar forma de pago" optionLabel="label" optionValue="value" styleClass="w-full"
-            (onChange)="onFormaPagoChange()" />
-        </div>
-
-        @if (esTarjeta()) {
-        <h3 class="section-title"><i class="pi pi-credit-card"></i> Tarjeta de Crédito</h3>
-        <div class="campo">
-          <label>Tipo de tarjeta *</label>
-          <p-select size="small" [(ngModel)]="checkout.tarjetacreditoId" [options]="tarjetasCredito()"
-            placeholder="Seleccionar tipo" optionLabel="label" optionValue="value" styleClass="w-full" />
-        </div>
-        <div class="campo campo-numero-tarjeta">
-          <label>Número de tarjeta *</label>
-          <p-inputmask mask="9999 9999 9999 9999" [(ngModel)]="checkout.nrotarjeta" placeholder="0000 0000 0000 0000"
-            (onBlur)="validarTarjetaBlur()" [styleClass]="'w-full' + (tarjetaError() ? ' ng-dirty ng-invalid' : '')" />
-          @if (tarjetaError()) {
-          <p-message severity="error" variant="simple" size="small">{{ tarjetaError() }}</p-message>
-          }
-        </div>
-        <div class="campo-row">
-          <div class="campo">
-            <label>Vencimiento *</label>
-            <p-inputmask mask="99/99" [(ngModel)]="checkout.fechaexpiracion" placeholder="MM/YY" slotChar="mm/yy"
-              styleClass="w-full" />
-          </div>
-          <div class="campo">
-            <label>CVV *</label>
-            <p-inputmask mask="999" [(ngModel)]="checkout.cvv" placeholder="000" styleClass="w-full" />
-          </div>
-        </div>
-        }
-
-        @if (esTransferencia()) {
-        <h3 class="section-title"><i class="pi pi-arrow-right-arrow-left"></i> Transferencia</h3>
-        <div class="campo">
-          <label>Número de autorización *</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.nroautorizacion"
-            placeholder="Autorización de la transferencia" class="w-full" />
-        </div>
-        }
-      </div>
-    </div>
-
-    <div class="checkout-summary">
-      <h3 class="section-title"><i class="pi pi-shopping-cart"></i> Resumen del Pedido</h3>
-      <div class="summary-items">
-        @for (item of pedidoItems(); track trackByItemId($index, item)) {
-        <div class="summary-item">
-          <div class="summary-item-img">
-            @if (getItemImagen(item)) {
-            <img [src]="getItemImagen(item)" [alt]="item.descripcion" loading="lazy" />
-            } @else {
-            <div class="summary-item-placeholder"><i class="pi pi-image"></i></div>
-            }
-          </div>
-          <div class="summary-item-info">
-            <span class="summary-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
-            <span class="summary-item-qty">Cant: {{ item.cantidad }} × {{ formatearPrecio(item.precioventa) }}</span>
-          </div>
-          <span class="summary-item-total">{{ formatearPrecio(item.subtotal) }}</span>
-        </div>
-        }
-      </div>
-
-      <div class="summary-totals">
-        <div class="summary-line">
-          <span>Subtotal ({{ totalItems() }} items)</span>
-          <span>{{ formatearPrecio(subtotalPedido()) }}</span>
-        </div>
-        @if (tasaImpuestoPct > 0) {
-        <div class="summary-line">
-          <span>ISV ({{ tasaImpuestoPct }}%)</span>
-          <span>{{ formatearPrecio(isvPedido()) }}</span>
-        </div>
-        }
-        <div class="summary-line summary-total">
-          <span>Total a pagar</span>
-          <strong>{{ formatearPrecio(totalPedido()) }}</strong>
-        </div>
-      </div>
-
-      <p-button label="Confirmar Factura" icon="pi pi-check" severity="success" [fluid]="true" [loading]="procesando()"
-        [disabled]="procesando() || !formularioPagoValido()" (click)="procesarPago()" />
-    </div>
-  </div>
-
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" [text]="true" icon="pi pi-arrow-left" [disabled]="procesando()"
-      (click)="dialogCheckout.set(false)" />
-  </ng-template>
-</p-dialog>
-
-<p-dialog header="Guardar pedido" [(visible)]="dialogGuardarPedido" [modal]="true" [draggable]="false"
-  [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
-  [style]="{ width: isMobile() ? '95vw' : '30rem' }">
-  <div class="guardar-fields">
-    <div class="campo">
-      <label>Nombre completo *</label>
-      <input pInputText pSize="small" [ngModel]="guardarNombre()" (ngModelChange)="guardarNombre.set($event)"
-        placeholder="Nombre del cliente" class="w-full" (keyup.enter)="guardarPedido()" />
-    </div>
-    <div class="campo">
-      <label>Teléfono</label>
-      <input pInputText pSize="small" [ngModel]="guardarTelefono()" (ngModelChange)="guardarTelefono.set($event)"
-        placeholder="Teléfono del cliente" class="w-full" />
-    </div>
-  </div>
-  <ng-template pTemplate="footer">
-    <p-button label="Cancelar" size="small" rounded variant="text" severity="secondary"
-      [disabled]="guardandoPedido()" (onClick)="dialogGuardarPedido.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" [raised]="true" [rounded]="true"
-      severity="success" [loading]="guardandoPedido()" (onClick)="guardarPedido()" />
-  </ng-template>
-</p-dialog>
-
-```
-
----
-
-## 📄 src\app\features\facturacion\pedidos-virtual\pedidos-virtual.scss
+## 📄 src\app\features\facturacion\pedidos-virtual\pedidos-virtual - copia.scss
 
 ```typescript
 $sidebar-width: 380px;
@@ -70743,8 +73291,8 @@ $sidebar-width: 380px;
 /* Grid layout */
 .productos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
   padding: 1.5rem;
 }
 
@@ -70755,7 +73303,7 @@ $sidebar-width: 380px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   transition: box-shadow 0.2s, transform 0.2s;
   content-visibility: auto;
-  contain-intrinsic-size: 0 320px;
+  contain-intrinsic-size: 0 440px;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
@@ -70800,7 +73348,7 @@ $sidebar-width: 380px;
   }
 
   .card-body {
-    padding: 0.75rem;
+    padding: 1rem;
   }
 
   .card-categoria {
@@ -70814,9 +73362,9 @@ $sidebar-width: 380px;
 
   .card-titulo {
     margin: 0 0 0.25rem;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: var(--c-card-color-text);
+    color: var(--c-text);
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -70825,7 +73373,7 @@ $sidebar-width: 380px;
   }
 
   .card-desc {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--c-text-muted);
     margin: 0 0 0.5rem;
     display: -webkit-box;
@@ -70840,8 +73388,14 @@ $sidebar-width: 380px;
     justify-content: space-between;
   }
 
+  .card-acciones {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
   .card-precio {
-    font-size: 1rem;
+    font-size: 1.15rem;
     font-weight: 700;
     color: var(--c-card-color-text);
   }
@@ -70943,6 +73497,9 @@ $sidebar-width: 380px;
   }
 
   .list-accion {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
     flex-shrink: 0;
   }
 }
@@ -71270,52 +73827,39 @@ $sidebar-width: 380px;
     }
   }
 
-  /* Grid: 1 columna */
+  /* Grid: 1 columna con card vertical grande idéntica al escritorio */
   .productos-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
     padding: 0.75rem;
   }
 
   .producto-card {
-    display: flex;
-    flex-direction: row;
-    border-radius: 10px;
+    contain-intrinsic-size: auto 380px;
 
     .card-imagen {
-      width: 100px;
-      height: 100px;
-      aspect-ratio: unset;
-      flex-shrink: 0;
-
-      .sin-imagen {
-        font-size: 2rem;
-      }
+      aspect-ratio: 4 / 3;
 
       ::ng-deep .tag-stock {
-        font-size: 0.6rem !important;
-        background-color: var(--c-card-background);
-        top: 0.25rem;
-        right: 0.25rem;
+        font-size: 0.65rem !important;
+        top: 0.35rem;
+        right: 0.35rem;
       }
     }
 
-    .card-body {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 0.6rem;
-    }
+    .card-body { padding: 0.75rem; }
+    .card-titulo { font-size: 0.9rem; }
+    .card-desc { font-size: 0.8rem; }
 
-    .card-titulo {
-      font-size: 0.8rem;
+    /* Footer adaptado para una columna */
+    .card-footer {
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
-
     .card-precio {
-      font-size: 0.9rem;
+      font-size: 1.05rem;
     }
+    .card-acciones { margin-left: auto; }
   }
 
   /* Lista: compacta */
@@ -71442,6 +73986,1725 @@ $sidebar-width: 380px;
   }
 }
 
+/* ==================== Galería de imágenes ==================== */
+.galeria-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  .galeria-titulo {
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  .galeria-count {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    border: 1px solid var(--c-border);
+    padding: 0.15rem 0.55rem;
+    border-radius: 1rem;
+    flex-shrink: 0;
+  }
+}
+
+.galeria-loading,
+.galeria-vacia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  color: var(--c-text-muted);
+  font-size: 0.9rem;
+
+  i {
+    font-size: 2.2rem;
+    color: var(--c-text-muted);
+  }
+
+  &.galeria-loading i {
+    color: var(--c-primary);
+    font-size: 1.8rem;
+  }
+}
+
+.tienda-galleria {
+  display: block;
+
+  .galeria-item-img {
+    display: block;
+    width: 100%;
+    max-height: 55vh;
+    object-fit: contain;
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 0.5rem;
+  }
+
+  ::ng-deep .p-galleria-thumbnail img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  // Sin efecto carrusel: PrimeNG aplica un transition inline
+  // 'transform 500ms ease' al items-container en cada navegación.
+  // !important gana sobre el inline y el cambio de imagen es instantáneo.
+  ::ng-deep .p-galleria-items-container,
+  ::ng-deep .p-galleria-thumbnail-items {
+    transition: none !important;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\pedidos-virtual\pedidos-virtual.html
+
+```typescript
+<p-toast />
+<div class="tienda-layout" [class.con-carrito]="totalItems() > 0 && !isMobile()">
+  @if (pedidoOpen()) {
+  <div class="cart-overlay" (click)="pedidoOpen.set(false)"></div>
+  }
+
+  @if (totalItems() > 0) {
+  <aside class="cart-sidebar" [class.open]="pedidoOpen()">
+    <div class="cart-header">
+      <div class="cart-header-left">
+        <i class="pi pi-shopping-cart"></i>
+        <span>Mi Pedido</span>
+      </div>
+      <div class="cart-header-right">
+        <span class="cart-count">{{ totalItems() }} item{{ totalItems() > 1 ? 's' : '' }}</span>
+        <button class="cart-close-mobile" (click)="pedidoOpen.set(false)">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="cart-items">
+      @for (item of pedidoItems(); track trackByItemId($index, item)) {
+      <div class="cart-item">
+        <div class="cart-item-img">
+          @if (getItemImagen(item)) {
+          <img [src]="getItemImagen(item)" [alt]="item.descripcion" loading="lazy" />
+          } @else {
+          <div class="cart-item-placeholder"><i class="pi pi-image"></i></div>
+          }
+        </div>
+        <div class="cart-item-details">
+          <span class="cart-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
+          <span class="cart-item-price">{{ formatearPrecio(item.precioventa) }}</span>
+          <div class="cart-item-qty">
+            <button class="qty-btn" (click)="decrementar(item)" [disabled]="cargandoPedido()">
+              <i class="pi pi-minus"></i>
+            </button>
+            <span class="qty-value">{{ item.cantidad }}</span>
+            <button class="qty-btn" (click)="incrementar(item)" [disabled]="cargandoPedido()">
+              <i class="pi pi-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="cart-item-right">
+          <span class="cart-item-subtotal">{{ formatearPrecio(item.subtotal) }}</span>
+          <button class="cart-item-remove" (click)="eliminarDelPedido(item)" pTooltip="Eliminar">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      </div>
+      }
+    </div>
+
+    <div class="cart-summary">
+      <div class="summary-line">
+        <span>Subtotal</span>
+        <span>{{ formatearPrecio(subtotalPedido()) }}</span>
+      </div>
+      @if (tasaImpuestoPct > 0) {
+      <div class="summary-line">
+        <span>ISV ({{ tasaImpuestoPct }}%)</span>
+        <span>{{ formatearPrecio(isvPedido()) }}</span>
+      </div>
+      }
+      <div class="summary-line summary-total">
+        <span>Total</span>
+        <strong>{{ formatearPrecio(totalPedido()) }}</strong>
+      </div>
+      <div class="cart-actions">
+        <p-button label="Guardar pedido" icon="pi pi-save" severity="secondary" [fluid]="true"
+          [disabled]="cargandoPedido()" (click)="abrirGuardarPedido()" />
+        <p-button label="Facturar pedido" icon="pi pi-check" severity="success" [fluid]="true"
+          [disabled]="cargandoPedido()" (click)="abrirCheckout(); pedidoOpen.set(false)" />
+      </div>
+    </div>
+  </aside>
+  }
+
+  <main class="tienda-main">
+    <div class="tienda-toolbar">
+      <div class="toolbar-left">
+        <p-button icon="pi pi-arrow-left" label="Volver" size="small" [rounded]="true" variant="text"
+          severity="secondary" pTooltip="Volver al listado" (onClick)="volver()" />
+        <h2 class="toolbar-title"><i class="pi pi-shopping-cart"></i> Pedidos</h2>
+        <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's'
+          : '' }}</span>
+      </div>
+      <div class="toolbar-right">
+        <div class="search-box">
+          <i class="pi pi-search search-icon"></i>
+          <input pInputText [(ngModel)]="busqueda" placeholder="Buscar..." class="search-input" />
+        </div>
+        <p-select size="small" [(ngModel)]="categoriaFiltro" [options]="categorias()" optionLabel="label"
+          optionValue="value" placeholder="Categoría" styleClass="cat-select" />
+        <p-select size="small" [(ngModel)]="ordenarPor" [options]="opcionesOrden" optionLabel="label"
+          optionValue="value" styleClass="sort-select" />
+        <div class="view-toggles desktop-only">
+          <button class="view-btn" [class.active]="layout() === 'grid'" (click)="layout.set('grid')"
+            pTooltip="Cuadrícula">
+            <i class="pi pi-th-large"></i>
+          </button>
+          <button class="view-btn" [class.active]="layout() === 'list'" (click)="layout.set('list')" pTooltip="Lista">
+            <i class="pi pi-list"></i>
+          </button>
+        </div>
+        <p-button size="small" label="Ofertas" [rounded]="true" [raised]="true" variant="text" severity="success"
+          [class.active]="soloOfertas()" (click)="soloOfertas.set(!soloOfertas())" pTooltip="Solo ofertas">
+        </p-button>
+
+      </div>
+    </div>
+
+    @if (cargando()) {
+    <div class="loading-container">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: var(--c-primary)"></i>
+      <p>Cargando productos...</p>
+    </div>
+    }
+
+    @if (!cargando() && layout() === 'grid') {
+    <div class="productos-grid">
+      @for (producto of productosFiltrados(); track trackByProductoId($index, producto)) {
+      <div class="producto-card">
+        <div class="card-imagen">
+          @if (producto.imagen) {
+          <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
+          } @else {
+          <div class="sin-imagen">
+            <i class="pi pi-images"></i>
+          </div>
+          }
+
+          @if (esOferta(producto)) {
+          <p-tag [value]="'Oferta: -' + getPorcentajeDescuento(producto) + '%'" severity="success"
+            styleClass="tag-stock" />
+          }
+
+        </div>
+        <div class="card-body">
+          <div class="card-categoria">{{ producto.categoria || 'Sin categoría' }}</div>
+          <h3 class="card-titulo">{{ producto.codbarra }}</h3>
+          @if (producto.descripcion) {
+          <p class="card-desc">{{ producto.descripcion }}</p>
+          }
+          @if (producto.existencia > 0) {
+          <p-tag [value]="'Existencia: '+ producto.existencia " [severity]="getSeverity(producto.existencia)"
+            style="padding:0;" />
+          } @else {
+          <p-tag value="Sin stock" severity="danger" />
+          }
+
+          <div class="card-footer">
+            @if (esOferta(producto)) {
+            <span class="card-precio card-precio-oferta">
+              <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
+              {{ formatearPrecio(getPrecioOferta(producto)!) }}
+            </span>
+            } @else {
+            <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
+            }
+            <div class="card-acciones">
+              <p-button icon="pi pi-images" [rounded]="true" [raised]="true" variant="text" severity="secondary"
+                (click)="abrirGaleria(producto)" pTooltip="Ver galería" />
+              <p-button icon="pi pi-cart-plus" [rounded]="true" [raised]="true" variant="text"
+                [disabled]="producto.existencia <= 0" (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
+            </div>
+          </div>
+        </div>
+      </div>
+      } @empty {
+      <div class="sin-productos">
+        <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
+        <p>No se encontraron productos</p>
+      </div>
+      }
+    </div>
+    }
+
+    @if (!cargando() && layout() === 'list') {
+    <div class="productos-list">
+      @for (producto of productosFiltrados(); track trackByProductoId($index, producto)) {
+      <div class="producto-list-row">
+        <div class="list-imagen">
+          @if (producto.imagen) {
+          <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
+          } @else {
+          <div class="sin-imagen-sm"><i class="pi pi-images"></i></div>
+          }
+        </div>
+        <div class="list-info">
+          <span class="list-categoria">{{ producto.categoria || 'Sin categoría' }}</span>
+          <h4>{{ producto.descripcion }}</h4>
+          @if (producto.descripcion_corta) {
+          <span class="list-desc">{{ producto.descripcion_corta }}</span>
+          }
+        </div>
+        <div class="list-stock">
+          <p-tag [value]="producto.existencia > 0 ? producto.existencia + ' disp.' : 'Sin stock'"
+            [severity]="getSeverity(producto.existencia)" />
+        </div>
+        <div class="list-precio">
+          @if (esOferta(producto)) {
+          <span class="card-precio-oferta">
+            <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
+            {{ formatearPrecio(getPrecioOferta(producto)!) }}
+          </span>
+          } @else {
+          {{ formatearPrecio(producto.precioventa) }}
+          }
+        </div>
+        <div class="list-accion">
+          <p-button icon="pi pi-images" [rounded]="true" variant="text" severity="secondary"
+            (click)="abrirGaleria(producto)" pTooltip="Ver galería" />
+          <p-button icon="pi pi-cart-plus" [rounded]="true" [disabled]="producto.existencia <= 0"
+            (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
+        </div>
+      </div>
+      } @empty {
+      <div class="sin-productos">
+        <i class="pi pi-inbox" style="font-size: 3rem; color: var(--c-text-muted)"></i>
+        <p>No se encontraron productos</p>
+      </div>
+      }
+    </div>
+    }
+  </main>
+</div>
+
+@if (totalItems() > 0 && !pedidoOpen()) {
+<button class="cart-fab" (click)="pedidoOpen.set(true)">
+  <i class="pi pi-shopping-cart"></i>
+  <span class="cart-fab-badge">{{ totalItems() }}</span>
+</button>
+}
+
+<p-dialog
+  [(visible)]="dialogGaleria"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: isMobile() ? '95vw' : '720px' }"
+  [breakpoints]="{ '960px': '85vw', '640px': '95vw' }"
+>
+  <ng-template pTemplate="header">
+    <div class="galeria-header">
+      <i class="pi pi-images"></i>
+      <span class="galeria-titulo">{{ galeriaTitulo() }}</span>
+      @if (galeriaImagenes().length > 0) {
+        <span class="galeria-count">{{ galeriaIndice() + 1 }} / {{ galeriaImagenes().length }}</span>
+      }
+    </div>
+  </ng-template>
+
+  @if (galeriaCargando() && galeriaImagenes().length === 0) {
+    <div class="galeria-loading">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando imágenes...</span>
+    </div>
+  } @else if (galeriaImagenes().length === 0) {
+    <div class="galeria-vacia">
+      <i class="pi pi-image"></i>
+      <span>Este producto no tiene imágenes disponibles</span>
+    </div>
+  } @else {
+    <p-galleria
+      [value]="galeriaImagenes()"
+      [activeIndex]="galeriaIndice()"
+      (activeIndexChange)="galeriaIndice.set($event)"
+      [numVisible]="5"
+      [responsiveOptions]="galeriaResponsiveOptions"
+      [circular]="true"
+      [showItemNavigators]="galeriaImagenes().length > 1"
+      [showThumbnailNavigators]="galeriaImagenes().length > 1"
+      [showThumbnails]="galeriaImagenes().length > 1"
+      [showIndicators]="false"
+      class="tienda-galleria"
+    >
+      <!-- Workaround bug PrimeNG 21.2.13: el item slot no pasa type="item",
+           el setter de GalleriaItemSlot nunca actualiza context.$implicit y
+           let-item queda congelado con la primera imagen. Se renderiza desde
+           nuestros signals (galeriaIndice/galeriaImagenes) que sí navegan. -->
+      <ng-template pTemplate="item">
+        <img [src]="galeriaImagenes()[galeriaIndice()]" [alt]="galeriaTitulo()" class="galeria-item-img" />
+      </ng-template>
+      <ng-template pTemplate="thumbnail" let-item>
+        <img [src]="item" [alt]="galeriaTitulo()" />
+      </ng-template>
+    </p-galleria>
+  }
+
+  <ng-template pTemplate="footer">
+    <p-button label="Cerrar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogGaleria.set(false)" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Facturar Pedido" [(visible)]="dialogCheckout" [modal]="true"
+  [style]="{ width: isMobile() ? '100vw' : '70vw', marginTop: '0', maxHeight: isMobile() ? '100dvh' : '100vh' }"
+  [styleClass]="'checkout-dialog' + (isMobile() ? ' checkout-mobile' : '')" [closable]="!procesando()">
+  <div class="checkout-layout">
+    <div class="checkout-form">
+      <div class="checkout-fields">
+        <h3 class="section-title"><i class="pi pi-user"></i> Información del Cliente</h3>
+        <div class="campo p-3 bg-surface-ground border-round mb-2">
+          <div class="text-sm text-color-secondary">Cliente autenticado:</div>
+          <div class="font-bold text-lg text-primary">{{ auth.currentUser()?.nombre || 'Cliente Tienda' }}</div>
+          <div class="text-xs text-color-secondary mt-1"><i class="pi pi-check-circle text-green-500"></i> Nombre y teléfono obtenidos automáticamente de su perfil (tusuariosinfo)</div>
+        </div>
+
+        <h3 class="section-title"><i class="pi pi-wallet"></i> Forma de Pago</h3>
+        <div class="campo">
+          <label>Forma de pago *</label>
+          <p-select size="small" [(ngModel)]="checkout.formapagoId" [options]="formaspago()"
+            placeholder="Seleccionar forma de pago" optionLabel="label" optionValue="value" styleClass="w-full"
+            (onChange)="onFormaPagoChange()" />
+        </div>
+
+        @if (esTarjeta()) {
+        <h3 class="section-title"><i class="pi pi-credit-card"></i> Tarjeta de Crédito</h3>
+        <div class="campo">
+          <label>Tipo de tarjeta *</label>
+          <p-select size="small" [(ngModel)]="checkout.tarjetacreditoId" [options]="tarjetasCredito()"
+            placeholder="Seleccionar tipo" optionLabel="label" optionValue="value" styleClass="w-full" />
+        </div>
+        <div class="campo campo-numero-tarjeta">
+          <label>Número de tarjeta *</label>
+          <p-inputmask mask="9999 9999 9999 9999" [(ngModel)]="checkout.nrotarjeta" placeholder="0000 0000 0000 0000"
+            (onBlur)="validarTarjetaBlur()" [styleClass]="'w-full' + (tarjetaError() ? ' ng-dirty ng-invalid' : '')" />
+          @if (tarjetaError()) {
+          <p-message severity="error" variant="simple" size="small">{{ tarjetaError() }}</p-message>
+          }
+        </div>
+        <div class="campo-row">
+          <div class="campo">
+            <label>Vencimiento *</label>
+            <p-inputmask mask="99/99" [(ngModel)]="checkout.fechaexpiracion" placeholder="MM/YY" slotChar="mm/yy"
+              styleClass="w-full" />
+          </div>
+          <div class="campo">
+            <label>CVV *</label>
+            <p-inputmask mask="999" [(ngModel)]="checkout.cvv" placeholder="000" styleClass="w-full" />
+          </div>
+        </div>
+        }
+
+        @if (esTransferencia()) {
+        <h3 class="section-title"><i class="pi pi-arrow-right-arrow-left"></i> Transferencia</h3>
+        <div class="campo">
+          <label>Número de autorización *</label>
+          <input pInputText pSize="small" [(ngModel)]="checkout.nroautorizacion"
+            placeholder="Autorización de la transferencia" class="w-full" />
+        </div>
+        }
+      </div>
+    </div>
+
+    <div class="checkout-summary">
+      <h3 class="section-title"><i class="pi pi-shopping-cart"></i> Resumen del Pedido</h3>
+      <div class="summary-items">
+        @for (item of pedidoItems(); track trackByItemId($index, item)) {
+        <div class="summary-item">
+          <div class="summary-item-img">
+            @if (getItemImagen(item)) {
+            <img [src]="getItemImagen(item)" [alt]="item.descripcion" loading="lazy" />
+            } @else {
+            <div class="summary-item-placeholder"><i class="pi pi-image"></i></div>
+            }
+          </div>
+          <div class="summary-item-info">
+            <span class="summary-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
+            <span class="summary-item-qty">Cant: {{ item.cantidad }} × {{ formatearPrecio(item.precioventa) }}</span>
+          </div>
+          <span class="summary-item-total">{{ formatearPrecio(item.subtotal) }}</span>
+        </div>
+        }
+      </div>
+
+      <div class="summary-totals">
+        <div class="summary-line">
+          <span>Subtotal ({{ totalItems() }} items)</span>
+          <span>{{ formatearPrecio(subtotalPedido()) }}</span>
+        </div>
+        @if (tasaImpuestoPct > 0) {
+        <div class="summary-line">
+          <span>ISV ({{ tasaImpuestoPct }}%)</span>
+          <span>{{ formatearPrecio(isvPedido()) }}</span>
+        </div>
+        }
+        <div class="summary-line summary-total">
+          <span>Total a pagar</span>
+          <strong>{{ formatearPrecio(totalPedido()) }}</strong>
+        </div>
+      </div>
+
+      <p-button label="Confirmar Factura" icon="pi pi-check" severity="success" [fluid]="true" [loading]="procesando()"
+        [disabled]="procesando() || !formularioPagoValido()" (click)="procesarPago()" />
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" [text]="true" icon="pi pi-arrow-left" [disabled]="procesando()"
+      (click)="dialogCheckout.set(false)" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Guardar pedido" [(visible)]="dialogGuardarPedido" [modal]="true" [draggable]="false"
+  [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: isMobile() ? '95vw' : '30rem' }">
+  <div class="guardar-fields">
+    <div class="campo p-3 bg-surface-ground border-round mb-2">
+      <div class="text-sm text-color-secondary">Cliente autenticado:</div>
+      <div class="font-bold text-lg text-primary">{{ auth.currentUser()?.nombre || 'Cliente Tienda' }}</div>
+      <div class="text-xs text-color-secondary mt-1"><i class="pi pi-check-circle text-green-500"></i> Nombre y teléfono obtenidos automáticamente de su perfil (tusuariosinfo)</div>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" size="small" rounded variant="text" severity="secondary"
+      [disabled]="guardandoPedido()" (onClick)="dialogGuardarPedido.set(false)" />
+    <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" [raised]="true" [rounded]="true"
+      severity="success" [loading]="guardandoPedido()" (onClick)="guardarPedido()" />
+  </ng-template>
+</p-dialog>
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\pedidos-virtual\pedidos-virtual.scss
+
+```typescript
+$sidebar-width: 380px;
+
+/* Layout principal */
+.tienda-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--c-surface-ground);
+  transition: padding-right 0.3s;
+
+  &.con-carrito {
+    padding-right: $sidebar-width;
+  }
+}
+
+/* Overlay para sidebar mobile */
+.cart-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 299;
+  transition: opacity 0.3s;
+
+  @media (max-width: 768px) {
+    display: block;
+  }
+}
+
+/* Sidebar Carrito */
+.cart-sidebar {
+  position: fixed;
+  top: 75px;
+  right: 0;
+  width: $sidebar-width;
+  height: 90vh;
+  background: var(--c-surface);
+  border-left: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 300;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.06);
+
+  @media (max-width: 768px) {
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
+    width: min(380px, 85vw);
+    z-index: 310;
+
+    &.open {
+      transform: translateX(0);
+    }
+  }
+}
+
+.cart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--c-border);
+
+  .cart-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+
+  .cart-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .cart-count {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    background: var(--c-surface-ground);
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem;
+    font-weight: 500;
+  }
+
+  .cart-close-mobile {
+    display: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    border: none;
+    background: var(--c-surface-ground);
+    color: var(--c-text-muted);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+
+    &:hover {
+      background: #fee2e2;
+      color: var(--c-error);
+    }
+
+    @media (max-width: 768px) {
+      display: flex;
+    }
+  }
+}
+
+.cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  background: var(--c-surface-ground);
+  border-radius: 10px;
+  transition: background 0.15s;
+
+  &:hover {
+    background: color-mix(in srgb, var(--c-primary) 4%, var(--c-surface-ground));
+  }
+
+  .cart-item-img {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f1f5f9;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cart-item-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-size: 1.25rem;
+      color: #cbd5e1;
+    }
+  }
+
+  .cart-item-details {
+    flex: 1;
+    min-width: 0;
+
+    .cart-item-name {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--c-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+    }
+
+    .cart-item-price {
+      font-size: 0.7rem;
+      color: var(--c-text-muted);
+    }
+  }
+
+  .cart-item-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+    flex-shrink: 0;
+
+    .cart-item-subtotal {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--c-primary);
+      white-space: nowrap;
+    }
+
+    .cart-item-remove {
+      background: none;
+      border: none;
+      color: var(--c-text-muted);
+      cursor: pointer;
+      padding: 0.15rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      transition: color 0.15s, background 0.15s;
+
+      &:hover {
+        color: var(--c-error);
+        background: #fef2f2;
+      }
+    }
+  }
+}
+
+.cart-item-qty {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-top: 0.2rem;
+
+  .qty-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.6rem;
+    color: var(--c-text);
+    transition: all 0.15s;
+
+    &:hover:not(:disabled) {
+      background: var(--c-primary);
+      color: white;
+      border-color: var(--c-primary);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .qty-value {
+    min-width: 1.5rem;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+}
+
+.cart-summary {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--c-surface);
+
+  .summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+    &.summary-total {
+      font-size: 1rem;
+      color: var(--c-text);
+      padding-top: 0.25rem;
+    }
+  }
+
+  .cart-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Main */
+.tienda-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Toolbar Poseidon-style */
+.tienda-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1.5rem;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  .toolbar-left {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-shrink: 0;
+
+    .toolbar-title {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--c-text);
+
+      i { color: var(--c-primary); }
+    }
+
+    .toolbar-count {
+      font-size: 0.75rem;
+      color: var(--c-text-muted);
+    }
+  }
+
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.search-box {
+  position: relative;
+
+  .search-icon {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--c-text-muted);
+    font-size: 0.85rem;
+    pointer-events: none;
+  }
+
+  .search-input {
+    padding-left: 0.75rem;
+    padding-right: 2.25rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    height: 36px;
+    width: 200px;
+    transition: width 0.2s;
+
+    &:focus {
+      width: 260px;
+    }
+  }
+}
+
+::ng-deep .sort-select,
+::ng-deep .cat-select {
+  .p-select {
+    font-size: 0.8rem;
+    border-radius: 8px;
+    min-width: 140px;
+  }
+}
+
+.view-toggles {
+  display: flex;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  overflow: hidden;
+
+  .view-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: var(--c-surface);
+    color: var(--c-text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+
+    &:hover {
+      background: var(--c-surface-ground);
+      color: var(--c-text);
+    }
+
+    &.active {
+      background: var(--c-primary);
+      color: white;
+    }
+
+    &:first-child {
+      border-right: 1px solid var(--c-border);
+    }
+  }
+}
+
+.btn-ofertas {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--c-surface-ground);
+    color: var(--c-text);
+  }
+
+  &.active {
+    background: var(--c-success);
+    color: white;
+    border-color: var(--c-success);
+  }
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+  gap: 1rem;
+  color: var(--c-text-muted);
+}
+
+/* Grid layout */
+.productos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.producto-card {
+  background: var(--c-card-background);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s, transform 0.2s;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 440px;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    will-change: transform;
+  }
+
+  .card-imagen {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      mix-blend-mode: multiply;
+    }
+
+    .sin-imagen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-size: 3rem;
+      color: #cbd5e1;
+    }
+
+    ::ng-deep .tag-stock {
+        background-color: var(--c-card-background);
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      font-size: 0.7rem !important;
+    }
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-categoria {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-card-color-text);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .card-titulo {
+    margin: 0 0 0.25rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--c-text);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-desc {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    margin: 0 0 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-acciones {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .card-precio {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--c-card-color-text);
+  }
+
+  .card-precio-oferta {
+    color: var(--c-success);
+
+    .precio-original {
+      text-decoration: line-through;
+      color: var(--c-text-muted);
+      font-weight: 400;
+      font-size: 0.8rem;
+      margin-right: 0.4rem;
+    }
+  }
+}
+
+/* List layout */
+.productos-list {
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.producto-list-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: var(--c-surface);
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  content-visibility: auto;
+  contain-intrinsic-size: 0 70px;
+
+  .list-imagen {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f1f5f9;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .sin-imagen-sm {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-size: 1.5rem;
+      color: #cbd5e1;
+    }
+  }
+
+  .list-info {
+    flex: 1;
+    min-width: 0;
+
+    .list-categoria {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      color: var(--c-primary);
+      font-weight: 600;
+    }
+
+    h4 {
+      margin: 0.1rem 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--c-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .list-desc {
+      font-size: 0.75rem;
+      color: var(--c-text-muted);
+    }
+  }
+
+  .list-stock {
+    flex-shrink: 0;
+  }
+
+  .list-precio {
+    font-weight: 700;
+    color: var(--c-primary);
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  .list-accion {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+}
+
+/* Sin productos */
+.sin-productos {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem 0;
+  gap: 0.5rem;
+  color: var(--c-text-muted);
+}
+
+/* Botón flotante carrito (FAB) — oculto en desktop */
+.cart-fab {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .cart-fab {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--c-primary) 0%, #059669 100%);
+    color: #fff;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+
+    &:hover {
+      transform: scale(1.08);
+      box-shadow: 0 12px 32px rgba(16, 185, 129, 0.55);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    .cart-fab-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 1rem;
+      background: var(--c-error);
+      color: white;
+      font-size: 0.65rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 0.3rem;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+      animation: fab-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes fab-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+  }
+}
+
+/* Dialog Checkout - Poseidon style */
+.checkout-dialog {
+  ::ng-deep .p-dialog-content {
+    padding: 0;
+    overflow: hidden;
+  }
+}
+
+.checkout-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  min-height: 420px;
+}
+
+.checkout-form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  border-right: 1px solid var(--c-border);
+}
+
+.checkout-fields {
+  .section-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+
+  .campo {
+    margin-bottom: 0.75rem;
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--c-text);
+      margin-bottom: 0.25rem;
+    }
+  }
+
+  .campo-numero-tarjeta {
+    margin-top: 1rem;
+  }
+}
+
+.campo-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* ===== Diálogo Guardar pedido ===== */
+.guardar-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  .campo {
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--c-text);
+      margin-bottom: 0.25rem;
+    }
+  }
+}
+
+.checkout-summary {
+  padding: 1.5rem;
+  background: var(--c-surface-ground);
+  display: flex;
+  flex-direction: column;
+
+  .section-title {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+}
+
+.summary-items {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  background: var(--c-surface);
+  border-radius: 8px;
+
+  .summary-item-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f1f5f9;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .summary-item-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-size: 1rem;
+      color: #cbd5e1;
+    }
+  }
+
+  .summary-item-info {
+    flex: 1;
+    min-width: 0;
+
+    .summary-item-name {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--c-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .summary-item-qty {
+      font-size: 0.65rem;
+      color: var(--c-text-muted);
+    }
+  }
+
+  .summary-item-total {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    white-space: nowrap;
+  }
+}
+
+.summary-totals {
+  border-top: 1px solid var(--c-border);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+
+  .summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+
+    &.summary-total {
+      font-size: 1rem;
+      color: var(--c-text);
+      padding-top: 0.35rem;
+      margin-top: 0.25rem;
+      border-top: 1px solid var(--c-border);
+    }
+  }
+}
+
+.w-full {
+  width: 100%;
+}
+
+/* ===========================
+   MOBILE RESPONSIVE (≤768px)
+   =========================== */
+
+.desktop-only {
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Layout: quitar padding del sidebar */
+  .tienda-layout.con-carrito {
+    padding-right: 0;
+  }
+
+  /* Toolbar: apilado */
+  .tienda-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    padding: 0.75rem;
+
+    .toolbar-left {
+      justify-content: space-between;
+    }
+
+    .toolbar-right {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+
+  .search-box {
+    width: 100%;
+
+    .search-input {
+      width: 100%;
+      height: 40px;
+
+      &:focus {
+        width: 100%;
+      }
+    }
+  }
+
+  ::ng-deep .sort-select,
+  ::ng-deep .cat-select {
+    width: 100%;
+
+    .p-select {
+      width: 100%;
+    }
+  }
+
+  /* Grid: 1 columna con card vertical grande idéntica al escritorio */
+  .productos-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .producto-card {
+    contain-intrinsic-size: auto 380px;
+
+    .card-imagen {
+      aspect-ratio: 4 / 3;
+
+      ::ng-deep .tag-stock {
+        font-size: 0.65rem !important;
+        top: 0.35rem;
+        right: 0.35rem;
+      }
+    }
+
+    .card-body { padding: 0.75rem; }
+    .card-titulo { font-size: 0.9rem; }
+    .card-desc { font-size: 0.8rem; }
+
+    /* Footer adaptado para una columna */
+    .card-footer {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .card-precio {
+      font-size: 1.05rem;
+    }
+    .card-acciones { margin-left: auto; }
+  }
+
+  /* Lista: compacta */
+  .productos-list {
+    padding: 0.75rem;
+    gap: 0.4rem;
+  }
+
+  .producto-list-row {
+    padding: 0.5rem;
+    gap: 0.5rem;
+
+    .list-imagen {
+      width: 48px;
+      height: 48px;
+    }
+
+    .list-info h4 {
+      font-size: 0.8rem;
+    }
+
+    .list-stock {
+      display: none;
+    }
+
+    .list-precio {
+      font-size: 0.8rem;
+      min-width: 60px;
+    }
+  }
+
+  /* Checkout dialog mobile — más angosto y centrado */
+  .checkout-dialog {
+    ::ng-deep .p-dialog {
+      width: 92vw !important;
+      max-width: 460px !important;
+      height: auto !important;
+      max-height: 90dvh !important;
+      margin: auto !important;
+      border-radius: 12px !important;
+    }
+
+    ::ng-deep .p-dialog-content {
+      overflow-y: auto !important;
+      padding: 0 !important;
+      max-height: calc(90dvh - 60px) !important;
+    }
+
+    ::ng-deep .p-dialog-header {
+      padding: 0.75rem 1rem !important;
+      border-bottom: 1px solid var(--c-border);
+      flex-shrink: 0;
+    }
+  }
+
+  .checkout-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .checkout-form {
+    padding: 1rem;
+    border-right: none;
+    border-bottom: 1px solid var(--c-border);
+    gap: 1rem;
+
+    .checkout-fields {
+      width: 95%;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .campo {
+      margin-bottom: 0.6rem;
+    }
+  }
+
+  .checkout-summary {
+    padding: 1rem;
+
+    .section-title {
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .summary-items {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .summary-item {
+      padding: 0.4rem;
+      gap: 0.5rem;
+
+      .summary-item-img {
+        width: 36px;
+        height: 36px;
+      }
+
+      .summary-item-name {
+        font-size: 0.7rem;
+      }
+    }
+  }
+
+  .campo-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Touch targets para tablets */
+@media (pointer: coarse) {
+  .p-button,
+  .p-inputtext,
+  .p-select,
+  .p-datepicker {
+    min-height: 44px;
+  }
+}
+
+/* ==================== Galería de imágenes ==================== */
+.galeria-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  .galeria-titulo {
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  .galeria-count {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    border: 1px solid var(--c-border);
+    padding: 0.15rem 0.55rem;
+    border-radius: 1rem;
+    flex-shrink: 0;
+  }
+}
+
+.galeria-loading,
+.galeria-vacia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  color: var(--c-text-muted);
+  font-size: 0.9rem;
+
+  i {
+    font-size: 2.2rem;
+    color: var(--c-text-muted);
+  }
+
+  &.galeria-loading i {
+    color: var(--c-primary);
+    font-size: 1.8rem;
+  }
+}
+
+.tienda-galleria {
+  display: block;
+
+  .galeria-item-img {
+    display: block;
+    width: 100%;
+    max-height: 55vh;
+    object-fit: contain;
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 0.5rem;
+  }
+
+  ::ng-deep .p-galleria-thumbnail img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  // Sin efecto carrusel: PrimeNG aplica un transition inline
+  // 'transform 500ms ease' al items-container en cada navegación.
+  // !important gana sobre el inline y el cambio de imagen es instantáneo.
+  ::ng-deep .p-galleria-items-container,
+  ::ng-deep .p-galleria-thumbnail-items {
+    transition: none !important;
+  }
+}
+
 ```
 
 ---
@@ -71454,116 +75717,101 @@ import { Observable, of, tap, shareReplay } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { ProductoTienda, Pedido, PedidoItem, CheckoutPedido, CheckoutPedidoResponse } from '../../../core/models/pedido.models';
 
-const PRODUCTOS_CACHE_KEY = 'pedidos_productos_v1';
-const PRODUCTOS_CACHE_TTL = 60 * 1000; // 1 minuto
+/**
+ * Origen de la solicitud → clave de caché distinta (para evitar colisiones
+ * con /facturacion/tienda que comparten el endpoint /inventario/tienda/productos).
+ *  - 'tienda': => lógica parametrizada (tipo_de_giro_tienda='C'), SOLO pedidos-virtual
+ *  - 'all': => sin filtro, sirve para diagnostico/testing (no se usa en la app)
+ */
+type OrigenCache = 'tienda' | 'all';
 
-interface ProductosCache {
+interface CacheEntry {
   data: ProductoTienda[];
-  timestamp: number;
+  ts: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class PedidosVirtualService {
   private api = inject(ApiService);
-  private productosCache$: Observable<ProductoTienda[]> | null = null;
+  private readonly TTL = 60 * 1000; // 1 minuto
+  private cacheStore = new Map<OrigenCache, CacheEntry>();
 
+  /** Productos para pedidos-virtual (con imagen y stock). Filtro parametrizado 'C'. */
   getProductos(forceRefresh = false): Observable<ProductoTienda[]> {
-    if (forceRefresh) {
-      this.invalidateCache();
+    const key: OrigenCache = 'tienda'; // pedidos-virtual aplica el filtro 'C' parametrizado
+
+    if (!forceRefresh) {
+      const hit = this.cacheStore.get(key);
+      if (hit && Date.now() - hit.ts <= this.TTL) {
+        return of(hit.data).pipe(shareReplay(1));
+      }
     }
 
-    if (this.productosCache$) return this.productosCache$;
-
-    const cached = this.leerCache();
-    if (cached) {
-      this.productosCache$ = of(cached).pipe(shareReplay(1));
-      return this.productosCache$;
-    }
-
-    this.productosCache$ = this.api.get<ProductoTienda[]>('/inventario/tienda/productos').pipe(
-      tap(data => this.escribirCache(data)),
-      shareReplay(1),
-    );
-    return this.productosCache$;
+    const src = this.api.get<ProductoTienda[]>('/inventario/tienda/productos', { origen: key })
+      .pipe(tap((data) => this.save(key, data)), shareReplay(1));
+    return src;
   }
 
   invalidateCache() {
-    this.productosCache$ = null;
-    try { localStorage.removeItem(PRODUCTOS_CACHE_KEY); } catch {}
-  }
-
-  private leerCache(): ProductoTienda[] | null {
+    this.cacheStore.clear();
     try {
-      const raw = localStorage.getItem(PRODUCTOS_CACHE_KEY);
-      if (!raw) return null;
-      const cache: ProductosCache = JSON.parse(raw);
-      if (Date.now() - cache.timestamp > PRODUCTOS_CACHE_TTL) {
-        localStorage.removeItem(PRODUCTOS_CACHE_KEY);
-        return null;
+      const store = localStorage as unknown as Storage;
+      for (let i = store.length - 1; i >= 0; i--) {
+        const k = store.key(i);
+        if (k && (k.startsWith('pedidos_productos_v1_') || k === 'pedidos_productos_v1')) {
+          store.removeItem(k);
+        }
       }
-      return cache.data;
     } catch {
-      return null;
+      /* ignore */
     }
   }
 
-  private escribirCache(data: ProductoTienda[]) {
+  private save(key: OrigenCache, data: ProductoTienda[]) {
     try {
-      const cache: ProductosCache = { data, timestamp: Date.now() };
-      localStorage.setItem(PRODUCTOS_CACHE_KEY, JSON.stringify(cache));
-    } catch {}
+      this.cacheStore.set(key, { data, ts: Date.now() });
+      localStorage.setItem(`pedidos_productos_v1_${key}`, JSON.stringify({ data, ts: Date.now() }));
+    } catch { /* ignore */ }
   }
 
-  crearPedido(nombrecliente: string, nrotelefono: string): Observable<Pedido> {
-    return this.api.post<Pedido>('/facturacion/pedidos', {
-      nombrecliente,
-      nrotelefono: nrotelefono || 'N/A',
-      sn_enviogratis: 'N',
-      sn_facturado: 'N',
+  // ===================== Pedido =====================
+
+  getPedido(pedidoId: number): Observable<Pedido & { items?: PedidoItem[] }> {
+    return this.api.get<Pedido & { items: PedidoItem[] }>(`/facturacion/pedidos/${pedidoId}`);
+  }
+
+  getPedidoItems(pospedmaeId: number): Observable<PedidoItem[]> {
+    return this.api.get<PedidoItem[]>(`/facturacion/pedidos-det/pedido/${pospedmaeId}`);
+  }
+
+  agregarItem(payload: any): Observable<any> {
+    return this.api.post<void>('/facturacion/pedidos-det', payload).pipe(
+      tap(() => this.invalidateCache()),
+    );
+  }
+
+  eliminarItem(pospeddetId: number): Observable<any> {
+    // ApiService.delete(path, id) agrega /${id}: la ruta va SIN el id
+    return this.api.delete('/facturacion/pedidos-det', pospeddetId).pipe(
+      tap(() => this.invalidateCache()),
+    );
+  }
+
+  crearPedido(nombrecliente: string, telefono: string): Observable<{ pospedmaeId: number }> {
+    return this.api.post<{ pospedmaeId: number }>('/facturacion/pedidos', {
+      nombrecliente: nombrecliente || 'Cliente Tienda',
+      nrotelefono: telefono || 'N/A',
     });
   }
 
-  agregarItem(payload: {
-    pospedmaeId: number;
-    productoId: number;
-    codbarra: string;
-    cantidad: number;
-    precioventa: number;
-    subtotal: number;
-    descuento: number;
-    impuesto: number;
-    nrofila: number;
-  }): Observable<PedidoItem> {
-    return this.api.post<PedidoItem>('/facturacion/pedidos-det', payload);
+  actualizarPedido(id: number, payload: any): Observable<any> {
+    return this.api.put<void>('/facturacion/pedidos', id, payload).pipe(
+      tap(() => this.invalidateCache()),
+    );
   }
 
-  getPedidoItems(pedidoId: number): Observable<PedidoItem[]> {
-    return this.api.get<PedidoItem[]>(`/facturacion/pedidos-det/pedido/${pedidoId}`);
-  }
-
-  eliminarItem(detId: number): Observable<any> {
-    return this.api.delete<any>('/facturacion/pedidos-det', detId);
-  }
-
-  eliminarPedido(pedidoId: number): Observable<any> {
-    return this.api.delete<any>('/facturacion/pedidos', pedidoId);
-  }
-
-  checkout(pago: CheckoutPedido): Observable<CheckoutPedidoResponse> {
-    return this.api.post<CheckoutPedidoResponse>('/facturacion/pedidos/checkout', pago, { sinContexto: true });
-  }
-
-  getPedido(pedidoId: number): Observable<Pedido> {
-    return this.api.get<Pedido>(`/facturacion/pedidos/${pedidoId}`);
-  }
-
-  /** Actualiza datos del pedido (nombre/teléfono del cliente) — PUT /facturacion/pedidos/:id */
-  actualizarPedido(pedidoId: number, datos: { nombrecliente?: string; nrotelefono?: string }): Observable<Pedido> {
-    return this.api.put<Pedido>('/facturacion/pedidos', pedidoId, datos);
-  }
-
-  getPedidoItemsByPedidoId(pedidoId: number): Observable<PedidoItem[]> {
-    return this.api.get<PedidoItem[]>(`/facturacion/pedidos-det/pedido/${pedidoId}`);
+  checkout(p: any): Observable<CheckoutPedidoResponse> {
+    return this.api.post<CheckoutPedidoResponse>('/facturacion/pedidos/checkout', p);
   }
 }
 
@@ -71590,6 +75838,7 @@ import { CommonModule } from '@angular/common';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import { GalleriaModule } from 'primeng/galleria';
 import { PedidosVirtualService } from './pedidos-virtual.service';
 import { ProductoTienda, PedidoItem, CheckoutPedido } from '../../../core/models/pedido.models';
 import { AuthService } from '../../../core/services/auth.service';
@@ -71603,7 +75852,7 @@ import { NavegacionService } from '../../../core/services/navegacion.service';
   imports: [
     CommonModule, FormsModule, DataViewModule, ButtonModule, DialogModule,
     InputNumberModule, InputTextModule, InputMaskModule, SelectModule, TagModule, ToastModule,
-    TooltipModule, MessageModule,
+    TooltipModule, MessageModule, GalleriaModule,
   ],
   providers: [],
   templateUrl: './pedidos-virtual.html',
@@ -71611,7 +75860,7 @@ import { NavegacionService } from '../../../core/services/navegacion.service';
 })
 export class PedidosVirtual implements OnInit {
   private pedidosService = inject(PedidosVirtualService);
-  private auth = inject(AuthService);
+  public auth = inject(AuthService);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private api = inject(ApiService);
@@ -71633,6 +75882,22 @@ export class PedidosVirtual implements OnInit {
   formaspago = signal<{ label: string; value: number }[]>([]);
   tarjetaError = signal<string | null>(null);
   pedidoOpen = signal(false);
+
+  // ==================== Galería de imágenes ====================
+  dialogGaleria = signal(false);
+  galeriaTitulo = signal('');
+  galeriaImagenes = signal<string[]>([]);
+  galeriaIndice = signal(0);
+  galeriaCargando = signal(false);
+  /** Cache productoId → imágenes (evita re-fetch al reabrir) */
+  private galeriaCache = new Map<number, string[]>();
+
+  /** Opciones responsive del Galleria (patrón doc PrimeNG) */
+  readonly galeriaResponsiveOptions = [
+    { breakpoint: '1024px', numVisible: 5 },
+    { breakpoint: '768px', numVisible: 3 },
+    { breakpoint: '560px', numVisible: 2 },
+  ];
 
   //── Guardar pedido (facturación a futuro) ──
   dialogGuardarPedido = signal(false);
@@ -71658,8 +75923,27 @@ export class PedidosVirtual implements OnInit {
   private impuestoId: number | null = null;
 
   categorias = computed(() => {
-    const cats = new Set(this.productos().map(p => p.categoria).filter(Boolean));
-    return [{ label: 'Todos', value: null }, ...Array.from(cats).map(c => ({ label: c!, value: c! }))];
+    // Derivación explícita: categoría -> {descripción, giro}.
+    // Los productos ya vienen filtrados por el backend a giro='C', pero quedan autónomas
+    // del filtro porgiro para que la lista sea inequívoca y no dependa de la lógica de la url.
+    const map = new Map<number, { descripcion: string; giro: string }>();
+    for (const p of this.productos()) {
+      if (!p.categoriaId) continue;
+      const prev = map.get(p.categoriaId);
+      if (!prev) {
+        map.set(p.categoriaId, { descripcion: p.categoria || '', giro: (p as any).tipo_giro || '' });
+      } else {
+        prev.descripcion = p.categoria || prev.descripcion;
+        prev.giro = (p as any).tipo_giro || prev.giro;
+      }
+    }
+
+    // Solo categorías de giro parametrizado ('C' para estos dos componentes).
+    const items = Array.from(map.values())
+      .filter((x) => x.giro === 'C')
+      .sort((a, b) => a.descripcion.localeCompare(b.descripcion))
+      .map((x) => ({ label: x.descripcion, value: x.descripcion }));
+    return [{ label: 'Todos', value: null }, ...items];
   });
   categoriaFiltro = signal<string | null>(null);
   ordenarPor = signal<string>('default');
@@ -72066,10 +76350,9 @@ export class PedidosVirtual implements OnInit {
       this.messageService.add({ severity: 'warn', summary: 'Pedido vacío', detail: 'Agrega productos antes de guardar' });
       return;
     }
-    const datos = this.pedidoDatosCliente();
-    // Precarga solo si tiene un nombre real (no el "Cliente Pedido" por defecto)
-    this.guardarNombre.set(datos?.nombre && datos.nombre !== 'Cliente Pedido' ? datos.nombre : '');
-    this.guardarTelefono.set(datos?.tel ?? '');
+    const user = this.auth.currentUser();
+    this.guardarNombre.set(user?.nombre || 'Cliente Tienda');
+    this.guardarTelefono.set('Registrado');
     this.dialogGuardarPedido.set(true);
   }
 
@@ -72114,10 +76397,11 @@ export class PedidosVirtual implements OnInit {
       this.messageService.add({ severity: 'warn', summary: 'Pedido vacío', detail: 'Agrega productos antes de facturar' });
       return;
     }
+    const user = this.auth.currentUser();
     this.checkout = {
       pospedmaeId: this.pedidoId()!,
-      nombrecliente: 'Cliente Pedido',
-      nrotelefono: '',
+      nombrecliente: user?.nombre || 'Cliente Tienda',
+      nrotelefono: 'Registrado',
       formapagoId: this.formaspago().length > 0 ? this.formaspago()[0].value : 0,
       efectivo_recibido: this.totalPedido(),
       nrotarjeta: '',
@@ -72240,6 +76524,54 @@ export class PedidosVirtual implements OnInit {
     return prod?.imagen ? this.resolverImagen(prod.imagen) : '';
   }
 
+  // ==================== Galería de imágenes ====================
+  abrirGaleria(producto: ProductoTienda): void {
+    const principal: string[] = producto.imagen ? [this.resolverImagen(producto.imagen)] : [];
+    const id = Number(producto.produtoId);
+
+    this.galeriaTitulo.set(producto.descripcion || producto.codbarra || 'Producto');
+    this.galeriaIndice.set(0);
+    this.galeriaImagenes.set(principal);
+    this.galeriaCargando.set(false);
+    this.dialogGaleria.set(true);
+
+    const cacheado = this.galeriaCache.get(id);
+    if (cacheado && cacheado.length) {
+      this.galeriaImagenes.set(cacheado);
+      return;
+    }
+
+    this.galeriaCargando.set(true);
+    this.api
+      .get<{ productoId: number; img: string; sn_activo?: string }[]>('/inventario/productos-img', { productoId: id })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const vistos = new Set<string>();
+          const imgs: string[] = [];
+          for (const r of Array.isArray(res) ? res : []) {
+            if (!r?.img || r.sn_activo === 'N') continue;
+            const url = this.resolverImagen(r.img);
+            if (!vistos.has(url)) {
+              vistos.add(url);
+              imgs.push(url);
+            }
+          }
+          // La imagen principal (la de la card) va primero
+          const ordenadas = principal.length
+            ? [principal[0], ...imgs.filter(u => u !== principal[0])]
+            : imgs;
+          if (ordenadas.length) this.galeriaCache.set(id, ordenadas);
+          this.galeriaImagenes.set(ordenadas);
+          this.galeriaCargando.set(false);
+        },
+        error: () => {
+          this.galeriaCargando.set(false);
+          this.messageService.add({ severity: 'error', summary: 'Galería', detail: 'No se pudieron cargar las imágenes' });
+        },
+      });
+  }
+
   /** Formato Lempiras con separador de miles y 2 decimales (ej: L 1,250.00) */
   formatearPrecio(precio: number | string): string {
     return `L ${Number(precio).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -72292,6 +76624,2931 @@ export class PedidosVirtual implements OnInit {
   trackByProductoId = (_: number, p: ProductoTienda) => p.produtoId;
   trackByItemId = (_: number, i: PedidoItem) => i.pospeddetId;
 }
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\restaurante\restaurante.html
+
+```typescript
+<p-toast />
+
+<div class="rest-layout" [class.rest-angosta]="estrecha()">
+  <!-- ═════════ Columna 1 · Productos (55%) ═════════ -->
+  <section class="rest-productos" aria-label="Productos">
+    <nav class="rest-categorias" aria-label="Categorías">
+      <button type="button" class="cat-chip" [class.activa]="categoriaActiva() === null" (click)="categoriaActiva.set(null)">
+        Todos
+      </button>
+      @for (c of categorias(); track c) {
+        <button type="button" class="cat-chip" [class.activa]="categoriaActiva() === c" (click)="categoriaActiva.set(c)">
+          {{ c }}
+        </button>
+      }
+    </nav>
+
+    @if (cargandoProductos()) {
+      <div class="rest-estado">
+        <i class="pi pi-spin pi-spinner"></i>
+        <p>Cargando productos...</p>
+      </div>
+    } @else {
+      <div class="rest-grid">
+        @for (p of productosFiltrados(); track p.produtoId) {
+          @let enOrden = cantidadPorProducto().get(p.produtoId) ?? 0;
+          <button
+            type="button"
+            class="prod-card"
+            [disabled]="p.existencia <= 0"
+            [attr.aria-label]="'Agregar ' + p.descripcion + ' a la orden'"
+            (click)="agregarProducto(p)"
+          >
+            <span class="prod-imagen">
+              @if (p.imagen) {
+                <img [src]="resolverImagen(p.imagen)" [alt]="p.descripcion" loading="lazy" />
+              } @else {
+                <i class="pi pi-images sin-imagen"></i>
+              }
+              @if (enOrden > 0) {
+                <span class="prod-badge" aria-label="{{ enOrden }} en la orden">{{ enOrden }}</span>
+              }
+            </span>
+            <span class="prod-info">
+              <span class="prod-categoria">{{ p.categoria || 'Sin categoría' }}</span>
+              <span class="prod-nombre">{{ p.descripcion }}</span>
+              <span class="prod-pie">
+                <span class="prod-precio">{{ formatearPrecio(p.precioventa) }}</span>
+                @if (p.existencia > 0) {
+                  <p-tag [value]="'Existencia: ' + p.existencia" severity="info" />
+                } @else {
+                  <p-tag value="Sin stock" severity="danger" />
+                }
+              </span>
+            </span>
+          </button>
+        } @empty {
+          <div class="rest-estado rest-vacio">
+            <i class="pi pi-inbox"></i>
+            <p>No hay productos en esta categoría</p>
+          </div>
+        }
+      </div>
+    }
+  </section>
+</div>
+
+<!-- ═════════ Columnas 2 y 3 · Drawer derecho (45% = 20% + 25%) ═════════ -->
+<p-drawer
+  [(visible)]="drawerVisible"
+  position="right"
+  [modal]="estrecha()"
+  [dismissible]="estrecha()"
+  [closeOnEscape]="estrecha()"
+  [showCloseIcon]="false"
+  [blockScroll]="false"
+  [style]="{ width: estrecha() ? '100%' : '40%' }"
+  styleClass="rest-drawer"
+>
+  <ng-template #headless>
+    <div class="rest-drawer-body">
+      <!-- Columna 2 · Mesas primero, Pedidos después -->
+      <section class="col-mesas" aria-label="Mesas y pedidos">
+        <header class="col-cabecera">
+          <h2 class="col-titulo">Mesas</h2>
+          @if (estrecha()) {
+            <p-button icon="pi pi-times" [rounded]="true" [text]="true" severity="secondary" aria-label="Cerrar panel" (onClick)="drawerVisible.set(false)" />
+          }
+        </header>
+
+        <div class="mesas-grid">
+          @for (m of mesas(); track m.nro) {
+            <p-button
+              [label]="'' + m.nro"
+              [rounded]="true"
+              [styleClass]="claseMesa(m)"
+              [pTooltip]="tituloMesa(m)"
+              tooltipPosition="top"
+              [attr.aria-label]="tituloMesa(m)"
+              (onClick)="clickMesa(m)"
+            />
+          }
+        </div>
+        <p class="mesas-leyenda">
+          <span class="punto libre"></span> Libre
+          <span class="punto seleccionada"></span> Seleccionada
+          <span class="punto ocupada"></span> Con orden
+        </p>
+
+        <div class="pedidos-cabecera">
+          <h3 class="col-subtitulo">
+            Pedidos
+            <span class="conteo">{{ pedidos().length }}</span>
+          </h3>
+          <p-button
+            label="Nueva orden"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            [disabled]="ocupado() || mesaSeleccionada() == null"
+            pTooltip="Elija una mesa libre primero"
+            tooltipPosition="left"
+            (onClick)="nuevaOrden()"
+          />
+        </div>
+
+        @if (mesaSeleccionada() != null) {
+          <p class="aviso-mesa" role="status">
+            Mesa {{ mesaSeleccionada() }} seleccionada — pulse "Nueva orden".
+          </p>
+        }
+
+        @if (pedidos().length === 0) {
+          <p class="vacio-texto">Sin pedidos. Seleccione una mesa libre y pulse "Nueva orden".</p>
+        } @else {
+          <ul class="pendientes">
+            @for (o of pedidos(); track o.pospedmaeId) {
+              <li class="pendiente" [class.seleccionada]="o.pospedmaeId === ordenActivaId()">
+                <button type="button" class="pendiente-info" (click)="seleccionarOrden(o.pospedmaeId)">
+                  <strong>Mesa {{ o.nromesa }}</strong>
+                  <span>
+                    Orden #{{ o.pospedmaeId }} · hace {{ minutos(o) }} min@if (o.sn_entregado === 'S') { · entregado }
+                  </span>
+                </button>
+                @if (o.sn_entregado === 'N') {
+                  <p-button
+                    icon="pi pi-check"
+                    [rounded]="true"
+                    [text]="true"
+                    severity="success"
+                    pTooltip="Marcar como entregado"
+                    [attr.aria-label]="'Marcar la mesa ' + o.nromesa + ' como entregada'"
+                    [disabled]="ocupado()"
+                    (onClick)="marcarEntregada(o)"
+                  />
+                }
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <!-- Columna 3 · Orden (25%) -->
+      <section class="col-orden" aria-label="Orden actual">
+        @if (ordenActiva(); as o) {
+          <header class="col-cabecera">
+            <h2 class="col-titulo">Orden #{{ o.pospedmaeId }}</h2>
+            <span class="orden-mesa" [class.sin-mesa]="o.nromesa == null">
+              {{ o.nromesa != null ? 'Mesa ' + o.nromesa : 'Sin mesa' }}
+            </span>
+          </header>
+
+          <div class="orden-items">
+            @for (item of items(); track item.pospeddetId) {
+              @let info = infoItem(item);
+              <div class="orden-item">
+                <div class="orden-item-img">
+                  @if (info.imagen) {
+                    <img [src]="info.imagen" [alt]="info.nombre" loading="lazy" />
+                  } @else {
+                    <i class="pi pi-image"></i>
+                  }
+                </div>
+                <div class="orden-item-datos">
+                  <span class="orden-item-nombre">{{ info.nombre }}</span>
+                  <span class="orden-item-precio">{{ formatearPrecio(item.precioventa) }}</span>
+                  <div class="orden-item-cant">
+                    <button type="button" class="qty-btn" aria-label="Quitar uno" [disabled]="ocupado()" (click)="decrementar(item)">
+                      <i class="pi pi-minus"></i>
+                    </button>
+                    <span class="qty-valor">{{ item.cantidad }}</span>
+                    <button type="button" class="qty-btn" aria-label="Agregar uno" [disabled]="ocupado()" (click)="incrementar(item)">
+                      <i class="pi pi-plus"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="orden-item-lado">
+                  <span class="orden-item-total">{{ formatearPrecio(totalLinea(item)) }}</span>
+                  <button type="button" class="item-quitar" aria-label="Quitar de la orden" [disabled]="ocupado()" (click)="quitar(item)">
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              <div class="rest-estado rest-vacio">
+                <i class="pi pi-shopping-cart"></i>
+                <p>Toque un producto para agregarlo.</p>
+              </div>
+            }
+          </div>
+
+          <footer class="orden-pie">
+            <div class="linea"><span>Subtotal</span><span>{{ formatearPrecio(o.subTotal) }}</span></div>
+            <div class="linea"><span>ISV</span><span>{{ formatearPrecio(o.impuesto) }}</span></div>
+            <div class="linea total"><span>Total</span><strong>{{ formatearPrecio(o.total) }}</strong></div>
+
+            @if (items().length && o.sn_entregado === 'N') {
+              <p-button
+                label="Marcar entregada"
+                icon="pi pi-check"
+                severity="secondary"
+                [outlined]="true"
+                [fluid]="true"
+                [disabled]="ocupado()"
+                (onClick)="marcarEntregada(o)"
+              />
+            }
+            @if (!items().length) {
+              <p-button label="Cancelar orden" icon="pi pi-trash" severity="danger" [text]="true" [fluid]="true" [disabled]="ocupado()" (onClick)="cancelarOrdenVacia()" />
+            } @else {
+              <p-button label="Pagar ahora" icon="pi pi-check" severity="success" [fluid]="true" [disabled]="ocupado()" (onClick)="abrirPago()" />
+            }
+          </footer>
+        } @else {
+          <header class="col-cabecera"><h2 class="col-titulo">Orden</h2></header>
+          <div class="rest-estado rest-vacio">
+            <i class="pi pi-receipt"></i>
+            <p>Seleccione una mesa con orden para ver su detalle, o elija una mesa libre y pulse "Nueva orden".</p>
+          </div>
+        }
+      </section>
+    </div>
+  </ng-template>
+</p-drawer>
+
+@if (estrecha() && !drawerVisible()) {
+  <button type="button" class="rest-fab" aria-label="Abrir mesas y orden" (click)="drawerVisible.set(true)">
+    <i class="pi pi-receipt"></i>
+    @if (totalItemsOrden() > 0) {
+      <span class="rest-fab-badge">{{ totalItemsOrden() }}</span>
+    }
+  </button>
+}
+
+<!-- ═════════ Cobro ═════════ -->
+<p-dialog
+  header="Cobrar orden"
+  [(visible)]="dialogPago"
+  [modal]="true"
+  [closable]="!ocupado()"
+  [style]="{ width: 'min(26rem, 94vw)' }"
+>
+  @if (ordenActiva(); as o) {
+    <div class="pago-resumen">
+      <span>Mesa {{ o.nromesa }} · Orden #{{ o.pospedmaeId }}</span>
+      <strong>{{ formatearPrecio(o.total) }}</strong>
+    </div>
+
+    <div class="pago-campo">
+      <label for="pago-forma">Forma de pago</label>
+      <p-select
+        inputId="pago-forma"
+        [options]="formasPago()"
+        optionLabel="label"
+        optionValue="value"
+        [(ngModel)]="pagoFormapagoId"
+        [fluid]="true"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="pago-campo">
+      <label for="pago-efectivo">Efectivo recibido (opcional)</label>
+      <p-inputnumber
+        inputId="pago-efectivo"
+        [(ngModel)]="pagoEfectivo"
+        mode="decimal"
+        prefix="L "
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        [fluid]="true"
+      />
+    </div>
+
+    @if (pagoEfectivo) {
+      <div class="pago-cambio">Cambio: <strong>{{ formatearPrecio(cambio()) }}</strong></div>
+    }
+  }
+
+  <ng-template #footer>
+    <p-button label="Cancelar" severity="secondary" [text]="true" [disabled]="ocupado()" (onClick)="dialogPago.set(false)" />
+    <p-button label="Facturar" icon="pi pi-check" severity="success" [loading]="ocupado()" [disabled]="pagoFormapagoId == null" (onClick)="confirmarPago()" />
+  </ng-template>
+</p-dialog>
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\restaurante\restaurante.scss
+
+```typescript
+/*
+  Restaurante — 3 columnas: productos 60% | mesas 20% | orden 20%.
+  Las columnas 2 y 3 viven dentro del p-drawer (40% del ancho): 1fr + 1fr = 20% : 20%.
+  Usa las variables --c-* del tema de Arcas (igual que tienda-virtual).
+*/
+
+$drawer-width: 40%;
+$bp-angosto: 992px;
+$mesa-size: 2.75rem;
+
+:host {
+  display: block;
+}
+
+.rest-layout {
+  min-height: 100vh;
+  background: var(--c-surface-ground);
+}
+
+/* ═════════ Columna 1 · Productos ═════════ */
+.rest-productos {
+  width: calc(100% - #{$drawer-width});
+  padding: 1rem 1.25rem 2rem;
+  box-sizing: border-box;
+}
+
+.rest-angosta .rest-productos {
+  width: 100%;
+  padding: 0.75rem 0.75rem 6rem; // espacio para el botón flotante
+}
+
+.rest-categorias {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.cat-chip {
+  flex: 0 0 auto;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: var(--c-surface-ground);
+  }
+
+  &.activa {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    color: #fff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Al menos 3 productos por fila en el 55% del ancho */
+.rest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.rest-angosta .rest-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.prod-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--c-card-background);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.99);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--c-primary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .prod-imagen {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #f1f5f9;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      mix-blend-mode: multiply;
+    }
+
+    .sin-imagen {
+      font-size: 2.5rem;
+      color: #cbd5e1;
+    }
+  }
+
+  .prod-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    padding: 0 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--c-success);
+    color: #052e16;
+    font-size: 0.85rem;
+    font-weight: 800;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+
+  .prod-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.75rem;
+  }
+
+  .prod-categoria {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--c-card-color-text);
+  }
+
+  .prod-nombre {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--c-text);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .prod-pie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
+  }
+
+  .prod-precio {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-card-color-text);
+  }
+}
+
+.rest-estado {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 3rem 1rem;
+  color: var(--c-text-muted);
+  text-align: center;
+
+  i {
+    font-size: 2rem;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  &.rest-vacio i {
+    color: var(--c-text-muted);
+    opacity: 0.7;
+  }
+}
+
+/* ═════════ Drawer (columnas 2 y 3) ═════════ */
+:host ::ng-deep .rest-drawer {
+  background: var(--c-surface);
+  border-left: 1px solid var(--c-border);
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.06);
+}
+
+.rest-drawer-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr; // 20% : 20% del ancho total
+  height: 100%;
+  min-height: 0;
+}
+
+.col-mesas,
+.col-orden {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 0;
+  min-width: 0;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.col-orden {
+  border-left: 1px solid var(--c-border);
+}
+
+.col-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.col-titulo {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.col-subtitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--c-text);
+
+  .conteo {
+    min-width: 1.4rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--c-text-muted);
+  }
+}
+
+.aviso-mesa {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px dashed var(--c-primary);
+  background: color-mix(in srgb, var(--c-primary) 10%, transparent);
+  font-size: 0.85rem;
+  color: var(--c-text);
+}
+
+/* ── Mesas: botones redondos ── */
+.mesas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(#{$mesa-size}, 1fr));
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+// Los colores se pasan con los tokens de p-button para que respeten hover y active
+:host ::ng-deep .mesa-btn.p-button {
+  width: $mesa-size;
+  height: $mesa-size;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0.95rem;
+  font-weight: 700;
+
+  // Libre = gris
+  --p-button-primary-background: color-mix(in srgb, var(--c-text-muted) 25%, var(--c-surface));
+  --p-button-primary-hover-background: color-mix(in srgb, var(--c-text-muted) 38%, var(--c-surface));
+  --p-button-primary-active-background: color-mix(in srgb, var(--c-text-muted) 45%, var(--c-surface));
+  --p-button-primary-border-color: var(--c-border);
+  --p-button-primary-hover-border-color: var(--c-border);
+  --p-button-primary-active-border-color: var(--c-border);
+  --p-button-primary-color: var(--c-text);
+  --p-button-primary-hover-color: var(--c-text);
+  --p-button-primary-active-color: var(--c-text);
+
+  // Con orden = verde
+  &.mesa-ocupada {
+    --p-button-primary-background: var(--c-success);
+    --p-button-primary-hover-background: color-mix(in srgb, var(--c-success) 85%, #000);
+    --p-button-primary-active-background: color-mix(in srgb, var(--c-success) 75%, #000);
+    --p-button-primary-border-color: var(--c-success);
+    --p-button-primary-hover-border-color: var(--c-success);
+    --p-button-primary-active-border-color: var(--c-success);
+    --p-button-primary-color: #052e16;
+    --p-button-primary-hover-color: #052e16;
+    --p-button-primary-active-color: #052e16;
+  }
+
+  // Orden que se está viendo
+  &.mesa-activa {
+    box-shadow: 0 0 0 3px var(--c-surface), 0 0 0 5px var(--c-success);
+  }
+
+  // Mesa libre elegida para crear la orden (pendiente de "Nueva orden")
+  &.mesa-seleccionada {
+    outline: 2px dashed var(--c-primary);
+    outline-offset: 2px;
+    --p-button-primary-background: color-mix(in srgb, var(--c-primary) 18%, var(--c-surface));
+    --p-button-primary-hover-background: color-mix(in srgb, var(--c-primary) 28%, var(--c-surface));
+    --p-button-primary-color: var(--c-primary);
+    --p-button-primary-border-color: var(--c-primary);
+  }
+}
+
+.mesas-leyenda {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+
+  .punto {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    border: 1px solid var(--c-border);
+
+    &.libre {
+      background: color-mix(in srgb, var(--c-text-muted) 30%, var(--c-surface));
+    }
+
+    &.seleccionada {
+      background: color-mix(in srgb, var(--c-primary) 25%, var(--c-surface));
+      border-color: var(--c-primary);
+      margin-left: 0.4rem;
+    }
+
+    &.ocupada {
+      background: var(--c-success);
+      border-color: var(--c-success);
+      margin-left: 0.4rem;
+    }
+  }
+}
+
+/* ── Cabecera de Pedidos: título + botón "Nueva orden" ── */
+.pedidos-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--c-border);
+
+  .col-subtitulo {
+    margin: 0;
+  }
+}
+
+/* ── Por entregar ── */
+.vacio-texto {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+}
+
+.pendientes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pendiente {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.6rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface-ground);
+
+  &.seleccionada {
+    border-color: var(--c-success);
+  }
+
+  .pendiente-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0.25rem 0;
+    border: none;
+    background: none;
+    color: var(--c-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    strong {
+      font-size: 0.85rem;
+    }
+
+    span {
+      font-size: 0.72rem;
+      color: var(--c-text-muted);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--c-primary);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+  }
+}
+
+/* ═════════ Columna 3 · Orden ═════════ */
+.orden-mesa {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--c-success);
+  color: #052e16;
+  font-size: 0.8rem;
+  font-weight: 700;
+
+  &.sin-mesa {
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    color: var(--c-text-muted);
+  }
+}
+
+.orden-items {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.orden-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  border-radius: 10px;
+  background: var(--c-surface-ground);
+
+  .orden-item-img {
+    flex: 0 0 3.25rem;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cbd5e1;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .orden-item-datos {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .orden-item-nombre {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .orden-item-precio {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+  }
+
+  .orden-item-cant {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.25rem;
+  }
+
+  .orden-item-lado {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+
+  .orden-item-total {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    white-space: nowrap;
+  }
+}
+
+.qty-btn,
+.item-quitar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:focus-visible {
+    outline: 2px solid var(--c-primary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.qty-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 6px;
+  font-size: 0.65rem;
+
+  &:hover:not(:disabled) {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    color: #fff;
+  }
+}
+
+.qty-valor {
+  min-width: 1.4rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.item-quitar {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+
+  &:hover:not(:disabled) {
+    color: var(--c-error);
+    background: #fef2f2;
+  }
+}
+
+.orden-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--c-border);
+
+  .linea {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+    &.total {
+      padding-top: 0.25rem;
+      font-size: 1.05rem;
+      color: var(--c-text);
+    }
+  }
+}
+
+/* ═════════ Botón flotante (pantallas angostas) ═════════ */
+.rest-fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--c-primary);
+  color: #fff;
+  font-size: 1.4rem;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+
+  &:focus-visible {
+    outline: 3px solid var(--c-text);
+    outline-offset: 3px;
+  }
+
+  .rest-fab-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 0.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--c-error);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+}
+
+/* ═════════ Cobro ═════════ */
+.pago-resumen {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: var(--c-surface-ground);
+  color: var(--c-text);
+
+  strong {
+    font-size: 1.3rem;
+  }
+}
+
+.pago-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.9rem;
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+}
+
+.pago-cambio {
+  font-size: 0.95rem;
+  color: var(--c-text);
+}
+
+/* ═════════ Pantallas angostas: el drawer ocupa todo y apila las columnas ═════════ */
+@media (max-width: $bp-angosto) {
+  .rest-drawer-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow-y: auto;
+  }
+
+  .col-mesas,
+  .col-orden {
+    overflow-y: visible;
+  }
+
+  .col-orden {
+    border-left: none;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .mesas-grid {
+    grid-template-columns: repeat(auto-fill, minmax(#{$mesa-size}, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prod-card,
+  .cat-chip,
+  .qty-btn {
+    transition: none;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\restaurante\restaurante.ts
+
+```typescript
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
+import { MessageService } from 'primeng/api';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { DrawerModule } from 'primeng/drawer';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
+import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
+import { TiendaService } from '../../../core/services/tienda.service';
+import { ProductoTienda } from '../../../core/models/tienda.models';
+import { RestauranteService } from '../../../core/services/restaurante.service';
+import { ConfigISV, MesaVista, NUM_MESAS, OrdenItem, OrdenRestaurante } from '../../../core/models/restaurante.models';
+
+/** Productos sin existencia no se pueden agregar. Ponlo en false si los platos preparados no llevan kardex. */
+const VALIDAR_EXISTENCIA = true;
+
+/**
+ * Pantalla de restaurante — 3 columnas: productos 55% | mesas 20% | orden 25%.
+ * Las dos últimas viven dentro de un p-drawer fijo a la derecha (45% del ancho)
+ * y, en pantallas angostas, el drawer pasa a ser un panel completo que se abre
+ * con el botón flotante.
+ */
+@Component({
+  selector: 'app-restaurante',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, ButtonModule, DialogModule, DrawerModule,
+    InputNumberModule, SelectModule, TagModule, ToastModule, TooltipModule,
+  ],
+  templateUrl: './restaurante.html',
+  styleUrl: './restaurante.scss',
+})
+export class Restaurante implements OnInit {
+  private srv = inject(RestauranteService);
+  private tienda = inject(TiendaService);
+  private msg = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+
+  readonly mesasNumeros = Array.from({ length: NUM_MESAS }, (_, i) => i + 1);
+
+  // ── Productos (columna 1) ──
+  productos = signal<ProductoTienda[]>([]);
+  cargandoProductos = signal(true);
+  categoriaActiva = signal<string | null>(null);
+
+  categorias = computed(() => {
+    const cats = new Set(this.productos().map((p) => p.categoria).filter(Boolean) as string[]);
+    return Array.from(cats);
+  });
+
+  productosFiltrados = computed(() => {
+    const cat = this.categoriaActiva();
+    const lista = this.productos();
+    return cat ? lista.filter((p) => p.categoria === cat) : lista;
+  });
+
+  private productoPorId = computed(() => new Map(this.productos().map((p) => [Number(p.produtoId), p])));
+
+  // ── Órdenes y mesas (columna 2) ──
+  ordenes = signal<OrdenRestaurante[]>([]);
+  ordenActivaId = signal<number | null>(null);
+  /** Mesa libre elegida por el usuario; la orden se crea SOLO después de elegir mesa. */
+  mesaSeleccionada = signal<number | null>(null);
+  ocupado = signal(false);
+  ahora = signal(Date.now());
+
+  ordenActiva = computed(() => this.ordenes().find((o) => o.pospedmaeId === this.ordenActivaId()) ?? null);
+
+  mesas = computed<MesaVista[]>(() => {
+    const porMesa = new Map(
+      this.ordenes()
+        .filter((o) => (o.nromesa ?? 0) >= 1)
+        .map((o) => [o.nromesa as number, o]),
+    );
+    return this.mesasNumeros.map((nro) => ({ nro, orden: porMesa.get(nro) ?? null }));
+  });
+
+  /** Órdenes abiertas de hoy, mesa más baja primero. */
+  pedidos = computed(() => [...this.ordenes()].sort((a, b) => (a.nromesa ?? 0) - (b.nromesa ?? 0)));
+
+  // ── Detalle de la orden (columna 3) ──
+  items = signal<OrdenItem[]>([]);
+  cantidadPorProducto = computed(() => {
+    const m = new Map<number, number>();
+    for (const i of this.items()) m.set(i.productoId, (m.get(i.productoId) ?? 0) + i.cantidad);
+    return m;
+  });
+
+  // ── Drawer / responsive ──
+  drawerVisible = signal(true);
+  estrecha = signal(false);
+  totalItemsOrden = computed(() => this.items().reduce((s, i) => s + i.cantidad, 0));
+
+  /** Config de ISV (tasa e indicador de precio con ISV incluido) */
+  isv = signal<ConfigISV>({ tasa: 0, incluido: false });
+
+  // ── Cobro ──
+  dialogPago = signal(false);
+  formasPago = signal<{ label: string; value: number }[]>([]);
+  pagoFormapagoId: number | null = null;
+  pagoEfectivo: number | null = null;
+
+  ngOnInit() {
+    this.configurarResponsive();
+    this.srv.cargarISV().subscribe((cfg) => this.isv.set(cfg));
+    this.cargarProductos();
+    this.cargarOrdenes();
+    this.srv.getFormasPago().subscribe((f) => {
+      this.formasPago.set(f);
+      this.pagoFormapagoId = f[0]?.value ?? null;
+    });
+
+    // Refresca el "hace X min" de la lista de entregas pendientes
+    const timer = setInterval(() => this.ahora.set(Date.now()), 30_000);
+    this.destroyRef.onDestroy(() => clearInterval(timer));
+  }
+
+  // ───────────────────────── Carga ─────────────────────────
+
+  private cargarProductos() {
+    this.tienda.getProductos(true).subscribe({
+      next: (p) => {
+        const lista = (p ?? []).filter((prod) => prod.tipo_giro === 'R');
+        this.productos.set(lista);
+        this.cargandoProductos.set(false);
+      },
+      error: () => {
+        this.cargandoProductos.set(false);
+        this.error('No se pudieron cargar los productos');
+      },
+    });
+  }
+
+  private cargarOrdenes() {
+    this.srv.getOrdenesAbiertas().subscribe({
+      next: (lista) => this.ordenes.set(lista),
+      error: () => this.error('No se pudieron cargar las órdenes abiertas'),
+    });
+  }
+
+  private configurarResponsive() {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 992px)');
+    const aplicar = (angosta: boolean) => {
+      this.estrecha.set(angosta);
+      this.drawerVisible.set(!angosta); // ancho: siempre visible; angosto: se abre con el botón flotante
+    };
+    aplicar(mq.matches);
+    const handler = (e: MediaQueryListEvent) => aplicar(e.matches);
+    mq.addEventListener('change', handler);
+    this.destroyRef.onDestroy(() => mq.removeEventListener('change', handler));
+  }
+
+  // ───────────────────────── Flujo de la orden ─────────────────────────
+
+  /**
+   * La orden solo nace DESPUÉS de elegir mesa libre: se crea con nromesa >= 1,
+   * así nunca quedan pedidos "huérfanos" con mesa 0 (y la mesa sale verde ya).
+   */
+  nuevaOrden() {
+    if (this.ocupado()) return;
+    const nromesa = this.mesaSeleccionada();
+    if (nromesa == null) {
+      this.msg.add({
+        severity: 'info',
+        summary: 'Elija una mesa',
+        detail: 'Primero seleccione una mesa libre y luego pulse "Nueva orden".',
+      });
+      return;
+    }
+    this.ocupado.set(true);
+    this.srv.crearOrden(nromesa).subscribe({
+      next: (o) => {
+        this.ordenes.update((l) => [...l, o]);
+        this.ordenActivaId.set(o.pospedmaeId);
+        this.mesaSeleccionada.set(null);
+        this.items.set([]);
+        this.ocupado.set(false);
+        this.msg.add({ severity: 'success', summary: `Mesa ${nromesa}`, detail: `Orden #${o.pospedmaeId} abierta.` });
+      },
+      error: (e) => this.fallo(e, 'No se pudo crear la orden'),
+    });
+  }
+
+  /** Mesa con orden → abrir su orden. Mesa libre → seleccionarla (para "Nueva orden"). */
+  clickMesa(mesa: MesaVista) {
+    if (this.ocupado()) return;
+    if (mesa.orden) {
+      this.mesaSeleccionada.set(null);
+      this.seleccionarOrden(mesa.orden.pospedmaeId);
+      return;
+    }
+    this.mesaSeleccionada.set(this.mesaSeleccionada() === mesa.nro ? null : mesa.nro);
+  }
+
+  seleccionarOrden(id: number) {
+    this.ordenActivaId.set(id);
+    this.items.set([]);
+    this.srv.getItems(id).subscribe({
+      next: (lista) => this.items.set(lista),
+      error: () => this.error('No se pudo cargar la orden'),
+    });
+  }
+
+  marcarEntregada(orden: OrdenRestaurante) {
+    if (this.ocupado()) return;
+    this.ocupado.set(true);
+    this.srv.marcarEntregada(orden.pospedmaeId).subscribe({
+      next: () => {
+        this.reemplazarOrden({ ...orden, sn_entregado: 'S' });
+        this.ocupado.set(false);
+        this.msg.add({ severity: 'success', summary: `Mesa ${orden.nromesa}`, detail: 'Pedido entregado.' });
+      },
+      error: (e) => this.fallo(e, 'No se pudo marcar como entregada'),
+    });
+  }
+
+  cancelarOrdenVacia() {
+    const o = this.ordenActiva();
+    if (!o || this.items().length || this.ocupado()) return;
+    this.ocupado.set(true);
+    this.srv.cancelarOrden(o.pospedmaeId).subscribe({
+      next: () => {
+        this.ordenes.update((l) => l.filter((x) => x.pospedmaeId !== o.pospedmaeId));
+        this.ordenActivaId.set(null);
+        this.ocupado.set(false);
+      },
+      error: (e) => this.fallo(e, 'No se pudo cancelar la orden'),
+    });
+  }
+
+  // ───────────────────────── Líneas ─────────────────────────
+
+  agregarProducto(p: ProductoTienda) {
+    const orden = this.ordenActiva();
+    if (!orden) {
+      this.msg.add({ severity: 'warn', summary: 'Sin orden', detail: 'Cree una orden o elija una mesa ocupada.' });
+      return;
+    }
+    if (!(orden.nromesa >= 1)) {
+      this.msg.add({ severity: 'warn', summary: 'Sin mesa', detail: 'La orden no tiene mesa asignada.' });
+      return;
+    }
+    if (this.ocupado()) return;
+
+    const existente = this.items().find((i) => i.productoId === Number(p.produtoId));
+    const nuevaCantidad = (existente?.cantidad ?? 0) + 1;
+    if (VALIDAR_EXISTENCIA && nuevaCantidad > Number(p.existencia)) {
+      this.msg.add({ severity: 'warn', summary: 'Sin existencia', detail: `${p.descripcion}: solo hay ${p.existencia}.` });
+      return;
+    }
+
+    this.ocupado.set(true);
+    const peticion = existente
+      ? this.srv.cambiarCantidad(existente, nuevaCantidad)
+      : this.srv.agregarItem(
+          orden.pospedmaeId,
+          { productoId: Number(p.produtoId), codbarra: p.codbarra ?? '', precio: Number(p.precioventa) },
+          Math.max(0, ...this.items().map((i) => i.nrofila)) + 1,
+        );
+    peticion.subscribe({
+      next: () => this.refrescarActiva(),
+      error: (e) => this.fallo(e, 'No se pudo agregar el producto'),
+    });
+  }
+
+  incrementar(item: OrdenItem) {
+    const p = this.productoPorId().get(item.productoId);
+    if (VALIDAR_EXISTENCIA && p && item.cantidad + 1 > Number(p.existencia)) {
+      this.msg.add({ severity: 'warn', summary: 'Sin existencia', detail: `Solo hay ${p.existencia}.` });
+      return;
+    }
+    this.mutarItem(this.srv.cambiarCantidad(item, item.cantidad + 1));
+  }
+
+  decrementar(item: OrdenItem) {
+    if (item.cantidad <= 1) return this.quitar(item);
+    this.mutarItem(this.srv.cambiarCantidad(item, item.cantidad - 1));
+  }
+
+  quitar(item: OrdenItem) {
+    this.mutarItem(this.srv.quitarItem(item));
+  }
+
+  private mutarItem(peticion: ReturnType<RestauranteService['quitarItem']>) {
+    if (this.ocupado()) return;
+    this.ocupado.set(true);
+    peticion.subscribe({
+      next: () => this.refrescarActiva(),
+      error: (e) => this.fallo(e, 'No se pudo actualizar la orden'),
+    });
+  }
+
+  /** El backend recalcula los totales; la pantalla siempre muestra lo que quedó guardado. */
+  private refrescarActiva() {
+    const id = this.ordenActivaId();
+    if (id == null) return this.ocupado.set(false);
+    forkJoin({ orden: this.srv.getOrden(id), items: this.srv.getItems(id) }).subscribe({
+      next: ({ orden, items }) => {
+        this.reemplazarOrden(orden);
+        this.items.set(items);
+        this.ocupado.set(false);
+      },
+      error: (e) => this.fallo(e, 'No se pudo refrescar la orden'),
+    });
+  }
+
+  private reemplazarOrden(o: OrdenRestaurante) {
+    this.ordenes.update((l) => l.map((x) => (x.pospedmaeId === o.pospedmaeId ? { ...x, ...o } : x)));
+  }
+
+  // ───────────────────────── Cobro ─────────────────────────
+
+  abrirPago() {
+    if (!this.items().length) {
+      this.msg.add({ severity: 'warn', summary: 'Orden vacía', detail: 'Agregue productos antes de cobrar.' });
+      return;
+    }
+    this.pagoEfectivo = null;
+    this.dialogPago.set(true);
+  }
+
+  cambio(): number {
+    const total = this.ordenActiva()?.total ?? 0;
+    return Math.max(0, Math.round(((this.pagoEfectivo ?? 0) - total) * 100) / 100);
+  }
+
+  confirmarPago() {
+    const orden = this.ordenActiva();
+    if (!orden || this.pagoFormapagoId == null || this.ocupado()) return;
+    this.ocupado.set(true);
+    this.srv
+      .facturar(orden, { formapagoId: this.pagoFormapagoId, efectivo_recibido: this.pagoEfectivo ?? undefined })
+      .subscribe({
+        next: (f) => {
+          // La orden ya está facturada: la mesa vuelve a quedar libre
+          this.ordenes.update((l) => l.filter((x) => x.pospedmaeId !== orden.pospedmaeId));
+          this.ordenActivaId.set(null);
+          this.items.set([]);
+          this.dialogPago.set(false);
+          this.ocupado.set(false);
+          this.msg.add({
+            severity: 'success',
+            summary: `Factura #${f.nrofactura}`,
+            detail: `Mesa ${orden.nromesa} cobrada: ${this.formatearPrecio(f.total)}`,
+          });
+        },
+        error: (e) => this.fallo(e, 'No se pudo facturar la orden'),
+      });
+  }
+
+  // ───────────────────────── Helpers de vista ─────────────────────────
+
+  /** Clases del botón redondo de cada mesa: libre (gris), con orden (verde), seleccionada. */
+  claseMesa(m: MesaVista): string {
+    const c = ['mesa-btn'];
+    if (m.orden) {
+      c.push('mesa-ocupada');
+      if (m.orden.pospedmaeId === this.ordenActivaId()) c.push('mesa-activa');
+    } else if (this.mesaSeleccionada() === m.nro) {
+      c.push('mesa-seleccionada');
+    }
+    return c.join(' ');
+  }
+
+  tituloMesa(m: MesaVista): string {
+    if (m.orden) return `Mesa ${m.nro} · Orden #${m.orden.pospedmaeId}`;
+    return this.mesaSeleccionada() === m.nro ? `Mesa ${m.nro} seleccionada` : `Mesa ${m.nro} libre`;
+  }
+
+  /** Total de la línea: si el precio ya incluye ISV, el bruto es el total; si no, se suma el ISV. */
+  totalLinea(item: OrdenItem): number {
+    return this.isv().incluido ? item.subtotal : item.subtotal + item.impuesto;
+  }
+
+  minutos(o: OrdenRestaurante): number {
+    const t = Date.parse(o.fecharegistro);
+    return Number.isNaN(t) ? 0 : Math.max(0, Math.floor((this.ahora() - t) / 60000));
+  }
+
+  infoItem(item: OrdenItem) {
+    const p = this.productoPorId().get(item.productoId);
+    return { nombre: p?.descripcion || p?.codbarra || `Producto #${item.productoId}`, imagen: this.resolverImagen(p?.imagen ?? null) };
+  }
+
+  resolverImagen(imagen: string | null): string {
+    if (!imagen) return '';
+    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
+  }
+
+  formatearPrecio(n: number | string): string {
+    return `L ${Number(n).toFixed(2)}`;
+  }
+
+  private error(detalle: string) {
+    this.msg.add({ severity: 'error', summary: 'Error', detail: detalle });
+  }
+
+  private fallo(e: any, detalle: string) {
+    this.ocupado.set(false);
+    this.error(e?.error?.message && typeof e.error.message === 'string' ? e.error.message : detalle);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\facturacion\tienda\backup.scss
+
+```typescript
+$sidebar-width: 380px;
+
+/* Layout principal */
+.tienda-layout {
+display: flex;
+  min-height: 100vh;
+  background: var(--c-surface-ground);
+  transition: padding-right 0.3s;
+margin-top: -20px;
+
+&.con-carrito {
+    padding-right: $sidebar-width;
+  }
+}
+
+/* Overlay para sidebar mobile */
+.cart-overlay {
+display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 299;
+  transition: opacity 0.3s;
+
+@media (max-width: 768px) {
+  // Topbar del layout público pasa a 2 filas en móvil (112px) → ajustar sticky
+    .tienda-toolbar {
+      top: 112px;
+    }
+
+    .cart-fab {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--c-primary) 0%, #059669 100%);
+      color: #fff;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+
+      &:hover {
+        transform: scale(1.08);
+        box-shadow: 0 12px 32px rgba(16, 185, 129, 0.55);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+
+      .cart-fab-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        min-width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 1rem;
+        background: var(--c-error);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 0.3rem;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+        animation: fab-pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes fab-pulse {
+
+        0%,
+        100% {
+          transform: scale(1);
+        }
+
+        50% {
+          transform: scale(1.15);
+        }
+      }
+    }
+
+    /* Layout: quitar padding del sidebar */
+    .tienda-layout.con-carrito {
+      padding-right: 0;
+    }
+
+    /* Toolbar: apilado */
+    .tienda-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.6rem;
+      padding: 0.75rem;
+
+      .toolbar-left {
+        justify-content: space-between;
+      }
+
+      .toolbar-right {
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+
+        p-button {
+        display: block;
+        width: 100%;
+
+          ::ng-deep .p-button {
+            width: 100% !important;
+            justify-content: center;
+          }
+        }
+        }
+        }
+
+        ::ng-deep .sort-select,
+        ::ng-deep .cat-select {
+          display: block;
+          width: 100%;
+
+          .p-select {
+            width: 100% !important;
+          }
+        }
+}
+}
+
+/* Sidebar Carrito */
+.cart-sidebar {
+position: fixed;
+top: 75px;
+  right: 0;
+  width: $sidebar-width;
+height: 90vh;
+  background: var(--c-surface);
+  border-left: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 300;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.06);
+
+@media (max-width: 768px) {
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
+    width: min(380px, 85vw);
+    z-index: 310;
+
+&.open {
+    transform: translateX(0);
+  }
+}
+}
+
+.cart-header {
+display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--c-border);
+
+.cart-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+
+.cart-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cart-count {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  background: var(--c-surface-ground);
+  padding: 0.2rem 0.6rem;
+  border-radius: 1rem;
+  font-weight: 500;
+}
+
+.cart-close-mobile {
+  display: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--c-surface-ground);
+  color: var(--c-text-muted);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+
+&:hover {
+    background: #fee2e2;
+    color: var(--c-error);
+  }
+
+@media (max-width: 768px) {
+  display: flex;
+}
+}
+}
+
+.cart-items {
+flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cart-item {
+display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  background: var(--c-surface-ground);
+  border-radius: 10px;
+  transition: background 0.15s;
+
+&:hover {
+    background: color-mix(in srgb, var(--c-primary) 4%, var(--c-surface-ground));
+  }
+
+.cart-item-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f1f5f9;
+
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+.cart-item-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.25rem;
+  color: #cbd5e1;
+}
+}
+
+.cart-item-details {
+  flex: 1;
+  min-width: 0;
+
+.cart-item-name {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+
+.cart-item-price {
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+}
+}
+
+.cart-item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  flex-shrink: 0;
+
+.cart-item-subtotal {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    white-space: nowrap;
+  }
+
+.cart-item-remove {
+  background: none;
+  border: none;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  padding: 0.15rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+transition:
+    color 0.15s,
+    background 0.15s;
+
+&:hover {
+    color: var(--c-error);
+    background: #fef2f2;
+  }
+}
+}
+}
+
+.cart-item-qty {
+display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-top: 0.2rem;
+
+.qty-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.6rem;
+    color: var(--c-text);
+    transition: all 0.15s;
+
+&:hover:not(:disabled) {
+    background: var(--c-primary);
+    color: white;
+    border-color: var(--c-primary);
+  }
+
+&:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+}
+
+.qty-value {
+  min-width: 1.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+}
+
+.cart-summary {
+padding: 1rem 1.25rem;
+  border-top: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--c-surface);
+
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+
+&.summary-total {
+    font-size: 1rem;
+    color: var(--c-text);
+    padding-top: 0.25rem;
+  }
+}
+}
+
+.cart-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Icono de advertencia del diÃ¡logo "Vaciar carrito" */
+.vaciar-warn-icon {
+  font-size: 1.75rem;
+  color: var(--c-warning);
+}
+/* Main */
+.tienda-main {
+flex: 1;
+  min-width: 0;
+}
+
+/* Toolbar Poseidon-style 2-rows */
+.tienda-toolbar {
+display: flex;
+flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  position: sticky;
+top: 60px;
+  z-index: 10;
+
+.toolbar-row-1 {
+    display: flex;
+align-items: center;
+  gap: 0.75rem;
+width: 100%;
+
+@media (min-width: 769px) {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+
+.toolbar-right {
+    grid-column: 3;
+    justify-self: end;
+  }
+}
+}
+
+.toolbar-row-2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  flex-wrap: nowrap; // UNA sola fila
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--c-border);
+.toolbar-count {
+font-size: 0.8rem;
+  color: var(--c-text-muted);
+font-weight: 600;
+  white-space: nowrap;
+}
+
+.ordenado-por {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+flex-wrap: nowrap;
+  margin-left: auto; // alineado a la derecha
+}
+}
+
+::ng-deep .sort-select {
+  .p-select {
+    font-size: 0.8rem;
+    border-radius: 8px;
+min-width: 140px;
+}
+}
+
+::ng-deep .cat-select {
+.p-multiselect {
+    font-size: 0.8rem;
+    border-radius: 8px;
+min-width: 260px !important;
+  width: 320px !important;
+}
+}
+.view-toggles {
+display: flex;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  overflow: hidden;
+
+.view-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: var(--c-surface);
+    color: var(--c-text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+
+&:hover {
+    background: var(--c-surface-ground);
+    color: var(--c-text);
+  }
+
+&.active {
+  background: var(--c-primary);
+  color: white;
+}
+
+&:first-child {
+  border-right: 1px solid var(--c-border);
+}
+}
+}
+
+.btn-ofertas {
+display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+
+&:hover {
+    background: var(--c-surface-ground);
+    color: var(--c-text);
+  }
+
+&.active {
+  background: var(--c-success);
+  color: white;
+  border-color: var(--c-success);
+}
+}
+
+/* Loading */
+.loading-container {
+display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+  gap: 1rem;
+  color: var(--c-text-muted);
+}
+
+/* Grid layout */
+.productos-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.producto-card {
+background: var(--c-card-background);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+  content-visibility: auto;
+contain-intrinsic-size: 0 440px;
+
+&:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    will-change: transform;
+  }
+
+.card-imagen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+  }
+
+.sin-imagen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 3rem;
+  color: #cbd5e1;
+}
+
+::ng-deep .tag-stock {
+background-color: var(--c-card-background);
+position: absolute;
+top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.7rem !important;
+}
+}
+
+.card-body {
+padding: 1rem;
+}
+
+.card-categoria {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--c-card-color-text);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.card-titulo {
+  margin: 0 0 0.25rem;
+font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--c-text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-desc {
+font-size: 0.8rem;
+  color: var(--c-text-muted);
+  margin: 0 0 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+.card-precio {
+font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--c-card-color-text);
+}
+
+.card-precio-oferta {
+  color: var(--c-success);
+
+.precio-original {
+    text-decoration: line-through;
+    color: var(--c-text-muted);
+    font-weight: 400;
+    font-size: 0.8rem;
+    margin-right: 0.4rem;
+  }
+}
+}
+
+/* List layout */
+.productos-list {
+padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.producto-list-row {
+display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: var(--c-surface);
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  content-visibility: auto;
+  contain-intrinsic-size: 0 70px;
+
+.list-imagen {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f1f5f9;
+
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+.sin-imagen-sm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.5rem;
+  color: #cbd5e1;
+}
+}
+
+.list-info {
+  flex: 1;
+  min-width: 0;
+
+.list-categoria {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--c-primary);
+    font-weight: 600;
+  }
+
+h4 {
+  margin: 0.1rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-desc {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+}
+
+.list-stock {
+  flex-shrink: 0;
+}
+
+.list-precio {
+  font-weight: 700;
+  color: var(--c-primary);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+}
+
+.list-accion {
+display: flex;
+  align-items: center;
+  gap: 0.35rem;
+flex-shrink: 0;
+}
+}
+
+/* Sin productos */
+.sin-productos {
+grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem 0;
+  gap: 0.5rem;
+  color: var(--c-text-muted);
+}
+
+/* BotÃ³n flotante carrito (FAB) â€” oculto en desktop */
+.cart-fab {
+display: none;
+}
+
+/* max-width: 768px */
+@media (max-width: 768px) {
+// Topbar del layout pÃºblico pasa a 2 filas en mÃ³vil (112px) â†’ ajustar sticky
+  .tienda-toolbar {
+    top: 112px;
+  }
+.cart-fab {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--c-primary) 0%, #059669 100%);
+  color: #fff;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+
+&:hover {
+    transform: scale(1.08);
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.55);
+  }
+
+&:active {
+  transform: scale(0.95);
+}
+
+.cart-fab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 1rem;
+  background: var(--c-error);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.3rem;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  animation: fab-pulse 2s ease-in-out infinite;
+}
+
+@keyframes fab-pulse {
+0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+}
+}
+}
+
+/* Dialog Checkout - Poseidon style */
+.checkout-dialog {
+::ng-deep .p-dialog-content {
+    padding: 0;
+    overflow: hidden;
+  }
+}
+
+.checkout-layout {
+display: grid;
+  grid-template-columns: 1fr 320px;
+  min-height: 420px;
+}
+
+.checkout-form {
+padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  border-right: 1px solid var(--c-border);
+}
+
+.checkout-fields {
+.section-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+i {
+    color: var(--c-primary);
+  }
+}
+
+.campo {
+  margin-bottom: 0.75rem;
+
+label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text);
+    margin-bottom: 0.25rem;
+  }
+}
+
+.campo-numero-tarjeta {
+  margin-top: 1rem;
+}
+}
+
+.campo-row {
+display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* ===== DiÃ¡logo Guardar pedido ===== */
+.guardar-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  .campo {
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--c-text);
+      margin-bottom: 0.25rem;
+    }
+  }
+}
+.checkout-summary {
+padding: 1.5rem;
+  background: var(--c-surface-ground);
+  display: flex;
+  flex-direction: column;
+
+.section-title {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--c-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+i {
+    color: var(--c-primary);
+  }
+}
+}
+
+.summary-items {
+flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.summary-item {
+display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  background: var(--c-surface);
+  border-radius: 8px;
+
+.summary-item-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f1f5f9;
+
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+.summary-item-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1rem;
+  color: #cbd5e1;
+}
+}
+
+.summary-item-info {
+  flex: 1;
+  min-width: 0;
+
+.summary-item-name {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+.summary-item-qty {
+  font-size: 0.65rem;
+  color: var(--c-text-muted);
+}
+}
+
+.summary-item-total {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c-primary);
+  white-space: nowrap;
+}
+}
+
+.summary-totals {
+border-top: 1px solid var(--c-border);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+
+&.summary-total {
+    font-size: 1rem;
+    color: var(--c-text);
+    padding-top: 0.35rem;
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--c-border);
+  }
+}
+}
+
+.w-full {
+width: 100%;
+}
+
+/* ===========================
+MOBILE RESPONSIVE (â‰¤768px)===========================*/
+
+.desktop-only {
+@media (max-width: 768px) {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+
+/* Layout: quitar padding del sidebar */
+  .tienda-layout.con-carrito {
+    padding-right: 0;
+  }
+
+/* Toolbar: apilado */
+.tienda-toolbar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+  padding: 0.75rem;
+
+.toolbar-left {
+    justify-content: space-between;
+  }
+
+.toolbar-right {
+  flex-direction: column;
+  gap: 0.5rem;
+width: 100%;
+
+p-button {
+    display: block;
+    width: 100%;
+
+::ng-deep .p-button {
+    width: 100% !important;
+    justify-content: center;
+  }
+}
+}
+}
+
+::ng-deep .sort-select,
+::ng-deep .cat-select {
+display: block;
+width: 100%;
+
+.p-select {
+width: 100% !important;
+}
+}
+
+/* Grid: 2 columnas, misma card vertical del escritorio */
+  .productos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .producto-card {
+    contain-intrinsic-size: auto 340px;
+
+    .card-imagen {
+      aspect-ratio: 4 / 3;
+
+      ::ng-deep .tag-stock {
+        font-size: 0.6rem !important;
+        top: 0.25rem;
+        right: 0.25rem;
+      }
+    }
+
+    .card-body {
+      padding: 0.65rem;
+    }
+
+    .card-titulo {
+      font-size: 0.85rem;
+    }
+
+                .card-desc {
+                  font-size: 0.75rem;
+                }
+
+                /* Footer: precio en su propia fila y botones a la derecha */
+                .card-footer {
+                  flex-wrap: wrap;
+                  gap: 0.35rem;
+      .card-precio {
+        flex: 1 1 100%;
+          font-size: 0.95rem;
+        }
+
+        .card-acciones {
+          margin-left: auto;
+        }
+        }
+
+                /* Lista: compacta */
+                .productos-list {
+                  padding: 0.75rem;
+                  gap: 0.4rem;
+                }
+
+.producto-list-row {
+  padding: 0.5rem;
+  gap: 0.5rem;
+
+.list-imagen {
+    width: 48px;
+    height: 48px;
+  }
+
+.list-info h4 {
+  font-size: 0.8rem;
+}
+
+.list-stock {
+  display: none;
+}
+
+.list-precio {
+  font-size: 0.8rem;
+  min-width: 60px;
+}
+}
+
+}
+}
+
+/* CIERRE del @media (max-width: 768px) global abierto en lÃ­nea 951 */
+
+/* Touch targets para tablets */
+@media (pointer: coarse) {
+
+  .p-button,
+  .p-inputtext,
+  .p-select,
+  .p-datepicker {
+    min-height: 44px;
+  }
+}
+
+/* ==================== GalerÃ­a de imÃ¡genes ==================== */
+.galeria-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+
+  .galeria-titulo {
+    font-weight: 600;
+    color: var(--c-text);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .galeria-count {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    border: 1px solid var(--c-border);
+    padding: 0.15rem 0.55rem;
+    border-radius: 1rem;
+    flex-shrink: 0;
+  }
+}
+
+.galeria-loading,
+.galeria-vacia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  color: var(--c-text-muted);
+  font-size: 0.9rem;
+
+  i {
+    font-size: 2.2rem;
+    color: var(--c-text-muted);
+  }
+}
+
+.galeria-loading i {
+  color: var(--c-primary);
+  font-size: 1.8rem;
+}
+
+.tienda-galleria {
+  display: block; // p-galleria es un elemento custom (inline por defecto)
+  width: 100%;
+  min-width: 0;
+
+  // Imagen principal: ocupa todo el ancho disponible y se escala sin recortarse
+  .galeria-item-img {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: auto;
+    max-height: 55vh;
+    object-fit: contain;
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 0.5rem;
+  }
+
+  ::ng-deep .p-galleria {
+    width: 100%;
+    max-width: 100%;
+    border: none;
+    background: transparent;
+  }
+
+  ::ng-deep .p-galleria-item {
+    width: 100%;
+    min-width: 0;
+  }
+
+  // Franja de miniaturas = el carrusel
+  ::ng-deep .p-galleria-thumbnails-content {
+    padding: 0.6rem 0 0;
+    background: transparent;
+  }
+
+  // PrimeNG reparte el ancho con "flex: 1 0 X%" (X = 100 / miniaturas visibles) y
+  // desplaza la franja en esos mismos porcentajes. Con border-box el padding no
+  // altera ese cÃ¡lculo y el desplazamiento no se descuadra.
+  ::ng-deep .p-galleria-thumbnail-item {
+    box-sizing: border-box;
+    padding: 0 0.25rem;
+    overflow: hidden;
+  }
+
+  ::ng-deep .p-galleria-thumbnail {
+    width: 100%;
+    min-width: 0;
+  }
+
+  ::ng-deep .p-galleria-thumbnail img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  // NO desactivar la transiciÃ³n de .p-galleria-thumbnail-items: PrimeNG anima el
+  // desplazamiento con un transition inline y limpia el estado en 'transitionend'.
+}
+
+@media (max-width: 560px) {
+  .tienda-galleria .galeria-item-img {
+    max-height: 45vh;
+    padding: 0.25rem;
+  }
+}
+
+/* ==================== Checkout (p-dialog) ==================== */
+// ESCRITORIO (≥ 769px): 2 columnas
+//   izquierda  → datos del cliente y de la tarjeta
+//   derecha    → resumen: items, totales y botón "Confirmar Pago"
+// MÓVIL (≤ 768px): una sola columna apilada y diálogo a pantalla completa.
+//
+// El styleClass del p-dialog cae en el propio panel (.p-dialog), por eso ::ng-deep va ANTES
+// de .checkout-dialog. El resto de selectores (.checkout-layout, .campo...) viven en el
+// template de este componente y no necesitan ::ng-deep.
+::ng-deep .checkout-dialog .p-dialog-content {
+  padding: 0;
+  overflow-x: hidden;
+}
+
+@media (min-width: 769px) {
+  .checkout-layout {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+
+  // Lista de items con scroll propio para que el botón de pagar siempre quede visible
+  .summary-items {
+    max-height: min(18rem, 40vh);
+  }
+}
+
+@media (max-width: 768px) {
+  ::ng-deep .checkout-dialog.p-dialog {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+      max-height: 100dvh !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+::ng-deep .checkout-dialog .p-dialog-header {
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--c-border);
+    }
+
+        // El contenido es lo que hace scroll; encabezado y pie quedan fijos
+        ::ng-deep .checkout-dialog .p-dialog-content {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+    }
+
+        ::ng-deep .checkout-dialog .p-dialog-footer {
+      flex-shrink: 0;
+    padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+        // De 2 columnas a una sola: formulario arriba, resumen abajo
+  .checkout-layout {
+    display: flex;
+      flex-direction: column;
+      min-height: 0;
+  }
+
+  .checkout-form {
+    padding: 1rem;
+    gap: 1rem;
+    border-right: none;
+    border-bottom: 1px solid var(--c-border);
+
+
+    .checkout-fields {
+    width: 100%;
+      margin: 0;
+
+      .campo {
+        margin-bottom: 0.9rem;
+    }
+
+                .campo-numero-tarjeta {
+                  margin-top: 0;
+                }
+                }
+
+        // Vencimiento y CVV: cada uno en su propia fila, a todo el ancho
+        .campo-row {
+          grid-template-columns: 1fr;
+          gap: 0;
+          margin-top: 0;
+    }
+// 16px evita el zoom automático de iOS al enfocar un campo
+.checkout-form ::ng-deep .p-inputtext,
+.checkout-form ::ng-deep .p-select-label {
+  font-size: 1rem;
+  }
+
+  .checkout-summary {
+    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+      flex: 0 0 auto;
+    }
+
+        // Sin scroll interno: scrollea todo el diálogo
+    .summary-items {
+    flex: 0 0 auto;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .summary-item {
+    padding: 0.5rem;
+      gap: 0.75rem;
+
+    .summary-item-img {
+      width: 48px;
+        height: 48px;
+      }
+
+                .summary-item-info .summary-item-name {
+                  font-size: 0.8rem;
+                }
+
+                .summary-item-info .summary-item-qty {
+                  font-size: 0.7rem;
+                }
+
+                .summary-item-total {
+                  font-size: 0.85rem;
+                }
+  }
+}
+    }
+    }
 
 ```
 
@@ -72366,81 +79623,80 @@ export class PedidosVirtual implements OnInit {
         @if (!autenticado()) {
           <p class="login-hint"><i class="pi pi-lock"></i> Inicie sesión para poder pagar</p>
         }
-        <p-button
-          label="Pagar ahora"
-          icon="pi pi-check"
-          severity="success"
-          [fluid]="true"
-          [disabled]="cargandoCarrito() || !autenticado()"
-          (click)="abrirCheckout(); carritoOpen.set(false)"
-        />
+        <div class="cart-actions">
+          <p-button
+            label="Pagar ahora"
+            icon="pi pi-check"
+            severity="success"
+            [fluid]="true"
+            [disabled]="cargandoCarrito() || !autenticado()"
+            (click)="abrirCheckout(); carritoOpen.set(false)"
+          />
+          <p-button
+            label="Vaciar carrito"
+            icon="pi pi-trash"
+            severity="danger"
+            variant="text"
+            [fluid]="true"
+            [disabled]="cargandoCarrito() || carritoItems().length === 0"
+            (click)="confirmarVaciarCarrito()"
+          />
+        </div>
       </div>
     </aside>
   }
 
   <main class="tienda-main">
     <div class="tienda-toolbar">
-      <div class="toolbar-left">
-        <h2 class="toolbar-title"><i class="pi pi-shopping-bag"></i> Tienda Virtual</h2>
-        <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's' : '' }}</span>
-      </div>
-      <div class="toolbar-right">
-        <div class="search-box">
-          <i class="pi pi-search search-icon"></i>
-          <input
-            pInputText
-            [(ngModel)]="busqueda"
-            placeholder="Buscar..."
-            class="search-input"
+
+      <!-- Row 2: UNA sola fila — breadcrumb+conteo a la izquierda; Ordenado por + cboprecios + view-toggles + Ofertas alineados a la derecha -->
+      <div class="toolbar-row-2">
+        <p-breadcrumb [model]="breadcrumbItems()" [home]="breadcrumbHome"
+          styleClass="border-none bg-transparent p-0 m-0" />
+        <span class="toolbar-count">({{ productosFiltrados().length }} prod.)</span>
+
+        <div class="toolbar-right">
+          <span class="ordenado-por">Ordenado por</span>
+          <p-select id="cboprecios"
+            [size]="'small'"
+            [ngModel]="ordenarPor()"
+            (ngModelChange)="ordenarPor.set($event)"
+            [options]="opcionesOrden"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="sort-select"
           />
-        </div>
-        <p-select
-size="small"           [(ngModel)]="categoriaFiltro"
-          [options]="categorias()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Categoría"
-          styleClass="cat-select"
-          [size]="'small'"
-        />
-        <p-select
-size="small"           [(ngModel)]="ordenarPor"
-          [options]="opcionesOrden"
-          optionLabel="label"
-          optionValue="value"
-          styleClass="sort-select"
-          [size]="'small'"
-        />
-        <div class="view-toggles desktop-only">
-          <button
-            class="view-btn"
-            [class.active]="layout() === 'grid'"
-            (click)="layout.set('grid')"
-            pTooltip="Cuadrícula"
+          <div class="view-toggles desktop-only">
+            <button
+              class="view-btn"
+              [class.active]="layout() === 'grid'"
+              (click)="layout.set('grid')"
+              pTooltip="Cuadrícula"
+            >
+              <i class="pi pi-th-large"></i>
+            </button>
+            <button
+              class="view-btn"
+              [class.active]="layout() === 'list'"
+              (click)="layout.set('list')"
+              pTooltip="Lista"
+            >
+              <i class="pi pi-list"></i>
+            </button>
+          </div>
+          <p-button
+            size="small"
+            label="Ofertas"
+            [rounded]="true"
+            [raised]="true"
+            variant="text"
+            severity="success"
+            [class.active]="soloOfertas()"
+            (click)="soloOfertas.set(!soloOfertas())"
+            pTooltip="Solo ofertas"
           >
-            <i class="pi pi-th-large"></i>
-          </button>
-          <button
-            class="view-btn"
-            [class.active]="layout() === 'list'"
-            (click)="layout.set('list')"
-            pTooltip="Lista"
-          >
-            <i class="pi pi-list"></i>
-          </button>
+          </p-button>
         </div>
-        <p-button
-          size="small"
-          label="Ofertas"
-          [rounded]="true"
-          [raised]="true"
-          variant="text"
-          severity="success"
-          [class.active]="soloOfertas()"
-          (click)="soloOfertas.set(!soloOfertas())"
-          pTooltip="Solo ofertas"
-        >
-        </p-button>
       </div>
     </div>
 
@@ -72491,6 +79747,16 @@ size="small"           [(ngModel)]="ordenarPor"
                 } @else {
                   <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
                 }
+              <div class="card-acciones">
+                <p-button
+                  icon="pi pi-images"
+                  [rounded]="true"
+                  [raised]="true"
+                  variant="text"
+                  severity="secondary"
+                  (click)="abrirGaleria(producto)"
+                  pTooltip="Ver galería"
+                />
                 <p-button
                   icon="pi pi-cart-plus"
                   [rounded]="true"
@@ -72501,6 +79767,7 @@ size="small"           [(ngModel)]="ordenarPor"
                   (click)="agregarAlCarrito(producto)"
                   pTooltip="Agregar al carrito"
                 />
+              </div>
               </div>
             </div>
           </div>
@@ -72546,6 +79813,13 @@ size="small"           [(ngModel)]="ordenarPor"
             </div>
             <div class="list-accion">
               <p-button
+                icon="pi pi-images"
+                [rounded]="true"
+                severity="secondary"
+                (click)="abrirGaleria(producto)"
+                pTooltip="Ver galería"
+              />
+              <p-button
                 icon="pi pi-cart-plus"
                 [rounded]="true"
                 [disabled]="producto.existencia <= 0"
@@ -72565,19 +79839,74 @@ size="small"           [(ngModel)]="ordenarPor"
   </main>
 </div>
 
-@if (totalItems() > 0 && !carritoOpen()) {
-  <button class="cart-fab" (click)="carritoOpen.set(true)">
-    <i class="pi pi-shopping-cart"></i>
-    <span class="cart-fab-badge">{{ totalItems() }}</span>
-  </button>
-}
+
+
+<p-dialog
+  [(visible)]="dialogGaleria"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: isMobile() ? '95vw' : '720px' }"
+  [breakpoints]="{ '960px': '85vw', '640px': '95vw' }"
+>
+  <ng-template pTemplate="header">
+    <div class="galeria-header">
+      <i class="pi pi-images"></i>
+      <span class="galeria-titulo">{{ galeriaTitulo() }}</span>
+      @if (galeriaImagenes().length > 0) {
+        <span class="galeria-count">{{ galeriaIndice() + 1 }} / {{ galeriaImagenes().length }}</span>
+      }
+    </div>
+  </ng-template>
+
+  @if (galeriaCargando() && galeriaImagenes().length === 0) {
+    <div class="galeria-loading">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando imágenes...</span>
+    </div>
+  } @else if (galeriaImagenes().length === 0) {
+    <div class="galeria-vacia">
+      <i class="pi pi-image"></i>
+      <span>Este producto no tiene imágenes disponibles</span>
+    </div>
+  } @else {
+    <p-galleria
+      [value]="galeriaImagenes()"
+      [activeIndex]="galeriaIndice()"
+      (activeIndexChange)="galeriaIndice.set($event)"
+      [numVisible]="5"
+      [responsiveOptions]="galeriaResponsiveOptions"
+      [circular]="true"
+      [showItemNavigators]="galeriaImagenes().length > 1"
+      [showThumbnailNavigators]="galeriaImagenes().length > galeriaNumVisible()"
+      [showThumbnails]="galeriaImagenes().length > 1"
+      [showIndicators]="false"
+      class="tienda-galleria"
+    >
+      <!-- Workaround bug PrimeNG 21.2.13: el item slot no pasa type="item",
+           el setter de GalleriaItemSlot nunca actualiza context.$implicit y
+           let-item queda congelado con la primera imagen. Se renderiza desde
+           nuestros signals (galeriaIndice/galeriaImagenes) que sí navegan. -->
+      <ng-template pTemplate="item">
+        <img [src]="galeriaImagenes()[galeriaIndice()]" [alt]="galeriaTitulo()" class="galeria-item-img" />
+      </ng-template>
+      <ng-template pTemplate="thumbnail" let-item>
+        <img [src]="item" [alt]="galeriaTitulo()" />
+      </ng-template>
+    </p-galleria>
+  }
+
+  <ng-template pTemplate="footer">
+    <p-button label="Cerrar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogGaleria.set(false)" />
+  </ng-template>
+</p-dialog>
 
 <p-dialog
   header="Finalizar Compra"
   [(visible)]="dialogCheckout"
   [modal]="true"
-  [style]="{ width: isMobile() ? '100vw' : '70vw', marginTop: '0', maxHeight: isMobile() ? '100dvh' : '100vh' }"
-  [styleClass]="'checkout-dialog' + (isMobile() ? ' checkout-mobile' : '')"
+  [style]="{ width: 'min(860px, 100vw)', marginTop: '0' }"
+  styleClass="checkout-dialog"
   [closable]="!procesando()"
 >
   <div class="checkout-layout">
@@ -72642,6 +79971,8 @@ size="small"             [(ngModel)]="checkout.tarjetacreditoId"
       </div>
     </div>
 
+
+    <!-- En modo mobil ponerlo una fila por debajo de checkout-form -->
     <div class="checkout-summary">
       <h3 class="section-title"><i class="pi pi-shopping-cart"></i> Resumen del Pedido</h3>
       <div class="summary-items">
@@ -72691,6 +80022,31 @@ size="small"             [(ngModel)]="checkout.tarjetacreditoId"
   </ng-template>
 </p-dialog>
 
+<!-- Gate de sesión para el checkout: login con opción a registro.
+     Tras login exitoso LoginDialog emite loginExito → se retoma abrirCheckout(). -->
+<!-- Confirmación vaciar carrito (p-dialog + señal: ConfirmationService no funciona en zoneless) -->
+<p-dialog
+  [(visible)]="dialogVaciar"
+  header="Vaciar carrito"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  styleClass="w-full max-w-25rem"
+>
+  <div class="flex align-items-center gap-3">
+    <i class="pi pi-exclamation-triangle vaciar-warn-icon"></i>
+    <span>¿Está seguro de vaciar el carrito? Se eliminarán {{ carritoItems().length }} producto(s).</span>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button size="small" label="No" rounded variant="text" severity="secondary" (onClick)="dialogVaciar.set(false)" />
+    <p-button size="small" label="Sí, vaciar" icon="pi pi-trash" rounded variant="text" severity="danger" (onClick)="vaciarCarrito()" />
+  </ng-template>
+</p-dialog>
+
+<app-login-dialog #loginGate (registro)="registroGate.abrir()" (loginExito)="abrirCheckout()" />
+<app-registro-dialog #registroGate (solicitarLogin)="loginGate.abrir()" />
+
 ```
 
 ---
@@ -72702,37 +80058,84 @@ $sidebar-width: 380px;
 
 /* Layout principal */
 .tienda-layout {
-  display: flex;
+display: flex;
   min-height: 100vh;
   background: var(--c-surface-ground);
   transition: padding-right 0.3s;
+margin-top: -20px;
 
-  &.con-carrito {
+&.con-carrito {
     padding-right: $sidebar-width;
   }
 }
 
 /* Overlay para sidebar mobile */
 .cart-overlay {
-  display: none;
+display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 299;
   transition: opacity 0.3s;
 
-  @media (max-width: 768px) {
-    display: block;
-  }
+@media (max-width: 768px) {
+  // Topbar del layout público pasa a 2 filas en móvil (112px) → ajustar sticky
+    .tienda-toolbar {
+      top: 112px;
+    }
+
+    /* Layout: quitar padding del sidebar */
+    .tienda-layout.con-carrito {
+      padding-right: 0;
+    }
+
+    /* Toolbar: apilado */
+    .tienda-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.6rem;
+      padding: 0.75rem;
+
+      .toolbar-left {
+        justify-content: space-between;
+      }
+
+      .toolbar-right {
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+
+        p-button {
+        display: block;
+        width: 100%;
+
+          ::ng-deep .p-button {
+            width: 100% !important;
+            justify-content: center;
+          }
+        }
+        }
+        }
+
+        ::ng-deep .sort-select,
+        ::ng-deep .cat-select {
+          display: block;
+          width: 100%;
+
+          .p-select {
+            width: 100% !important;
+          }
+        }
+}
 }
 
 /* Sidebar Carrito */
 .cart-sidebar {
-  position: fixed;
-  top: 0;
+position: fixed;
+top: 75px;
   right: 0;
   width: $sidebar-width;
-  height: 100vh;
+height: 90vh;
   background: var(--c-surface);
   border-left: 1px solid var(--c-border);
   display: flex;
@@ -72740,27 +80143,27 @@ $sidebar-width: 380px;
   z-index: 300;
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.06);
 
-  @media (max-width: 768px) {
+@media (max-width: 768px) {
     transform: translateX(100%);
     transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
     width: min(380px, 85vw);
     z-index: 310;
 
-    &.open {
-      transform: translateX(0);
-    }
+&.open {
+    transform: translateX(0);
   }
+}
 }
 
 .cart-header {
-  display: flex;
+display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--c-border);
 
-  .cart-header-left {
+.cart-header-left {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -72769,47 +80172,47 @@ $sidebar-width: 380px;
     color: var(--c-text);
   }
 
-  .cart-header-right {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.cart-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cart-count {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  background: var(--c-surface-ground);
+  padding: 0.2rem 0.6rem;
+  border-radius: 1rem;
+  font-weight: 500;
+}
+
+.cart-close-mobile {
+  display: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--c-surface-ground);
+  color: var(--c-text-muted);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+
+&:hover {
+    background: #fee2e2;
+    color: var(--c-error);
   }
 
-  .cart-count {
-    font-size: 0.75rem;
-    color: var(--c-text-muted);
-    background: var(--c-surface-ground);
-    padding: 0.2rem 0.6rem;
-    border-radius: 1rem;
-    font-weight: 500;
-  }
-
-  .cart-close-mobile {
-    display: none;
-    width: 2rem;
-    height: 2rem;
-    border-radius: 50%;
-    border: none;
-    background: var(--c-surface-ground);
-    color: var(--c-text-muted);
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-
-    &:hover {
-      background: #fee2e2;
-      color: var(--c-error);
-    }
-
-    @media (max-width: 768px) {
-      display: flex;
-    }
-  }
+@media (max-width: 768px) {
+  display: flex;
+}
+}
 }
 
 .cart-items {
-  flex: 1;
+flex: 1;
   overflow-y: auto;
   padding: 0.75rem;
   display: flex;
@@ -72818,7 +80221,7 @@ $sidebar-width: 380px;
 }
 
 .cart-item {
-  display: flex;
+display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem;
@@ -72826,95 +80229,97 @@ $sidebar-width: 380px;
   border-radius: 10px;
   transition: background 0.15s;
 
-  &:hover {
+&:hover {
     background: color-mix(in srgb, var(--c-primary) 4%, var(--c-surface-ground));
   }
 
-  .cart-item-img {
-    width: 56px;
-    height: 56px;
-    border-radius: 8px;
+.cart-item-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f1f5f9;
+
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+.cart-item-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.25rem;
+  color: #cbd5e1;
+}
+}
+
+.cart-item-details {
+  flex: 1;
+  min-width: 0;
+
+.cart-item-name {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text);
+    white-space: nowrap;
     overflow: hidden;
-    flex-shrink: 0;
-    background: #f1f5f9;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .cart-item-placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      font-size: 1.25rem;
-      color: #cbd5e1;
-    }
+    text-overflow: ellipsis;
+    line-height: 1.2;
   }
 
-  .cart-item-details {
-    flex: 1;
-    min-width: 0;
+.cart-item-price {
+  font-size: 0.7rem;
+  color: var(--c-text-muted);
+}
+}
 
-    .cart-item-name {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--c-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.2;
-    }
+.cart-item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  flex-shrink: 0;
 
-    .cart-item-price {
-      font-size: 0.7rem;
-      color: var(--c-text-muted);
-    }
+.cart-item-subtotal {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    white-space: nowrap;
   }
 
-  .cart-item-right {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.25rem;
-    flex-shrink: 0;
+.cart-item-remove {
+  background: none;
+  border: none;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  padding: 0.15rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+transition:
+    color 0.15s,
+    background 0.15s;
 
-    .cart-item-subtotal {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--c-primary);
-      white-space: nowrap;
-    }
-
-    .cart-item-remove {
-      background: none;
-      border: none;
-      color: var(--c-text-muted);
-      cursor: pointer;
-      padding: 0.15rem;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      transition: color 0.15s, background 0.15s;
-
-      &:hover {
-        color: var(--c-error);
-        background: #fef2f2;
-      }
-    }
+&:hover {
+    color: var(--c-error);
+    background: #fef2f2;
   }
+}
+}
 }
 
 .cart-item-qty {
-  display: flex;
+display: flex;
   align-items: center;
   gap: 0.15rem;
   margin-top: 0.2rem;
 
-  .qty-btn {
+.qty-btn {
     width: 22px;
     height: 22px;
     border-radius: 6px;
@@ -72928,155 +80333,151 @@ $sidebar-width: 380px;
     color: var(--c-text);
     transition: all 0.15s;
 
-    &:hover:not(:disabled) {
-      background: var(--c-primary);
-      color: white;
-      border-color: var(--c-primary);
-    }
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+&:hover:not(:disabled) {
+    background: var(--c-primary);
+    color: white;
+    border-color: var(--c-primary);
   }
 
-  .qty-value {
-    min-width: 1.5rem;
-    text-align: center;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--c-text);
-  }
+&:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+}
+
+.qty-value {
+  min-width: 1.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
 }
 
 .cart-summary {
-  padding: 1rem 1.25rem;
+padding: 1rem 1.25rem;
   border-top: 1px solid var(--c-border);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   background: var(--c-surface);
 
-  /* Tienda pública: aviso de que pagar requiere sesión */
-  .login-hint {
-    margin: 0;
-    text-align: center;
-    font-size: 0.8rem;
-    color: var(--c-text-muted);
-
-    i {
-      margin-right: 0.3rem;
-    }
-  }
-
-  .summary-line {
+.summary-line {
     display: flex;
     justify-content: space-between;
     font-size: 0.85rem;
     color: var(--c-text-muted);
 
-    &.summary-total {
-      font-size: 1rem;
-      color: var(--c-text);
-      padding-top: 0.25rem;
-    }
+&.summary-total {
+    font-size: 1rem;
+    color: var(--c-text);
+    padding-top: 0.25rem;
   }
 }
+}
 
+.cart-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Icono de advertencia del diÃ¡logo "Vaciar carrito" */
+.vaciar-warn-icon {
+  font-size: 1.75rem;
+  color: var(--c-warning);
+}
 /* Main */
 .tienda-main {
-  flex: 1;
+flex: 1;
   min-width: 0;
 }
 
-/* Toolbar Poseidon-style */
+/* Toolbar Poseidon-style 2-rows */
 .tienda-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.875rem 1.5rem;
+display: flex;
+flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
   background: var(--c-surface);
   border-bottom: 1px solid var(--c-border);
   position: sticky;
-  top: 0;
+top: 60px;
   z-index: 10;
 
-  .toolbar-left {
+.toolbar-row-1 {
     display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
-    flex-shrink: 0;
+align-items: center;
+  gap: 0.75rem;
+width: 100%;
 
-    .toolbar-title {
-      margin: 0;
-      font-size: 1.15rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--c-text);
-
-      i { color: var(--c-primary); }
-    }
-
-    .toolbar-count {
-      font-size: 0.75rem;
-      color: var(--c-text-muted);
-    }
-  }
-
-  .toolbar-right {
-    display: flex;
+@media (min-width: 769px) {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: 0.5rem;
+
+.toolbar-right {
+    grid-column: 3;
+    justify-self: end;
   }
 }
-
-.search-box {
-  position: relative;
-
-  .search-icon {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--c-text-muted);
-    font-size: 0.85rem;
-    pointer-events: none;
-  }
-
-  .search-input {
-    padding-left: 0.75rem;
-    padding-right: 2.25rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    height: 36px;
-    width: 200px;
-    transition: width 0.2s;
-
-    &:focus {
-      width: 260px;
-    }
-  }
 }
 
-::ng-deep .sort-select,
-::ng-deep .cat-select {
+.toolbar-row-2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  flex-wrap: nowrap; // UNA sola fila
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--c-border);
+.toolbar-count {
+font-size: 0.8rem;
+  color: var(--c-text-muted);
+font-weight: 600;
+  white-space: nowrap;
+}
+
+.ordenado-por {
+  font-size: 0.8rem;
+  color: var(--c-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+flex-wrap: nowrap;
+  margin-left: auto; // alineado a la derecha
+}
+}
+
+::ng-deep .sort-select {
   .p-select {
     font-size: 0.8rem;
     border-radius: 8px;
-    min-width: 140px;
-  }
+min-width: 140px;
+}
 }
 
+::ng-deep .cat-select {
+.p-multiselect {
+    font-size: 0.8rem;
+    border-radius: 8px;
+min-width: 260px !important;
+  width: 320px !important;
+}
+}
 .view-toggles {
-  display: flex;
+display: flex;
   border: 1px solid var(--c-border);
   border-radius: 8px;
   overflow: hidden;
 
-  .view-btn {
+.view-btn {
     width: 36px;
     height: 36px;
     display: flex;
@@ -73089,24 +80490,24 @@ $sidebar-width: 380px;
     font-size: 0.85rem;
     transition: all 0.15s;
 
-    &:hover {
-      background: var(--c-surface-ground);
-      color: var(--c-text);
-    }
-
-    &.active {
-      background: var(--c-primary);
-      color: white;
-    }
-
-    &:first-child {
-      border-right: 1px solid var(--c-border);
-    }
+&:hover {
+    background: var(--c-surface-ground);
+    color: var(--c-text);
   }
+
+&.active {
+  background: var(--c-primary);
+  color: white;
+}
+
+&:first-child {
+  border-right: 1px solid var(--c-border);
+}
+}
 }
 
 .btn-ofertas {
-  display: flex;
+display: flex;
   align-items: center;
   gap: 0.3rem;
   height: 36px;
@@ -73119,21 +80520,21 @@ $sidebar-width: 380px;
   font-size: 0.85rem;
   transition: all 0.15s;
 
-  &:hover {
+&:hover {
     background: var(--c-surface-ground);
     color: var(--c-text);
   }
 
-  &.active {
-    background: var(--c-success);
-    color: white;
-    border-color: var(--c-success);
-  }
+&.active {
+  background: var(--c-success);
+  color: white;
+  border-color: var(--c-success);
+}
 }
 
 /* Loading */
 .loading-container {
-  display: flex;
+display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -73144,133 +80545,140 @@ $sidebar-width: 380px;
 
 /* Grid layout */
 .productos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
   padding: 1.5rem;
 }
 
 .producto-card {
-  background: var(--c-card-background);
+background: var(--c-card-background);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s, transform 0.2s;
+transition:
+    box-shadow 0.2s,
+    transform 0.2s;
   content-visibility: auto;
-  contain-intrinsic-size: 0 320px;
+contain-intrinsic-size: 0 440px;
 
-  &:hover {
+&:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
     will-change: transform;
   }
 
-  .card-imagen {
-    position: relative;
+.card-imagen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+img {
     width: 100%;
-    aspect-ratio: 1;
-    overflow: hidden;
-    background: #f1f5f9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      mix-blend-mode: multiply;
-    }
-
-    .sin-imagen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      font-size: 3rem;
-      color: #cbd5e1;
-    }
-
-    ::ng-deep .tag-stock {
-      position: absolute;
-      background-color: var(--c-card-background);
-      top: 0.5rem;
-      right: 0.5rem;
-      font-size: 0.7rem !important;
-    }
+    height: 100%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
   }
 
-  .card-body {
-    padding: 0.75rem;
-  }
+.sin-imagen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 3rem;
+  color: #cbd5e1;
+}
 
-  .card-categoria {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--c-card-color-text);
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-  }
+::ng-deep .tag-stock {
+background-color: var(--c-card-background);
+position: absolute;
+top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.7rem !important;
+}
+}
 
-  .card-titulo {
-    margin: 0 0 0.25rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--c-text);
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+.card-body {
+padding: 1rem;
+}
 
-  .card-desc {
-    font-size: 0.75rem;
+.card-categoria {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--c-card-color-text);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.card-titulo {
+  margin: 0 0 0.25rem;
+font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--c-text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-desc {
+font-size: 0.8rem;
+  color: var(--c-text-muted);
+  margin: 0 0 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+.card-precio {
+font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--c-card-color-text);
+}
+
+.card-precio-oferta {
+  color: var(--c-success);
+
+.precio-original {
+    text-decoration: line-through;
     color: var(--c-text-muted);
-    margin: 0 0 0.5rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-weight: 400;
+    font-size: 0.8rem;
+    margin-right: 0.4rem;
   }
-
-  .card-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .card-precio {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--c-card-color-text);
-  }
-
-  .card-precio-oferta {
-    color: var(--c-success);
-
-    .precio-original {
-      text-decoration: line-through;
-      color: var(--c-text-muted);
-      font-weight: 400;
-      font-size: 0.8rem;
-      margin-right: 0.4rem;
-    }
-  }
+}
 }
 
 /* List layout */
 .productos-list {
-  padding: 1rem 1.5rem;
+padding: 1rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
 .producto-list-row {
-  display: flex;
+display: flex;
   align-items: center;
   gap: 1rem;
   padding: 0.75rem;
@@ -73280,7 +80688,7 @@ $sidebar-width: 380px;
   content-visibility: auto;
   contain-intrinsic-size: 0 70px;
 
-  .list-imagen {
+.list-imagen {
     width: 60px;
     height: 60px;
     border-radius: 8px;
@@ -73288,70 +80696,73 @@ $sidebar-width: 380px;
     flex-shrink: 0;
     background: #f1f5f9;
 
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .sin-imagen-sm {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      font-size: 1.5rem;
-      color: #cbd5e1;
-    }
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
-  .list-info {
-    flex: 1;
-    min-width: 0;
+.sin-imagen-sm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.5rem;
+  color: #cbd5e1;
+}
+}
 
-    .list-categoria {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      color: var(--c-primary);
-      font-weight: 600;
-    }
+.list-info {
+  flex: 1;
+  min-width: 0;
 
-    h4 {
-      margin: 0.1rem 0;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--c-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .list-desc {
-      font-size: 0.75rem;
-      color: var(--c-text-muted);
-    }
-  }
-
-  .list-stock {
-    flex-shrink: 0;
-  }
-
-  .list-precio {
-    font-weight: 700;
+.list-categoria {
+    font-size: 0.65rem;
+    text-transform: uppercase;
     color: var(--c-primary);
-    white-space: nowrap;
-    min-width: 80px;
-    text-align: right;
+    font-weight: 600;
   }
 
-  .list-accion {
-    flex-shrink: 0;
-  }
+h4 {
+  margin: 0.1rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-desc {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+}
+
+.list-stock {
+  flex-shrink: 0;
+}
+
+.list-precio {
+  font-weight: 700;
+  color: var(--c-primary);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+}
+
+.list-accion {
+display: flex;
+  align-items: center;
+  gap: 0.35rem;
+flex-shrink: 0;
+}
 }
 
 /* Sin productos */
 .sin-productos {
-  grid-column: 1 / -1;
+grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -73360,82 +80771,30 @@ $sidebar-width: 380px;
   color: var(--c-text-muted);
 }
 
-/* Botón flotante carrito (FAB) — oculto en desktop */
-.cart-fab {
-  display: none;
-}
-
+/* max-width: 768px */
 @media (max-width: 768px) {
-  .cart-fab {
-    position: fixed;
-    bottom: 1.25rem;
-    right: 1.25rem;
-    width: 3.5rem;
-    height: 3.5rem;
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
-    background: linear-gradient(135deg, var(--c-primary) 0%, #059669 100%);
-    color: #fff;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 300;
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
-    transition: transform 0.2s, box-shadow 0.2s;
-
-    &:hover {
-      transform: scale(1.08);
-      box-shadow: 0 12px 32px rgba(16, 185, 129, 0.55);
-    }
-
-    &:active {
-      transform: scale(0.95);
-    }
-
-    .cart-fab-badge {
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      min-width: 1.25rem;
-      height: 1.25rem;
-      border-radius: 1rem;
-      background: var(--c-error);
-      color: white;
-      font-size: 0.65rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 0.3rem;
-      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
-      animation: fab-pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes fab-pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-    }
+// Topbar del layout pÃºblico pasa a 2 filas en mÃ³vil (112px) â†’ ajustar sticky
+  .tienda-toolbar {
+    top: 112px;
   }
 }
 
 /* Dialog Checkout - Poseidon style */
 .checkout-dialog {
-  ::ng-deep .p-dialog-content {
+::ng-deep .p-dialog-content {
     padding: 0;
     overflow: hidden;
   }
 }
 
 .checkout-layout {
-  display: grid;
+display: grid;
   grid-template-columns: 1fr 320px;
   min-height: 420px;
 }
 
 .checkout-form {
-  padding: 1.5rem;
+padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -73443,7 +80802,7 @@ $sidebar-width: 380px;
 }
 
 .checkout-fields {
-  .section-title {
+.section-title {
     margin: 0 0 0.75rem;
     font-size: 0.9rem;
     font-weight: 700;
@@ -73452,14 +80811,42 @@ $sidebar-width: 380px;
     align-items: center;
     gap: 0.5rem;
 
-    i {
-      color: var(--c-primary);
-    }
+i {
+    color: var(--c-primary);
   }
+}
+
+.campo {
+  margin-bottom: 0.75rem;
+
+label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text);
+    margin-bottom: 0.25rem;
+  }
+}
+
+.campo-numero-tarjeta {
+  margin-top: 1rem;
+}
+}
+
+.campo-row {
+display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* ===== DiÃ¡logo Guardar pedido ===== */
+.guardar-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 
   .campo {
-    margin-bottom: 0.75rem;
-
     label {
       display: block;
       font-size: 0.75rem;
@@ -73468,26 +80855,14 @@ $sidebar-width: 380px;
       margin-bottom: 0.25rem;
     }
   }
-
-  .campo-numero-tarjeta {
-    margin-top: 1rem;
-  }
 }
-
-.campo-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-}
-
 .checkout-summary {
-  padding: 1.5rem;
+padding: 1.5rem;
   background: var(--c-surface-ground);
   display: flex;
   flex-direction: column;
 
-  .section-title {
+.section-title {
     margin: 0 0 1rem;
     font-size: 0.9rem;
     font-weight: 700;
@@ -73496,14 +80871,14 @@ $sidebar-width: 380px;
     align-items: center;
     gap: 0.5rem;
 
-    i {
-      color: var(--c-primary);
-    }
+i {
+    color: var(--c-primary);
   }
+}
 }
 
 .summary-items {
-  flex: 1;
+flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -73512,14 +80887,14 @@ $sidebar-width: 380px;
 }
 
 .summary-item {
-  display: flex;
+display: flex;
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem;
   background: var(--c-surface);
   border-radius: 8px;
 
-  .summary-item-img {
+.summary-item-img {
     width: 40px;
     height: 40px;
     border-radius: 6px;
@@ -73527,165 +80902,145 @@ $sidebar-width: 380px;
     flex-shrink: 0;
     background: #f1f5f9;
 
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .summary-item-placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      font-size: 1rem;
-      color: #cbd5e1;
-    }
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
-  .summary-item-info {
-    flex: 1;
-    min-width: 0;
+.summary-item-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1rem;
+  color: #cbd5e1;
+}
+}
 
-    .summary-item-name {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--c-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+.summary-item-info {
+  flex: 1;
+  min-width: 0;
 
-    .summary-item-qty {
-      font-size: 0.65rem;
-      color: var(--c-text-muted);
-    }
-  }
-
-  .summary-item-total {
+.summary-item-name {
+    display: block;
     font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--c-primary);
+    font-weight: 600;
+    color: var(--c-text);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+
+.summary-item-qty {
+  font-size: 0.65rem;
+  color: var(--c-text-muted);
+}
+}
+
+.summary-item-total {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c-primary);
+  white-space: nowrap;
+}
 }
 
 .summary-totals {
-  border-top: 1px solid var(--c-border);
+border-top: 1px solid var(--c-border);
   padding-top: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   margin-bottom: 1rem;
 
-  .summary-line {
+.summary-line {
     display: flex;
     justify-content: space-between;
     font-size: 0.8rem;
     color: var(--c-text-muted);
 
-    &.summary-total {
-      font-size: 1rem;
-      color: var(--c-text);
-      padding-top: 0.35rem;
-      margin-top: 0.25rem;
-      border-top: 1px solid var(--c-border);
-    }
+&.summary-total {
+    font-size: 1rem;
+    color: var(--c-text);
+    padding-top: 0.35rem;
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--c-border);
   }
+}
 }
 
 .w-full {
-  width: 100%;
+width: 100%;
 }
 
 /* ===========================
-   MOBILE RESPONSIVE (≤768px)
-   =========================== */
+MOBILE RESPONSIVE (â‰¤768px)===========================*/
 
 .desktop-only {
-  @media (max-width: 768px) {
+@media (max-width: 768px) {
     display: none;
   }
 }
 
 @media (max-width: 768px) {
-  /* Layout: quitar padding del sidebar */
+
+/* Layout: quitar padding del sidebar */
   .tienda-layout.con-carrito {
     padding-right: 0;
   }
 
-  /* Toolbar: apilado */
-  .tienda-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.6rem;
-    padding: 0.75rem;
+/* Toolbar: apilado */
+.tienda-toolbar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+  padding: 0.75rem;
 
-    .toolbar-left {
-      justify-content: space-between;
-    }
-
-    .toolbar-right {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
+.toolbar-left {
+    justify-content: space-between;
   }
 
-  .search-box {
+.toolbar-right {
+  flex-direction: column;
+  gap: 0.5rem;
+width: 100%;
+
+p-button {
+    display: block;
     width: 100%;
 
-    .search-input {
-      width: 100%;
-      height: 40px;
-
-      &:focus {
-        width: 100%;
-      }
-    }
+::ng-deep .p-button {
+    width: 100% !important;
+    justify-content: center;
   }
+}
+}
+}
 
-  ::ng-deep .sort-select,
-  ::ng-deep .cat-select {
-    width: 100%;
+::ng-deep .sort-select,
+::ng-deep .cat-select {
+display: block;
+width: 100%;
 
-    .p-select {
-      width: 100%;
-    }
-  }
+.p-select {
+width: 100% !important;
+}
+}
 
-  /* Grid: 1 columna */
+/* Grid: 2 columnas, misma card vertical del escritorio */
   .productos-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
     padding: 0.75rem;
   }
 
   .producto-card {
-    display: flex;
-    flex-direction: row;
-    border-radius: 10px;
+    contain-intrinsic-size: auto 340px;
 
     .card-imagen {
-      width: 100px;
-      height: 100px;
-      aspect-ratio: unset;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        mix-blend-mode: multiply;
-      }
-
-      .sin-imagen {
-        font-size: 2rem;
-      }
+      aspect-ratio: 4 / 3;
 
       ::ng-deep .tag-stock {
         font-size: 0.6rem !important;
@@ -73695,139 +81050,68 @@ $sidebar-width: 380px;
     }
 
     .card-body {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 0.6rem;
+      padding: 0.65rem;
     }
 
     .card-titulo {
-      font-size: 0.8rem;
-    }
-
-    .card-precio {
-      font-size: 0.9rem;
-    }
-  }
-
-  /* Lista: compacta */
-  .productos-list {
-    padding: 0.75rem;
-    gap: 0.4rem;
-  }
-
-  .producto-list-row {
-    padding: 0.5rem;
-    gap: 0.5rem;
-
-    .list-imagen {
-      width: 48px;
-      height: 48px;
-    }
-
-    .list-info h4 {
-      font-size: 0.8rem;
-    }
-
-    .list-stock {
-      display: none;
-    }
-
-    .list-precio {
-      font-size: 0.8rem;
-      min-width: 60px;
-    }
-  }
-
-  /* Checkout dialog mobile — fullscreen pegado a la barra del navegador */
-  .checkout-dialog {
-    ::ng-deep .p-dialog {
-      width: 100vw !important;
-      height: 100dvh !important;
-      max-height: 100dvh !important;
-      margin: 0 !important;
-      border-radius: 0 !important;
-      top: 0 !important;
-      left: 0 !important;
-    }
-
-    ::ng-deep .p-dialog-content {
-      overflow-y: auto !important;
-      padding: 0 !important;
-      max-height: 100dvh !important;
-      height: 100dvh !important;
-    }
-
-    ::ng-deep .p-dialog-header {
-      padding: 0.75rem 1rem !important;
-      border-bottom: 1px solid var(--c-border);
-      flex-shrink: 0;
-    }
-  }
-
-  .checkout-layout {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-
-  .checkout-form {
-    padding: 1rem;
-    border-right: none;
-    border-bottom: 1px solid var(--c-border);
-    gap: 1rem;
-
-    .checkout-fields {
-      width: 95%;
-      margin: 0 auto;
-    }
-
-    .section-title {
       font-size: 0.85rem;
-      margin-bottom: 0.75rem;
     }
 
-    .campo {
-      margin-bottom: 0.6rem;
-    }
+                .card-desc {
+                  font-size: 0.75rem;
+                }
+
+                /* Footer: precio en su propia fila y botones a la derecha */
+                .card-footer {
+                  flex-wrap: wrap;
+                  gap: 0.35rem;
+      .card-precio {
+        flex: 1 1 100%;
+          font-size: 0.95rem;
+        }
+
+        .card-acciones {
+          margin-left: auto;
+        }
+        }
+
+                /* Lista: compacta */
+                .productos-list {
+                  padding: 0.75rem;
+                  gap: 0.4rem;
+                }
+
+.producto-list-row {
+  padding: 0.5rem;
+  gap: 0.5rem;
+
+.list-imagen {
+    width: 48px;
+    height: 48px;
   }
 
-  .checkout-summary {
-    padding: 1rem;
-
-    .section-title {
-      font-size: 0.85rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .summary-items {
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .summary-item {
-      padding: 0.4rem;
-      gap: 0.5rem;
-
-      .summary-item-img {
-        width: 36px;
-        height: 36px;
-      }
-
-      .summary-item-name {
-        font-size: 0.7rem;
-      }
-    }
-  }
-
-  .campo-row {
-    grid-template-columns: 1fr;
-  }
+.list-info h4 {
+  font-size: 0.8rem;
 }
+
+.list-stock {
+  display: none;
+}
+
+.list-precio {
+  font-size: 0.8rem;
+  min-width: 60px;
+}
+}
+
+}
+}
+
+/* CIERRE del @media (max-width: 768px) global abierto en lÃ­nea 951 */
 
 /* Touch targets para tablets */
 @media (pointer: coarse) {
+
   .p-button,
   .p-inputtext,
   .p-select,
@@ -73836,6 +81120,253 @@ $sidebar-width: 380px;
   }
 }
 
+/* ==================== GalerÃ­a de imÃ¡genes ==================== */
+.galeria-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+
+  .galeria-titulo {
+    font-weight: 600;
+    color: var(--c-text);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .galeria-count {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    border: 1px solid var(--c-border);
+    padding: 0.15rem 0.55rem;
+    border-radius: 1rem;
+    flex-shrink: 0;
+  }
+}
+
+.galeria-loading,
+.galeria-vacia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  color: var(--c-text-muted);
+  font-size: 0.9rem;
+
+  i {
+    font-size: 2.2rem;
+    color: var(--c-text-muted);
+  }
+}
+
+.galeria-loading i {
+  color: var(--c-primary);
+  font-size: 1.8rem;
+}
+
+.tienda-galleria {
+  display: block; // p-galleria es un elemento custom (inline por defecto)
+  width: 100%;
+  min-width: 0;
+
+  // Imagen principal: ocupa todo el ancho disponible y se escala sin recortarse
+  .galeria-item-img {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: auto;
+    max-height: 55vh;
+    object-fit: contain;
+    background: var(--c-surface-ground);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 0.5rem;
+  }
+
+  ::ng-deep .p-galleria {
+    width: 100%;
+    max-width: 100%;
+    border: none;
+    background: transparent;
+  }
+
+  ::ng-deep .p-galleria-item {
+    width: 100%;
+    min-width: 0;
+  }
+
+  // Franja de miniaturas = el carrusel
+  ::ng-deep .p-galleria-thumbnails-content {
+    padding: 0.6rem 0 0;
+    background: transparent;
+  }
+
+  // PrimeNG reparte el ancho con "flex: 1 0 X%" (X = 100 / miniaturas visibles) y
+  // desplaza la franja en esos mismos porcentajes. Con border-box el padding no
+  // altera ese cÃ¡lculo y el desplazamiento no se descuadra.
+  ::ng-deep .p-galleria-thumbnail-item {
+    box-sizing: border-box;
+    padding: 0 0.25rem;
+    overflow: hidden;
+  }
+
+  ::ng-deep .p-galleria-thumbnail {
+    width: 100%;
+    min-width: 0;
+  }
+
+  ::ng-deep .p-galleria-thumbnail img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  // NO desactivar la transiciÃ³n de .p-galleria-thumbnail-items: PrimeNG anima el
+  // desplazamiento con un transition inline y limpia el estado en 'transitionend'.
+}
+
+@media (max-width: 560px) {
+  .tienda-galleria .galeria-item-img {
+    max-height: 45vh;
+    padding: 0.25rem;
+  }
+}
+
+/* ==================== Checkout (p-dialog) ==================== */
+// ESCRITORIO (≥ 769px): 2 columnas
+//   izquierda  → datos del cliente y de la tarjeta
+//   derecha    → resumen: items, totales y botón "Confirmar Pago"
+// MÓVIL (≤ 768px): una sola columna apilada y diálogo a pantalla completa.
+//
+// El styleClass del p-dialog cae en el propio panel (.p-dialog), por eso ::ng-deep va ANTES
+// de .checkout-dialog. El resto de selectores (.checkout-layout, .campo...) viven en el
+// template de este componente y no necesitan ::ng-deep.
+::ng-deep .checkout-dialog .p-dialog-content {
+  padding: 0;
+  overflow-x: hidden;
+}
+
+@media (min-width: 769px) {
+  .checkout-layout {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+
+  // Lista de items con scroll propio para que el botón de pagar siempre quede visible
+  .summary-items {
+    max-height: min(18rem, 40vh);
+  }
+}
+
+@media (max-width: 768px) {
+  ::ng-deep .checkout-dialog.p-dialog {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+      max-height: 100dvh !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+::ng-deep .checkout-dialog .p-dialog-header {
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--c-border);
+    }
+
+        // El contenido es lo que hace scroll; encabezado y pie quedan fijos
+        ::ng-deep .checkout-dialog .p-dialog-content {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+    }
+
+        ::ng-deep .checkout-dialog .p-dialog-footer {
+      flex-shrink: 0;
+    padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+        // De 2 columnas a una sola: formulario arriba, resumen abajo
+  .checkout-layout {
+    display: flex;
+      flex-direction: column;
+      min-height: 0;
+  }
+
+  .checkout-form {
+    padding: 1rem;
+    gap: 1rem;
+    border-right: none;
+    border-bottom: 1px solid var(--c-border);
+
+
+    .checkout-fields {
+    width: 100%;
+      margin: 0;
+
+      .campo {
+        margin-bottom: 0.9rem;
+    }
+
+                .campo-numero-tarjeta {
+                  margin-top: 0;
+                }
+                }
+
+        // Vencimiento y CVV: cada uno en su propia fila, a todo el ancho
+        .campo-row {
+          grid-template-columns: 1fr;
+          gap: 0;
+          margin-top: 0;
+    }
+// 16px evita el zoom automático de iOS al enfocar un campo
+.checkout-form ::ng-deep .p-inputtext,
+.checkout-form ::ng-deep .p-select-label {
+  font-size: 1rem;
+  }
+
+  .checkout-summary {
+    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+      flex: 0 0 auto;
+    }
+
+        // Sin scroll interno: scrollea todo el diálogo
+    .summary-items {
+    flex: 0 0 auto;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .summary-item {
+    padding: 0.5rem;
+      gap: 0.75rem;
+
+    .summary-item-img {
+      width: 48px;
+        height: 48px;
+      }
+
+                .summary-item-info .summary-item-name {
+                  font-size: 0.8rem;
+                }
+
+                .summary-item-info .summary-item-qty {
+                  font-size: 0.7rem;
+                }
+
+                .summary-item-total {
+                  font-size: 0.85rem;
+                }
+  }
+}
+    }
+    }
+
 ```
 
 ---
@@ -73843,8 +81374,10 @@ $sidebar-width: 380px;
 ## 📄 src\app\features\facturacion\tienda\tienda-virtual.ts
 
 ```typescript
-import { Component, OnInit, inject, signal, computed, DestroyRef, NgZone } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, model, DestroyRef, NgZone, ViewChild, effect } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
+import { filter, forkJoin } from 'rxjs';
 import { DataViewModule } from 'primeng/dataview';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -73856,14 +81389,23 @@ import { TagModule } from 'primeng/tag';
 import { MessageModule } from 'primeng/message';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { MessageService } from 'primeng/api';
+import { MessageService, MenuItem } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
+import { GalleriaModule } from 'primeng/galleria';
+import { BreadcrumbModule } from 'primeng/breadcrumb';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { TiendaService } from './tienda.service';
+import { TiendaFiltroService } from '../../../core/services/tienda-filtro.service';
+import { CategoriasService } from '../../../core/services/categorias.service';
 import { ProductoTienda, CarritoItem, CheckoutPago } from '../../../core/models/tienda.models';
+import { Categoria } from '../../../core/models/inventario.models';
 import { AuthService } from '../../../core/services/auth.service';
+import { CarritoStateService } from '../../../core/services/carrito-state.service';
 import { ApiService } from '../../../core/services/api.service';
+import { LoginDialog } from '../../../layout/login-dialog/login-dialog';
+import { RegistroDialog } from '../../../layout/registro-dialog/registro-dialog';
 
 @Component({
   selector: 'app-tienda-virtual',
@@ -73871,7 +81413,8 @@ import { ApiService } from '../../../core/services/api.service';
   imports: [
     CommonModule, FormsModule, DataViewModule, ButtonModule, DialogModule,
     InputNumberModule, InputTextModule, InputMaskModule, SelectModule, TagModule, ToastModule,
-    BadgeModule, TooltipModule, MessageModule,
+    BadgeModule, TooltipModule, MessageModule, GalleriaModule, BreadcrumbModule, MultiSelectModule,
+    LoginDialog, RegistroDialog,
   ],
   providers: [],
   templateUrl: './tienda-virtual.html',
@@ -73882,24 +81425,98 @@ export class TiendaVirtual implements OnInit {
   private auth = inject(AuthService);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+  private carritoState = inject(CarritoStateService);
   private api = inject(ApiService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  readonly filtroService = inject(TiendaFiltroService);
+  private categoriasService = inject(CategoriasService);
 
   /** true si hay sesión activa — el botón "Pagar" solo se habilita autenticado (tienda es pública) */
   readonly autenticado = this.auth.isAuthenticated;
+
+  /** Login/registro en diálogo: el visitante agrega al carrito libre, pero pagar exige sesión */
+  @ViewChild('loginGate') loginGate?: LoginDialog;
+  @ViewChild('registroGate') registroGate?: RegistroDialog;
+
+  allCategorias = signal<Categoria[]>([]);
+
+  readonly breadcrumbHome: MenuItem = {
+    icon: 'pi pi-home',
+    command: () => this.resetFiltros(),
+  };
+
+  breadcrumbItems = computed<MenuItem[]>(() => {
+    const catNombres = this.filtroService.categoriaNombres();
+    const depNombre = this.filtroService.deptoNombre();
+    const items: MenuItem[] = [];
+
+    if (depNombre) {
+      items.push({ label: depNombre });
+    }
+    if (catNombres && catNombres.length > 0) {
+      items.push({ label: catNombres.join(', ') });
+    }
+    if (items.length === 0) {
+      items.push({ label: 'Todos los productos' });
+    }
+    return items;
+  });
+
+  resetFiltros() {
+    this.filtroService.limpiarFiltros();
+    this.busqueda.set('');
+  }
+
+  onCategoriasChange(categoriaIds: any) {
+    const ids = Array.isArray(categoriaIds) ? categoriaIds.map(Number) : (categoriaIds != null && categoriaIds !== '' ? [Number(categoriaIds)] : []);
+    const cats = this.allCategorias().filter(c => ids.includes(Number(c.categoriaId)));
+    const nombres = cats.length > 0 ? cats.map(c => c.descripcion) : this.productos().filter(p => ids.includes(Number(p.categoriaId))).map(p => p.categoria).filter((n): n is string => !!n);
+    this.filtroService.setFiltros(
+      ids,
+      this.filtroService.deptoId(),
+      nombres,
+      this.filtroService.deptoNombre()
+    );
+  }
 
   productos = signal<ProductoTienda[]>([]);
   carritoItems = signal<CarritoItem[]>([]);
   carritoId = signal<number | null>(null);
   busqueda = signal<string>('');
+
+  categoriaIdFiltro = signal<number | null>(null);
+  deptoIdFiltro = signal<number | null>(null);
   layout = signal<'grid' | 'list'>('grid');
   cargando = signal(false);
   cargandoCarrito = signal(false);
 
-  dialogCheckout = signal(false);
+  // model() en vez de signal(): [(visible)] de PrimeNG es binding de dos vías —
+  // con signal() plano, visibleChange() SOBREESCRIBE la señal con un booleano
+  // y el siguiente .set(true) truena ("no abre el diálogo").
+  dialogCheckout = model(false);
   procesando = signal(false);
   tarjetasCredito = signal<{ label: string; value: number }[]>([]);
   tarjetaError = signal<string | null>(null);
-  carritoOpen = signal(false);
+  /** Señal del carrito compartida con el topbar (CarritoStateService) */
+  readonly carritoOpen = this.carritoState.carritoOpen;
+
+  // ==================== Galería de imágenes ====================
+  dialogGaleria = model(false);
+  galeriaTitulo = signal('');
+  galeriaImagenes = signal<string[]>([]);
+  galeriaIndice = signal(0);
+  galeriaCargando = signal(false);
+  /** Cache productoId → imágenes (evita re-fetch al reabrir) */
+  private galeriaCache = new Map<number, string[]>();
+  private galeriaSub: any = null;
+
+  /** Opciones responsive del Galleria (patrón doc PrimeNG) */
+  readonly galeriaResponsiveOptions = [
+    { breakpoint: '1024px', numVisible: 5 },
+    { breakpoint: '768px', numVisible: 4 },
+    { breakpoint: '560px', numVisible: 3 },
+  ];
 
   /** Mapa productoId → precio con descuento de promo/oferta */
   private mapaOfertas = new Map<number, number>();
@@ -73909,10 +81526,16 @@ export class TiendaVirtual implements OnInit {
   // Image cache removed — browser handles caching natively
 
   categorias = computed(() => {
-    const cats = new Set(this.productos().map(p => p.categoria).filter(Boolean));
-    return [{ label: 'Todos', value: null }, ...Array.from(cats).map(c => ({ label: c!, value: c! }))];
+    const depId = this.filtroService.deptoId();
+    let cats = this.allCategorias();
+    if (depId) {
+      cats = cats.filter((c) => Number(c.deptoId) === Number(depId));
+    }
+    return cats
+      .filter((x) => x.sn_activo === 'S')
+      .sort((a, b) => a.descripcion.localeCompare(b.descripcion))
+      .map((x) => ({ label: x.descripcion, value: x.categoriaId }));
   });
-  categoriaFiltro = signal<string | null>(null);
   ordenarPor = signal<string>('default');
   soloOfertas = signal(false);
 
@@ -73926,13 +81549,19 @@ export class TiendaVirtual implements OnInit {
 
   productosFiltrados = computed(() => {
     let lista = this.productos();
-    const cat = this.categoriaFiltro();
+    const catIds = this.filtroService.categoriaIds();
+    const depId = this.filtroService.deptoId();
     const busq = this.busqueda().toLowerCase();
     const orden = this.ordenarPor();
     const soloOfertas = this.soloOfertas();
 
     if (soloOfertas) lista = lista.filter(p => this.esOferta(p));
-    if (cat) lista = lista.filter(p => p.categoria === cat);
+    if (catIds && catIds.length > 0) {
+      lista = lista.filter(p => catIds.map(Number).includes(Number(p.categoriaId)));
+    }
+    if (depId) {
+      lista = lista.filter(p => Number(p.deptoId) === Number(depId) || Number(p.categoriaDeptoId) === Number(depId));
+    }
     if (busq) lista = lista.filter(p =>
       p.descripcion?.toLowerCase().includes(busq) ||
       p.codbarra?.toLowerCase().includes(busq)
@@ -73951,6 +81580,11 @@ export class TiendaVirtual implements OnInit {
   totalItems = computed(() => this.carritoItems().reduce((sum, i) => sum + Number(i.cantidad), 0));
   totalCarrito = computed(() => this.carritoItems().reduce((sum, i) => sum + Number(i.subTotal), 0));
 
+  /** Sincroniza totalItems al servicio compartido para que el topbar lo muestre */
+  private _syncCarrito = effect(() => {
+    this.carritoState.setTotalItems(this.totalItems());
+  });
+
   checkout: CheckoutPago & { nrotarjeta?: string; tarjetacreditoId?: number; fechaexpiracion?: string; cvv?: string } = {
     poscotmaeId: 0,
     nombrecliente: '',
@@ -73964,6 +81598,19 @@ export class TiendaVirtual implements OnInit {
   };
 
   ngOnInit() {
+    // Búsqueda enviada desde el buscador global del topbar (?buscar=texto)
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const buscar = params.get('buscar');
+        if (buscar) this.busqueda.set(buscar);
+      });
+    this.categoriasService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cats) => this.allCategorias.set(cats),
+        error: () => {},
+      });
     this.cargarProductos();
     this.cargarTarjetasCredito();
     this.cargarOfertas();
@@ -73971,7 +81618,7 @@ export class TiendaVirtual implements OnInit {
 
   cargarProductos() {
     this.cargando.set(true);
-    this.tiendaService.getProductos(true)
+    this.tiendaService.getProductos(true, 'tienda')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
@@ -74084,7 +81731,10 @@ export class TiendaVirtual implements OnInit {
 
   async crearCarrito() {
     return new Promise<void>((resolve) => {
-      this.tiendaService.crearCarrito('Cliente Tienda', '', 'Tienda Virtual', 1)
+      const user = this.auth.currentUser();
+      const gestorId = user?.usuarioId || 1;
+      const atendio = user?.nombre || 'Tienda Online';
+      this.tiendaService.crearCarrito('Cliente Tienda', 'N/A', atendio, gestorId)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (carrito) => {
@@ -74161,10 +81811,48 @@ export class TiendaVirtual implements OnInit {
       .subscribe(() => this.recargarItems());
   }
 
+  // Modal de confirmación "Vaciar carrito" — NO se usa ConfirmationService de
+  // PrimeNG porque en zoneless su estado interno no dispara change detection
+  // y el modal no se dibuja. Un p-dialog + señal funciona siempre.
+  dialogVaciar = model(false);
+
+  confirmarVaciarCarrito() {
+    const items = this.carritoItems();
+    if (!items.length || this.cargandoCarrito()) return;
+    this.dialogVaciar.set(true);
+  }
+
+  /** Elimina TODOS los items del carrito en paralelo (forkJoin) */
+  vaciarCarrito() {
+    const items = this.carritoItems();
+    if (!items.length) return;
+    this.dialogVaciar.set(false);
+    this.cargandoCarrito.set(true);
+    forkJoin(items.map(i => this.tiendaService.eliminarItem(i.poscotdetId)))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.carritoItems.set([]);
+          this.cargandoCarrito.set(false);
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Carrito vaciado',
+            detail: 'Se eliminaron todos los productos del carrito',
+          });
+        },
+        error: () => {
+          this.cargandoCarrito.set(false);
+          this.recargarItems();
+        },
+      });
+  }
+
   abrirCheckout() {
-    // Tienda pública: visitantes navegan libre, pero pagar exige sesión
+    // Tienda pública: visitantes navegan y agregan al carrito libre, pero
+    // pagar exige sesión → se abre el diálogo de login (con opción a registro).
+    // Tras login exitoso el LoginDialog emite `loginExito` → se retoma el checkout.
     if (!this.auth.isAuthenticated()) {
-      this.messageService.add({ severity: 'warn', summary: 'Sesión requerida', detail: 'Inicie sesión para poder pagar' });
+      this.loginGate?.abrir();
       return;
     }
     if (this.carritoItems().length === 0) {
@@ -74262,8 +81950,69 @@ export class TiendaVirtual implements OnInit {
     return prod?.imagen ? this.resolverImagen(prod.imagen) : '';
   }
 
+  // ==================== Galería de imágenes ====================
+  galeriaNumVisible(): number {
+    if (typeof window === 'undefined') return 5;
+    const w = window.innerWidth;
+    if (w <= 560) return 3;
+    if (w <= 768) return 4;
+    return 5;
+  }
+
+  abrirGaleria(producto: ProductoTienda): void {
+    if (this.galeriaSub) {
+      this.galeriaSub.unsubscribe();
+      this.galeriaSub = null;
+    }
+
+    const principal: string[] = producto.imagen ? [this.resolverImagen(producto.imagen)] : [];
+    const id = Number(producto.produtoId);
+
+    this.galeriaTitulo.set(producto.descripcion || producto.codbarra || 'Producto');
+    this.galeriaIndice.set(0);
+    this.galeriaImagenes.set(principal);
+    this.galeriaCargando.set(false);
+    this.dialogGaleria.set(true);
+
+    const cacheado = this.galeriaCache.get(id);
+    if (cacheado && cacheado.length) {
+      this.galeriaImagenes.set(cacheado);
+      return;
+    }
+
+    this.galeriaCargando.set(true);
+    this.galeriaSub = this.api
+      .get<{ productoId: number; img: string; sn_activo?: string }[]>('/inventario/productos-img', { productoId: id })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const vistos = new Set<string>();
+          const imgs: string[] = [];
+          for (const r of Array.isArray(res) ? res : []) {
+            if (!r?.img || r.sn_activo === 'N') continue;
+            const url = this.resolverImagen(r.img);
+            if (!vistos.has(url)) {
+              vistos.add(url);
+              imgs.push(url);
+            }
+          }
+          // La imagen principal (la de la card) va primero
+          const ordenadas = principal.length
+            ? [principal[0], ...imgs.filter(u => u !== principal[0])]
+            : imgs;
+          if (ordenadas.length) this.galeriaCache.set(id, ordenadas);
+          this.galeriaImagenes.set(ordenadas);
+          this.galeriaCargando.set(false);
+        },
+        error: () => {
+          this.galeriaCargando.set(false);
+          this.messageService.add({ severity: 'error', summary: 'Galería', detail: 'No se pudieron cargar las imágenes' });
+        },
+      });
+  }
+
   formatearPrecio(precio: number | string): string {
-    return `L ${Number(precio).toFixed(2)}`;
+    return `L ${Number(precio).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   validarLuhn(numero: string): boolean {
@@ -74324,102 +82073,110 @@ export class TiendaVirtual implements OnInit {
 import { Injectable, inject } from '@angular/core';
 import { Observable, of, tap, shareReplay } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
-import { ProductoTienda, Carrito, CarritoItem, CheckoutPago, CheckoutResponse } from '../../../core/models/tienda.models';
+import { ProductoTienda, CarritoItem, CheckoutPago, CheckoutResponse } from '../../../core/models/tienda.models';
 
-const PRODUCTOS_CACHE_KEY = 'tienda_productos_v1';
-const PRODUCTOS_CACHE_TTL = 60 * 1000; // 1 minuto
+/**
+ * Origen de la solicitud -> clave de caché distinta (para evitar colisiones
+ * entre /facturacion/tienda y /facturacion/restaurante que comparten el endpoint).
+ *  - 'tienda': => lógica parametrizada (tipo_de_giro_tienda='C'), SOLO este componente
+ *  - 'restaurante': => lógica R original (sin filtro), NUNCA se modifica
+ */
+type OrigenCache = 'tienda' | 'restaurante' | 'all';
 
-interface ProductosCache {
+interface CacheEntry {
   data: ProductoTienda[];
-  timestamp: number;
+  ts: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class TiendaService {
   private api = inject(ApiService);
-  private productosCache$: Observable<ProductoTienda[]> | null = null;
+  private readonly TTL = 60 * 1000; // 1 minuto
+  private cacheStore = new Map<OrigenCache, CacheEntry>();
 
-  getProductos(forceRefresh = false): Observable<ProductoTienda[]> {
-    if (forceRefresh) {
-      this.invalidateCache();
+  /** Productos para tienda virtual (con imagen y stock). Filtro por origen parametrizado 'C'. */
+  getProductos(
+    forceRefresh = false,
+    origen: OrigenCache = 'all',
+  ): Observable<ProductoTienda[]> {
+    const key = origen || 'all';
+
+    if (!forceRefresh) {
+      const hit = this.cacheStore.get(key);
+      if (hit && Date.now() - hit.ts <= this.TTL) {
+        return of(hit.data).pipe(shareReplay(1));
+      }
     }
 
-    if (this.productosCache$) return this.productosCache$;
-
-    const cached = this.leerCache();
-    if (cached) {
-      this.productosCache$ = of(cached).pipe(shareReplay(1));
-      return this.productosCache$;
-    }
-
-    this.productosCache$ = this.api.get<ProductoTienda[]>('/inventario/tienda/productos').pipe(
-      tap(data => this.escribirCache(data)),
+    const src = this.api.get<ProductoTienda[]>(
+      '/inventario/tienda/productos',
+      key === 'all' ? undefined : { origen: key },
+    ).pipe(
+      tap((data) => this.save(key, data)),
       shareReplay(1),
     );
-    return this.productosCache$;
+    return src;
   }
 
   invalidateCache() {
-    this.productosCache$ = null;
-    try { localStorage.removeItem(PRODUCTOS_CACHE_KEY); } catch {}
-  }
-
-  private leerCache(): ProductoTienda[] | null {
+    this.cacheStore.clear();
     try {
-      const raw = localStorage.getItem(PRODUCTOS_CACHE_KEY);
-      if (!raw) return null;
-      const cache: ProductosCache = JSON.parse(raw);
-      if (Date.now() - cache.timestamp > PRODUCTOS_CACHE_TTL) {
-        localStorage.removeItem(PRODUCTOS_CACHE_KEY);
-        return null;
+      const store = localStorage as unknown as Storage;
+      for (let i = store.length - 1; i >= 0; i--) {
+        const k = store.key(i);
+        if (k && k.startsWith('tienda_productos_v1_')) store.removeItem(k);
       }
-      return cache.data;
     } catch {
-      return null;
+      /* ignore */
     }
   }
 
-  private escribirCache(data: ProductoTienda[]) {
+  private save(key: OrigenCache, data: ProductoTienda[]) {
     try {
-      const cache: ProductosCache = { data, timestamp: Date.now() };
-      localStorage.setItem(PRODUCTOS_CACHE_KEY, JSON.stringify(cache));
-    } catch {}
+      this.cacheStore.set(key, { data, ts: Date.now() });
+      localStorage.setItem(
+        `tienda_productos_v1_${key}`,
+        JSON.stringify({ data, ts: Date.now() }),
+      );
+    } catch {
+      /* localStorage deshabilitado */
+    }
   }
 
-  crearCarrito(nombre: string, direccion: string, atendio: string, gestorId: number): Observable<Carrito> {
-    return this.api.post<Carrito>('/facturacion/cotizaciones', {
-      Nombrecliente: nombre,
+  // ===================== Carrito =====================
+
+  getCarritoItems(carritoId: number): Observable<CarritoItem[]> {
+    return this.api.get<CarritoItem[]>(`/facturacion/cotizaciones-det/mae/${carritoId}`);
+  }
+
+  crearCarrito(
+    nombrecliente: string,
+    direccion: string,
+    atendio: string,
+    gestorId: number,
+  ): Observable<{ poscotmaeId: number }> {
+    return this.api.post<{ poscotmaeId: number }>('/facturacion/cotizaciones', {
+      Nombrecliente: nombrecliente || 'Cliente Tienda',
       direccion: direccion || 'N/A',
-      atendio,
-      gestorId,
+      atendio: atendio || 'Tienda Online',
+      gestorId: Number(gestorId) || 1,
     });
   }
 
-  agregarItem(payload: {
-    poscotmaeId: number;
-    productoId: string;
-    codbarra: string;
-    cantidad: number;
-    precio: number;
-    subTotal: number;
-  }): Observable<CarritoItem> {
-    return this.api.post<CarritoItem>('/facturacion/cotizaciones-det', payload);
+  agregarItem(payload: any): Observable<void> {
+    return this.api.post<void>('/facturacion/cotizaciones-det', payload).pipe(
+      tap(() => this.invalidateCache()),
+    );
   }
 
-  getCarritoItems(maeId: number): Observable<CarritoItem[]> {
-    return this.api.get<CarritoItem[]>(`/facturacion/cotizaciones-det/mae/${maeId}`);
+  eliminarItem(poscotdetId: number): Observable<any> {
+    return this.api.delete('/facturacion/cotizaciones-det', poscotdetId).pipe(
+      tap(() => this.invalidateCache()),
+    );
   }
 
-  eliminarItem(detId: number): Observable<any> {
-    return this.api.delete<any>('/facturacion/cotizaciones-det', detId);
-  }
-
-  eliminarCarrito(maeId: number): Observable<any> {
-    return this.api.delete<any>('/facturacion/cotizaciones', maeId);
-  }
-
-  checkout(pago: CheckoutPago): Observable<CheckoutResponse> {
-    return this.api.post<CheckoutResponse>('/facturacion/tienda/checkout', pago, { sinContexto: true });
+  checkout(p: any): Observable<CheckoutResponse> {
+    return this.api.post<CheckoutResponse>('/facturacion/tienda/checkout', p);
   }
 }
 
@@ -75638,14 +83395,9 @@ export class ProductosHelperList implements OnInit {
             </div>
             <div class="campo campo-cantidad">
               <label>Cantidad</label>
-              <p-inputNumber formControlName="cantidad" [min]="0.01" mode="decimal" [minFractionDigits]="2"
-                [maxFractionDigits]="2" size="small" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
-            </div>
-            <div class="campo campo-costo">
-              <label>Costo U.</label>
-              <p-inputNumber formControlName="costoUnitario" [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'"
-                [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" size="small"
-                [inputStyle]="{ 'width': '100%' }" styleClass="w-full" [readonly]="true" />
+              <p-inputNumber inputId="cant-ajuste" formControlName="cantidad" [min]="0.01" mode="decimal"
+                [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" size="small"
+                [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
             </div>
             <div class="campo-btn">
               <p-button icon="pi pi-plus" size="small" rounded severity="success" (onClick)="buscarProducto(); agregarItem()"
@@ -75655,7 +83407,6 @@ export class ProductosHelperList implements OnInit {
           @if (formDet.value.descripcion) {
             <div class="producto-encontrado">
               <span class="font-bold">{{ formDet.value.descripcion }}</span>
-              <span class="text-sm text-color-secondary"> | Costo: {{ moneda(formDet.value.costoUnitario) }}</span>
             </div>
           }
         </div>
@@ -75794,14 +83545,13 @@ export class ProductosHelperList implements OnInit {
 }
 
 .campo-codbarra { flex: 3; }
-.campo-cantidad { flex: 1; min-width: 100px; }
-.campo-costo { flex: 1; min-width: 100px; }
+.campo-cantidad { flex: 1; min-width: 130px; }
 .campo-btn { flex: 0; padding-bottom: 0.15rem; }
 
 .producto-encontrado {
   margin-top: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: var(--c-surface-ground, #f8fafc);
+  background: var(--c-bg);
   border-radius: 0.375rem;
   border: 1px solid var(--c-border, #e2e8f0);
   font-size: 0.85rem;
@@ -75820,8 +83570,7 @@ export class ProductosHelperList implements OnInit {
   }
 
   .campo-codbarra,
-  .campo-cantidad,
-  .campo-costo {
+  .campo-cantidad {
     flex: 1 1 100%;
     min-width: 100%;
   }
@@ -75904,7 +83653,6 @@ export class Ajustes implements OnInit {
     productoId: [null as number | null],
     descripcion: [''],
     cantidad: [1, [Validators.required, Validators.min(0.01)]],
-    costoUnitario: [0],
   });
 
   ngOnInit() {
@@ -75958,7 +83706,7 @@ export class Ajustes implements OnInit {
 
   nuevoMae() {
     this.formMae.reset({ concepto: '', bodegaId: null, sn_entrada: 'S' });
-    this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1, costoUnitario: 0 });
+    this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1 });
     this.codBusqueda.set('');
     this.detalles.set([]);
     this.seleccionado.set({ invmovmaeid: 0, sn_procesado: 'N', sn_anulado: 'N', concepto: '', bodegaId: 0 });
@@ -75999,7 +83747,6 @@ export class Ajustes implements OnInit {
         productoId: prod.produtoId,
         codbarra: prod.codbarra,
         descripcion: prod.descripcion,
-        costoUnitario: prod.cstounit || 0,
       });
     } else {
       this.msgs.add({ severity: 'warn', summary: 'No encontrado', detail: 'Producto no encontrado por código de barras' });
@@ -76017,32 +83764,32 @@ export class Ajustes implements OnInit {
     });
     this.ref.onClose.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: any) => {
       if (data && 'codbarra' in data) {
-        this.agregarDirecto(data);
+        this.seleccionarProducto(data);
       }
     });
   }
 
-  agregarDirecto(prod: any) {
+  /**
+   * Producto elegido en el helper: se carga en el formulario y se deja el
+   * cursor en CANTIDAD para digitarla y confirmar con el botón "+".
+   */
+  seleccionarProducto(prod: any) {
     const mae = this.seleccionado();
     if (!mae || !mae.invmovmaeid) {
       this.msgs.add({ severity: 'warn', summary: 'Atención', detail: 'Primero guarde el encabezado del ajuste' });
       return;
     }
-    this.guardando.set(true);
-    this.service.createDet({
-      invmovmaeid: mae.invmovmaeid,
-      bodegaId: mae.bodegaId,
+    this.formDet.patchValue({
+      productoId: prod.productoId ?? prod.produtoId ?? null,
       codbarra: prod.codbarra,
+      descripcion: prod.descripcion,
       cantidad: 1,
-      sn_entrada: mae.sn_entrada || 'S',
-      empresaId: mae.empresaId,
-    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.guardando.set(false);
-        this.msgs.add({ severity: 'success', summary: 'Agregado', detail: prod.descripcion });
-        this.cargarDetalles(mae.invmovmaeid);
-      },
-      error: (err) => { this.guardando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar' }); },
+    });
+    this.codBusqueda.set(prod.codbarra || '');
+    setTimeout(() => {
+      const input = document.getElementById('cant-ajuste') as HTMLInputElement | null;
+      input?.focus();
+      input?.select();
     });
   }
 
@@ -76065,7 +83812,7 @@ export class Ajustes implements OnInit {
       next: () => {
         this.guardando.set(false);
         this.msgs.add({ severity: 'success', summary: 'Agregado', detail: 'Item agregado' });
-        this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1, costoUnitario: 0 });
+        this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidad: 1 });
         this.codBusqueda.set('');
         this.cargarDetalles(mae.invmovmaeid);
       },
@@ -77563,6 +85310,11 @@ export const INVENTARIO_ROUTES: Routes = [
   { path: 'proveedores/nuevo', loadComponent: () => import('./proveedores/proveedor-form').then(m => m.ProveedorForm) },
   { path: 'proveedores/editar/:id', loadComponent: () => import('./proveedores/proveedor-form').then(m => m.ProveedorForm) },
 
+  // Departamentos (tinvdeptos)
+  { path: 'deptos', data: { nombre: 'deptos' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then(m => m.CatalogoGenerico) },
+  { path: 'deptos/nuevo', data: { nombre: 'deptos' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+  { path: 'deptos/editar/:id', data: { nombre: 'deptos' }, loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then(m => m.CatalogoForm) },
+
   // Existencias (read-only)
   { path: 'existencias', loadComponent: () => import('./existencias/existencias').then(m => m.Existencias) },
 
@@ -77657,8 +85409,8 @@ export const INVENTARIO_ROUTES: Routes = [
         </td>
         <td>{{ k.nroreferencia }}</td>
         <td class="text-right">{{ k.cantidad }}</td>
-        <td class="text-right">{{ k.saldoAnterior }}</td>
-        <td class="text-right">{{ k.saldoActual }}</td>
+        <td class="text-right">{{ k.existencia_anterior }}</td>
+        <td class="text-right">{{ k.exisencia_actual }}</td>
         <td class="text-right">{{ moneda(k.costoUnitario) }}</td>
         <td class="text-right">{{ moneda(k.subTotal) }}</td>
         <td class="text-right">{{ moneda(k.costoTotal) }}</td>
@@ -78078,6 +85830,21 @@ export class Kardex implements OnInit {
                         optionLabel="label"
                         optionValue="value"
                         placeholder="Producto controlado"
+                        styleClass="w-full"
+                        [appendTo]="'body'"
+                      />
+                    </div>
+
+                    <div class="campo">
+                      <label for="sn_droga">Droga / Psicotrópico</label>
+                      <p-select
+                        size="small"
+                        id="sn_droga"
+                        formControlName="sn_droga"
+                        [options]="snControladoOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Regulado como droga"
                         styleClass="w-full"
                         [appendTo]="'body'"
                       />
@@ -78853,8 +86620,10 @@ export class ProductoForm implements OnInit {
       // NOT NULL en BD + FK a ttipoimpuestos → obligatorio
       impuestoId: [null as number | null, Validators.required],
 
-      // Producto controlado (fármacos, material agroindustrial) → default 'N'
-      sn_controlado: ['N' as 'S' | 'N'],
+       // Producto controlado (fármacos, material agroindustrial) → default 'N'
+       sn_controlado: ['N' as 'S' | 'N'],
+       // Producto regulado como droga o psicotrópico → default 'N'
+       sn_droga: ['N' as 'S' | 'N'],
     });
 
     this.atributoForm = this.fb.group({
@@ -78890,6 +86659,7 @@ export class ProductoForm implements OnInit {
             impuestoId: p.impuestoId,
             sn_activo: p.sn_activo === 'S' ? 'S' : 'N',
             sn_controlado: p.sn_controlado === 'S' ? 'S' : 'N',
+            sn_droga: p.sn_droga === 'S' ? 'S' : 'N',
             // 20261015 ARFM clasificación: los productos antiguos traen 0 →
             // se dejan en null para que el select quede vacío y el usuario
             // asigne el valor real (los 3 campos son obligatorios).
@@ -79298,6 +87068,7 @@ export class ProductoForm implements OnInit {
           pasilloId: raw.pasilloId,
           impuestoId: raw.impuestoId,
           sn_controlado: raw.sn_controlado || 'N',
+          sn_droga: raw.sn_droga || 'N',
           sn_activo: raw.sn_activo || 'S',
         }
       : {
@@ -79315,6 +87086,7 @@ export class ProductoForm implements OnInit {
           pasilloId: raw.pasilloId,
           impuestoId: raw.impuestoId,
           sn_controlado: raw.sn_controlado || 'N',
+          sn_droga: raw.sn_droga || 'N',
           empresaId: this.auth.currentUser()?.empresaId,
           sn_activo: 'S',
         };
@@ -83402,6 +91174,15 @@ export class CatalogoForm implements OnInit, OnChanges {
     if (this.catalogoNombre) {
       // Modo embebido: emitir evento para que el padre cierre
       this.finalized.emit();
+      return;
+    }
+    // Ir a la lista del catálogo (config.ruta). `['../']` desde `cat/editar/:id`
+    // sube solo el `:id` → queda `cat/editar` (ruta inexistente) → wildcard
+    // del módulo → redirige a otra pantalla (ej: productos).
+    const ruta = this.config?.ruta;
+    const url = this.router.url.split('?')[0];
+    if (ruta && (url === ruta || url.startsWith(ruta + '/'))) {
+      this.router.navigate([ruta]);
     } else {
       this.router.navigate(['../'], { relativeTo: this.route });
     }
@@ -85819,7 +93600,7 @@ export class EmpleadoTipoMovList implements OnInit {
 <section class="page">
   <header class="page-header">
     <div>
-      <h1 class="page-title">Afectaciones Económicas</h1>
+      <h1 class="page-title">Obligaciones y Bonificaciones</h1>
       <p class="page-subtitle">
         @if (empleado(); as emp) {
           {{ emp.nombres }} {{ emp.apellidos }} — DNI: {{ emp.nrodocumento }}
@@ -85978,7 +93759,7 @@ export class EmpleadoTipoMovList implements OnInit {
     @if (ingresos().length > 0) {
       <div class="card mb-3">
         <h3 class="seccion-title seccion-ingreso">
-          <i class="pi pi-arrow-up"></i> Ingresos
+          <i class="pi pi-arrow-up"></i> Bonificaciones
         </h3>
         @if (fichaEmpleado(); as ficha) {
           <div class="empleado-ficha">
@@ -86064,7 +93845,7 @@ export class EmpleadoTipoMovList implements OnInit {
     @if (egresos().length > 0) {
       <div class="card mb-3">
         <h3 class="seccion-title seccion-egreso">
-          <i class="pi pi-arrow-down"></i> Egresos
+          <i class="pi pi-arrow-down"></i> Obligaciones
         </h3>
         @if (fichaEmpleado(); as ficha) {
           <div class="empleado-ficha">
@@ -86385,6 +94166,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { PlanillaService } from '../../../core/services/planilla.service';
 import { ApiService } from '../../../core/services/api.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 import { PlanillaEmpleado } from '../../../core/models/planilla.models';
 
 interface PlTipoMov {
@@ -86427,6 +94209,7 @@ export class EmpleadoTipoMovManager implements OnInit {
   private router = inject(Router);
   private service = inject(PlanillaService);
   private api = inject(ApiService);
+  private nav = inject(NavegacionService);
   private msgs = inject(MessageService);
 
   cargando = signal(false);
@@ -86720,7 +94503,7 @@ export class EmpleadoTipoMovManager implements OnInit {
   }
 
   volver() {
-    this.router.navigate(['/planilla/empleado-tipo-mov']);
+    this.nav.volver(['/planilla/empleado-tipo-mov']);
   }
 
   editarEmpleado() {
@@ -87376,7 +95159,7 @@ import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -87387,6 +95170,7 @@ import { MessageService } from 'primeng/api';
 import { PlanillaService } from '../../../core/services/planilla.service';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
 
 @Component({
   selector: 'app-empleado-form',
@@ -87407,11 +95191,11 @@ import { AuthService } from '../../../core/services/auth.service';
 export class EmpleadoForm implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
   private service = inject(PlanillaService);
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private msgs = inject(MessageService);
+  private nav = inject(NavegacionService);
   private destroyRef = inject(DestroyRef);
 
   esEdicion = signal(false);
@@ -87618,7 +95402,7 @@ export class EmpleadoForm implements OnInit {
   }
 
   volver() {
-    this.router.navigate(['../'], { relativeTo: this.route });
+    this.nav.volver(['/planilla/empleados']);
   }
 
   /**
@@ -98905,6 +106689,298 @@ export const USUARIOS_ROUTES: Routes = [
 
 ---
 
+## 📄 src\app\layout\login-dialog\login-dialog copy.scss
+
+```typescript
+// ============================================================
+// Login headless — réplica de los estilos de features/auth/login/login.scss
+// Estilos PROPIOS de este componente. NO toca main-layout.scss.
+// ============================================================
+
+// Panel del p-dialog transparente: la tarjeta lleva su propio fondo estilo login
+:host ::ng-deep .login-hl-dialog {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+.login-hl-card {
+  position: relative;
+  background: var(--c-bg-black);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 1.5rem;
+  padding: 0; // el padding vive en .login-hl-main (layout 2 columnas)
+  overflow: hidden; // recorta las esquinas del grid al radio de la tarjeta
+  width: 100%;
+  box-shadow: 0 30px 60px -15px rgba(2, 6, 23, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  animation: hlCardIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+// ===== Layout 2 columnas: izquierda (60%) con bienvenida, derecha (40%) con el login =====
+.login-hl-grid {
+  display: grid;
+  grid-template-columns: 55% 40%;
+}
+
+// Columna izquierda: encabezado de bienvenida + botón de registro
+.login-hl-side {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.75rem 2.25rem;
+  background: var(--c-card-background);
+}
+
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.6rem;
+  max-width: 30rem; // suficiente para que el título quepare en 1 fila
+  width: 100%;
+}
+
+.welcome-title {
+  margin: 0;
+  color: var(--color-font-sidebar);
+  font-family: 'Hurricane', cursive;
+  font-size: clamp(1.5rem, 3.6vw, 3rem); // hasta 48px; se reduce en pantallas angostas para no cortarse
+  font-weight: 400; // Hurricane solo tiene peso 400 (evita faux-bold)
+  letter-spacing: normal;
+  line-height: 1.3;
+  white-space: nowrap; // siempre en una sola fila
+}
+
+.welcome-sub {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 0.95rem;
+}
+
+.welcome-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0.6rem 0;
+}
+
+.welcome-cta {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+// Columna derecha: contenido existente del login
+.login-hl-main {
+  min-width: 0;
+  margin-left: 2.25rem;
+  padding: 2.75rem 2.25rem;
+  background: var(--c-bg-black);
+}
+
+// En pantallas angostas el diálogo queda a 90vw → una sola columna
+@media (max-width: 640px) {
+  .login-hl-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .login-hl-side {
+    display: none;
+  }
+}
+
+@keyframes hlCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// Botón X de cierre (el header del diálogo está oculto en headless)
+.login-hl-close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.15s,
+    color 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+  }
+}
+
+.login-logo {
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .login-logo-img {
+    width: 6rem;
+    height: 6rem;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 18px rgba(1, 5, 17, 0.35));
+  }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  h2 {
+    margin: 0.5rem 0 0.25rem;
+    color: var(--c-bg-white);
+    font-family: 'Hurricane', cursive;
+    font-size: clamp(1.5rem, 3.6vw, 3rem); // hasta 48px; se reduce en pantallas angostas para no cortarse
+    letter-spacing: 0.10em;
+  }
+}
+
+.text-muted {
+  color: var(--c-text-muted);
+  margin: 0;
+}
+
+.login-form {
+  // Fondo de los inputs TRANSPARENTE: se ve el fondo del card.
+  // Se sobrescriben los tokens de PrimeNG solo dentro de este formulario (las variables
+  // CSS se heredan, no hace falta ::ng-deep). Para usar el color sólido del contenedor
+  // en lugar de transparente, cambia "transparent" por el color del fondo del diálogo.
+  --p-inputtext-background: transparent;
+  --p-inputtext-disabled-background: transparent;
+  --p-inputtext-filled-background: transparent;
+  --p-inputtext-filled-hover-background: transparent;
+  --p-inputtext-filled-focus-background: transparent;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-texto-label);
+    }
+
+    .req {
+      color: var(--c-danger);
+    }
+
+    ::ng-deep {
+      .p-inputtext,
+      .p-password,
+      .p-password-input {
+        width: 100%;
+      }
+
+      .p-password {
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+      }
+
+      .p-inputtext {
+        border-radius: var(--radius-sm);
+        transition:
+          border-color var(--tr-fast),
+          box-shadow var(--tr-fast);
+
+        &:focus,
+        &.p-focus {
+          border-color: var(--c-border);
+          box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+        }
+      }
+    }
+  }
+
+  // Checkboxes: "Es cliente" y "Recordar lo que indiqué"
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--c-text);
+      cursor: pointer;
+      margin: 0;
+    }
+  }
+
+  ::ng-deep .p-button {
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    height: 2.75rem;
+  }
+}
+
+// ============================================================
+// Validaciones / UX de campos
+// ============================================================
+.campo-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--c-danger);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.caps-warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--c-warning);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.check-hint {
+  color: var(--c-text-muted);
+  font-weight: 400;
+  font-size: 0.75rem;
+}
+
+label.check-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+```
+
+---
+
 ## 📄 src\app\layout\login-dialog\login-dialog.html
 
 ```typescript
@@ -99091,7 +107167,9 @@ export const USUARIOS_ROUTES: Routes = [
 
 .login-hl-card {
   position: relative;
-  background: var(--c-bg-black);
+  background: var(--c-bg-black); // respaldo si el navegador no soporta degradados con color-mix()
+    // Base en degradado con tus mismos colores: así los espacios entre columnas no se ven como franjas negras
+    background: linear-gradient(150deg, var(--c-card-background) 0%, var(--c-bg-black) 100%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-radius: 1.5rem;
@@ -99101,12 +107179,26 @@ export const USUARIOS_ROUTES: Routes = [
   box-shadow: 0 30px 60px -15px rgba(2, 6, 23, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.4);
   animation: hlCardIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
+// Línea de acento con brillo en el borde superior (usa los azules de tus orbes)
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12%;
+    right: 12%;
+    height: 2px;
+    z-index: 1;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, #0ea5e9, var(--c-primary), #3b82f6, transparent);
+    box-shadow: 0 0 14px color-mix(in srgb, #0ea5e9 60%, transparent);
+    pointer-events: none;
+  }
 }
 
 // ===== Layout 2 columnas: izquierda (60%) con bienvenida, derecha (40%) con el login =====
 .login-hl-grid {
   display: grid;
-  grid-template-columns: 55% 40%;
+  grid-template-columns: 55% 45%;
 }
 
 // Columna izquierda: encabezado de bienvenida + botón de registro
@@ -99116,7 +107208,16 @@ export const USUARIOS_ROUTES: Routes = [
   align-items: center;
   justify-content: center;
   padding: 2.75rem 2.25rem;
-  background: var(--c-card-background);
+  background: var(--c-card-background); // respaldo
+    // Degradado: brillo azul en la esquina superior izquierda sobre tu --c-card-background
+    background:
+      radial-gradient(ellipse 80% 60% at 0% 0%,
+        color-mix(in srgb, #0ea5e9 24%, transparent),
+        transparent 70%),
+      linear-gradient(150deg,
+        color-mix(in srgb, var(--master-background) 70%, var(--c-card-background)) 0%,
+        var(--c-card-background) 55%,
+        var(--c-bg-login) 100%);
 }
 
 .welcome {
@@ -99163,9 +107264,17 @@ export const USUARIOS_ROUTES: Routes = [
 // Columna derecha: contenido existente del login
 .login-hl-main {
   min-width: 0;
-  margin-left: 2.25rem;
-  padding: 2.75rem 2.25rem;
-  background: var(--c-bg-black);
+    padding: 2.25rem 2.25rem 2.25rem 2.25rem; // reduce el padding para que el login quede más centrado verticalmente
+      background: var(--c-bg-black); // respaldo
+      // Degradado: de --c-card-background a --c-bg-black, con un brillo azul abajo a la derecha
+      background:
+        radial-gradient(ellipse 70% 50% at 100% 100%,
+          color-mix(in srgb, var(--c-primary) 22%, transparent),
+          transparent 90%),
+        linear-gradient(150deg,
+          var(--c-card-background) 0%,
+          var(--c-bg-black) 45%,
+          var(--c-bg-black) 100%);
 }
 
 // En pantallas angostas el diálogo queda a 90vw → una sola columna
@@ -99253,6 +107362,14 @@ export const USUARIOS_ROUTES: Routes = [
   flex-direction: column;
   gap: 1rem;
 
+  // Fondo de los inputs TRANSPARENTE: se ve el degradado de la columna.
+    // Se sobrescriben los tokens de PrimeNG solo dentro de este formulario.
+    // Para el color sólido del contenedor en vez de transparente, cambia "transparent" por var(--c-bg-black).
+    --p-inputtext-background: transparent;
+    --p-inputtext-disabled-background: transparent;
+    --p-inputtext-filled-background: transparent;
+    --p-inputtext-filled-hover-background: transparent;
+    --p-inputtext-filled-focus-background: transparent;
   .campo {
     display: flex;
     flex-direction: column;
@@ -99285,13 +107402,25 @@ export const USUARIOS_ROUTES: Routes = [
         transition:
           border-color var(--tr-fast),
           box-shadow var(--tr-fast);
-        background-color: var(--c-bg-black);
+        background-color: transparent;
 
         &:focus,
         &.p-focus {
           border-color: var(--c-border);
           box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
         }
+// Autocompletado del navegador: pinta su propio fondo e ignora "background".
+// El transition con delay enorme impide que ese color llegue a verse.
+&:-webkit-autofill,
+&:-webkit-autofill:hover,
+&:-webkit-autofill:focus,
+&:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--color-texto-input);
+  caret-color: var(--color-texto-input);
+  transition:
+    background-color 600000s 0s,
+    color 600000s 0s;
+}
       }
     }
   }
@@ -99374,7 +107503,9 @@ import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { Message } from 'primeng/message';
 import { MessageService } from 'primeng/api';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, RUTAS_CLIENTE } from '../../core/services/auth.service';
+import { LoadingStateService } from '../../core/services/loading-state.service';
+import { Router } from '@angular/router';
 
 /**
  * Login en diálogo HEADLESS (PrimeNG Dialog → <ng-template #headless>).
@@ -99408,6 +107539,8 @@ export class LoginDialog {
   private auth = inject(AuthService);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+  private router = inject(Router);
+  private loadingState = inject(LoadingStateService);
 
   /** Misma clave de persistencia que el drawer en main-layout (preferencia compartida) */
   private static readonly CLAVE_RECORDAR = 'drawer_login_preferencias';
@@ -99424,6 +107557,8 @@ export class LoginDialog {
   readonly tipoPersonaChange = output<string>();
   /** Notifica a MainLayout que se debe abrir el diálogo de registro */
   readonly registro = output<void>();
+  /** Notifica al padre que el login fue exitoso (ej: tienda virtual retoma el checkout) */
+  readonly loginExito = output<void>();
 
   usuario = signal('');
   password = signal('');
@@ -99650,6 +107785,31 @@ export class LoginDialog {
             summary: 'Sesión iniciada',
             detail: `Bienvenido ${res.usuario?.nombre || usuario}`,
           });
+
+          // ── Switch de layout según sn_cliente (28/10/2026) ──
+          // Vale para VALIDAR_SESSION='N' y 'S': el switch es por tipo de
+          // usuario, no por el modo de validación.
+          // Caso 1 sn_cliente='N' (empleado) → main-layout-private + Dashboard
+          // Caso 2 sn_cliente='S' (cliente) → main-layout-public + Tienda
+          const esERP = res.usuario?.sn_cliente !== 'S' && res.usuario?.tipoPersona !== 'C';
+          if (esERP) {
+            this.loadingState.mostrar('Cargando panel ERP...');
+            this.router.navigate(['/dashboard']);
+          } else {
+            // CRM/cliente → layout público. Se emite loginExito (la tienda
+            // retoma el checkout) Y se navega si la URL actual no es de
+            // cliente: los guards solo se re-evalúan en navegaciones, sin
+            // esto seguirías viendo el layout privado donde estabas.
+            this.loginExito.emit();
+            const url = this.router.url.split('?')[0];
+            const enRutaCliente = RUTAS_CLIENTE.some(
+              (r) => url === r || url.startsWith(r + '/'),
+            );
+            if (!enRutaCliente) {
+              this.loadingState.mostrar('Cargando tienda...');
+              this.router.navigate(['/facturacion/tienda']);
+            }
+          }
         },
         error: (err) => {
           this.loading.set(false);
@@ -99666,7 +107826,7 @@ export class LoginDialog {
 
 ---
 
-## 📄 src\app\layout\main-layout\main-layout.html
+## 📄 src\app\layout\main-layout-private\main-layout-private.html
 
 ```typescript
 <div class="layout-wrapper" [class.sidebar-hidden]="sidebarHidden()" [class.sidebar-open]="mobileSidebarOpen()">
@@ -99687,6 +107847,7 @@ export class LoginDialog {
         <i class="pi pi-times"></i>
       </button>
     </div>
+
     <div class="sidebar-menu" (click)="onMenuClick($event)">
       <div class="sidebar-user">
         <i class="pi pi-user" style="font-size: 2rem; margin-top: -5px;"></i>
@@ -99696,10 +107857,11 @@ export class LoginDialog {
         </div>
       </div>
       <p-panelmenu [model]="menuItems()" class="w-full md:w-80" />
+
+ <!--
       <div class="sidebar-footer">
-        <p-button label="Cuenta" icon="pi pi-user" class="w-full" size="small" [rounded]="true" severity="secondary" variant="outlined" (onClick)="visible = true" />
-        <p-button label="Salir" icon="pi pi-sign-out" class="w-full" size="small" [rounded]="true" severity="danger" variant="text" (onClick)="cerrarSesion()" />
       </div>
+    -->
     </div>
   </aside>
 
@@ -99719,12 +107881,17 @@ export class LoginDialog {
           (onClick)="quickNav.abrir()" size="small" iconOnly
           pTooltip="Navegación rápida (Ctrl+Alt+1)" tooltipPosition="bottom" />
 
-         <!-- Abre el login headless (estilo login) -->
-         <p-button type="button"
-         (onClick)="loginDlg.abrir()"
-         label="Cuenta"
-         [rounded]="true" [text]="true"
-         icon="fa-regular fa-circle-user" />
+         <!-- Menú de usuario (p-popover): login/registro sin sesión, cerrar sesión con sesión -->
+         <p-button
+           type="button"
+           pTooltip="Usuario/Sesión"
+           tooltipPosition="left"
+           (onClick)="alternarUsuario($event)"
+           [rounded]="true"
+           [text]="true"
+         >
+           <i class="fa-regular fa-circle-user" style="font-size: 1.45rem"></i>
+         </p-button>
 
 <!--
         <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-sign-out" (onClick)="cerrarSesion()"
@@ -99733,82 +107900,6 @@ export class LoginDialog {
       </div>
     </header>
 
-            <p-drawer header="Cuenta" [(visible)]="visible" position="right">
-              <div class="drawer-login">
-                @if (loginError()) {
-                  <p-message severity="error" [text]="loginError()" styleClass="w-full" />
-                }
-
-                <form class="drawer-form" (ngSubmit)="login()">
-                  <div class="campo">
-                    <label for="d-usuario">Usuario <span class="req">*</span></label>
-                    <input
-                      pInputText
-                      id="d-usuario"
-                      name="d-usuario"
-                      type="text"
-                      autocomplete="username"
-                      [ngModel]="loginUsuario()"
-                      (ngModelChange)="loginUsuario.set($event)"
-                      placeholder="Ingrese su usuario"
-                      [disabled]="loginLoading()"
-                      styleClass="w-full"
-                    />
-                  </div>
-
-                  <div class="campo">
-                    <label for="d-password">Contraseña <span class="req">*</span></label>
-                    <p-password
-                      id="d-password"
-                      name="d-password"
-                      [ngModel]="loginPassword()"
-                      (ngModelChange)="loginPassword.set($event)"
-                      [toggleMask]="true"
-                      [feedback]="false"
-                      [fluid]="true"
-                      autocomplete="current-password"
-                      placeholder="Ingrese su contraseña"
-                      [disabled]="loginLoading()"
-                      styleClass="w-full"
-                    />
-                  </div>
-
-                  <div class="check-row">
-                    <p-checkbox
-                      inputId="d-escliente"
-                      name="d-escliente"
-                      [binary]="true"
-                      [ngModel]="esCliente"
-                      (ngModelChange)="onEsClienteChange($event)"
-                    />
-                    <label for="d-escliente">Soy cliente</label>
-                  </div>
-
-                  <div class="check-row">
-                    <p-checkbox
-                      inputId="d-recordar"
-                      name="d-recordar"
-                      [binary]="true"
-                      [ngModel]="recordar()"
-                      (ngModelChange)="onRecordarChange($event)"
-                    />
-                    <label for="d-recordar">Recordar mi sesión</label>
-                  </div>
-
-                  <p-button
-                    type="submit"
-                    label="Ingresar"
-                    icon="pi pi-sign-in"
-                    size="small"
-                    [rounded]="true"
-                    severity="success"
-                    variant="outlined"
-                    [loading]="loginLoading()"
-                    styleClass="w-full mt-2"
-                  />
-                </form>
-              </div>
-            </p-drawer>
 
     <!-- Content -->
     <main class="layout-content">
@@ -99832,14 +107923,96 @@ export class LoginDialog {
   (registro)="registroDlg.abrir()"
 />
 
-<!-- Registro headless (diálogo estilo login) — botón "Registrarse" del login -->
-<app-registro-dialog #registroDlg (solicitarLogin)="loginDlg.abrir()" />
+<!-- Menú de usuario del topbar (anclado al botón circle-user) -->
+<p-popover #popUsuario styleClass="usuario-popover">
+  <div class="usuario-menu">
+    @if (user(); as u) {
+      <!-- Con sesión: identidad + cerrar sesión -->
+      <div class="usuario-menu-cabecera">
+        <p-avatar [label]="(u.nombre || u.usuario).charAt(0).toUpperCase()" shape="circle" />
+        <div class="usuario-menu-info">
+          <span class="usuario-menu-nombre">{{ u.nombre || u.usuario }}</span>
+          <span class="usuario-menu-email">{{ u.email || 'Sin correo' }}</span>
+        </div>
+      </div>
+      @if (esClienteLogueado()) {
+        <!-- Solo clientes con sesión: acceso al CRM de pedidos -->
+        <div class="usuario-menu-separador"></div>
+        <button type="button" class="usuario-menu-item" (click)="irAPedidosDesdePopover()">
+          <i class="pi pi-shopping-cart"></i>
+          <span>Pedidos</span>
+        </button>
+      }
+      <div class="usuario-menu-separador"></div>
+      <button type="button" class="usuario-menu-item"
+          (click)="abrirCambiarPassword()">
+        <i class="pi pi-key"></i>
+        <span>Cambiar contraseña</span>
+      </button>
+      <div class="usuario-menu-separador"></div>
+      <button type="button" class="usuario-menu-item usuario-menu-item--salir" (click)="cerrarSesionDesdePopover()">
+        <i class="pi pi-sign-out"></i>
+        <span>Cerrar sesión</span>
+      </button>
+    } @else {
+      <!-- Sin sesión: iniciar sesión / registrarse -->
+      <button type="button" class="usuario-menu-item" (click)="loginDesdePopover()">
+        <i class="pi pi-sign-in"></i>
+        <span>Iniciar sesión</span>
+      </button>
+      <button type="button" class="usuario-menu-item" (click)="registroDesdePopover()">
+        <i class="pi pi-user-plus"></i>
+        <span>Registrarse</span>
+      </button>
+    }
+  </div>
+</p-popover>
+
+<!-- Diálogo para cambiar contraseña -->
+<p-dialog header="Cambiar contraseña" [(visible)]="dialogCambiarPassword" [modal]="true" [draggable]="false"
+  [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  styleClass="w-full max-w-25rem">
+  <div class="flex flex-column gap-3 pt-2">
+    <div class="campo">
+      <label class="block font-semibold mb-1 text-sm">Nueva contraseña *</label>
+      <p-password [(ngModel)]="passwordNueva" [toggleMask]="true" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" placeholder="Mínimo 8 caracteres" />
+      <ul class="pwd-rules">
+        <li [class.ok]="pwdLargo">
+          <i class="pi" [class.pi-check]="pwdLargo" [class.pi-times]="!pwdLargo"></i>
+          Mínimo 8 caracteres
+        </li>
+        <li [class.ok]="pwdMayuscula">
+          <i class="pi" [class.pi-check]="pwdMayuscula" [class.pi-times]="!pwdMayuscula"></i>
+          Al menos 1 mayúscula
+        </li>
+        <li [class.ok]="pwdDigito">
+          <i class="pi" [class.pi-check]="pwdDigito" [class.pi-times]="!pwdDigito"></i>
+          Al menos 1 número
+        </li>
+        <li [class.ok]="pwdEspecial">
+          <i class="pi" [class.pi-check]="pwdEspecial" [class.pi-times]="!pwdEspecial"></i>
+          Al menos 1 carácter especial
+        </li>
+      </ul>
+    </div>
+    <div class="campo">
+      <label class="block font-semibold mb-1 text-sm">Confirmar contraseña *</label>
+      <p-password [(ngModel)]="passwordConfirm" [toggleMask]="true" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" placeholder="Repita la nueva contraseña" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" size="small" rounded variant="text" severity="secondary"
+      [disabled]="cambiandoPassword" (onClick)="dialogCambiarPassword = false" />
+    <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" [raised]="true" [rounded]="true"
+      severity="success" [loading]="cambiandoPassword" (onClick)="guardarPassword()" />
+  </ng-template>
+</p-dialog>
 
 ```
 
 ---
 
-## 📄 src\app\layout\main-layout\main-layout.scss
+## 📄 src\app\layout\main-layout-private\main-layout-private.scss
 
 ```typescript
 // ===== Diamond Dark Sidebar Theme (copiado de junta-agua) =====
@@ -100273,6 +108446,9 @@ $topbar-height: 60px;
 // ===== Main Area =====
 .layout-main {
   flex: 1;
+  // min-width:0 → el contenido no puede forzar overflow horizontal de la página
+  // (los formularios anchos crecían el layout y "cortaban" la columna derecha)
+  min-width: 0;
   margin-left: $sidebar-width;
   padding-top: $topbar-height;
   transition: margin-left 0.4s cubic-bezier(0.32, 0.72, 0, 1);
@@ -100542,14 +108718,142 @@ $topbar-height: 60px;
   }
 }
 
+// ===== Menú de usuario (p-popover del topbar) =====
+::ng-deep .usuario-popover {
+  padding: 0.25rem;
+}
+
+.usuario-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+}
+
+.usuario-menu-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
+
+  :deep(.p-avatar) {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    font-weight: 700;
+  }
+}
+
+.usuario-menu-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.usuario-menu-nombre {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usuario-menu-email {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usuario-menu-separador {
+  height: 1px;
+  background: var(--c-border);
+  margin: 0.25rem 0;
+}
+
+.usuario-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--c-text);
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+
+  i {
+    color: var(--c-text-muted);
+    width: 1rem;
+    text-align: center;
+  }
+
+  &:hover {
+    background: var(--c-surface-ground);
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+}
+
+.usuario-menu-item--salir {
+  i {
+    color: var(--c-error);
+  }
+
+  &:hover {
+    i {
+      color: var(--c-error);
+    }
+  }
+}
+
+// ===== Reglas de contraseña (lista en vivo) =====
+.pwd-rules {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    transition: color 0.15s;
+
+    i {
+      font-size: 0.7rem;
+      color: var(--c-text-muted);
+    }
+
+    &.ok {
+      color: var(--c-success);
+
+      i {
+        color: var(--c-success);
+      }
+    }
+  }
+}
+
 ```
 
 ---
 
-## 📄 src\app\layout\main-layout\main-layout.ts
+## 📄 src\app\layout\main-layout-private\main-layout-private.ts
 
 ```typescript
-﻿import { Component, DestroyRef, inject, signal, computed } from '@angular/core';
+﻿import { Component, DestroyRef, inject, signal, computed, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -100563,11 +108867,14 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { TooltipModule } from 'primeng/tooltip';
+import { Popover, PopoverModule } from 'primeng/popover';
+import { DialogModule } from 'primeng/dialog';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { Message } from 'primeng/message';
 import { AuthService } from '../../core/services/auth.service';
 import { MenuConfigService } from '../../core/services/menu-config.service';
 import { QuickNavService } from '../../core/services/quick-nav.service';
+import { ApiService } from '../../core/services/api.service';
 import { Drawer, DrawerModule } from 'primeng/drawer';
 import { QuickNav } from '../quick-nav/quick-nav';
 import { LoginDialog } from '../login-dialog/login-dialog';
@@ -100598,22 +108905,30 @@ interface Opcion {
     TooltipModule,
     Message,
     DrawerModule,
+    PopoverModule,
+    DialogModule,
     QuickNav,
     LoginDialog,
     RegistroDialog,
   ],
-  templateUrl: './main-layout.html',
-  styleUrl: './main-layout.scss',
+  templateUrl: './main-layout-private.html',
+  styleUrl: './main-layout-private.scss',
 })
-export class MainLayout {
+export class MainPrivateLayout {
   private auth = inject(AuthService);
   private confirm = inject(ConfirmationService);
   private msgs = inject(MessageService);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
   private menuConfig = inject(MenuConfigService);
+  private api = inject(ApiService);
   /** Instancia del servicio de navegación rápida (botón del topbar) */
   readonly quickNav = inject(QuickNavService);
+
+  /** Menú de usuario del topbar (p-popover) */
+  @ViewChild('popUsuario') popUsuario?: Popover;
+  @ViewChild('loginDlg') loginDlg?: LoginDialog;
+  @ViewChild('registroDlg') registroDlg?: RegistroDialog;
 
   mobileSidebarOpen = signal(false);
   sidebarHidden = signal(false);
@@ -100649,6 +108964,11 @@ export class MainLayout {
     return this.tipoPersona() === 'C';
   }
 
+  readonly esClienteLogueado = (): boolean => {
+    const u = this.user();
+    return u != null && (u.tipoPersona === 'C' || u.sn_cliente === 'S');
+  };
+
   /** Checkbox "Es cliente": marca/desmarca y sincroniza el tipo de persona del topbar */
   onEsClienteChange(esCliente: boolean) {
     this.tipoPersona.set(esCliente ? 'C' : 'E');
@@ -100665,21 +108985,21 @@ export class MainLayout {
   private guardarPreferencias() {
     if (this.recordar()) {
       localStorage.setItem(
-        MainLayout.CLAVE_RECORDAR,
+        MainPrivateLayout.CLAVE_RECORDAR,
         JSON.stringify({
           usuario: this.loginUsuario(),
           tipoPersona: this.tipoPersona(),
         }),
       );
     } else {
-      localStorage.removeItem(MainLayout.CLAVE_RECORDAR);
+      localStorage.removeItem(MainPrivateLayout.CLAVE_RECORDAR);
     }
   }
 
   /** Restaura la selección guardada al iniciar (si el usuario pidió recordar) */
   private cargarPreferencias() {
     try {
-      const raw = localStorage.getItem(MainLayout.CLAVE_RECORDAR);
+      const raw = localStorage.getItem(MainPrivateLayout.CLAVE_RECORDAR);
       if (!raw) return;
       const data = JSON.parse(raw);
       if (data?.usuario) this.loginUsuario.set(String(data.usuario));
@@ -100817,7 +109137,92 @@ export class MainLayout {
       .slice(0, 2);
   }
 
+  // ==================== Menú de usuario (p-popover) ====================
+
+  alternarUsuario(event: Event) {
+    this.popUsuario?.toggle(event);
+  }
+
+  loginDesdePopover() {
+    this.popUsuario?.hide();
+    this.loginDlg?.abrir();
+  }
+
+  registroDesdePopover() {
+    this.popUsuario?.hide();
+    this.registroDlg?.abrir();
+  }
+
+  irAPedidosDesdePopover() {
+    this.popUsuario?.hide();
+    this.router.navigate(['/facturacion/pedidos-virtual']);
+  }
+
+  // ==================== Cambiar Contraseña ====================
+
+  dialogCambiarPassword: boolean = false;
+  passwordNueva: string = '';
+  passwordConfirm: string = '';
+  cambiandoPassword: boolean = false;
+
+  abrirCambiarPassword() {
+    this.popUsuario?.hide();
+    this.passwordNueva = '';
+    this.passwordConfirm = '';
+    this.dialogCambiarPassword = true;
+  }
+
+  get pwdLargo(): boolean {
+    return this.passwordNueva.length >= 8;
+  }
+  get pwdMayuscula(): boolean {
+    return /[A-ZÁÉÍÓÚÜÑ]/.test(this.passwordNueva);
+  }
+  get pwdDigito(): boolean {
+    return /[0-9]/.test(this.passwordNueva);
+  }
+  get pwdEspecial(): boolean {
+    return /[.,!@#$%^&*()=+~/?;:ñÑ]/.test(this.passwordNueva);
+  }
+  get pwdValida(): boolean {
+    return this.pwdLargo && this.pwdMayuscula && this.pwdDigito && this.pwdEspecial;
+  }
+
+  guardarPassword() {
+    const nueva = this.passwordNueva.trim();
+    const confirm = this.passwordConfirm.trim();
+    if (!this.pwdValida) {
+      this.msgs.add({ severity: 'warn', summary: 'Contraseña no cumple requisitos', detail: 'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.' });
+      return;
+    }
+    if (nueva !== confirm) {
+      this.msgs.add({ severity: 'warn', summary: 'No coinciden', detail: 'La confirmación de contraseña no coincide.' });
+      return;
+    }
+
+    this.cambiandoPassword = true;
+    this.api.putBase('/users/password/actualizar', { passwordNueva: nueva })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.cambiandoPassword = false;
+          this.dialogCambiarPassword = false;
+          this.msgs.add({ severity: 'success', summary: 'Contraseña actualizada', detail: 'Tu contraseña ha sido cambiada exitosamente' });
+        },
+        error: (err) => {
+          this.cambiandoPassword = false;
+          const msg = err.error?.message || 'No se pudo actualizar la contraseña';
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: msg });
+        },
+      });
+  }
+
   cerrarSesion() {
+    this.cerrarSesionDesdePopover();
+  }
+
+  cerrarSesionDesdePopover() {
+    this.popUsuario?.hide();
     this.confirm.confirm({
       header: 'Cerrar sesión',
       message: '¿Estás seguro de cerrar la sesión actual?',
@@ -100827,6 +109232,1277 @@ export class MainLayout {
       acceptButtonStyleClass: 'p-button-text p-button-success p-button-rounded',
       rejectButtonStyleClass: 'p-button-text p-button-secondary p-button-rounded',
       accept: () => this.auth.logout(),
+    });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\layout\main-layout-public\main-layout-public.html
+
+```typescript
+<div class="layout-wrapper">
+  <!-- Menú Drill-Down (Departamentos -> Categorías con botón Volver) en p-drawer a la izquierda -->
+  <p-drawer [(visible)]="menuVisible"
+     position="left" styleClass="departamentos-drawer">
+    <ng-template #header>
+      <div class="flex items-center gap-2">
+        <p-avatar  image="assets/images/toyota.png" shape="circle" />
+        <span class="sidebar-title">TOYOTA</span>
+      </div>
+    </ng-template>
+    <app-sidebar-drilldown />
+  </p-drawer>
+
+  <!-- Main -->
+  <div class="layout-main">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <p-button
+          id="btnShowDrawer"
+          icon="pi pi-bars"
+          (onClick)="menuVisible = true"
+          severity="contrast"
+          rounded="true"
+          variant="text"
+          iconOnly
+          size="small"
+          styleClass="botton-bg-transparente sidebar-toggle"
+          pTooltip="Departamentos"
+        ></p-button>
+        <div class="topbar-brand">
+          <img src="assets/images/toyota.png" alt="TOYOTA" class="brand-logo" />
+          <span class="sidebar-title">TOYOTA</span>
+        </div>
+      </div>
+      <div class="topbar-center">
+        <p-autoComplete
+          [ngModel]="busquedaTopbar()"
+          (ngModelChange)="busquedaTopbar.set($event)"
+          [suggestions]="sugerenciasTopbar()"
+          (completeMethod)="filterProductos($event)"
+          field="descripcion"
+          placeholder="Buscar productos..."
+          styleClass="topbar-search"
+          [inputStyle]="{ width: '100%' }"
+          [dropdown]="true"
+          [forceSelection]="false"
+          [showClear]="true"
+          [appendTo]="'body'"
+          (onSelect)="onProductoSelect($event)"
+          (onClear)="onTopbarClear()"
+          (onInputKeydown)="onTopbarKeydown($event)"
+        >
+          <ng-template let-producto pTemplate="item">
+            <div class="flex align-items-center gap-2 py-1">
+              @if (producto.imagen) {
+              <img
+                [src]="resolverImagenTopbar(producto.imagen)"
+                width="32"
+                height="32"
+                class="topbar-search-img"
+              />
+              } @else {
+              <i class="pi pi-box topbar-search-icon"></i>
+              }
+              <div class="flex flex-column">
+                <span class="font-bold text-xs">{{ producto.descripcion }}</span>
+                <span class="text-xs text-muted-color"
+                  >Cód: {{ producto.codbarra || 'N/A' }} | Precio: {{
+                  formatearPrecioTopbar(producto.precioventa) }}</span
+                >
+              </div>
+            </div>
+          </ng-template>
+        </p-autoComplete>
+      </div>
+      <div class="topbar-right">
+        <!-- Abre el login headless (estilo login) -->
+        @if (carritoState.totalItems() > 0 && !carritoState.carritoOpen()) {
+        <p-overlaybadge
+          id="btnshopping"
+          [value]="carritoState.totalItems()"
+          pTooltip="Carrito de compras"
+          badgeSize="small"
+          severity="success"
+        >
+          <i
+            class="fa-solid fa-cart-shopping"
+            style="font-size: 1.25rem; cursor: pointer"
+            (click)="carritoState.abrir()"
+          ></i>
+        </p-overlaybadge>
+        }
+
+        <!-- Menú de usuario (p-popover): login/registro sin sesión, cerrar sesión con sesión -->
+        <p-button
+          type="button"
+          pTooltip="Usuario/Cesión"
+          tooltipPosition="left"
+          (onClick)="alternarUsuario($event)"
+          [rounded]="true"
+          [text]="true"
+        >
+          <i class="fa-regular fa-circle-user" style="font-size: 1.45rem"></i>
+        </p-button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="layout-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<!-- Globales: notificaciones y confirmaciones -->
+<p-toast />
+<p-confirmdialog />
+
+<!-- Menú de usuario del topbar (anclado al botón circle-user) -->
+<p-popover #popUsuario styleClass="usuario-popover">
+  <div class="usuario-menu">
+    @if (usuario(); as u) {
+      <!-- Con sesión: identidad + cerrar sesión -->
+      <div class="usuario-menu-cabecera">
+        <p-avatar [label]="(u.nombre || u.usuario).charAt(0).toUpperCase()" shape="circle" />
+        <div class="usuario-menu-info">
+          <span class="usuario-menu-nombre">{{ u.nombre || u.usuario }}</span>
+          <span class="usuario-menu-email">{{ u.email || 'Sin correo' }}</span>
+        </div>
+      </div>
+      @if (esCliente()) {
+        <!-- Solo clientes con sesión: acceso al CRM de pedidos -->
+        <div class="usuario-menu-separador"></div>
+        <button type="button" class="usuario-menu-item" (click)="irAPedidosDesdePopover()">
+          <i class="pi pi-shopping-cart"></i>
+          <span>Pedidos</span>
+        </button>
+      }
+      <div class="usuario-menu-separador"></div>
+      <button type="button" class="usuario-menu-item" (click)="abrirCambiarPassword()">
+        <i class="pi pi-key"></i>
+        <span>Cambiar contraseña</span>
+      </button>
+      <div class="usuario-menu-separador"></div>
+      <button type="button" class="usuario-menu-item usuario-menu-item--salir" (click)="cerrarSesionDesdePopover()">
+        <i class="pi pi-sign-out"></i>
+        <span>Cerrar sesión</span>
+      </button>
+    } @else {
+      <!-- Sin sesión: iniciar sesión / registrarse -->
+      <button type="button" class="usuario-menu-item" (click)="loginDesdePopover()">
+        <i class="pi pi-sign-in"></i>
+        <span>Iniciar sesión</span>
+      </button>
+      <button type="button" class="usuario-menu-item" (click)="registroDesdePopover()">
+        <i class="pi pi-user-plus"></i>
+        <span>Registrarse</span>
+      </button>
+    }
+  </div>
+</p-popover>
+
+<!-- Navegación rápida global (Ctrl+Alt+1) -->
+<app-quick-nav />
+
+<!-- Login headless (diálogo estilo login) — botón "Cuenta" del topbar -->
+<app-login-dialog
+  #loginDlg
+  [tipoPersona]="'C'"
+  (tipoPersonaChange)="(0)"
+  (registro)="registroDlg.abrir()"
+/>
+
+<!-- Registro headless (diálogo estilo login) — botón "Registrarse" del login -->
+<app-registro-dialog #registroDlg (solicitarLogin)="loginDlg.abrir()" />
+
+<!-- Diálogo para cambiar contraseña -->
+<p-dialog header="Cambiar contraseña" [(visible)]="dialogCambiarPassword" [modal]="true" [draggable]="false"
+  [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  styleClass="w-full max-w-25rem">
+  <div class="flex flex-column gap-3 pt-2">
+    <div class="campo">
+      <label class="block font-semibold mb-1 text-sm">Nueva contraseña *</label>
+      <p-password [(ngModel)]="passwordNueva" [toggleMask]="true" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" placeholder="Mínimo 8 caracteres" />
+      <ul class="pwd-rules">
+        <li [class.ok]="pwdLargo">
+          <i class="pi" [class.pi-check]="pwdLargo" [class.pi-times]="!pwdLargo"></i>
+          Mínimo 8 caracteres
+        </li>
+        <li [class.ok]="pwdMayuscula">
+          <i class="pi" [class.pi-check]="pwdMayuscula" [class.pi-times]="!pwdMayuscula"></i>
+          Al menos 1 mayúscula
+        </li>
+        <li [class.ok]="pwdDigito">
+          <i class="pi" [class.pi-check]="pwdDigito" [class.pi-times]="!pwdDigito"></i>
+          Al menos 1 número
+        </li>
+        <li [class.ok]="pwdEspecial">
+          <i class="pi" [class.pi-check]="pwdEspecial" [class.pi-times]="!pwdEspecial"></i>
+          Al menos 1 carácter especial
+        </li>
+      </ul>
+    </div>
+    <div class="campo">
+      <label class="block font-semibold mb-1 text-sm">Confirmar contraseña *</label>
+      <p-password [(ngModel)]="passwordConfirm" [toggleMask]="true" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" placeholder="Repita la nueva contraseña" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancelar" size="small" rounded variant="text" severity="secondary"
+      [disabled]="cambiandoPassword" (onClick)="dialogCambiarPassword = false" />
+    <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" [raised]="true" [rounded]="true"
+      severity="success" [loading]="cambiandoPassword" (onClick)="guardarPassword()" />
+  </ng-template>
+</p-dialog>
+
+```
+
+---
+
+## 📄 src\app\layout\main-layout-public\main-layout-public.scss
+
+```typescript
+// ===== Diamond Dark Sidebar Theme (copiado de junta-agua) =====
+
+$sidebar-width: 320px;
+$sidebar-collapsed-width: 56px;
+$topbar-height: 75px;
+
+// CSS variables estilo Diamond
+:host {
+  --d-sidebar-bg-color: rgba(11, 14, 23, 0.85);
+  --d-sidebar-bg-color-alt: rgba(11, 14, 23, 0.85);
+  --d-sidebar-border: 1px solid rgba(255, 255, 255, 0.06);
+  --d-app-name-color: #ffffff;
+  --d-menu-separator-border: 1px solid rgba(255, 255, 255, 0.08);
+  --d-menuitem-root-text-color: rgba(255, 255, 255, 0.4);
+  --d-menuitem-text-color: rgba(255, 255, 255, 0.65);
+  --d-menuitem-hover-bg: rgba(255, 255, 255, 0.06);
+  --d-menuitem-active-bg: rgba(255, 255, 255, 0.08);
+  --d-menuitem-active-text-color: rgba(255, 255, 255, 0.65);
+  --d-menuitem-active-route-text-color: #ffffff;
+  --d-menuitem-focus-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+// ===== Wrapper =====
+.layout-wrapper {
+  display: flex;
+  min-height: 100vh;
+  transition: all 0.2s ease;
+}
+
+// ===== Sidebar =====
+.sidebar {
+  width: $sidebar-width;
+  min-height: 100vh;
+  background: var(--c-surface);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border-right: var(--d-sidebar-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: width 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  user-select: none;
+}
+
+// ===== Sidebar Header =====
+.sidebar-header {
+  background: var(--d-sidebar-bg-color);
+  height: $topbar-height;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem 0 1.25rem;
+  border-bottom: var(--d-menu-separator-border);
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.sidebar-close-mobile {
+  display: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+}
+
+.sidebar-pin {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+  display: none;
+  transition:
+    background-color 0.15s,
+    transform 0.3s;
+
+  &.visible {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &.pinned {
+    background: var(--p-primary-color, #0ea5e9);
+    border-color: var(--p-primary-color, #0ea5e9);
+  }
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--d-app-name-color);
+  font-size: 1.25rem;
+  flex: 1;
+  min-width: 0;
+
+  .sidebar-logo-img {
+    margin-top:5px;
+    width: 2.75rem;
+    height: 2.75rem;
+    min-width: 2.25rem;
+    object-fit: contain;
+  }
+}
+
+.sidebar-title {
+   font-family: 'AstroSpace';
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  color: var(--color-font-sidebar);
+  flex: 1;
+  font-size: 1.5rem;
+  letter-spacing: 0.2px;
+}
+
+// ===== Menu Container =====
+.sidebar-menu {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.75rem;
+
+  // ===== User info en sidebar =====
+  .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.5rem;
+    border-bottom: var(--d-menu-separator-border);
+
+    :deep(.p-avatar) {
+      background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+      color: #fff;
+      font-weight: 700;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  .sidebar-user-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .sidebar-user-name {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-user-role {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 0 0;
+    margin-top: 0.5rem;
+    border-top: var(--d-menu-separator-border);
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+}
+
+// ===== Main Area =====
+.layout-main {
+  flex: 1;
+  min-width: 0;
+  margin-left: 0; // sin sidebar: el menú vive en un p-drawer
+  padding-top: $topbar-height;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+// ===== Topbar =====
+.topbar {
+  height: $topbar-height;
+  background: rgba(11, 14, 23, 0.85);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  gap: 1rem;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+}
+
+// ===== Brand TOYOTA en el topbar (junto al hamburguesa) =====
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: 0.55rem;
+
+  .brand-logo {
+    margin-top: 0.15rem;
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+  }
+
+  .sidebar-title {
+    color: #ffffff;
+    font-size: 1.35rem;
+    white-space: nowrap;
+  }
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  :deep(.p-button) {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.875rem;
+
+    &:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+// ===== Buscador de productos (centro del topbar) =====
+.topbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 1rem;
+
+  ::ng-deep .p-autocomplete {
+    width: 100%;
+    max-width: 440px;
+    background: transparent;
+  }
+
+  ::ng-deep .p-autocomplete .p-inputtext {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    border-radius: 999px;
+    padding-left: 1rem;
+  }
+
+  ::ng-deep .p-autocomplete .p-inputtext:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  ::ng-deep .p-autocomplete .p-inputtext::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  ::ng-deep .p-autocomplete .p-inputtext:focus {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+  }
+
+  ::ng-deep .p-autocomplete-dropdown {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 0.5rem;
+
+    ::ng-deep .p-autocomplete {
+      max-width: none;
+    }
+  }
+}
+
+.topbar-search-img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.topbar-search-icon {
+  font-size: 1.2rem;
+  color: var(--c-primary);
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.9rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  transition:
+    border-color var(--tr-fast),
+    box-shadow var(--tr-fast),
+    background var(--tr-fast);
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.user-chip-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.user-name {
+  font-weight: 700;
+  color: #ffffff;
+  font-size: 0.875rem;
+}
+
+.user-role {
+  text-transform: capitalize;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.user-avatar {
+  :deep(.p-avatar) {
+    background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+    color: #fff;
+    font-weight: 700;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.sidebar-toggle {
+  :deep(.p-button) {
+    color: #ffffff;
+    background: transparent;
+    border: none;
+
+    &:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    &:focus-visible {
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    }
+  }
+}
+
+.hidden-mobile {
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+.profile-btn {
+  :deep(.p-button) {
+    color: rgba(255, 255, 255, 0.85);
+
+    &:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    &:focus-visible {
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+    }
+  }
+}
+
+.layout-content {
+  flex: 1;
+  padding: 0.5rem;
+  background:#1e2e3b;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateY(-110%);
+    visibility: hidden;
+    transition:
+      transform 0.45s cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0.45s;
+    z-index: 200;
+    min-height: 100vh;
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.4);
+
+    .sidebar-pin {
+      display: none;
+    }
+    .sidebar-close-mobile {
+      display: flex;
+    }
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 199;
+  }
+
+  .sidebar-open {
+    .sidebar {
+      transform: translateY(0);
+      visibility: visible;
+    }
+
+    .sidebar-overlay {
+      display: block;
+    }
+  }
+
+  .layout-main {
+    margin-left: 0 !important;
+    padding-top: 112px; // topbar de 2 filas en móvil (izq+der / buscador)
+  }
+
+  .layout-content {
+  padding: 0.5rem;
+  }
+
+  .sidebar-collapsed .layout-main {
+    margin-left: 0;
+  }
+
+  // ===== Topbar móvil: 2 filas =====
+  // Fila 1: topbar-left (hamburguesa + TOYOTA) + topbar-right (cuenta)
+  // Fila 2: topbar-center (buscador autocomplete) a ancho completo
+  .topbar {
+    height: auto;
+    min-height: $topbar-height;
+    flex-wrap: wrap;
+    padding: 0.5rem 0.75rem;
+    row-gap: 0.5rem;
+    z-index: 201;
+  }
+
+  .topbar-left {
+    order: 1;
+  }
+
+  .topbar-right {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .topbar-center {
+    order: 3;
+    flex-basis: 100%;
+    width: 100%;
+    padding: 0;
+
+    ::ng-deep .p-autocomplete {
+      max-width: none;
+    }
+  }
+
+  .sidebar-toggle {
+    .p-button {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+  }
+}
+
+// ===== Drawer de Departamentos (reemplaza al sidebar) =====
+::ng-deep .departamentos-drawer {
+  width: 380px;
+  max-width: 95vw;
+
+  .p-drawer-header {
+    font-family: 'AstroSpace';
+    font-weight: 300;
+    background: var(--c-bg);
+    border-bottom: var(--d-menu-separator-border);
+    color: var(--d-app-name-color);
+    text-align: center;
+  }
+
+  .p-drawer-content {
+    background: var(--c-surface);
+    padding: 0;
+    // Sin scrollbar visible (el contenido sigue siendo scrollable si se desborda)
+    scrollbar-width: none; // Firefox
+
+    &::-webkit-scrollbar {
+      display: none; // Chrome / Edge / Safari
+    }
+  }
+}
+
+.drawer-login {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+
+  .drawer-form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.85rem;
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--c-text-muted);
+    }
+
+    .req {
+      color: var(--c-error);
+    }
+
+    :deep(.p-password) {
+      width: 100%;
+    }
+  }
+
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.65rem;
+
+    label {
+      font-size: 0.85rem;
+      color: var(--c-text);
+      cursor: pointer;
+      margin: 0;
+    }
+  }
+}
+
+// ===== Menú de usuario (p-popover del topbar) =====
+::ng-deep .usuario-popover {
+  padding: 0.25rem;
+}
+
+.usuario-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+}
+
+.usuario-menu-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
+
+  :deep(.p-avatar) {
+    background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+    color: #fff;
+    font-weight: 700;
+  }
+}
+
+.usuario-menu-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.usuario-menu-nombre {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usuario-menu-email {
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usuario-menu-separador {
+  height: 1px;
+  background: var(--c-border);
+  margin: 0.25rem 0;
+}
+
+.usuario-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--c-text);
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+
+  i {
+    color: var(--c-text-muted);
+    width: 1rem;
+    text-align: center;
+  }
+
+  &:hover {
+    background: var(--c-surface-ground);
+
+    i {
+      color: var(--c-primary);
+    }
+  }
+}
+
+.usuario-menu-item--salir {
+  i {
+    color: var(--c-error);
+  }
+
+  &:hover {
+    i {
+      color: var(--c-error);
+    }
+  }
+}
+
+// ===== Reglas de contraseña (lista en vivo) =====
+.pwd-rules {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    transition: color 0.15s;
+
+    i {
+      font-size: 0.7rem;
+      color: var(--c-text-muted);
+    }
+
+    &.ok {
+      color: var(--c-success);
+
+      i {
+        color: var(--c-success);
+      }
+    }
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\layout\main-layout-public\main-layout-public.ts
+
+```typescript
+import { Component, DestroyRef, inject, signal, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
+import { AutoCompleteModule } from 'primeng/autocomplete';
+import { Popover } from 'primeng/popover';
+import { DialogModule } from 'primeng/dialog';
+import { PasswordModule } from 'primeng/password';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { QuickNavService } from '../../core/services/quick-nav.service';
+import { TiendaService } from '../../features/facturacion/tienda/tienda.service';
+import { ApiService } from '../../core/services/api.service';
+import { ProductoTienda } from '../../core/models/tienda.models';
+import { DrawerModule } from 'primeng/drawer';
+import { QuickNav } from '../quick-nav/quick-nav';
+import { SidebarDrilldownComponent } from '../sidebar-drilldown/sidebar-drilldown';
+import { LoginDialog } from '../login-dialog/login-dialog';
+import { RegistroDialog } from '../registro-dialog/registro-dialog';
+import { OverlayBadgeModule } from 'primeng/overlaybadge';
+import { CarritoStateService } from '../../core/services/carrito-state.service';
+import { AvatarModule } from 'primeng/avatar';
+import { AuthService } from '../../core/services/auth.service';
+
+@Component({
+  selector: 'app-main-layout-public',
+  standalone: true,
+  imports: [
+    RouterOutlet,
+    FormsModule,
+    ButtonModule,
+    ToastModule,
+    ConfirmDialogModule,
+    TooltipModule,
+    AutoCompleteModule,
+    DrawerModule,
+    SidebarDrilldownComponent,
+    QuickNav,
+    LoginDialog,
+    RegistroDialog,
+    OverlayBadgeModule,
+    AvatarModule,
+    Popover,
+    DialogModule,
+    PasswordModule,
+  ],
+  templateUrl: './main-layout-public.html',
+  styleUrl: './main-layout-public.scss',
+})
+export class MainLayoutPublic {
+  private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+  private tiendaService = inject(TiendaService);
+  private auth = inject(AuthService);
+  private confirm = inject(ConfirmationService);
+  private msgs = inject(MessageService);
+  private api = inject(ApiService);
+  readonly quickNav = inject(QuickNavService);
+  readonly carritoState = inject(CarritoStateService);
+
+  /** Menú de usuario del topbar (p-popover) */
+  @ViewChild('popUsuario') popUsuario?: Popover;
+  /** Diálogo de login (template ref #loginDlg) */
+  @ViewChild('loginDlg') loginDlg?: LoginDialog;
+  /** Diálogo de registro (template ref #registroDlg) */
+  @ViewChild('registroDlg') registroDlg?: RegistroDialog;
+
+  /** true si hay sesión activa (define el contenido del popover) */
+  readonly usuario = this.auth.currentUser;
+
+  /** true si la sesión activa es de un cliente (mismo criterio que authGuard) */
+  readonly esCliente = (): boolean => {
+    const u = this.usuario();
+    return u != null && (u.tipoPersona === 'C' || u.sn_cliente === 'S');
+  };
+
+  /** Drawer de Departamentos (reemplaza al sidebar) */
+  menuVisible: boolean = false;
+
+  // ==================== Buscador de productos en el topbar ====================
+
+  /** Texto tipeado en el buscador del topbar */
+  busquedaTopbar = signal('');
+  /** Sugerencias mostradas en el dropdown (mismo filtrado que tienda-virtual) */
+  sugerenciasTopbar = signal<ProductoTienda[]>([]);
+  /** Catálogo de productos — se carga de forma perezosa en el primer tipeo */
+  private productosTopbar = signal<ProductoTienda[]>([]);
+  /** true mientras se carga el catálogo (evita requests duplicados) */
+  private catalogoCargando = false;
+  /** true cuando el catálogo ya se cargó al menos una vez */
+  private catalogoListo = false;
+  /** true si se presionó Enter y aún no se resolvió por onSelect (fallback a texto libre) */
+  private enterPendiente = false;
+
+  /**
+   * Filtra productos por descripción/código de barra (misma lógica que
+   * `tienda-virtual.filterProductos`). En la primera llamada carga el
+   * catálogo reusando el caché de TiendaService (TTL 1 min + localStorage).
+   */
+  filterProductos(event: { query: string }) {
+    if (!this.catalogoListo && !this.catalogoCargando) {
+      this.catalogoCargando = true;
+      this.tiendaService
+        .getProductos(false, 'tienda')
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (data) => {
+            this.productosTopbar.set(data);
+            this.catalogoListo = true;
+            this.catalogoCargando = false;
+            this.aplicarFiltroTopbar(event);
+          },
+          error: () => {
+            this.catalogoCargando = false;
+            this.sugerenciasTopbar.set([]);
+          },
+        });
+      return;
+    }
+    this.aplicarFiltroTopbar(event);
+  }
+
+  private aplicarFiltroTopbar(event: { query: string }) {
+    const query = (event.query || '').toLowerCase().trim();
+    const lista = this.productosTopbar();
+    if (!query) {
+      this.sugerenciasTopbar.set(lista.slice(0, 10));
+      return;
+    }
+    const filtrados = lista.filter(
+      (p) =>
+        p.descripcion?.toLowerCase().includes(query) ||
+        p.codbarra?.toLowerCase().includes(query),
+    );
+    this.sugerenciasTopbar.set(filtrados.slice(0, 10));
+  }
+
+  /**
+   * Enter en el buscador: PrimeNG emite `onInputKeydown` ANTES de procesar
+   * la tecla. Si hay una opción enfocada, `onSelect` se emite
+   * sincrónicamente y limpia el flag; si no, al siguiente tick navegamos
+   * con el texto libre.
+   */
+  onTopbarKeydown(event: KeyboardEvent) {
+    if (event.key !== 'Enter' && event.key !== 'NumpadEnter') return;
+    this.enterPendiente = true;
+    setTimeout(() => {
+      if (this.enterPendiente) {
+        this.enterPendiente = false;
+        this.irATienda(this.busquedaTopbar());
+      }
+    });
+  }
+
+  /** Selección de una sugerencia → envía el producto como parámetro de búsqueda a la tienda */
+  onProductoSelect(event: any) {
+    this.enterPendiente = false;
+    const prod: ProductoTienda | undefined = event?.value;
+    this.irATienda(prod?.descripcion || this.busquedaTopbar());
+  }
+
+  /** Sincroniza el estado del dropdown al limpiar el input */
+  onTopbarClear() {
+    this.sugerenciasTopbar.set([]);
+    this.enterPendiente = false;
+  }
+
+  /** Navega a la tienda virtual enviando el texto en el query param `buscar` */
+  private irATienda(texto: string) {
+    const q = (texto || '').trim();
+    if (!q) return;
+    this.busquedaTopbar.set('');
+    this.sugerenciasTopbar.set([]);
+    this.router.navigate(['/facturacion/tienda'], { queryParams: { buscar: q } });
+  }
+
+  resolverImagenTopbar(imagen: string | null): string {
+    if (!imagen) return '';
+    return /^data:/i.test(imagen) ? imagen : `data:image/png;base64,${imagen}`;
+  }
+
+  formatearPrecioTopbar(precio: number | string): string {
+    return `L ${Number(precio).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  // ==================== Menú de usuario (p-popover) ====================
+
+  /** Abre/cierra el popover anclado al botón de usuario del topbar */
+  alternarUsuario(event: Event) {
+    this.popUsuario?.toggle(event);
+  }
+
+  /** "Iniciar sesión" (sin sesión) → abre el LoginDialog y cierra el popover */
+  loginDesdePopover() {
+    this.popUsuario?.hide();
+    this.loginDlg?.abrir();
+  }
+
+  /** "Registrarse" (sin sesión) → abre el RegistroDialog y cierra el popover */
+  registroDesdePopover() {
+    this.popUsuario?.hide();
+    this.registroDlg?.abrir();
+  }
+
+  /** "Pedidos" (solo clientes con sesión) → navega al CRM de pedidos */
+  irAPedidosDesdePopover() {
+    this.popUsuario?.hide();
+    this.router.navigate(['/facturacion/pedidos-virtual']);
+  }
+
+  /** "Cerrar sesión" (con sesión) → confirmación y logout ( AuthService limpia todo) */
+  cerrarSesionDesdePopover() {
+    this.popUsuario?.hide();
+    this.confirm.confirm({
+      header: 'Cerrar sesión',
+      message: '¿Estás seguro de cerrar la sesión actual?',
+      icon: 'pi pi-sign-out',
+      acceptLabel: 'Sí, cerrar sesión',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-text p-button-success p-button-rounded',
+      rejectButtonStyleClass: 'p-button-text p-button-secondary p-button-rounded',
+      accept: () => this.auth.logout(),
+    });
+  }
+
+  // ==================== Cambiar Contraseña ====================
+
+  dialogCambiarPassword: boolean = false;
+  passwordNueva: string = '';
+  passwordConfirm: string = '';
+  cambiandoPassword: boolean = false;
+
+  abrirCambiarPassword() {
+    this.popUsuario?.hide();
+    this.passwordNueva = '';
+    this.passwordConfirm = '';
+    this.dialogCambiarPassword = true;
+  }
+
+  get pwdLargo(): boolean {
+    return this.passwordNueva.length >= 8;
+  }
+  get pwdMayuscula(): boolean {
+    return /[A-ZÁÉÍÓÚÜÑ]/.test(this.passwordNueva);
+  }
+  get pwdDigito(): boolean {
+    return /[0-9]/.test(this.passwordNueva);
+  }
+  get pwdEspecial(): boolean {
+    return /[.,!@#$%^&*()=+~/?;:ñÑ]/.test(this.passwordNueva);
+  }
+  get pwdValida(): boolean {
+    return this.pwdLargo && this.pwdMayuscula && this.pwdDigito && this.pwdEspecial;
+  }
+
+  guardarPassword() {
+    const nueva = this.passwordNueva.trim();
+    const confirm = this.passwordConfirm.trim();
+    if (!this.pwdValida) {
+      this.msgs.add({ severity: 'warn', summary: 'Contraseña no cumple requisitos', detail: 'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.' });
+      return;
+    }
+    if (nueva !== confirm) {
+      this.msgs.add({ severity: 'warn', summary: 'No coinciden', detail: 'La confirmación de contraseña no coincide.' });
+      return;
+    }
+
+    this.cambiandoPassword = true;
+    this.api.putBase('/users/password/actualizar', { passwordNueva: nueva })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.cambiandoPassword = false;
+          this.dialogCambiarPassword = false;
+          this.msgs.add({ severity: 'success', summary: 'Contraseña actualizada', detail: 'Tu contraseña ha sido cambiada exitosamente' });
+        },
+        error: (err) => {
+          this.cambiandoPassword = false;
+          const msg = err.error?.message || 'No se pudo actualizar la contraseña';
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: msg });
+        },
+      });
+  }
+
+  constructor() {
+    // Al navegar (ej. elegir categoría), cerrar el drawer en móvil
+    this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+      if (event instanceof NavigationEnd && window.innerWidth <= 768) {
+        this.menuVisible = false;
+      }
     });
   }
 }
@@ -102649,6 +112325,354 @@ export class RegistroDialog {
 
 ---
 
+## 📄 src\app\layout\sidebar-drilldown\sidebar-drilldown.html
+
+```typescript
+<div class="drilldown-menu">
+  @if (!deptoActivo()) {
+    <!-- VISTA 1: Lista de Departamentos -->
+    <div class="drilldown-header">
+      <i class="fa-solid fa-layer-group"></i>
+      <span class="drilldown-title">Departamentos</span>
+    </div>
+    <div class="drilldown-list">
+      @for (depto of deptos(); track depto.deptoId) {
+        <button class="drilldown-item" (click)="seleccionarDepto(depto)">
+          <div class="item-content">
+            <i class="fa-solid fa-folder"></i>
+            <span>{{ depto.descripcion }}</span>
+          </div>
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
+      } @empty {
+        <div class="p-3 text-center text-muted text-sm">Cargando departamentos...</div>
+      }
+    </div>
+  } @else {
+    <!-- VISTA 2: Encabezado del Departamento + Categorías Apiladas con Back-History -->
+    <div class="drilldown-header with-back">
+      <p-button
+        icon="pi pi-chevron-left"
+        [rounded]="true"
+        [text]="true"
+        size="large"
+        severity="secondary"
+          (onClick)="volver()"
+        pTooltip="Volver a departamentos"
+        tooltipPosition="right" />
+      <span class="drilldown-title truncate cursor-pointer hover:text-primary transition-colors" (click)="filtrarDeptoCompleto()" [title]="'Ver todo en ' + deptoActivo()?.descripcion">
+        {{ deptoActivo()?.descripcion }}
+      </span>
+    </div>
+    <div class="drilldown-list">
+      @for (cat of categoriasFiltradas(); track cat.categoriaId) {
+        <button class="drilldown-item" (click)="seleccionarCategoria(cat)">
+          <div class="item-content">
+            <i class="fa-solid fa-tag"></i>
+            <span>{{ cat.descripcion }}</span>
+          </div>
+          <i class="fa-solid fa-angle-right text-xs"></i>
+        </button>
+      } @empty {
+        <div class="p-3 text-center text-muted text-sm">No hay categorías en este departamento</div>
+      }
+    </div>
+  }
+</div>
+
+```
+
+---
+
+## 📄 src\app\layout\sidebar-drilldown\sidebar-drilldown.scss
+
+```typescript
+.drilldown-menu {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: transparent;
+  border-bottom: var(--d-menu-separator-border);
+  margin-top: 0;
+  margin-bottom: 0.2rem;
+  padding-top: 0;
+  padding-bottom: 0.2rem;
+}
+
+.drilldown-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--d-menuitem-root-text-color, rgba(255, 255, 255, 0.4));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: transparent;
+
+  &.with-back {
+    justify-content: flex-start;
+    gap: 0.5rem;
+    text-transform: none;
+    color: var(--d-menuitem-text-color);
+    padding: 0.45rem 0.75rem;
+  }
+
+  i {
+    font-size: 0.85rem;
+    color: var(--d-menuitem-text-color);
+  }
+}
+
+.drilldown-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--d-menuitem-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drilldown-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  overflow-y: auto;
+
+  // Scrollbar fino y elegante
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.4);
+    }
+  }
+}
+
+.drilldown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: var(--d-menuitem-hover-bg);
+    .item-content span, i {
+      color: var(--d-menuitem-active-route-text-color);
+    }
+  }
+
+  .item-content {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+   font-family: 'Figtree';
+    font-size: 1rem;
+    font-weight: 300;
+    color: var(--color-texto-label);
+
+    i {
+      font-size: 0.85rem;
+      min-width: 1.25rem;
+      color: var(--d-menuitem-text-color);
+    }
+
+    span {
+      color: var(--d-menuitem-text-color);
+    }
+  }
+
+  > i {
+    font-size: 0.75rem;
+    color: var(--d-menuitem-text-color);
+    opacity: 0.7;
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\layout\sidebar-drilldown\sidebar-drilldown.ts
+
+```typescript
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
+import { DepartamentosService } from '../../core/services/departamentos.service';
+import { CategoriasService } from '../../core/services/categorias.service';
+import { TiendaFiltroService } from '../../core/services/tienda-filtro.service';
+import { Departamento, Categoria } from '../../core/models/inventario.models';
+
+/**
+ * Componente de navegación lateral estilo Drill-Down (como Indufesa / e-commerce):
+ * Muestra primero los departamentos. Al hacer clic en uno, se despliegan sus categorías
+ * apiladas bajo el encabezado del departamento con un botón de retorno ("back-history").
+ */
+@Component({
+  selector: 'app-sidebar-drilldown',
+  standalone: true,
+  imports: [CommonModule, ButtonModule, TooltipModule],
+  templateUrl: './sidebar-drilldown.html',
+  styleUrl: './sidebar-drilldown.scss',
+})
+export class SidebarDrilldownComponent implements OnInit {
+  private deptosService = inject(DepartamentosService);
+  private categoriasService = inject(CategoriasService);
+  private router = inject(Router);
+  private filtroService = inject(TiendaFiltroService);
+
+  deptos = signal<Departamento[]>([]);
+  categorias = signal<Categoria[]>([]);
+  deptoActivo = signal<Departamento | null>(null);
+  loading = signal<boolean>(false);
+
+  /** Categorías filtradas pertenecientes al departamento activo */
+  categoriasFiltradas = computed(() => {
+    const depto = this.deptoActivo();
+    if (!depto) return [];
+    return this.categorias().filter((c) => c.deptoId === depto.deptoId);
+  });
+
+  ngOnInit() {
+    this.cargarDatos();
+  }
+
+  cargarDatos() {
+    this.loading.set(true);
+    this.deptosService.getAll().subscribe({
+      next: (d) => this.deptos.set(d),
+      error: (e) => console.error('Error cargando departamentos:', e),
+    });
+
+    this.categoriasService.getAll().subscribe({
+      next: (c) => {
+        this.categorias.set(c);
+        this.loading.set(false);
+      },
+      error: (e) => {
+        console.error('Error cargando categorías:', e);
+        this.loading.set(false);
+      },
+    });
+  }
+
+  seleccionarDepto(depto: Departamento) {
+    this.deptoActivo.set(depto);
+    this.filtroService.setFiltroDepto(depto.deptoId, depto.descripcion);
+    this.router.navigate(['/facturacion/tienda']);
+  }
+
+  filtrarDeptoCompleto() {
+    const depto = this.deptoActivo();
+    if (depto) {
+      this.filtroService.setFiltroDepto(depto.deptoId, depto.descripcion);
+      this.router.navigate(['/facturacion/tienda']);
+    }
+  }
+
+  volver() {
+    this.deptoActivo.set(null);
+    this.filtroService.limpiarFiltros();
+    this.router.navigate(['/facturacion/tienda']);
+  }
+
+  seleccionarCategoria(cat: Categoria) {
+    const depto = this.deptoActivo();
+    this.filtroService.setFiltros([cat.categoriaId], cat.deptoId, [cat.descripcion], depto?.descripcion);
+    this.router.navigate(['/facturacion/tienda']);
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\shared\loading\loading.ts
+
+```typescript
+import { Component, input } from '@angular/core';
+
+/**
+ * Pantalla de carga global mientras se determina el layout
+ * (lectura de localStorage / cambio de perfil tras login).
+ *
+ * Muestra un GIF de `src/assets/images/` según el `gif` input
+ * (default: `cargando.gif`).
+ */
+@Component({
+  selector: 'app-loading',
+  standalone: true,
+  template: `
+    <div class="loading-overlay">
+      <img
+        [src]="'assets/images/' + gif()"
+        alt="Cargando..."
+        class="loading-gif"
+      />
+      <p class="loading-text">{{ texto() }}</p>
+    </div>
+  `,
+  styles: [
+    `
+      .loading-overlay {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        background: var(--c-surface-ground, #f8fafc);
+        z-index: 9999;
+      }
+      .loading-gif {
+        width: 140px;
+        height: 140px;
+        object-fit: contain;
+      }
+      .loading-text {
+        font-family: 'Mukta', sans-serif;
+        font-size: 1.1rem;
+        color: var(--c-text-muted, #64748b);
+        margin: 0;
+      }
+    `,
+  ],
+})
+export class Loading {
+  /** Nombre del GIF en src/assets/images/ */
+  readonly gif = input('cargando.gif');
+  /** Texto debajo del GIF */
+  readonly texto = input('Cargando...');
+}
+
+```
+
+---
+
 ## 📄 src\environments\environment.prod.ts
 
 ```typescript
@@ -102656,6 +112680,8 @@ export const environment = {
   production: true,
   apiUrl: '',
   currencySymbol: 'L ',
+  VALIDAR_SESSION: 'S',
+  EMPRESA_ID: 2,
 };
 
 ```
@@ -102669,6 +112695,8 @@ export const environment = {
   production: false,
   apiUrl: 'http://localhost:3000/api',
   currencySymbol: 'L ',
+  VALIDAR_SESSION: 'N',
+  empresaId: 2,
 };
 
 ```
@@ -102718,7 +112746,838 @@ bootstrapApplication(App, appConfig)
 
 ---
 
-## 📄 src\styles - copia.scss
+## 📄 src\styles.scss
+
+```typescript
+/* You can add global styles to this file, and also import other style files */
+@layer primeng {}
+
+@font-face {
+  font-family: 'Mukta';
+  src: url('/assets/fonts/Mukta/Mukta-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Mukta';
+  src: url('/assets/fonts/Mukta/Mukta-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Mukta';
+  src: url('/assets/fonts/Mukta/Mukta-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Mukta';
+  src: url('/assets/fonts/Mukta/Mukta-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Mukta';
+  src: url('/assets/fonts/Mukta/Mukta-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
+
+/* Figtree — fuente variable (pesos 300–900, romana + itálica) */
+@font-face {
+  font-family: 'Figtree';
+  src: url('/assets/fonts/Figtree/Figtree-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Figtree';
+  src: url('/assets/fonts/Figtree/Figtree-Italic-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'AstroSpace';
+  src: url('/assets/fonts/AstroSpace/AstroSpace.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+
+@font-face {
+  font-family: 'Angora';
+  src: url('/assets/fonts/Angora/Angora-1G3BB.otf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Audiowide';
+  src: url('/assets/fonts/Audiowide/Audiowide-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
+
+@font-face {
+  font-family: 'Hurricane';
+  src: url('/assets/fonts/Hurricane/Hurricane-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
+
+@font-face {
+  font-family: 'Rye';
+  src: url('/assets/fonts/Rye/Rye-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
+
+:root {
+  --font-family: 'Figtree', 'Mukta', sans-serif;
+
+  --color-font-sidebar: #dbe7f0;
+  --color-texto-label: rgba(255, 255, 255, 0.4);
+  --color-texto-input: rgba(255, 255, 255, 0.808);
+  --master-background: #213341;
+  --datatable-row-hover-background: #285856e7;
+    --datatable-row-striped-background: #1f2f3a;
+  --texto-secundario: #2c4d6f;
+  --select-row: #93b7d3;
+  --for-border-color-alls: #39495b;
+  --color1: #243347;
+    --color2: #1E293B;
+
+  /* ===== Design tokens ===== */
+  --c-bg: #1e2e3b;
+  --c-bg-white: white;
+  --c-bg-black: black;
+  --c-bg-muted: #1e2e3b00;
+  --c-bg-login: #030713;
+  --c-bg-login-inputtext: #030713;
+  --c-surface: #1e2e3b;
+  --c-surface-muted: #2d3d50b4;
+  --c-card-background: #08131c;
+  --c-card-color-text: var(--color-texto-label);
+  --c-border: #1e2e3b;
+  --c-border-strong: #2c4d6f;
+  --c-text: var(--color-texto-label);
+  --c-text-secondary: var(--texto-secundario);
+  --c-text-muted: #8aa9c9;
+  --c-text-faint: #5f86ab;
+  --c-disabled-color: #1f2f3a;
+  --c-primary: #3d8bff;
+  --c-primary-strong: #0070f2;
+  --c-success: #2fd48a;
+  --c-warning: #f5a623;
+  --c-danger: #d84b4b;
+  --c-peligro: #c41919;
+  --c-info: #38bdf8;
+  --c-uva: #604ec7ef;
+  --c-amarillo: #faf06af8;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --radius-full: 9999px;
+
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 28px -8px rgba(0, 0, 0, 0.55);
+  --shadow-focus: 0 0 0 3px rgba(61, 139, 255, 0.35);
+
+  --tr-fast: 150ms ease;
+  --tr-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --tr-smooth: 300ms cubic-bezier(0.32, 0.72, 0, 1);
+
+  --p-button-padding-x: 0.75rem;
+  --p-button-padding-y: 0.5rem;
+  --p-button-font-size: 0.875rem;
+  --p-inputtext-padding-x: 0.75rem;
+  --p-inputtext-padding-y: 0.5rem;
+  --p-inputtext-font-size: 0.875rem;
+  --p-select-padding-x: 0.75rem;
+  --p-select-padding-y: 0.5rem;
+  --p-select-font-size: 0.875rem;
+  --p-textarea-padding-x: 0.75rem;
+  --p-textarea-padding-y: 0.5rem;
+  --p-textarea-font-size: 0.875rem;
+  --p-datepicker-padding-x: 0.75rem;
+  --p-datepicker-padding-y: 0.5rem;
+  --p-datepicker-font-size: 0.875rem;
+  --p-inputicon-font-size: 0.875rem;
+  --p-paginator-font-size: 0.875rem;
+
+  --p-form-field-background: #213341;
+  --p-form-field-border-color: #39495b;
+
+
+  --p-navigation-item-color: #7f8790;
+  --p-navigation-item-icon-color: #558dc6;
+
+  --p-panelmenu-item-focus-color: #558dc6;
+  --p-navigation-submenu-icon-color: #558dc6;
+
+
+  --p-card-title-font-size: 1.05rem;
+  --p-card-background: var(--p-form-field-background);
+
+  --p-inputtext-color: var(--color-texto-input);
+  --p-inputtext-background: #213341;
+  --p-inputtext-border-color: #39495b;
+  --p-inputtext-disabled-color: var(--c-text-muted);
+  --p-inputtext-disabled-background: var(--c-bg);
+  --p-inputtext-disabled-border-color: #2a3a4a;
+  --p-inputtext-invalid-border-color: var(--c-danger);
+
+  --p-togglebutton-color: var(--color-texto-input);
+  --p-togglebutton-background: var(--c-bg);
+
+
+  // para los botones selecionados del toggle button
+  --p-togglebutton-checked-color: var(--c-success);
+  --p-togglebutton-content-checked-background: var(--p-inputtext-background);
+
+
+  --p-togglebutton-background: var(--c-bg);
+  --p-togglebutton-checked-background: var(--c-bg);
+
+  --p-togglebutton-hover-color: var(--c-amarillo);
+  --p-togglebutton-border-color: var(--c-bg);
+  --p-togglebutton-checked-border-color: var(--c-bg);
+
+
+  --p-select-color: var(--color-texto-input);
+  --p-select-background: var(--p-form-field-background);
+  --p-select-disabled-background: var(--c-bg);
+  --p-select-disabled-color: var(--c-text-muted);
+
+  --p-inputnumber-disabled-background: var(--c-bg);
+  --p-datepicker-disabled-background: var(--c-bg);
+
+  --p-toolbar-border-color: var(--for-border-color-alls);
+
+  --p-datatable-body-cell-border-color: #25374a;
+  --p-datatable-header-cell-border-color: #25374a;
+  --p-datatable-header-cell-color: var(--color-texto-input);
+  --p-datatable-body-cell-sm-padding: 0.20rem 0.08rem;
+    /* Reduce o aumenta el padding vertical y horizontal de las celdas */
+    --p-datatable-body-cell-padding: 0.20rem 0.08rem;
+    /* Valor más compacto que el predeterminado */
+
+    /* Cambiar el color de fondo para las filas impares/pares alternadas */
+      --p-datatable-row-striped-background: var(--datatable-row-striped-background);
+
+      /* Color de fila seleccionada */
+      --p-datatable-row-selected-background: var(--c-text-muted);
+      --p-datatable-row-selected-color: var(--color-texto-label);
+      --p-datatable-row-hover-background: var(--datatable-row-hover-background);
+
+
+  --p-tag-secondary-background: var(--c-bg-muted);
+  --p-tag-success-background: var(--c-bg-muted);
+  --p-tag-info-background: var(--c-bg-muted);
+  --p-tag-warn-background: var(--c-bg-muted);
+  --p-tag-danger-background: var(--c-bg-muted);
+
+  --p-tag-rounded-border-radius: 5px 5px 5px 5px;
+
+  --surface-border: var(--for-border-color-alls);
+
+--p-button-contrast-background: var(--c-bg-black);
+  --p-button-contrast-border-color: var(--c-bg-black);
+  --p-button-contrast-color: var(--c-bg-white);
+}
+
+
+.p-dataview {
+  --p-dataview-content-padding: 0.25rem;
+  /* Modifica el padding general del contenedor de contenido */
+}
+
+::ng-deep .p-dataview .p-dataview-content .dataview-item {
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+::ng-deep .p-dataview .p-dataview-content .dataview-item:hover {
+  background-color: var(--datatable-row-hover-background);
+  /* O usa un color fijo como #f8fafc */
+  color: var(--c-bg-white);
+  cursor: pointer;
+}
+
+.togglebutton-bg-azulnarino {
+  /* Estado Normal (Sin chequear) */
+  --p-togglebutton-background: var(--c-bg-black);
+  --p-togglebutton-border-color: var(--c-bg-black);
+
+  /* Estado Hover (Sin chequear) */
+  --p-togglebutton-hover-background: rgba(255, 255, 255, 0.08);
+  --p-togglebutton-hover-border-color: var(--c-bg-black);
+
+  /* Estado Chequeado */
+  --p-togglebutton-checked-background: rgba(255, 255, 255, 0.08);
+  --p-togglebutton-content-checked-background: rgba(255, 255, 255, 0.08);
+  --p-togglebutton-checked-border-color: var(--c-bg-black);
+}
+
+.togglebutton-bg-black {
+  /* Estado Normal (Sin chequear) */
+  --p-togglebutton-background: var(--c-bg-black);
+  --p-togglebutton-border-color: var(--c-bg-black);
+
+  /* Estado Hover (Sin chequear) */
+  --p-togglebutton-hover-background: var(--c-bg);
+  --p-togglebutton-hover-border-color: var(--c-bg);
+
+  /* Estado Chequeado */
+  --p-togglebutton-checked-background: var(--c-bg);
+  --p-togglebutton-content-checked-background: var(--c-bg);
+  --p-togglebutton-checked-border-color: var(--c-bg);
+}
+.botton-bg-transparente {
+  background: transparent;
+  color: var(--c-bg-white);
+
+  --p-button-contrast-background: transparent;
+  --p-button-contrast-border-color: var(--c-bg-black);
+  --p-button-contrast-color: var(--c-bg-white);
+}
+
+.inputtext-transparente {
+  background: transparent;
+  color: var(--c-bg-white);
+  border-color: var(--c-bg-white);
+  --p-inputtext-background: transparent;
+  --p-inputtext-border-color: var(--c-bg-white);
+  --p-inputtext-color: var(--c-bg-white);
+}
+body {
+  font-family: var(--font-family);
+  color: var(--c-text);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+label {
+  color: var(--c-text);
+  /* Color del texto */
+}
+
+thead th {
+  color: var(--c-text);
+}
+
+tr {
+  color: var(--c-text);
+}
+
+
+ul {
+  display: block;
+  list-style-type: none;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+  padding-inline-start: 12px;
+  unicode-bidi: isolate;
+}
+
+
+.p-inputtext {
+  color: var(--c-text);
+  /* Color del texto */
+}
+
+.p-select {
+  color: var(--c-text);
+  /* Color del texto */
+}
+
+.p-card {
+  --p-card-body-padding: 0.75rem;
+  /* O el valor que prefieras, ej: 10px, 0.5rem */
+}
+
+.tabla-card {
+  padding: 0.05rem;
+  overflow: hidden;
+  border-radius: 12px;
+
+}
+
+/* =====================================================
+   Animaciones de entrada
+   ===================================================== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseSoft {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page>* {
+    animation: fadeInUp var(--tr-smooth) both;
+  }
+
+  .page>*:nth-child(2) {
+    animation-delay: 0.04s;
+  }
+
+  .page>*:nth-child(3) {
+    animation-delay: 0.08s;
+  }
+
+  .page>*:nth-child(4) {
+    animation-delay: 0.12s;
+  }
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.p-skeleton {
+  background: linear-gradient(90deg, #eef2f7 25%, #e2e8f0 50%, #eef2f7 75%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 1.6s infinite !important;
+}
+
+/* =====================================================
+   Estilos compartidos de páginas
+   ===================================================== */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+
+  .page-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+}
+
+.w-full {
+  width: 100%;
+}
+
+.page-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--c-text);
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.page-subtitle {
+  font-size: 0.9rem;
+  color: var(--c-text-muted);
+  margin: 0;
+}
+
+/* Tarjeta genérica */
+.card {
+  background: var(--c-bg);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--for-border-color-alls);
+
+}
+
+// =====================================================
+// Tablas responsive con scroll horizontal
+// =====================================================
+.p-datatable-wrapper {
+  overflow-x: auto;
+
+  table {
+    min-width: max-content;
+  }
+}
+
+@media (max-width: 640px) {
+  .p-datatable-wrapper {
+    margin: 0 -0.75rem;
+    padding: 0 0.75rem;
+  }
+
+  .p-datatable-table {
+    font-size: 0.8rem;
+  }
+
+  .p-datatable-tbody>tr>td {
+    padding: 0.5rem 0.4rem !important;
+    white-space: nowrap;
+  }
+
+  .p-datatable-thead>tr>th {
+    padding: 0.5rem 0.4rem !important;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .p-paginator {
+    font-size: 0.8rem;
+    padding: 0.5rem 0 !important;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+}
+
+// =====================================================
+// Mejoras táctiles / accesibilidad
+// =====================================================
+@media (pointer: coarse) {
+
+  .p-button,
+  .p-inputtext,
+  .p-select,
+  .p-datepicker {
+    min-height: 44px;
+  }
+}
+
+// =====================================================
+// Responsive: compartido
+// =====================================================
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+
+    >div:first-child {
+      width: 100%;
+    }
+
+    >div:last-child,
+    >p-button {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      button,
+      .p-button {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+  }
+
+  .card {
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+  }
+
+  .totales-grid {
+    @media (max-width: 640px) {
+      .nf-totales-row {
+        .nf-total-block {
+          flex: 1 1 45%;
+        }
+      }
+    }
+  }
+}
+
+/* Bloque de filtros */
+.filtros {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--c-text-secondary);
+    }
+
+    &.acciones {
+      flex-direction: row;
+      gap: 0.5rem;
+      align-items: center;
+    }
+  }
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .campo {
+      width: 100%;
+
+      input,
+      p-select,
+      p-button,
+      .p-select,
+      .p-inputtext {
+        width: 100%;
+      }
+
+      &.acciones {
+        flex-direction: column;
+
+        button,
+        .p-button {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+/* Tablas */
+.text-center {
+  text-align: center;
+}
+
+/* =====================================================
+   DataView cards (catálogos)
+   ===================================================== */
+.dv-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dv-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--tr-base),
+    border-color var(--tr-base),
+    transform var(--tr-base);
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: #bfdbfe;
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+
+  .dv-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+
+    .dv-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--c-text);
+    }
+  }
+
+  .dv-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+  }
+
+  .dv-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+
+    .dv-label {
+      color: var(--c-text-faint);
+      font-weight: 500;
+    }
+
+    .dv-value {
+      color: var(--c-text-secondary);
+      font-weight: 600;
+
+      &.dv-monto {
+        color: var(--c-success);
+        font-variant-numeric: tabular-nums;
+      }
+    }
+  }
+
+  .dv-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  @media (max-width: 640px) {
+    padding: 0.85rem 0.9rem;
+  }
+}
+
+.p-dataview-content {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.monto {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* =====================================================
+   Impresión de reportes
+   ===================================================== */
+@media print {
+
+  .layout-wrapper .sidebar,
+  .layout-wrapper .topbar,
+  .no-print,
+  .filtros,
+  .page-header button,
+  .p-paginator {
+    display: none !important;
+  }
+
+  .layout-main {
+    margin-left: 0 !important;
+  }
+
+  .layout-content {
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+/* Encabezado de reporte impreso */
+.print-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.3rem;
+  }
+
+  p {
+    margin: 0.2rem 0;
+    font-size: 0.85rem;
+    color: #475569;
+  }
+}
+
+/* Tarjetas de totales (reportes) */
+.totales-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+
+  .total-card {
+    background: var(--c-surface-muted);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+
+    .label {
+      font-size: 0.75rem;
+      color: var(--c-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--c-text);
+      margin-top: 0.2rem;
+    }
+  }
+}
+
+```
+
+---
+
+## 📄 src\styles_basic.scss
 
 ```typescript
 /* You can add global styles to this file, and also import other style files */
@@ -103262,817 +114121,6 @@ body {
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
-    .value {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--c-text);
-      margin-top: 0.2rem;
-    }
-  }
-}
-
-```
-
----
-
-## 📄 src\styles.scss
-
-```typescript
-/* You can add global styles to this file, and also import other style files */
-@layer primeng {}
-
-@font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-Medium.ttf') format('truetype');
-  font-weight: 500;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-SemiBold.ttf') format('truetype');
-  font-weight: 600;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-ExtraBold.ttf') format('truetype');
-  font-weight: 800;
-  font-style: normal;
-}
-
-/* Figtree — fuente variable (pesos 300–900, romana + itálica) */
-@font-face {
-  font-family: 'Figtree';
-  src: url('/assets/fonts/Figtree/Figtree-VariableFont_wght.ttf') format('truetype');
-  font-weight: 300 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Figtree';
-  src: url('/assets/fonts/Figtree/Figtree-Italic-VariableFont_wght.ttf') format('truetype');
-  font-weight: 300 900;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'AstroSpace';
-  src: url('/assets/fonts/AstroSpace/AstroSpace.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-}
-
-
-@font-face {
-  font-family: 'Angora';
-  src: url('/assets/fonts/Angora/Angora-1G3BB.otf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Audiowide';
-  src: url('/assets/fonts/Audiowide/Audiowide-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: regular;
-}
-
-@font-face {
-  font-family: 'Hurricane';
-  src: url('/assets/fonts/Hurricane/Hurricane-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: regular;
-}
-
-@font-face {
-  font-family: 'Rye';
-  src: url('/assets/fonts/Rye/Rye-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: regular;
-}
-
-:root {
-  --font-family: 'Figtree', 'Mukta', sans-serif;
-
-  --color-font-sidebar: #dbe7f0;
-  --color-texto-label: rgba(255, 255, 255, 0.4);
-  --color-texto-input: rgba(255, 255, 255, 0.808);
-  --master-background: #213341;
-  --datatable-row-hover-background: #305f5de7;
-  --texto-secundario: #2c4d6f;
-  --select-row: #93b7d3;
-  --for-border-color-alls: #39495b;
-
-  /* ===== Design tokens ===== */
-  --c-bg: #1e2e3b;
-  --c-bg-white: white;
-  --c-bg-black: black;
-  --c-bg-muted: #1e2e3b00;
-  --c-bg-login: #030713;
-  --c-bg-login-inputtext: #030713;
-  --c-surface: #1e2e3b;
-  --c-surface-muted: #2d3d50b4;
-  --c-card-background: #08131c;
-  --c-card-color-text: var(--color-texto-label);
-  --c-border: #1e2e3b;
-  --c-border-strong: #2c4d6f;
-  --c-text: var(--color-texto-label);
-  --c-text-secondary: var(--texto-secundario);
-  --c-text-muted: #8aa9c9;
-  --c-text-faint: #5f86ab;
-  --c-disabled-color: #1f2f3a;
-  --c-primary: #3d8bff;
-  --c-primary-strong: #0070f2;
-  --c-success: #2fd48a;
-  --c-warning: #f5a623;
-  --c-danger: #d84b4b;
-  --c-peligro: #c41919;
-  --c-info: #38bdf8;
-  --c-uva: #604ec7ef;
-  --c-amarillo: #faf06af8;
-
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1.25rem;
-  --radius-full: 9999px;
-
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 12px 28px -8px rgba(0, 0, 0, 0.55);
-  --shadow-focus: 0 0 0 3px rgba(61, 139, 255, 0.35);
-
-  --tr-fast: 150ms ease;
-  --tr-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --tr-smooth: 300ms cubic-bezier(0.32, 0.72, 0, 1);
-
-  --p-button-padding-x: 0.75rem;
-  --p-button-padding-y: 0.5rem;
-  --p-button-font-size: 0.875rem;
-  --p-inputtext-padding-x: 0.75rem;
-  --p-inputtext-padding-y: 0.5rem;
-  --p-inputtext-font-size: 0.875rem;
-  --p-select-padding-x: 0.75rem;
-  --p-select-padding-y: 0.5rem;
-  --p-select-font-size: 0.875rem;
-  --p-textarea-padding-x: 0.75rem;
-  --p-textarea-padding-y: 0.5rem;
-  --p-textarea-font-size: 0.875rem;
-  --p-datepicker-padding-x: 0.75rem;
-  --p-datepicker-padding-y: 0.5rem;
-  --p-datepicker-font-size: 0.875rem;
-  --p-inputicon-font-size: 0.875rem;
-  --p-paginator-font-size: 0.875rem;
-
-  --p-form-field-background: #213341;
-  --p-form-field-border-color: #39495b;
-
-
-  --p-navigation-item-color: #7f8790;
-  --p-navigation-item-icon-color: #558dc6;
-
-  --p-panelmenu-item-focus-color: #558dc6;
-  --p-navigation-submenu-icon-color: #558dc6;
-
-
-  --p-card-title-font-size: 1.05rem;
-  --p-card-background: var(--p-form-field-background);
-
-  --p-inputtext-color: var(--color-texto-input);
-  --p-inputtext-background: #213341;
-  --p-inputtext-border-color: #39495b;
-  --p-inputtext-disabled-color: var(--c-text-muted);
-  --p-inputtext-disabled-background: var(--c-bg);
-  --p-inputtext-disabled-border-color: #2a3a4a;
-  --p-inputtext-invalid-border-color: var(--c-danger);
-
-  --p-togglebutton-color: var(--color-texto-input);
-  --p-togglebutton-background: var(--c-bg);
-
-
-  // para los botones selecionados del toggle button
-  --p-togglebutton-checked-color: var(--c-success);
-  --p-togglebutton-content-checked-background: var(--p-inputtext-background);
-
-
-  --p-togglebutton-background: var(--c-bg);
-  --p-togglebutton-checked-background: var(--c-bg);
-
-  --p-togglebutton-hover-color: var(--c-amarillo);
-  --p-togglebutton-border-color: var(--c-bg);
-  --p-togglebutton-checked-border-color: var(--c-bg);
-
-
-  --p-select-color: var(--color-texto-input);
-  --p-select-background: var(--p-form-field-background);
-  --p-select-disabled-background: var(--c-bg);
-  --p-select-disabled-color: var(--c-text-muted);
-
-  --p-inputnumber-disabled-background: var(--c-bg);
-  --p-datepicker-disabled-background: var(--c-bg);
-
-  --p-toolbar-border-color: var(--for-border-color-alls);
-
-  --p-datatable-body-cell-border-color: #25374a;
-  --p-datatable-header-cell-border-color: #25374a;
-  --p-datatable-header-cell-color: var(--color-texto-input);
-  --p-datatable-body-cell-sm-padding: 0.20rem 0.08rem;
-    /* Reduce o aumenta el padding vertical y horizontal de las celdas */
-    --p-datatable-body-cell-padding: 0.20rem 0.08rem;
-    /* Valor más compacto que el predeterminado */
-
-    /* Cambiar el color de fondo para las filas impares/pares alternadas */
-      --p-datatable-row-striped-background: var(--p-form-field-background);
-
-      /* Color de fila seleccionada */
-      --p-datatable-row-selected-background: var(--c-text-muted);
-      --p-datatable-row-selected-color: var(--color-texto-label);
-      --p-datatable-row-hover-background: var(--datatable-row-hover-background);
-
-
-  --p-tag-secondary-background: var(--c-bg-muted);
-  --p-tag-success-background: var(--c-bg-muted);
-  --p-tag-info-background: var(--c-bg-muted);
-  --p-tag-warn-background: var(--c-bg-muted);
-  --p-tag-danger-background: var(--c-bg-muted);
-
-  --p-tag-rounded-border-radius: 5px 5px 5px 5px;
-
-  --surface-border: var(--for-border-color-alls);
-
---p-button-contrast-background: var(--c-bg-black);
-  --p-button-contrast-border-color: var(--c-bg-black);
-  --p-button-contrast-color: var(--c-bg-white);
-}
-
-
-.p-dataview {
-  --p-dataview-content-padding: 0.25rem;
-  /* Modifica el padding general del contenedor de contenido */
-}
-
-::ng-deep .p-dataview .p-dataview-content .dataview-item {
-  transition: background-color 0.2s ease, transform 0.2s ease;
-}
-
-::ng-deep .p-dataview .p-dataview-content .dataview-item:hover {
-  background-color: var(--datatable-row-hover-background);
-  /* O usa un color fijo como #f8fafc */
-  color: var(--c-bg-white);
-  cursor: pointer;
-}
-
-.togglebutton-bg-azulnarino {
-  /* Estado Normal (Sin chequear) */
-  --p-togglebutton-background: var(--c-bg-black);
-  --p-togglebutton-border-color: var(--c-bg-black);
-
-  /* Estado Hover (Sin chequear) */
-  --p-togglebutton-hover-background: rgba(255, 255, 255, 0.08);
-  --p-togglebutton-hover-border-color: var(--c-bg-black);
-
-  /* Estado Chequeado */
-  --p-togglebutton-checked-background: rgba(255, 255, 255, 0.08);
-  --p-togglebutton-content-checked-background: rgba(255, 255, 255, 0.08);
-  --p-togglebutton-checked-border-color: var(--c-bg-black);
-}
-
-.togglebutton-bg-black {
-  /* Estado Normal (Sin chequear) */
-  --p-togglebutton-background: var(--c-bg-black);
-  --p-togglebutton-border-color: var(--c-bg-black);
-
-  /* Estado Hover (Sin chequear) */
-  --p-togglebutton-hover-background: var(--c-bg);
-  --p-togglebutton-hover-border-color: var(--c-bg);
-
-  /* Estado Chequeado */
-  --p-togglebutton-checked-background: var(--c-bg);
-  --p-togglebutton-content-checked-background: var(--c-bg);
-  --p-togglebutton-checked-border-color: var(--c-bg);
-}
-body {
-  font-family: var(--font-family);
-  color: var(--c-text);
-  background: var(--c-bg);
-  -webkit-font-smoothing: antialiased;
-}
-
-label {
-  color: var(--c-text);
-  /* Color del texto */
-}
-
-thead th {
-  color: var(--c-text);
-}
-
-tr {
-  color: var(--c-text);
-}
-
-
-ul {
-  display: block;
-  list-style-type: none;
-  margin-block-start: 1em;
-  margin-block-end: 1em;
-  padding-inline-start: 12px;
-  unicode-bidi: isolate;
-}
-
-
-.p-inputtext {
-  color: var(--c-text);
-  /* Color del texto */
-}
-
-.p-select {
-  color: var(--c-text);
-  /* Color del texto */
-}
-
-.p-card {
-  --p-card-body-padding: 0.75rem;
-  /* O el valor que prefieras, ej: 10px, 0.5rem */
-}
-
-.tabla-card {
-  padding: 0.05rem;
-  overflow: hidden;
-  border-radius: 12px;
-
-}
-
-/* =====================================================
-   Animaciones de entrada
-   ===================================================== */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes pulseSoft {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.55;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .page>* {
-    animation: fadeInUp var(--tr-smooth) both;
-  }
-
-  .page>*:nth-child(2) {
-    animation-delay: 0.04s;
-  }
-
-  .page>*:nth-child(3) {
-    animation-delay: 0.08s;
-  }
-
-  .page>*:nth-child(4) {
-    animation-delay: 0.12s;
-  }
-}
-
-/* Skeleton shimmer */
-@keyframes shimmer {
-  from {
-    background-position: 200% 0;
-  }
-
-  to {
-    background-position: -200% 0;
-  }
-}
-
-.p-skeleton {
-  background: linear-gradient(90deg, #eef2f7 25%, #e2e8f0 50%, #eef2f7 75%) !important;
-  background-size: 200% 100% !important;
-  animation: shimmer 1.6s infinite !important;
-}
-
-/* =====================================================
-   Estilos compartidos de páginas
-   ===================================================== */
-
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-
-  .page-header-text {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-}
-
-.w-full {
-  width: 100%;
-}
-
-.page-title {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--c-text);
-  margin: 0;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-}
-
-.page-subtitle {
-  font-size: 0.9rem;
-  color: var(--c-text-muted);
-  margin: 0;
-}
-
-/* Tarjeta genérica */
-.card {
-  background: var(--c-bg);
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--for-border-color-alls);
-
-}
-
-// =====================================================
-// Tablas responsive con scroll horizontal
-// =====================================================
-.p-datatable-wrapper {
-  overflow-x: auto;
-
-  table {
-    min-width: max-content;
-  }
-}
-
-@media (max-width: 640px) {
-  .p-datatable-wrapper {
-    margin: 0 -0.75rem;
-    padding: 0 0.75rem;
-  }
-
-  .p-datatable-table {
-    font-size: 0.8rem;
-  }
-
-  .p-datatable-tbody>tr>td {
-    padding: 0.5rem 0.4rem !important;
-    white-space: nowrap;
-  }
-
-  .p-datatable-thead>tr>th {
-    padding: 0.5rem 0.4rem !important;
-    font-size: 0.75rem;
-    white-space: nowrap;
-  }
-
-  .p-paginator {
-    font-size: 0.8rem;
-    padding: 0.5rem 0 !important;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-}
-
-// =====================================================
-// Mejoras táctiles / accesibilidad
-// =====================================================
-@media (pointer: coarse) {
-
-  .p-button,
-  .p-inputtext,
-  .p-select,
-  .p-datepicker {
-    min-height: 44px;
-  }
-}
-
-// =====================================================
-// Responsive: compartido
-// =====================================================
-@media (max-width: 640px) {
-  .page-header {
-    flex-direction: column;
-    align-items: stretch;
-
-    >div:first-child {
-      width: 100%;
-    }
-
-    >div:last-child,
-    >p-button {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-
-      button,
-      .p-button {
-        flex: 1;
-        min-width: 0;
-      }
-    }
-  }
-
-  .card {
-    padding: 0.75rem;
-    border-radius: var(--radius-md);
-  }
-
-  .totales-grid {
-    @media (max-width: 640px) {
-      .nf-totales-row {
-        .nf-total-block {
-          flex: 1 1 45%;
-        }
-      }
-    }
-  }
-}
-
-/* Bloque de filtros */
-.filtros {
-  display: flex;
-  align-items: flex-end;
-  gap: 1rem;
-  flex-wrap: wrap;
-
-  .campo {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-
-    label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--c-text-secondary);
-    }
-
-    &.acciones {
-      flex-direction: row;
-      gap: 0.5rem;
-      align-items: center;
-    }
-  }
-
-  @media (max-width: 640px) {
-    flex-direction: column;
-    gap: 0.75rem;
-
-    .campo {
-      width: 100%;
-
-      input,
-      p-select,
-      p-button,
-      .p-select,
-      .p-inputtext {
-        width: 100%;
-      }
-
-      &.acciones {
-        flex-direction: column;
-
-        button,
-        .p-button {
-          width: 100%;
-        }
-      }
-    }
-  }
-}
-
-/* Tablas */
-.text-center {
-  text-align: center;
-}
-
-/* =====================================================
-   DataView cards (catálogos)
-   ===================================================== */
-.dv-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.dv-card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-lg);
-  padding: 1rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition:
-    box-shadow var(--tr-base),
-    border-color var(--tr-base),
-    transform var(--tr-base);
-
-  &:hover {
-    box-shadow: var(--shadow-lg);
-    border-color: #bfdbfe;
-    transform: translateY(-2px);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--shadow-focus);
-  }
-
-  .dv-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-
-    .dv-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--c-text);
-    }
-  }
-
-  .dv-body {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem 1.5rem;
-  }
-
-  .dv-row {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.85rem;
-
-    .dv-label {
-      color: var(--c-text-faint);
-      font-weight: 500;
-    }
-
-    .dv-value {
-      color: var(--c-text-secondary);
-      font-weight: 600;
-
-      &.dv-monto {
-        color: var(--c-success);
-        font-variant-numeric: tabular-nums;
-      }
-    }
-  }
-
-  .dv-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.25rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid #f1f5f9;
-  }
-
-  @media (max-width: 640px) {
-    padding: 0.85rem 0.9rem;
-  }
-}
-
-.p-dataview-content {
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-
-.monto {
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-/* =====================================================
-   Impresión de reportes
-   ===================================================== */
-@media print {
-
-  .layout-wrapper .sidebar,
-  .layout-wrapper .topbar,
-  .no-print,
-  .filtros,
-  .page-header button,
-  .p-paginator {
-    display: none !important;
-  }
-
-  .layout-main {
-    margin-left: 0 !important;
-  }
-
-  .layout-content {
-    padding: 0 !important;
-    background: #fff !important;
-  }
-
-  body {
-    background: #fff !important;
-  }
-
-  .card {
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  .print-only {
-    display: block !important;
-  }
-}
-
-.print-only {
-  display: none;
-}
-
-/* Encabezado de reporte impreso */
-.print-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
-
-  h2 {
-    margin: 0;
-    font-size: 1.3rem;
-  }
-
-  p {
-    margin: 0.2rem 0;
-    font-size: 0.85rem;
-    color: #475569;
-  }
-}
-
-/* Tarjetas de totales (reportes) */
-.totales-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.75rem;
-
-  .total-card {
-    background: var(--c-surface-muted);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-sm);
-    padding: 0.75rem 1rem;
-
-    .label {
-      font-size: 0.75rem;
-      color: var(--c-text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
     .value {
       font-size: 1.25rem;
       font-weight: 700;

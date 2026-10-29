@@ -13,6 +13,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
+import { DrawerModule } from 'primeng/drawer';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { CompraPendientePago, ChequeEmitido, BcoCta, BcoMovimiento } from '../../../core/models/bancos.models';
@@ -24,7 +25,7 @@ import { numeroALetras } from '../../../core/utils/numeros-a-letras';
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule, RouterLink, TableModule, ButtonModule,
     InputTextModule, InputNumberModule, SelectModule, TagModule, TooltipModule,
-    ToastModule, DialogModule,
+    ToastModule, DialogModule, DrawerModule,
   ],
   templateUrl: './cheques.html',
   styleUrl: './cheques.scss',
@@ -51,6 +52,7 @@ export class ChequesBancos implements OnInit {
   chequeAImprimir = signal<ChequeEmitido | null>(null);
   dialogConfirmVisible = signal(false);
   confirmMessage = signal('');
+  drawerResumenVisible = signal(false);
 
   // Formulario
   form!: FormGroup;
@@ -183,6 +185,11 @@ export class ChequesBancos implements OnInit {
       factura._montoPago = factura.saldo ?? factura.total;
     }
     this.facturas.update(facturas => [...facturas]);
+    if (this.facturasSeleccionadas.length > 0) {
+      this.drawerResumenVisible.set(true);
+    } else {
+      this.drawerResumenVisible.set(false);
+    }
   }
 
   onMontoPagoChange(factura: CompraPendientePago, valor: number) {
@@ -194,6 +201,9 @@ export class ChequesBancos implements OnInit {
       factura._montoPago = 0.01;
     }
     this.facturas.update(facturas => [...facturas]);
+    if (this.facturasSeleccionadas.length > 0) {
+      this.drawerResumenVisible.set(true);
+    }
   }
 
   toggleTodas(event: any) {
@@ -203,6 +213,11 @@ export class ChequesBancos implements OnInit {
       _selected: checked,
       _montoPago: checked ? (f.saldo ?? f.total) : f._montoPago,
     })));
+    if (this.facturasSeleccionadas.length > 0) {
+      this.drawerResumenVisible.set(true);
+    } else {
+      this.drawerResumenVisible.set(false);
+    }
   }
 
   // ── Emisión ─────────────────────────────────────────────
@@ -265,6 +280,7 @@ export class ChequesBancos implements OnInit {
       next: (res) => {
         this.emitando.set(false);
         this.chequesGenerados.set(res.cheques || []);
+        this.drawerResumenVisible.set(false);
         this.msgs.add({ severity: 'success', summary: 'Éxito', detail: res.mensaje });
         this.facturas.set([]);
         this.cargarFacturasPendientes();

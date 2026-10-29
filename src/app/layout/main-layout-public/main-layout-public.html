@@ -129,14 +129,18 @@
           <span class="usuario-menu-email">{{ u.email || 'Sin correo' }}</span>
         </div>
       </div>
-      @if (esCliente()) {
-        <!-- Solo clientes con sesión: acceso al CRM de pedidos -->
-        <div class="usuario-menu-separador"></div>
-        <button type="button" class="usuario-menu-item" (click)="irAPedidosDesdePopover()">
-          <i class="pi pi-shopping-cart"></i>
-          <span>Pedidos</span>
-        </button>
-      }
+       @if (esCliente()) {
+         <!-- Solo clientes con sesión: acceso al CRM de pedidos -->
+         <div class="usuario-menu-separador"></div>
+         <button type="button" class="usuario-menu-item" (click)="irAPedidosDesdePopover()">
+           <i class="pi pi-shopping-cart"></i>
+           <span>Pedidos</span>
+         </button>
+         <button type="button" class="usuario-menu-item" (click)="irAConsultaFacturasDesdePopover()">
+           <i class="pi pi-file"></i>
+           <span>Consultar Facturas</span>
+         </button>
+       }
       <div class="usuario-menu-separador"></div>
       <button type="button" class="usuario-menu-item" (click)="abrirCambiarPassword()">
         <i class="pi pi-key"></i>

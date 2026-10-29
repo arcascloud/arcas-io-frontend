@@ -44,7 +44,7 @@
         </div>
         <div class="cart-item-right">
           <span class="cart-item-subtotal">{{ formatearPrecio(item.subtotal) }}</span>
-          <button class="cart-item-remove" (click)="eliminarDelPedido(item)" pTooltip="Eliminar">
+          <button class="cart-item-remove" (click)="eliminarDelPedido(item)" pTooltip="Eliminar" tooltipPosition="left">
             <i class="pi pi-times"></i>
           </button>
         </div>
@@ -80,8 +80,8 @@
   <main class="tienda-main">
     <div class="tienda-toolbar">
       <div class="toolbar-left">
-        <p-button icon="pi pi-arrow-left" label="Volver" size="small" [rounded]="true" variant="text"
-          severity="secondary" pTooltip="Volver al listado" (onClick)="volver()" />
+         <p-button icon="pi pi-arrow-left" label="Volver" size="small" [rounded]="true" variant="text"
+           severity="secondary" pTooltip="Volver al listado" tooltipPosition="left" (onClick)="volver()" />
         <h2 class="toolbar-title"><i class="pi pi-shopping-cart"></i> Pedidos</h2>
         <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's'
           : '' }}</span>
@@ -97,15 +97,15 @@
           optionValue="value" styleClass="sort-select" />
         <div class="view-toggles desktop-only">
           <button class="view-btn" [class.active]="layout() === 'grid'" (click)="layout.set('grid')"
-            pTooltip="Cuadrícula">
+            pTooltip="Cuadrícula" tooltipPosition="left">
             <i class="pi pi-th-large"></i>
           </button>
-          <button class="view-btn" [class.active]="layout() === 'list'" (click)="layout.set('list')" pTooltip="Lista">
+          <button class="view-btn" [class.active]="layout() === 'list'" (click)="layout.set('list')" pTooltip="Lista" tooltipPosition="left">
             <i class="pi pi-list"></i>
           </button>
         </div>
         <p-button size="small" label="Ofertas" [rounded]="true" [raised]="true" variant="text" severity="success"
-          [class.active]="soloOfertas()" (click)="soloOfertas.set(!soloOfertas())" pTooltip="Solo ofertas">
+          [class.active]="soloOfertas()" (click)="soloOfertas.set(!soloOfertas())" pTooltip="Solo ofertas" tooltipPosition="left">
         </p-button>
 
       </div>
@@ -161,9 +161,9 @@
             }
             <div class="card-acciones">
               <p-button icon="pi pi-images" [rounded]="true" [raised]="true" variant="text" severity="secondary"
-                (click)="abrirGaleria(producto)" pTooltip="Ver galería" />
+                (click)="abrirGaleria(producto)" pTooltip="Ver galería" tooltipPosition="left" />
               <p-button icon="pi pi-cart-plus" [rounded]="true" [raised]="true" variant="text"
-                [disabled]="producto.existencia <= 0" (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
+                [disabled]="producto.existencia <= 0" (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" tooltipPosition="left" />
             </div>
           </div>
         </div>
@@ -211,9 +211,9 @@
         </div>
         <div class="list-accion">
           <p-button icon="pi pi-images" [rounded]="true" variant="text" severity="secondary"
-            (click)="abrirGaleria(producto)" pTooltip="Ver galería" />
+            (click)="abrirGaleria(producto)" pTooltip="Ver galería" tooltipPosition="left" />
           <p-button icon="pi pi-cart-plus" [rounded]="true" [disabled]="producto.existencia <= 0"
-            (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
+            (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" tooltipPosition="left" />
         </div>
       </div>
       } @empty {

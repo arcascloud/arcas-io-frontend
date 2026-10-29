@@ -137,7 +137,7 @@
 }
 
 .cheque-container {
-  background: white;
+  background: var(--c-bg);
   width: 21.59cm; /* Carta width */
   max-width: 100%;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
@@ -408,5 +408,25 @@
   .cheque-container,
   .cheque-container * {
     visibility: visible;
+  }
+}
+
+/* ═══════════════ Drawer Resumen (full height bajo topbar) ═══════════════ */
+:host ::ng-deep .resumen-drawer {
+  top: 60px !important;
+  height: calc(100vh - 60px) !important;
+  max-height: none !important;
+  width: 420px;
+  max-width: 90vw;
+
+  .p-drawer-header {
+    background: var(--c-surface-ground, var(--c-bg));
+    border-bottom: 1px solid var(--c-border);
+    font-weight: 700;
+  }
+
+  .p-drawer-content {
+    background: var(--c-surface);
+    padding: 1rem;
   }
 }

@@ -12,7 +12,7 @@
         <span class="p-input-icon-left">
           <input pInputText type="text" pSize="small"
             placeholder="Buscar por # factura o nombre del cliente..."
-            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" class="busqueda-input" />
+            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" class="busqueda-input" />
         </span>
       </div>
       <div class="filtros-acciones">

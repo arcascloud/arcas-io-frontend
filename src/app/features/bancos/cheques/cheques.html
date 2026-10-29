@@ -22,7 +22,11 @@
       <h1 class="page-title">Emisión de Cheques</h1>
       <p class="page-subtitle">Pago consolidado a proveedores</p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex gap-2 align-items-center">
+      @if (facturasSeleccionadas.length > 0) {
+        <p-button size="small" label="Ver Resumen ({{ facturasSeleccionadas.length }})" icon="pi pi-list"
+          severity="success" [raised]="true" [rounded]="true" (click)="drawerResumenVisible.set(true)" />
+      }
       <a routerLink="/bancos/cheques/particulares">
         <p-button label="Cheque a Particular" icon="pi pi-user" size="small" variant="text" severity="secondary" [rounded]="true" />
       </a>
@@ -131,49 +135,6 @@
       </p-table>
     </div>
 
-    <!-- ═══ PASO 3: Resumen y emitir ═══ -->
-    @if (facturasSeleccionadas.length > 0) {
-      <div class="card mb-3">
-        <h5 class="mb-3">Resumen de Pago</h5>
-        <p-table [value]="proveedoresSeleccionados" size="small">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Proveedor</th>
-              <th style="width: 5rem" class="text-center">Facturas</th>
-              <th style="width: 10rem" class="text-right">Total a Pagar</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-grp>
-            <tr>
-              <td class="font-bold">{{ grp.proveedorNombre }}</td>
-              <td class="text-center">{{ grp.facturas.length }}</td>
-              <td class="text-right font-bold text-primary">{{ formatCurrency(grp.total) }}</td>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="summary">
-            <div class="flex justify-content-end align-items-center gap-3 p-2">
-              <span class="font-bold">Total General:</span>
-              <span class="text-xl font-bold text-primary">{{ formatCurrency(totalSeleccionado) }}</span>
-            </div>
-          </ng-template>
-        </p-table>
-
-        @if (saldoInsuficiente()) {
-          <div class="saldo-insuficiente-msg mb-3">
-            <i class="pi pi-exclamation-triangle"></i>
-            <span>Saldo insuficiente — saldo actual {{ saldoTexto() }}, total a pagar {{ formatCurrency(totalSeleccionado) }}</span>
-          </div>
-        }
-
-        <div class="form-actions">
-          <p-button size="small" label="Emitir Cheques" icon="pi pi-check-circle" severity="success"
-            variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
-            [disabled]="saldoInsuficiente()"
-            (click)="confirmarEmision()" />
-        </div>
-      </div>
-    }
-
     <!-- ═══ Cheques generados ═══ -->
     @if (chequesGenerados().length > 0) {
       <div class="card mb-3">
@@ -208,6 +169,55 @@
     </div>
   }
 </section>
+
+<!-- ═══ Drawer Resumen de Pago ═══ -->
+<p-drawer
+  [(visible)]="drawerResumenVisible"
+  header="Resumen de Pago"
+  position="left"
+  styleClass="resumen-drawer"
+  [style]="{ width: '420px', 'max-width': '90vw' }"
+>
+  <div class="flex flex-column gap-2 pt-1">
+    <p-table [value]="proveedoresSeleccionados" size="small">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Proveedor</th>
+          <th style="width: 5rem" class="text-center">Facturas</th>
+          <th style="width: 10rem" class="text-right">Total a Pagar</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-grp>
+        <tr>
+          <td class="font-bold">{{ grp.proveedorNombre }}</td>
+          <td class="text-center">{{ grp.facturas.length }}</td>
+          <td class="text-right font-bold text-primary">{{ formatCurrency(grp.total) }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <div class="p-2 bg-surface border-round flex justify-content-between align-items-center">
+      <span class="font-bold">Total General:</span>
+      <span class="text-lg font-bold text-primary">{{ formatCurrency(totalSeleccionado) }}</span>
+    </div>
+
+    @if (saldoInsuficiente()) {
+      <div class="saldo-insuficiente-msg">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>Saldo insuficiente — saldo actual {{ saldoTexto() }}, total a pagar {{ formatCurrency(totalSeleccionado) }}</span>
+      </div>
+    }
+
+    <!-- Botón emitir cheques apilado (vertical stack) -->
+    <div class="flex flex-column gap-1 mt-2 w-full">
+      <p-button size="small" label="Emitir Cheques" icon="pi pi-check-circle" severity="success"
+        variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
+        [disabled]="saldoInsuficiente() || facturasSeleccionadas.length === 0"
+        styleClass="w-full"
+        (click)="confirmarEmision()" />
+    </div>
+  </div>
+</p-drawer>
 
 <!-- ═══ Dialog Impresión de Cheque ═══ -->
 @if (mostrarImpresion() && chequeAImprimir()) {

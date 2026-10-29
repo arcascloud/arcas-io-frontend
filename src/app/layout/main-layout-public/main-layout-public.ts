@@ -211,6 +211,13 @@ export class MainLayoutPublic {
     this.router.navigate(['/facturacion/pedidos-virtual']);
   }
 
+  /** "Consultar Facturas" → navega a consulta de facturas filtradas por usuario */
+  irAConsultaFacturasDesdePopover() {
+    this.popUsuario?.hide();
+    const usuario = this.auth.currentUser()?.usuario;
+    this.router.navigate(['/facturacion/consultas'], { queryParams: { usuario } });
+  }
+
   /** "Cerrar sesión" (con sesión) → confirmación y logout ( AuthService limpia todo) */
   cerrarSesionDesdePopover() {
     this.popUsuario?.hide();

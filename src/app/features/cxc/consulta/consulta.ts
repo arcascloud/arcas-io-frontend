@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { DataViewModule } from 'primeng/dataview';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 
@@ -26,7 +27,7 @@ const CAMPOS_AUDITORIA = [
 @Component({
   selector: 'app-consulta',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataViewModule, ButtonModule, InputTextModule],
+  imports: [CommonModule, FormsModule, DataViewModule, ButtonModule, InputTextModule, TooltipModule],
   templateUrl: './consulta.html',
   styleUrl: './consulta.scss',
 })

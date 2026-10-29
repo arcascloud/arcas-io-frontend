@@ -2,7 +2,7 @@
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -25,6 +25,7 @@ import { TodoPagoService, TodoPagoTransaccion } from '../../../core/services/tod
 export class ConsultaFacturas implements OnInit {
   private api = inject(ApiService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
@@ -34,6 +35,7 @@ export class ConsultaFacturas implements OnInit {
   filtered = signal<any[]>([]);
   cargando = signal(false);
   q = signal('');
+  usuarioFiltro = signal<string | null>(null);
 
   dialogCorreo = signal(false);
   emailDestino = signal('');
@@ -50,12 +52,22 @@ export class ConsultaFacturas implements OnInit {
   linkGenerando = signal(false);
 
   ngOnInit() {
-    this.load();
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+      const u = params['usuario'];
+      if (u) {
+        this.usuarioFiltro.set(u);
+      }
+      this.load();
+    });
   }
 
   load() {
     this.cargando.set(true);
-    this.api.get<any>('/facturacion/facturas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    const params: any = {};
+    if (this.usuarioFiltro()) {
+      params.usuario = this.usuarioFiltro();
+    }
+    this.api.get<any>('/facturacion/facturas', params).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res: any) => {
         const items = Array.isArray(res) ? res : (res?.value ?? []);
         this.facturas.set(items);

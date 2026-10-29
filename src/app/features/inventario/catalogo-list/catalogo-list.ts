@@ -6,6 +6,7 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 
@@ -28,7 +29,7 @@ export interface CatalogoConfig {
 @Component({
   selector: 'app-catalogo-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule],
   templateUrl: './catalogo-list.html',
   styleUrl: './catalogo-list.scss',
 })
