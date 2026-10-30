@@ -19,6 +19,18 @@ export const CXC_ROUTES: Routes = [
     loadComponent: () => import('./rendicion-caja/rendicion-caja').then((m) => m.RendicionCaja),
   },
 
+  // Caja Préstamos - réplica de Caja para cobros a préstamos
+  {
+    path: 'caja-prestamos',
+    loadComponent: () =>
+      import('./caja-prestamos/caja-prestamos').then((m) => m.CajaPrestamos),
+  },
+  {
+    path: 'caja-prestamos/editar/:id',
+    loadComponent: () =>
+      import('./caja-prestamos/caja-prestamos').then((m) => m.CajaPrestamos),
+  },
+
   // Clientes - Nuevo gestor con layout dividido
   {
     path: 'clientes',

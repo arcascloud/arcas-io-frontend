@@ -85,12 +85,16 @@
 <app-quick-nav />
 
 <!-- Login headless (diálogo estilo login) — botón "Cuenta" del topbar -->
+
+
 <app-login-dialog
   #loginDlg
   [tipoPersona]="tipoPersona()"
   (tipoPersonaChange)="onTipoPersonaChange($event)"
   (registro)="registroDlg.abrir()"
 />
+
+<app-registro-dialog #registroDlg (solicitarLogin)="loginDlg.abrir()" />
 
 <!-- Menú de usuario del topbar (anclado al botón circle-user) -->
 <p-popover #popUsuario styleClass="usuario-popover">

@@ -54,12 +54,18 @@ export class MovimientosBancos implements OnInit {
   tipomovActual = signal('DEPOSITO');
   importeActual = signal(0);
 
-  readonly TIPO_MOV_OPTIONS = [
+  /**
+   * Tipos de movimiento: catálogo vivo desde `GET /bancos/ccdocs` (bcosccdocs).
+   * El fallback estático solo aplica si la API falla.
+   */
+  tipoMovOptions = signal<{ label: string; value: string }[]>([
     { label: 'Depósito', value: 'DEPOSITO' },
     { label: 'Retiro', value: 'RETIRO' },
     { label: 'Transferencia', value: 'TRANSFERENCIA' },
     { label: 'Pago', value: 'PAGO' },
-  ];
+    { label: 'Nota de Debito', value: 'NOTA_DEBITO' },
+    { label: 'Nota de Credito', value: 'NOTA_CREDITO' },
+  ]);
 
   readonly DC_OPTIONS = [
     { label: 'Débito', value: 'D' },
@@ -90,6 +96,21 @@ export class MovimientosBancos implements OnInit {
     this.cargarMonedas();
     this.cargarFactoresCambio();
     this.cargarCuentas();
+    this.cargarTiposMov();
+  }
+
+  /** Carga el catálogo de tipos de movimiento desde bcosccdocs (solo activos). */
+  cargarTiposMov() {
+    this.api.get<any[]>('/bancos/ccdocs').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const opciones = (data || [])
+          .filter(d => d.sn_activo !== 'N' && d.abreviatura)
+          .map(d => ({ label: d.descripcion || d.abreviatura, value: d.abreviatura }));
+        if (opciones.length) this.tipoMovOptions.set(opciones);
+      },
+      // Sin catálogo → se conserva el fallback estático
+      error: () => {},
+    });
   }
 
   cargarBancos() {
@@ -294,10 +315,10 @@ export class MovimientosBancos implements OnInit {
 
   /**
    * Naturaleza derivada del tipo de movimiento:
-   * depósito (entrada) → 'D'; retiro/transferencia/pago (salida) → 'C'
+   * entrada (depósito, nota de crédito) → 'D'; salida (retiro/transferencia/pago, nota de débito) → 'C'
    */
   dcPorTipo(tipomov: string): 'D' | 'C' {
-    return tipomov === 'DEPOSITO' ? 'D' : 'C';
+    return tipomov === 'DEPOSITO' || tipomov === 'NOTA_CREDITO' ? 'D' : 'C';
   }
 
   /**
@@ -324,13 +345,15 @@ export class MovimientosBancos implements OnInit {
   }
 
   tipoMovLabel(tipo: string): string {
-    return this.TIPO_MOV_OPTIONS.find(o => o.value === tipo)?.label || tipo;
+    return this.tipoMovOptions().find(o => o.value === tipo)?.label || tipo;
   }
 
   tipoMovSeverity(tipo: string): 'success' | 'warn' | 'info' | 'danger' {
     switch (tipo) {
       case 'DEPOSITO': return 'success';
+      case 'NOTA_CREDITO': return 'success';
       case 'RETIRO': return 'warn';
+      case 'NOTA_DEBITO': return 'warn';
       case 'TRANSFERENCIA': return 'info';
       case 'PAGO': return 'danger';
       default: return 'info';

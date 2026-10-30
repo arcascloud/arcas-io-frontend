@@ -28,7 +28,7 @@ export interface BcoMovimiento {
   bancoId: number;
   bcoctasId: number;
   moduloId: number;
-  tipomov: 'DEPOSITO' | 'RETIRO' | 'TRANSFERENCIA' | 'PAGO';
+  tipomov: 'DEPOSITO' | 'RETIRO' | 'TRANSFERENCIA' | 'PAGO' | 'NOTA_DEBITO' | 'NOTA_CREDITO';
   dc_debitocredito: 'D' | 'C';
   nroreferencia: string;
   nrochq: string;

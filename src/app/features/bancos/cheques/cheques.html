@@ -23,10 +23,12 @@
       <p class="page-subtitle">Pago consolidado a proveedores</p>
     </div>
     <div class="flex gap-2 align-items-center">
-      @if (facturasSeleccionadas.length > 0) {
-        <p-button size="small" label="Ver Resumen ({{ facturasSeleccionadas.length }})" icon="pi pi-list"
-          severity="success" [raised]="true" [rounded]="true" (click)="drawerResumenVisible.set(true)" />
-      }
+      <span #btnVerResumen>
+        @if (facturasSeleccionadas.length > 0) {
+          <p-button size="small" label="Ver Resumen ({{ facturasSeleccionadas.length }})" icon="pi pi-list"
+            severity="success" [raised]="true" [rounded]="true" (click)="abrirResumen()" />
+        }
+      </span>
       <a routerLink="/bancos/cheques/particulares">
         <p-button label="Cheque a Particular" icon="pi pi-user" size="small" variant="text" severity="secondary" [rounded]="true" />
       </a>
@@ -174,9 +176,9 @@
 <p-drawer
   [(visible)]="drawerResumenVisible"
   header="Resumen de Pago"
-  position="left"
+  position="right"
   styleClass="resumen-drawer"
-  [style]="{ width: '420px', 'max-width': '90vw' }"
+  [style.--drawer-left]="drawerLeft()"
 >
   <div class="flex flex-column gap-2 pt-1">
     <p-table [value]="proveedoresSeleccionados" size="small">

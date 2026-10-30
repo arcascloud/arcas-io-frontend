@@ -51,16 +51,23 @@ export class HistorialBancos implements OnInit {
 
   private readonly rowsPagina = 15;
 
-  readonly TIPO_MOV_OPTIONS = [
+  /**
+   * Tipos de movimiento: catálogo vivo desde `GET /bancos/ccdocs` (bcosccdocs).
+   * El fallback estático solo aplica si la API falla.
+   */
+  tipoMovOptions = signal<{ label: string; value: string }[]>([
     { label: 'Depósito', value: 'DEPOSITO' },
     { label: 'Retiro', value: 'RETIRO' },
     { label: 'Transferencia', value: 'TRANSFERENCIA' },
     { label: 'Pago', value: 'PAGO' },
-  ];
+    { label: 'Nota de Debito', value: 'NOTA_DEBITO' },
+    { label: 'Nota de Credito', value: 'NOTA_CREDITO' },
+  ]);
 
   ngOnInit() {
     this.cargarBancos();
     this.cargarCuentas();
+    this.cargarTiposMov();
 
     // Partida contable de origen (botón "Volver a la partida")
     const partidaParam = Number(this.route.snapshot.queryParamMap.get('partidaId'));
@@ -114,6 +121,20 @@ export class HistorialBancos implements OnInit {
         const ctas = (data || []).map((c: any) => ({ ...c, bancoId: Number(c.bancoId) }));
         this.cuentas.set(ctas);
       },
+    });
+  }
+
+  /** Carga el catálogo de tipos de movimiento desde bcosccdocs (solo activos). */
+  cargarTiposMov() {
+    this.api.get<any[]>('/bancos/ccdocs').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const opciones = (data || [])
+          .filter(d => d.sn_activo !== 'N' && d.abreviatura)
+          .map(d => ({ label: d.descripcion || d.abreviatura, value: d.abreviatura }));
+        if (opciones.length) this.tipoMovOptions.set(opciones);
+      },
+      // Sin catálogo → se conserva el fallback estático
+      error: () => {},
     });
   }
 
@@ -188,13 +209,15 @@ export class HistorialBancos implements OnInit {
   // ── Helpers ─────────────────────────────────────────────
 
   tipoMovLabel(tipo: string): string {
-    return this.TIPO_MOV_OPTIONS.find(o => o.value === tipo)?.label || tipo;
+    return this.tipoMovOptions().find(o => o.value === tipo)?.label || tipo;
   }
 
   tipoMovSeverity(tipo: string): 'success' | 'warn' | 'info' | 'danger' {
     switch (tipo) {
       case 'DEPOSITO': return 'success';
+      case 'NOTA_CREDITO': return 'success';
       case 'RETIRO': return 'warn';
+      case 'NOTA_DEBITO': return 'warn';
       case 'TRANSFERENCIA': return 'info';
       case 'PAGO': return 'danger';
       default: return 'info';

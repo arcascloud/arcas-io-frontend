@@ -411,13 +411,16 @@
   }
 }
 
-/* ═══════════════ Drawer Resumen (full height bajo topbar) ═══════════════ */
+/* ═══════════════ Drawer Resumen (centrado, sin tapar Ver Resumen, top a bottom de pantalla) ═══════════════ */
 :host ::ng-deep .resumen-drawer {
-  top: 60px !important;
-  height: calc(100vh - 60px) !important;
+  top: 0 !important;
+  height: 100vh !important;
   max-height: none !important;
-  width: 420px;
-  max-width: 90vw;
+  /* Centrado horizontal; si tapa el botón Ver Resumen se corre (calculado en TS) */
+  left: var(--drawer-left, auto) !important;
+  right: auto !important;
+  width: min(420px, 90vw) !important;
+  max-width: 90vw !important;
 
   .p-drawer-header {
     background: var(--c-surface-ground, var(--c-bg));
@@ -428,5 +431,6 @@
   .p-drawer-content {
     background: var(--c-surface);
     padding: 1rem;
+    overflow-y: auto;
   }
 }

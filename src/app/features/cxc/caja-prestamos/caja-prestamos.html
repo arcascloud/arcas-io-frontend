@@ -1,0 +1,504 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h3 class="page-title">Caja - Préstamos</h3>
+      <p class="page-subtitle">Abonos a cuenta de clientes</p>
+    </div>
+    <div class="header-actions">
+      @if (esEdicion() && esAnulada()) {
+      <p-tag severity="danger" value="Anulada" icon="pi pi-ban" />
+      } @if (esEdicion() && !esAnulada()) {
+      <p-button
+        label="Imprimir"
+        icon="pi pi-print"
+        severity="secondary"
+        text
+        size="small"
+        rounded
+        [loading]="imprimiendo()"
+        (onClick)="imprimirRecibo()"
+      />
+      <p-button
+        label="Anular"
+        icon="pi pi-ban"
+        severity="danger"
+        text
+        size="small"
+        rounded
+        [loading]="anulando()"
+        (onClick)="anular()"
+      />
+      }
+      <p-button
+        label="Volver"
+        icon="pi pi-arrow-left"
+        severity="secondary"
+        text
+        size="small"
+        rounded
+        (onClick)="volver()"
+      />
+    </div>
+  </header>
+
+  @if (esAnulada()) {
+  <div class="card banner-anulada">
+    <i class="pi pi-ban"></i>
+    <span
+      >Esta caja fue anulada. Los movimientos CxC fueron revertidos. No se puede modificar.</span
+    >
+  </div>
+  } @if (cargando()) {
+  <div class="card">Cargando datos...</div>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="guardar()">
+    <div class="card form-grid">
+      <div class="campo">
+        <label>Destino de abono <span class="req">*</span></label>
+        <p-select
+          size="small"
+          formControlName="destinoabono"
+          [options]="DESTINO_ABONO"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Destino..."
+          styleClass="w-full"
+          [appendTo]="'body'"
+          [disabled]="!puedeEditar() || esEdicion()"
+          (ngModelChange)="onDestinoChange()"
+        />
+      </div>
+      <div class="campo campo-span-2">
+        <label>Cliente <span class="req">*</span></label>
+        <div class="flex gap-2">
+          <p-select
+            size="small"
+            formControlName="clienteId"
+            [options]="clientes()"
+            optionLabel="cliente"
+            optionValue="clienteId"
+            placeholder="Seleccionar cliente..."
+            styleClass="w-full"
+            [filter]="true"
+            filterBy="cliente"
+            [appendTo]="'body'"
+            [disabled]="!puedeEditar()"
+          />
+          @if (puedeEditar()) {
+          <p-button
+            size="small"
+            type="button"
+            icon="pi pi-search"
+            severity="info"
+            [rounded]="true"
+            (onClick)="abrirClientes()"
+          />
+          }
+        </div>
+        @if (invalid('clienteId')) {
+        <small class="err">Cliente es obligatorio</small>
+        }
+      </div>
+      @if (!esDestinoPrestamo()) {
+      <div class="campo">
+        <label>Tipo Documento Fiscal</label>
+        <p-select
+          size="small"
+          formControlName="documentoId"
+          [options]="documentosFiltrados()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Tipo documento..."
+          styleClass="w-full"
+          [filter]="true"
+          filterBy="label"
+          [appendTo]="'body'"
+          (ngModelChange)="onDocumentoIdChange()"
+          [disabled]="!puedeEditar()"
+        />
+      </div>
+      <div class="campo">
+        <label>Nro. Documento</label>
+        <p-select
+          size="small"
+          formControlName="nrodocumento"
+          [options]="nrosDocumento()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Nro. documento..."
+          styleClass="w-full"
+          [filter]="true"
+          filterBy="label"
+          [appendTo]="'body'"
+          [disabled]="!puedeEditar()"
+        />
+      </div>
+      }
+    </div>
+
+    <div class="ml-1 mb-3 mt-2 grid">
+      <div class="col-fixed" style="width: 100%">
+        <label>Concepto de pago</label>
+        <input
+          pInputText
+          pSize="small"
+          formControlName="concepto"
+          maxlength="120"
+          placeholder="Ingrese el concepto de pago..."
+          class="w-full"
+          [disabled]="!puedeEditar()"
+        />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="detalles-head">
+        <h4 class="detalles-title">Detalle de pagos</h4>
+        @if (puedeEditar()) {
+        <p-button
+          type="button"
+          label="Agregar forma de pago"
+          icon="pi pi-plus"
+          variant="text"
+          severity="success"
+          size="small"
+          [rounded]="true"
+          (onClick)="nuevaFila()"
+        />
+        }
+      </div>
+
+      <div class="fp-lista">
+        @for (row of dets(); track row['nrofila']; let idx = $index) {
+        <div class="fp-fila">
+          <div class="fp-campo fp-fp">
+            <p-select
+              size="small"
+              [ngModel]="row['formapagoId']"
+              (ngModelChange)="row['formapagoId'] = $event; onFormaPagoChange(row)"
+              [ngModelOptions]="{ standalone: true }"
+              [options]="opcionesFp()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              [filter]="true"
+              filterBy="label"
+              [appendTo]="'body'"
+              [disabled]="!puedeEditar()"
+            />
+          </div>
+          <div class="fp-campo fp-importe">
+            <p-inputnumber
+              size="small"
+              [(ngModel)]="row['importe']"
+              [ngModelOptions]="{ standalone: true }"
+              [min]="0"
+              mode="currency"
+              currency="HNL"
+              [locale]="'es-HN'"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [useGrouping]="true"
+              styleClass="w-8rem"
+              [inputStyle]="{ 'width': '100%' }"
+              (ngModelChange)="recalcularTotal()"
+              [readonly]="!puedeEditar()"
+            />
+          </div>
+          @if (esTarjeta(row)) {
+          <div class="fp-campo fp-extra">
+            <p-select
+              size="small"
+              [ngModel]="row['tarjetacreditoId']"
+              (ngModelChange)="row['tarjetacreditoId'] = $event"
+              [ngModelOptions]="{ standalone: true }"
+              [options]="opcionesTarjeta()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="VISA/MASTERCARD"
+              styleClass="w-full"
+              [filter]="true"
+              filterBy="label"
+              [appendTo]="'body'"
+              [disabled]="!puedeEditar()"
+            />
+          </div>
+          <div class="fp-campo fp-extra">
+            <input
+              pInputText
+              pSize="small"
+              [(ngModel)]="row['nrotarjeta']"
+              [ngModelOptions]="{ standalone: true }"
+              [disabled]="!puedeEditar()"
+              placeholder="Nro. tarjeta"
+            />
+          </div>
+          } @if (esTransferencia(row)) {
+          <div class="fp-campo fp-extra">
+            <input
+              pInputText
+              pSize="small"
+              [(ngModel)]="row['nroautorizacion']"
+              [ngModelOptions]="{ standalone: true }"
+              [disabled]="!puedeEditar()"
+              placeholder="Autorización"
+            />
+          </div>
+          }
+          <div class="fp-campo fp-accion">
+            <p-button
+              type="button"
+              icon="pi pi-trash"
+              severity="danger"
+              variant="text"
+              [rounded]="true"
+              size="small"
+              [disabled]="!esNuevaFila(row) || !puedeEditar()"
+              (onClick)="quitarFila(idx)"
+            />
+          </div>
+        </div>
+        } @empty {
+        <div class="fp-vacio">Sin detalles de pagos, agregue una forma de pago.</div>
+        }
+      </div>
+
+      @if (totalPagos() > 0) {
+      <div class="total-linea">
+        <span class="total-label">Total efectivo:</span>
+        <span class="total-valor"
+          >{{ totalPagos() | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+        >
+      </div>
+      }
+    </div>
+
+    @if (esDestinoPrestamo()) {
+    <div class="card cuotas-card">
+      <div class="detalles-head">
+        <h4 class="detalles-title"><i class="pi pi-wallet"></i> Cobro a préstamo</h4>
+      </div>
+      <div class="prestamo-select">
+        <label>Préstamo <span class="req">*</span></label>
+        <p-select
+          size="small"
+          formControlName="prestamoId"
+          [options]="prestamosCliente()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar préstamo..."
+          styleClass="w-full"
+          [filter]="true"
+          filterBy="label"
+          [appendTo]="'body'"
+          [disabled]="!puedeEditar()"
+          (ngModelChange)="onPrestamoChange($event)"
+        />
+      </div>
+
+      @if (repartoPrestamo(); as rp) {
+      <div class="cuota-virtual">
+        <div class="cv-header">
+          <span class="cv-num">Número de cuota a pagar.: {{ rp.ultcuotapagada}}</span>
+          <span class="ml-2 cv-vence"
+            >Importe minimo de cuota a pagar {{ rp.vlrcuota | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+          @if (rp.cumple) {
+          <p-tag severity="success" value="Abono completado" size="small" />
+          } @else {
+          <p-tag severity="warn" value="No cubre la cuota" size="small" />
+          }
+        </div>
+        <div class="grid">
+          <div class="col-3">
+            <span class="cv-label">Saldo pendiente</span>
+            <span class="ml-2 cv-value"
+              >{{ rp.saldo | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+            >
+          </div>
+          <div class="col-2">
+            <span class="cv-label">Días interés </span>
+            <span class="ml-2 cv-value">{{ rp.diasInteres }}</span>
+          </div>
+          @if (rp.diasGracia > 0) {
+          <div class="col-2">
+            <span class="cv-label">Días de gracia </span>
+            <span class="ml-2 cv-value">{{ rp.diasGracia }}</span>
+          </div>
+
+          }
+          <div class="col-2">
+            <span class="cv-label">Interés simple </span>
+            <span class="ml-2 cv-value"
+              >{{ rp.interes | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+            >
+          </div>
+          @if (rp.diasMora > 0) {
+          <div class="col-2">
+            <span class="cv-label">Días mora </span>
+            <span class="ml-2 cv-value mora-positiva">{{ rp.diasMora }}</span>
+          </div>
+          <div class="col-2">
+            <span class="cv-label">Interés moratorio </span>
+            <span class="ml-2 cv-value mora-positiva"
+              >{{ rp.mora | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+            >
+          </div>
+          }
+        </div>
+      </div>
+
+      <div class="resumen-cuotas">
+        <div class="rc">
+          <span class="rc-label">Efectivo recibido</span>
+          <span class="rc-value"
+            >{{ rp.efectivo | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        <div class="rc">
+          <span class="rc-label">(−) Cargos</span>
+          <span class="rc-value"
+            >{{ rp.cargos | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        <div class="rc rc-capital">
+          <span class="rc-label">(=) Abono a capital</span>
+          <span class="rc-value"
+            >{{ rp.abonoCapital | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        <div class="rc">
+          <span class="rc-label">Saldo nuevo</span>
+          <span class="rc-value"
+            >{{ rp.saldoNuevo | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+      </div>
+
+      @if (!rp.cumple && rp.efectivo > 0) {
+      <div class="aviso-cuota">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span
+          >El efectivo recibido (L {{ rp.efectivo.toFixed(2) }}) es menor a la cuota pactada (L {{
+          rp.vlrcuota.toFixed(2) }}).</span
+        >
+      </div>
+      } } @else if (form.get('prestamoId')?.value) {
+      <div class="cuota-vacia">
+        <i class="pi pi-check-circle"></i>
+        <span>Préstamo sin saldo de capital.</span>
+      </div>
+      }
+    </div>
+    } @if (docSeleccionado(); as doc) {
+    <div class="card desglose-card" [class.con-cargos]="tieneInteres()">
+      <h4 class="desglose-title">
+        <i class="pi pi-wallet"></i> Desglose del cobro — Factura #{{ doc.nroreferencia }}
+      </h4>
+
+      <div class="desglose-grid">
+        <div class="dl">
+          <span class="dl-label">Saldo factura</span>
+          <span class="dl-value"
+            >{{ doc.saldo | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+
+        @if (doc.esFacturaCredito) {
+        <div class="dl">
+          <span class="dl-label">Último abono</span>
+          <span class="dl-value">{{ doc.fechaultabono | date:'dd/MM/yyyy' }}</span>
+        </div>
+        <div class="dl">
+          <span class="dl-label">Días transcurridos</span>
+          <span class="dl-value">{{ doc.diasTranscurridos }}</span>
+        </div>
+        <div class="dl">
+          <span class="dl-label">Días interés</span>
+          <span class="dl-value">{{ doc.diasInteres }}</span>
+        </div>
+        @if (doc.diasMora > 0) {
+        <div class="dl">
+          <span class="dl-label">Días mora</span>
+          <span class="dl-value warn">{{ doc.diasMora }}</span>
+        </div>
+        }
+        <div class="dl">
+          <span class="dl-label">Interés devengado</span>
+          <span class="dl-value"
+            >{{ doc.interes | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        @if (doc.mora > 0) {
+        <div class="dl">
+          <span class="dl-label">Interés moratorio</span>
+          <span class="dl-value warn"
+            >{{ doc.mora | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        } }
+      </div>
+
+      @if (tieneInteres()) {
+      <div class="desglose-reparto">
+        <div class="reparto-head">Reparto del efectivo recibido</div>
+        <div class="reparto-row">
+          <span>Efectivo recibido</span>
+          <span class="rp"
+            >{{ totalPagos() | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        <div class="reparto-row cargos">
+          <span>(−) Cargos (interés + mora)</span>
+          <span class="rp"
+            >{{ cargosCubiertos() | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        <div class="reparto-row capital">
+          <span>(=) Abono a capital</span>
+          <span class="rp"
+            >{{ abonoCapital() | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        <div class="reparto-row saldo">
+          <span>Saldo restante factura</span>
+          <span class="rp"
+            >{{ saldoNuevo() | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+      </div>
+      }
+    </div>
+    } @if (puedeEditar()) {
+    <div class="acciones-form">
+      <p-button
+        type="button"
+        label="Cancelar"
+        icon="pi pi-times"
+        variant="text"
+        severity="secondary"
+        size="small"
+        [rounded]="true"
+        (onClick)="volver()"
+      />
+      <p-button
+        type="submit"
+        label="Procesar abono"
+        icon="pi pi-check"
+        variant="text"
+        severity="success"
+        size="small"
+        [rounded]="true"
+        [loading]="guardando()"
+      />
+    </div>
+    }
+  </form>
+  }
+</section>
+
+<p-confirmdialog
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: '420px' }"
+/>

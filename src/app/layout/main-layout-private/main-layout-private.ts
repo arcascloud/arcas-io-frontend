@@ -16,7 +16,6 @@ import { TooltipModule } from 'primeng/tooltip';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
-import { Message } from 'primeng/message';
 import { AuthService } from '../../core/services/auth.service';
 import { MenuConfigService } from '../../core/services/menu-config.service';
 import { QuickNavService } from '../../core/services/quick-nav.service';
@@ -49,7 +48,6 @@ interface Opcion {
     InputTextModule,
     PasswordModule,
     TooltipModule,
-    Message,
     DrawerModule,
     PopoverModule,
     DialogModule,
@@ -338,22 +336,36 @@ export class MainPrivateLayout {
     const nueva = this.passwordNueva.trim();
     const confirm = this.passwordConfirm.trim();
     if (!this.pwdValida) {
-      this.msgs.add({ severity: 'warn', summary: 'Contraseña no cumple requisitos', detail: 'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Contraseña no cumple requisitos',
+        detail:
+          'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.',
+      });
       return;
     }
     if (nueva !== confirm) {
-      this.msgs.add({ severity: 'warn', summary: 'No coinciden', detail: 'La confirmación de contraseña no coincide.' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'No coinciden',
+        detail: 'La confirmación de contraseña no coincide.',
+      });
       return;
     }
 
     this.cambiandoPassword = true;
-    this.api.putBase('/users/password/actualizar', { passwordNueva: nueva })
+    this.api
+      .putBase('/users/password/actualizar', { passwordNueva: nueva })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
           this.cambiandoPassword = false;
           this.dialogCambiarPassword = false;
-          this.msgs.add({ severity: 'success', summary: 'Contraseña actualizada', detail: 'Tu contraseña ha sido cambiada exitosamente' });
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Contraseña actualizada',
+            detail: 'Tu contraseña ha sido cambiada exitosamente',
+          });
         },
         error: (err) => {
           this.cambiandoPassword = false;
