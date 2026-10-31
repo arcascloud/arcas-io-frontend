@@ -87,7 +87,10 @@
             <ng-template #body let-row let-idx="rowIndex">
               <tr>
                 <td>
-                  <p-button type="button" icon="pi pi-times" severity="danger" text rounded size="small" (onClick)="quitarFila(idx)" />
+                  <p-button type="button"
+                   icon="pi pi-times" severity="danger" 
+                   rounded=[true] 
+                   size="small" (onClick)="quitarFila(idx)" />
                 </td>
                 <td class="celda-img">
                   @if (row.imagenUrl) {

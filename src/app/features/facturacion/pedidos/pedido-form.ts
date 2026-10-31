@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, DestroyRef, HostListener } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, DestroyRef, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -17,6 +17,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { PopoverModule, Popover } from 'primeng/popover';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ApiService } from '../../../core/services/api.service';
@@ -93,6 +94,7 @@ interface PagoPedido {
     TooltipModule,
     IconFieldModule,
     InputIconModule,
+    PopoverModule,
     ConfirmDialogModule,
   ],
   // ConfirmationService local: aisla nuestro p-confirmdialog del global de main-layout
@@ -165,9 +167,24 @@ export class PedidoForm implements OnInit {
   //── Líneas (tabla) ──
   filas = signal<FilaPedido[]>([]);
   private contadorFila = 0;
+
+  // ARFM20261030 MEJORA consumida en pedido-form.html (<ng-template #footer>):
+  // filas en blanco mínimas para que la tabla nunca quede "a media altura".
+  readonly MIN_ROWS = 7;
+
+  get emptyRows(): any[] {
+    const missingRows = this.MIN_ROWS - this.filas().length;
+    return missingRows > 0 ? new Array(missingRows) : [];
+  }
+
   qProducto = signal('');
   cargando = signal(false);
   guardando = signal(false);
+
+  //── Popover de existencia al hacer click en la imagen de la fila ──
+  // (patrón Popover#datatable de PrimeNG v21, con "Buy" reemplazado por la existencia)
+  @ViewChild('op') op?: Popover;
+  productoSeleccionado = signal<FilaPedido | null>(null);
 
   totales = signal({ subTotal: 0, descuento: 0, impuesto: 0, total: 0 });
 
@@ -319,10 +336,18 @@ export class PedidoForm implements OnInit {
   /** Catálogo base en paralelo: clientes, productos, existencias, imágenes, ofertas */
   private cargarCatalogos(): Promise<void> {
     const clientes$ = this.api.get<any>('/cxc/clientes').pipe(catchError(() => of(null)));
-    const existencias$ = this.api.get<any[]>('/inventario/existencias').pipe(catchError(() => of([] as any[])));
-    const productos$ = this.api.get<any[]>('/inventario/productos').pipe(catchError(() => of([] as any[])));
-    const imagenes$ = this.api.get<any[]>('/inventario/productos-img').pipe(catchError(() => of([] as any[])));
-    const ofertas$ = this.api.get<any>('/facturacion/combos-ofertas').pipe(catchError(() => of(null)));
+    const existencias$ = this.api
+      .get<any[]>('/inventario/existencias')
+      .pipe(catchError(() => of([] as any[])));
+    const productos$ = this.api
+      .get<any[]>('/inventario/productos')
+      .pipe(catchError(() => of([] as any[])));
+    const imagenes$ = this.api
+      .get<any[]>('/inventario/productos-img')
+      .pipe(catchError(() => of([] as any[])));
+    const ofertas$ = this.api
+      .get<any>('/facturacion/combos-ofertas')
+      .pipe(catchError(() => of(null)));
 
     return firstValueFrom(forkJoin([clientes$, existencias$, productos$, imagenes$, ofertas$]))
       .then(([resCli, existencias, productos, imagenes, resOfertas]) => {
@@ -373,9 +398,9 @@ export class PedidoForm implements OnInit {
     this.cargando.set(true);
     forkJoin({
       pedido: this.api.get<any>(`/facturacion/pedidos/${pedidoId}`),
-      detalles: this.api.get<any[]>(`/facturacion/pedidos-det/pedido/${pedidoId}`).pipe(
-        catchError(() => of([] as any[])),
-      ),
+      detalles: this.api
+        .get<any[]>(`/facturacion/pedidos-det/pedido/${pedidoId}`)
+        .pipe(catchError(() => of([] as any[]))),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -396,7 +421,9 @@ export class PedidoForm implements OnInit {
           this.nroConstancia.set(pedido.nroconstancia ?? '');
           this.importeExcento.set(Number(pedido.importe_excento) || 0);
           this.diasCredito.set(Number(pedido.diascredito) || 0);
-          this.fechaVencimiento.set(pedido.fechavencimiento ? new Date(pedido.fechavencimiento) : null);
+          this.fechaVencimiento.set(
+            pedido.fechavencimiento ? new Date(pedido.fechavencimiento) : null,
+          );
           this.gestorId.set(pedido.gestorId ?? null);
 
           const nuevas: FilaPedido[] = (detalles ?? []).map((d) => this.filaDesdeDetalle(d));
@@ -419,15 +446,20 @@ export class PedidoForm implements OnInit {
   /** Convierte un pospeddet en fila de edición (enriquece descripción/imagen desde catálogo) */
   private filaDesdeDetalle(d: any): FilaPedido {
     const productoId = Number(d.productoId);
-    const prod = this.productosArray.find((p) => Number(p.produtoId ?? p.productoId) === productoId);
+    const prod = this.productosArray.find(
+      (p) => Number(p.produtoId ?? p.productoId) === productoId,
+    );
     const cantidad = Number(d.cantidad) || 0;
     const precio = Number(d.precioventa) || 0;
     const bruto = cantidad * precio;
     const descMonto = Number(d.descuento) || 0;
     const impuesto = Number(d.impuesto) || 0;
-    const descPct = d.p_descuento != null
-      ? Number(d.p_descuento) || 0
-      : bruto > 0 ? Math.round((descMonto / bruto) * 10000) / 100 : 0;
+    const descPct =
+      d.p_descuento != null
+        ? Number(d.p_descuento) || 0
+        : bruto > 0
+          ? Math.round((descMonto / bruto) * 10000) / 100
+          : 0;
     const existencia = this.getExistencia(productoId);
     return {
       fila: ++this.contadorFila,
@@ -448,8 +480,12 @@ export class PedidoForm implements OnInit {
   /** ISV: param-fac (módulo 3) + catálogo de impuestos — mismo criterio que nueva-factura */
   private cargarISV() {
     forkJoin({
-      impuestos: this.api.get<any[]>('/parametros/impuestos').pipe(catchError(() => of([] as any[]))),
-      param: this.api.get<any>('/parametros/parametros/objeto?moduloId=3').pipe(catchError(() => of(null))),
+      impuestos: this.api
+        .get<any[]>('/parametros/impuestos')
+        .pipe(catchError(() => of([] as any[]))),
+      param: this.api
+        .get<any>('/parametros/parametros/objeto?moduloId=3')
+        .pipe(catchError(() => of(null))),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({ impuestos, param }) => {
@@ -464,8 +500,11 @@ export class PedidoForm implements OnInit {
 
   private aplicarTasa() {
     if (!this.impuestos.length) return;
-    const porId = this.impuestos.find((i) => i.impuestoId === this.impuestoId && i.sn_activo === 'S');
-    const porModulo = porId || this.impuestos.find((i) => Number(i.moduloId) === 3 && i.sn_activo === 'S');
+    const porId = this.impuestos.find(
+      (i) => i.impuestoId === this.impuestoId && i.sn_activo === 'S',
+    );
+    const porModulo =
+      porId || this.impuestos.find((i) => Number(i.moduloId) === 3 && i.sn_activo === 'S');
     if (porModulo && Number(porModulo.porcentaje) > 0) {
       this.tasaImpuestoPct = Number(porModulo.porcentaje);
       this.tasaImpuesto = this.tasaImpuestoPct / 100;
@@ -475,45 +514,61 @@ export class PedidoForm implements OnInit {
   /** Formas de pago y tarjetas (para el diálogo de checkout) */
   private cargarPagos() {
     forkJoin({
-      formaspago: this.api.get<any[]>('/parametros/formas-pago').pipe(catchError(() => of([] as any[]))),
-      tarjetas: this.api.get<any[]>('/parametros/tarjetas-credito').pipe(catchError(() => of([] as any[]))),
+      formaspago: this.api
+        .get<any[]>('/parametros/formas-pago')
+        .pipe(catchError(() => of([] as any[]))),
+      tarjetas: this.api
+        .get<any[]>('/parametros/tarjetas-credito')
+        .pipe(catchError(() => of([] as any[]))),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({ formaspago, tarjetas }) => {
         // El ERP usa TODAS las formas de pago (a diferencia del CRM online que filtra)
-        this.formaspago.set((formaspago ?? []).map((f) => ({ label: f.descripcion, value: f.formapagoId })));
-        this.tarjetasCredito.set((tarjetas ?? []).map((t) => ({ label: t.descripcion, value: t.tarjetacreditoId })));
+        this.formaspago.set(
+          (formaspago ?? []).map((f) => ({ label: f.descripcion, value: f.formapagoId })),
+        );
+        this.tarjetasCredito.set(
+          (tarjetas ?? []).map((t) => ({ label: t.descripcion, value: t.tarjetacreditoId })),
+        );
       });
   }
 
   /** Descuentos globales — mismo criterio que Nueva Factura */
   private cargarDescuentos() {
-    this.api.get<any>('/facturacion/descuentos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
-      const items = res?.value ?? res ?? [];
-      this.descuentosMap.clear();
-      this.descAcumulables.clear();
-      for (const d of items) {
-        this.descuentosMap.set(d.descuentoId, Number(d.porcentaje) || 0);
-        // Detectar descuentos acumulables (tercera edad, vejez, etc.)
-        const desc = (d.descripcion ?? '').toLowerCase();
-        if (desc.includes('tercera') || desc.includes('vejez') || desc.includes('adulto mayor')) {
-          this.descAcumulables.add(d.descuentoId);
+    this.api
+      .get<any>('/facturacion/descuentos')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((res) => {
+        const items = res?.value ?? res ?? [];
+        this.descuentosMap.clear();
+        this.descAcumulables.clear();
+        for (const d of items) {
+          this.descuentosMap.set(d.descuentoId, Number(d.porcentaje) || 0);
+          // Detectar descuentos acumulables (tercera edad, vejez, etc.)
+          const desc = (d.descripcion ?? '').toLowerCase();
+          if (desc.includes('tercera') || desc.includes('vejez') || desc.includes('adulto mayor')) {
+            this.descAcumulables.add(d.descuentoId);
+          }
         }
-      }
-      this.descuentos.set(items
-        .filter((d: any) => d.sn_activo === 'S')
-        .map((d: any) => ({ label: d.descripcion, value: d.descuentoId })));
-    });
+        this.descuentos.set(
+          items
+            .filter((d: any) => d.sn_activo === 'S')
+            .map((d: any) => ({ label: d.descripcion, value: d.descuentoId })),
+        );
+      });
   }
 
   /** Días de crédito + fecha de vencimiento (param CxC módulo 4) — igual que Nueva Factura */
   private cargarParamCxc() {
-    this.api.get<any>('/parametros/parametros/objeto?moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (p) => {
-        this.diasCredito.set(Number(p?.diasPlazo ?? 0));
-        this.refrescarVencimiento();
-      },
-    });
+    this.api
+      .get<any>('/parametros/parametros/objeto?moduloId=4')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (p) => {
+          this.diasCredito.set(Number(p?.diasPlazo ?? 0));
+          this.refrescarVencimiento();
+        },
+      });
   }
 
   private refrescarVencimiento() {
@@ -527,21 +582,24 @@ export class PedidoForm implements OnInit {
     const usuarioId = this.auth.currentUser()?.usuarioId;
     if (!usuarioId) return;
 
-    this.api.get<any[]>('/parametros/gestores').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (items) => {
-        // Solo gestores de VENTAS: módulo 3 (Facturación) y activos (el backend ya filtra por empresa)
-        const ventas = (items ?? []).filter(
-          (g) => Number(g.moduloId) === 3 && g.sn_activo !== 'N' && !!g.nombre,
-        );
-        this.gestores.set(
-          ventas.map((g) => ({ label: String(g.nombre), value: Number(g.gestorId) })),
-        );
-        // Precarga: si el usuario actual tiene gestor asignado en facturación, se preselecciona
-        const propio = ventas.find((g) => Number(g.usuarioId) === usuarioId);
-        if (propio) this.gestorId.set(Number(propio.gestorId));
-      },
-      error: () => this.gestores.set([]),
-    });
+    this.api
+      .get<any[]>('/parametros/gestores')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          // Solo gestores de VENTAS: módulo 3 (Facturación) y activos (el backend ya filtra por empresa)
+          const ventas = (items ?? []).filter(
+            (g) => Number(g.moduloId) === 3 && g.sn_activo !== 'N' && !!g.nombre,
+          );
+          this.gestores.set(
+            ventas.map((g) => ({ label: String(g.nombre), value: Number(g.gestorId) })),
+          );
+          // Precarga: si el usuario actual tiene gestor asignado en facturación, se preselecciona
+          const propio = ventas.find((g) => Number(g.usuarioId) === usuarioId);
+          if (propio) this.gestorId.set(Number(propio.gestorId));
+        },
+        error: () => this.gestores.set([]),
+      });
   }
 
   // ═════════════════════════════════════════════════════════════════════════
@@ -560,7 +618,9 @@ export class PedidoForm implements OnInit {
         .subscribe({
           next: (res) => {
             const items = Array.isArray(res) ? res : (res?.value ?? []);
-            const producto = items.find((p: any) => (p.codbarra ?? '').trim().startsWith(texto.trim()));
+            const producto = items.find((p: any) =>
+              (p.codbarra ?? '').trim().startsWith(texto.trim()),
+            );
             if (producto) {
               this.agregarProducto(producto);
               this.qProducto.set('');
@@ -574,6 +634,25 @@ export class PedidoForm implements OnInit {
           },
         });
     }
+  }
+
+  /** Abre/cierra el popover de existencia al hacer click en la imagen de la fila */
+  mostrarExistenciaImagen(event: Event, row: FilaPedido) {
+    if (this.productoSeleccionado()?.fila === row.fila) {
+      this.op?.hide();
+      this.productoSeleccionado.set(null);
+    } else {
+      this.productoSeleccionado.set(row);
+      this.op?.show(event);
+      if (this.op?.container) {
+        this.op.align();
+      }
+    }
+  }
+
+  ocultarPopoverExistencia() {
+    this.op?.hide();
+    this.productoSeleccionado.set(null);
   }
 
   /** Abre el helper de productos (DynamicDialog — mismo patrón que nueva-factura) */
@@ -682,7 +761,8 @@ export class PedidoForm implements OnInit {
 
     if (this.impuestoIncluido) {
       const subConImp = bruto * (1 + this.tasaImpuesto) * (1 - descPct / 100);
-      const isvCalculado = Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
+      const isvCalculado =
+        Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
       row.impuesto = exenta ? 0 : isvCalculado;
       row.impuestoExcento = exenta ? isvCalculado : 0;
       row.subTotal = Math.round(subConImp * 100) / 100;
@@ -768,7 +848,9 @@ export class PedidoForm implements OnInit {
     this.clienteId.set(value);
     const c = this.clientesArray.find((i) => i.clienteId === value);
     if (c) {
-      this.nombreCliente.set(`${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim() || c.razonsocial || '');
+      this.nombreCliente.set(
+        `${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim() || c.razonsocial || '',
+      );
       // RTN: en crédito se lee del cliente; en contado queda limpio (manual)
       this.rtnCliente.set(this.tipoFactura() === 'C' ? (c.rtn ?? '') : '');
     }
@@ -854,7 +936,11 @@ export class PedidoForm implements OnInit {
    */
   private async asegurarGuardado(): Promise<boolean> {
     if (this.soloLectura()) {
-      this.msgs.add({ severity: 'warn', summary: 'Pedido facturado', detail: 'El pedido ya fue facturado y no se puede modificar' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Pedido facturado',
+        detail: 'El pedido ya fue facturado y no se puede modificar',
+      });
       return false;
     }
     if (!this.clienteId()) {
@@ -862,20 +948,36 @@ export class PedidoForm implements OnInit {
       return false;
     }
     if (!this.nombreCliente().trim()) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el nombre del cliente' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Ingrese el nombre del cliente',
+      });
       return false;
     }
     if (this.filas().length === 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Agregue al menos un producto' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Agregue al menos un producto',
+      });
       return false;
     }
     if (this.snExcenta() === 'S') {
       if (!this.tipoConstancia()) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione el tipo de constancia' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: 'Seleccione el tipo de constancia',
+        });
         return false;
       }
       if (!this.nroConstancia().trim()) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el número de constancia' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: 'Ingrese el número de constancia',
+        });
         return false;
       }
     }
@@ -911,9 +1013,9 @@ export class PedidoForm implements OnInit {
         await firstValueFrom(this.api.put<any>('/facturacion/pedidos', this.pedidoId(), mae));
         if (this.sucio) {
           const existentes: any[] = await firstValueFrom(
-            this.api.get<any[]>(`/facturacion/pedidos-det/pedido/${this.pedidoId()}`).pipe(
-              catchError(() => of([] as any[])),
-            ),
+            this.api
+              .get<any[]>(`/facturacion/pedidos-det/pedido/${this.pedidoId()}`)
+              .pipe(catchError(() => of([] as any[]))),
           );
           await this.sincronizarDetalles(existentes ?? []);
         }
@@ -925,7 +1027,11 @@ export class PedidoForm implements OnInit {
     } catch (err) {
       console.error('Error al guardar pedido', err);
       this.guardando.set(false);
-      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el pedido' });
+      this.msgs.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo guardar el pedido',
+      });
       return false;
     }
   }
@@ -963,7 +1069,11 @@ export class PedidoForm implements OnInit {
     const ok = await this.asegurarGuardado();
     if (!ok) return;
     const id = this.pedidoId();
-    this.msgs.add({ severity: 'success', summary: `Pedido #${id} guardado`, detail: 'Pedido listo para facturar' });
+    this.msgs.add({
+      severity: 'success',
+      summary: `Pedido #${id} guardado`,
+      detail: 'Pedido listo para facturar',
+    });
     this.router.navigate(['/facturacion/pedidos']);
   }
 
@@ -971,7 +1081,11 @@ export class PedidoForm implements OnInit {
    *  contado → diálogo de pago; crédito → facturar directo sin pagos */
   async facturar() {
     if (this.snFacturado() === 'S') {
-      this.msgs.add({ severity: 'warn', summary: 'Pedido facturado', detail: 'El pedido ya fue facturado' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Pedido facturado',
+        detail: 'El pedido ya fue facturado',
+      });
       return;
     }
     const ok = await this.asegurarGuardado();
@@ -990,11 +1104,15 @@ export class PedidoForm implements OnInit {
 
     this.procesando.set(true);
     this.api
-      .post<any>('/facturacion/pedidos/checkout', {
-        pospedmaeId: id,
-        nombrecliente: this.nombreCliente().trim(),
-        nrotelefono: this.telefono().trim() || 'N/A',
-      }, { sinContexto: true })
+      .post<any>(
+        '/facturacion/pedidos/checkout',
+        {
+          pospedmaeId: id,
+          nombrecliente: this.nombreCliente().trim(),
+          nrotelefono: this.telefono().trim() || 'N/A',
+        },
+        { sinContexto: true },
+      )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (resp) => {
@@ -1012,7 +1130,11 @@ export class PedidoForm implements OnInit {
         error: (err) => {
           console.error('Error en checkout de pedido (crédito)', err);
           this.procesando.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo facturar el pedido' });
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo facturar el pedido',
+          });
         },
       });
   }
@@ -1074,23 +1196,39 @@ export class PedidoForm implements OnInit {
     const t = this.totales();
 
     if (pagos.length === 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese importe en las formas de pago' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Ingrese importe en las formas de pago',
+      });
       return;
     }
     for (const p of pagos) {
       if (this.esTarjeta(p)) {
         const num = p.nrotarjeta?.replace(/\s/g, '') || '';
         if (num.length < 13 || !this.validarLuhn(num)) {
-          this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Número de tarjeta inválido' });
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Validación',
+            detail: 'Número de tarjeta inválido',
+          });
           return;
         }
         if (!p.tarjetacreditoId) {
-          this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione el tipo de tarjeta' });
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Validación',
+            detail: 'Seleccione el tipo de tarjeta',
+          });
           return;
         }
       }
       if (this.esTransferencia(p) && !p.nroautorizacion?.trim()) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el número de autorización' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: 'Ingrese el número de autorización',
+        });
         return;
       }
     }
@@ -1107,11 +1245,12 @@ export class PedidoForm implements OnInit {
     const id = this.pedidoId();
     if (!id) return;
     const primero = pagos[0];
-    const tipopago = primero.esEfectivo || this.esEfectivoFila(primero)
-      ? 'E'
-      : this.esTarjeta(primero)
-        ? 'T'
-        : 'TR';
+    const tipopago =
+      primero.esEfectivo || this.esEfectivoFila(primero)
+        ? 'E'
+        : this.esTarjeta(primero)
+          ? 'T'
+          : 'TR';
 
     // ── TodoPago: si algún pago es por link, la factura nace pendiente y
     //    tras el checkout se genera el link (el TP no entra a posfaccaja) ──
@@ -1119,25 +1258,31 @@ export class PedidoForm implements OnInit {
 
     this.procesando.set(true);
     this.api
-      .post<any>('/facturacion/pedidos/checkout', {
-        pospedmaeId: id,
-        nombrecliente: this.nombreCliente().trim(),
-        nrotelefono: this.telefono().trim() || 'N/A',
-        formapagoId: primero.formapagoId,
-        efectivo_recibido: totalPagado,
-        tarjetacreditoId: this.esTarjeta(primero) ? primero.tarjetacreditoId ?? undefined : undefined,
-        nrotarjeta: this.esTarjeta(primero) ? primero.nrotarjeta || undefined : undefined,
-        nroautorizacion: primero.nroautorizacion || undefined,
-        tipopago,
-        pagos: pagos.map((p) => ({
-          formapagoId: p.formapagoId,
-          tarjetacreditoId: p.tarjetacreditoId || undefined,
-          nrotarjeta: p.nrotarjeta || undefined,
-          nroautorizacion: p.nroautorizacion || undefined,
-          importe: Number(p.importe) || 0,
-          esEfectivo: this.esEfectivoFila(p),
-        })),
-      }, { sinContexto: true })
+      .post<any>(
+        '/facturacion/pedidos/checkout',
+        {
+          pospedmaeId: id,
+          nombrecliente: this.nombreCliente().trim(),
+          nrotelefono: this.telefono().trim() || 'N/A',
+          formapagoId: primero.formapagoId,
+          efectivo_recibido: totalPagado,
+          tarjetacreditoId: this.esTarjeta(primero)
+            ? (primero.tarjetacreditoId ?? undefined)
+            : undefined,
+          nrotarjeta: this.esTarjeta(primero) ? primero.nrotarjeta || undefined : undefined,
+          nroautorizacion: primero.nroautorizacion || undefined,
+          tipopago,
+          pagos: pagos.map((p) => ({
+            formapagoId: p.formapagoId,
+            tarjetacreditoId: p.tarjetacreditoId || undefined,
+            nrotarjeta: p.nrotarjeta || undefined,
+            nroautorizacion: p.nroautorizacion || undefined,
+            importe: Number(p.importe) || 0,
+            esEfectivo: this.esEfectivoFila(p),
+          })),
+        },
+        { sinContexto: true },
+      )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (resp) => {
@@ -1161,7 +1306,11 @@ export class PedidoForm implements OnInit {
         error: (err) => {
           console.error('Error en checkout de pedido', err);
           this.procesando.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo facturar el pedido' });
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo facturar el pedido',
+          });
         },
       });
   }
@@ -1170,24 +1319,27 @@ export class PedidoForm implements OnInit {
 
   /** Genera el link para la factura creada por el checkout y abre el diálogo headless */
   private generarLinkPago(fac: { facturaId: number; nrofactura?: number }) {
-    this.todp.generarLink(fac.facturaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (link) => {
-        this.linkPago.set(link);
-        this.linkStatus.set(link.status || 'pending');
-        this.linkCopiado.set(false);
-        this.iniciarPollingLink(link.operationId);
-        // El toast queda reemplazado por el diálogo headless (llamativo)
-        this.mostrarDialogoLink();
-      },
-      error: (err) => {
-        console.error('Error al generar link de pago', err);
-        this.msgs.add({
-          severity: 'warn',
-          summary: 'Link de pago',
-          detail: `Factura #${fac.nrofactura} creada, pero no se pudo generar el link`,
-        });
-      },
-    });
+    this.todp
+      .generarLink(fac.facturaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (link) => {
+          this.linkPago.set(link);
+          this.linkStatus.set(link.status || 'pending');
+          this.linkCopiado.set(false);
+          this.iniciarPollingLink(link.operationId);
+          // El toast queda reemplazado por el diálogo headless (llamativo)
+          this.mostrarDialogoLink();
+        },
+        error: (err) => {
+          console.error('Error al generar link de pago', err);
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Link de pago',
+            detail: `Factura #${fac.nrofactura} creada, pero no se pudo generar el link`,
+          });
+        },
+      });
   }
 
   /** Consulta el estado cada 10 s mientras esté pendiente */
@@ -1198,32 +1350,37 @@ export class PedidoForm implements OnInit {
         this.detenerPollingLink();
         return;
       }
-      this.todp.getStatus(operationId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-        next: (tx) => {
-          this.linkStatus.set(tx.status);
-          if (tx.status !== 'pending') {
-            this.detenerPollingLink();
-            if (tx.status === 'completed') {
-              this.msgs.add({
-                severity: 'success',
-                summary: 'Pago confirmado',
-                detail: `Factura #${tx.nrofactura || tx.facturaid} pagada vía TodoPago`,
-                life: 8000,
-              });
-              // Reabre el diálogo headless con la variante "¡Pago confirmado!"
-              this.mostrarDialogoLink();
-            } else if (tx.status === 'failed' || tx.status === 'expired') {
-              this.msgs.add({
-                severity: 'warn',
-                summary: 'Pago no completado',
-                detail: 'La transacción TodoPago finalizó sin completarse',
-                life: 8000,
-              });
+      this.todp
+        .getStatus(operationId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (tx) => {
+            this.linkStatus.set(tx.status);
+            if (tx.status !== 'pending') {
+              this.detenerPollingLink();
+              if (tx.status === 'completed') {
+                this.msgs.add({
+                  severity: 'success',
+                  summary: 'Pago confirmado',
+                  detail: `Factura #${tx.nrofactura || tx.facturaid} pagada vía TodoPago`,
+                  life: 8000,
+                });
+                // Reabre el diálogo headless con la variante "¡Pago confirmado!"
+                this.mostrarDialogoLink();
+              } else if (tx.status === 'failed' || tx.status === 'expired') {
+                this.msgs.add({
+                  severity: 'warn',
+                  summary: 'Pago no completado',
+                  detail: 'La transacción TodoPago finalizó sin completarse',
+                  life: 8000,
+                });
+              }
             }
-          }
-        },
-        error: () => { /* el polling tolera fallos transitorios */ },
-      });
+          },
+          error: () => {
+            /* el polling tolera fallos transitorios */
+          },
+        });
     }, 10000);
     this.destroyRef.onDestroy(() => this.detenerPollingLink());
   }
@@ -1262,21 +1419,31 @@ export class PedidoForm implements OnInit {
   /** Estado visible de la card del link */
   labelEstadoLink(): string {
     switch (this.linkStatus()) {
-      case 'completed': return 'Pagado';
-      case 'failed': return 'Fallido';
-      case 'expired': return 'Expirado';
-      case 'reversed': return 'Reversado';
-      default: return 'Pendiente';
+      case 'completed':
+        return 'Pagado';
+      case 'failed':
+        return 'Fallido';
+      case 'expired':
+        return 'Expirado';
+      case 'reversed':
+        return 'Reversado';
+      default:
+        return 'Pendiente';
     }
   }
 
   severityEstadoLink(): 'success' | 'warn' | 'danger' | 'info' {
     switch (this.linkStatus()) {
-      case 'completed': return 'success';
-      case 'failed': return 'danger';
-      case 'expired': return 'warn';
-      case 'reversed': return 'danger';
-      default: return 'info';
+      case 'completed':
+        return 'success';
+      case 'failed':
+        return 'danger';
+      case 'expired':
+        return 'warn';
+      case 'reversed':
+        return 'danger';
+      default:
+        return 'info';
     }
   }
 
@@ -1287,7 +1454,12 @@ export class PedidoForm implements OnInit {
       await navigator.clipboard.writeText(url);
       this.linkCopiado.set(true);
       setTimeout(() => this.linkCopiado.set(false), 2500);
-      this.msgs.add({ severity: 'success', summary: 'Copiado', detail: 'Link copiado al portapapeles', life: 2500 });
+      this.msgs.add({
+        severity: 'success',
+        summary: 'Copiado',
+        detail: 'Link copiado al portapapeles',
+        life: 2500,
+      });
     } catch {
       this.msgs.add({ severity: 'warn', summary: 'Copiar', detail: 'No se pudo copiar el link' });
     }
@@ -1308,22 +1480,30 @@ export class PedidoForm implements OnInit {
   consultarEstadoLink(): void {
     const link = this.linkPago();
     if (!link) return;
-    this.todp.getStatus(link.operationId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (tx) => {
-        this.linkStatus.set(tx.status);
-        if (tx.status !== 'pending') this.detenerPollingLink();
-        if (tx.status === 'completed') {
+    this.todp
+      .getStatus(link.operationId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (tx) => {
+          this.linkStatus.set(tx.status);
+          if (tx.status !== 'pending') this.detenerPollingLink();
+          if (tx.status === 'completed') {
+            this.msgs.add({
+              severity: 'success',
+              summary: 'Pago confirmado',
+              detail: `Factura #${tx.nrofactura || tx.facturaid} pagada vía TodoPago`,
+              life: 8000,
+            });
+            this.mostrarDialogoLink();
+          }
+        },
+        error: () =>
           this.msgs.add({
-            severity: 'success',
-            summary: 'Pago confirmado',
-            detail: `Factura #${tx.nrofactura || tx.facturaid} pagada vía TodoPago`,
-            life: 8000,
-          });
-          this.mostrarDialogoLink();
-        }
-      },
-      error: () => this.msgs.add({ severity: 'warn', summary: 'Estado', detail: 'No se pudo consultar el estado' }),
-    });
+            severity: 'warn',
+            summary: 'Estado',
+            detail: 'No se pudo consultar el estado',
+          }),
+      });
   }
 
   /** Auto-asignar el importe pendiente al elegir TodoPago como forma de pago */
@@ -1362,11 +1542,11 @@ export class PedidoForm implements OnInit {
   }
 
   getExistencia(productoId: number | null): number {
-    return productoId ? this.existenciasMap.get(productoId) ?? 0 : 0;
+    return productoId ? (this.existenciasMap.get(productoId) ?? 0) : 0;
   }
 
   getOferta(productoId: number | null): { porcentaje: number; precioConDescuento: number } | null {
-    return productoId ? this.ofertasMap.get(productoId) ?? null : null;
+    return productoId ? (this.ofertasMap.get(productoId) ?? null) : null;
   }
 
   esOferta(productoId: number | null): boolean {

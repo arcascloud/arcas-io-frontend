@@ -51,7 +51,9 @@ export const authGuard: CanMatchFn = async (_route, segments) => {
   const msgs = inject(MessageService);
 
   const ruta = rutaIntentada(segments);
+  const p_validar_session = environment.VALIDAR_SESSION;
 
+  console.log('Validar session: ' + p_validar_session);
   // ══ VALIDAR_SESSION='N' — modo sin validación de sesión ══
   // No se exige sesión ni permisos, y NO se intercepta la raíz:
   // cada layout maneja su redirect interno (privado → dashboard si hay

@@ -44,7 +44,7 @@ $topbar-height: 60px;
   top: 0;
   left: 0;
   bottom: 0;
-  z-index: 100;
+  z-index: 1000;
   overflow-x: hidden;
   overflow-y: hidden;
   user-select: none;
@@ -455,7 +455,7 @@ $topbar-height: 60px;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: 1100;
   gap: 1rem;
 }
 
@@ -546,8 +546,10 @@ $topbar-height: 60px;
 
 // Botón toggle del sidebar (naranja)
 .sidebar-toggle {
+font-size: 1.45rem;
   :deep(.p-button) {
     color: #fb923c;
+    font-size: 1.45rem;
 
     &:hover {
       color: #ffffff;
@@ -642,7 +644,7 @@ $topbar-height: 60px;
 
   .topbar {
     padding: 0 0.75rem;
-    z-index: 201;
+    z-index: 1100;
   }
 
   .sidebar-toggle {

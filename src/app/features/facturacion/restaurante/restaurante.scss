@@ -7,6 +7,7 @@
 $drawer-width: 40%;
 $bp-angosto: 992px;
 $mesa-size: 2.75rem;
+$topbar-height: 60px;
 
 :host {
   display: block;
@@ -227,6 +228,12 @@ $mesa-size: 2.75rem;
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.06);
 }
 
+@media (min-width: 992px) {
+  :host ::ng-deep .rest-drawer {
+    top: 60px !important;
+    height: calc(100vh - 60px) !important;
+  }
+}
 .rest-drawer-body {
   display: grid;
   grid-template-columns: 1fr 1fr; // 20% : 20% del ancho total

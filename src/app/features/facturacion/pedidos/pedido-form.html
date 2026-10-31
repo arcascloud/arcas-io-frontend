@@ -1,34 +1,74 @@
 <section class="page">
-
   <div class="page-header-pedido">
     <span>Pedidos/Facturación</span>
     <div class="pedido-estado">
       <!-- Fila 1: chips de estado del pedido -->
       <div class="pedido-chips">
-        <p-tag [value]="'Pedido ' + (pedidoId() ? '#' + pedidoId() : 'nuevo')" severity="info" styleClass="tag-sm" />
-        <p-tag [value]="estadoPedidoLabel()" [severity]="estadoPedidoSeverity()" styleClass="tag-sm" />
+        <p-tag
+          [value]="'Pedido ' + (pedidoId() ? '#' + pedidoId() : 'nuevo')"
+          severity="info"
+          styleClass="tag-sm"
+        />
+        <p-tag
+          [value]="estadoPedidoLabel()"
+          [severity]="estadoPedidoSeverity()"
+          styleClass="tag-sm"
+        />
         @if (snFacturado() === 'S' && (nrofactura() || facturaId())) {
-        <p-tag [value]="'Factura #' + (nrofactura() ?? facturaId())" severity="success" styleClass="tag-sm" />
-        }
-        @if (soloLectura()) {
-        <span class="badge-readonly"><i class="pi pi-lock"></i> Solo lectura — pedido facturado</span>
+        <p-tag
+          [value]="'Factura #' + (nrofactura() ?? facturaId())"
+          severity="success"
+          styleClass="tag-sm"
+        />
+        } @if (soloLectura()) {
+        <span class="badge-readonly"
+          ><i class="pi pi-lock"></i> Solo lectura — pedido facturado</span
+        >
         }
       </div>
       <!-- Fila 2: controles (Gestor → Teléfono → Envío gratis) -->
       <div class="pedido-header-controls">
         <label for="gestorId">Gestor de venta</label>
-        <p-select size="small" id="gestorId" [ngModel]="gestorId()" (ngModelChange)="gestorId.set($event)"
-          [options]="gestores()" optionLabel="label" optionValue="value" filter showClear
-          placeholder="Seleccionar gestor..." styleClass="w-16rem" [appendTo]="'body'"
-          [ngModelOptions]="{ standalone: true }" [disabled]="soloLectura()" />
+        <p-select
+          size="small"
+          id="gestorId"
+          [ngModel]="gestorId()"
+          (ngModelChange)="gestorId.set($event)"
+          [options]="gestores()"
+          optionLabel="label"
+          optionValue="value"
+          filter
+          showClear
+          placeholder="Seleccionar gestor..."
+          styleClass="w-16rem"
+          [appendTo]="'body'"
+          [ngModelOptions]="{ standalone: true }"
+          [disabled]="soloLectura()"
+        />
         <label for="telefono">Teléfono</label>
-        <input pInputText id="telefono" pSize="small" [ngModel]="telefono()"
-          (ngModelChange)="onTelChange($event)" [ngModelOptions]="{ standalone: true }" maxlength="20"
-          placeholder="Teléfono del cliente" class="w-10rem" [disabled]="soloLectura()" />
+        <input
+          pInputText
+          id="telefono"
+          pSize="small"
+          [ngModel]="telefono()"
+          (ngModelChange)="onTelChange($event)"
+          [ngModelOptions]="{ standalone: true }"
+          maxlength="20"
+          placeholder="Teléfono del cliente"
+          class="w-10rem"
+          [disabled]="soloLectura()"
+        />
         <label for="envioGratis">Envío gratis</label>
-        <p-selectbutton size="small" id="envioGratis" [options]="snOptions" [ngModel]="envioGratis()"
-          (ngModelChange)="onEnvioChange($event)" optionLabel="label" optionValue="value"
-          [disabled]="soloLectura()" />
+        <p-selectbutton
+          size="small"
+          id="envioGratis"
+          [options]="snOptions"
+          [ngModel]="envioGratis()"
+          (ngModelChange)="onEnvioChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          [disabled]="soloLectura()"
+        />
       </div>
     </div>
   </div>
@@ -40,98 +80,240 @@
         <div class="field col col-12 md:col">
           <div class="nf-busqueda">
             <p-iconfield styleClass="w-full">
-              <input pInputText type="text" pSize="small" class="w-full" [value]="qProducto()"
-                (input)="onBuscarProducto($event)" placeholder="Buscar producto o escanear código de barras..."
-                [disabled]="soloLectura()" />
+              <input
+                pInputText
+                type="text"
+                pSize="small"
+                class="w-full"
+                [value]="qProducto()"
+                (input)="onBuscarProducto($event)"
+                placeholder="Buscar producto o escanear código de barras..."
+                [disabled]="soloLectura()"
+              />
               <p-inputicon class="ml-10">
-                <p-button id="btnbuscar" size="small" icon="pi pi-search" pTooltip="ALT + 1 Buscar producto"
-                  showDelay="1000" hideDelay="300" severity="info" [rounded]="true" variant="text"
-                  [disabled]="soloLectura()" (onClick)="showHelperProductos()" />
+                <p-button
+                  id="btnbuscar"
+                  size="small"
+                  icon="pi pi-search"
+                  pTooltip="ALT + 1 Buscar producto"
+                  showDelay="1000"
+                  hideDelay="300"
+                  severity="info"
+                  [rounded]="true"
+                  variant="text"
+                  [disabled]="soloLectura()"
+                  (onClick)="showHelperProductos()"
+                />
               </p-inputicon>
             </p-iconfield>
           </div>
         </div>
       </div>
 
-      <p-table [value]="filas()" size="small" [scrollable]="true" scrollHeight="280px"
-        [tableStyle]="{ 'min-width': '50rem' }" styleClass="det-table" [rows]="5">
-        <ng-template #header>
-          <tr>
-            <th class="th-label width-producto">Producto</th>
-            <th class="th-label width-imagen">Imagen</th>
-            <th class="th-label width-cantidad">Cantidad</th>
-            <th class="th-label width-promo">Promo</th>
-            <th class="th-label width-precio">PrecioVta</th>
-            <th class="th-label width-subtotal">Subtotal</th>
-            <th class="th-label width-accion">Acción</th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-row let-idx="rowIndex">
-          <tr>
-            <td class="cell-producto">
-              <span class="cod-barra">Cod. {{ row.codbarra }}</span>
-              <span class="desc-linea">{{ row.descripcion }}</span>
-              <span class="desc-linea">
-                Stock..
-                <p-tag [value]="getExistencia(row.productoId) + ''" severity="secondary" styleClass="tag-sm" />
-                disp..
-                <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)" styleClass="tag-sm" />
-              </span>
-            </td>
+      <!-- ARFM20261030 scrollHeight="flex" (igual que nueva-factura): el contenedor llena
+           calc(100vh - 360px) para que las 9 filas en blanco del footer (MIN_ROWS) quepan
+           sin scroll — con "280px" se cortaban y el tfoot sticky se encimaba -->
+      <div style="height: calc(100vh - 360px)">
+        <p-table
+          [value]="filas()"
+          size="small"
+          stripedRows
+          [scrollable]="true"
+          scrollHeight="flex"
+          [tableStyle]="{ 'min-width': '50rem' }"
+          styleClass="det-table"
+          [rows]="7"
+        >
+          <ng-template #header>
+            <tr>
+              <th class="th-label width-producto">Producto</th>
+              <th class="th-label width-imagen">Imagen</th>
+              <th class="th-label width-cantidad">Cantidad</th>
+              <th class="th-label width-promo">Promo</th>
+              <th class="th-label width-precio">PrecioVta</th>
+              <th class="th-label width-subtotal">Subtotal</th>
+              <th class="th-label width-accion">Acción</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-row let-idx="rowIndex">
+            <tr>
+              <td class="cell-producto">
+                <span class="cod-barra">Cod. {{ row.codbarra }}</span>
+                <span class="desc-linea">{{ row.descripcion }}</span>
+                <span class="desc-linea">
+                  Stock..
+                  <p-tag
+                    [value]="getExistencia(row.productoId) + ''"
+                    severity="secondary"
+                    styleClass="tag-sm"
+                  />
+                  disp..
+                  <p-tag
+                    [value]="row.estado"
+                    [severity]="getSeverity(row.estado)"
+                    styleClass="tag-sm"
+                  />
+                </span>
+              </td>
 
-            <td>
-              @if (row.imagenUrl) {
-              <img [src]="row.imagenUrl" [alt]="row.descripcion" width="50" class="img-producto" />
+              <td>
+                @if (row.imagenUrl) {
+                <!-- ARFM20261030 wrapper retroiluminado: la luz va de atrás hacia adelante
+                     alrededor de la imagen; click = popover de existencia -->
+                <span
+                  class="img-backlight img-clickable"
+                  (click)="mostrarExistenciaImagen($event, row)"
+                >
+                  <img
+                    [src]="row.imagenUrl"
+                    [alt]="row.descripcion"
+                    width="80"
+                    class="img-producto"
+                  />
+                </span>
+                } @else {
+                <i class="pi pi-images icono-sin-imagen"></i>
+                }
+              </td>
+
+              <td>
+                <p-inputnumber
+                  [(ngModel)]="row.cantidad"
+                  [ngModelOptions]="{ standalone: true }"
+                  [min]="0"
+                  [step]="1"
+                  [showButtons]="true"
+                  spinnerMode="horizontal"
+                  buttonLayout="horizontal"
+                  size="small"
+                  mode="currency"
+                  currency="HNL"
+                  [locale]="'es-HN'"
+                  [minFractionDigits]="2"
+                  [maxFractionDigits]="2"
+                  [useGrouping]="true"
+                  styleClass="w-10rem"
+                  [inputStyle]="{ 'width': '100%' }"
+                  (ngModelChange)="recalcularFila(row)"
+                  [disabled]="soloLectura()"
+                >
+                  <ng-template #incrementbuttonicon>
+                    <span class="pi pi-plus"></span>
+                  </ng-template>
+                  <ng-template #decrementbuttonicon>
+                    <span class="pi pi-minus"></span>
+                  </ng-template>
+                </p-inputnumber>
+              </td>
+
+              @if (esOferta(row.productoId)) {
+              <td>
+                @if (row.descuento > getOferta(row.productoId)!.porcentaje) {
+                <p-tag
+                  [value]="'Promo -' + getOferta(row.productoId)!.porcentaje + '% + Tercera -' + (row.descuento -
+                getOferta(row.productoId)!.porcentaje) + '%'"
+                  severity="success"
+                  styleClass="tag-sm"
+                />
+                } @else {
+                <p-tag
+                  [value]="'Descuento -' + getOferta(row.productoId)!.porcentaje + '%'"
+                  severity="success"
+                  styleClass="tag-sm"
+                />
+                }
+              </td>
               } @else {
-              <i class="pi pi-images icono-sin-imagen"></i>
+              <td></td>
               }
-            </td>
 
-            <td>
-              <p-inputnumber [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" [min]="0" [step]="1"
-                [showButtons]="true" spinnerMode="horizontal" buttonLayout="horizontal" size="small" mode="currency"
-                currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
-                styleClass="w-10rem" [inputStyle]="{ 'width': '100%' }" (ngModelChange)="recalcularFila(row)"
-                [disabled]="soloLectura()">
-                <ng-template #incrementbuttonicon>
-                  <span class="pi pi-plus"></span>
-                </ng-template>
-                <ng-template #decrementbuttonicon>
-                  <span class="pi pi-minus"></span>
-                </ng-template>
-              </p-inputnumber>
-            </td>
+              <td>{{ moneda(row.precioventa) }}</td>
 
-            @if (esOferta(row.productoId)) {
-            <td>
-              @if (row.descuento > getOferta(row.productoId)!.porcentaje) {
-              <p-tag [value]="'Promo -' + getOferta(row.productoId)!.porcentaje + '% + Tercera -' + (row.descuento -
-                getOferta(row.productoId)!.porcentaje) + '%'" severity="success" styleClass="tag-sm" />
-              } @else {
-              <p-tag [value]="'Descuento -' + getOferta(row.productoId)!.porcentaje + '%'" severity="success"
-                styleClass="tag-sm" />
-              }
-            </td>
-            } @else {
-            <td></td>
+              <td>{{ moneda(row.subTotal) }}</td>
+
+              <td>
+                <p-button
+                  icon="pi pi-times"
+                  [rounded]="true"
+                  severity="danger"
+                  (onClick)="quitarFila(idx)"
+                  size="small"
+                  [disabled]="soloLectura()"
+                />
+              </td>
+            </tr>
+          </ng-template>
+          <!-- ARFM20261030 MEJORA consumida aquí: emptyRows (MIN_ROWS=9) pinta filas en
+               blanco en el footer de la tabla hasta completar 9 filas — mismo criterio
+               que nueva-factura.html -->
+          <ng-template #footer>
+            @for (empty of emptyRows; track $index) {
+              <tr class="empty-row">
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
             }
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="100" class="text-center p-3">
+                Sin artículos. Agregue el primer artículo.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
 
-            <td>{{ moneda(row.precioventa) }}</td>
+        <!-- ARFM20261030 Popover de existencia (patrón Popover#datatable PrimeNG v21).
+             FUERA de la p-table para que no se renderice por fila. Se abre con click
+             en la imagen; en lugar del botón "Buy" muestra la existencia del producto. -->
+        <p-popover #op (onHide)="productoSeleccionado.set(null)">
+          <ng-template #content>
+            @if (productoSeleccionado(); as row) {
+            <!-- Card estilo menú de restaurante: imagen grande arriba + ficha abajo -->
+            <div class="menu-card">
+              <div class="menu-card-media">
+                @if (row.imagenUrl) {
+                <img
+                  [src]="row.imagenUrl"
+                  [alt]="row.descripcion"
+                  class="img-producto img-producto-lg"
+                />
+                } @else {
+                <i class="pi pi-images icono-sin-imagen"></i>
+                }
+                <p-tag
+                  [value]="row.estado"
+                  [severity]="getSeverity(row.estado)"
+                  styleClass="tag-sm menu-card-tag"
+                />
+              </div>
 
-            <td>{{ moneda(row.subTotal) }}</td>
+              <div class="menu-card-body">
+                <span class="menu-card-cod">Cod. {{ row.codbarra }}</span>
+                <div class="menu-card-desc">{{ row.descripcion }}</div>
 
-            <td>
-              <p-button icon="pi pi-times" [rounded]="true" severity="danger" (onClick)="quitarFila(idx)" size="small"
-                [disabled]="soloLectura()" />
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="100" class="text-center p-3">Sin artículos. Agregue el primer artículo.</td>
-          </tr>
-        </ng-template>
-      </p-table>
+                <div class="menu-card-meta">
+                  <span class="menu-card-precio">{{ moneda(row.precioventa) }}</span>
+                  <!-- En lugar de "Buy": existencia disponible -->
+                  <span
+                    class="menu-card-stock"
+                    [ngClass]="'nivel-' + (row.estado || '').toLowerCase()"
+                  >
+                    <i class="pi pi-box"></i>
+                    Existencia: {{ getExistencia(row.productoId) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            }
+          </ng-template>
+        </p-popover>
+      </div>
 
       <div class="mt-2 nf-totales">
         <div class="nf-totales-split">
@@ -160,9 +342,10 @@
     </div>
 
     <!-- Columna 2: panel lateral -->
-    <div style="margin-top: -100px"  class="col-12 xl:col-3 nf-side-panel-col">
+    <!-- ARFM20261030 margin-top: -100px ahora vive en SCSS (.nf-side-panel-col) para poder
+         anularlo solo en mobile sin !important -->
+    <div class="col-12 xl:col-3 nf-side-panel-col">
       <div class="p-2 for-border-color-alls border-2 border-round m-2 nf-side-panel">
-
         <div class="field">
           <div class="p-0 grid">
             <div class="p-0 mt-2 ml-2 col">
@@ -170,18 +353,34 @@
                 <label for="tipoFactura">Tipo factura<span class="req">*</span></label>
                 <p-selectbutton
                   id="cbotipofactura"
-                  size="small" id="tenipoFactura" [options]="tipoOptions" [ngModel]="tipoFactura()"
-                  (ngModelChange)="tipoFactura.set($event); onTipoFacturaChange()" optionLabel="label"
-                  optionValue="value" [disabled]="soloLectura()" />
+                  size="small"
+                  id="tenipoFactura"
+                  [options]="tipoOptions"
+                  [ngModel]="tipoFactura()"
+                  (ngModelChange)="tipoFactura.set($event); onTipoFacturaChange()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [disabled]="soloLectura()"
+                />
               </div>
             </div>
             <div class="p-0 mt-5 mr-2">
               <p-button
-               id="btnaddnewcustomer"
-               label="Nuevo cliente" variant="text"
-               icon="pi pi-plus" size="small" severity="info" [raised]="true" [rounded]="true"
-                pTooltip="ALT + 2 Agregar nuevo cliente" [appendTo]="'body'" showDelay="1000" hideDelay="300"
-                (onClick)="abrirNuevoCliente()" [disabled]="soloLectura()" />
+                id="btnaddnewcustomer"
+                label="Nuevo cliente"
+                variant="text"
+                icon="pi pi-plus"
+                size="small"
+                severity="info"
+                [raised]="true"
+                [rounded]="true"
+                pTooltip="ALT + 2 Agregar nuevo cliente"
+                [appendTo]="'body'"
+                showDelay="1000"
+                hideDelay="300"
+                (onClick)="abrirNuevoCliente()"
+                [disabled]="soloLectura()"
+              />
             </div>
           </div>
         </div>
@@ -189,58 +388,111 @@
         <div class="field">
           <div class="campo">
             <label for="clienteId">Cliente <span class="req">*</span></label>
-            <p-select size="small" id="clienteId" [ngModel]="clienteId()" (ngModelChange)="onClienteChange($event)"
-              [options]="clientes()" optionLabel="label" optionValue="value" filter showClear
-              placeholder="Seleccionar cliente..." styleClass="w-full" [appendTo]="'body'"
-              [disabled]="soloLectura()" />
+            <p-select
+              size="small"
+              id="clienteId"
+              [ngModel]="clienteId()"
+              (ngModelChange)="onClienteChange($event)"
+              [options]="clientes()"
+              optionLabel="label"
+              optionValue="value"
+              filter
+              showClear
+              placeholder="Seleccionar cliente..."
+              styleClass="w-full"
+              [appendTo]="'body'"
+              [disabled]="soloLectura()"
+            />
           </div>
         </div>
 
         <div class="field">
           <div class="campo">
             <label for="nombreCliente">Nombre del cliente<span class="req">*</span></label>
-            <input pInputText id="nombreCliente" pSize="small" [ngModel]="nombreCliente()"
-              (ngModelChange)="onNombreChange($event)" [ngModelOptions]="{ standalone: true }"
-              placeholder="Nombre del cliente" class="w-full" [disabled]="soloLectura()" />
+            <input
+              pInputText
+              id="nombreCliente"
+              pSize="small"
+              [ngModel]="nombreCliente()"
+              (ngModelChange)="onNombreChange($event)"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Nombre del cliente"
+              class="w-full"
+              [disabled]="soloLectura()"
+            />
           </div>
         </div>
 
         <div class="field">
           <div class="campo">
             <label for="rtnCliente">RTN del cliente</label>
-            <input pInputText id="rtnCliente" pSize="small" [ngModel]="rtnCliente()"
-              (ngModelChange)="onRtnChange($event)" [ngModelOptions]="{ standalone: true }" maxlength="20"
-              placeholder="RTN del cliente" class="w-full" [disabled]="soloLectura()" />
+            <input
+              pInputText
+              id="rtnCliente"
+              pSize="small"
+              [ngModel]="rtnCliente()"
+              (ngModelChange)="onRtnChange($event)"
+              [ngModelOptions]="{ standalone: true }"
+              maxlength="20"
+              placeholder="RTN del cliente"
+              class="w-full"
+              [disabled]="soloLectura()"
+            />
           </div>
         </div>
 
         <div class="field">
           <div class="campo">
             <label>Descuento</label>
-            <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
-              placeholder="Sin descuento" [showClear]="true" styleClass="w-full" [appendTo]="'body'"
-              [ngModel]="descuentoGlobalId()" [ngModelOptions]="{ standalone: true }"
+            <p-select
+              size="small"
+              [options]="descuentos()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Sin descuento"
+              [showClear]="true"
+              styleClass="w-full"
+              [appendTo]="'body'"
+              [ngModel]="descuentoGlobalId()"
+              [ngModelOptions]="{ standalone: true }"
               (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()"
-              [disabled]="soloLectura()" />
+              [disabled]="soloLectura()"
+            />
           </div>
         </div>
 
         <div class="field">
           <div class="campo campo-inline">
             <label>Exenta de ISV</label>
-            <p-selectbutton size="small" [options]="snOptions" [ngModel]="snExcenta()"
-              (ngModelChange)="snExcenta.set($event); recalcularExenta()" optionLabel="label" optionValue="value"
-              [disabled]="soloLectura()" />
+            <p-selectbutton
+              size="small"
+              [options]="snOptions"
+              [ngModel]="snExcenta()"
+              (ngModelChange)="snExcenta.set($event); recalcularExenta()"
+              optionLabel="label"
+              optionValue="value"
+              [disabled]="soloLectura()"
+            />
           </div>
         </div>
 
         <div class="field">
           <div class="campo">
             <label for="tipoConstancia">Tipo Constancia</label>
-            <p-select id="tipoConstancia" [ngModel]="tipoConstancia()" [ngModelOptions]="{ standalone: true }"
-              (ngModelChange)="onTipoConstanciaChange($event)" [options]="tipoConstanciaOpciones"
-              optionLabel="label" optionValue="value" placeholder="Seleccionar..." size="small" styleClass="w-full"
-              [appendTo]="'body'" [disabled]="snExcenta() !== 'S' || soloLectura()" />
+            <p-select
+              id="tipoConstancia"
+              [ngModel]="tipoConstancia()"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="onTipoConstanciaChange($event)"
+              [options]="tipoConstanciaOpciones"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              size="small"
+              styleClass="w-full"
+              [appendTo]="'body'"
+              [disabled]="snExcenta() !== 'S' || soloLectura()"
+            />
             @if (snExcenta() === 'S' && !tipoConstancia()) {
             <small class="err">Seleccione el tipo de constancia</small>
             }
@@ -250,10 +502,18 @@
         <div class="field">
           <div class="campo">
             <label for="nroConstancia">Nro. Constancia</label>
-            <input pInputText id="nroConstancia" [ngModel]="nroConstancia()"
-              (ngModelChange)="onNroConstanciaChange($event)" [ngModelOptions]="{ standalone: true }"
-              pSize="small" placeholder="Constancia" class="w-full" maxlength="20"
-              [readonly]="snExcenta() !== 'S' || soloLectura()" />
+            <input
+              pInputText
+              id="nroConstancia"
+              [ngModel]="nroConstancia()"
+              (ngModelChange)="onNroConstanciaChange($event)"
+              [ngModelOptions]="{ standalone: true }"
+              pSize="small"
+              placeholder="Constancia"
+              class="w-full"
+              maxlength="20"
+              [readonly]="snExcenta() !== 'S' || soloLectura()"
+            />
             @if (snExcenta() === 'S' && !nroConstancia().trim()) {
             <small class="err">Ingrese el número de constancia</small>
             }
@@ -263,9 +523,21 @@
         <div class="field">
           <div class="campo">
             <label for="importeExcento">Importe Excento</label>
-            <p-inputNumber id="importeExcento" [ngModel]="importeExcento()" [ngModelOptions]="{ standalone: true }"
-              mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
-              [useGrouping]="true" size="small" styleClass="w-full" [inputStyle]="{ width: '100%' }" [readonly]="true" />
+            <p-inputNumber
+              id="importeExcento"
+              [ngModel]="importeExcento()"
+              [ngModelOptions]="{ standalone: true }"
+              mode="currency"
+              currency="HNL"
+              [locale]="'es-HN'"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [useGrouping]="true"
+              size="small"
+              styleClass="w-full"
+              [inputStyle]="{ width: '100%' }"
+              [readonly]="true"
+            />
           </div>
         </div>
 
@@ -276,16 +548,29 @@
                 <div class="invoice-party-title">Resumen de Pago</div>
                 <div class="pago-resumen">
                   <div class="pago-resumen-inline">
-                    <span>Total Pedido: <span class="font-bold">{{ moneda(totales().total) }}</span></span>
-                    <span>Total Pagos: <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
-                        [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0">{{
-                        moneda(totalPagos())
-                        }}</span></span>
+                    <span
+                      >Total Pedido:
+                      <span class="font-bold">{{ moneda(totales().total) }}</span></span
+                    >
+                    <span
+                      >Total Pagos:
+                      <span
+                        class="font-bold"
+                        [class.text-ok]="totalPagos() >= totales().total"
+                        [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"
+                        >{{ moneda(totalPagos()) }}</span
+                      ></span
+                    >
                     @if (pendiente() > 0) {
-                    <span>Pendiente: <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span>
-                    }
-                    @if (cambioTotal() > 0) {
-                    <span>Cambio: <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span>
+                    <span
+                      >Pendiente:
+                      <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span
+                    >
+                    } @if (cambioTotal() > 0) {
+                    <span
+                      >Cambio:
+                      <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span
+                    >
                     }
                   </div>
                 </div>
@@ -306,22 +591,56 @@
               <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
             </div>
             <div class="tp-link-monto">
-              {{ moneda(link.monto) }}
-              @if (link.sandbox) {
+              {{ moneda(link.monto) }} @if (link.sandbox) {
               <span class="tp-sandbox-tag">SANDBOX</span>
               }
             </div>
-            <input pInputText pSize="small" class="w-full tp-link-url" [ngModel]="link.url"
-              [ngModelOptions]="{ standalone: true }" readonly />
+            <input
+              pInputText
+              pSize="small"
+              class="w-full tp-link-url"
+              [ngModel]="link.url"
+              [ngModelOptions]="{ standalone: true }"
+              readonly
+            />
             <div class="tp-link-actions">
-              <p-button size="small" [label]="linkCopiado() ? 'Copiado' : 'Copiar'" icon="pi pi-copy"
-                severity="secondary" variant="text" [rounded]="true" (onClick)="copiarLink()" />
-              <p-button size="small" label="Abrir" icon="pi pi-external-link" severity="success" variant="text"
-                [rounded]="true" (onClick)="abrirLink()" />
-              <p-button size="small" label="Estado" icon="pi pi-refresh" severity="info" variant="text" [rounded]="true"
-                (onClick)="consultarEstadoLink()" />
-              <p-button size="small" icon="pi pi-times" severity="danger" variant="text" [rounded]="true"
-                pTooltip="Cerrar" [appendTo]="'body'" (onClick)="cerrarLink()" />
+              <p-button
+                size="small"
+                [label]="linkCopiado() ? 'Copiado' : 'Copiar'"
+                icon="pi pi-copy"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                (onClick)="copiarLink()"
+              />
+              <p-button
+                size="small"
+                label="Abrir"
+                icon="pi pi-external-link"
+                severity="success"
+                variant="text"
+                [rounded]="true"
+                (onClick)="abrirLink()"
+              />
+              <p-button
+                size="small"
+                label="Estado"
+                icon="pi pi-refresh"
+                severity="info"
+                variant="text"
+                [rounded]="true"
+                (onClick)="consultarEstadoLink()"
+              />
+              <p-button
+                size="small"
+                icon="pi pi-times"
+                severity="danger"
+                variant="text"
+                [rounded]="true"
+                pTooltip="Cerrar"
+                [appendTo]="'body'"
+                (onClick)="cerrarLink()"
+              />
             </div>
           </div>
         </div>
@@ -330,50 +649,114 @@
         <div class="field mt-3 acciones-pedido">
           <!-- Fila 1: acción principal (ancho completo) -->
           <div class="acciones-fila acciones-fila-guardar">
-            <p-button type="button" 
-            label="Guardar" 
-           variant="text"
-            icon="pi pi-check" size="small" [rounded]="true" 
-              severity="warn" [loading]="guardando()" (onClick)="guardar()" [disabled]="soloLectura()"
-              pTooltip="Guardar pedido" />
+            <p-button
+              type="button"
+              label="Guardar"
+              variant="text"
+              icon="pi pi-check"
+              size="small"
+              [rounded]="true"
+              severity="warn"
+              [loading]="guardando()"
+              (onClick)="guardar()"
+              [disabled]="soloLectura()"
+              pTooltip="Guardar pedido"
+            />
           </div>
           <!-- Fila 2: acciones secundarias -->
           <div class="acciones-fila">
-            <p-button type="button" label="Salir" variant="text" severity="secondary" icon="pi pi-sign-out" size="small"
-              [rounded]="true" (onClick)="volver()" />
+            <p-button
+              type="button"
+              label="Salir"
+              variant="text"
+              severity="secondary"
+              icon="pi pi-sign-out"
+              size="small"
+              [rounded]="true"
+              (onClick)="volver()"
+            />
 
-            <p-button type="button" label="Nueva" icon="pi pi-file" variant="text" severity="success" size="small"
-              [rounded]="true" (onClick)="nueva()" pTooltip="ESC Salir" [disabled]="soloLectura()" />
+            <p-button
+              type="button"
+              label="Nueva"
+              icon="pi pi-file"
+              variant="text"
+              severity="success"
+              size="small"
+              [rounded]="true"
+              (onClick)="nueva()"
+              pTooltip="ESC Salir"
+              [disabled]="soloLectura()"
+            />
 
             @if (tipoFactura() === 'C') {
-            <p-button type="button" label="Facturar" icon="pi pi-check-circle" size="small" [rounded]="true"
-              variant="text" severity="success" [loading]="procesando()" (onClick)="facturar()"
-              [disabled]="soloLectura()" pTooltip="Facturar a crédito (sin pago)" />
+            <p-button
+              type="button"
+              label="Facturar"
+              icon="pi pi-check-circle"
+              size="small"
+              [rounded]="true"
+              variant="text"
+              severity="success"
+              [loading]="procesando()"
+              (onClick)="facturar()"
+              [disabled]="soloLectura()"
+              pTooltip="Facturar a crédito (sin pago)"
+            />
             } @else {
-            <p-button type="button" label="Pagar" icon="pi pi-credit-card" size="small" [rounded]="true"
-              variant="text" severity="info" [loading]="procesando()" (onClick)="facturar()" [disabled]="soloLectura()"
+            <p-button
+              type="button"
+              label="Pagar"
+              icon="pi pi-credit-card"
+              size="small"
+              [rounded]="true"
+              variant="text"
+              severity="info"
+              [loading]="procesando()"
+              (onClick)="facturar()"
+              [disabled]="soloLectura()"
               [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
-              pTooltip="Cobrar pedido" />
+              pTooltip="Cobrar pedido"
+            />
             }
           </div>
         </div>
-
       </div>
     </div>
   </div>
 </section>
 
 <!-- Diálogo de pago: tabla de formas de pago idéntica a Nueva Factura -->
-<p-dialog header="Formas de Pago" [(visible)]="dialogPago" [modal]="true" [style]="{ width: '80vw', height: '85vh' }"
-  [contentStyle]="{ overflow: 'auto' }" [draggable]="false" [resizable]="false"
-  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+<p-dialog
+  header="Formas de Pago"
+  [(visible)]="dialogPago"
+  [modal]="true"
+  [style]="{ width: '80vw', height: '85vh' }"
+  [contentStyle]="{ overflow: 'auto' }"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+>
   <div class="pago-dialog-body">
     <div class="pago-add-row">
-      <p-button size="small" label="Agregar pago" icon="pi pi-plus" severity="success" variant="text" [raised]="true"
-        [rounded]="true" (onClick)="agregarPago()" />
+      <p-button
+        size="small"
+        label="Agregar pago"
+        icon="pi pi-plus"
+        severity="success"
+        variant="text"
+        [raised]="true"
+        [rounded]="true"
+        (onClick)="agregarPago()"
+      />
     </div>
-    <p-table [value]="pagos()" size="small" [scrollable]="true" scrollHeight="flex"
-      [tableStyle]="{ 'min-width': '100%' }">
+    <p-table
+      [value]="pagos()"
+      size="small"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '100%' }"
+    >
       <ng-template #header>
         <tr>
           <th class="th-label width-fp">Forma de Pago</th>
@@ -387,36 +770,83 @@
       <ng-template #body let-pago let-idx="rowIndex">
         <tr>
           <td>
-            <p-select size="small" [options]="formaspago()" optionLabel="label" optionValue="value"
-              placeholder="Seleccionar..." styleClass="w-full" [(ngModel)]="pago.formapagoId"
-              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" (onChange)="onFormaPagoChange(pago)" />
+            <p-select
+              size="small"
+              [options]="formaspago()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              [(ngModel)]="pago.formapagoId"
+              [ngModelOptions]="{ standalone: true }"
+              [appendTo]="'body'"
+              (onChange)="onFormaPagoChange(pago)"
+            />
           </td>
           <td>
             @if (esTarjeta(pago)) {
-            <p-select size="small" [options]="tarjetasCredito()" optionLabel="label" optionValue="value"
-              placeholder="Seleccionar..." styleClass="w-full" showClear [(ngModel)]="pago.tarjetacreditoId"
-              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" />
+            <p-select
+              size="small"
+              [options]="tarjetasCredito()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              showClear
+              [(ngModel)]="pago.tarjetacreditoId"
+              [ngModelOptions]="{ standalone: true }"
+              [appendTo]="'body'"
+            />
             }
           </td>
           <td>
             @if (esTarjeta(pago)) {
-            <input pInputText pSize="small" [(ngModel)]="pago.nrotarjeta" [ngModelOptions]="{ standalone: true }"
-              placeholder="Nro. tarjeta" class="w-full" />
+            <input
+              pInputText
+              pSize="small"
+              [(ngModel)]="pago.nrotarjeta"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Nro. tarjeta"
+              class="w-full"
+            />
             }
           </td>
           <td>
             @if (esTarjeta(pago) || esTransferencia(pago)) {
-            <input pInputText pSize="small" [(ngModel)]="pago.nroautorizacion" [ngModelOptions]="{ standalone: true }"
-              placeholder="Autorización" class="w-full" />
+            <input
+              pInputText
+              pSize="small"
+              [(ngModel)]="pago.nroautorizacion"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Autorización"
+              class="w-full"
+            />
             }
           </td>
           <td>
-            <p-inputnumber size="small" [(ngModel)]="pago.importe" [ngModelOptions]="{ standalone: true }" [min]="0"
-              mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
-              [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
+            <p-inputnumber
+              size="small"
+              [(ngModel)]="pago.importe"
+              [ngModelOptions]="{ standalone: true }"
+              [min]="0"
+              mode="currency"
+              currency="HNL"
+              [locale]="'es-HN'"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [useGrouping]="true"
+              [inputStyle]="{ 'width': '100%' }"
+              styleClass="w-full"
+            />
           </td>
           <td class="text-center">
-            <p-button icon="pi pi-times" [rounded]="true" severity="danger" size="small" (onClick)="quitarPago(idx)" />
+            <p-button
+              icon="pi pi-times"
+              [rounded]="true"
+              severity="danger"
+              size="small"
+              (onClick)="quitarPago(idx)"
+            />
           </td>
         </tr>
       </ng-template>
@@ -430,7 +860,6 @@
     </p-table>
   </div>
   <ng-template pTemplate="footer">
-
     <div class="grid w-full">
       <div class="col-12 md:col-6 lg:col-3">
         <span>Total Pedido:</span>
@@ -438,8 +867,13 @@
       </div>
       <div class="col-12 md:col-6 lg:col-3">
         <span>Total Pagos:</span>
-        <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
-          [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"> {{ moneda(totalPagos()) }}</span>
+        <span
+          class="font-bold"
+          [class.text-ok]="totalPagos() >= totales().total"
+          [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"
+        >
+          {{ moneda(totalPagos()) }}</span
+        >
       </div>
       <div class="col-12 md:col-6 lg:col-3">
         @if (pendiente() > 0) {
@@ -454,22 +888,45 @@
         <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span>
         }
       </div>
-
     </div>
 
     <div class="pago-dialog-actions">
-      <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small"
-        [rounded]="true" (onClick)="dialogPago.set(false)" [disabled]="procesando()" />
-      <p-button type="button" label="Facturar" icon="pi pi-shopping-cart" [loading]="procesando()" size="small"
-        severity="success" variant="text" [rounded]="true" (onClick)="procesarPago()"
-        [disabled]="!formularioPagoValido()" />
+      <p-button
+        type="button"
+        label="Cancelar"
+        icon="pi pi-times"
+        variant="text"
+        severity="secondary"
+        size="small"
+        [rounded]="true"
+        (onClick)="dialogPago.set(false)"
+        [disabled]="procesando()"
+      />
+      <p-button
+        type="button"
+        label="Facturar"
+        icon="pi pi-shopping-cart"
+        [loading]="procesando()"
+        size="small"
+        severity="success"
+        variant="text"
+        [rounded]="true"
+        (onClick)="procesarPago()"
+        [disabled]="!formularioPagoValido()"
+      />
     </div>
   </ng-template>
 </p-dialog>
 
 <!-- Diálogo headless TodoPago: notificación llamativa del link (y del pago confirmado) -->
-<p-confirmdialog key="tp-link" styleClass="tp-hl-dialog" [modal]="true" [style]="{ width: '460px' }"
-  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [dismissableMask]="true">
+<p-confirmdialog
+  key="tp-link"
+  styleClass="tp-hl-dialog"
+  [modal]="true"
+  [style]="{ width: '460px' }"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [dismissableMask]="true"
+>
   <ng-template #headless let-message let-onAccept="onAccept" let-onReject="onReject">
     @if (linkPago(); as link) {
     <div class="tp-hl">
@@ -485,8 +942,15 @@
         <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
       </div>
       <div class="tp-hl-actions">
-        <p-button size="small" label="Entendido" icon="pi pi-check" severity="success" [raised]="true" [rounded]="true"
-          (onClick)="onAccept()" />
+        <p-button
+          size="small"
+          label="Entendido"
+          icon="pi pi-check"
+          severity="success"
+          [raised]="true"
+          [rounded]="true"
+          (onClick)="onAccept()"
+        />
       </div>
       } @else {
       <!-- Variante: link generado (pendiente) -->
@@ -496,25 +960,58 @@
       <span class="tp-hl-title">Link de pago generado</span>
       <p class="tp-hl-sub">Factura #{{ nrofactura() }} — comparta el link con el cliente</p>
       <div class="tp-hl-monto">
-        {{ moneda(link.monto) }}
-        @if (link.sandbox) {
+        {{ moneda(link.monto) }} @if (link.sandbox) {
         <span class="tp-hl-sandbox">SANDBOX</span>
         }
       </div>
       <div class="tp-hl-status">
         <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
       </div>
-      <input pInputText pSize="small" class="w-full tp-hl-url" [ngModel]="link.url"
-        [ngModelOptions]="{ standalone: true }" readonly />
+      <input
+        pInputText
+        pSize="small"
+        class="w-full tp-hl-url"
+        [ngModel]="link.url"
+        [ngModelOptions]="{ standalone: true }"
+        readonly
+      />
       <div class="tp-hl-actions">
-        <p-button size="small" [label]="linkCopiado() ? 'Copiado' : 'Copiar link'" icon="pi pi-copy"
-          severity="success" [raised]="true" [rounded]="true" (onClick)="copiarLink()" />
-        <p-button size="small" label="Abrir link" icon="pi pi-external-link" severity="info" variant="text"
-          [rounded]="true" (onClick)="abrirLink()" />
-        <p-button size="small" label="Estado" icon="pi pi-refresh" severity="secondary" variant="text" [rounded]="true"
-          (onClick)="consultarEstadoLink()" />
-        <p-button size="small" label="Cerrar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
-          (onClick)="onReject()" />
+        <p-button
+          size="small"
+          [label]="linkCopiado() ? 'Copiado' : 'Copiar link'"
+          icon="pi pi-copy"
+          severity="success"
+          [raised]="true"
+          [rounded]="true"
+          (onClick)="copiarLink()"
+        />
+        <p-button
+          size="small"
+          label="Abrir link"
+          icon="pi pi-external-link"
+          severity="info"
+          variant="text"
+          [rounded]="true"
+          (onClick)="abrirLink()"
+        />
+        <p-button
+          size="small"
+          label="Estado"
+          icon="pi pi-refresh"
+          severity="secondary"
+          variant="text"
+          [rounded]="true"
+          (onClick)="consultarEstadoLink()"
+        />
+        <p-button
+          size="small"
+          label="Cerrar"
+          icon="pi pi-times"
+          severity="secondary"
+          variant="text"
+          [rounded]="true"
+          (onClick)="onReject()"
+        />
       </div>
       }
     </div>

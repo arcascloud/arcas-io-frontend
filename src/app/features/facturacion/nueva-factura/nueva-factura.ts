@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, DestroyRef, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -34,6 +34,7 @@ import { BadgeModule } from 'primeng/badge';
 import { DividerModule } from 'primeng/divider';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { PopoverModule, Popover } from 'primeng/popover';
 
 interface Opcion {
   label: string;
@@ -85,6 +86,7 @@ interface PagoFactura {
     DividerModule,
     InputIconModule,
     IconFieldModule,
+    PopoverModule,
     ConfirmDialogModule,
   ],
   // ConfirmationService local: aisla nuestro p-confirmdialog del global de main-layout
@@ -130,6 +132,8 @@ export class NuevaFactura implements OnInit {
   filas = signal<FilaDet[]>([]);
   pagos = signal<PagoFactura[]>([]);
 
+  // ARFM20261030 MEJORA consumida en nueva-factura.html (<ng-template #footer>):
+  // filas en blanco mínimas para que la tabla nunca quede "a media altura".
   readonly MIN_ROWS = 9;
 
   get emptyRows(): any[] {
@@ -181,10 +185,11 @@ export class NuevaFactura implements OnInit {
   dialogAtajos = signal(false);
   dialogSuspendidas = signal(false);
   ventasSuspendidas = signal<any[]>([]);
-  zoomVisible = signal(false);
-  zoomUrl = signal('');
-  zoomX = signal(0);
-  zoomY = signal(0);
+
+  // ARFM20261030 Popover de existencia al hacer click en la imagen de la fila
+  // (patrón Popover#datatable de PrimeNG v21 — reemplaza al hover-zoom anterior)
+  @ViewChild('op') op?: Popover;
+  productoSeleccionado = signal<FilaDet | null>(null);
 
   readonly atajos = [
     { tecla: 'ESC', accion: 'Cancelar factura actual' },
@@ -577,20 +582,23 @@ export class NuevaFactura implements OnInit {
     return this.form.get('tipofactura')?.value === 'E';
   }
 
-  onImgHover(url: string, event: MouseEvent) {
-    this.zoomUrl.set(url);
-    this.zoomX.set(event.clientX + 12);
-    this.zoomY.set(event.clientY - 100);
-    this.zoomVisible.set(true);
+  /** Abre/cierra el popover de existencia al hacer click en la imagen de la fila */
+  mostrarExistenciaImagen(event: Event, row: FilaDet) {
+    if (this.productoSeleccionado()?.fila === row.fila) {
+      this.op?.hide();
+      this.productoSeleccionado.set(null);
+    } else {
+      this.productoSeleccionado.set(row);
+      this.op?.show(event);
+      if (this.op?.container) {
+        this.op.align();
+      }
+    }
   }
 
-  onImgMove(event: MouseEvent) {
-    this.zoomX.set(event.clientX + 12);
-    this.zoomY.set(event.clientY - 100);
-  }
-
-  onImgLeave() {
-    this.zoomVisible.set(false);
+  ocultarPopoverExistencia() {
+    this.op?.hide();
+    this.productoSeleccionado.set(null);
   }
 
   @HostListener('document:keydown', ['$event'])

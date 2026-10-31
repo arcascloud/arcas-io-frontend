@@ -10,6 +10,11 @@
   min-height: 200px;
 }
 
+// ARFM20261030 Columna 2 (panel lateral): en desktop xl se sube para alinear con la tabla;
+// en mobile (col-12 apilado debajo) se anula para que baje y no quede encima de la columna 1
+.nf-side-panel-col {
+  margin-top: -100px;
+}
 .nf-col {
   min-width: 0;
 }
@@ -169,11 +174,11 @@
   }
 
   ::ng-deep .p-datatable-tbody>tr>td {
-    padding: 0.25rem 0.75rem;
+    padding: 0.25rem 0.55rem;
   }
 
   ::ng-deep .p-datatable-thead>tr>th {
-    padding: 0.4rem 0.75rem;
+    padding: 0.4rem 0.55rem;
   }
 }
 
@@ -271,6 +276,8 @@
 // Totales (idéntico a nueva-factura)
 .nf-totales {
 
+  background: var(--master-background);
+    border-radius: 8px;
   .nf-totales-split {
     display: flex;
     align-items: center;
@@ -309,7 +316,7 @@
 }
 
 .nf-total-grand {
-  border-left: 1px solid var(--c-border);
+  border-left: 1px solid var(--master-background);
   padding-left: 1rem;
 
   >div:last-child {
@@ -345,14 +352,194 @@
   }
 }
 
-.img-producto {
-  mix-blend-mode: multiply;
-  background: transparent;
-  border-radius: 7px;
+// ARFM20261030 Imagen de producto con efecto retroiluminado:
+// la luz va de ATRÁS hacia DELANTE (halo detrás del círculo), la imagen conserva
+// su propio color de fondo (mix-blend-mode: multiply la deja transparente sobre la luz),
+// forma casi 100% redonda y bordes suavizados (máscara radial, sin corte seco).
+.img-backlight {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  // ARFM20261030 interior del círculo en blanco
+  background: #fff;
+  background-image:
+    radial-gradient(circle closest-side,
+      #fff,
+      #fff);
+  // contorno retroiluminado con --c-primary (de atrás hacia adelante)
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--c-border) 45%, transparent),
+    0 0 8px 1px color-mix(in srgb, var(--c-border) 55%, transparent),
+    0 0 18px 3px color-mix(in srgb, var(--c-border) 32%, transparent),
+    0 0 30px 6px color-mix(in srgb, var(--c-border) 16%, transparent);
+}
+                                .img-producto {
+    // ARFM20261030 sin mix-blend-mode: se conserva el color de fondo propio de la imagen;
+      // la luz del wrapper se filtra por los bordes desvanecidos (máscara radial)
+      background: transparent;
   object-fit: contain;
   width: 50px;
   height: 50px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0);
+  // casi redondo (no 50% exacto para que conserve un guiño de forma natural)
+    border-radius: 46%;
+    // bordes suavizados: el borde se desvanece en vez de cortarse
+    -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    box-shadow: none;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ARFM20261030 Popover de existencia — card estilo menú de restaurante
+// (panel de PrimeNG + contenido .menu-card del ng-template #content)
+// ═══════════════════════════════════════════════════════════════════════════
+
+.img-clickable {
+    cursor: pointer;
+}
+
+// Panel del popover: sin padding del PrimeNG, bordes redondeados, sombra propia
+::ng-deep .p-popover {
+    border: 1px solid var(--c-border-strong);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+    .p-popover-content {
+        padding: 0;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+}
+
+.menu-card {
+    width: 19rem;
+    background: var(--c-card-background);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+// Media: imagen grande centrada con halo radial de --c-primary detrás
+.menu-card-media {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 14rem;
+    padding: 1rem;
+    // recorta el zoom para que no se desborde del media
+    overflow: hidden;
+    background:
+        radial-gradient(
+            circle at 50% 45%,
+            color-mix(in srgb, var(--c-primary) 12%, transparent),
+            transparent 70%
+        );
+}
+
+// Tag de estado superpuesto en la esquina del media — SIEMPRE por encima del zoom
+.menu-card-tag {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 2;
+}
+
+.img-producto-lg {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    object-fit: contain;
+    width: 170px;
+    height: 170px;
+    border-radius: 46%;
+    -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    box-shadow: none;
+    // zoom suave al pasar el mouse (la tag queda por encima por z-index)
+    transition: transform 0.25s ease;
+
+    .menu-card-media:hover & {
+        transform: scale(1.35);
+    }
+}
+
+// Ficha inferior: código, descripción, precio + chip de existencia
+.menu-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.75rem 0.9rem 0.9rem;
+}
+
+.menu-card-cod {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+}
+
+.menu-card-desc {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #fff;
+}
+
+.menu-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+}
+
+.menu-card-precio {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-primary);
+}
+
+// Chip de existencia (en lugar del botón "Buy" del ejemplo PrimeNG)
+.menu-card-stock {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+
+    i {
+        font-size: 0.75rem;
+    }
+
+    // Niveles según row.estado (ALTA / BAJO / AGOTADO / SIN_STOCK)
+    &.nivel-alta {
+        color: var(--c-success);
+        background: color-mix(in srgb, var(--c-success) 14%, transparent);
+        border-color: color-mix(in srgb, var(--c-success) 45%, transparent);
+    }
+
+    &.nivel-bajo {
+        color: var(--c-warning);
+        background: color-mix(in srgb, var(--c-warning) 14%, transparent);
+        border-color: color-mix(in srgb, var(--c-warning) 45%, transparent);
+    }
+
+    &.nivel-agotado {
+        color: var(--c-danger);
+        background: color-mix(in srgb, var(--c-danger) 14%, transparent);
+        border-color: color-mix(in srgb, var(--c-danger) 45%, transparent);
+    }
+
+    &.nivel-sin_stock {
+        color: var(--c-info);
+        background: color-mix(in srgb, var(--c-info) 14%, transparent);
+        border-color: color-mix(in srgb, var(--c-info) 45%, transparent);
+    }
 }
 
 .text-right {
@@ -424,6 +611,14 @@
   width: 5%;
 }
 
+@media (max-width: 1279px) {
+
+  // ARFM20261030 Mobile/tablet: xl:col-3 deja de estar al lado (se apila debajo de col-9),
+  // así que el -100px ya no aplica — la columna 2 baja a su posición natural
+  .nf-side-panel-col {
+    margin-top: 0;
+  }
+}
 @media (max-width: 767px) {
   section.page {
     overflow-x: hidden;
@@ -432,6 +627,39 @@
 
   .nf-busqueda {
     margin-top: 0;
+// ARFM20261030 Mobile: el botón de buscar producto (p-inputicon ml-10) con left:97%
+  // se salía del margen derecho y no se veía — se ancla por la derecha, hacia adentro,
+  // y el input reserva espacio para que el texto no quede debajo del ícono
+  ::ng-deep .p-inputicon {
+    left: auto;
+    right: 0.75rem;
+    margin-left: 0;
+  }
+
+  input[pinputtext] {
+    padding-right: 2.75rem;
+  }
+}
+
+// ARFM20261030 Mobile: controles del header apilados, 1 por fila y al 100% del ancho
+// (Gestor → select / Teléfono → input / Envío gratis → selectbutton)
+.pedido-header-controls {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+
+  label {
+    white-space: normal;
+  }
+
+  input[pinputtext] {
+    width: 100%;
+  }
+
+  ::ng-deep .p-select,
+  ::ng-deep .p-selectbutton {
+    width: 100%;
+  }
   }
 
   .nf-totales .nf-totales-col-data {
@@ -603,4 +831,10 @@
 // según PrimeNG #17000) — se oculta completamente. ::ng-deep porque el panel lo crea Dialog.
 ::ng-deep .tp-hl-dialog .p-dialog-footer {
   display: none;
+}
+
+// ARFM20261030 MEJORA consumida aquí: alturas de las filas en blanco del footer
+// (emptyRows / MIN_ROWS=9) — mismo criterio que nueva-factura.scss
+.empty-row td {
+  height: 45px;
 }

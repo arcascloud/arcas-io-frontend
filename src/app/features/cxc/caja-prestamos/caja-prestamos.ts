@@ -77,10 +77,7 @@ export class CajaPrestamos implements OnInit {
   /** Destino del abono: 1 = Cuenta corriente (documentos), 2 = Préstamos (cuotas). */
   destinoAbono = signal<number>(1);
   /** Opciones del select "Destino de abono". */
-  readonly DESTINO_ABONO = [
-    { label: 'Cuenta corriente', value: 1 },
-    { label: 'Préstamos', value: 2 },
-  ] as const;
+  readonly DESTINO_ABONO = [{ label: 'Préstamos', value: 2 }] as const;
   /** Préstamos activos del cliente (cuando destino = Préstamos). */
   prestamosCliente = signal<{ label: string; value: number; _raw: any }[]>([]);
   /**
@@ -106,8 +103,8 @@ export class CajaPrestamos implements OnInit {
     const persistido = Number(p.vlrcuota) || 0;
     if (persistido > 0) return Math.round(persistido * 100) / 100;
     // Fallback: cálculo por fórmula francesa
-    const capitalneto = Number(p.capitalneto)
-      || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
+    const capitalneto =
+      Number(p.capitalneto) || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
     const cuotas = Number(p.cuotas) || 0;
     const i = (Number(p.tasa) || 0) / 100 / 12;
     if (capitalneto <= 0 || cuotas <= 0) return 0;
@@ -127,15 +124,27 @@ export class CajaPrestamos implements OnInit {
     if (!p) return null;
     const saldo = Number(p.saldoactual) || Number(p.capitalneto) || Number(p.capital) || 0;
     if (saldo <= 0) {
-      return { saldo, efectivo, vlrcuota, interes: 0, mora: 0, cargos: 0, abonoCapital: 0, saldoNuevo: 0, diasInteres: 0, diasMora: 0, cumple: false };
+      return {
+        saldo,
+        efectivo,
+        vlrcuota,
+        interes: 0,
+        mora: 0,
+        cargos: 0,
+        abonoCapital: 0,
+        saldoNuevo: 0,
+        diasInteres: 0,
+        diasMora: 0,
+        cumple: false,
+      };
     }
 
-
     const hoy = new Date();
-    const fechaBase = (p.fechaUltPago ? new Date(p.fechaUltPago) : null)
-      ?? (p.fechaEfectiva ? new Date(p.fechaEfectiva) : hoy);
+    const fechaBase =
+      (p.fechaUltPago ? new Date(p.fechaUltPago) : null) ??
+      (p.fechaEfectiva ? new Date(p.fechaEfectiva) : hoy);
     const ultcuotapagada = p.ultcuotapagada;
-     const tasa = (Number(p.tasa) || 0) / 100;
+    const tasa = (Number(p.tasa) || 0) / 100;
     const tasaMor = (Number(p.moratorio) || 0) / 100;
     const diasPlazo = Number(p.diascuotas) || 0;
     const gracia = Number(p.gracia) || 0;
@@ -143,26 +152,40 @@ export class CajaPrestamos implements OnInit {
     const diasTrans = Math.max(0, this.diasEntre(fechaBase, hoy));
     const proximo = this.sumarDias(fechaBase, diasPlazo);
     const fechaMax = this.sumarDias(proximo, gracia);
+
+    // Regla de Préstamos (ARFM20261030): DiasGraciaEfectiva = 0
     let diasInteres = diasTrans;
     let diasMora = 0;
     let diasGracia = 0;
-    if (this.diasEntre(hoy, fechaMax) >= 0) {
-      // Dentro de plazo/gracia: la gracia usada no devenga interés.
-      diasGracia = Math.max(0, this.diasEntre(proximo, hoy));
-      diasInteres = Math.max(0, diasTrans - diasGracia);
-    } else {
-      // Vencido: interés sobre todos los días + mora desde el fin de gracia.
+    if (this.diasEntre(hoy, fechaMax) < 0) {
       diasMora = this.diasEntre(fechaMax, hoy);
     }
 
     const interes = r2(saldo * tasa * (diasInteres / 360));
-    const mora = r2(saldo * tasaMor * (diasMora / 360));
+    const cuotaBase = vlrcuota > 0 ? vlrcuota : efectivo > 0 ? efectivo : 0;
+    const saldoCapitalCuota = Math.max(0, cuotaBase - interes);
+    const mora = r2(saldoCapitalCuota * tasaMor * (diasMora / 360));
     const cargos = r2(interes + mora);
-    const abonoCapital = r2(Math.max(0, efectivo - cargos));
+    const efectivoAplicar = efectivo > 0 ? efectivo : vlrcuota;
+    const abonoCapital = r2(Math.max(0, efectivoAplicar - cargos));
     const saldoNuevo = r2(Math.max(0, saldo - abonoCapital));
     return {
-      saldo, fechaBase, ultcuotapagada, proximo, fechaMax, diasTrans, diasInteres, diasMora,diasGracia,
-      interes, mora, cargos, efectivo, abonoCapital, saldoNuevo, vlrcuota,
+      saldo,
+      fechaBase,
+      ultcuotapagada,
+      proximo,
+      fechaMax,
+      diasTrans,
+      diasInteres,
+      diasMora,
+      diasGracia,
+      interes,
+      mora,
+      cargos,
+      efectivo,
+      abonoCapital,
+      saldoNuevo,
+      vlrcuota,
       cumple: efectivo >= vlrcuota - 0.01,
     };
   });
@@ -173,7 +196,7 @@ export class CajaPrestamos implements OnInit {
   /** Total de cargos (interés + mora) devengados al día de hoy. */
   totalCargos = computed(() => {
     const doc = this.docSeleccionado();
-    return doc?.esFacturaCredito ? (Number(doc.totalCargos) || 0) : 0;
+    return doc?.esFacturaCredito ? Number(doc.totalCargos) || 0 : 0;
   });
 
   /**
@@ -285,28 +308,34 @@ export class CajaPrestamos implements OnInit {
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data ?? []);
         const filtrados = items.filter((i: any) => ['FAC', 'NDB', 'PRE'].includes(i.abreviatura));
-        this.documentosFiscales.set(filtrados.map((i: any) => ({
-          label: i.descripcion,
-          value: i.tipodocumentofiscalId,
-        })));
+        this.documentosFiscales.set(
+          filtrados.map((i: any) => ({
+            label: i.descripcion,
+            value: i.tipodocumentofiscalId,
+          })),
+        );
       },
     });
     this.api.get<any>('/parametros/formas-pago').subscribe({
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data ?? []);
-        this.formasPago.set(items.map((i: any) => ({
-          label: i.descripcion,
-          value: i.formapagoId,
-        })));
+        this.formasPago.set(
+          items.map((i: any) => ({
+            label: i.descripcion,
+            value: i.formapagoId,
+          })),
+        );
       },
     });
     this.api.get<any>('/parametros/tarjetas-credito').subscribe({
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data ?? []);
-        this.tarjetas.set(items.map((i: any) => ({
-          label: i.descripcion,
-          value: i.tarjetacreditoId,
-        })));
+        this.tarjetas.set(
+          items.map((i: any) => ({
+            label: i.descripcion,
+            value: i.tarjetacreditoId,
+          })),
+        );
       },
     });
   }
@@ -317,9 +346,8 @@ export class CajaPrestamos implements OnInit {
    * - destino=2 (Préstamos): solo clientes con préstamos activos (con cuotas por cobrar).
    */
   private cargarClientes() {
-    const ruta = this.destinoAbono() === 2
-      ? '/cxc/clientes-con-prestamos'
-      : '/cxc/clientes-con-saldo';
+    const ruta =
+      this.destinoAbono() === 2 ? '/cxc/clientes-con-prestamos' : '/cxc/clientes-con-saldo';
     this.api.get<any>(ruta).subscribe({
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data ?? []);
@@ -343,63 +371,70 @@ export class CajaPrestamos implements OnInit {
   }
 
   private vigilarCliente() {
-    this.form.get('clienteId')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((clienteId) => {
-      if (!clienteId) {
-        this.form.patchValue({ nrocliente: '', nombrecliente: '' });
-        this.documentosPendientes.set([]);
-        this.documentosFiltrados.set([]);
-        this.nrosDocumento.set([]);
-        this.docSeleccionado.set(null);
-        this.prestamosCliente.set([]);
-        this.prestamoSeleccionado.set(null);
-        return;
-      }
-      this.api.get<any>(`/cxc/clientes/${clienteId}`).subscribe({
-        next: (cliente) => this.form.patchValue({
-          nrocliente: cliente?.nrocliente ?? '',
-          nombrecliente: `${cliente?.nombres ?? ''} ${cliente?.apellidos ?? ''}`.trim(),
-        }),
-        error: () => this.form.patchValue({ nrocliente: '', nombrecliente: '' }),
-      });
-
-      // Destino = Préstamos: carga los préstamos activos del cliente (no documentos)
-      // y auto-selecciona el primero para mostrar el plan de cuotas.
-      if (this.destinoAbono() === 2) {
-        this.cargarPrestamosCliente(clienteId, () => {
-          const lista = this.prestamosCliente();
-          if (lista.length) {
-            this.onPrestamoChange(lista[0].value);
-          }
-        });
-        return;
-      }
-
-      this.cxcService.getDocumentosPendientesCliente(clienteId).subscribe({
-        next: (docs) => {
-          this.documentosPendientes.set(docs);
-          this.filtrarDocumentos(docs);
-        },
-        error: () => {
+    this.form
+      .get('clienteId')
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((clienteId) => {
+        if (!clienteId) {
+          this.form.patchValue({ nrocliente: '', nombrecliente: '' });
           this.documentosPendientes.set([]);
           this.documentosFiltrados.set([]);
           this.nrosDocumento.set([]);
-        },
+          this.docSeleccionado.set(null);
+          this.prestamosCliente.set([]);
+          this.prestamoSeleccionado.set(null);
+          return;
+        }
+        this.api.get<any>(`/cxc/clientes/${clienteId}`).subscribe({
+          next: (cliente) =>
+            this.form.patchValue({
+              nrocliente: cliente?.nrocliente ?? '',
+              nombrecliente: `${cliente?.nombres ?? ''} ${cliente?.apellidos ?? ''}`.trim(),
+            }),
+          error: () => this.form.patchValue({ nrocliente: '', nombrecliente: '' }),
+        });
+
+        // Destino = Préstamos: carga los préstamos activos del cliente (no documentos)
+        // y auto-selecciona el primero para mostrar el plan de cuotas.
+        if (this.destinoAbono() === 2) {
+          this.cargarPrestamosCliente(clienteId, () => {
+            const lista = this.prestamosCliente();
+            if (lista.length) {
+              this.onPrestamoChange(lista[0].value);
+            }
+          });
+          return;
+        }
+
+        this.cxcService.getDocumentosPendientesCliente(clienteId).subscribe({
+          next: (docs) => {
+            this.documentosPendientes.set(docs);
+            this.filtrarDocumentos(docs);
+          },
+          error: () => {
+            this.documentosPendientes.set([]);
+            this.documentosFiltrados.set([]);
+            this.nrosDocumento.set([]);
+          },
+        });
       });
-    });
   }
 
   /** Cambia el destino del abono: limpia cliente, documentos y plan de cuotas. */
   onDestinoChange() {
     const destino = this.form.get('destinoabono')?.value ?? 1;
     this.destinoAbono.set(Number(destino));
-    this.form.patchValue({
-      clienteId: null,
-      nrocliente: '',
-      nombrecliente: '',
-      prestamoId: null,
-      documentoId: null,
-      nrodocumento: null,
-    }, { emitEvent: false });
+    this.form.patchValue(
+      {
+        clienteId: null,
+        nrocliente: '',
+        nombrecliente: '',
+        prestamoId: null,
+        documentoId: null,
+        nrodocumento: null,
+      },
+      { emitEvent: false },
+    );
     this.documentosPendientes.set([]);
     this.documentosFiltrados.set([]);
     this.nrosDocumento.set([]);
@@ -416,15 +451,20 @@ export class CajaPrestamos implements OnInit {
       next: (prestamos) => {
         // Activo = no anulado, sn_activo='S' Y con saldo de capital por cobrar
         // (los totalmente pagados conservan sn_activo='S' en BD).
-        const activos = (prestamos ?? []).filter((p: any) =>
-          p.sn_activo === 'S' && p.sn_anulado !== 'S' && Number(p.saldoactual ?? p.capital ?? 0) > 0,
+        const activos = (prestamos ?? []).filter(
+          (p: any) =>
+            p.sn_activo === 'S' &&
+            p.sn_anulado !== 'S' &&
+            Number(p.saldoactual ?? p.capital ?? 0) > 0,
         );
-        this.prestamosCliente.set(activos.map((p: any) => ({
-          // saldoactual: capital pendiente (fallback al capital para préstamos antiguos sin saldo)
-          label: `${p.nroprestamo} · Saldo L ${Number(p.saldoactual ?? p.capital ?? 0).toFixed(2)} · Cuota L ${this.calcularVlrcuota(p).toFixed(2)}`,
-          value: p.prestamoId,
-          _raw: p,
-        })));
+        this.prestamosCliente.set(
+          activos.map((p: any) => ({
+            // saldoactual: capital pendiente (fallback al capital para préstamos antiguos sin saldo)
+            label: `${p.nroprestamo} · Saldo L ${Number(p.saldoactual ?? p.capital ?? 0).toFixed(2)} · Cuota L ${this.calcularVlrcuota(p).toFixed(2)}`,
+            value: p.prestamoId,
+            _raw: p,
+          })),
+        );
         after?.();
       },
       error: () => {
@@ -442,15 +482,17 @@ export class CajaPrestamos implements OnInit {
   onPrestamoChange(prestamoId: number | null) {
     this.form.patchValue({ prestamoId: prestamoId ?? null }, { emitEvent: false });
     this.prestamoSeleccionado.set(
-      prestamoId ? (this.prestamosCliente().find((p) => p.value === prestamoId)?._raw ?? null) : null,
+      prestamoId
+        ? (this.prestamosCliente().find((p) => p.value === prestamoId)?._raw ?? null)
+        : null,
     );
   }
 
   /** Cuota pactada de un préstamo (francesa mensual) — espejo de vlrcuotaPactada por objeto. */
   private calcularVlrcuota(p: any): number {
     if (!p) return 0;
-    const capitalneto = Number(p.capitalneto)
-      || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
+    const capitalneto =
+      Number(p.capitalneto) || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
     const cuotas = Number(p.cuotas) || 0;
     const i = (Number(p.tasa) || 0) / 100 / 12;
     if (capitalneto <= 0 || cuotas <= 0) return 0;
@@ -474,15 +516,16 @@ export class CajaPrestamos implements OnInit {
 
   /** Observa el control nrodocumento (forma reactiva) para fijar el doc con desglose. */
   private vigilarNroDocumento() {
-    this.form.get('nrodocumento')?.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    this.form
+      .get('nrodocumento')
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((nro) => this.onNroDocumentoChange(nro));
   }
 
   private filtrarDocumentos(docs: any[]) {
-    const tiposUnicos = [...new Set(docs.map(d => d.documentoId))];
+    const tiposUnicos = [...new Set(docs.map((d) => d.documentoId))];
     const allOpts = this.documentosFiscales();
-    const filtradas = allOpts.filter(o => tiposUnicos.includes(o.value));
+    const filtradas = allOpts.filter((o) => tiposUnicos.includes(o.value));
     this.documentosFiltrados.set(filtradas);
     this.form.get('documentoId')?.setValue(null);
     this.form.get('nrodocumento')?.setValue(null);
@@ -494,11 +537,13 @@ export class CajaPrestamos implements OnInit {
     this.form.get('nrodocumento')?.setValue(null);
     this.docSeleccionado.set(null);
     if (docId) {
-      const docs = this.documentosPendientes().filter(d => d.documentoId === docId);
-      this.nrosDocumento.set(docs.map(d => ({
-        label: `${d.nroreferencia} (Saldo: ${d.saldo.toFixed(2)})`,
-        value: d.nroreferencia,
-      })));
+      const docs = this.documentosPendientes().filter((d) => d.documentoId === docId);
+      this.nrosDocumento.set(
+        docs.map((d) => ({
+          label: `${d.nroreferencia} (Saldo: ${d.saldo.toFixed(2)})`,
+          value: d.nroreferencia,
+        })),
+      );
     } else {
       this.nrosDocumento.set([]);
     }
@@ -510,7 +555,7 @@ export class CajaPrestamos implements OnInit {
       this.docSeleccionado.set(null);
       return;
     }
-    const doc = this.documentosPendientes().find(d => d.nroreferencia === nro);
+    const doc = this.documentosPendientes().find((d) => d.nroreferencia === nro);
     this.docSeleccionado.set(doc ?? null);
   }
 
@@ -555,7 +600,11 @@ export class CajaPrestamos implements OnInit {
   private validarDetalles(): boolean {
     const filas = this.dets();
     if (filas.length === 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Debe agregar al menos una forma de pago' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Debe agregar al menos una forma de pago',
+      });
       return false;
     }
 
@@ -564,12 +613,20 @@ export class CajaPrestamos implements OnInit {
       const importe = Number(fila['importe']) || 0;
 
       if (!fila['formapagoId']) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: `Fila ${i + 1}: seleccione la forma de pago` });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: `Fila ${i + 1}: seleccione la forma de pago`,
+        });
         return false;
       }
 
       if (importe <= 0) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: `Fila ${i + 1}: el importe debe ser mayor a cero` });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: `Fila ${i + 1}: el importe debe ser mayor a cero`,
+        });
         return false;
       }
 
@@ -577,7 +634,11 @@ export class CajaPrestamos implements OnInit {
       if (fila['nrotarjeta'] && String(fila['nrotarjeta']).trim()) {
         const nrotarjeta = String(fila['nrotarjeta']).replace(/[\s-]/g, '');
         if (nrotarjeta.length >= 13 && !this.validarLuhn(nrotarjeta)) {
-          this.msgs.add({ severity: 'warn', summary: 'Validación', detail: `Fila ${i + 1}: número de tarjeta inválido (Luhn)` });
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Validación',
+            detail: `Fila ${i + 1}: número de tarjeta inválido (Luhn)`,
+          });
           return false;
         }
       }
@@ -690,7 +751,7 @@ export class CajaPrestamos implements OnInit {
     this.service.getDet<any>(`/cxc/caja-det/factura/${this.itemId}`).subscribe({
       next: (mios) => {
         this.dets.set((mios ?? []).map((d) => ({ ...d })));
-        for (const d of (mios ?? [])) this.detGuardados.add(d['cxccajadetId']);
+        for (const d of mios ?? []) this.detGuardados.add(d['cxccajadetId']);
         this.contadorFila = (mios ?? []).length;
         this.recalcularTotal();
         this.cargando.set(false);
@@ -707,7 +768,11 @@ export class CajaPrestamos implements OnInit {
           },
           error: () => {
             this.cargando.set(false);
-            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los detalles' });
+            this.msgs.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudieron cargar los detalles',
+            });
           },
         });
       },
@@ -717,16 +782,19 @@ export class CajaPrestamos implements OnInit {
   nuevaFila() {
     if (!this.puedeEditar()) return;
     this.contadorFila += 1;
-    this.dets.update((d) => [...d, {
-      __local: true,
-      nrofila: this.contadorFila,
-      formapagoId: null,
-      importe: 0,
-      tarjetacreditoId: null,
-      nrotarjeta: '',
-      nroautorizacion: '',
-      factordecambio: 0,
-    }]);
+    this.dets.update((d) => [
+      ...d,
+      {
+        __local: true,
+        nrofila: this.contadorFila,
+        formapagoId: null,
+        importe: 0,
+        tarjetacreditoId: null,
+        nrotarjeta: '',
+        nroautorizacion: '',
+        factordecambio: 0,
+      },
+    ]);
   }
 
   quitarFila(idx: number) {
@@ -764,7 +832,11 @@ export class CajaPrestamos implements OnInit {
 
     if (this.destinoAbono() === 2) {
       if (!this.form.get('prestamoId')?.value) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione el préstamo a pagar' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: 'Seleccione el préstamo a pagar',
+        });
         return;
       }
       const rp = this.repartoPrestamo();
@@ -801,7 +873,6 @@ export class CajaPrestamos implements OnInit {
   }
 
   private ejecutarGuardado() {
-
     const maeBody = {
       ...this.form.getRawValue(),
       ...(this.esEdicion() ? {} : { empresaId: this.auth.currentUser()?.empresaId }),
@@ -819,7 +890,11 @@ export class CajaPrestamos implements OnInit {
       },
       error: () => {
         this.guardando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la caja' });
+        this.msgs.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo guardar la caja',
+        });
       },
     });
   }
@@ -838,7 +913,11 @@ export class CajaPrestamos implements OnInit {
     };
     const fail = () => {
       this.guardando.set(false);
-      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar uno de los detalles' });
+      this.msgs.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo guardar uno de los detalles',
+      });
     };
 
     const empresaId = this.auth.currentUser()?.empresaId;
@@ -847,7 +926,9 @@ export class CajaPrestamos implements OnInit {
       const body = { ...fila, cxccajaId: maeId, empresaId };
       delete body.__local;
       if (detId && this.detGuardados.has(detId)) {
-        this.service.updateDet<any>('/cxc/caja-det', detId, body).subscribe({ next: ok, error: fail });
+        this.service
+          .updateDet<any>('/cxc/caja-det', detId, body)
+          .subscribe({ next: ok, error: fail });
       } else {
         this.service.createDet<any>('/cxc/caja-det', body).subscribe({ next: ok, error: fail });
       }
@@ -986,7 +1067,11 @@ export class CajaPrestamos implements OnInit {
       },
       error: () => {
         this.imprimiendo.set(false);
-        this.msgs.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudieron cargar los datos del recibo' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Impresión',
+          detail: 'No se pudieron cargar los datos del recibo',
+        });
       },
     });
   }
@@ -997,19 +1082,29 @@ export class CajaPrestamos implements OnInit {
     const empresa = data.empresa;
     const detalles = data.detalles || [];
 
-    const fmt = (n: number) => `L ${Number(n || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    const fecha = caja.fecharegistro ? new Date(caja.fecharegistro).toLocaleDateString('es-HN') : '';
-    const hora = caja.fecharegistro ? new Date(caja.fecharegistro).toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' }) : '';
+    const fmt = (n: number) =>
+      `L ${Number(n || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const fecha = caja.fecharegistro
+      ? new Date(caja.fecharegistro).toLocaleDateString('es-HN')
+      : '';
+    const hora = caja.fecharegistro
+      ? new Date(caja.fecharegistro).toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '';
 
-    const pagosHtml = detalles.map((d: any) => {
-      let extra = '';
-      if (d.nrotarjeta) extra += ` ****${String(d.nrotarjeta).slice(-4)}`;
-      if (d.nroautorizacion) extra += ` Aut: ${d.nroautorizacion}`;
-      return `<tr>
+    const pagosHtml = detalles
+      .map((d: any) => {
+        let extra = '';
+        if (d.nrotarjeta) extra += ` ****${String(d.nrotarjeta).slice(-4)}`;
+        if (d.nroautorizacion) extra += ` Aut: ${d.nroautorizacion}`;
+        return `<tr>
         <td>${d.formaPago}${extra}</td>
         <td class="right">${fmt(d.importe)}</td>
       </tr>`;
-    }).join('');
+      })
+      .join('');
 
     const html = `<!DOCTYPE html>
 <html lang="es">
@@ -1069,11 +1164,15 @@ export class CajaPrestamos implements OnInit {
     ${caja.nrodocumento ? `<div class="row"><span>Documento #:</span><span>${caja.nrodocumento}</span></div>` : ''}
   </div>
 
-  ${data.prestamo ? `
+  ${
+    data.prestamo
+      ? `
   <div class="doc-info">
     <div class="row"><span>Préstamo #:</span><span class="bold">${data.prestamo.nroprestamo}</span></div>
     <div class="row"><span>Cuotas pagadas:</span><span class="bold">${data.prestamo.cuotas.map((c: any) => '#' + c.nrofila).join(', ')}</span></div>
-  </div>` : ''}
+  </div>`
+      : ''
+  }
 
   <div class="line"></div>
 
@@ -1119,7 +1218,11 @@ export class CajaPrestamos implements OnInit {
 
     const printWindow = window.open('', '_blank', 'width=320,height=600');
     if (!printWindow) {
-      this.msgs.add({ severity: 'warn', summary: 'Impresión', detail: 'Permita las ventanas emergentes para imprimir' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Impresión',
+        detail: 'Permita las ventanas emergentes para imprimir',
+      });
       return;
     }
     printWindow.document.write(html);
@@ -1164,7 +1267,11 @@ export class CajaPrestamos implements OnInit {
             this.anulando.set(false);
             this.esAnulada.set(true);
             this.form.disable();
-            this.msgs.add({ severity: 'success', summary: 'Anulada', detail: res.mensaje || 'Caja anulada correctamente' });
+            this.msgs.add({
+              severity: 'success',
+              summary: 'Anulada',
+              detail: res.mensaje || 'Caja anulada correctamente',
+            });
           },
           error: (err) => {
             this.anulando.set(false);

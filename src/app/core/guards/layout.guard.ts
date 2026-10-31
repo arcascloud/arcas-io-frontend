@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanMatchFn } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 /**
  * Decide si la ruta raíz usa `main-layout-private` (ERP).
@@ -22,15 +23,19 @@ export const erpLayoutGuard: CanMatchFn = () => {
   const auth = inject(AuthService);
   const user = auth.currentUser();
 
-  // Sin sesión → layout público (startPage / logout → tienda con layout público)
-  if (!user) return false;
+  console.log('User ' + user + ' session ' + environment.VALIDAR_SESSION);
 
-  // Cliente por tipoPersona ('C') → layout público (cubre sesiones viejas
-  // en localStorage que no tienen sn_cliente porque se crearon antes del cambio)
-  if (user.tipoPersona === 'C') return false;
+  if (environment.VALIDAR_SESSION === 'N') {
+    // Sin sesión → layout público (startPage / logout → tienda con layout público)
+    if (!user) return false;
 
-  // sn_cliente = 'S' → CRM → layout público
-  if (user.sn_cliente === 'S') return false;
+    // Cliente por tipoPersona ('C') → layout público (cubre sesiones viejas
+    // en localStorage que no tienen sn_cliente porque se crearon antes del cambio)
+    if (user.tipoPersona === 'C') return false;
+
+    // sn_cliente = 'S' → CRM → layout público
+    if (user.sn_cliente === 'S') return false;
+  }
 
   // Cualquier otro caso (sn_cliente = 'N', vacío o indefinido) → ERP
   return true;
