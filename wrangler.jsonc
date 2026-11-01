@@ -4,7 +4,6 @@
   "assets": {
     "directory": "./dist/arcas-software/browser",
     "not_found_handling": "single-page-application",
-    "binding": "ASSETS",
   },
   "vars": {
     "API_URL": "https://arcas-io-backend.onrender.com/api",
