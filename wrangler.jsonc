@@ -1,0 +1,12 @@
+{
+  "name": "arcas-software",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": "dist/arcas-software/browser"
+  },
+  "vars": {
+		"API_URL": "https://arcas-io-backend.onrender.com/api",
+		"PRODUCTION": "true",
+		"CURRENCY_SYMBOL": "L "
+	}
+}
