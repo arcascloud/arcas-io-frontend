@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/arcas-software/browser",
+  "installCommand": "npm install --legacy-peer-deps",
+  "framework": "angular"
+}
