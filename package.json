@@ -1,6 +1,7 @@
 {
   "name": "frontend",
   "version": "1.0.0",
+  "packageManager": "npm@10.8.2",
   "scripts": {
     "config": "node src/set-env.js",
     "ng": "ng",
@@ -12,13 +13,13 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "^21.2.18",
+    "@angular/animations": "^22.1.0",
     "@angular/cdk": "^21.0.0",
-    "@angular/common": "^21.2.0",
-    "@angular/compiler": "^21.2.0",
-    "@angular/core": "^21.2.0",
-    "@angular/forms": "^21.2.0",
-    "@angular/platform-browser": "^21.2.0",
+    "@angular/common": "^22.1.0",
+    "@angular/compiler": "^22.1.0",
+    "@angular/core": "^22.1.0",
+    "@angular/forms": "^22.1.0",
+    "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
     "@fortawesome/fontawesome-free": "^7.3.1",
     "@primeicons/core": "^8.0.0",
@@ -45,9 +46,9 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@angular/build": "^21.2.7",
-    "@angular/cli": "^21.0.4",
-    "@angular/compiler-cli": "^21.2.0",
+    "@angular/build": "^22.1.0",
+    "@angular/cli": "^22.1.0",
+    "@angular/compiler-cli": "^22.1.0",
     "@types/node": "^26.1.2",
     "@types/pdfmake": "^0.3.3",
     "dotenv": "^17.4.2",
