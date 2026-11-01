@@ -134,7 +134,7 @@ export class NuevaFactura implements OnInit {
 
   // ARFM20261030 MEJORA consumida en nueva-factura.html (<ng-template #footer>):
   // filas en blanco mínimas para que la tabla nunca quede "a media altura".
-  readonly MIN_ROWS = 9;
+  readonly MIN_ROWS = 7;
 
   get emptyRows(): any[] {
     const missingRows = this.MIN_ROWS - this.filas().length;

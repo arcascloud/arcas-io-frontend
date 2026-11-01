@@ -236,7 +236,7 @@
 
           <!-- Fila 6: Sucursal | Departamento | Jefe inmediato -->
           <div class="campo">
-            <label for="Idsucursal">Sucursal</label>
+            <label for="Idsucursal">Sucursal <span class="req">*</span></label>
             <p-select
               size="small"
               id="Idsucursal"
@@ -246,9 +246,12 @@
               optionValue="value"
               placeholder="Seleccione sucursal"
               styleClass="w-full"
-              [showClear]="true"
               [appendTo]="'body'"
+              [ngClass]="{ 'ng-invalid': invalid('Idsucursal') }"
             />
+            @if (invalid('Idsucursal')) {
+              <small class="err">La sucursal es obligatoria</small>
+            }
           </div>
 
           <div class="campo">

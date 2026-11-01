@@ -108,7 +108,7 @@ export class EmpleadoForm implements OnInit {
       email: ['', Validators.required],
       tipoempId: [0, Validators.required],
       techoseguro: [0],
-      Idsucursal: [null as number | null],
+      Idsucursal: [null as number | null, Validators.required],
       deptoId: [null as number | null],
       jefeId: [null as number | null],
       cuentabancaria: [''],
@@ -204,7 +204,7 @@ export class EmpleadoForm implements OnInit {
       this.puestos.set((items ?? []).map((i) => ({ label: String(i.descripcion), value: i.puestosId })));
     });
     this.api.get<any[]>('/sucursales').subscribe((items) => {
-      this.sucursales.set((items ?? []).map((i) => ({ label: String(i.descripcion), value: i.Idsucursal })));
+      this.sucursales.set((items ?? []).map((i) => ({ label: String(i.descripcion), value: i.idsucursal })));
     });
     this.api.get<any[]>('/parametros/departamentos-empresa').subscribe((items) => {
       this.deptoJefeMap.clear();
@@ -373,7 +373,6 @@ export class EmpleadoForm implements OnInit {
     raw.paisresidencia = raw.paisresidencia ?? null;
     raw.deptoId = raw.deptoId ?? null;
     raw.jefeId = raw.jefeId ?? null;
-    raw.Idsucursal = raw.Idsucursal ?? null;
     raw.fecha_alta = raw.fecha_alta ? raw.fecha_alta.toISOString() : null;
     raw.fecha_baja = raw.fecha_baja ? raw.fecha_baja.toISOString() : null;
 
