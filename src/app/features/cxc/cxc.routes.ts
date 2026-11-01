@@ -19,18 +19,6 @@ export const CXC_ROUTES: Routes = [
     loadComponent: () => import('./rendicion-caja/rendicion-caja').then((m) => m.RendicionCaja),
   },
 
-  // Caja Préstamos - réplica de Caja para cobros a préstamos
-  {
-    path: 'caja-prestamos',
-    loadComponent: () =>
-      import('./caja-prestamos/caja-prestamos').then((m) => m.CajaPrestamos),
-  },
-  {
-    path: 'caja-prestamos/editar/:id',
-    loadComponent: () =>
-      import('./caja-prestamos/caja-prestamos').then((m) => m.CajaPrestamos),
-  },
-
   // Clientes - Nuevo gestor con layout dividido
   {
     path: 'clientes',
@@ -43,11 +31,6 @@ export const CXC_ROUTES: Routes = [
   {
     path: 'clientes/editar/:id',
     loadComponent: () => import('./clientes/cliente-form').then((m) => m.ClienteForm),
-  },
-  {
-    path: 'prestamos',
-    loadComponent: () =>
-      import('./prestamos/prestamos-manager').then((m) => m.PrestamosManager),
   },
 
   // Consultas (solo lectura)
@@ -68,14 +51,18 @@ export const CXC_ROUTES: Routes = [
   },
   {
     path: 'historico',
-    loadComponent: () =>
-      import('./historico/historico-manager').then((m) => m.HistoricoManager),
+    loadComponent: () => import('./historico/historico-manager').then((m) => m.HistoricoManager),
   },
   {
     path: 'saldo-favor',
     component: Consulta,
     data: {
-      consulta: { nombre: 'saldo-favor', titulo: 'Saldo a Favor', ruta: '/cxc/saldo-favor', idKey: 'cxcsalfavId' },
+      consulta: {
+        nombre: 'saldo-favor',
+        titulo: 'Saldo a Favor',
+        ruta: '/cxc/saldo-favor',
+        idKey: 'cxcsalfavId',
+      },
     },
   },
 
@@ -83,24 +70,28 @@ export const CXC_ROUTES: Routes = [
   {
     path: 'carteras-cliente',
     data: { nombre: 'carteras-cliente' },
-    loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
   },
   {
     path: 'carteras-cliente/editar/:id',
     data: { nombre: 'carteras-cliente' },
-    loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
   },
 
   // Información de clientes - celulares, direcciones y correos (catálogo genérico)
   {
     path: 'clientes-info',
     data: { nombre: 'clientes-info' },
-    loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
   },
   {
     path: 'clientes-info/editar/:id',
     data: { nombre: 'clientes-info' },
-    loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
   },
 
   { path: '**', redirectTo: 'caja' },

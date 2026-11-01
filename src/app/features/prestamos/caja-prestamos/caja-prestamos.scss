@@ -1,0 +1,105 @@
+:host {
+  display: block;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.banner-anulada {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-left: 4px solid var(--c-error);
+  background: color-mix(in srgb, var(--c-error) 8%, transparent);
+  color: var(--c-error);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  i { font-size: 1.2rem; }
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  p-select, p-inputnumber, p-datepicker { width: 100%; }
+  label { font-size: 0.85rem; font-weight: 600; color: var(--color-texto-label); }
+}
+.campo-span-2 { grid-column: span 2; }
+.req { color: var(--c-error); margin-left: 0.15rem; }
+.err { color: var(--c-error); font-size: 0.75rem; margin-top: 0.25rem; display: block; }
+.acciones-form {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.detalles-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.detalles-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.fp-lista { display: flex; flex-direction: column; }
+.fp-fila { display: flex; align-items: center; gap: 0.75rem; padding: 0.4rem 0; }
+.fp-campo { display: flex; align-items: center; p-select, p-inputnumber, input { width: 100%; } }
+.fp-fp { flex: 0 0 200px; }
+.fp-importe { flex: 0 0 160px; }
+.fp-extra { flex: 0 0 180px; }
+.fp-accion { margin-left: auto; flex: 0 0 auto; }
+.fp-vacio { padding: 0.75rem; color: var(--c-text-muted); font-size: 0.9rem; text-align: center; }
+.total-linea {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--c-border);
+}
+.total-label { font-size: 0.9rem; font-weight: 600; color: var(--c-text-muted); }
+.total-valor { font-size: 1.1rem; font-weight: 700; color: var(--c-primary); font-variant-numeric: tabular-nums; }
+.cuotas-card { border-left: 3px solid var(--c-primary); }
+.prestamo-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  max-width: 480px;
+  label { font-size: 0.85rem; font-weight: 600; color: var(--color-texto-label); }
+  p-select { width: 100%; }
+}
+.cuota-virtual {
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: var(--c-surface);
+}
+.cv-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.cv-num { font-size: 1rem; color: var(--c-info); }
+.cv-vence { font-size: 1rem; color: var(--c-info); margin-right: auto; }
+.mora-positiva { color: var(--c-warning); }
+.cv-label { font-size: 1rem; color: var(--c-text-muted); }
+.cv-value { font-size: 1rem; width: 100%; color: var(--c-text); font-variant-numeric: tabular-nums; }
+.resumen-cuotas { width: 18%; }
+.rc { width: 90%; text-align: right; }
+.rc-label { font-size: 1rem; width: 100%; text-align: right; color: var(--c-text-muted); }
+.rc-value { font-size: 1rem; text-align: right; margin-left: 2px; color: var(--c-text); font-variant-numeric: tabular-nums; }
+.rc-capital { .rc-label, .rc-value { color: var(--c-primary); font-weight: 600; } }
+.cuota-vacia, .aviso-cuota {
+  display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; padding: 0.6rem 0.75rem; font-size: 0.85rem;
+}
+.cuota-vacia { border-left: 3px solid var(--c-success); background: color-mix(in srgb, var(--c-success) 10%, transparent); color: var(--c-text); i { color: var(--c-success); } }
+.aviso-cuota { border-left: 3px solid var(--c-warning); background: color-mix(in srgb, var(--c-warning) 10%, transparent); color: var(--c-text); i { color: var(--c-warning); } }

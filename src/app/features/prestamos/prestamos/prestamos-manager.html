@@ -152,7 +152,7 @@
             </div>
           </div>
 
-          <!-- Control del préstamo (solo consulta cuando ya existe) -->
+          <!-- Control del préstamo -->
           @if (prestamoData(); as pres) {
           <div class="prestamo-info-control mb-3">
             <table class="pic-tabla">
@@ -188,7 +188,7 @@
           </div>
           }
 
-          <!-- Botones del flujo (siempre visibles; deshabilitados con motivo) -->
+          <!-- Botones del flujo -->
           <div class="prestamo-actions mb-3">
             <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary"
               (click)="cancelar()" [rounded]="true" size="small"></p-button>

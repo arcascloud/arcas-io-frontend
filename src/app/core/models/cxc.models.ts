@@ -17,6 +17,7 @@ export interface CxcCliente {
   sn_activo: 'S' | 'N';
   categoria: 'A' | 'B' | 'C' | 'D' | 'E';
   empresaId: number;
+  moduloId?: number;
   usuarioCreated: string;
   usuarioUpdated?: string;
   fechaUpdated?: string;

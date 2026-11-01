@@ -76,7 +76,7 @@ export class HistoricoManager implements OnInit {
   }
 
   private cargarClientes() {
-    this.service.getClientes(1, 1000).pipe(
+    this.service.getClientes(1, 1000, '', 4).pipe(
       takeUntilDestroyed(this.destroyRef),
       timeout(15000),
       catchError(() => of({ data: [] as CxcCliente[], total: 0 })),

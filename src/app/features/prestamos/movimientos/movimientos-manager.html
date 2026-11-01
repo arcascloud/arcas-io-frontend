@@ -1,0 +1,305 @@
+<div class="movimientos-manager">
+  @if (partidaId()) {
+    <div class="barra-origen">
+      <span class="barra-origen__texto">
+        <i class="pi pi-file-edit"></i>
+        Movimiento abierto desde una partida contable
+      </span>
+      <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+        variant="text" [rounded]="true" (onClick)="volverAPartida()" />
+    </div>
+  } @else if (desdeHistorico()) {
+    <div class="barra-origen">
+      <span class="barra-origen__texto">
+        <i class="pi pi-history"></i>
+        Movimiento abierto desde el Histórico de Clientes
+      </span>
+      <p-button label="Volver al histórico" icon="pi pi-arrow-left" size="small" severity="secondary"
+        variant="text" [rounded]="true" (onClick)="volverAHistorico()" />
+    </div>
+  }
+
+  <div class="split-layout">
+    <div class="left-column">
+      @if (!selectedCliente()) {
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Seleccione un cliente</h3>
+        <p>Haga clic en un cliente de la lista para gestionar movimientos</p>
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
+              <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
+                [rounded]="true" size="small"></p-button>
+            </p-iconField>
+          </div>
+        </div>
+      </div>
+      }
+
+      @if (selectedCliente()) {
+      <div class="cliente-detail">
+        <div class="tab-content">
+          <div class="tab-header tab-header--stacked">
+            <h4>Movimientos</h4>
+            <span>Cod. {{ selectedCliente()?.clienteId }} - {{ selectedCliente()?.nombres }} {{ selectedCliente()?.apellidos }}</span>
+          </div>
+
+          <div class="prestamo-form-columns mb-3">
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Datos del Movimiento</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Tipo</label>
+                  <p-select size="small" [options]="tipoMovOptions" [ngModel]="movimientoModel().tipomov"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), tipomov: $event, nroreferencia: ''})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar tipo"></p-select>
+                </div>
+
+                <div class="p-field">
+                  <label>¿Es un documento manual?</label>
+                  <p-select size="small" [options]="snDocManualOptions"
+                    [ngModel]="movimientoModel().sn_doc_manual || 'S'"
+                    (ngModelChange)="onModoManualChange($event)"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar origen"></p-select>
+                </div>
+
+                <div class="p-field">
+                  <label>Documento Fiscal</label>
+                  <p-select id="cbodocfiscal" size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()"
+                    (ngModelChange)="documentoSelected.set($event)" placeholder="Seleccionar documento"
+                    styleClass="w-full" [appendTo]="'body'"></p-select>
+                </div>
+
+                <div class="p-field">
+                  <label>Nro. Referencia</label>
+                  @if (esManual()) {
+                    <input pInputText pSize="small" [ngModel]="movimientoModel().nroreferencia"
+                      (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
+                      placeholder="Escriba el numero de documento" />
+                  } @else {
+                    <p-select size="small"
+                      [options]="debitoReferencias().map(r => ({label: r.nroreferencia + ' - Saldo: ' + moneda(r.saldo), value: r.nroreferencia}))"
+                      [ngModel]="movimientoModel().nroreferencia"
+                      (ngModelChange)="onRefSelect($event)"
+                      placeholder="Seleccione documento" styleClass="w-full" [appendTo]="'body'"></p-select>
+                  }
+                </div>
+
+                <div class="p-field">
+                  <label>Concepto</label>
+                  <input pInputText pSize="small" [ngModel]="movimientoModel().concepto"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), concepto: $event})"
+                    placeholder="Descripcion del movimiento" />
+                </div>
+              </div>
+            </div>
+
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Referencia y Fecha</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Fecha del documento</label>
+                  <p-datepicker [ngModel]="movimientoFecha()"
+                   size="small"
+                   (ngModelChange)="onMovimientoFechaChange($event)"
+                   dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
+                </div>
+
+                <div class="p-field">
+                  <label>Cartera Contable</label>
+                  <p-select size="small" [options]="carterasOptions()" [ngModel]="movimientoModel().carteracontableId"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), carteracontableId: $event})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar cartera"
+                    [showClear]="true"></p-select>
+                </div>
+
+                <div class="p-field">
+                  <label>Importe del documento</label>
+                  <p-inputNumber size="small" [ngModel]="movimientoModel().importe"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), importe: $event})" mode="currency"
+                    currency="HNL" [locale]="'es-HN'" [min]="0.01" [minFractionDigits]="2"
+                    [maxFractionDigits]="2" [useGrouping]="true"
+                    [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="prestamo-actions mb-3">
+            <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+              (click)="cancelarMovimiento()" [rounded]="true" size="small"></p-button>
+            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+              [loading]="movimientoSaving()" (click)="guardarMovimiento()" [rounded]="true"
+              size="small"></p-button>
+          </div>
+
+          <div class="movs-block">
+            <div class="movs-header">
+              <h5 class="prestamo-col-title">Movimientos del cliente</h5>
+              <div class="movs-saldos">
+                <span class="movs-saldo-item">Debitos: <b>{{ moneda(totalDebitos()) }}</b></span>
+                <span class="movs-saldo-item">Creditos: <b>{{ moneda(totalCreditos()) }}</b></span>
+                <span class="movs-saldo-item movs-saldo-uno">Saldo: <b>{{ moneda(saldoCliente()) }}</b></span>
+              </div>
+            </div>
+
+            @if (movimientosLoading()) {
+              <p-skeleton styleClass="mb-2" />
+              <p-skeleton styleClass="mb-2" />
+              <p-skeleton />
+            } @else if (movimientosData().length === 0) {
+              <div class="movs-vacio">
+                <i class="pi pi-inbox"></i>
+                <p>Este cliente no tiene movimientos registrados</p>
+              </div>
+            } @else {
+              <p-table [value]="movimientosData()" size="small" [paginator]="true" [rows]="10"
+                [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} movimientos"
+                styleClass="movs-table">
+                <ng-template #header>
+                  <tr>
+                    <th style="width:4rem">#</th>
+                    <th style="width:6rem">Fecha</th>
+                    <th style="width:6rem">Tipo</th>
+                    <th style="width:8rem">Referencia</th>
+                    <th>Concepto</th>
+                    <th style="width:8rem" class="text-right">Importe</th>
+                    <th style="width:7rem">Estado</th>
+                    <th style="width:7rem">Origen</th>
+                    <th style="width:4rem" class="acciones-header">Acciones</th>
+                  </tr>
+                </ng-template>
+                <ng-template #body let-m>
+                  <tr [class.mov-anulado]="m.sn_doc_anulado === 'S'">
+                    <td>{{ m.nromovimiento }}</td>
+                    <td>{{ fechaCorta(m.fecharegistro) }}</td>
+                    <td>
+                      <p-tag [value]="getTipoMovLabel(m.tipomov)" [severity]="getTipoMovSeverity(m.tipomov)"
+                        styleClass="tag-sm" />
+                    </td>
+                    <td>{{ m.nroreferencia || '—' }}</td>
+                    <td class="mov-concepto" [title]="m.concepto">{{ m.concepto }}</td>
+                    <td class="text-right">{{ moneda(m.importe) }}</td>
+                    <td>
+                      @if (m.sn_doc_anulado === 'S') {
+                        <p-tag value="Anulada" severity="danger" styleClass="tag-sm" />
+                      } @else if (m.sn_cotabilizada === 'S') {
+                        <p-tag value="Contab." severity="info" styleClass="tag-sm" />
+                      } @else {
+                        <p-tag value="Sin contab." severity="secondary" styleClass="tag-sm" />
+                      }
+                    </td>
+                    <td>
+                      <p-tag [value]="getOrigenLabel(m)" [severity]="getOrigenSeverity(m)" styleClass="tag-sm" />
+                    </td>
+                    <td class="acciones-cell">
+                      <p-button icon="pi pi-ban" severity="danger" text rounded size="small"
+                        [disabled]="bloqueoAnulacion(m) !== null"
+                        [pTooltip]="bloqueoAnulacion(m) || 'Anular movimiento'" tooltipPosition="top"
+                        (onClick)="anularMovimiento(m)" />
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                  <tr>
+                    <td colspan="9" class="movs-vacio">
+                      <p>No hay movimientos registrados</p>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            }
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+            (keyup.enter)="loadClientes()" placeholder="Buscar por nombre, DNI, RTN..."
+            class="search-input" />
+          <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
+            [rounded]="true" size="small" class="clear-btn"></p-button>
+        </div>
+      </div>
+
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay clientes</h3>
+        <p>No se encontraron clientes registrados.</p>
+      </div>
+      } @else {
+      <div class="clientes-lista">
+        @for (cliente of data(); track cliente.clienteId) {
+        <div class="cliente-item-ficha"
+          [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)">
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ cliente.nrocliente }}</span>
+            <p-tag [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ cliente.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ cliente.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ cliente.dni }}</span>
+          </div>
+          @if (cliente.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ cliente.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ cliente.categoria }}</span>
+          </div>
+        </div>
+        }
+      </div>
+
+      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"></p-paginator>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,842 @@
+<div class="clientes-manager">
+  <div class="split-layout" [class.form-active]="showForm()">
+    <div class="left-column">
+      @if (!selectedCliente() && !showForm() && !nuevoCliente()) {
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Pulse un cliente</h3>
+        <p>Haga clic en un cliente de la lista para ver su información</p>
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input
+                type="text"
+                pSize="small"
+                pInputText
+                [ngModel]="q()"
+                (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..."
+                class="mr-1"
+              />
+              <p-button
+                *ngIf="q()"
+                icon="pi pi-times"
+                (click)="limpiarFiltros()"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                size="small"
+              ></p-button>
+            </p-iconField>
+          </div>
+        </div>
+
+        <p-button
+          label="Agregar nuevo cliente"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          class="mr-2"
+          size="small"
+        ></p-button>
+      </div>
+      }
+
+      @if ((selectedCliente() || nuevoCliente()) && !showForm()) {
+      <div class="cliente-detail">
+        <p-tabs [value]="activeTabValue()" (valueChange)="activeTabValue.set($event)">
+          <p-tablist>
+            <p-tab value="0">
+              <i class="pi pi-wallet"></i>
+              <span>Cliente</span>
+            </p-tab>
+            <p-tab value="1" [disabled]="nuevoCliente()">
+              <i class="pi pi-info-circle"></i>
+              <span>Inf. Adicional</span>
+            </p-tab>
+            <p-tab value="2" [disabled]="nuevoCliente()">
+              <i class="pi pi-wallet"></i>
+              <span>Estado de Cuenta</span>
+            </p-tab>
+            <p-tab value="3" [disabled]="nuevoCliente()">
+              <i class="pi pi-address-book"></i>
+              <span>Referencias</span>
+            </p-tab>
+            <p-tab value="4" [disabled]="nuevoCliente()">
+              <i class="pi pi-users"></i>
+              <span>Parientes</span>
+            </p-tab>
+          </p-tablist>
+
+          <p-tabpanels>
+            <p-tabpanel value="0">
+              <div class="tab-content">
+                <app-cliente-form
+                  #clienteFormRef
+                  [clienteIdInput]="nuevoCliente() ? null : (selectedCliente()?.clienteId ?? null)"
+                  (saved)="onFormSaved()"
+                  (cancelled)="onFormCancelled()"
+                />
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="1">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Información Adicional</h4>
+                </div>
+
+                <p-accordion>
+                  <p-accordionTab header="Información de contacto">
+                    <div class="accordion-panel-body">
+                      <h5 class="form-col-title">
+                        {{ infoModel().id != null ? 'Editar información de contacto' : 'Nueva información de contacto' }}
+                      </h5>
+
+                      <div class="info-form-row">
+                        <div class="p-field">
+                          <label>Tipo</label>
+                          <p-select
+                            size="small"
+                            [options]="infoTipoOptions"
+                            [ngModel]="infoModel().tipo"
+                            (ngModelChange)="infoModel.set({...infoModel(), tipo: $event})"
+                            placeholder="Seleccione tipo"
+                            styleClass="w-full"
+                            [appendTo]="'body'"
+                          ></p-select>
+                        </div>
+                        <div class="p-field field-grow">
+                          <label>Descripción</label>
+                          <input
+                            pInputText
+                            pSize="small"
+                            [ngModel]="infoModel().descripcion"
+                            (ngModelChange)="infoModel.set({...infoModel(), descripcion: $event})"
+                            placeholder="Valor del contacto"
+                            class="w-full"
+                          />
+                        </div>
+                        <div class="p-field">
+                          <label>Estado</label>
+                          <p-select
+                            size="small"
+                            [options]="infoEstadoOptions"
+                            [ngModel]="infoModel().sn_activo"
+                            (ngModelChange)="infoModel.set({...infoModel(), sn_activo: $event})"
+                            placeholder="Seleccione estado"
+                            styleClass="w-full"
+                            [appendTo]="'body'"
+                          ></p-select>
+                        </div>
+                        <div class="info-form-buttons">
+                          @if (infoModel().id != null) {
+                          <p-button
+                            label="Cancelar"
+                            icon="pi pi-times"
+                            variant="text"
+                            severity="secondary"
+                            (click)="cancelarInfo()"
+                            [rounded]="true"
+                            size="small"
+                          ></p-button>
+                          } @else {
+                          <p-button
+                            label="Limpiar"
+                            icon="pi pi-times"
+                            variant="text"
+                            severity="secondary"
+                            (click)="cancelarInfo()"
+                            [rounded]="true"
+                            size="small"
+                          ></p-button>
+                          }
+                          <p-button
+                            label="Agregar"
+                            icon="pi pi-plus"
+                            variant="text"
+                            severity="success"
+                            [loading]="infoSaving()"
+                            (click)="guardarInfo()"
+                            [rounded]="true"
+                            size="small"
+                          ></p-button>
+                        </div>
+                      </div>
+
+                      <h5 class="form-col-title detalle-title">Detalle</h5>
+                      <p-table
+                        [value]="infoData()"
+                        [loading]="infoLoading()"
+                        showGridlines
+                        styleClass="tabla-card"
+                        [tableStyle]="{ 'min-width': '15rem' }"
+                        size="small"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th class="col-acciones">Acción</th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-info>
+                          <tr>
+                            <td class="col-tipo">{{ infoTipoLabel(info.tipo) }}</td>
+                            <td>{{ info.descripcion || '—' }}</td>
+                            <td class="col-estado text-center">
+                              <p-tag
+                                [value]="info.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+                                [severity]="info.sn_activo === 'S' ? 'success' : 'danger'"
+                              />
+                            </td>
+                            <td class="col-acciones">
+                              <p-button
+                                icon="pi pi-pencil"
+                                (click)="editarInfo(info)"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="secondary"
+                                pTooltip="Editar"
+                                tooltipPosition="left"
+                              />
+                              <p-button
+                                icon="pi pi-trash"
+                                (click)="eliminarInfo(info)"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="danger"
+                                pTooltip="Eliminar"
+                                tooltipPosition="left"
+                              />
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                          <tr>
+                            <td colspan="4" class="text-center text-muted">
+                              No tiene información registrada
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
+                    </div>
+                  </p-accordionTab>
+
+                  <p-accordionTab header="Cartera contable">
+                    <div class="accordion-panel-body">
+                      <div class="info-form-row">
+                        <div class="p-field">
+                          <label>Cartera</label>
+                          <p-select
+                            size="small"
+                            [options]="carterasDisponibles()"
+                            [ngModel]="carteraSeleccionada()"
+                            (ngModelChange)="carteraSeleccionada.set($event)"
+                            placeholder="Seleccione cartera"
+                            styleClass="w-full"
+                            [appendTo]="'body'"
+                            [showClear]="true"
+                          ></p-select>
+                          @if (carterasDisponibles().length === 0) {
+                          <small class="carteras-sin-opciones">
+                            No hay carteras disponibles para asignar
+                          </small>
+                          }
+                        </div>
+                        <div class="p-field field-grow">
+                          <label>Cuenta contable</label>
+                          <input
+                            pInputText
+                            pSize="small"
+                            [value]="carteraSeleccionada() ? (ctaCartera(carteraSeleccionada()!) || '—') : ''"
+                            readonly
+                            placeholder="Seleccione una cartera"
+                            class="w-full"
+                          />
+                        </div>
+                        <div class="info-form-buttons">
+                          <p-button
+                            label="Asignar"
+                            icon="pi pi-plus"
+                            variant="text"
+                            severity="success"
+                            [rounded]="true"
+                            size="small"
+                            [loading]="carteraSaving()"
+                            (click)="agregarCartera()"
+                          ></p-button>
+                        </div>
+                      </div>
+
+                      <h5 class="form-col-title detalle-title">Detalle</h5>
+                      <p-table
+                        [value]="carterasCliente()"
+                        [loading]="carteraLoading()"
+                        showGridlines
+                        styleClass="tabla-card"
+                        [tableStyle]="{ 'min-width': '15rem' }"
+                        size="small"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Cartera</th>
+                            <th class="col-cta">Cuenta</th>
+                            <th>Cuenta contable</th>
+                            <th class="col-acciones">Acción</th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-cartera>
+                          <tr>
+                            <td class="celda-cartera">{{ nombreCartera(cartera.carteractaId) }}</td>
+                            <td class="col-cta">{{ ctaCartera(cartera.carteractaId) || '—' }}</td>
+                            <td class="celda-cta-desc">
+                              {{ descripcionCtaCartera(cartera.carteractaId) || '—' }}
+                            </td>
+                            <td class="col-acciones">
+                              <p-button
+                                icon="pi pi-trash"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="danger"
+                                pTooltip="Quitar"
+                                tooltipPosition="left"
+                                (click)="eliminarCartera(cartera)"
+                              />
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                          <tr>
+                            <td colspan="4" class="text-center text-muted">
+                              No tiene carteras contables asignadas
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
+                    </div>
+                  </p-accordionTab>
+                </p-accordion>
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="2">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Estado de Cuenta</h4>
+                  <div class="saldo-total">
+                    Saldo: <strong>{{ moneda(getSaldoPendiente()) }}</strong>
+                  </div>
+                </div>
+
+                <div
+                  class="detalle-estado-cuenta"
+                  *ngIf="!estadoCuentaLoading(); else loadingSkeleton"
+                >
+                  <div class="table-responsive">
+                    <table class="table table-striped">
+                      <thead>
+                        <tr>
+                          <th class="col-fila">Fila</th>
+                          <th>Fecha</th>
+                          <th>D/C</th>
+                          <th class="col-ref">Referencia</th>
+                          <th>Concepto</th>
+                          <th class="col-importe">Importe</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let mov of estadoCuentaData()">
+                          <td class="col-fila">{{ mov.clienteMovId }}</td>
+                          <td>{{ mov.fecharegistro | date:'dd/MM/yyyy' }}</td>
+                          <td>
+                            <span class="badge" [ngClass]="getTipoMovSeverity(mov.tipomov)">
+                              {{ getTipoMovLabel(mov.tipomov) }}
+                            </span>
+                          </td>
+                          <td class="col-ref">{{ mov.nroreferencia || '—' }}</td>
+                          <td>{{ mov.concepto }}</td>
+                          <td
+                            class="col-importe"
+                            [ngClass]="{
+                              'text-success': mov.tipomov === 'D',
+                              'text-danger': mov.tipomov === 'C' || mov.tipomov === 'A',
+                              'text-warning': mov.tipomov === 'I'
+                            }"
+                          >
+                            {{ mov.tipomov === 'D' ? '+' : (mov.tipomov === 'I' ? '' : '-') }}{{ moneda(mov.importe) }}
+                          </td>
+                        </tr>
+                        <tr *ngIf="estadoCuentaData().length === 0">
+                          <td colspan="6" class="text-center text-muted">
+                            No tiene movimientos el cliente
+                          </td>
+                        </tr>
+                      </tbody>
+                      <tfoot>
+                        <tr class="fw-bold">
+                          <td colspan="6" class="text-end">Saldo Total:</td>
+                          <td class="col-importe">{{ moneda(getSaldoPendiente()) }}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+
+                <ng-template #loadingSkeleton>
+                  <div class="loading-skeleton">
+                    @for (i of [1,2,3,4,5]; track i) {
+                    <div class="skeleton-row">
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                    </div>
+                    }
+                  </div>
+                </ng-template>
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="3">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Referencias</h4>
+                </div>
+
+                <div class="prestamo-form-columns mb-3">
+                  <div class="form-col">
+                    <h5 class="form-col-title">Datos Personales</h5>
+                    <div class="p-fluid">
+                      <div class="p-field">
+                        <label>Nombres</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().nombres"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), nombres: $event})"
+                          placeholder="Nombres"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Apellidos</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().apellidos"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), apellidos: $event})"
+                          placeholder="Apellidos"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>DNI</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().dni"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), dni: $event})"
+                          placeholder="DNI"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Fecha de Nacimiento</label>
+                        <p-datepicker
+                          [ngModel]="referenciaFecha()"
+                          (ngModelChange)="onReferenciaFechaChange($event)"
+                          dateFormat="dd/mm/yy"
+                          [showIcon]="true"
+                        ></p-datepicker>
+                      </div>
+                      <div class="p-field">
+                        <label>Tipo</label>
+                        <p-select
+                          size="small"
+                          [options]="referenciaTipoOptions"
+                          [ngModel]="referenciaModel().tipo"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), tipo: $event})"
+                          placeholder="Seleccione tipo"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-col">
+                    <h5 class="form-col-title">Contacto y Ubicación</h5>
+                    <div class="p-fluid">
+                      <div class="p-field">
+                        <label>Teléfono</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().telefono"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), telefono: $event})"
+                          placeholder="Teléfono fijo"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Celular</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().celular"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), celular: $event})"
+                          placeholder="Celular"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Parentesco</label>
+                        <p-select
+                          size="small"
+                          [options]="referenciaParentescoOptions"
+                          [ngModel]="referenciaModel().parentesco"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), parentesco: $event})"
+                          placeholder="Seleccione parentesco"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                      <div class="p-field">
+                        <label>Dirección</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().direccion1"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), direccion1: $event})"
+                          placeholder="Dirección"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Lugar de Trabajo</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().lugarTrabajo"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), lugarTrabajo: $event})"
+                          placeholder="Lugar de trabajo"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions mb-3">
+                  <p-button
+                    label="Limpiar"
+                    icon="pi pi-times"
+                    variant="text"
+                    severity="secondary"
+                    (click)="cancelarReferencia()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
+                  <p-button
+                    label="Guardar"
+                    icon="pi pi-check"
+                    variant="text"
+                    severity="success"
+                    [loading]="referenciaSaving()"
+                    (click)="guardarReferencia()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
+                </div>
+
+                <p-dataView
+                  [value]="referenciasData()"
+                  [loading]="referenciasLoading()"
+                  size="small"
+                  layout="list"
+                  class="referencias-dataview"
+                >
+                  <ng-template #list let-ref>
+                    <div class="referencia-item">
+                      <div class="ref-nombre">{{ ref.nombres || ref.nombre }}</div>
+                      <div class="ref-telefono">{{ ref.telefono || ref.celular }}</div>
+                      <div class="ref-tipo">{{ ref.tipo || ref.parentesco }}</div>
+                    </div>
+                  </ng-template>
+                </p-dataView>
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="4">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Parientes</h4>
+                </div>
+
+                <div class="prestamo-form-columns mb-3">
+                  <div class="form-col">
+                    <h5 class="form-col-title">Datos del Pariente</h5>
+                    <div class="p-fluid">
+                      <div class="p-field">
+                        <label>Nombres</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().nombres"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), nombres: $event})"
+                          placeholder="Nombres"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Apellidos</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().apellidos"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), apellidos: $event})"
+                          placeholder="Apellidos"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>DNI</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().dni"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), dni: $event})"
+                          placeholder="DNI"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-col">
+                    <h5 class="form-col-title">Contacto</h5>
+                    <div class="p-fluid">
+                      <div class="p-field">
+                        <label>Parentesco</label>
+                        <p-select
+                          size="small"
+                          [options]="parienteParentescoOptions"
+                          [ngModel]="parienteModel().parentesco"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), parentesco: $event})"
+                          placeholder="Seleccione parentesco"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                      <div class="p-field">
+                        <label>Teléfono</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().telefono"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), telefono: $event})"
+                          placeholder="Teléfono de contacto"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions mb-3">
+                  <p-button
+                    label="Limpiar"
+                    icon="pi pi-times"
+                    variant="text"
+                    severity="secondary"
+                    (click)="cancelarPariente()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
+                  <p-button
+                    label="Guardar"
+                    icon="pi pi-check"
+                    variant="text"
+                    severity="success"
+                    [loading]="parienteSaving()"
+                    (click)="guardarPariente()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
+                </div>
+
+                <p-dataView
+                  [value]="parientesData()"
+                  [loading]="parientesLoading()"
+                  size="small"
+                  layout="list"
+                  class="parientes-dataview"
+                >
+                  <ng-template #list let-par>
+                    <div class="pariente-item">
+                      <div class="par-nombre">{{ par.nombres }} {{ par.apellidos }}</div>
+                      <div class="par-parentesco">{{ par.parentesco }}</div>
+                      <div class="par-telefono">{{ par.telefono }}</div>
+                    </div>
+                  </ng-template>
+                </p-dataView>
+              </div>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+      </div>
+      }
+    </div>
+
+    <div class="right-column" [class.hidden]="showForm()">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            pInputText
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event)"
+            placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..."
+            class="search-input"
+          />
+          <p-button
+            *ngIf="q()"
+            label="Limpiar"
+            icon="pi pi-times"
+            (click)="limpiarFiltros()"
+            severity="secondary"
+            [rounded]="true"
+            size="small"
+            class="clear-btn"
+          ></p-button>
+        </div>
+
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        ></p-button>
+      </div>
+
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay clientes</h3>
+        <p>No se encontraron clientes registrados.</p>
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        ></p-button>
+      </div>
+      } @else {
+      <div class="clientes-lista">
+        @for (cliente of data(); track cliente.clienteId) {
+        <div
+          class="cliente-item-ficha"
+          [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)"
+        >
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ cliente.nrocliente }}</span>
+            <p-tag
+              [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}"
+            />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ cliente.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ cliente.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ cliente.dni }}</span>
+          </div>
+          @if (cliente.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ cliente.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Disponible Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa interes:</span>
+            <span class="ficha-value">{{ cliente.interes }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa moratoria:</span>
+            <span class="ficha-value">{{ cliente.moratorio }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ cliente.categoria }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Estado:</span>
+            <span class="ficha-value">{{ cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Razon social:</span>
+            <span class="ficha-value">{{ cliente.razonsocial }}</span>
+          </div>
+          <div class="item-ficha-actions">
+            <p-button
+              icon="pi pi-pencil"
+              (click)="editarCliente(cliente, $event)"
+              [rounded]="true"
+              size="small"
+              text
+              pTooltip="Editar"
+              tooltipPosition="left"
+            />
+          </div>
+        </div>
+        }
+      </div>
+
+      <p-paginator
+        [first]="(page() - 1) * limit()"
+        [rows]="limit()"
+        [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"
+      ></p-paginator>
+      }
+    </div>
+  </div>
+</div>

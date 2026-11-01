@@ -93,11 +93,10 @@ export class ComprasManager implements OnInit {
   formMae = this.fb.group({
     proveedorId: [null as number | null, Validators.required],
     bodegaId: [null as number | null, Validators.required],
-    TipoCompra: ['FCO' as 'FCO' | 'FCC' | 'ORC', Validators.required],
+    TipoCompra: ['FCO' as 'FCO' | 'FCC' | 'ORC',Validators.required],
     documentoId: [null as number | null],
     monedaId: [null as number | null, Validators.required],
     nroreferencia: [''],
-    subtotal: [0],
     descuento: [0],
     impuesto: [0],
     total: [0],
@@ -240,7 +239,12 @@ export class ComprasManager implements OnInit {
 
   seleccionar(compra: CompraMae) {
     this.seleccionado.set(compra);
-    this.formMae.patchValue(compra);
+    this.formMae.patchValue({
+      ...compra,
+      descuento: compra.descuento || 0,
+      impuesto: compra.impuesto || 0,
+      total: compra.total || 0,
+    });
     this.formDet.reset({ productoId: null, codbarra: '', descripcion: '', cantidad: 1, precio: 0, precioventa: 0, preciovtaId: this.preciovtaDefaultId });
     this.itemEditando.set(null);
     this.productoSeleccionado = null;
@@ -251,7 +255,14 @@ export class ComprasManager implements OnInit {
     this.cargandoDet.set(true);
     this.service.getDetallesByCompra(compraId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
-        this.detalles.set((data || []).sort((a, b) => (b.nrofila || 0) - (a.nrofila || 0)));
+        const dets = (data || []).sort((a, b) => (b.nrofila || 0) - (a.nrofila || 0));
+        this.detalles.set(dets);
+        const subtotal = dets.reduce((sum, d) => sum + Number(d.subtotal || 0), 0);
+        const desc = Number(this.formMae.value.descuento || 0);
+        const imp = Number(this.formMae.value.impuesto || 0);
+        const total = Math.max(0, subtotal - desc + imp);
+        this.formMae.patchValue({ total }, { emitEvent: false });
+        this.seleccionado.update(s => s ? { ...s, subtotal, descuento: desc, impuesto: imp, total } : s);
         this.cargandoDet.set(false);
       },
       error: () => {
@@ -259,6 +270,27 @@ export class ComprasManager implements OnInit {
         this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los detalles' });
       },
     });
+  }
+
+  recalcularTotalHeader() {
+    const sub = this.detalles().reduce((sum, d) => sum + Number(d.subtotal || 0), 0);
+    const desc = Number(this.formMae.value.descuento || 0);
+    const imp = Number(this.formMae.value.impuesto || 0);
+    const total = Math.max(0, sub - desc + imp);
+    this.formMae.patchValue({ total }, { emitEvent: false });
+    const mae = this.seleccionado();
+    if (mae && mae.compraId !== 0) {
+      this.service.updateCompra(mae.compraId, {
+        subtotal: sub,
+        descuento: desc,
+        impuesto: imp,
+        total: total,
+      }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          this.seleccionado.update(s => s ? { ...s, subtotal: sub, descuento: desc, impuesto: imp, total } : s);
+        }
+      });
+    }
   }
 
   volver() {
@@ -275,7 +307,6 @@ export class ComprasManager implements OnInit {
       documentoId: null,
       monedaId: null,
       nroreferencia: '',
-      subtotal: 0,
       descuento: 0,
       impuesto: 0,
       total: 0,
@@ -291,7 +322,6 @@ export class ComprasManager implements OnInit {
       bodegaId: 0,
       proveedorId: 0,
       documentoId: 0,
-      subtotal: 0,
       descuento: 0,
       impuesto: 0,
       total: 0,
@@ -554,6 +584,22 @@ export class ComprasManager implements OnInit {
   procesar() {
     const mae = this.seleccionado();
     if (!mae) return;
+
+    const sumaDetalles = this.detalles().reduce((sum, d) => sum + Number(d.subtotal || 0), 0);
+    const headerTotal = Number(this.formMae.value.total || 0);
+    const desc = Number(this.formMae.value.descuento || 0);
+    const imp = Number(this.formMae.value.impuesto || 0);
+    const esperadoTotal = Math.max(0, sumaDetalles - desc + imp);
+
+    if (Math.abs(headerTotal - esperadoTotal) > 0.01) {
+      this.msgs.add({
+        severity: 'error',
+        summary: 'Discrepancia en Total',
+        detail: `El total del header (${this.moneda(headerTotal)}) no coincide con el total del detalle (${this.moneda(esperadoTotal)}). El total del detalle debe ser igual al total del header.`,
+      });
+      return;
+    }
+
     this.confirm.confirm({
       message: `¿Procesar compra #${mae.compraId}? Se registrará entrada en kardex y movimiento CxP (débito).`,
       header: 'Procesar compra',

@@ -263,6 +263,7 @@ export class ClienteForm implements OnInit {
       }
       payload = {
         ...cleaned,
+        moduloId: 4,
         empresaId: this.auth.currentUser()?.empresaId,
         sn_activo: 'S',
       };

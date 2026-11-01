@@ -130,7 +130,7 @@ export class PrestamosManager implements OnInit {
   loadClientes() {
     this.cargando.set(true);
     this.service
-      .getClientes(this.page(), this.limit(), this.q())
+      .getClientes(this.page(), this.limit(), this.q(), 10)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         timeout(10000),
@@ -214,7 +214,6 @@ export class PrestamosManager implements OnInit {
               sn_preaprobado: pres.sn_preaprobado || 'N',
               sn_activo: pres.sn_activo || 'S',
             });
-            // Plan de pago: loading sigue activo hasta que termine
             this.loadPlanPago(pres.prestamoId);
           } else {
             this.prestamoData.set(null);
@@ -265,7 +264,6 @@ export class PrestamosManager implements OnInit {
 
   calcularCuota() {
     const raw = this.prestamoModel();
-    // Regla de negocio: la cuota se calcula sobre el CAPITAL NETO (capital - prima)
     const capitalneto =
       Math.round(((Number(raw.capital) || 0) - (Number(raw.prima) || 0)) * 100) / 100;
     const cuotas = Number(raw.cuotas) || 0;
@@ -274,7 +272,6 @@ export class PrestamosManager implements OnInit {
     this.prestamoModel.set({ ...this.prestamoModel(), capitalneto, vlrcuota });
   }
 
-  /** Cancelar: limpia el formulario (alcance definido 14/10/2026). */
   cancelar() {
     this.limpiarFormulario();
   }
@@ -308,7 +305,6 @@ export class PrestamosManager implements OnInit {
       return;
     }
 
-    // Validar que no tenga prestamo activo
     if (this.prestamoData()) {
       this.msgs.add({
         severity: 'warn',
@@ -324,51 +320,33 @@ export class PrestamosManager implements OnInit {
     const capitalneto = Math.round((capital - prima) * 100) / 100;
     const payload: any = {
       clienteId: cliente.clienteId,
-      // El nroprestamo NO se envía: la APROBACIÓN es quien asigna el correlativo
       capital,
       prima,
-      capitalneto, // el backend recalcula, pero viaja coherente
+      capitalneto,
       vlrcuota: Number(raw.vlrcuota) || 0,
       cuotas: Number(raw.cuotas) || 1,
       tasa: Number(raw.tasa) || 0,
       moratorio: Number(raw.moratorio) || 0,
       fecha_aprobacion: raw.fecha_aprobacion,
-      // El pre-aprobado es un paso del flujo (botón), nunca se setea manualmente
       sn_preaprobado: 'N',
       sn_activo: raw.sn_activo || 'S',
       sn_contabilizado: 'N',
     };
 
     if (capital <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'El capital debe ser mayor a 0',
-      });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital debe ser mayor a 0' });
       return;
     }
     if (prima < 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'La prima no puede ser negativa',
-      });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'La prima no puede ser negativa' });
       return;
     }
     if (capitalneto <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'El capital neto (capital - prima) debe ser mayor a 0',
-      });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital neto (capital - prima) debe ser mayor a 0' });
       return;
     }
     if (!payload.cuotas || payload.cuotas <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'Las cuotas deben ser mayor a 0',
-      });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Las cuotas deben ser mayor a 0' });
       return;
     }
 
@@ -392,19 +370,13 @@ export class PrestamosManager implements OnInit {
             nroprestamo: res.nroprestamo || '',
           });
           this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'success',
-            summary: 'Guardado',
-            detail: 'Prestamo registrado correctamente',
-          });
+          this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Prestamo registrado correctamente' });
 
-          // Guardar plan de pago si existe
           const plan = this.planPago();
           if (plan.length > 0 && res?.prestamoId) {
             this.guardarPlanPagoConPrestamo(res.prestamoId, plan, cliente.clienteId);
           }
 
-          // Encadenar pre-aprobación pendiente (flujo: guardar → pre-aprobar)
           if (this.pendingPreaprobado) {
             this.pendingPreaprobado = false;
             this.preaprobar();
@@ -443,11 +415,7 @@ export class PrestamosManager implements OnInit {
           completadas++;
           if (completadas + errores === total) {
             this.prestamoSaving.set(false);
-            this.msgs.add({
-              severity: 'success',
-              summary: 'Plan de pago',
-              detail: `${completadas} cuotas guardadas`,
-            });
+            this.msgs.add({ severity: 'success', summary: 'Plan de pago', detail: `${completadas} cuotas guardadas` });
           }
         },
         error: () => {
@@ -469,41 +437,24 @@ export class PrestamosManager implements OnInit {
     const raw = this.prestamoModel();
     const capital = Number(raw.capital) || 0;
     const prima = Number(raw.prima) || 0;
-    // Regla de negocio: el plan se amortiza sobre el CAPITAL NETO
     const capitalneto = Math.round((capital - prima) * 100) / 100;
     const cuotas = Number(raw.cuotas) || 0;
     const tasaAnual = Number(raw.tasa) || 0;
 
     if (capital <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'El capital debe ser mayor a 0',
-      });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital debe ser mayor a 0' });
       return;
     }
     if (capitalneto <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'El capital neto (capital - prima) debe ser mayor a 0',
-      });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital neto (capital - prima) debe ser mayor a 0' });
       return;
     }
     if (cuotas <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'Las cuotas deben ser mayor a 0',
-      });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Las cuotas deben ser mayor a 0' });
       return;
     }
     if (tasaAnual <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'La tasa de interes debe ser mayor a 0',
-      });
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'La tasa de interes debe ser mayor a 0' });
       return;
     }
 
@@ -513,7 +464,6 @@ export class PrestamosManager implements OnInit {
 
     const plan: any[] = [];
     let saldo = capitalneto;
-    // 1er cuota = fecha de aprobación + 30 días; luego mensualidades desde ahí
     const fechaEfectiva = this.fechaEfectivaCalc() ?? new Date();
 
     for (let i = 1; i <= cuotas; i++) {
@@ -539,14 +489,12 @@ export class PrestamosManager implements OnInit {
 
     this.planPago.set(plan);
     this.showPlanPago.set(true);
-    // El nroprestamo NO se genera aquí: solo la APROBACIÓN asigna el correlativo
     this.prestamoModel.set({
       ...this.prestamoModel(),
       capitalneto,
       vlrcuota: Math.round(cuotaFija * 100) / 100,
     });
 
-    // Préstamo ya guardado → regenerar plan en BD (borra el anterior y guarda el nuevo)
     const p = this.prestamoData();
     if (p?.prestamoId) {
       this.prestamoSaving.set(true);
@@ -567,35 +515,26 @@ export class PrestamosManager implements OnInit {
     }
   }
 
-  // ── Flujo de estados del préstamo ─────────────────────────────────
-
-  /** Generar plan: siempre que NO esté pre-aprobado ni aprobado (guardado o no). */
   puedeGenerarPlan = computed(() => {
     const p = this.prestamoData();
-    // Sin préstamo guardado → puede generar (primera vez)
     if (!p) return true;
-    // Con préstamo guardado → solo si no está pre-aprobado ni aprobado
     return p.sn_preaprobado !== 'S' && p.sn_aprobado !== 'S';
   });
 
-  /** Pre-aprobación: guarda el préstamo (con o sin plan generado), siempre que no esté pre-aprobado ni aprobado. */
   puedePreaprobar = computed(() => {
     const p = this.prestamoData();
-    if (!p) return true; // sin préstamo guardado → puede pre-aprobar (guarda)
+    if (!p) return true;
     return p.sn_preaprobado !== 'S' && p.sn_aprobado !== 'S';
   });
 
-  /** Motivo por el que el botón Generar Plan está deshabilitado. */
   motivoBloqueoPlan = computed(() => {
     const p = this.prestamoData();
     if (!p) return '';
-    if (p.sn_preaprobado === 'S')
-      return 'El préstamo está pre-aprobado: el plan de pagos está bloqueado';
+    if (p.sn_preaprobado === 'S') return 'El préstamo está pre-aprobado: el plan de pagos está bloqueado';
     if (p.sn_aprobado === 'S') return 'El préstamo está aprobado: el plan de pagos está bloqueado';
     return '';
   });
 
-  /** Motivo por el que el botón Pre-aprobación está deshabilitado. */
   motivoBloqueoPreaprobado = computed(() => {
     const p = this.prestamoData();
     if (!p) return '';
@@ -604,7 +543,6 @@ export class PrestamosManager implements OnInit {
     return '';
   });
 
-  /** Motivo por el que el botón Aprobación está deshabilitado. */
   motivoBloqueoAprobar = computed(() => {
     const p = this.prestamoData();
     if (!p) return 'Guarde o pre-aprobee el préstamo primero';
@@ -613,7 +551,6 @@ export class PrestamosManager implements OnInit {
     return '';
   });
 
-  /** Motivo por el que el botón Contabilización está deshabilitado. */
   motivoBloqueoContabilizar = computed(() => {
     const p = this.prestamoData();
     if (!p) return 'El préstamo debe estar aprobado antes de contabilizarlo';
@@ -622,26 +559,19 @@ export class PrestamosManager implements OnInit {
     return '';
   });
 
-  /** Aprobación: solo si está pre-aprobado y NO aprobado. Genera nroprestamo y bloquea plan. */
   puedeAprobar = computed(() => {
     const p = this.prestamoData();
     return !!p && p.sn_preaprobado === 'S' && p.sn_aprobado !== 'S';
   });
 
-  /** Contabilización: solo si está aprobado y NO contabilizado. Genera partida + movimiento D. */
   puedeContabilizar = computed(() => {
     const p = this.prestamoData();
     return !!p && p.sn_aprobado === 'S' && p.sn_contabilizado !== 'S';
   });
 
-  /**
-   * Pre-aprobación: si el préstamo aún no está guardado, lo guarda primero
-   * (con plan si se generó) y luego lo pre-aprueba. NO genera nroprestamo.
-   */
   preaprobar() {
     const p = this.prestamoData();
     if (!p) {
-      // Guardar primero y encadenar la pre-aprobación
       this.pendingPreaprobado = true;
       this.guardarPrestamo();
       return;
@@ -667,11 +597,7 @@ export class PrestamosManager implements OnInit {
         },
         error: (err) => {
           this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: err.error?.message || 'No se pudo pre-aprobar',
-          });
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo pre-aprobar' });
         },
       });
   }
@@ -683,20 +609,8 @@ export class PrestamosManager implements OnInit {
       message: `¿Está seguro de APROBAR el préstamo #${p.prestamoId}?<br/>Se generará el número de préstamo y el plan de pagos quedará bloqueado.`,
       header: 'Confirmar Aprobación',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonProps: {
-        label: 'Sí, aprobar',
-        severity: 'success',
-        variant: 'text',
-        size: 'small',
-        rounded: true,
-      },
-      rejectButtonProps: {
-        label: 'Cancelar',
-        severity: 'secondary',
-        variant: 'text',
-        size: 'small',
-        rounded: true,
-      },
+      acceptButtonProps: { label: 'Sí, aprobar', severity: 'success', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
       accept: () => this.aprobar(),
     });
   }
@@ -717,19 +631,11 @@ export class PrestamosManager implements OnInit {
             sn_aprobado: 'S',
           });
           this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'success',
-            summary: 'Aprobado',
-            detail: `Préstamo ${res.nroprestamo} aprobado`,
-          });
+          this.msgs.add({ severity: 'success', summary: 'Aprobado', detail: `Préstamo ${res.nroprestamo} aprobado` });
         },
         error: (err) => {
           this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: err.error?.message || 'No se pudo aprobar',
-          });
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo aprobar' });
         },
       });
   }
@@ -738,23 +644,11 @@ export class PrestamosManager implements OnInit {
     const p = this.prestamoData();
     if (!p) return;
     this.confirm.confirm({
-      message: `¿Está seguro de CONTABILIZAR el préstamo ${p.nroprestamo}?<br/>Se generará la partida (Débito préstamo / Crédito bancos) y el movimiento de débito por L ${Number(p.capitalneto || 0).toFixed(2)}.`,
+      message: `¿Está seguro de CONTABILIZAR el préstamo ${p.nroprestamo}?<br/>Se generará la partida y el movimiento de débito por L ${Number(p.capitalneto || 0).toFixed(2)}.`,
       header: 'Confirmar Contabilización',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonProps: {
-        label: 'Sí, contabilizar',
-        severity: 'success',
-        variant: 'text',
-        size: 'small',
-        rounded: true,
-      },
-      rejectButtonProps: {
-        label: 'Cancelar',
-        severity: 'secondary',
-        variant: 'text',
-        size: 'small',
-        rounded: true,
-      },
+      acceptButtonProps: { label: 'Sí, contabilizar', severity: 'success', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
       accept: () => this.contabilizar(),
     });
   }
@@ -779,11 +673,7 @@ export class PrestamosManager implements OnInit {
         },
         error: (err) => {
           this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: err.error?.message || 'No se pudo contabilizar',
-          });
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo contabilizar' });
         },
       });
   }

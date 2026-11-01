@@ -96,7 +96,7 @@ export class CartasRecordatorio implements OnInit {
   load() {
     this.cargando.set(true);
     forkJoin({
-      clientes: this.service.getClientes(1, 9999),
+      clientes: this.service.getClientes(1, 9999, '', 4),
       movimientos: this.service.getMovimientos(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: ({ clientes, movimientos }) => {

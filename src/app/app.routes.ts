@@ -36,6 +36,10 @@ const sharedChildren: Routes = [
     loadChildren: () => import('./features/cxc/cxc.routes').then((m) => m.CXC_ROUTES),
   },
   {
+    path: 'prestamos',
+    loadChildren: () => import('./features/prestamos/prestamos.routes').then((m) => m.PRESTAMOS_ROUTES),
+  },
+  {
     path: 'cxp',
     loadChildren: () => import('./features/cxp/cxp.routes').then((m) => m.CXP_ROUTES),
   },

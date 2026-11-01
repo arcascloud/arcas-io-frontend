@@ -20,12 +20,15 @@ export class CxcService {
     page?: number,
     limit?: number,
     q?: string,
+    moduloId?: number,
   ): Observable<{ data: CxcCliente[]; total: number }> {
-    const p = page ?? 1;
-    const l = limit ?? 50; // default grande para compatibilidad
-    let url = `${this.clientes}?page=${p}&limit=${l}`;
-    if (q && q.trim()) url += `&q=${encodeURIComponent(q.trim())}`;
-    return this.api.get<{ data: CxcCliente[]; total: number }>(url);
+    const params: Record<string, string | number> = {
+      page: page ?? 1,
+      limit: limit ?? 50,
+    };
+    if (q && q.trim()) params['q'] = q.trim();
+    if (moduloId != null) params['moduloId'] = moduloId;
+    return this.api.get<{ data: CxcCliente[]; total: number }>(this.clientes, params);
   }
 
   /**
@@ -314,6 +317,16 @@ export class CxcService {
   getAntiguedadSaldos(): Observable<any[]> {
     const t = Date.now();
     return this.api.get<any[]>(`/cxc/antiguedad-saldos?_t=${t}`);
+  }
+
+  getAntiguedadSaldosPrestamos(): Observable<any[]> {
+    const t = Date.now();
+    return this.api.get<any[]>(`/cxc/antiguedad-saldos-prestamos?_t=${t}`);
+  }
+
+  getAntiguedadSaldosPrestamosCuotas(): Observable<any[]> {
+    const t = Date.now();
+    return this.api.get<any[]>(`/cxc/antiguedad-saldos-prestamos-cuotas?_t=${t}`);
   }
 
   /**

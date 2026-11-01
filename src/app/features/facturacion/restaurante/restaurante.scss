@@ -224,8 +224,6 @@ $topbar-height: 60px;
 /* ═════════ Drawer (columnas 2 y 3) ═════════ */
 :host ::ng-deep .rest-drawer {
   background: var(--c-surface);
-  border-left: 1px solid var(--c-border);
-  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.06);
 }
 
 @media (min-width: 992px) {

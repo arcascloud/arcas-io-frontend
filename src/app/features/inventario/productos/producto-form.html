@@ -16,556 +16,633 @@
   </header>
 
   @if (cargando()) {
-    <div class="card">Cargando datos...</div>
+  <div class="card">Cargando datos...</div>
   } @else {
-    <div class="producto-layout">
-      <!-- ═══════════════ COLUMNA IZQUIERDA ═══════════════ -->
-      <div class="producto-col-izq">
-        <form [formGroup]="form" (ngSubmit)="guardar()">
+  <div class="producto-layout">
+    <!-- ═══════════════ COLUMNA IZQUIERDA ═══════════════ -->
+    <div class="producto-col-izq">
+      <form [formGroup]="form" (ngSubmit)="guardar()">
+        <!-- Datos basicos -->
+        <div class="card mb-3">
+          <div class="p-fluid">
+            <div class="campo">
+              <label for="descripcion">Descripción <span class="req">*</span></label>
+              <input
+                pInputText
+                pSize="small"
+                id="descripcion"
+                formControlName="descripcion"
+                maxlength="250"
+                placeholder="Descripción del producto"
+                [ngClass]="{ 'ng-invalid': invalid('descripcion') }"
+              />
+              @if (invalid('descripcion')) {
+              <small class="err">La descripción es obligatoria</small>
+              }
+            </div>
 
-          <!-- Datos basicos -->
-          <div class="card mb-3">
-            <div class="p-fluid">
-              <div class="campo">
-                <label for="descripcion">Descripción <span class="req">*</span></label>
-                <input
-                  pInputText
-                  pSize="small"
-                  id="descripcion"
-                  formControlName="descripcion"
-                  maxlength="250"
-                  placeholder="Descripción del producto"
-                  [ngClass]="{ 'ng-invalid': invalid('descripcion') }"
-                />
-                @if (invalid('descripcion')) {
-                  <small class="err">La descripción es obligatoria</small>
-                }
-              </div>
+            <div class="campo">
+              <label for="descripcion_corta">Descripción corta</label>
+              <input
+                pInputText
+                pSize="small"
+                id="descripcion_corta"
+                formControlName="descripcion_corta"
+                maxlength="50"
+                placeholder="Nombre corto"
+              />
+            </div>
 
-              <div class="campo">
-                <label for="descripcion_corta">Descripción corta</label>
-                <input
-                  pInputText
-                  pSize="small"
-                  id="descripcion_corta"
-                  formControlName="descripcion_corta"
-                  maxlength="50"
-                  placeholder="Nombre corto"
-                />
-              </div>
+            <div class="campo">
+              <label for="codigo_sku">SKU <span class="req">*</span></label>
+              <input
+                pInputText
+                pSize="small"
+                id="codigo_sku"
+                formControlName="codigo_sku"
+                maxlength="20"
+                placeholder="Código interno (SKU)"
+                [ngClass]="{ 'ng-invalid': invalid('codigo_sku') }"
+              />
+              @if (invalid('codigo_sku')) {
+              <small class="err">El SKU es obligatorio</small>
+              }
+            </div>
 
-              <div class="campo">
-                <label for="codigo_sku">SKU <span class="req">*</span></label>
-                <input
-                  pInputText
-                  pSize="small"
-                  id="codigo_sku"
-                  formControlName="codigo_sku"
-                  maxlength="20"
-                  placeholder="Código interno (SKU)"
-                  [ngClass]="{ 'ng-invalid': invalid('codigo_sku') }"
-                />
-                @if (invalid('codigo_sku')) {
-                  <small class="err">El SKU es obligatorio</small>
-                }
-              </div>
-
-              <div class="campo">
-                <label for="codbarra">Código de barras</label>
-                <input
-                  pInputText
-                  pSize="small"
-                  id="codbarra"
-                  formControlName="codbarra"
-                  maxlength="20"
-                  placeholder="Código de barras"
-                />
-              </div>
+            <div class="campo">
+              <label for="codbarra">Código de barras</label>
+              <input
+                pInputText
+                pSize="small"
+                id="codbarra"
+                formControlName="codbarra"
+                maxlength="20"
+                placeholder="Código de barras"
+              />
             </div>
           </div>
+        </div>
 
-          <!-- Accordion: Costos y Precio de Venta -->
-          <p-accordion class="mb-3" [value]="['0']">
-            <p-accordion-panel value="0">
-              <p-accordion-header>Costos y Precio de Venta</p-accordion-header>
-              <p-accordion-content>
-                <div class="p-fluid">
-                  <div class="form-grid-2">
-                    <div class="campo">
-                      <label for="cstounit">Costo unitario</label>
-                      <p-inputnumber size="small"
-                        id="cstounit"
-                        formControlName="cstounit"
-                        mode="currency"
-                        currency="HNL"
-                        [locale]="'es-HN'"
-                        [minFractionDigits]="2"
-                        [maxFractionDigits]="2"
-                        [useGrouping]="true"
-                        [inputStyle]="{ 'width': '100%' }"
-                      />
-                    </div>
+        <!-- Accordion: Costos y Precio de Venta -->
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header>Costos y Precio de Venta del producto</p-accordion-header>
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="form-grid-2">
+                  <div class="campo">
+                    <label for="cstounit">Costo unitario</label>
+                    <p-inputnumber
+                      size="small"
+                      id="cstounit"
+                      formControlName="cstounit"
+                      mode="currency"
+                      currency="HNL"
+                      [locale]="'es-HN'"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [useGrouping]="true"
+                      [inputStyle]="{ 'width': '100%' }"
+                    />
+                  </div>
 
-                    <div class="campo">
-                      <label for="cstoprom">Costo promedio</label>
-                      <p-inputnumber size="small"
-                        id="cstoprom"
-                        formControlName="cstoprom"
-                        mode="currency"
-                        currency="HNL"
-                        [locale]="'es-HN'"
-                        [minFractionDigits]="2"
-                        [maxFractionDigits]="2"
-                        [useGrouping]="true"
-                        [inputStyle]="{ 'width': '100%' }"
-                      />
-                    </div>
+                  <div class="campo">
+                    <label for="cstoprom">Costo promedio</label>
+                    <p-inputnumber
+                      size="small"
+                      id="cstoprom"
+                      formControlName="cstoprom"
+                      mode="currency"
+                      currency="HNL"
+                      [locale]="'es-HN'"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [useGrouping]="true"
+                      [inputStyle]="{ 'width': '100%' }"
+                    />
+                  </div>
 
-                    <div class="campo">
-                      <label for="puntoretorno">Punto de retorno</label>
-                      <p-inputnumber size="small"
-                        id="puntoretorno"
-                        formControlName="puntoretorno"
-                        mode="currency"
-                        currency="HNL"
-                        [locale]="'es-HN'"
-                        [minFractionDigits]="2"
-                        [maxFractionDigits]="2"
-                        [useGrouping]="true"
-                        [inputStyle]="{ 'width': '100%' }"
-                      />
-                    </div>
+                  <div class="campo">
+                    <label for="puntoretorno">Punto de retorno</label>
+                    <p-inputnumber
+                      size="small"
+                      id="puntoretorno"
+                      formControlName="puntoretorno"
+                      mode="currency"
+                      currency="HNL"
+                      [locale]="'es-HN'"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [useGrouping]="true"
+                      [inputStyle]="{ 'width': '100%' }"
+                    />
+                  </div>
 
-                    <div class="campo">
-                      <label for="precioventa">Precio de venta</label>
-                      <p-inputnumber size="small"
-                        id="precioventa"
-                        formControlName="precioventa"
-                        mode="currency"
-                        currency="HNL"
-                        [locale]="'es-HN'"
-                        [minFractionDigits]="2"
-                        [maxFractionDigits]="2"
-                        [useGrouping]="true"
-                        [inputStyle]="{ 'width': '100%' }"
-                      />
-                    </div>
+                  <div class="campo">
+                    <label for="precioventa">Precio de venta</label>
+                    <p-inputnumber
+                      size="small"
+                      id="precioventa"
+                      formControlName="precioventa"
+                      mode="currency"
+                      currency="HNL"
+                      [locale]="'es-HN'"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [useGrouping]="true"
+                      [inputStyle]="{ 'width': '100%' }"
+                    />
                   </div>
                 </div>
-              </p-accordion-content>
-            </p-accordion-panel>
-          </p-accordion>
-
-          <!-- Accordion: Impuesto -->
-          <p-accordion class="mb-3" [value]="['0']">
-            <p-accordion-panel value="0">
-              <p-accordion-header>Impuestos</p-accordion-header>
-              <p-accordion-content>
-                <div class="p-fluid">
-                  <div class="form-grid-2">
-
-                    <div class="campo">
-                      <label for="impuestoId">Impuesto <span class="req">*</span></label>
-                      <p-select
-                        size="small"
-                        id="impuestoId"
-                        formControlName="impuestoId"
-                        [options]="impuestos()"
-                        optionLabel="descripcion"
-                        optionValue="impuestoId"
-                        placeholder="Seleccionar impuesto"
-                        styleClass="w-full"
-                        [appendTo]="'body'"
-                        [ngClass]="{ 'ng-invalid': invalid('impuestoId') }"
-                      />
-                      @if (invalid('impuestoId')) {
-                        <small class="err">Seleccione un impuesto</small>
-                      }
-                    </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
 
 
+        <!-- Accordion: Departamento, Categoría, Marca, Pasillo, Estado -->
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header
+              >Atributos de Departamento, Categoría, Marca, Pasillo</p-accordion-header
+            >
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="form-grid-2">
+                  <div class="campo">
+                    <!-- 20261015 ARFM select real de departamentos (tinvdeptos) -->
+                    <label for="deptoId">Departamento <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      id="deptoId"
+                      formControlName="deptoId"
+                      [options]="departamentos()"
+                      optionLabel="descripcion"
+                      optionValue="deptoId"
+                      placeholder="Seleccione un departamento"
+                      styleClass="w-full"
+                      [showClear]="true"
+                      [loading]="departamentosCargando()"
+                      [ngClass]="{ 'ng-invalid': invalid('deptoId') }"
+                      [appendTo]="'body'"
+                    />
+                    @if (invalid('deptoId')) {
+                    <small class="err">Seleccione un departamento</small>
+                    }
+                  </div>
+
+                  <div class="campo">
+                    <label for="categoriaId">Categoría <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      id="categoriaId"
+                      formControlName="categoriaId"
+                      [options]="categorias()"
+                      optionLabel="descripcion"
+                      optionValue="categoriaId"
+                      placeholder="Seleccione categoría"
+                      styleClass="w-full"
+                      [showClear]="true"
+                      [loading]="categoriasCargando()"
+                      [ngClass]="{ 'ng-invalid': invalid('categoriaId') }"
+                      [appendTo]="'body'"
+                    />
+                    @if (invalid('categoriaId')) {
+                    <small class="err">Seleccione una categoría</small>
+                    }
+                  </div>
+
+                  <div class="campo">
+                    <label for="marcaId">Marca <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      id="marcaId"
+                      formControlName="marcaId"
+                      [options]="marcas()"
+                      optionLabel="descripcion"
+                      optionValue="marcaId"
+                      placeholder="Seleccione una marca"
+                      styleClass="w-full"
+                      [showClear]="true"
+                      [loading]="marcasCargando()"
+                      [ngClass]="{ 'ng-invalid': invalid('marcaId') }"
+                      [appendTo]="'body'"
+                    />
+                    @if (invalid('marcaId')) {
+                    <small class="err">Seleccione una marca</small>
+                    }
+                  </div>
+
+                  <div class="campo">
+                    <label for="pasilloId">Pasillo <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      id="pasilloId"
+                      formControlName="pasilloId"
+                      [options]="pasillos()"
+                      optionLabel="descripcion"
+                      optionValue="pasilloId"
+                      placeholder="Seleccione un pasillo"
+                      styleClass="w-full"
+                      [showClear]="true"
+                      [loading]="pasillosCargando()"
+                      [ngClass]="{ 'ng-invalid': invalid('pasilloId') }"
+                      [appendTo]="'body'"
+                    />
+                    @if (invalid('pasilloId')) {
+                    <small class="err">Seleccione un pasillo</small>
+                    }
+                  </div>
+
+                </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
+
+        <!-- Accordion: Farmacias -->
+
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header>Atributo de Farmacias</p-accordion-header>
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="form-grid-2">
+                  <div class="campo">
+                    <label for="sn_controlado">Control</label>
+                    <p-select
+                      size="small"
+                      id="sn_controlado"
+                      formControlName="sn_controlado"
+                      [options]="snControladoOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Producto controlado"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    />
+                  </div>
+
+                  <div class="campo">
+                    <label for="sn_droga">Droga / Psicotrópico</label>
+                    <p-select
+                      size="small"
+                      id="sn_droga"
+                      formControlName="sn_droga"
+                      [options]="snControladoOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Regulado como droga"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    />
+                  </div>
+
+                  <div class="campo">
+                    <label for="sn_valida_lote">Valida Lote / Vencimiento</label>
+                    <p-select
+                      size="small"
+                      id="sn_valida_lote"
+                      formControlName="sn_valida_lote"
+                      [options]="snValidarOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Valida lote"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    />
                   </div>
                 </div>
-              </p-accordion-content>
-            </p-accordion-panel>
-          </p-accordion>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
 
+        <!-- Accordion: Restaurante -->
 
-          <!-- Accordion: Departamento, Categoría, Marca, Pasillo, Estado -->
-          <p-accordion class="mb-3" [value]="['0']">
-            <p-accordion-panel value="0">
-              <p-accordion-header>Departamento, Categoría, Marca, Pasillo y Control</p-accordion-header>
-              <p-accordion-content>
-                <div class="p-fluid">
-                  <div class="form-grid-2">
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header>Atributo de restaurante</p-accordion-header>
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="campo">
+                  <label for="sn_enviar_a_cocina">Enviar a Cocina</label>
+                  <p-select
+                    size="small"
+                    id="sn_enviar_a_cocina"
+                    formControlName="sn_enviar_a_cocina"
+                    [options]="snValidarOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Enviar a cocina"
+                    styleClass="w-full"
+                    [appendTo]="'body'"
+                  />
+                </div>
 
-                    <div class="campo">
-                      <!-- 20261015 ARFM select real de departamentos (tinvdeptos) -->
-                      <label for="deptoId">Departamento <span class="req">*</span></label>
-                      <p-select
-                        size="small"
-                        id="deptoId"
-                        formControlName="deptoId"
-                        [options]="departamentos()"
-                        optionLabel="descripcion"
-                        optionValue="deptoId"
-                        placeholder="Seleccione un departamento"
-                        styleClass="w-full"
-                        [showClear]="true"
-                        [loading]="departamentosCargando()"
-                        [ngClass]="{ 'ng-invalid': invalid('deptoId') }"
-                        [appendTo]="'body'"
-                      />
-                      @if (invalid('deptoId')) {
-                        <small class="err">Seleccione un departamento</small>
-                      }
-                    </div>
+                <div class="p-fluid"></div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
 
-
-                    <div class="campo">
-                      <label for="categoriaId">Categoría <span class="req">*</span></label>
-                      <p-select
-                        size="small"
-                        id="categoriaId"
-                        formControlName="categoriaId"
-                        [options]="categorias()"
-                        optionLabel="descripcion"
-                        optionValue="categoriaId"
-                        placeholder="Seleccione categoría"
-                        styleClass="w-full"
-                        [showClear]="true"
-                        [loading]="categoriasCargando()"
-                        [ngClass]="{ 'ng-invalid': invalid('categoriaId') }"
-                        [appendTo]="'body'"
-                      />
-                      @if (invalid('categoriaId')) {
-                        <small class="err">Seleccione una categoría</small>
-                      }
-                    </div>
-
-                    <div class="campo">
-                      <label for="marcaId">Marca <span class="req">*</span></label>
-                      <p-select
-                        size="small"
-                        id="marcaId"
-                        formControlName="marcaId"
-                        [options]="marcas()"
-                        optionLabel="descripcion"
-                        optionValue="marcaId"
-                        placeholder="Seleccione una marca"
-                        styleClass="w-full"
-                        [showClear]="true"
-                        [loading]="marcasCargando()"
-                        [ngClass]="{ 'ng-invalid': invalid('marcaId') }"
-                        [appendTo]="'body'"
-                      />
-                      @if (invalid('marcaId')) {
-                        <small class="err">Seleccione una marca</small>
-                      }
-                    </div>
-
-                    <div class="campo">
-                      <label for="pasilloId">Pasillo <span class="req">*</span></label>
-                      <p-select
-                        size="small"
-                        id="pasilloId"
-                        formControlName="pasilloId"
-                        [options]="pasillos()"
-                        optionLabel="descripcion"
-                        optionValue="pasilloId"
-                        placeholder="Seleccione un pasillo"
-                        styleClass="w-full"
-                        [showClear]="true"
-                        [loading]="pasillosCargando()"
-                        [ngClass]="{ 'ng-invalid': invalid('pasilloId') }"
-                        [appendTo]="'body'"
-                      />
-                      @if (invalid('pasilloId')) {
-                        <small class="err">Seleccione un pasillo</small>
-                      }
-                    </div>
-
-                    <div class="campo">
-                      <label for="sn_controlado">Control</label>
-                      <p-select
-                        size="small"
-                        id="sn_controlado"
-                        formControlName="sn_controlado"
-                        [options]="snControladoOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Producto controlado"
-                        styleClass="w-full"
-                        [appendTo]="'body'"
-                      />
-                    </div>
-
-                    <div class="campo">
-                      <label for="sn_droga">Droga / Psicotrópico</label>
-                      <p-select
-                        size="small"
-                        id="sn_droga"
-                        formControlName="sn_droga"
-                        [options]="snControladoOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Regulado como droga"
-                        styleClass="w-full"
-                        [appendTo]="'body'"
-                      />
-                    </div>
-
-                    @if (esEdicion()) {
-                      <div class="campo">
-                        <label>Estado <span class="req">*</span></label>
-                        <p-select size="small"
-                          [options]="snOptions"
-                          formControlName="sn_activo"
-                          optionLabel="label"
-                          optionValue="value"
-                          placeholder="Estado"
-                          styleClass="w-full"
-                          [appendTo]="'body'"
-                        />
-                      </div>
+        <!-- Accordion: Impuesto -->
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header>Impuesto del producto</p-accordion-header>
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="form-grid-2">
+                  <div class="campo">
+                    <label for="impuestoId">Impuesto <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      id="impuestoId"
+                      formControlName="impuestoId"
+                      [options]="impuestos()"
+                      optionLabel="descripcion"
+                      optionValue="impuestoId"
+                      placeholder="Seleccionar impuesto"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                      [ngClass]="{ 'ng-invalid': invalid('impuestoId') }"
+                    />
+                    @if (invalid('impuestoId')) {
+                    <small class="err">Seleccione un impuesto</small>
                     }
                   </div>
                 </div>
-              </p-accordion-content>
-            </p-accordion-panel>
-          </p-accordion>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
 
-          <!-- Acciones -->
-          <div class="acciones-form">
-            <p-button
-              type="button"
-              label="Cancelar"
-              icon="pi pi-times"
-              severity="secondary"
-              size="small"
-              rounded
-              (onClick)="volver()"
-            />
-            <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
-          </div>
-        </form>
-      </div>
+        <!-- Accordion: Estado -->
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header>Estado del producto</p-accordion-header>
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="form-grid-2">
+                  @if (esEdicion()) {
+                  <div class="campo">
+                    <label>Estado <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      [options]="snOptions"
+                      formControlName="sn_activo"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Estado"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    />
+                  </div>
+                  }
 
-      <!-- ═══════════════ COLUMNA DERECHA ═══════════════ -->
-      <div class="producto-col-der">
-        <!-- Imágenes -->
-        <div class="card mb-3">
-          <div class="img-header">
-            <div>
-              <h3 class="card-title">Imágenes del Producto</h3>
-              <p class="card-hint">Máximo {{ MAX_IMAGENES }} imágenes. Formato JPG/PNG.</p>
-            </div>
-            @if (puedeAgregarImagen) {
-              <p-button
-                size="small"
-                icon="pi pi-plus"
-                label="Agregar"
-                severity="success"
-                variant="text"
-                [rounded]="true"
-                (click)="fileInput.click()"
-              />
-            }
-          </div>
-          <input
-            #fileInput
-            type="file"
-            accept="image/*"
-            hidden
-            (change)="onSeleccionarImagen($event, imagenesCount)"
+                </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
+
+
+        <!-- Acciones -->
+        <div class="acciones-form">
+          <p-button
+            type="button"
+            label="Cancelar"
+            icon="pi pi-times"
+            severity="secondary"
+            size="small"
+            rounded
+            (onClick)="volver()"
           />
+          <p-button
+            type="submit"
+            label="Guardar"
+            icon="pi pi-check"
+            rounded
+            size="small"
+            [loading]="guardando()"
+          />
+        </div>
+      </form>
+    </div>
 
-          @if (imagenes().length > 0) {
-            <p-galleria
-              [(value)]="imagenes"
-              [activeIndex]="activeIndex()"
-              (onActiveIndexChange)="activeIndex.set($event)"
-              [showThumbnails]="true"
-              [showItemNavigators]="true"
-              [circular]="true"
-              [numVisible]="5"
-              [thumbnailsPosition]="'left'"
-              [containerStyle]="{ 'max-width': '98%' }"
-              styleClass="producto-galleria"
-            >
-              <ng-template #item let-item>
-                <div class="galleria-item">
-                  <img [src]="getImagenUrl(item)" style="width: 100%; display: block" />
-                </div>
-              </ng-template>
-              <ng-template #thumbnail let-item>
-                <div class="galleria-thumb">
-                  <img [src]="getImagenUrl(item)" />
-                  <button
-                    type="button"
-                    class="galleria-thumb-remove"
-                    (click)="eliminarImagen(item); $event.stopPropagation()"
-                    pTooltip="Eliminar"
-                  >
-                    <i class="pi pi-times"></i>
-                  </button>
-                </div>
-              </ng-template>
-            </p-galleria>
-          } @else {
-            <div class="img-empty-state" (click)="fileInput.click()">
-              <i class="pi pi-images"></i>
-              <span>Sin imágenes — clic para agregar</span>
-            </div>
+    <!-- ═══════════════ COLUMNA DERECHA ═══════════════ -->
+    <div class="producto-col-der">
+      <!-- Imágenes -->
+      <div class="card mb-3">
+        <div class="img-header">
+          <div>
+            <h3 class="card-title">Imágenes del Producto</h3>
+            <p class="card-hint">Máximo {{ MAX_IMAGENES }} imágenes. Formato JPG/PNG.</p>
+          </div>
+          @if (puedeAgregarImagen) {
+          <p-button
+            size="small"
+            icon="pi pi-plus"
+            label="Agregar"
+            severity="success"
+            variant="text"
+            [rounded]="true"
+            (click)="fileInput.click()"
+          />
           }
         </div>
+        <input
+          #fileInput
+          type="file"
+          accept="image/*"
+          hidden
+          (change)="onSeleccionarImagen($event, imagenesCount)"
+        />
 
-        <!-- Fieldset: Información Específica -->
-        <div class="fieldset-wrapper">
-          <p-accordion class="mb-3" [value]="['1']">
-            <p-accordion-panel value="1">
-              <p-accordion-header>Información adicional</p-accordion-header>
-              <p-accordion-content>
-          <!-- Formulario de atributo -->
-          <div class="atributo-form" [formGroup]="atributoForm">
-            <div class="p-fluid">
-              <div class="form-grid-3">
-                <div class="campo">
-                  <label>Tipo <span class="req">*</span></label>
-                  <p-select
-                    size="small"
-                    formControlName="tipo"
-                    [options]="TIPOS_OPTIONS"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Seleccione tipo"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                    [ngClass]="{ 'ng-invalid': invalidAtributo('tipo') }"
-                  />
-                </div>
-
-                <div class="campo">
-                  <label>Descripción <span class="req">*</span></label>
-                  <input
-                    pInputText
-                    pSize="small"
-                    formControlName="descripcion"
-                    maxlength="30"
-                    placeholder="Descripción"
-                    [ngClass]="{ 'ng-invalid': invalidAtributo('descripcion') }"
-                  />
-                </div>
-
-                <div class="campo">
-                  <label>Estado</label>
-                  <p-select
-                    size="small"
-                    formControlName="sn_activo"
-                    [options]="snOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Estado"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                  />
-                </div>
-              </div>
-
-              <div class="atributo-acciones">
-                <p-button
-                  size="small"
-                  label="Limpiar"
-                  icon="pi pi-times"
-                  severity="secondary"
-                  variant="text"
-                  [rounded]="true"
-                  (onClick)="cancelarAtributo()"
-                />
-                <p-button
-                  size="small"
-                  [label]="atributoEditando() ? 'Actualizar' : 'Agregar'"
-                  [icon]="atributoEditando() ? 'pi pi-check' : 'pi pi-plus'"
-                  severity="success"
-                  variant="text"
-                  [raised]="true"
-                  [rounded]="true"
-                  [loading]="guardandoAtributo()"
-                  (onClick)="guardarAtributo()"
-                />
-              </div>
+        @if (imagenes().length > 0) {
+        <p-galleria
+          [(value)]="imagenes"
+          [activeIndex]="activeIndex()"
+          (onActiveIndexChange)="activeIndex.set($event)"
+          [showThumbnails]="true"
+          [showItemNavigators]="true"
+          [circular]="true"
+          [numVisible]="5"
+          [thumbnailsPosition]="'left'"
+          [containerStyle]="{ 'max-width': '98%' }"
+          styleClass="producto-galleria"
+        >
+          <ng-template #item let-item>
+            <div class="galleria-item">
+              <img [src]="getImagenUrl(item)" style="width: 100%; display: block" />
             </div>
-          </div>
+          </ng-template>
+          <ng-template #thumbnail let-item>
+            <div class="galleria-thumb">
+              <img [src]="getImagenUrl(item)" />
+              <button
+                type="button"
+                class="galleria-thumb-remove"
+                (click)="eliminarImagen(item); $event.stopPropagation()"
+                pTooltip="Eliminar"
+              >
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          </ng-template>
+        </p-galleria>
+        } @else {
+        <div class="img-empty-state" (click)="fileInput.click()">
+          <i class="pi pi-images"></i>
+          <span>Sin imágenes — clic para agregar</span>
+        </div>
+        }
+      </div>
 
-          <!-- Tabla de atributos -->
-          @if (atributos().length > 0) {
-            <p-table
-              id="gridinfoadd"
-              [value]="atributos()"
-              size="small"
-              [paginator]="true"
-              [rows]="5"
-              [rowsPerPageOptions]="[5, 10, 25]"
-              [showCurrentPageReport]="true"
-              currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-            >
-              <ng-template pTemplate="header">
-                <tr>
-                  <th style="width: 30%">Tipo</th>
-                  <th>Descripción</th>
-                  <th style="width: 15%">Estado</th>
-                  <th style="width: 15%">Acciones</th>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="body" let-attr>
-                <tr>
-                  <td>
-                    <span>{{ getTipoLabel(attr.tipo) }}</span>
-                  </td>
-                  <td>{{ attr.descripcion }}</td>
-                  <td>
-                    @if (attr.sn_activo === 'S') {
+      <!-- Fieldset: Información Específica -->
+      <div class="fieldset-wrapper">
+        <p-accordion class="mb-3" [value]="['1']">
+          <p-accordion-panel value="1">
+            <p-accordion-header>Información adicional</p-accordion-header>
+            <p-accordion-content>
+              <!-- Formulario de atributo -->
+              <div class="atributo-form" [formGroup]="atributoForm">
+                <div class="p-fluid">
+                  <div class="form-grid-3">
+                    <div class="campo">
+                      <label>Tipo <span class="req">*</span></label>
+                      <p-select
+                        size="small"
+                        formControlName="tipo"
+                        [options]="TIPOS_OPTIONS"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Seleccione tipo"
+                        styleClass="w-full"
+                        [appendTo]="'body'"
+                        [ngClass]="{ 'ng-invalid': invalidAtributo('tipo') }"
+                      />
+                    </div>
+
+                    <div class="campo">
+                      <label>Descripción <span class="req">*</span></label>
+                      <input
+                        pInputText
+                        pSize="small"
+                        formControlName="descripcion"
+                        maxlength="30"
+                        placeholder="Descripción"
+                        [ngClass]="{ 'ng-invalid': invalidAtributo('descripcion') }"
+                      />
+                    </div>
+
+                    <div class="campo">
+                      <label>Estado</label>
+                      <p-select
+                        size="small"
+                        formControlName="sn_activo"
+                        [options]="snOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Estado"
+                        styleClass="w-full"
+                        [appendTo]="'body'"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="atributo-acciones">
+                    <p-button
+                      size="small"
+                      label="Limpiar"
+                      icon="pi pi-times"
+                      severity="secondary"
+                      variant="text"
+                      [rounded]="true"
+                      (onClick)="cancelarAtributo()"
+                    />
+                    <p-button
+                      size="small"
+                      [label]="atributoEditando() ? 'Actualizar' : 'Agregar'"
+                      [icon]="atributoEditando() ? 'pi pi-check' : 'pi pi-plus'"
+                      severity="success"
+                      variant="text"
+                      [raised]="true"
+                      [rounded]="true"
+                      [loading]="guardandoAtributo()"
+                      (onClick)="guardarAtributo()"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tabla de atributos -->
+              @if (atributos().length > 0) {
+              <p-table
+                id="gridinfoadd"
+                [value]="atributos()"
+                size="small"
+                [paginator]="true"
+                [rows]="5"
+                [rowsPerPageOptions]="[5, 10, 25]"
+                [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+              >
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th style="width: 30%">Tipo</th>
+                    <th>Descripción</th>
+                    <th style="width: 15%">Estado</th>
+                    <th style="width: 15%">Acciones</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-attr>
+                  <tr>
+                    <td>
+                      <span>{{ getTipoLabel(attr.tipo) }}</span>
+                    </td>
+                    <td>{{ attr.descripcion }}</td>
+                    <td>
+                      @if (attr.sn_activo === 'S') {
 
                       <p-badge value="Activo" severity="success" badgeSize="small" />
-                    } @else {
-                      <p-badge value="Inactivo"  severity="warn" badgeSize="small" />
-                    }
-                  </td>
-                  <td>
-                    <div class="d-flex gap-1">
-                      <p-button
-                        size="small"
-                        icon="pi pi-pencil"
-                        severity="warn"
-                        variant="text"
-                        [rounded]="true"
-                        pTooltip="Editar"
-                        (onClick)="editarAtributo(attr)"
-                      />
-                      <p-button
-                        size="small"
-                        icon="pi pi-trash"
-                        severity="danger"
-                        variant="text"
-                        [rounded]="true"
-                        pTooltip="Eliminar"
-                        (onClick)="eliminarAtributo(attr)"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              </ng-template>
-            </p-table>
-          } @else {
-            <p class="text-muted text-center">Sin atributos registrados</p>
-          }
-
-              </p-accordion-content>
-            </p-accordion-panel>
-          </p-accordion>
-
-        </div>
+                      } @else {
+                      <p-badge value="Inactivo" severity="warn" badgeSize="small" />
+                      }
+                    </td>
+                    <td>
+                      <div class="d-flex gap-1">
+                        <p-button
+                          size="small"
+                          icon="pi pi-pencil"
+                          severity="warn"
+                          variant="text"
+                          [rounded]="true"
+                          pTooltip="Editar"
+                          (onClick)="editarAtributo(attr)"
+                        />
+                        <p-button
+                          size="small"
+                          icon="pi pi-trash"
+                          severity="danger"
+                          variant="text"
+                          [rounded]="true"
+                          pTooltip="Eliminar"
+                          (onClick)="eliminarAtributo(attr)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+              } @else {
+              <p class="text-muted text-center">Sin atributos registrados</p>
+              }
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
       </div>
     </div>
+  </div>
   }
 </section>

@@ -1,0 +1,139 @@
+<div class="antiguedad-saldos">
+  <p-toolbar>
+    <ng-template #start>
+      <div class="toolbar-title">
+        <i class="pi pi-chart-bar"></i>
+        <span>Balance de Cuotas Vencidas</span>
+      </div>
+    </ng-template>
+    <ng-template #end>
+      <p-button
+        label="Actualizar"
+        icon="pi pi-refresh"
+        (click)="load()"
+        [loading]="cargando()"
+        [rounded]="true"
+        size="small"
+      ></p-button>
+    </ng-template>
+  </p-toolbar>
+
+  <div class="search-bar">
+    <div class="search-input-wrapper">
+      <i class="pi pi-search"></i>
+      <input
+        type="text"
+        pInputText
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        placeholder="Buscar por nombre o Nro. préstamo..."
+        class="search-input"
+      />
+      <p-button
+        *ngIf="q()"
+        icon="pi pi-times"
+        (click)="limpiarFiltros()"
+        severity="secondary"
+        [rounded]="true"
+        size="small"
+        class="clear-btn"
+      ></p-button>
+    </div>
+  </div>
+
+  <div class="resumen-grid">
+    <div class="resumen-card total">
+      <div class="resumen-label">Total Cuotas</div>
+      <div class="resumen-value">{{ moneda(totalGeneral()) }}</div>
+    </div>
+    <div class="resumen-card corriente">
+      <div class="resumen-label">Al día</div>
+      <div class="resumen-value">{{ moneda(totalCorriente()) }}</div>
+      <div class="resumen-pct">{{ getPorcentaje(totalCorriente(), totalGeneral()) }}</div>
+    </div>
+    <div class="resumen-card vencido30">
+      <div class="resumen-label">1-30 Días</div>
+      <div class="resumen-value">{{ moneda(totalVencido30()) }}</div>
+      <div class="resumen-pct">{{ getPorcentaje(totalVencido30(), totalGeneral()) }}</div>
+    </div>
+    <div class="resumen-card vencido60">
+      <div class="resumen-label">31-60 Días</div>
+      <div class="resumen-value">{{ moneda(totalVencido60()) }}</div>
+      <div class="resumen-pct">{{ getPorcentaje(totalVencido60(), totalGeneral()) }}</div>
+    </div>
+    <div class="resumen-card vencido90">
+      <div class="resumen-label">60+ Días</div>
+      <div class="resumen-value">{{ moneda(totalVencido90()) }}</div>
+      <div class="resumen-pct">{{ getPorcentaje(totalVencido90(), totalGeneral()) }}</div>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <p-table
+      [value]="filtered()"
+      [loading]="cargando()"
+      [paginator]="true"
+      [rows]="15"
+      [rowsPerPageOptions]="[10, 15, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+      [globalFilterFields]="['cliente', 'nrocliente']"
+      styleClass="p-datatable-striped"
+      size="small"
+    >
+      <ng-template #header>
+        <tr>
+          <th style="width: 100px">Nro. Préstamo</th>
+          <th pSortableColumn="cliente">Cliente <p-sortIcon field="cliente"></p-sortIcon></th>
+          <th class="col-importe" pSortableColumn="total">Total <p-sortIcon field="total"></p-sortIcon></th>
+          <th class="col-importe" pSortableColumn="corriente">Al día <p-sortIcon field="corriente"></p-sortIcon></th>
+          <th class="col-importe" pSortableColumn="vencido30">1-30 Días <p-sortIcon field="vencido30"></p-sortIcon></th>
+          <th class="col-importe" pSortableColumn="vencido60">31-60 Días <p-sortIcon field="vencido60"></p-sortIcon></th>
+          <th class="col-importe" pSortableColumn="vencido90">60+ Días <p-sortIcon field="vencido90"></p-sortIcon></th>
+          <th style="width: 100px">Estado</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr>
+          <td>{{ item.nrocliente }}</td>
+          <td>
+            <span class="cliente-nombre">{{ item.cliente }}</span>
+          </td>
+          <td class="col-importe fw-bold">{{ moneda(item.total) }}</td>
+          <td class="col-importe text-success">{{ moneda(item.corriente) }}</td>
+          <td class="col-importe" [class.text-danger]="item.vencido30 > 0">{{ moneda(item.vencido30) }}</td>
+          <td class="col-importe" [class.text-danger]="item.vencido60 > 0">{{ moneda(item.vencido60) }}</td>
+          <td class="col-importe" [class.text-danger]="item.vencido90 > 0">{{ moneda(item.vencido90) }}</td>
+          <td>
+            <p-tag
+              [value]="item.vencido90 > 0 ? 'Mora Alta' : item.vencido60 > 0 ? 'Mora Media' : item.vencido30 > 0 ? 'Mora Baja' : 'Al día'"
+              [severity]="getSeverity(item)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="text-center p-4">
+            <div class="empty-state">
+              <i class="pi pi-inbox empty-icon"></i>
+              <p>No se encontraron cuotas vencidas.</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #summary>
+        <div class="table-summary">
+          <div class="summary-row">
+            <span class="summary-label">Total Registros:</span>
+            <span class="summary-value">{{ filtered().length }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Total Cuotas:</span>
+            <span class="summary-value fw-bold">{{ moneda(totalGeneral()) }}</span>
+          </div>
+        </div>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

@@ -320,7 +320,7 @@ export class MovimientosManager implements OnInit {
   // ===== CLIENTES =====
   loadClientes() {
     this.cargando.set(true);
-    this.service.getClientes(this.page(), this.limit(), this.q()).pipe(
+    this.service.getClientes(this.page(), this.limit(), this.q(), 4).pipe(
       takeUntilDestroyed(this.destroyRef),
       timeout(10000),
       catchError(() => of({ data: [], total: 0 }))

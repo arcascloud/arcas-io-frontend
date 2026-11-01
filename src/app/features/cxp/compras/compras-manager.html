@@ -205,6 +205,56 @@
                 [appendTo]="'body'"
               />
             </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Descuento</label>
+              <p-inputNumber
+                size="small"
+                formControlName="descuento"
+                mode="currency"
+                currency="HNL"
+                [locale]="'es-HN'"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                styleClass="w-full"
+                [inputStyle]="{ 'width': '100%' }"
+                [min]="0"
+                [useGrouping]="true"
+                (onInput)="recalcularTotalHeader()"
+              />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Impuesto (ISV)</label>
+              <p-inputNumber
+                size="small"
+                formControlName="impuesto"
+                mode="currency"
+                currency="HNL"
+                [locale]="'es-HN'"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                styleClass="w-full"
+                [inputStyle]="{ 'width': '100%' }"
+                [min]="0"
+                [useGrouping]="true"
+                (onInput)="recalcularTotalHeader()"
+              />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Total Compra</label>
+              <p-inputNumber
+                size="small"
+                formControlName="total"
+                mode="currency"
+                currency="HNL"
+                [locale]="'es-HN'"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                styleClass="w-full font-bold"
+                [inputStyle]="{ 'width': '100%', 'font-weight': 'bold', 'font-size': '1.1rem' }"
+                [readonly]="true"
+                [useGrouping]="true"
+              />
+            </div>
           </div>
         </form>
       </p-card>
@@ -495,7 +545,7 @@
             <th style="width: 6rem" class="text-right">Cantidad</th>
             <th style="width: 7rem" class="text-right">P. Compra</th>
             <th style="width: 7rem" class="text-right">P. Venta</th>
-            <th style="width: 7rem" class="text-right">Subtotal</th>
+            <th style="width: 7rem" class="text-right">Total</th>
             <th style="width: 6rem">Acciones</th>
           </tr>
         </ng-template>

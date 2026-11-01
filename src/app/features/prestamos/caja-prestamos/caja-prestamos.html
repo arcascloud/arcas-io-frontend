@@ -2,7 +2,7 @@
   <header class="page-header">
     <div>
       <h3 class="page-title">Caja - Préstamos</h3>
-      <p class="page-subtitle">Abonos a cuenta de clientes</p>
+      <p class="page-subtitle">Abonos a cuenta de préstamos</p>
     </div>
     <div class="header-actions">
       @if (esEdicion() && esAnulada()) {
@@ -45,7 +45,7 @@
   <div class="card banner-anulada">
     <i class="pi pi-ban"></i>
     <span
-      >Esta caja fue anulada. Los movimientos CxC fueron revertidos. No se puede modificar.</span
+      >Esta caja fue anulada. Los movimientos fueron revertidos. No se puede modificar.</span
     >
   </div>
   } @if (cargando()) {
@@ -64,8 +64,7 @@
           placeholder="Destino..."
           styleClass="w-full"
           [appendTo]="'body'"
-          [disabled]="!puedeEditar() || esEdicion()"
-          (ngModelChange)="onDestinoChange()"
+          [disabled]="true"
         />
       </div>
       <div class="campo campo-span-2">
@@ -77,7 +76,7 @@
             [options]="clientes()"
             optionLabel="cliente"
             optionValue="clienteId"
-            placeholder="Seleccionar cliente..."
+            placeholder="Seleccionar cliente con préstamo..."
             styleClass="w-full"
             [filter]="true"
             filterBy="cliente"
@@ -99,41 +98,6 @@
         <small class="err">Cliente es obligatorio</small>
         }
       </div>
-      @if (!esDestinoPrestamo()) {
-      <div class="campo">
-        <label>Tipo Documento Fiscal</label>
-        <p-select
-          size="small"
-          formControlName="documentoId"
-          [options]="documentosFiltrados()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Tipo documento..."
-          styleClass="w-full"
-          [filter]="true"
-          filterBy="label"
-          [appendTo]="'body'"
-          (ngModelChange)="onDocumentoIdChange()"
-          [disabled]="!puedeEditar()"
-        />
-      </div>
-      <div class="campo">
-        <label>Nro. Documento</label>
-        <p-select
-          size="small"
-          formControlName="nrodocumento"
-          [options]="nrosDocumento()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Nro. documento..."
-          styleClass="w-full"
-          [filter]="true"
-          filterBy="label"
-          [appendTo]="'body'"
-          [disabled]="!puedeEditar()"
-        />
-      </div>
-      }
     </div>
 
     <div class="ml-1 mb-3 mt-2 grid">
@@ -274,7 +238,6 @@
       }
     </div>
 
-    @if (esDestinoPrestamo()) {
     <div class="card cuotas-card">
       <div class="detalles-head">
         <h4 class="detalles-title"><i class="pi pi-wallet"></i> Cobro a préstamo</h4>
@@ -326,7 +289,6 @@
             <span class="cv-label">Días de gracia </span>
             <span class="ml-2 cv-value">{{ rp.diasGracia }}</span>
           </div>
-
           }
           <div class="col-2">
             <span class="cv-label">Interés simple </span>
@@ -391,86 +353,8 @@
       </div>
       }
     </div>
-    } @if (docSeleccionado(); as doc) {
-    <div class="card desglose-card" [class.con-cargos]="tieneInteres()">
-      <h4 class="desglose-title">
-        <i class="pi pi-wallet"></i> Desglose del cobro — Factura #{{ doc.nroreferencia }}
-      </h4>
 
-      <div class="desglose-grid">
-        <div class="dl">
-          <span class="dl-label">Saldo factura</span>
-          <span class="dl-value"
-            >{{ doc.saldo | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
-          >
-        </div>
-
-        @if (doc.esFacturaCredito) {
-        <div class="dl">
-          <span class="dl-label">Último abono</span>
-          <span class="dl-value">{{ doc.fechaultabono | date:'dd/MM/yyyy' }}</span>
-        </div>
-        <div class="dl">
-          <span class="dl-label">Días transcurridos</span>
-          <span class="dl-value">{{ doc.diasTranscurridos }}</span>
-        </div>
-        <div class="dl">
-          <span class="dl-label">Días interés</span>
-          <span class="dl-value">{{ doc.diasInteres }}</span>
-        </div>
-        @if (doc.diasMora > 0) {
-        <div class="dl">
-          <span class="dl-label">Días mora</span>
-          <span class="dl-value warn">{{ doc.diasMora }}</span>
-        </div>
-        }
-        <div class="dl">
-          <span class="dl-label">Interés devengado</span>
-          <span class="dl-value"
-            >{{ doc.interes | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
-          >
-        </div>
-        @if (doc.mora > 0) {
-        <div class="dl">
-          <span class="dl-label">Interés moratorio</span>
-          <span class="dl-value warn"
-            >{{ doc.mora | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
-          >
-        </div>
-        } }
-      </div>
-
-      @if (tieneInteres()) {
-      <div class="desglose-reparto">
-        <div class="reparto-head">Reparto del efectivo recibido</div>
-        <div class="reparto-row">
-          <span>Efectivo recibido</span>
-          <span class="rp"
-            >{{ totalPagos() | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
-          >
-        </div>
-        <div class="reparto-row cargos">
-          <span>(−) Cargos (interés + mora)</span>
-          <span class="rp"
-            >{{ cargosCubiertos() | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
-          >
-        </div>
-        <div class="reparto-row capital">
-          <span>(=) Abono a capital</span>
-          <span class="rp"
-            >{{ abonoCapital() | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
-          >
-        </div>
-        <div class="reparto-row saldo">
-          <span>Saldo restante factura</span>
-          <span class="rp"
-            >{{ saldoNuevo() | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
-          >
-        </div>
-      </div>
-      }
-    </div>
-    } @if (puedeEditar()) {
+    @if (puedeEditar()) {
     <div class="acciones-form">
       <p-button
         type="button"
