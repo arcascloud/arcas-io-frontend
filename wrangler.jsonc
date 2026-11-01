@@ -2,7 +2,8 @@
   "name": "arcas-software",
   "compatibility_date": "2026-08-01",
   "assets": {
-    "directory": "dist/arcas-software/browser"
+    "directory": "dist/arcas-software/browser",
+    "not_found_handling": "single-page-application"
   },
   "vars": {
 		"API_URL": "https://arcas-io-backend.onrender.com/api",
