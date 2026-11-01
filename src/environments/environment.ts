@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000/api',
+  apiUrl: 'https://arcas-io-backend.onrender.com',
   currencySymbol: 'L ',
   VALIDAR_SESSION: 'S',
   empresaId: 2,
