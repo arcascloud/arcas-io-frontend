@@ -56,4 +56,29 @@ export const PRESTAMOS_ROUTES: Routes = [
   },
 
 
-  // Carteras contables por cliente (catálogo genérico
+  // Carteras contables por cliente (catálogo genérico)
+  {
+    path: 'carteras-cliente',
+    data: { nombre: 'carteras-cliente' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+  },
+  {
+    path: 'carteras-cliente/editar/:id',
+    data: { nombre: 'carteras-cliente' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+  },
+
+  // Información de clientes - celulares, direcciones y correos (catálogo genérico)
+  {
+    path: 'clientes-info',
+    data: { nombre: 'clientes-info' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+  },
+  {
+    path: 'clientes-info/editar/:id',
+    data: { nombre: 'clientes-info' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+  },
+
+  { path: '**', redirectTo: 'caja' },
+];
