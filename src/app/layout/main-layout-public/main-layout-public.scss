@@ -128,7 +128,7 @@ $topbar-height: 75px;
 }
 
 .sidebar-title {
-   font-family: 'AstroSpace';
+    font-family: 'astrospace';
   font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
@@ -194,6 +194,9 @@ $topbar-height: 75px;
     margin-top: 0.5rem;
     border-top: var(--d-menu-separator-border);
   }
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -540,7 +543,7 @@ $topbar-height: 75px;
   max-width: 95vw;
 
   .p-drawer-header {
-    font-family: 'AstroSpace';
+   font-family: 'astrospace';
     font-weight: 300;
     background: var(--c-bg);
     border-bottom: var(--d-menu-separator-border);

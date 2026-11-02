@@ -129,7 +129,7 @@ $topbar-height: 60px;
 }
 
 .sidebar-title {
-   font-family: 'AstroSpace';
+   font-family: 'astrospace';
   font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
@@ -195,6 +195,9 @@ $topbar-height: 60px;
     margin-top: 0.5rem;
     border-top: var(--d-menu-separator-border);
   }
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 
   &::-webkit-scrollbar {
     width: 6px;

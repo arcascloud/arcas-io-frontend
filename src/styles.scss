@@ -2,94 +2,94 @@
 @layer primeng {}
 
 @font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-Regular.ttf') format('truetype');
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-Medium.ttf') format('truetype');
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-SemiBold.ttf') format('truetype');
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-semibold.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-Bold.ttf') format('truetype');
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-ExtraBold.ttf') format('truetype');
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-extrabold.ttf') format('truetype');
   font-weight: 800;
   font-style: normal;
 }
 
-/* Figtree — fuente variable (pesos 300–900, romana + itálica) */
+/* figtree — fuente variable (pesos 300–900, romana + itálica) */
 @font-face {
-  font-family: 'Figtree';
-  src: url('/assets/fonts/Figtree/Figtree-VariableFont_wght.ttf') format('truetype');
+  font-family: 'figtree';
+  src: url('/assets/fonts/figtree/figtree-variablefont_wght.ttf') format('truetype');
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Figtree';
-  src: url('/assets/fonts/Figtree/Figtree-Italic-VariableFont_wght.ttf') format('truetype');
+  font-family: 'figtree';
+  src: url('/assets/fonts/figtree/figtree-italic-variablefont_wght.ttf') format('truetype');
   font-weight: 300 900;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
-  font-family: 'AstroSpace';
-  src: url('/assets/fonts/AstroSpace/AstroSpace.ttf') format('truetype');
+   font-family: 'astrospace';
+  src: url('/assets/fonts/astrospace/astrospace.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 
 @font-face {
-  font-family: 'Angora';
-  src: url('/assets/fonts/Angora/Angora-1G3BB.otf') format('truetype');
+  font-family: 'angora';
+  src: url('/assets/fonts/angora/angora-1g3bb.otf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Audiowide';
-  src: url('/assets/fonts/Audiowide/Audiowide-Regular.ttf') format('truetype');
+  font-family: 'audiowide';
+  src: url('/assets/fonts/audiowide/audiowide-regular.ttf') format('truetype');
   font-weight: 400;
   font-style: regular;
 }
 
 @font-face {
-  font-family: 'Hurricane';
-  src: url('/assets/fonts/Hurricane/Hurricane-Regular.ttf') format('truetype');
+  font-family: 'hurricane';
+  src: url('/assets/fonts/hurricane/hurricane-regular.ttf') format('truetype');
   font-weight: 400;
   font-style: regular;
 }
 
 @font-face {
-  font-family: 'Rye';
-  src: url('/assets/fonts/Rye/Rye-Regular.ttf') format('truetype');
+  font-family: 'rye';
+  src: url('/assets/fonts/rye/rye-regular.ttf') format('truetype');
   font-weight: 400;
   font-style: regular;
 }
 
 :root {
-  --font-family: 'Figtree', 'Mukta', sans-serif;
+  --font-family: 'figtree', 'mukta', sans-serif;
 
   --c2: #fffff;
   --color-font-sidebar: #dbe7f0;

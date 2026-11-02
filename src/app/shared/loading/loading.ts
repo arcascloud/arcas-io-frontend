@@ -39,7 +39,7 @@ import { Component, input } from '@angular/core';
         object-fit: contain;
       }
       .loading-text {
-        font-family: 'Mukta', sans-serif;
+        font-family: 'mukta', sans-serif;
         font-size: 1.1rem;
         color: var(--c-text-muted, #64748b);
         margin: 0;

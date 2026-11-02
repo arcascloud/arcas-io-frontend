@@ -3,42 +3,42 @@
 }
 
 @font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-Regular.ttf') format('truetype');
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-Medium.ttf') format('truetype');
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-SemiBold.ttf') format('truetype');
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-semibold.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-Bold.ttf') format('truetype');
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Mukta';
-  src: url('/assets/fonts/Mukta/Mukta-ExtraBold.ttf') format('truetype');
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-extrabold.ttf') format('truetype');
   font-weight: 800;
   font-style: normal;
 }
 
 :root {
-  --font-family: 'Mukta', sans-serif;
+  --font-family: 'mukta', sans-serif;
 
   /* ===== Design tokens ===== */
   --c-bg: #f1f5f9;

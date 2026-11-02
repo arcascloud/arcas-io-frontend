@@ -101,11 +101,15 @@
 
 .login-header {
   text-align: center;
-  margin-bottom: 2rem;
+  font-family: 'hurricane', cursive;
+    font-size: clamp(1.5rem, 3.6vw, 3rem); // hasta 48px; se reduce en pantallas angostas para no cortarse
+    font-weight: 400; // hurricane solo tiene peso 400 (evita faux-bold)
+    letter-spacing: normal;
+    color: var(--c-bg-white);
+    margin-bottom: 0.5rem;
 
   h2 {
-    margin: 0.5rem 0 0.25rem;
-    color: var(--c-text);
+    color: var(--c-bg-white);
     font-weight: 800;
     font-size: 1.5rem;
     letter-spacing: -0.01em;
@@ -114,7 +118,8 @@
 
 .text-muted {
   color: var(--c-text-muted);
-  margin: 0;
+  text-align: center;
+    margin-bottom: 2rem;
 }
 
 .login-form {

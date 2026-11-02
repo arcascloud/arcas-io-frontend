@@ -218,24 +218,24 @@ export class ReportesPrintService {
   // PDF
   // =========================================================================
 
-  /** Base64 (VFS) de Audiowide-Regular.ttf — se carga una sola vez por sesión */
+  /** Base64 (VFS) de audiowide-regular.ttf — se carga una sola vez por sesión */
   private fuenteB64: string | null = null;
-  /** Base64 (VFS) de Mukta-Regular.ttf — título, RTN y criterio del encabezado */
+  /** Base64 (VFS) de mukta-regular.ttf — título, RTN y criterio del encabezado */
   private muktaB64: string | null = null;
   private fuenteCargando: Promise<void> | null = null;
 
   /**
-   * Descarga las TTFs de assets (Audiowide para la empresa, Mukta para título/
+   * Descarga las TTFs de assets (audiowide para la empresa, mukta para título/
    * RTN/criterio) y las deja en base64 listas para embeber en cada documento.
    * Si una falla, ese elemento usa helvetica.
    */
   private prepararFuente(): Promise<void> {
     if (!this.fuenteCargando) {
       this.fuenteCargando = Promise.all([
-        this.cargarTtf('/assets/fonts/Audiowide/Audiowide-Regular.ttf').then((b64) => {
+        this.cargarTtf('/assets/fonts/audiowide/audiowide-regular.ttf').then((b64) => {
           if (b64) this.fuenteB64 = b64;
         }),
-        this.cargarTtf('/assets/fonts/Mukta/Mukta-Regular.ttf').then((b64) => {
+        this.cargarTtf('/assets/fonts/mukta/mukta-regular.ttf').then((b64) => {
           if (b64) this.muktaB64 = b64;
         }),
       ]).then(() => undefined);
@@ -273,8 +273,8 @@ export class ReportesPrintService {
       }
     };
     return {
-      audiowide: reg(this.fuenteB64, 'Audiowide-Regular.ttf', 'Audiowide'),
-      mukta: reg(this.muktaB64, 'Mukta-Regular.ttf', 'Mukta'),
+      audiowide: reg(this.fuenteB64, 'audiowide-regular.ttf', 'audiowide'),
+      mukta: reg(this.muktaB64, 'mukta-regular.ttf', 'mukta'),
     };
   }
 
@@ -284,8 +284,8 @@ export class ReportesPrintService {
    * para que las páginas nuevas no pisen el encabezado repetido.
    *
    * Diseño en 2 filas (elementos compartidos en la MISMA línea):
-   *   fila 1: empresa a la izquierda (16pt, Audiowide) + título centrado (12.7pt, Mukta)
-   *   fila 2: RTN a la izquierda (9pt, Mukta) + criterio de filtro centrado (9pt, Mukta)
+   *   fila 1: empresa a la izquierda (16pt, audiowide) + título centrado (12.7pt, mukta)
+   *   fila 2: RTN a la izquierda (9pt, mukta) + criterio de filtro centrado (9pt, mukta)
    *   filete sólido de ancho completo.
    */
   pdfEncabezado(doc: jsPDF, enc: EncabezadoPrint): number {
@@ -293,10 +293,10 @@ export class ReportesPrintService {
     const cx = pageW / 2;
     const margen = 10;
     const fuentes = this.registrarFuente(doc);
-    const fontEmpresa = fuentes.audiowide ? 'Audiowide' : 'helvetica';
-    const fontTexto = fuentes.mukta ? 'Mukta' : 'helvetica';
+    const fontEmpresa = fuentes.audiowide ? 'audiowide' : 'helvetica';
+    const fontTexto = fuentes.mukta ? 'mukta' : 'helvetica';
 
-    // Fila 1 — empresa (izquierda, Audiowide) + título (centrado, Mukta)
+    // Fila 1 — empresa (izquierda, audiowide) + título (centrado, mukta)
     const yFila1 = 12;
     doc.setFont(fontEmpresa, 'normal');
     doc.setFontSize(16);
@@ -305,7 +305,7 @@ export class ReportesPrintService {
     doc.setFontSize(12.7);
     doc.text(this.cortar(enc.titulo.toUpperCase(), 40), cx, yFila1, { align: 'center' });
 
-    // Fila 2 — RTN (izquierda) + criterio de filtro (centrado), ambas en Mukta
+    // Fila 2 — RTN (izquierda) + criterio de filtro (centrado), ambas en mukta
     const yFila2 = yFila1 + 7.5;
     doc.setFontSize(9);
     if (enc.rtn) doc.text(this.cortar(enc.rtn, 70), margen, yFila2);
@@ -511,8 +511,8 @@ export class ReportesPrintService {
 
   /**
    * Encabezado de Excel en 2 filas con elementos COMPARTIDOS en la misma línea:
-   *   fila 1: empresa (izquierda, grande, Audiowide) + título (centrado, Mukta)
-   *   fila 2: RTN (izquierda, Mukta) + criterio de filtro (centrado, Mukta)
+   *   fila 1: empresa (izquierda, grande, audiowide) + título (centrado, mukta)
+   *   fila 2: RTN (izquierda, mukta) + criterio de filtro (centrado, mukta)
    * Devuelve la fila donde empieza la cabecera de la tabla.
    */
   excelEncabezado(wb: Workbook, ws: Worksheet, enc: EncabezadoPrint, tab: TablaPrint): number {
@@ -561,7 +561,7 @@ export class ReportesPrintService {
       const r = ws.getRow(fila);
       r.height = op.height;
       const sizeDer = op.sizeDer ?? op.sizeIzq;
-      const fontIzq = op.fontIzq ?? 'Audiowide';
+      const fontIzq = op.fontIzq ?? 'audiowide';
       const fontDer = op.fontDer ?? fontIzq;
       if (ncols < 2) {
         // Caso límite (una sola columna): ambos textos en la misma celda
@@ -585,10 +585,10 @@ export class ReportesPrintService {
       fila++;
     };
 
-    // 1) Fila 1 — empresa (izquierda, 21pt, Audiowide) + título (centrado, 13pt, Mukta)
-    filaCompartida(enc.empresa, enc.titulo.toUpperCase(), { sizeIzq: 21, sizeDer: 13, height: 30, fontDer: 'Mukta' });
+    // 1) Fila 1 — empresa (izquierda, 21pt, audiowide) + título (centrado, 13pt, mukta)
+    filaCompartida(enc.empresa, enc.titulo.toUpperCase(), { sizeIzq: 21, sizeDer: 13, height: 30, fontDer: 'mukta' });
 
-    // 2) Fila 2 — RTN (izquierda, 9pt) + criterio de filtro (centrado, 9pt), ambas en Mukta
+    // 2) Fila 2 — RTN (izquierda, 9pt) + criterio de filtro (centrado, 9pt), ambas en mukta
     if (enc.rtn || enc.meta) {
       filaCompartida(enc.rtn, enc.meta, {
         sizeIzq: 9,
@@ -596,8 +596,8 @@ export class ReportesPrintService {
         grisIzq: true,
         grisDer: true,
         height: 16,
-        fontIzq: 'Mukta',
-        fontDer: 'Mukta',
+        fontIzq: 'mukta',
+        fontDer: 'mukta',
       });
     }
 
@@ -729,8 +729,8 @@ export class ReportesPrintService {
   /**
    * Encabezado de Word, repetido en cada página, en 2 filas con elementos
    * COMPARTIDOS en la misma línea:
-   *   fila 1: empresa (izquierda, grande, Audiowide) + título (centrado, Mukta)
-   *   fila 2: RTN (izquierda, Mukta) + criterio de filtro (centrado, Mukta)
+   *   fila 1: empresa (izquierda, grande, audiowide) + título (centrado, mukta)
+   *   fila 2: RTN (izquierda, mukta) + criterio de filtro (centrado, mukta)
    * Usa una tabla sin bordes de 3 columnas (izq / centro / der) con las
    * columnas laterales del mismo ancho para que el bloque centrado quede en el
    * centro exacto de la página. Sin logo, sin dirección y sin teléfono.
@@ -753,7 +753,7 @@ export class ReportesPrintService {
       alinear: (typeof AlignmentType)[keyof typeof AlignmentType],
       size: number,
       gris = false,
-      fuente = 'Audiowide',
+      fuente = 'audiowide',
     ): TableCell =>
       new TableCell({
         borders: sinBordes,
@@ -771,23 +771,23 @@ export class ReportesPrintService {
       });
 
     const filas: TableRow[] = [
-      // Fila 1 — empresa (izq. 42 = 21pt, Audiowide) + título (centrado, 26 = 13pt, Mukta)
+      // Fila 1 — empresa (izq. 42 = 21pt, audiowide) + título (centrado, 26 = 13pt, mukta)
       new TableRow({
         children: [
           celda(enc.empresa, lateral, AlignmentType.LEFT, 42),
-          celda(enc.titulo.toUpperCase(), central, AlignmentType.CENTER, 26, false, 'Mukta'),
+          celda(enc.titulo.toUpperCase(), central, AlignmentType.CENTER, 26, false, 'mukta'),
           celda('', lateral, AlignmentType.RIGHT, 18),
         ],
       }),
     ];
 
-    // Fila 2 — RTN (izq. 18 = 9pt) + criterio de filtro (centrado, 18 = 9pt), ambas en Mukta
+    // Fila 2 — RTN (izq. 18 = 9pt) + criterio de filtro (centrado, 18 = 9pt), ambas en mukta
     if (enc.rtn || enc.meta) {
       filas.push(
         new TableRow({
           children: [
-            celda(enc.rtn, lateral, AlignmentType.LEFT, 18, true, 'Mukta'),
-            celda(enc.meta, central, AlignmentType.CENTER, 18, true, 'Mukta'),
+            celda(enc.rtn, lateral, AlignmentType.LEFT, 18, true, 'mukta'),
+            celda(enc.meta, central, AlignmentType.CENTER, 18, true, 'mukta'),
             celda('', lateral, AlignmentType.RIGHT, 18),
           ],
         }),
