@@ -1,0 +1,22 @@
+# ===== Stage 1: Compilar el WAR con Maven =====
+FROM maven:3.8-openjdk-8 AS build
+WORKDIR /src
+
+# Copia el pom y fuentes (aprovecha cache de .m2)
+COPY pom.xml .
+COPY maven-settings.xml .
+RUN mvn -B -s maven-settings.xml dependency:go-offline || true
+
+COPY src ./src
+RUN mvn -B -s maven-settings.xml -DskipTests clean package
+
+# ===== Stage 2: WildFly + WAR =====
+FROM jboss/wildfly:18.0.1.Final
+
+# Copia el WAR compilado
+COPY --from=build /src/target/planilla.war /opt/jboss/wildfly/standalone/deployments/
+
+# Corre en modo standalone (sin clustering), expuesto en 8080
+EXPOSE 8080
+
+CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "0.0.0.0", "-c", "standalone.xml"]

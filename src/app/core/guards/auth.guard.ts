@@ -53,7 +53,7 @@ export const authGuard: CanMatchFn = async (_route, segments) => {
   const ruta = rutaIntentada(segments);
   const p_validar_session = environment.VALIDAR_SESSION;
 
-  console.log('Validar session: ' + p_validar_session);
+  // console.log('Validar session: ' + p_validar_session);
   // ══ VALIDAR_SESSION='N' — modo sin validación de sesión ══
   // No se exige sesión ni permisos, y NO se intercepta la raíz:
   // cada layout maneja su redirect interno (privado → dashboard si hay
@@ -81,9 +81,7 @@ export const authGuard: CanMatchFn = async (_route, segments) => {
   // Clientes (tipoPersona 'C' según datos del backend): solo rutas de
   // tienda/pedidos; cualquier otra URL redirige a la tienda virtual.
   if (authService.currentUser()?.tipoPersona === 'C') {
-    const permitida = RUTAS_CLIENTE.some(
-      (r) => ruta === r || ruta.startsWith(r + '/'),
-    );
+    const permitida = RUTAS_CLIENTE.some((r) => ruta === r || ruta.startsWith(r + '/'));
     if (!permitida) {
       return router.createUrlTree(['/facturacion/tienda']);
     }
