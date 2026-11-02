@@ -8,4 +8,5 @@ API_URL = "https://arcas-io-backend.onrender.com/api"
 [assets]
 directory = "./dist/arcas-software/browser"
 binding = "ASSETS"
+not_found_handling = "single-page-application"
 
