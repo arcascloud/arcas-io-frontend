@@ -1,5 +1,6 @@
 name = "hn"
 compatibility_date = "2026-11-02"
+main = "_worker.js"
 
 [vars]
 API_URL = "https://arcas-io-backend.onrender.com/api"
@@ -7,8 +8,4 @@ API_URL = "https://arcas-io-backend.onrender.com/api"
 [assets]
 directory = "./dist/arcas-software/browser"
 binding = "ASSETS"
-# /login, /dashboard, /facturacion/... devuelven index.html (sin esto dan 404 al abrirlos directo o al recargar)
-not_found_handling = "single-page-application"
-# /api/* siempre pasa por el Worker (si no, un GET de navegación a /api/docs recibiría index.html)
-run_worker_first = ["/api/*"]
 
