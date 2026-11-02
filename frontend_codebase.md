@@ -1,5 +1,5 @@
 # ERP Arcas - Código Fuente Completo
-> Generado automáticamente el 29/10/2026, 11:49:20 a. m.
+> Generado automáticamente el 1/11/2026, 10:58:54 a. m.
 
 ---
 
@@ -119,8 +119,9 @@
 
 ```json
 {
-  "name": "arcas-software-frontend",
+  "name": "frontend",
   "version": "1.0.0",
+  "packageManager": "npm@10.8.2",
   "scripts": {
     "config": "node src/set-env.js",
     "ng": "ng",
@@ -133,6 +134,7 @@
   "private": true,
   "dependencies": {
     "@angular/animations": "^22.1.0",
+    "@angular/cdk": "^21.0.0",
     "@angular/common": "^22.1.0",
     "@angular/compiler": "^22.1.0",
     "@angular/core": "^22.1.0",
@@ -436,6 +438,10 @@ const sharedChildren: Routes = [
     loadChildren: () => import('./features/cxc/cxc.routes').then((m) => m.CXC_ROUTES),
   },
   {
+    path: 'prestamos',
+    loadChildren: () => import('./features/prestamos/prestamos.routes').then((m) => m.PRESTAMOS_ROUTES),
+  },
+  {
     path: 'cxp',
     loadChildren: () => import('./features/cxp/cxp.routes').then((m) => m.CXP_ROUTES),
   },
@@ -598,7 +604,9 @@ export const authGuard: CanMatchFn = async (_route, segments) => {
   const msgs = inject(MessageService);
 
   const ruta = rutaIntentada(segments);
+  const p_validar_session = environment.VALIDAR_SESSION;
 
+  console.log('Validar session: ' + p_validar_session);
   // ══ VALIDAR_SESSION='N' — modo sin validación de sesión ══
   // No se exige sesión ni permisos, y NO se intercepta la raíz:
   // cada layout maneja su redirect interno (privado → dashboard si hay
@@ -673,6 +681,7 @@ export const authGuard: CanMatchFn = async (_route, segments) => {
 import { inject } from '@angular/core';
 import { CanMatchFn } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 /**
  * Decide si la ruta raíz usa `main-layout-private` (ERP).
@@ -694,15 +703,19 @@ export const erpLayoutGuard: CanMatchFn = () => {
   const auth = inject(AuthService);
   const user = auth.currentUser();
 
-  // Sin sesión → layout público (startPage / logout → tienda con layout público)
-  if (!user) return false;
+  console.log('User ' + user + ' session ' + environment.VALIDAR_SESSION);
 
-  // Cliente por tipoPersona ('C') → layout público (cubre sesiones viejas
-  // en localStorage que no tienen sn_cliente porque se crearon antes del cambio)
-  if (user.tipoPersona === 'C') return false;
+  if (environment.VALIDAR_SESSION === 'N') {
+    // Sin sesión → layout público (startPage / logout → tienda con layout público)
+    if (!user) return false;
 
-  // sn_cliente = 'S' → CRM → layout público
-  if (user.sn_cliente === 'S') return false;
+    // Cliente por tipoPersona ('C') → layout público (cubre sesiones viejas
+    // en localStorage que no tienen sn_cliente porque se crearon antes del cambio)
+    if (user.tipoPersona === 'C') return false;
+
+    // sn_cliente = 'S' → CRM → layout público
+    if (user.sn_cliente === 'S') return false;
+  }
 
   // Cualquier otro caso (sn_cliente = 'N', vacío o indefinido) → ERP
   return true;
@@ -716,21 +729,10 @@ export const erpLayoutGuard: CanMatchFn = () => {
 
 ```typescript
 import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const token = authService.tokenValue();
-
-  if (token) {
-    const cloned = req.clone({
-      setHeaders: { Authorization: `Bearer ${token}` },
-    });
-    return next(cloned);
-  }
-
-  return next(req);
+  const cloned = req.clone({ withCredentials: true });
+  return next(cloned);
 };
 
 ```
@@ -828,7 +830,7 @@ export interface BcoMovimiento {
   bancoId: number;
   bcoctasId: number;
   moduloId: number;
-  tipomov: 'DEPOSITO' | 'RETIRO' | 'TRANSFERENCIA' | 'PAGO';
+  tipomov: 'DEPOSITO' | 'RETIRO' | 'TRANSFERENCIA' | 'PAGO' | 'NOTA_DEBITO' | 'NOTA_CREDITO';
   dc_debitocredito: 'D' | 'C';
   nroreferencia: string;
   nrochq: string;
@@ -3285,6 +3287,7 @@ export interface CxcCliente {
   sn_activo: 'S' | 'N';
   categoria: 'A' | 'B' | 'C' | 'D' | 'E';
   empresaId: number;
+  moduloId?: number;
   usuarioCreated: string;
   usuarioUpdated?: string;
   fechaUpdated?: string;
@@ -6100,46 +6103,23 @@ export class ApiService {
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, firstValueFrom } from 'rxjs';
+import { Observable, tap, catchError, of, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 /** Datos del usuario autenticado */
 export interface AuthUser {
-  /** ID del usuario */
   usuarioId: number;
-  /** Nombre de usuario para login */
   usuario: string;
-  /** Nombre completo del usuario */
   nombre: string;
-  /** Correo electrónico */
   email: string;
-  /** ID de la empresa a la que pertenece */
   empresaId: number;
-  /** ID de la sucursal del usuario */
   idsucursal: number;
-  /** Rol del usuario (ej: 'admin', 'contador') */
   rol?: string;
-  /** Roles del usuario (ttipo_rol vía tusuarios_rol) */
   roles?: string[];
-  /**
-   * Tipo de persona que determinó el backend al iniciar sesión (por datos,
-   * no por el checkbox del formulario): 'C' = cliente (solo rutas de
-   * tienda/pedidos), 'E' = empleado (acceso completo al ERP).
-   */
   tipoPersona?: 'C' | 'E';
-  /**
-   * Flag de `tusuariosinfo`:
-   * - `'S'` → usuario CRM/cliente → `main-layout-public`
-   * - `'N'` → usuario ERP → `main-layout-private`
-   */
   sn_cliente?: 'S' | 'N';
 }
 
-/**
- * Rutas permitidas para usuarios cliente (`tipoPersona === 'C'`).
- * El guard de autenticación y el filtro de menú usan esta lista como
- * única fuente de verdad.
- */
 export const RUTAS_CLIENTE: readonly string[] = [
   '/tienda',
   '/pedidos',
@@ -6147,26 +6127,16 @@ export const RUTAS_CLIENTE: readonly string[] = [
   '/facturacion/pedidos-virtual',
 ];
 
-/**
- * Rutas públicas: accesibles SIN sesión (la tienda se puede navegar como
- * visitante; el botón "Pagar" se habilita solo con sesión activa).
- */
 export const RUTAS_PUBLICAS: readonly string[] = [
   '/tienda',
   '/facturacion/tienda',
 ];
 
-/** Roles con permiso de administrar cuentas contables (sn_operable / cuentas con historial) */
 export const ROLES_CONTABILIDAD = ['admin', 'supervisor', 'contador'];
-
-/** Roles con permiso de administrar fechas autorizadas (tfecma/tfecdet) y de corregir la Fecha del Sistema del ERP */
 export const ROLES_FECHAS = ['admin', 'supervisor', 'contador'];
 
-/** Respuesta del endpoint de login */
 export interface LoginResponse {
-  /** Token JWT de autenticación */
-  access_token: string;
-  /** Datos del usuario autenticado */
+  access_token?: string;
   usuario: AuthUser;
 }
 
@@ -6175,16 +6145,13 @@ export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
 
-  private token = signal<string | null>(localStorage.getItem('token'));
   private user = signal<AuthUser | null>(this.loadUser());
 
-  /** Indica si el usuario está autenticado (token presente) */
-  readonly isAuthenticated = computed(() => !!this.token());
+  /** Indica si el usuario está autenticado */
+  readonly isAuthenticated = computed(() => !!this.user());
   /** Usuario autenticado actual (solo lectura) */
   readonly currentUser = this.user.asReadonly();
-  /** Token JWT actual (solo lectura) */
-  readonly tokenValue = this.token.asReadonly();
-  /** true si el usuario tiene un rol privilegiado en contabilidad (admin/supervisor/contador) */
+
   readonly esRolContabilidad = computed(() => {
     const u = this.user();
     if (!u) return false;
@@ -6192,7 +6159,6 @@ export class AuthService {
     return roles.some((r) => ROLES_CONTABILIDAD.includes(r));
   });
 
-  /** true si el usuario puede administrar fechas autorizadas y la Fecha del Sistema (admin/supervisor/contador) */
   readonly esRolFechas = computed(() => {
     const u = this.user();
     if (!u) return false;
@@ -6200,81 +6166,61 @@ export class AuthService {
     return roles.some((r) => ROLES_FECHAS.includes(r));
   });
 
-  /** true si la sesión actual pertenece a un cliente (tipoPersona 'C' según datos del backend) */
   readonly esCliente = computed(() => this.user()?.tipoPersona === 'C');
 
-  /**
-   * true si el usuario es ERP → `main-layout-private`.
-   * Regla: `sn_cliente !== 'S'` (vacío/undefined se considera ERP por defecto
-   * para no romper sesiones antiguas guardadas en localStorage).
-   */
   readonly esERP = computed(() => {
     const u = this.user();
     if (!u) return false;
     return u.sn_cliente !== 'S';
   });
 
-  /**
-   * Autentica al usuario con credenciales
-   * @param usuario - Nombre de usuario
-   * @param password - Contraseña
-   * @returns Observable con el token JWT y datos del usuario
-   */
   login(usuario: string, password: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, {
       usuario,
       password,
     }).pipe(
       tap((res) => {
-        localStorage.setItem('token', res.access_token);
         localStorage.setItem('user', JSON.stringify(res.usuario));
-        this.token.set(res.access_token);
         this.user.set(res.usuario);
       }),
     );
   }
 
-  /**
-   * Autentica al usuario con un body completo (para login con campos adicionales)
-   * @param body - Cuerpo de la petición con usuario, password y otros campos
-   * @returns Observable con el token JWT y datos del usuario
-   */
   loginRaw(body: Record<string, unknown>): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, body).pipe(
       tap((res) => {
-        localStorage.setItem('token', res.access_token);
         localStorage.setItem('user', JSON.stringify(res.usuario));
-        this.token.set(res.access_token);
         this.user.set(res.usuario);
       }),
     );
   }
 
-  /**
-   * Verifica si hay una sesión activa (token y usuario presentes en localStorage)
-   * @returns Observable que emite true si la sesión es válida, false en caso contrario
-   */
   checkStatus(): Observable<boolean> {
-    return new Observable<boolean>((observer) => {
-      const token = this.token();
-      const user = this.user();
-      const valid = !!token && !!user;
-      observer.next(valid);
-      observer.complete();
+    if (!this.user()) return of(false);
+
+    return this.http.get<AuthUser>(`${environment.apiUrl}/auth/me`).pipe(
+      tap((user) => {
+        this.user.set(user);
+        localStorage.setItem('user', JSON.stringify(user));
+      }),
+      map(() => true),
+      catchError(() => {
+        this.limpiarSesion();
+        this.user.set(null);
+        return of(false);
+      })
+    );
+  }
+
+  logout(): void {
+    this.http.post(`${environment.apiUrl}/auth/logout`, {}).subscribe({
+      next: () => this.finalizarLogout(),
+      error: () => this.finalizarLogout(),
     });
   }
 
-  /**
-   * Cierra la sesión de quien sea:
-   * 1. Limpieza TOTAL — localStorage, sessionStorage y cookies (evita
-   *    falsos positivos de sesión al re-ingresar).
-   * 2. Destino según `VALIDAR_SESSION`:
-   *    - `'N'` → `facturacion/tienda` (NUNCA /login ni /dashboard)
-   *    - `'S'` → `/login` (NUNCA la tienda)
-   */
-  logout(): void {
+  private finalizarLogout(): void {
     this.limpiarSesion();
-    this.token.set(null);
     this.user.set(null);
     const destino: string[] =
       environment.VALIDAR_SESSION === 'N'
@@ -6283,22 +6229,13 @@ export class AuthService {
     this.router.navigate(destino);
   }
 
-  /**
-   * Elimina TODO rastro de sesión: localStorage completo (token, usuario,
-   * preferencias, contraseña recordada, carrito, ventas suspendidas…),
-   * sessionStorage y todas las cookies del documento.
-   */
   private limpiarSesion(): void {
     try {
       localStorage.clear();
-    } catch {
-      // storage no disponible → se ignora
-    }
+    } catch {}
     try {
       sessionStorage.clear();
-    } catch {
-      // storage no disponible → se ignora
-    }
+    } catch {}
     document.cookie.split(';').forEach((cookie) => {
       const eq = cookie.indexOf('=');
       const nombre = (eq > 0 ? cookie.substring(0, eq) : cookie).trim();
@@ -6308,10 +6245,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * Carga el usuario desde localStorage al iniciar la aplicación
-   * @returns Usuario autenticado o null si no hay sesión guardada
-   */
   private loadUser(): AuthUser | null {
     try {
       const raw = localStorage.getItem('user');
@@ -7163,12 +7096,15 @@ export class CxcService {
     page?: number,
     limit?: number,
     q?: string,
+    moduloId?: number,
   ): Observable<{ data: CxcCliente[]; total: number }> {
-    const p = page ?? 1;
-    const l = limit ?? 50; // default grande para compatibilidad
-    let url = `${this.clientes}?page=${p}&limit=${l}`;
-    if (q && q.trim()) url += `&q=${encodeURIComponent(q.trim())}`;
-    return this.api.get<{ data: CxcCliente[]; total: number }>(url);
+    const params: Record<string, string | number> = {
+      page: page ?? 1,
+      limit: limit ?? 50,
+    };
+    if (q && q.trim()) params['q'] = q.trim();
+    if (moduloId != null) params['moduloId'] = moduloId;
+    return this.api.get<{ data: CxcCliente[]; total: number }>(this.clientes, params);
   }
 
   /**
@@ -7457,6 +7393,16 @@ export class CxcService {
   getAntiguedadSaldos(): Observable<any[]> {
     const t = Date.now();
     return this.api.get<any[]>(`/cxc/antiguedad-saldos?_t=${t}`);
+  }
+
+  getAntiguedadSaldosPrestamos(): Observable<any[]> {
+    const t = Date.now();
+    return this.api.get<any[]>(`/cxc/antiguedad-saldos-prestamos?_t=${t}`);
+  }
+
+  getAntiguedadSaldosPrestamosCuotas(): Observable<any[]> {
+    const t = Date.now();
+    return this.api.get<any[]>(`/cxc/antiguedad-saldos-prestamos-cuotas?_t=${t}`);
   }
 
   /**
@@ -10383,6 +10329,505 @@ export class PlanillaService {
    */
   contabilizarPlanilla(id: number): Observable<PlanillaMae> {
     return this.api.post<PlanillaMae>(`/planilla/planillas/${id}/contabilizar`, {});
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\core\services\prestamos.service.ts
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { Observable, tap } from 'rxjs';
+import { ApiService } from './api.service';
+import { CxcCliente, CxcMovimiento, CxcHistorico, CxcSaldoFavor, CxcClienteInfo, CxcCarteraCliente } from '../models/cxc.models';
+
+@Injectable({ providedIn: 'root' })
+export class PrestamosService {
+  private api = inject(ApiService);
+
+  private clientes = '/cxc/clientes';
+
+  /**
+   * Obtiene la lista de clientes con paginación y búsqueda.
+   * @param page - Número de página (default: 1)
+   * @param limit - Cantidad de registros por página (default: 50)
+   * @param q - Texto de búsqueda para filtrar clientes
+   * @returns Observable con los datos paginados y el total de registros
+   */
+  getClientes(
+    page?: number,
+    limit?: number,
+    q?: string,
+    moduloId?: number,
+  ): Observable<{ data: CxcCliente[]; total: number }> {
+    const params: Record<string, string | number> = {
+      page: page ?? 1,
+      limit: limit ?? 50,
+    };
+    if (q && q.trim()) params['q'] = q.trim();
+    if (moduloId != null) params['moduloId'] = moduloId;
+    return this.api.get<{ data: CxcCliente[]; total: number }>(this.clientes, params);
+  }
+
+  /**
+   * Obtiene un cliente por su ID.
+   * @param id - Identificador único del cliente
+   * @returns Observable con el cliente encontrado
+   */
+  getCliente(id: number): Observable<CxcCliente> {
+    return this.api.getOne<CxcCliente>(this.clientes, id);
+  }
+
+  /**
+   * Verifica si un DNI ya existe en clientes de la empresa (DNI = llave maestra).
+   * @param dni - DNI a verificar
+   * @param excluirId - Cliente a excluir (para edicion)
+   * @returns true si el DNI ya esta asignado a otro cliente
+   */
+  dniExiste(
+    dni: string,
+    excluirId?: number,
+  ): Observable<{
+    existe: boolean;
+    id: number | null;
+    numero: string | null;
+    nombre: string | null;
+  }> {
+    return this.api.get(`${this.clientes}/dni-existe`, {
+      dni,
+      ...(excluirId ? { excluirId } : {}),
+    });
+  }
+
+  /**
+   * Crea un nuevo cliente en el sistema.
+   * @param payload - Datos del cliente a crear
+   * @returns Observable con el cliente creado
+   */
+  createCliente(payload: unknown): Observable<CxcCliente> {
+    return this.api.post<CxcCliente>(this.clientes, payload);
+  }
+
+  /**
+   * Actualiza los datos de un cliente existente.
+   * @param id - Identificador único del cliente
+   * @param payload - Datos a actualizar del cliente
+   * @returns Observable con el cliente actualizado
+   */
+  updateCliente(id: number, payload: unknown): Observable<CxcCliente> {
+    return this.api.put<CxcCliente>(this.clientes, id, payload);
+  }
+
+  /**
+   * Obtiene todos los movimientos de cuentas por cobrar.
+   * @returns Observable con la lista de movimientos CxC
+   */
+  getMovimientos(): Observable<CxcMovimiento[]> {
+    return this.api.get<CxcMovimiento[]>('/cxc/movimientos');
+  }
+
+  /**
+   * Obtiene los movimientos de CxC de un cliente específico.
+   * @param clienteId - Identificador del cliente
+   * @returns Observable con la lista de movimientos del cliente
+   */
+  getMovimientosByCliente(clienteId: number): Observable<CxcMovimiento[]> {
+    return this.api.get<CxcMovimiento[]>(`/cxc/movimientos/cliente/${clienteId}`);
+  }
+
+  /**
+   * Obtiene un movimiento de CxC por su identificador (clienteMovId).
+   * Usado para la trazabilidad de partidas contables (ver documento origen).
+   * @param id - Identificador del movimiento en cxcmovimientos
+   */
+  getMovimiento(id: number): Observable<CxcMovimiento> {
+    return this.api.get<CxcMovimiento>(`/cxc/movimientos/${id}`);
+  }
+
+  /**
+   * Obtiene el histórico de transacciones de CxC.
+   * @returns Observable con la lista de registros históricos
+   */
+  getHistorico(): Observable<CxcHistorico[]> {
+    return this.api.get<CxcHistorico[]>('/cxc/historico');
+  }
+
+  /**
+   * Obtiene el histórico de transacciones con filtros.
+   * @param dni - Filtro por DNI (opcional)
+   * @param cliente - Filtro por nombre/razón social (opcional)
+   * @param fechaDesde - Fecha desde (opcional)
+   * @param fechaHasta - Fecha hasta (opcional)
+   * @returns Observable con la lista de registros históricos filtrados
+   */
+  getHistoricoConFiltros(
+    dni?: string,
+    cliente?: string,
+    fechaDesde?: string,
+    fechaHasta?: string,
+    documentoId?: string,
+  ): Observable<CxcHistorico[]> {
+    const params: Record<string, string | number> = {};
+    if (dni && dni.trim()) params['dni'] = dni.trim();
+    if (cliente && cliente.trim()) params['cliente'] = cliente.trim();
+    if (fechaDesde && fechaDesde.trim()) params['fechaDesde'] = fechaDesde.trim();
+    if (fechaHasta && fechaHasta.trim()) params['fechaHasta'] = fechaHasta.trim();
+    if (documentoId && documentoId.trim()) params['documentoId'] = documentoId.trim();
+    return this.api.get<CxcHistorico[]>('/cxc/historico/filtros', params);
+  }
+
+  /**
+   * Obtiene el histórico de transacciones de un cliente específico.
+   * @param clienteId - Identificador del cliente
+   * @returns Observable con la lista de registros históricos del cliente
+   */
+  getHistoricoByCliente(clienteId: number): Observable<CxcHistorico[]> {
+    return this.api.get<CxcHistorico[]>(`/cxc/historico/cliente/${clienteId}`);
+  }
+
+  /**
+   * Obtiene los saldos a favor registrados en CxC.
+   * @returns Observable con la lista de saldos a favor
+   */
+  getSaldoFavor(): Observable<CxcSaldoFavor[]> {
+    return this.api.get<CxcSaldoFavor[]>('/cxc/saldo-favor');
+  }
+
+  /**
+   * Obtiene todos los préstamos registrados en CxC.
+   * @returns Observable con la lista de préstamos
+   */
+  getPrestamos(): Observable<any[]> {
+    return this.api.get<any[]>('/cxc/prestamos');
+  }
+
+  /**
+   * Obtiene los préstamos de un cliente específico.
+   * @param clienteId - Identificador del cliente
+   * @returns Observable con la lista de préstamos del cliente
+   */
+  getPrestamosByCliente(clienteId: number): Observable<any[]> {
+    return this.api.get<any[]>(`/cxc/prestamos/cliente/${clienteId}`);
+  }
+
+  /**
+   * Obtiene los parientes registrados de los clientes.
+   * @returns Observable con la lista de parientes
+   */
+  getParientes(): Observable<any[]> {
+    return this.api.get<any[]>('/cxc/parientes');
+  }
+
+  /**
+   * Obtiene los parientes de un cliente específico.
+   * @param clienteId - Identificador del cliente
+   * @returns Observable con la lista de parientes del cliente
+   */
+  getParientesByCliente(clienteId: number): Observable<any[]> {
+    return this.api.get<any[]>(`/cxc/parientes/cliente/${clienteId}`);
+  }
+
+  /**
+   * Obtiene las referencias personales de los clientes.
+   * @returns Observable con la lista de referencias
+   */
+  getReferencias(): Observable<any[]> {
+    return this.api.get<any[]>('/cxc/clientes-ref');
+  }
+
+  /**
+   * Obtiene las referencias personales de un cliente específico.
+   * @param clienteId - Identificador del cliente
+   * @returns Observable con la lista de referencias del cliente
+   */
+  getReferenciasByCliente(clienteId: number): Observable<any[]> {
+    return this.api.get<any[]>(`/cxc/clientes-ref/cliente/${clienteId}`);
+  }
+
+  /**
+   * Crea un nuevo registro en el histórico de CxC.
+   * @param payload - Datos del registro histórico a crear
+   * @returns Observable con el registro histórico creado
+   */
+  createHistorico(payload: unknown): Observable<CxcHistorico> {
+    return this.api.post<CxcHistorico>('/cxc/historico', payload);
+  }
+
+  /**
+   * Crea un nuevo movimiento de CxC.
+   * @param payload - Datos del movimiento a crear
+   * @returns Observable con el movimiento creado
+   */
+  createMovimiento(payload: unknown): Observable<any> {
+    return this.api.post<any>('/cxc/movimientos', payload);
+  }
+
+  /**
+   * Anula un movimiento CxC (solo manuales no contabilizados).
+   * El backend estampa fec_anulacion con fechaSistema.
+   * @param id - Identificador del movimiento (clienteMovId)
+   * @returns Observable con el movimiento anulado
+   */
+  anularMovimiento(id: number): Observable<CxcMovimiento> {
+    return this.api.putBase<CxcMovimiento>(`/cxc/movimientos/${id}/anular`, {});
+  }
+
+  /**
+   * Crea un nuevo préstamo en CxC.
+   * @param payload - Datos del préstamo a crear
+   * @returns Observable con el préstamo creado
+   */
+  createPrestamo(payload: unknown): Observable<any> {
+    return this.api.post<any>('/cxc/prestamos', payload);
+  }
+
+  /**
+   * Pre-aprueba un préstamo (guarda con prestamoId, NO genera nroprestamo).
+   */
+  preaprobarPrestamo(prestamoId: number): Observable<any> {
+    return this.api.putBase<any>(`/cxc/prestamos/${prestamoId}/preaprobado`, {});
+  }
+
+  /**
+   * Aprueba un préstamo (solo pre-aprobados).
+   */
+  aprobarPrestamo(prestamoId: number): Observable<any> {
+    return this.api.putBase<any>(`/cxc/prestamos/${prestamoId}/aprobar`, {});
+  }
+
+  /**
+   * Contabiliza un préstamo aprobado (partida D préstamo / C bancos + movimiento D capital neto).
+   */
+  contabilizarPrestamo(prestamoId: number): Observable<any> {
+    return this.api.putBase<any>(`/cxc/prestamos/${prestamoId}/contabilizar`, {});
+  }
+
+  /**
+   * Crea una nueva referencia personal para un cliente.
+   * @param payload - Datos de la referencia a crear
+   * @returns Observable con la referencia creada
+   */
+  createReferencia(payload: unknown): Observable<any> {
+    return this.api.post<any>('/cxc/clientes-ref', payload);
+  }
+
+  /**
+   * Crea un nuevo pariente registrado para un cliente.
+   * @param payload - Datos del pariente a crear
+   * @returns Observable con el pariente creado
+   */
+  createPariente(payload: unknown): Observable<any> {
+    return this.api.post<any>('/cxc/parientes', payload);
+  }
+
+  /**
+   * Crea un nuevo registro de plan de pago de préstamo.
+   * @param payload - Datos del plan de pago a crear
+   * @returns Observable con el registro creado
+   */
+  createPrestamoPP(payload: unknown): Observable<any> {
+    return this.api.post<any>('/cxc/prestamo-pp', payload);
+  }
+
+  /**
+   * Obtiene el plan de pago de un préstamo específico.
+   * @param prestamoId - Identificador del préstamo
+   * @returns Observable con la lista de cuotas del plan de pago
+   */
+  getPrestamoPPByPrestamo(prestamoId: number): Observable<any[]> {
+    return this.api.get<any[]>(`/cxc/prestamo-pp?prestamoId=${prestamoId}`);
+  }
+
+  /**
+   * Elimina TODAS las cuotas del plan de un préstamo (regenerar plan).
+   * El backend bloquea la operación si el préstamo está pre-aprobado/aprobado.
+   */
+  deletePrestamoPPByPrestamo(prestamoId: number): Observable<{ eliminadas: number }> {
+    //20261016 ARFM, creo que falta la empresa
+    return this.api.delete<{ eliminadas: number }>('/cxc/prestamo-pp/prestamo', prestamoId);
+  }
+
+  /**
+   * Obtiene la antigüedad de saldos de todos los clientes.
+   * Muestra saldos categorizados por antigüedad: corriente, 30, 60 y 90+ días.
+   * @returns Observable con la lista de antigüedad de saldos
+   */
+  getAntiguedadSaldos(): Observable<any[]> {
+    const t = Date.now();
+    return this.api.get<any[]>(`/cxc/antiguedad-saldos?_t=${t}`);
+  }
+
+  /**
+   * Obtiene los clientes que tienen saldo pendiente por cobrar.
+   * @returns Observable con la lista de clientes con saldo
+   */
+  getClientesConSaldo(): Observable<any[]> {
+    return this.api.get<any[]>('/cxc/clientes-con-saldo');
+  }
+
+  /**
+   * Obtiene los documentos con saldo pendiente de pago de un cliente.
+   * @param clienteId - Identificador del cliente
+   * @returns Observable con la lista de documentos pendientes
+   */
+  getDocumentosPendientesCliente(clienteId: number): Observable<any[]> {
+    return this.api.get<any[]>(`/cxc/documentos-pendientes/cliente/${clienteId}`);
+  }
+
+  // ========== Información adicional del cliente (cxccclientesinfo) ==========
+
+  /**
+   * Obtiene la información de contacto (celular, dirección, correo) de un cliente.
+   * @param clienteId - Identificador del cliente
+   * @returns Observable con los registros de cxccclientesinfo del cliente
+   */
+  getClienteInfoByCliente(clienteId: number): Observable<CxcClienteInfo[]> {
+    return this.api.get<CxcClienteInfo[]>(`/cxc/clientes-info/cliente/${clienteId}`);
+  }
+
+  /**
+   * Crea un registro de información de contacto del cliente.
+   * @param payload - Datos del registro a crear (clienteid, tipo, descripcion, empresaId)
+   * @returns Observable con el registro creado
+   */
+  createClienteInfo(payload: unknown): Observable<CxcClienteInfo> {
+    return this.api.post<CxcClienteInfo>('/cxc/clientes-info', payload);
+  }
+
+  /**
+   * Actualiza un registro de información de contacto del cliente.
+   * @param id - Identificador del registro (cxccclientesinfo.id)
+   * @param payload - Datos a actualizar
+   * @returns Observable con el registro actualizado
+   */
+  updateClienteInfo(id: number, payload: unknown): Observable<CxcClienteInfo> {
+    return this.api.put<CxcClienteInfo>('/cxc/clientes-info', id, payload);
+  }
+
+  /**
+   * Desactiva un registro de información de contacto (sn_activo = 'N').
+   * @param id - Identificador del registro (cxccclientesinfo.id)
+   * @returns Observable con el registro desactivado
+   */
+  removeClienteInfo(id: number): Observable<CxcClienteInfo> {
+    return this.api.putBase<CxcClienteInfo>(`/cxc/clientes-info/${id}/remove`, {});
+  }
+
+  // ========== Cartera contable por cliente (cxccarteracta) ==========
+
+  /**
+   * Obtiene todas las asignaciones de cartera contable de la empresa.
+   * El filtro por cliente se hace en el componente (el endpoint no expone clienteId).
+   * @returns Observable con las asignaciones de cxccarteracta
+   */
+  getCarterasCliente(): Observable<CxcCarteraCliente[]> {
+    return this.api.get<CxcCarteraCliente[]>('/cxc/carteras-cliente');
+  }
+
+  /**
+   * Asigna una cartera contable a un cliente.
+   * @param payload - Datos (clienteId, carteractaId, empresaId, Idsucursal)
+   * @returns Observable con la asignación creada
+   */
+  createCarteraCliente(payload: unknown): Observable<CxcCarteraCliente> {
+    return this.api.post<CxcCarteraCliente>('/cxc/carteras-cliente', payload);
+  }
+
+  /**
+   * Elimina (físico) la asignación de cartera contable de un cliente.
+   * @param id - Identificador de la asignación (cxccarteracta.id)
+   * @returns Observable con el resultado
+   */
+  removeCarteraCliente(id: number): Observable<{ id: number; eliminado: boolean }> {
+    return this.api.putBase<{ id: number; eliminado: boolean }>(
+      `/cxc/carteras-cliente/${id}/remove`,
+      {},
+    );
+  }
+
+  // ========== Caja · abono con reparto de cargos vs capital ==========
+
+  /**
+   * Genera los movimientos CxC de un cobro (caja) sobre el TOTAL recibido,
+   * repartiendo primero los cargos (interés + mora) y el resto al capital.
+   * Destino = Préstamos: en lugar de movimientos, aplica el abono a las cuotas
+   * del plan (la UI envía las cuotas cubiertas con su desglose).
+   * Idempotente: re-guardar no duplica movimientos ni cuotas.
+   * @param cajaId - Identificador del maestro de caja (cxccajaId)
+   * @returns Observable con el resumen ({ movimientos, totalEfectivo } o { cuotasPagadas, totalAplicado })
+   */
+  procesarAbono(
+    cajaId: number,
+    desglose?: {
+      interes?: number;
+      mora?: number;
+      prestamoId?: number;
+    },
+  ): Observable<{
+    movimientos?: number;
+    totalEfectivo?: number;
+    cuotasPagadas?: number[];
+    totalAplicado?: number;
+    motivo?: string;
+    interes?: number;
+    mora?: number;
+    abonoCapital?: number;
+    saldoNuevo?: number;
+    vlrcuota?: number;
+    diasInteres?: number;
+    diasMora?: number;
+  }> {
+    return this.api.post<{
+      movimientos?: number;
+      totalEfectivo?: number;
+      cuotasPagadas?: number[];
+      totalAplicado?: number;
+      motivo?: string;
+      interes?: number;
+      mora?: number;
+      abonoCapital?: number;
+      saldoNuevo?: number;
+      vlrcuota?: number;
+      diasInteres?: number;
+      diasMora?: number;
+    }>(`/cxc/caja-mae/${cajaId}/procesar-abono`, desglose ?? {});
+  }
+
+  // ========== Caja · anulación ==========
+
+  /**
+   * Anula una caja (cobro) completa: maestro, detalles y movimientos CxC.
+   * @param cajaId - Identificador del maestro de caja (cxccajaId)
+   * @returns Observable con el resultado de la anulación
+   */
+  anularCaja(cajaId: number): Observable<{ ok: boolean; mensaje: string }> {
+    return this.api.post<{ ok: boolean; mensaje: string }>(`/cxc/caja-mae/${cajaId}/anular`, {});
+  }
+
+  // ========== Caja · recibo de impresión ==========
+
+  /**
+   * Obtiene los datos completos de una caja para imprimir el recibo.
+   * @param cajaId - Identificador del maestro de caja (cxccajaId)
+   * @returns Observable con los datos del recibo (caja, detalles, cliente, empresa)
+   */
+  getCajaRecibo(cajaId: number): Observable<any> {
+    return this.api.get<any>(`/cxc/caja-mae/${cajaId}/recibo`);
+  }
+
+  // ========== Caja · rendición ==========
+
+  /**
+   * Obtiene la rendición de caja de una fecha: totales por forma de pago
+   * y detalle de cobros no anulados.
+   * @param fecha - Fecha en formato YYYY-MM-DD
+   * @returns Observable con la rendición (cajas, resumen, totalGeneral)
+   */
+  getRendicionCaja(fecha: string): Observable<any> {
+    return this.api.get<any>(`/cxc/caja-mae/rendicion?fecha=${fecha}`);
   }
 }
 
@@ -15486,10 +15931,12 @@ export const BANCOS_ROUTES: Routes = [
       <p class="page-subtitle">Pago consolidado a proveedores</p>
     </div>
     <div class="flex gap-2 align-items-center">
-      @if (facturasSeleccionadas.length > 0) {
-        <p-button size="small" label="Ver Resumen ({{ facturasSeleccionadas.length }})" icon="pi pi-list"
-          severity="success" [raised]="true" [rounded]="true" (click)="drawerResumenVisible.set(true)" />
-      }
+      <span #btnVerResumen>
+        @if (facturasSeleccionadas.length > 0) {
+          <p-button size="small" label="Ver Resumen ({{ facturasSeleccionadas.length }})" icon="pi pi-list"
+            severity="success" [raised]="true" [rounded]="true" (click)="abrirResumen()" />
+        }
+      </span>
       <a routerLink="/bancos/cheques/particulares">
         <p-button label="Cheque a Particular" icon="pi pi-user" size="small" variant="text" severity="secondary" [rounded]="true" />
       </a>
@@ -15637,9 +16084,9 @@ export const BANCOS_ROUTES: Routes = [
 <p-drawer
   [(visible)]="drawerResumenVisible"
   header="Resumen de Pago"
-  position="left"
+  position="right"
   styleClass="resumen-drawer"
-  [style]="{ width: '420px', 'max-width': '90vw' }"
+  [style.--drawer-left]="drawerLeft()"
 >
   <div class="flex flex-column gap-2 pt-1">
     <p-table [value]="proveedoresSeleccionados" size="small">
@@ -16206,13 +16653,16 @@ export const BANCOS_ROUTES: Routes = [
   }
 }
 
-/* ═══════════════ Drawer Resumen (full height bajo topbar) ═══════════════ */
+/* ═══════════════ Drawer Resumen (centrado, sin tapar Ver Resumen, top a bottom de pantalla) ═══════════════ */
 :host ::ng-deep .resumen-drawer {
-  top: 60px !important;
-  height: calc(100vh - 60px) !important;
+  top: 0 !important;
+  height: 100vh !important;
   max-height: none !important;
-  width: 420px;
-  max-width: 90vw;
+  /* Centrado horizontal; si tapa el botón Ver Resumen se corre (calculado en TS) */
+  left: var(--drawer-left, auto) !important;
+  right: auto !important;
+  width: min(420px, 90vw) !important;
+  max-width: 90vw !important;
 
   .p-drawer-header {
     background: var(--c-surface-ground, var(--c-bg));
@@ -16223,6 +16673,7 @@ export const BANCOS_ROUTES: Routes = [
   .p-drawer-content {
     background: var(--c-surface);
     padding: 1rem;
+    overflow-y: auto;
   }
 }
 ```
@@ -16232,7 +16683,7 @@ export const BANCOS_ROUTES: Routes = [
 ## 📄 src\app\features\bancos\cheques\cheques.ts
 
 ```typescript
-import { Component, inject, signal, computed, OnInit, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef, ChangeDetectionStrategy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -16287,6 +16738,10 @@ export class ChequesBancos implements OnInit {
   dialogConfirmVisible = signal(false);
   confirmMessage = signal('');
   drawerResumenVisible = signal(false);
+  /** Posición izquierda del drawer (15px a la derecha del botón "Ver Resumen"). */
+  drawerLeft = signal<string>('auto');
+
+  @ViewChild('btnVerResumen') private btnVerResumen?: ElementRef<HTMLElement>;
 
   // Formulario
   form!: FormGroup;
@@ -16370,6 +16825,33 @@ export class ChequesBancos implements OnInit {
 
   // ── Selección ───────────────────────────────────────────
 
+  /**
+   * Abre el drawer de resumen centrado horizontalmente y desplegado de top a
+   * bottom de pantalla, SIN tapar el botón "Ver Resumen": si el panel centrado
+   * lo alcanzaría (con 15px de margen), se corre a la izquierda del botón.
+   */
+  abrirResumen() {
+    const vw = window.innerWidth;
+    const ancho = Math.min(420, Math.round(vw * 0.9));
+    let left = Math.round((vw - ancho) / 2);
+
+    const el = this.btnVerResumen?.nativeElement;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      const margen = 15;
+      const tapa = left < r.right + margen && left + ancho > r.left - margen;
+      if (tapa) {
+        const porIzq = r.left - margen - ancho;
+        left = porIzq >= 0
+          ? Math.round(porIzq)
+          : Math.round(Math.min(r.right + margen, vw - ancho));
+      }
+    }
+
+    this.drawerLeft.set(`${Math.max(0, left)}px`);
+    this.drawerResumenVisible.set(true);
+  }
+
   get facturasSeleccionadas(): CompraPendientePago[] {
     return this.facturas().filter(f => f._selected);
   }
@@ -16419,11 +16901,6 @@ export class ChequesBancos implements OnInit {
       factura._montoPago = factura.saldo ?? factura.total;
     }
     this.facturas.update(facturas => [...facturas]);
-    if (this.facturasSeleccionadas.length > 0) {
-      this.drawerResumenVisible.set(true);
-    } else {
-      this.drawerResumenVisible.set(false);
-    }
   }
 
   onMontoPagoChange(factura: CompraPendientePago, valor: number) {
@@ -16435,9 +16912,6 @@ export class ChequesBancos implements OnInit {
       factura._montoPago = 0.01;
     }
     this.facturas.update(facturas => [...facturas]);
-    if (this.facturasSeleccionadas.length > 0) {
-      this.drawerResumenVisible.set(true);
-    }
   }
 
   toggleTodas(event: any) {
@@ -16447,11 +16921,6 @@ export class ChequesBancos implements OnInit {
       _selected: checked,
       _montoPago: checked ? (f.saldo ?? f.total) : f._montoPago,
     })));
-    if (this.facturasSeleccionadas.length > 0) {
-      this.drawerResumenVisible.set(true);
-    } else {
-      this.drawerResumenVisible.set(false);
-    }
   }
 
   // ── Emisión ─────────────────────────────────────────────
@@ -18438,16 +18907,23 @@ export class HistorialBancos implements OnInit {
 
   private readonly rowsPagina = 15;
 
-  readonly TIPO_MOV_OPTIONS = [
+  /**
+   * Tipos de movimiento: catálogo vivo desde `GET /bancos/ccdocs` (bcosccdocs).
+   * El fallback estático solo aplica si la API falla.
+   */
+  tipoMovOptions = signal<{ label: string; value: string }[]>([
     { label: 'Depósito', value: 'DEPOSITO' },
     { label: 'Retiro', value: 'RETIRO' },
     { label: 'Transferencia', value: 'TRANSFERENCIA' },
     { label: 'Pago', value: 'PAGO' },
-  ];
+    { label: 'Nota de Debito', value: 'NOTA_DEBITO' },
+    { label: 'Nota de Credito', value: 'NOTA_CREDITO' },
+  ]);
 
   ngOnInit() {
     this.cargarBancos();
     this.cargarCuentas();
+    this.cargarTiposMov();
 
     // Partida contable de origen (botón "Volver a la partida")
     const partidaParam = Number(this.route.snapshot.queryParamMap.get('partidaId'));
@@ -18501,6 +18977,20 @@ export class HistorialBancos implements OnInit {
         const ctas = (data || []).map((c: any) => ({ ...c, bancoId: Number(c.bancoId) }));
         this.cuentas.set(ctas);
       },
+    });
+  }
+
+  /** Carga el catálogo de tipos de movimiento desde bcosccdocs (solo activos). */
+  cargarTiposMov() {
+    this.api.get<any[]>('/bancos/ccdocs').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const opciones = (data || [])
+          .filter(d => d.sn_activo !== 'N' && d.abreviatura)
+          .map(d => ({ label: d.descripcion || d.abreviatura, value: d.abreviatura }));
+        if (opciones.length) this.tipoMovOptions.set(opciones);
+      },
+      // Sin catálogo → se conserva el fallback estático
+      error: () => {},
     });
   }
 
@@ -18575,13 +19065,15 @@ export class HistorialBancos implements OnInit {
   // ── Helpers ─────────────────────────────────────────────
 
   tipoMovLabel(tipo: string): string {
-    return this.TIPO_MOV_OPTIONS.find(o => o.value === tipo)?.label || tipo;
+    return this.tipoMovOptions().find(o => o.value === tipo)?.label || tipo;
   }
 
   tipoMovSeverity(tipo: string): 'success' | 'warn' | 'info' | 'danger' {
     switch (tipo) {
       case 'DEPOSITO': return 'success';
+      case 'NOTA_CREDITO': return 'success';
       case 'RETIRO': return 'warn';
+      case 'NOTA_DEBITO': return 'warn';
       case 'TRANSFERENCIA': return 'info';
       case 'PAGO': return 'danger';
       default: return 'info';
@@ -18709,7 +19201,7 @@ export class HistorialBancos implements OnInit {
               <div class="p-col-12 p-col-4">
                 <div class="campo">
                   <label>Tipo <span class="req">*</span></label>
-                  <p-select formControlName="tipomov" [options]="TIPO_MOV_OPTIONS"
+                  <p-select formControlName="tipomov" [options]="tipoMovOptions()"
                     optionLabel="label" optionValue="value" size="small" styleClass="w-full" appendTo="body" />
                 </div>
               </div>
@@ -19053,12 +19545,18 @@ export class MovimientosBancos implements OnInit {
   tipomovActual = signal('DEPOSITO');
   importeActual = signal(0);
 
-  readonly TIPO_MOV_OPTIONS = [
+  /**
+   * Tipos de movimiento: catálogo vivo desde `GET /bancos/ccdocs` (bcosccdocs).
+   * El fallback estático solo aplica si la API falla.
+   */
+  tipoMovOptions = signal<{ label: string; value: string }[]>([
     { label: 'Depósito', value: 'DEPOSITO' },
     { label: 'Retiro', value: 'RETIRO' },
     { label: 'Transferencia', value: 'TRANSFERENCIA' },
     { label: 'Pago', value: 'PAGO' },
-  ];
+    { label: 'Nota de Debito', value: 'NOTA_DEBITO' },
+    { label: 'Nota de Credito', value: 'NOTA_CREDITO' },
+  ]);
 
   readonly DC_OPTIONS = [
     { label: 'Débito', value: 'D' },
@@ -19089,6 +19587,21 @@ export class MovimientosBancos implements OnInit {
     this.cargarMonedas();
     this.cargarFactoresCambio();
     this.cargarCuentas();
+    this.cargarTiposMov();
+  }
+
+  /** Carga el catálogo de tipos de movimiento desde bcosccdocs (solo activos). */
+  cargarTiposMov() {
+    this.api.get<any[]>('/bancos/ccdocs').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        const opciones = (data || [])
+          .filter(d => d.sn_activo !== 'N' && d.abreviatura)
+          .map(d => ({ label: d.descripcion || d.abreviatura, value: d.abreviatura }));
+        if (opciones.length) this.tipoMovOptions.set(opciones);
+      },
+      // Sin catálogo → se conserva el fallback estático
+      error: () => {},
+    });
   }
 
   cargarBancos() {
@@ -19293,10 +19806,10 @@ export class MovimientosBancos implements OnInit {
 
   /**
    * Naturaleza derivada del tipo de movimiento:
-   * depósito (entrada) → 'D'; retiro/transferencia/pago (salida) → 'C'
+   * entrada (depósito, nota de crédito) → 'D'; salida (retiro/transferencia/pago, nota de débito) → 'C'
    */
   dcPorTipo(tipomov: string): 'D' | 'C' {
-    return tipomov === 'DEPOSITO' ? 'D' : 'C';
+    return tipomov === 'DEPOSITO' || tipomov === 'NOTA_CREDITO' ? 'D' : 'C';
   }
 
   /**
@@ -19323,13 +19836,15 @@ export class MovimientosBancos implements OnInit {
   }
 
   tipoMovLabel(tipo: string): string {
-    return this.TIPO_MOV_OPTIONS.find(o => o.value === tipo)?.label || tipo;
+    return this.tipoMovOptions().find(o => o.value === tipo)?.label || tipo;
   }
 
   tipoMovSeverity(tipo: string): 'success' | 'warn' | 'info' | 'danger' {
     switch (tipo) {
       case 'DEPOSITO': return 'success';
+      case 'NOTA_CREDITO': return 'success';
       case 'RETIRO': return 'warn';
+      case 'NOTA_DEBITO': return 'warn';
       case 'TRANSFERENCIA': return 'info';
       case 'PAGO': return 'danger';
       default: return 'info';
@@ -41114,10 +41629,7 @@ export class Caja implements OnInit {
   /** Destino del abono: 1 = Cuenta corriente (documentos), 2 = Préstamos (cuotas). */
   destinoAbono = signal<number>(1);
   /** Opciones del select "Destino de abono". */
-  readonly DESTINO_ABONO = [
-    { label: 'Cuenta corriente', value: 1 },
-    { label: 'Préstamos', value: 2 },
-  ] as const;
+  readonly DESTINO_ABONO = [{ label: 'Cuenta corriente', value: 1 }] as const;
   /** Préstamos activos del cliente (cuando destino = Préstamos). */
   prestamosCliente = signal<{ label: string; value: number; _raw: any }[]>([]);
   /**
@@ -41143,8 +41655,8 @@ export class Caja implements OnInit {
     const persistido = Number(p.vlrcuota) || 0;
     if (persistido > 0) return Math.round(persistido * 100) / 100;
     // Fallback: cálculo por fórmula francesa
-    const capitalneto = Number(p.capitalneto)
-      || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
+    const capitalneto =
+      Number(p.capitalneto) || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
     const cuotas = Number(p.cuotas) || 0;
     const i = (Number(p.tasa) || 0) / 100 / 12;
     if (capitalneto <= 0 || cuotas <= 0) return 0;
@@ -41164,15 +41676,27 @@ export class Caja implements OnInit {
     if (!p) return null;
     const saldo = Number(p.saldoactual) || Number(p.capitalneto) || Number(p.capital) || 0;
     if (saldo <= 0) {
-      return { saldo, efectivo, vlrcuota, interes: 0, mora: 0, cargos: 0, abonoCapital: 0, saldoNuevo: 0, diasInteres: 0, diasMora: 0, cumple: false };
+      return {
+        saldo,
+        efectivo,
+        vlrcuota,
+        interes: 0,
+        mora: 0,
+        cargos: 0,
+        abonoCapital: 0,
+        saldoNuevo: 0,
+        diasInteres: 0,
+        diasMora: 0,
+        cumple: false,
+      };
     }
 
-
     const hoy = new Date();
-    const fechaBase = (p.fechaUltPago ? new Date(p.fechaUltPago) : null)
-      ?? (p.fechaEfectiva ? new Date(p.fechaEfectiva) : hoy);
+    const fechaBase =
+      (p.fechaUltPago ? new Date(p.fechaUltPago) : null) ??
+      (p.fechaEfectiva ? new Date(p.fechaEfectiva) : hoy);
     const ultcuotapagada = p.ultcuotapagada;
-     const tasa = (Number(p.tasa) || 0) / 100;
+    const tasa = (Number(p.tasa) || 0) / 100;
     const tasaMor = (Number(p.moratorio) || 0) / 100;
     const diasPlazo = Number(p.diascuotas) || 0;
     const gracia = Number(p.gracia) || 0;
@@ -41180,26 +41704,40 @@ export class Caja implements OnInit {
     const diasTrans = Math.max(0, this.diasEntre(fechaBase, hoy));
     const proximo = this.sumarDias(fechaBase, diasPlazo);
     const fechaMax = this.sumarDias(proximo, gracia);
+
+    // Regla de Préstamos (ARFM20261030): DiasGraciaEfectiva = 0
     let diasInteres = diasTrans;
     let diasMora = 0;
     let diasGracia = 0;
-    if (this.diasEntre(hoy, fechaMax) >= 0) {
-      // Dentro de plazo/gracia: la gracia usada no devenga interés.
-      diasGracia = Math.max(0, this.diasEntre(proximo, hoy));
-      diasInteres = Math.max(0, diasTrans - diasGracia);
-    } else {
-      // Vencido: interés sobre todos los días + mora desde el fin de gracia.
+    if (this.diasEntre(hoy, fechaMax) < 0) {
       diasMora = this.diasEntre(fechaMax, hoy);
     }
 
     const interes = r2(saldo * tasa * (diasInteres / 360));
-    const mora = r2(saldo * tasaMor * (diasMora / 360));
+    const cuotaBase = vlrcuota > 0 ? vlrcuota : efectivo > 0 ? efectivo : 0;
+    const saldoCapitalCuota = Math.max(0, cuotaBase - interes);
+    const mora = r2(saldoCapitalCuota * tasaMor * (diasMora / 360));
     const cargos = r2(interes + mora);
-    const abonoCapital = r2(Math.max(0, efectivo - cargos));
+    const efectivoAplicar = efectivo > 0 ? efectivo : vlrcuota;
+    const abonoCapital = r2(Math.max(0, efectivoAplicar - cargos));
     const saldoNuevo = r2(Math.max(0, saldo - abonoCapital));
     return {
-      saldo, fechaBase, ultcuotapagada, proximo, fechaMax, diasTrans, diasInteres, diasMora,diasGracia,
-      interes, mora, cargos, efectivo, abonoCapital, saldoNuevo, vlrcuota,
+      saldo,
+      fechaBase,
+      ultcuotapagada,
+      proximo,
+      fechaMax,
+      diasTrans,
+      diasInteres,
+      diasMora,
+      diasGracia,
+      interes,
+      mora,
+      cargos,
+      efectivo,
+      abonoCapital,
+      saldoNuevo,
+      vlrcuota,
       cumple: efectivo >= vlrcuota - 0.01,
     };
   });
@@ -41210,7 +41748,7 @@ export class Caja implements OnInit {
   /** Total de cargos (interés + mora) devengados al día de hoy. */
   totalCargos = computed(() => {
     const doc = this.docSeleccionado();
-    return doc?.esFacturaCredito ? (Number(doc.totalCargos) || 0) : 0;
+    return doc?.esFacturaCredito ? Number(doc.totalCargos) || 0 : 0;
   });
 
   /**
@@ -41322,28 +41860,34 @@ export class Caja implements OnInit {
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data ?? []);
         const filtrados = items.filter((i: any) => ['FAC', 'NDB', 'PRE'].includes(i.abreviatura));
-        this.documentosFiscales.set(filtrados.map((i: any) => ({
-          label: i.descripcion,
-          value: i.tipodocumentofiscalId,
-        })));
+        this.documentosFiscales.set(
+          filtrados.map((i: any) => ({
+            label: i.descripcion,
+            value: i.tipodocumentofiscalId,
+          })),
+        );
       },
     });
     this.api.get<any>('/parametros/formas-pago').subscribe({
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data ?? []);
-        this.formasPago.set(items.map((i: any) => ({
-          label: i.descripcion,
-          value: i.formapagoId,
-        })));
+        this.formasPago.set(
+          items.map((i: any) => ({
+            label: i.descripcion,
+            value: i.formapagoId,
+          })),
+        );
       },
     });
     this.api.get<any>('/parametros/tarjetas-credito').subscribe({
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data ?? []);
-        this.tarjetas.set(items.map((i: any) => ({
-          label: i.descripcion,
-          value: i.tarjetacreditoId,
-        })));
+        this.tarjetas.set(
+          items.map((i: any) => ({
+            label: i.descripcion,
+            value: i.tarjetacreditoId,
+          })),
+        );
       },
     });
   }
@@ -41354,9 +41898,8 @@ export class Caja implements OnInit {
    * - destino=2 (Préstamos): solo clientes con préstamos activos (con cuotas por cobrar).
    */
   private cargarClientes() {
-    const ruta = this.destinoAbono() === 2
-      ? '/cxc/clientes-con-prestamos'
-      : '/cxc/clientes-con-saldo';
+    const ruta =
+      this.destinoAbono() === 2 ? '/cxc/clientes-con-prestamos' : '/cxc/clientes-con-saldo';
     this.api.get<any>(ruta).subscribe({
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data ?? []);
@@ -41380,63 +41923,70 @@ export class Caja implements OnInit {
   }
 
   private vigilarCliente() {
-    this.form.get('clienteId')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((clienteId) => {
-      if (!clienteId) {
-        this.form.patchValue({ nrocliente: '', nombrecliente: '' });
-        this.documentosPendientes.set([]);
-        this.documentosFiltrados.set([]);
-        this.nrosDocumento.set([]);
-        this.docSeleccionado.set(null);
-        this.prestamosCliente.set([]);
-        this.prestamoSeleccionado.set(null);
-        return;
-      }
-      this.api.get<any>(`/cxc/clientes/${clienteId}`).subscribe({
-        next: (cliente) => this.form.patchValue({
-          nrocliente: cliente?.nrocliente ?? '',
-          nombrecliente: `${cliente?.nombres ?? ''} ${cliente?.apellidos ?? ''}`.trim(),
-        }),
-        error: () => this.form.patchValue({ nrocliente: '', nombrecliente: '' }),
-      });
-
-      // Destino = Préstamos: carga los préstamos activos del cliente (no documentos)
-      // y auto-selecciona el primero para mostrar el plan de cuotas.
-      if (this.destinoAbono() === 2) {
-        this.cargarPrestamosCliente(clienteId, () => {
-          const lista = this.prestamosCliente();
-          if (lista.length) {
-            this.onPrestamoChange(lista[0].value);
-          }
-        });
-        return;
-      }
-
-      this.cxcService.getDocumentosPendientesCliente(clienteId).subscribe({
-        next: (docs) => {
-          this.documentosPendientes.set(docs);
-          this.filtrarDocumentos(docs);
-        },
-        error: () => {
+    this.form
+      .get('clienteId')
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((clienteId) => {
+        if (!clienteId) {
+          this.form.patchValue({ nrocliente: '', nombrecliente: '' });
           this.documentosPendientes.set([]);
           this.documentosFiltrados.set([]);
           this.nrosDocumento.set([]);
-        },
+          this.docSeleccionado.set(null);
+          this.prestamosCliente.set([]);
+          this.prestamoSeleccionado.set(null);
+          return;
+        }
+        this.api.get<any>(`/cxc/clientes/${clienteId}`).subscribe({
+          next: (cliente) =>
+            this.form.patchValue({
+              nrocliente: cliente?.nrocliente ?? '',
+              nombrecliente: `${cliente?.nombres ?? ''} ${cliente?.apellidos ?? ''}`.trim(),
+            }),
+          error: () => this.form.patchValue({ nrocliente: '', nombrecliente: '' }),
+        });
+
+        // Destino = Préstamos: carga los préstamos activos del cliente (no documentos)
+        // y auto-selecciona el primero para mostrar el plan de cuotas.
+        if (this.destinoAbono() === 2) {
+          this.cargarPrestamosCliente(clienteId, () => {
+            const lista = this.prestamosCliente();
+            if (lista.length) {
+              this.onPrestamoChange(lista[0].value);
+            }
+          });
+          return;
+        }
+
+        this.cxcService.getDocumentosPendientesCliente(clienteId).subscribe({
+          next: (docs) => {
+            this.documentosPendientes.set(docs);
+            this.filtrarDocumentos(docs);
+          },
+          error: () => {
+            this.documentosPendientes.set([]);
+            this.documentosFiltrados.set([]);
+            this.nrosDocumento.set([]);
+          },
+        });
       });
-    });
   }
 
   /** Cambia el destino del abono: limpia cliente, documentos y plan de cuotas. */
   onDestinoChange() {
     const destino = this.form.get('destinoabono')?.value ?? 1;
     this.destinoAbono.set(Number(destino));
-    this.form.patchValue({
-      clienteId: null,
-      nrocliente: '',
-      nombrecliente: '',
-      prestamoId: null,
-      documentoId: null,
-      nrodocumento: null,
-    }, { emitEvent: false });
+    this.form.patchValue(
+      {
+        clienteId: null,
+        nrocliente: '',
+        nombrecliente: '',
+        prestamoId: null,
+        documentoId: null,
+        nrodocumento: null,
+      },
+      { emitEvent: false },
+    );
     this.documentosPendientes.set([]);
     this.documentosFiltrados.set([]);
     this.nrosDocumento.set([]);
@@ -41453,15 +42003,20 @@ export class Caja implements OnInit {
       next: (prestamos) => {
         // Activo = no anulado, sn_activo='S' Y con saldo de capital por cobrar
         // (los totalmente pagados conservan sn_activo='S' en BD).
-        const activos = (prestamos ?? []).filter((p: any) =>
-          p.sn_activo === 'S' && p.sn_anulado !== 'S' && Number(p.saldoactual ?? p.capital ?? 0) > 0,
+        const activos = (prestamos ?? []).filter(
+          (p: any) =>
+            p.sn_activo === 'S' &&
+            p.sn_anulado !== 'S' &&
+            Number(p.saldoactual ?? p.capital ?? 0) > 0,
         );
-        this.prestamosCliente.set(activos.map((p: any) => ({
-          // saldoactual: capital pendiente (fallback al capital para préstamos antiguos sin saldo)
-          label: `${p.nroprestamo} · Saldo L ${Number(p.saldoactual ?? p.capital ?? 0).toFixed(2)} · Cuota L ${this.calcularVlrcuota(p).toFixed(2)}`,
-          value: p.prestamoId,
-          _raw: p,
-        })));
+        this.prestamosCliente.set(
+          activos.map((p: any) => ({
+            // saldoactual: capital pendiente (fallback al capital para préstamos antiguos sin saldo)
+            label: `${p.nroprestamo} · Saldo L ${Number(p.saldoactual ?? p.capital ?? 0).toFixed(2)} · Cuota L ${this.calcularVlrcuota(p).toFixed(2)}`,
+            value: p.prestamoId,
+            _raw: p,
+          })),
+        );
         after?.();
       },
       error: () => {
@@ -41479,15 +42034,17 @@ export class Caja implements OnInit {
   onPrestamoChange(prestamoId: number | null) {
     this.form.patchValue({ prestamoId: prestamoId ?? null }, { emitEvent: false });
     this.prestamoSeleccionado.set(
-      prestamoId ? (this.prestamosCliente().find((p) => p.value === prestamoId)?._raw ?? null) : null,
+      prestamoId
+        ? (this.prestamosCliente().find((p) => p.value === prestamoId)?._raw ?? null)
+        : null,
     );
   }
 
   /** Cuota pactada de un préstamo (francesa mensual) — espejo de vlrcuotaPactada por objeto. */
   private calcularVlrcuota(p: any): number {
     if (!p) return 0;
-    const capitalneto = Number(p.capitalneto)
-      || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
+    const capitalneto =
+      Number(p.capitalneto) || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
     const cuotas = Number(p.cuotas) || 0;
     const i = (Number(p.tasa) || 0) / 100 / 12;
     if (capitalneto <= 0 || cuotas <= 0) return 0;
@@ -41511,15 +42068,16 @@ export class Caja implements OnInit {
 
   /** Observa el control nrodocumento (forma reactiva) para fijar el doc con desglose. */
   private vigilarNroDocumento() {
-    this.form.get('nrodocumento')?.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    this.form
+      .get('nrodocumento')
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((nro) => this.onNroDocumentoChange(nro));
   }
 
   private filtrarDocumentos(docs: any[]) {
-    const tiposUnicos = [...new Set(docs.map(d => d.documentoId))];
+    const tiposUnicos = [...new Set(docs.map((d) => d.documentoId))];
     const allOpts = this.documentosFiscales();
-    const filtradas = allOpts.filter(o => tiposUnicos.includes(o.value));
+    const filtradas = allOpts.filter((o) => tiposUnicos.includes(o.value));
     this.documentosFiltrados.set(filtradas);
     this.form.get('documentoId')?.setValue(null);
     this.form.get('nrodocumento')?.setValue(null);
@@ -41531,11 +42089,13 @@ export class Caja implements OnInit {
     this.form.get('nrodocumento')?.setValue(null);
     this.docSeleccionado.set(null);
     if (docId) {
-      const docs = this.documentosPendientes().filter(d => d.documentoId === docId);
-      this.nrosDocumento.set(docs.map(d => ({
-        label: `${d.nroreferencia} (Saldo: ${d.saldo.toFixed(2)})`,
-        value: d.nroreferencia,
-      })));
+      const docs = this.documentosPendientes().filter((d) => d.documentoId === docId);
+      this.nrosDocumento.set(
+        docs.map((d) => ({
+          label: `${d.nroreferencia} (Saldo: ${d.saldo.toFixed(2)})`,
+          value: d.nroreferencia,
+        })),
+      );
     } else {
       this.nrosDocumento.set([]);
     }
@@ -41547,7 +42107,7 @@ export class Caja implements OnInit {
       this.docSeleccionado.set(null);
       return;
     }
-    const doc = this.documentosPendientes().find(d => d.nroreferencia === nro);
+    const doc = this.documentosPendientes().find((d) => d.nroreferencia === nro);
     this.docSeleccionado.set(doc ?? null);
   }
 
@@ -41592,7 +42152,11 @@ export class Caja implements OnInit {
   private validarDetalles(): boolean {
     const filas = this.dets();
     if (filas.length === 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Debe agregar al menos una forma de pago' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Debe agregar al menos una forma de pago',
+      });
       return false;
     }
 
@@ -41601,12 +42165,20 @@ export class Caja implements OnInit {
       const importe = Number(fila['importe']) || 0;
 
       if (!fila['formapagoId']) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: `Fila ${i + 1}: seleccione la forma de pago` });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: `Fila ${i + 1}: seleccione la forma de pago`,
+        });
         return false;
       }
 
       if (importe <= 0) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: `Fila ${i + 1}: el importe debe ser mayor a cero` });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: `Fila ${i + 1}: el importe debe ser mayor a cero`,
+        });
         return false;
       }
 
@@ -41614,7 +42186,11 @@ export class Caja implements OnInit {
       if (fila['nrotarjeta'] && String(fila['nrotarjeta']).trim()) {
         const nrotarjeta = String(fila['nrotarjeta']).replace(/[\s-]/g, '');
         if (nrotarjeta.length >= 13 && !this.validarLuhn(nrotarjeta)) {
-          this.msgs.add({ severity: 'warn', summary: 'Validación', detail: `Fila ${i + 1}: número de tarjeta inválido (Luhn)` });
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Validación',
+            detail: `Fila ${i + 1}: número de tarjeta inválido (Luhn)`,
+          });
           return false;
         }
       }
@@ -41727,7 +42303,7 @@ export class Caja implements OnInit {
     this.service.getDet<any>(`/cxc/caja-det/factura/${this.itemId}`).subscribe({
       next: (mios) => {
         this.dets.set((mios ?? []).map((d) => ({ ...d })));
-        for (const d of (mios ?? [])) this.detGuardados.add(d['cxccajadetId']);
+        for (const d of mios ?? []) this.detGuardados.add(d['cxccajadetId']);
         this.contadorFila = (mios ?? []).length;
         this.recalcularTotal();
         this.cargando.set(false);
@@ -41744,7 +42320,11 @@ export class Caja implements OnInit {
           },
           error: () => {
             this.cargando.set(false);
-            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los detalles' });
+            this.msgs.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudieron cargar los detalles',
+            });
           },
         });
       },
@@ -41754,16 +42334,19 @@ export class Caja implements OnInit {
   nuevaFila() {
     if (!this.puedeEditar()) return;
     this.contadorFila += 1;
-    this.dets.update((d) => [...d, {
-      __local: true,
-      nrofila: this.contadorFila,
-      formapagoId: null,
-      importe: 0,
-      tarjetacreditoId: null,
-      nrotarjeta: '',
-      nroautorizacion: '',
-      factordecambio: 0,
-    }]);
+    this.dets.update((d) => [
+      ...d,
+      {
+        __local: true,
+        nrofila: this.contadorFila,
+        formapagoId: null,
+        importe: 0,
+        tarjetacreditoId: null,
+        nrotarjeta: '',
+        nroautorizacion: '',
+        factordecambio: 0,
+      },
+    ]);
   }
 
   quitarFila(idx: number) {
@@ -41801,7 +42384,11 @@ export class Caja implements OnInit {
 
     if (this.destinoAbono() === 2) {
       if (!this.form.get('prestamoId')?.value) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione el préstamo a pagar' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: 'Seleccione el préstamo a pagar',
+        });
         return;
       }
       const rp = this.repartoPrestamo();
@@ -41838,7 +42425,6 @@ export class Caja implements OnInit {
   }
 
   private ejecutarGuardado() {
-
     const maeBody = {
       ...this.form.getRawValue(),
       ...(this.esEdicion() ? {} : { empresaId: this.auth.currentUser()?.empresaId }),
@@ -41856,7 +42442,11 @@ export class Caja implements OnInit {
       },
       error: () => {
         this.guardando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la caja' });
+        this.msgs.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo guardar la caja',
+        });
       },
     });
   }
@@ -41875,7 +42465,11 @@ export class Caja implements OnInit {
     };
     const fail = () => {
       this.guardando.set(false);
-      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar uno de los detalles' });
+      this.msgs.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo guardar uno de los detalles',
+      });
     };
 
     const empresaId = this.auth.currentUser()?.empresaId;
@@ -41884,7 +42478,9 @@ export class Caja implements OnInit {
       const body = { ...fila, cxccajaId: maeId, empresaId };
       delete body.__local;
       if (detId && this.detGuardados.has(detId)) {
-        this.service.updateDet<any>('/cxc/caja-det', detId, body).subscribe({ next: ok, error: fail });
+        this.service
+          .updateDet<any>('/cxc/caja-det', detId, body)
+          .subscribe({ next: ok, error: fail });
       } else {
         this.service.createDet<any>('/cxc/caja-det', body).subscribe({ next: ok, error: fail });
       }
@@ -42023,7 +42619,11 @@ export class Caja implements OnInit {
       },
       error: () => {
         this.imprimiendo.set(false);
-        this.msgs.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudieron cargar los datos del recibo' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Impresión',
+          detail: 'No se pudieron cargar los datos del recibo',
+        });
       },
     });
   }
@@ -42034,19 +42634,29 @@ export class Caja implements OnInit {
     const empresa = data.empresa;
     const detalles = data.detalles || [];
 
-    const fmt = (n: number) => `L ${Number(n || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    const fecha = caja.fecharegistro ? new Date(caja.fecharegistro).toLocaleDateString('es-HN') : '';
-    const hora = caja.fecharegistro ? new Date(caja.fecharegistro).toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' }) : '';
+    const fmt = (n: number) =>
+      `L ${Number(n || 0).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const fecha = caja.fecharegistro
+      ? new Date(caja.fecharegistro).toLocaleDateString('es-HN')
+      : '';
+    const hora = caja.fecharegistro
+      ? new Date(caja.fecharegistro).toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '';
 
-    const pagosHtml = detalles.map((d: any) => {
-      let extra = '';
-      if (d.nrotarjeta) extra += ` ****${String(d.nrotarjeta).slice(-4)}`;
-      if (d.nroautorizacion) extra += ` Aut: ${d.nroautorizacion}`;
-      return `<tr>
+    const pagosHtml = detalles
+      .map((d: any) => {
+        let extra = '';
+        if (d.nrotarjeta) extra += ` ****${String(d.nrotarjeta).slice(-4)}`;
+        if (d.nroautorizacion) extra += ` Aut: ${d.nroautorizacion}`;
+        return `<tr>
         <td>${d.formaPago}${extra}</td>
         <td class="right">${fmt(d.importe)}</td>
       </tr>`;
-    }).join('');
+      })
+      .join('');
 
     const html = `<!DOCTYPE html>
 <html lang="es">
@@ -42106,11 +42716,15 @@ export class Caja implements OnInit {
     ${caja.nrodocumento ? `<div class="row"><span>Documento #:</span><span>${caja.nrodocumento}</span></div>` : ''}
   </div>
 
-  ${data.prestamo ? `
+  ${
+    data.prestamo
+      ? `
   <div class="doc-info">
     <div class="row"><span>Préstamo #:</span><span class="bold">${data.prestamo.nroprestamo}</span></div>
     <div class="row"><span>Cuotas pagadas:</span><span class="bold">${data.prestamo.cuotas.map((c: any) => '#' + c.nrofila).join(', ')}</span></div>
-  </div>` : ''}
+  </div>`
+      : ''
+  }
 
   <div class="line"></div>
 
@@ -42156,7 +42770,11 @@ export class Caja implements OnInit {
 
     const printWindow = window.open('', '_blank', 'width=320,height=600');
     if (!printWindow) {
-      this.msgs.add({ severity: 'warn', summary: 'Impresión', detail: 'Permita las ventanas emergentes para imprimir' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Impresión',
+        detail: 'Permita las ventanas emergentes para imprimir',
+      });
       return;
     }
     printWindow.document.write(html);
@@ -42201,7 +42819,11 @@ export class Caja implements OnInit {
             this.anulando.set(false);
             this.esAnulada.set(true);
             this.form.disable();
-            this.msgs.add({ severity: 'success', summary: 'Anulada', detail: res.mensaje || 'Caja anulada correctamente' });
+            this.msgs.add({
+              severity: 'success',
+              summary: 'Anulada',
+              detail: res.mensaje || 'Caja anulada correctamente',
+            });
           },
           error: (err) => {
             this.anulando.set(false);
@@ -42655,7 +43277,7 @@ export class CartasRecordatorio implements OnInit {
   load() {
     this.cargando.set(true);
     forkJoin({
-      clientes: this.service.getClientes(1, 9999),
+      clientes: this.service.getClientes(1, 9999, '', 4),
       movimientos: this.service.getMovimientos(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: ({ clientes, movimientos }) => {
@@ -43459,6 +44081,7 @@ export class ClienteForm implements OnInit {
       }
       payload = {
         ...cleaned,
+        moduloId: 4,
         empresaId: this.auth.currentUser()?.empresaId,
         sn_activo: 'S',
       };
@@ -45349,7 +45972,7 @@ export class ClientesManager implements OnInit {
 
   loadClientes() {
     this.cargando.set(true);
-    this.service.getClientes(this.page(), this.limit(), this.q()).pipe(
+    this.service.getClientes(this.page(), this.limit(), this.q(), 4).pipe(
       takeUntilDestroyed(this.destroyRef),
       timeout(10000),
       catchError(() => of({ data: [], total: 0 }))
@@ -45915,6 +46538,7 @@ export class ClientesManager implements OnInit {
         [ngModel]="q()"
         (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()"
+        pTooltip="Presione enter para consultar"
         pSize="small"
       />
     </div>
@@ -46014,6 +46638,7 @@ import { ActivatedRoute } from '@angular/router';
 import { DataViewModule } from 'primeng/dataview';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 
@@ -46035,7 +46660,7 @@ const CAMPOS_AUDITORIA = [
 @Component({
   selector: 'app-consulta',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataViewModule, ButtonModule, InputTextModule],
+  imports: [CommonModule, FormsModule, DataViewModule, ButtonModule, InputTextModule, TooltipModule],
   templateUrl: './consulta.html',
   styleUrl: './consulta.scss',
 })
@@ -46153,11 +46778,6 @@ export const CXC_ROUTES: Routes = [
     path: 'clientes/editar/:id',
     loadComponent: () => import('./clientes/cliente-form').then((m) => m.ClienteForm),
   },
-  {
-    path: 'prestamos',
-    loadComponent: () =>
-      import('./prestamos/prestamos-manager').then((m) => m.PrestamosManager),
-  },
 
   // Consultas (solo lectura)
   {
@@ -46177,14 +46797,18 @@ export const CXC_ROUTES: Routes = [
   },
   {
     path: 'historico',
-    loadComponent: () =>
-      import('./historico/historico-manager').then((m) => m.HistoricoManager),
+    loadComponent: () => import('./historico/historico-manager').then((m) => m.HistoricoManager),
   },
   {
     path: 'saldo-favor',
     component: Consulta,
     data: {
-      consulta: { nombre: 'saldo-favor', titulo: 'Saldo a Favor', ruta: '/cxc/saldo-favor', idKey: 'cxcsalfavId' },
+      consulta: {
+        nombre: 'saldo-favor',
+        titulo: 'Saldo a Favor',
+        ruta: '/cxc/saldo-favor',
+        idKey: 'cxcsalfavId',
+      },
     },
   },
 
@@ -46192,24 +46816,28 @@ export const CXC_ROUTES: Routes = [
   {
     path: 'carteras-cliente',
     data: { nombre: 'carteras-cliente' },
-    loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
   },
   {
     path: 'carteras-cliente/editar/:id',
     data: { nombre: 'carteras-cliente' },
-    loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
   },
 
   // Información de clientes - celulares, direcciones y correos (catálogo genérico)
   {
     path: 'clientes-info',
     data: { nombre: 'clientes-info' },
-    loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
   },
   {
     path: 'clientes-info/editar/:id',
     data: { nombre: 'clientes-info' },
-    loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+    loadComponent: () =>
+      import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
   },
 
   { path: '**', redirectTo: 'caja' },
@@ -46591,7 +47219,7 @@ export class HistoricoManager implements OnInit {
   }
 
   private cargarClientes() {
-    this.service.getClientes(1, 1000).pipe(
+    this.service.getClientes(1, 1000, '', 4).pipe(
       takeUntilDestroyed(this.destroyRef),
       timeout(15000),
       catchError(() => of({ data: [] as CxcCliente[], total: 0 })),
@@ -48040,7 +48668,7 @@ export class MovimientosManager implements OnInit {
   // ===== CLIENTES =====
   loadClientes() {
     this.cargando.set(true);
-    this.service.getClientes(this.page(), this.limit(), this.q()).pipe(
+    this.service.getClientes(this.page(), this.limit(), this.q(), 4).pipe(
       takeUntilDestroyed(this.destroyRef),
       timeout(10000),
       catchError(() => of({ data: [], total: 0 }))
@@ -48438,1625 +49066,6 @@ export class MovimientosManager implements OnInit {
         this.msgs.add({ severity: 'error', summary: 'Error', detail });
       },
     });
-  }
-}
-
-```
-
----
-
-## 📄 src\app\features\cxc\prestamos\prestamos-manager.html
-
-```typescript
-<div class="prestamos-manager">
-  <div class="split-layout">
-
-    <!-- Columna izquierda: formulario prestamo + plan de pago -->
-    <div class="left-column">
-      @if (!selectedCliente()) {
-      <div class="empty-state">
-        <i class="pi pi-arrow-right empty-icon"></i>
-        <h3>Seleccione un cliente</h3>
-        <p>Haga clic en un cliente de la lista para ver su prestamo</p>
-
-        <div class="grid">
-          <div class="col-12 flex flex-wrap justify-center gap-2">
-            <p-iconField>
-              <p-inputIcon class="pi pi-search" />
-              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
-                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
-              <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
-                [rounded]="true" size="small"></p-button>
-            </p-iconField>
-          </div>
-        </div>
-      </div>
-      }
-
-      @if (selectedCliente()) {
-      <div class="cliente-detail">
-        <div class="cliente-header-inline">
-          <span class="cliente-inline-codigo">Codigo.: {{ selectedCliente()?.nrocliente }} -</span>
-          <span class="cliente-inline-nombre">{{ getClienteNombre(selectedCliente()) }}</span>
-        </div>
-
-        @if (prestamosLoading()) {
-        <div class="loading-center">
-          <p-progressSpinner strokeWidth="4" fill="transparent" animationDuration=".8s"></p-progressSpinner>
-          <span class="loading-text">Cargando prestamo...</span>
-        </div>
-        } @else {
-        <div class="tab-content">
-          <!-- Formulario dos columnas -->
-          <div class="prestamo-form-columns mb-3">
-            <div class="prestamo-col">
-              <h5 class="prestamo-col-title">Datos del Prestamo</h5>
-              <div class="p-fluid">
-                <div class="p-field">
-                  <label>Nro. Prestamo</label>
-                  <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo || ''"
-                    placeholder="Se asigna al aprobar" [readonly]="true" />
-                </div>
-                <div class="p-field">
-                  <label>Capital Solicitado</label>
-                  <p-inputNumber size="small" [ngModel]="prestamoModel().capital"
-                    (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})"
-                    (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'"
-                    [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2"
-                    locale="es-HN"
-                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
-                    [disabled]="!!prestamoData()"></p-inputNumber>
-                </div>
-                <div class="p-field">
-                  <label>Prima (aporte del cliente)</label>
-                  <p-inputNumber size="small" [ngModel]="prestamoModel().prima"
-                    (ngModelChange)="prestamoModel.set({...prestamoModel(), prima: $event})"
-                    (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'"
-                    [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2"
-                    locale="es-HN"
-                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
-                    [disabled]="!!prestamoData()"></p-inputNumber>
-                </div>
-                <div class="p-field">
-                  <label>Capital Neto (solo lectura)</label>
-                  <p-inputNumber size="small" [ngModel]="capitalnetoCalc()" [readonly]="true"
-                    mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0"
-                    [minFractionDigits]="2" [maxFractionDigits]="2" locale="es-HN"
-                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
-                </div>
-                <div class="p-field">
-                  <label>Cuotas</label>
-                  <p-inputNumber size="small" [ngModel]="prestamoModel().cuotas"
-                    (ngModelChange)="prestamoModel.set({...prestamoModel(), cuotas: $event})"
-                    (blur)="calcularCuota()" [min]="1"
-                    [disabled]="!!prestamoData()"></p-inputNumber>
-                </div>
-                <div class="p-field">
-                  <label>Valor Cuota</label>
-                  <p-inputNumber size="small" [ngModel]="prestamoModel().vlrcuota" [readonly]="true"
-                    mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0"
-                    [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
-                    [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
-                </div>
-              </div>
-            </div>
-
-            <div class="prestamo-col">
-              <h5 class="prestamo-col-title">Tasas y Control</h5>
-              <div class="p-fluid">
-                <div class="p-field">
-                  <label>Tasa anual %</label>
-                  <p-inputNumber size="small" [ngModel]="prestamoModel().tasa"
-                    (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})"
-                    (blur)="calcularCuota()" mode="decimal" [min]="0" [step]="0.01"
-                    locale="es-HN"
-                    [minFractionDigits]="2" [maxFractionDigits]="2"
-                    [inputStyle]="{ 'width': '100%' }"
-                    [disabled]="!!prestamoData()"></p-inputNumber>
-                </div>
-                <div class="p-field">
-                  <label>Tasa moratoria %</label>
-                  <p-inputNumber size="small" [ngModel]="prestamoModel().moratorio"
-                    (ngModelChange)="prestamoModel.set({...prestamoModel(), moratorio: $event})"
-                    mode="decimal" [min]="0" [step]="0.01"
-                    locale="es-HN"
-                    [minFractionDigits]="2" [maxFractionDigits]="2"
-                    [inputStyle]="{ 'width': '100%' }"
-                    [disabled]="!!prestamoData()"></p-inputNumber>
-                </div>
-                <div class="p-field">
-                  <label>Fecha Aprobación</label>
-                  <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)"
-                    dateFormat="dd/mm/yy" [showIcon]="true" size="small" [appendTo]="'body'"
-                    styleClass="w-full"
-                    [disabled]="!!prestamoData()"></p-datepicker>
-                </div>
-                <div class="p-field">
-                  <label>Fecha 1er Cuota (aprobación + 30 días)</label>
-                  <input pInputText pSize="small"
-                    [value]="(fechaEfectivaCalc() | date:'dd/MM/yyyy') || ''" [readonly]="true" />
-                </div>
-                <div class="p-field">
-                  <label>Estado del flujo</label>
-                  <div class="estado-flujo-tags">
-                    @if (prestamoData(); as pres) {
-                      <p-tag [value]="pres.sn_preaprobado === 'S' ? 'Pre-aprobado' : 'Sin pre-aprobar'"
-                        [severity]="pres.sn_preaprobado === 'S' ? 'warn' : 'secondary'"></p-tag>
-                      <p-tag [value]="pres.sn_aprobado === 'S' ? 'Aprobado' : 'Sin aprobar'"
-                        [severity]="pres.sn_aprobado === 'S' ? 'success' : 'secondary'"></p-tag>
-                      <p-tag [value]="pres.sn_contabilizado === 'S' ? 'Contabilizado' : 'Sin contabilizar'"
-                        [severity]="pres.sn_contabilizado === 'S' ? 'info' : 'secondary'"></p-tag>
-                    } @else {
-                      <p-tag value="Nuevo" severity="secondary"></p-tag>
-                    }
-                  </div>
-                </div>
-                <div class="p-field">
-                  <label>Estado</label>
-                  <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo"
-                    (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"
-                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar estado"
-                    [disabled]="!!prestamoData()"></p-select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Control del préstamo (solo consulta cuando ya existe) -->
-          @if (prestamoData(); as pres) {
-          <div class="prestamo-info-control mb-3">
-            <table class="pic-tabla">
-              <thead>
-                <tr>
-                  <th>Capital</th>
-                  <th>Fecha</th>
-                  <th>Fecha efectiva</th>
-                  <th>Saldo</th>
-                  <th>Fecha</th>
-                  <th>Nro Cuota</th>
-                </tr>
-                <tr>
-                  <th>Neto aprobado</th>
-                  <th>Aprobación</th>
-                  <th>(1era cuota)</th>
-                  <th>Actual</th>
-                  <th>Ult. pago</th>
-                  <th>Ult. pagada</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="pic-valor">{{ moneda(pres.capitalneto) }}</td>
-                  <td class="pic-valor">{{ (pres.fecha_aprobacion | date:'dd/MM/yyyy') || '—' }}</td>
-                  <td class="pic-valor">{{ (pres.fechaEfectiva | date:'dd/MM/yyyy') || '—' }}</td>
-                  <td class="pic-valor pic-saldo">{{ moneda(pres.saldoactual) }}</td>
-                  <td class="pic-valor">{{ (pres.fechaUltPago | date:'dd/MM/yyyy') || '—' }}</td>
-                  <td class="pic-valor">{{ pres.ultcuotapagada ? '#' + pres.ultcuotapagada : '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          }
-
-          <!-- Botones del flujo (siempre visibles; deshabilitados con motivo) -->
-          <div class="prestamo-actions mb-3">
-            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary"
-              (click)="cancelar()" [rounded]="true" size="small"></p-button>
-
-            <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
-              (click)="generarPlanPago()" [rounded]="true" size="small"
-              [disabled]="!puedeGenerarPlan()"
-              [pTooltip]="motivoBloqueoPlan()" tooltipPosition="bottom"></p-button>
-
-            <p-button label="Pre-Aprobación" icon="pi pi-check-circle" variant="text" severity="warn"
-              [loading]="prestamoSaving()" (click)="preaprobar()" [rounded]="true" size="small"
-              [disabled]="!puedePreaprobar()"
-              [pTooltip]="motivoBloqueoPreaprobado()" tooltipPosition="bottom"></p-button>
-
-            <p-button label="Aprobación" icon="pi pi-verified" variant="text" severity="success"
-              [loading]="prestamoSaving()" (click)="confirmarAprobar()" [rounded]="true" size="small"
-              [disabled]="!puedeAprobar()"
-              [pTooltip]="motivoBloqueoAprobar()" tooltipPosition="bottom"></p-button>
-
-            <p-button label="Contabilización" icon="pi pi-book" variant="text" severity="info"
-              [loading]="prestamoSaving()" (click)="confirmarContabilizar()" [rounded]="true" size="small"
-              [disabled]="!puedeContabilizar()"
-              [pTooltip]="motivoBloqueoContabilizar()" tooltipPosition="bottom"></p-button>
-          </div>
-
-          <!-- Plan de pago -->
-          @if (showPlanPago() && planPago().length > 0) {
-          <div class="card">
-            <div class="tab-header">
-              <h4>Plan de Pago - Amortizacion</h4>
-              <span class="cuotas-info">{{ planPago().length }} cuotas</span>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>Cuota</th>
-                    <th>Fecha Pago</th>
-                    <th class="col-importe">Cuota</th>
-                    <th class="col-importe">Capital</th>
-                    <th class="col-importe">Interes</th>
-                    <th class="col-importe">Saldo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (fila of planPago(); track fila.nrofila) {
-                  <tr [class.fila-pagada]="fila.sn_pagada === 'S'">
-                    <td>{{ fila.nrofila }}</td>
-                    <td>{{ fila.FechaPago | date:'dd/MM/yyyy' }}</td>
-                    <td class="col-importe">{{ moneda(fila.vlrcuota) }}</td>
-                    <td class="col-importe">{{ moneda(fila.capital) }}</td>
-                    <td class="col-importe">{{ moneda(fila.interes) }}</td>
-                    <td class="col-importe">{{ moneda(fila.saldo) }}</td>
-                  </tr>
-                  }
-                </tbody>
-                <tfoot>
-                  <tr class="fw-bold">
-                    <td colspan="2">Totales</td>
-                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.vlrcuota || 0), 0)) }}</td>
-                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.capital || 0), 0)) }}</td>
-                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.interes || 0), 0)) }}</td>
-                    <td class="col-importe"></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-          }
-        </div>
-        }
-      </div>
-      }
-    </div>
-
-    <!-- Columna derecha: lista de clientes -->
-    <div class="right-column">
-      <div class="search-bar">
-        <div class="search-input-wrapper">
-          <i class="pi pi-search"></i>
-          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
-            (keyup.enter)="loadClientes()" placeholder="Buscar por nombre, DNI, RTN..."
-            class="search-input" />
-          <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
-            [rounded]="true" size="small" class="clear-btn"></p-button>
-        </div>
-      </div>
-
-      @if (cargando()) {
-      <div class="loading-skeleton">
-        @for (i of [1,2,3,4,5]; track i) {
-        <div class="skeleton-item">
-          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
-          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
-          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
-        </div>
-        }
-      </div>
-      } @else if (data().length === 0) {
-      <div class="empty-state">
-        <i class="pi pi-users empty-icon"></i>
-        <h3>No hay clientes</h3>
-        <p>No se encontraron clientes registrados.</p>
-      </div>
-      } @else {
-      <div class="clientes-lista">
-        @for (cliente of data(); track cliente.clienteId) {
-        <div class="cliente-item-ficha"
-          [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
-          (click)="seleccionarCliente(cliente)">
-          <div class="item-ficha-header">
-            <span class="ficha-label">Codigo:</span>
-            <span class="ficha-value">{{ cliente.nrocliente }}</span>
-            <p-tag [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
-              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
-              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
-          </div>
-          <div class="item-ficha-row">
-            <span class="ficha-label">Apellidos:</span>
-            <span class="ficha-value">{{ cliente.apellidos }}</span>
-          </div>
-          <div class="item-ficha-row">
-            <span class="ficha-label">Nombres:</span>
-            <span class="ficha-value">{{ cliente.nombres }}</span>
-          </div>
-          <div class="item-ficha-row">
-            <span class="ficha-label">DNI:</span>
-            <span class="ficha-value">{{ cliente.dni }}</span>
-          </div>
-          @if (cliente.rtn) {
-          <div class="item-ficha-row">
-            <span class="ficha-label">RTN:</span>
-            <span class="ficha-value">{{ cliente.rtn }}</span>
-          </div>
-          }
-          <div class="item-ficha-row">
-            <span class="ficha-label">Dias plazo:</span>
-            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
-          </div>
-          <div class="item-ficha-row">
-            <span class="ficha-label">Limite Credito:</span>
-            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
-          </div>
-          <div class="item-ficha-row">
-            <span class="ficha-label">Tasa interes:</span>
-            <span class="ficha-value">{{ cliente.interes }}%</span>
-          </div>
-          <div class="item-ficha-row">
-            <span class="ficha-label">Categoria:</span>
-            <span class="ficha-value">{{ cliente.categoria }}</span>
-          </div>
-        </div>
-        }
-      </div>
-
-      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
-        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
-        styleClass="paginator-compact"></p-paginator>
-      }
-    </div>
-  </div>
-</div>
-
-<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
-
-```
-
----
-
-## 📄 src\app\features\cxc\prestamos\prestamos-manager.scss
-
-```typescript
-.prestamos-manager {
-  height: calc(100vh - 4rem);
-  display: flex;
-  flex-direction: column;
-}
-
-.split-layout {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.left-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--c-bg);
-  overflow: hidden;
-}
-
-.right-column {
-  width: 380px;
-  min-width: 350px;
-  border-left: 1px solid var(--c-border);
-  display: flex;
-  flex-direction: column;
-  background: var(--c-surface);
-}
-
-// ===== Utilidades =====
-
-.mb-3 {
-  margin-bottom: 1rem;
-}
-
-// ===== Inputs disabled (refuerzo visual) =====
-
-app-prestamos-manager {
-  .p-inputtext[readonly],
-  .p-inputtext:disabled {
-    color: var(--c-text-muted) !important;
-    font-style: italic;
-  }
-}
-
-// ===== Busqueda y lista (columna derecha) =====
-
-.search-bar {
-  padding: 1rem;
-  border-bottom: 1px solid var(--c-border);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-
-  .search-input-wrapper {
-    flex: 1;
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-}
-
-.search-input-wrapper .pi-search {
-  position: absolute;
-  left: 0.75rem;
-  color: var(--c-text-muted);
-  z-index: 1;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem 0.5rem 2.5rem;
-  border: 1px solid var(--for-border-color-alls);
-  border-radius: 6px;
-  background: var(--c-bg);
-  color: var(--c-text);
-}
-
-.clear-btn {
-  position: absolute;
-  right: 0.25rem;
-}
-
-// ===== Loading center =====
-
-.loading-center {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 2rem;
-
-  .loading-text {
-    font-size: 0.85rem;
-    color: var(--c-text-muted);
-  }
-}
-
-// ===== Empty states =====
-
-.empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  color: var(--c-text-muted);
-  padding: 2rem;
-  text-align: center;
-
-  .empty-icon {
-    font-size: 3rem;
-    color: var(--c-primary);
-    opacity: 0.6;
-  }
-
-  h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--c-text);
-  }
-
-  p {
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--c-text-secondary, #6c757d);
-  }
-}
-
-// ===== Skeleton =====
-
-.loading-skeleton {
-  padding: 20px;
-}
-
-.skeleton-item {
-  border: 1px solid var(--c-border);
-  padding: 15px;
-  margin: 10px;
-  border-radius: 4px;
-  background: var(--c-bg);
-}
-
-// ===== Lista de clientes (fichas) =====
-
-.clientes-lista {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.cliente-item-ficha {
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  background: var(--c-surface);
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-
-  &:hover {
-    border-color: var(--c-primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  }
-
-  &.selected {
-    border-color: var(--for-border-color-alls);
-    background: var(--master-background);
-  }
-}
-
-.item-ficha-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding-bottom: 0.375rem;
-  margin-bottom: 0.375rem;
-  border-bottom: 1px solid var(--c-border);
-}
-
-.item-ficha-row {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.15rem 0;
-  line-height: 1.3;
-}
-
-.ficha-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--c-text-muted);
-  min-width: 120px;
-  flex-shrink: 0;
-}
-
-.ficha-value {
-  font-size: 0.85rem;
-  color: var(--c-text);
-  font-weight: 500;
-}
-
-// ===== Detalle del cliente (columna izquierda) =====
-
-.cliente-detail {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.cliente-header-inline {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.5rem 1.5rem;
-  border-bottom: 1px solid var(--c-border);
-  background: var(--c-surface);
-  min-height: 2.2rem;
-}
-
-.cliente-inline-codigo {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--c-text-muted);
-  white-space: nowrap;
-}
-
-.cliente-inline-nombre {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--c-text);
-}
-
-.tab-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.5rem;
-  min-height: 0;
-}
-
-.tab-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--c-border);
-}
-
-.tab-header h4 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.tab-header .cuotas-info {
-  font-size: 0.8rem;
-  color: var(--c-text-muted);
-}
-
-// ===== Formulario dos columnas =====
-
-.prestamo-form-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: 1.25rem;
-}
-
-.prestamo-col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.prestamo-col-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--c-text-muted);
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--c-border);
-}
-
-.prestamo-col .p-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.prestamo-col label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--c-text-muted);
-}
-
-.prestamo-col input.p-inputtext,
-.prestamo-col .p-select,
-.prestamo-col .p-inputnumber,
-.prestamo-col .p-datepicker {
-  width: 100%;
-}
-
-.prestamo-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  padding: 0.75rem 1rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-}
-
-// Tags de estado del flujo (Nuevo → Pre-aprobado → Aprobado → Contabilizado)
-.estado-flujo-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  align-items: center;
-
-  .p-tag {
-    font-size: 0.7rem;
-    font-weight: 500;
-  }
-}
-
-// ===== Tabla amortizacion =====
-
-.table-responsive {
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-
-  th, td {
-    padding: 0.5rem 0.75rem;
-    text-align: left;
-  }
-
-  th {
-    background: var(--c-surface);
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: var(--c-text-muted);
-    border-bottom: 2px solid var(--c-border);
-  }
-
-  td {
-    border-bottom: 1px solid var(--c-border);
-    font-size: 0.9rem;
-  }
-
-  .col-importe {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .fw-bold {
-    font-weight: 600;
-  }
-}
-
-.table-striped tbody tr:nth-child(even) {
-  background: var(--c-surface-muted);
-}
-
-.fila-pagada {
-  opacity: 0.5;
-}
-
-// ===== Control del préstamo (saldo/fechas) =====
-
-.prestamo-info-control {
-  padding: 0.75rem 1rem;
-  background: var(--c-surface-muted);
-  border: 1px solid var(--c-border);
-  border-radius: 6px;
-
-  .pic-tabla {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: center;
-
-    th {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      color: var(--c-text-muted);
-      font-weight: 600;
-      padding: 0.15rem 0.5rem;
-      white-space: nowrap;
-    }
-
-    td.pic-valor {
-      font-size: 0.95rem;
-      color: var(--c-text);
-      font-weight: 600;
-      padding: 0.3rem 0.5rem;
-    }
-
-    .pic-saldo {
-      color: var(--c-primary);
-      font-size: 1.05rem;
-    }
-  }
-}
-
-// ===== Responsive =====
-
-@media (max-width: 1024px) {
-  .right-column {
-    width: 320px;
-  }
-}
-
-@media (max-width: 768px) {
-  .split-layout {
-    flex-direction: column;
-  }
-
-  .left-column {
-    order: 2;
-  }
-
-  .right-column {
-    order: 1;
-    width: 100%;
-    max-width: none;
-    border-left: none;
-    border-bottom: 1px solid var(--c-border);
-    max-height: 40vh;
-  }
-
-  .prestamo-form-columns {
-    grid-template-columns: 1fr;
-  }
-}
-
-```
-
----
-
-## 📄 src\app\features\cxc\prestamos\prestamos-manager.ts
-
-```typescript
-import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { timeout, catchError, of } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { DataViewModule } from 'primeng/dataview';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
-import { CardModule } from 'primeng/card';
-import { SkeletonModule } from 'primeng/skeleton';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
-import { DatePickerModule } from 'primeng/datepicker';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { CxcService } from '../../../core/services/cxc.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { CxcCliente } from '../../../core/models/cxc.models';
-
-@Component({
-  selector: 'app-prestamos-manager',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    ButtonModule,
-    InputTextModule,
-    DataViewModule,
-    TagModule,
-    TooltipModule,
-    CardModule,
-    SkeletonModule,
-    ConfirmDialogModule,
-    InputNumberModule,
-    SelectModule,
-    DatePickerModule,
-    ProgressSpinnerModule,
-    IconFieldModule,
-    InputIconModule,
-  ],
-  providers: [ConfirmationService],
-  templateUrl: './prestamos-manager.html',
-  styleUrl: './prestamos-manager.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-})
-export class PrestamosManager implements OnInit {
-  private service = inject(CxcService);
-  private msgs = inject(MessageService);
-  private confirm = inject(ConfirmationService);
-  private auth = inject(AuthService);
-  private destroyRef = inject(DestroyRef);
-
-  // ===== CLIENTES =====
-  data = signal<CxcCliente[]>([]);
-  cargando = signal(false);
-  selectedCliente = signal<CxcCliente | null>(null);
-  q = signal('');
-  page = signal(1);
-  limit = signal(15);
-  totalClientes = signal(0);
-
-  private _searchEffect = effect(() => {
-    this.q();
-    this.page.set(1);
-    untracked(() => this.loadClientes());
-  });
-
-  // ===== PRESTAMO (maximo 1 por cliente) =====
-  prestamoData = signal<any | null>(null);
-  prestamosLoading = signal(false);
-  prestamoSaving = signal(false);
-
-  prestamoModel = signal<any>({
-    clienteId: null,
-    nroprestamo: '',
-    capital: 0,
-    prima: 0,
-    capitalneto: 0,
-    cuotas: 1,
-    tasa: 0,
-    moratorio: 0,
-    vlrcuota: 0,
-    fecha_aprobacion: new Date().toISOString(),
-    sn_preaprobado: 'N',
-    sn_activo: 'S',
-  });
-
-  prestamoFecha = computed(() => {
-    const f = this.prestamoModel().fecha_aprobacion;
-    if (!f) return null;
-    const d = new Date(f);
-    return isNaN(d.getTime()) ? null : d;
-  });
-
-  /** Capital neto = capital - prima (solo lectura en el form). */
-  capitalnetoCalc = computed(() => {
-    const m = this.prestamoModel();
-    return Math.round(((Number(m.capital) || 0) - (Number(m.prima) || 0)) * 100) / 100;
-  });
-
-  /** Fecha de la 1er cuota = fecha de aprobación + 30 días (regla de negocio). */
-  fechaEfectivaCalc = computed(() => {
-    const f = this.prestamoModel().fecha_aprobacion;
-    if (!f) return null;
-    const d = new Date(f);
-    if (isNaN(d.getTime())) return null;
-    d.setDate(d.getDate() + 30);
-    return d;
-  });
-
-  planPago = signal<any[]>([]);
-  showPlanPago = signal(false);
-
-  readonly estadoOptions = [
-    { label: 'Activo', value: 'S' },
-    { label: 'Inactivo', value: 'N' },
-  ];
-
-  /** Guarda pendiente: pre-aprobacion solicitada sobre un préstamo sin guardar. */
-  private pendingPreaprobado = false;
-
-  ngOnInit() {}
-
-  // ===== CLIENTES =====
-  loadClientes() {
-    this.cargando.set(true);
-    this.service
-      .getClientes(this.page(), this.limit(), this.q())
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        timeout(10000),
-        catchError(() => of({ data: [], total: 0 })),
-      )
-      .subscribe({
-        next: (res) => {
-          this.data.set(res.data);
-          this.totalClientes.set(res.total);
-          this.cargando.set(false);
-        },
-        error: () => this.cargando.set(false),
-      });
-  }
-
-  onPageChange(event: any) {
-    this.page.set(event.page + 1);
-    this.limit.set(event.rows);
-    this.loadClientes();
-  }
-
-  limpiarFiltros() {
-    this.q.set('');
-    this.selectedCliente.set(null);
-    this.prestamoData.set(null);
-    this.planPago.set([]);
-    this.showPlanPago.set(false);
-    this.limpiarFormulario();
-  }
-
-  seleccionarCliente(cliente: CxcCliente) {
-    this.selectedCliente.set(cliente);
-    this.prestamoData.set(null);
-    this.planPago.set([]);
-    this.showPlanPago.set(false);
-    this.loadPrestamoCliente(cliente.clienteId);
-  }
-
-  getClienteNombre(c: CxcCliente): string {
-    const nombres = c.nombres || '';
-    const apellidos = c.apellidos || '';
-    const full = `${nombres} ${apellidos}`.trim();
-    return full || c.razonsocial || c.nrocliente || 'Sin nombre';
-  }
-
-  moneda(val: any): string {
-    const num = Number(val) || 0;
-    if (isNaN(num)) return '0.00';
-    const partes = num.toFixed(2).split('.');
-    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return partes.join('.');
-  }
-
-  // ===== PRESTAMO =====
-  private loadPrestamoCliente(clienteId: number) {
-    this.prestamosLoading.set(true);
-    this.service
-      .getPrestamosByCliente(clienteId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res: any) => {
-          const pres = Array.isArray(res) ? res[0] : res?.value ? res.value[0] : res;
-          if (pres && pres.prestamoId) {
-            this.prestamoData.set(pres);
-            const capitalneto =
-              Number(pres.capitalneto) || (Number(pres.capital) || 0) - (Number(pres.prima) || 0);
-            this.prestamoModel.set({
-              prestamoId: pres.prestamoId,
-              clienteId: pres.clienteId,
-              nroprestamo: pres.nroprestamo || '',
-              capital: Number(pres.capital) || 0,
-              prima: Number(pres.prima) || 0,
-              capitalneto,
-              cuotas: Number(pres.cuotas) || 0,
-              tasa: Number(pres.tasa) || 0,
-              moratorio: Number(pres.moratorio) || 0,
-              vlrcuota:
-                Number(pres.vlrcuota) ||
-                this.calcularCuotaValue(capitalneto, Number(pres.cuotas), Number(pres.tasa)),
-              fecha_aprobacion: pres.fecha_aprobacion || pres.fecharegistro,
-              sn_preaprobado: pres.sn_preaprobado || 'N',
-              sn_activo: pres.sn_activo || 'S',
-            });
-            // Plan de pago: loading sigue activo hasta que termine
-            this.loadPlanPago(pres.prestamoId);
-          } else {
-            this.prestamoData.set(null);
-            this.limpiarFormulario();
-            this.planPago.set([]);
-            this.showPlanPago.set(false);
-            this.prestamosLoading.set(false);
-          }
-        },
-        error: () => this.prestamosLoading.set(false),
-      });
-  }
-
-  private loadPlanPago(prestamoId: number) {
-    this.showPlanPago.set(false);
-    this.planPago.set([]);
-    this.service
-      .getPrestamoPPByPrestamo(prestamoId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          const cuotas = (res || []).sort((a: any, b: any) => (a.nrofila || 0) - (b.nrofila || 0));
-          this.planPago.set(cuotas);
-          this.showPlanPago.set(cuotas.length > 0);
-          this.prestamosLoading.set(false);
-        },
-        error: () => {
-          this.planPago.set([]);
-          this.showPlanPago.set(false);
-          this.prestamosLoading.set(false);
-        },
-      });
-  }
-
-  private calcularCuotaValue(capital: number, cuotas: number, tasaAnual: number): number {
-    if (capital <= 0 || cuotas <= 0 || tasaAnual <= 0) return 0;
-    const tasaMensual = tasaAnual / 100 / 12;
-    const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
-    return Math.round(capital * factor * 100) / 100;
-  }
-
-  onPrestamoFechaChange(d: Date | null) {
-    this.prestamoModel.set({
-      ...this.prestamoModel(),
-      fecha_aprobacion: d ? d.toISOString() : null,
-    });
-  }
-
-  calcularCuota() {
-    const raw = this.prestamoModel();
-    // Regla de negocio: la cuota se calcula sobre el CAPITAL NETO (capital - prima)
-    const capitalneto =
-      Math.round(((Number(raw.capital) || 0) - (Number(raw.prima) || 0)) * 100) / 100;
-    const cuotas = Number(raw.cuotas) || 0;
-    const tasaAnual = Number(raw.tasa) || 0;
-    const vlrcuota = this.calcularCuotaValue(capitalneto, cuotas, tasaAnual);
-    this.prestamoModel.set({ ...this.prestamoModel(), capitalneto, vlrcuota });
-  }
-
-  /** Cancelar: limpia el formulario (alcance definido 14/10/2026). */
-  cancelar() {
-    this.limpiarFormulario();
-  }
-
-  private limpiarFormulario() {
-    this.pendingPreaprobado = false;
-    this.prestamoModel.set({
-      clienteId: this.selectedCliente()?.clienteId ?? null,
-      nroprestamo: '',
-      capital: 0,
-      prima: 0,
-      capitalneto: 0,
-      cuotas: 1,
-      tasa: 0,
-      moratorio: 0,
-      vlrcuota: 0,
-      fecha_aprobacion: new Date().toISOString(),
-      sn_preaprobado: 'N',
-      sn_activo: 'S',
-    });
-  }
-
-  guardarPrestamo() {
-    const cliente = this.selectedCliente();
-    if (!cliente) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Seleccione',
-        detail: 'Seleccione un cliente antes de crear un prestamo',
-      });
-      return;
-    }
-
-    // Validar que no tenga prestamo activo
-    if (this.prestamoData()) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Ya existe',
-        detail: 'Este cliente ya tiene un prestamo registrado',
-      });
-      return;
-    }
-
-    const raw = { ...this.prestamoModel() };
-    const capital = Number(raw.capital) || 0;
-    const prima = Number(raw.prima) || 0;
-    const capitalneto = Math.round((capital - prima) * 100) / 100;
-    const payload: any = {
-      clienteId: cliente.clienteId,
-      // El nroprestamo NO se envía: la APROBACIÓN es quien asigna el correlativo
-      capital,
-      prima,
-      capitalneto, // el backend recalcula, pero viaja coherente
-      vlrcuota: Number(raw.vlrcuota) || 0,
-      cuotas: Number(raw.cuotas) || 1,
-      tasa: Number(raw.tasa) || 0,
-      moratorio: Number(raw.moratorio) || 0,
-      fecha_aprobacion: raw.fecha_aprobacion,
-      // El pre-aprobado es un paso del flujo (botón), nunca se setea manualmente
-      sn_preaprobado: 'N',
-      sn_activo: raw.sn_activo || 'S',
-      sn_contabilizado: 'N',
-    };
-
-    if (capital <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'El capital debe ser mayor a 0',
-      });
-      return;
-    }
-    if (prima < 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'La prima no puede ser negativa',
-      });
-      return;
-    }
-    if (capitalneto <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'El capital neto (capital - prima) debe ser mayor a 0',
-      });
-      return;
-    }
-    if (!payload.cuotas || payload.cuotas <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'Las cuotas deben ser mayor a 0',
-      });
-      return;
-    }
-
-    const user = this.auth.currentUser();
-    if (user) {
-      payload.empresaId = payload.empresaId ?? user.empresaId;
-      if (user.idsucursal != null) payload.Idsucursal = payload.Idsucursal ?? user.idsucursal;
-      payload.usuarioCreated = payload.usuarioCreated ?? user.usuario ?? user.nombre;
-    }
-
-    this.prestamoSaving.set(true);
-    this.service
-      .createPrestamo(payload)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          this.prestamoData.set(res);
-          this.prestamoModel.set({
-            ...this.prestamoModel(),
-            prestamoId: res.prestamoId,
-            nroprestamo: res.nroprestamo || '',
-          });
-          this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'success',
-            summary: 'Guardado',
-            detail: 'Prestamo registrado correctamente',
-          });
-
-          // Guardar plan de pago si existe
-          const plan = this.planPago();
-          if (plan.length > 0 && res?.prestamoId) {
-            this.guardarPlanPagoConPrestamo(res.prestamoId, plan, cliente.clienteId);
-          }
-
-          // Encadenar pre-aprobación pendiente (flujo: guardar → pre-aprobar)
-          if (this.pendingPreaprobado) {
-            this.pendingPreaprobado = false;
-            this.preaprobar();
-          }
-        },
-        error: (err) => {
-          let detail = 'No se pudo guardar el prestamo';
-          if (err?.error?.message) detail = err.error.message;
-          else if (err?.message) detail = err.message;
-          this.prestamoSaving.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail });
-        },
-      });
-  }
-
-  private guardarPlanPagoConPrestamo(prestamoId: number, plan: any[], clienteId: number) {
-    const user = this.auth.currentUser();
-    const requests = plan.map((fila) => {
-      const payload = {
-        ...fila,
-        prestamoId,
-        clienteId,
-        empresaId: user?.empresaId,
-        usuarioCreated: user?.usuario || user?.nombre,
-      };
-      return this.service.createPrestamoPP(payload);
-    });
-
-    let completadas = 0;
-    let errores = 0;
-    const total = plan.length;
-
-    requests.forEach((req) => {
-      req.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-        next: () => {
-          completadas++;
-          if (completadas + errores === total) {
-            this.prestamoSaving.set(false);
-            this.msgs.add({
-              severity: 'success',
-              summary: 'Plan de pago',
-              detail: `${completadas} cuotas guardadas`,
-            });
-          }
-        },
-        error: () => {
-          errores++;
-          if (completadas + errores === total) {
-            this.prestamoSaving.set(false);
-            this.msgs.add({
-              severity: errores > 0 ? 'warn' : 'success',
-              summary: 'Plan de pago',
-              detail: `${completadas} guardadas, ${errores} errores`,
-            });
-          }
-        },
-      });
-    });
-  }
-
-  generarPlanPago() {
-    const raw = this.prestamoModel();
-    const capital = Number(raw.capital) || 0;
-    const prima = Number(raw.prima) || 0;
-    // Regla de negocio: el plan se amortiza sobre el CAPITAL NETO
-    const capitalneto = Math.round((capital - prima) * 100) / 100;
-    const cuotas = Number(raw.cuotas) || 0;
-    const tasaAnual = Number(raw.tasa) || 0;
-
-    if (capital <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'El capital debe ser mayor a 0',
-      });
-      return;
-    }
-    if (capitalneto <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'El capital neto (capital - prima) debe ser mayor a 0',
-      });
-      return;
-    }
-    if (cuotas <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'Las cuotas deben ser mayor a 0',
-      });
-      return;
-    }
-    if (tasaAnual <= 0) {
-      this.msgs.add({
-        severity: 'warn',
-        summary: 'Datos incompletos',
-        detail: 'La tasa de interes debe ser mayor a 0',
-      });
-      return;
-    }
-
-    const tasaMensual = tasaAnual / 100 / 12;
-    const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
-    const cuotaFija = capitalneto * factor;
-
-    const plan: any[] = [];
-    let saldo = capitalneto;
-    // 1er cuota = fecha de aprobación + 30 días; luego mensualidades desde ahí
-    const fechaEfectiva = this.fechaEfectivaCalc() ?? new Date();
-
-    for (let i = 1; i <= cuotas; i++) {
-      const interes = saldo * tasaMensual;
-      const capitalPago = cuotaFija - interes;
-      saldo = saldo - capitalPago;
-
-      const fechaPago = new Date(fechaEfectiva);
-      fechaPago.setMonth(fechaPago.getMonth() + (i - 1));
-
-      plan.push({
-        nrofila: i,
-        FechaPago: fechaPago.toISOString(),
-        vlrcuota: Math.round(cuotaFija * 100) / 100,
-        capital: Math.round(capitalPago * 100) / 100,
-        interes: Math.round(interes * 100) / 100,
-        mora: 0,
-        saldo: Math.round(Math.abs(saldo) * 100) / 100,
-        sn_pagada: 'N',
-        sn_anulada: 'N',
-      });
-    }
-
-    this.planPago.set(plan);
-    this.showPlanPago.set(true);
-    // El nroprestamo NO se genera aquí: solo la APROBACIÓN asigna el correlativo
-    this.prestamoModel.set({
-      ...this.prestamoModel(),
-      capitalneto,
-      vlrcuota: Math.round(cuotaFija * 100) / 100,
-    });
-
-    // Préstamo ya guardado → regenerar plan en BD (borra el anterior y guarda el nuevo)
-    const p = this.prestamoData();
-    if (p?.prestamoId) {
-      this.prestamoSaving.set(true);
-      this.service
-        .deletePrestamoPPByPrestamo(p.prestamoId)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => this.guardarPlanPagoConPrestamo(p.prestamoId, plan, p.clienteId),
-          error: (err) => {
-            this.prestamoSaving.set(false);
-            this.msgs.add({
-              severity: 'error',
-              summary: 'Plan de pago',
-              detail: err.error?.message || 'No se pudo regenerar el plan',
-            });
-          },
-        });
-    }
-  }
-
-  // ── Flujo de estados del préstamo ─────────────────────────────────
-
-  /** Generar plan: siempre que NO esté pre-aprobado ni aprobado (guardado o no). */
-  puedeGenerarPlan = computed(() => {
-    const p = this.prestamoData();
-    // Sin préstamo guardado → puede generar (primera vez)
-    if (!p) return true;
-    // Con préstamo guardado → solo si no está pre-aprobado ni aprobado
-    return p.sn_preaprobado !== 'S' && p.sn_aprobado !== 'S';
-  });
-
-  /** Pre-aprobación: guarda el préstamo (con o sin plan generado), siempre que no esté pre-aprobado ni aprobado. */
-  puedePreaprobar = computed(() => {
-    const p = this.prestamoData();
-    if (!p) return true; // sin préstamo guardado → puede pre-aprobar (guarda)
-    return p.sn_preaprobado !== 'S' && p.sn_aprobado !== 'S';
-  });
-
-  /** Motivo por el que el botón Generar Plan está deshabilitado. */
-  motivoBloqueoPlan = computed(() => {
-    const p = this.prestamoData();
-    if (!p) return '';
-    if (p.sn_preaprobado === 'S')
-      return 'El préstamo está pre-aprobado: el plan de pagos está bloqueado';
-    if (p.sn_aprobado === 'S') return 'El préstamo está aprobado: el plan de pagos está bloqueado';
-    return '';
-  });
-
-  /** Motivo por el que el botón Pre-aprobación está deshabilitado. */
-  motivoBloqueoPreaprobado = computed(() => {
-    const p = this.prestamoData();
-    if (!p) return '';
-    if (p.sn_preaprobado === 'S') return 'El préstamo ya está pre-aprobado';
-    if (p.sn_aprobado === 'S') return 'El préstamo ya está aprobado';
-    return '';
-  });
-
-  /** Motivo por el que el botón Aprobación está deshabilitado. */
-  motivoBloqueoAprobar = computed(() => {
-    const p = this.prestamoData();
-    if (!p) return 'Guarde o pre-aprobee el préstamo primero';
-    if (p.sn_preaprobado !== 'S') return 'El préstamo debe estar pre-aprobado antes de aprobarlo';
-    if (p.sn_aprobado === 'S') return 'El préstamo ya está aprobado';
-    return '';
-  });
-
-  /** Motivo por el que el botón Contabilización está deshabilitado. */
-  motivoBloqueoContabilizar = computed(() => {
-    const p = this.prestamoData();
-    if (!p) return 'El préstamo debe estar aprobado antes de contabilizarlo';
-    if (p.sn_aprobado !== 'S') return 'El préstamo debe estar aprobado antes de contabilizarlo';
-    if (p.sn_contabilizado === 'S') return 'El préstamo ya está contabilizado';
-    return '';
-  });
-
-  /** Aprobación: solo si está pre-aprobado y NO aprobado. Genera nroprestamo y bloquea plan. */
-  puedeAprobar = computed(() => {
-    const p = this.prestamoData();
-    return !!p && p.sn_preaprobado === 'S' && p.sn_aprobado !== 'S';
-  });
-
-  /** Contabilización: solo si está aprobado y NO contabilizado. Genera partida + movimiento D. */
-  puedeContabilizar = computed(() => {
-    const p = this.prestamoData();
-    return !!p && p.sn_aprobado === 'S' && p.sn_contabilizado !== 'S';
-  });
-
-  /**
-   * Pre-aprobación: si el préstamo aún no está guardado, lo guarda primero
-   * (con plan si se generó) y luego lo pre-aprueba. NO genera nroprestamo.
-   */
-  preaprobar() {
-    const p = this.prestamoData();
-    if (!p) {
-      // Guardar primero y encadenar la pre-aprobación
-      this.pendingPreaprobado = true;
-      this.guardarPrestamo();
-      return;
-    }
-    this.prestamoSaving.set(true);
-    this.service
-      .preaprobarPrestamo(p.prestamoId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          this.prestamoData.set(res);
-          this.prestamoModel.set({
-            ...this.prestamoModel(),
-            nroprestamo: res.nroprestamo || '',
-            sn_preaprobado: 'S',
-          });
-          this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'success',
-            summary: 'Pre-aprobado',
-            detail: `Préstamo #${res.prestamoId} pre-aprobado. El plan de pagos queda bloqueado.`,
-          });
-        },
-        error: (err) => {
-          this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: err.error?.message || 'No se pudo pre-aprobar',
-          });
-        },
-      });
-  }
-
-  confirmarAprobar() {
-    const p = this.prestamoData();
-    if (!p) return;
-    this.confirm.confirm({
-      message: `¿Está seguro de APROBAR el préstamo #${p.prestamoId}?<br/>Se generará el número de préstamo y el plan de pagos quedará bloqueado.`,
-      header: 'Confirmar Aprobación',
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonProps: {
-        label: 'Sí, aprobar',
-        severity: 'success',
-        variant: 'text',
-        size: 'small',
-        rounded: true,
-      },
-      rejectButtonProps: {
-        label: 'Cancelar',
-        severity: 'secondary',
-        variant: 'text',
-        size: 'small',
-        rounded: true,
-      },
-      accept: () => this.aprobar(),
-    });
-  }
-
-  aprobar() {
-    const p = this.prestamoData();
-    if (!p) return;
-    this.prestamoSaving.set(true);
-    this.service
-      .aprobarPrestamo(p.prestamoId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          this.prestamoData.set(res);
-          this.prestamoModel.set({
-            ...this.prestamoModel(),
-            nroprestamo: res.nroprestamo,
-            sn_aprobado: 'S',
-          });
-          this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'success',
-            summary: 'Aprobado',
-            detail: `Préstamo ${res.nroprestamo} aprobado`,
-          });
-        },
-        error: (err) => {
-          this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: err.error?.message || 'No se pudo aprobar',
-          });
-        },
-      });
-  }
-
-  confirmarContabilizar() {
-    const p = this.prestamoData();
-    if (!p) return;
-    this.confirm.confirm({
-      message: `¿Está seguro de CONTABILIZAR el préstamo ${p.nroprestamo}?<br/>Se generará la partida (Débito préstamo / Crédito bancos) y el movimiento de débito por L ${Number(p.capitalneto || 0).toFixed(2)}.`,
-      header: 'Confirmar Contabilización',
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonProps: {
-        label: 'Sí, contabilizar',
-        severity: 'success',
-        variant: 'text',
-        size: 'small',
-        rounded: true,
-      },
-      rejectButtonProps: {
-        label: 'Cancelar',
-        severity: 'secondary',
-        variant: 'text',
-        size: 'small',
-        rounded: true,
-      },
-      accept: () => this.contabilizar(),
-    });
-  }
-
-  contabilizar() {
-    const p = this.prestamoData();
-    if (!p) return;
-    this.prestamoSaving.set(true);
-    this.service
-      .contabilizarPrestamo(p.prestamoId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          this.prestamoData.set(res.prestamo);
-          this.prestamoModel.set({ ...this.prestamoModel(), sn_contabilizado: 'S' });
-          this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'success',
-            summary: 'Contabilizado',
-            detail: `Partida #${res.partidaId} y movimiento #${res.movimientoId} generados`,
-          });
-        },
-        error: (err) => {
-          this.prestamoSaving.set(false);
-          this.msgs.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: err.error?.message || 'No se pudo contabilizar',
-          });
-        },
-      });
   }
 }
 
@@ -50918,6 +49927,56 @@ export class RendicionCaja implements OnInit {
                 [appendTo]="'body'"
               />
             </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Descuento</label>
+              <p-inputNumber
+                size="small"
+                formControlName="descuento"
+                mode="currency"
+                currency="HNL"
+                [locale]="'es-HN'"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                styleClass="w-full"
+                [inputStyle]="{ 'width': '100%' }"
+                [min]="0"
+                [useGrouping]="true"
+                (onInput)="recalcularTotalHeader()"
+              />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Impuesto (ISV)</label>
+              <p-inputNumber
+                size="small"
+                formControlName="impuesto"
+                mode="currency"
+                currency="HNL"
+                [locale]="'es-HN'"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                styleClass="w-full"
+                [inputStyle]="{ 'width': '100%' }"
+                [min]="0"
+                [useGrouping]="true"
+                (onInput)="recalcularTotalHeader()"
+              />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium">Total Compra</label>
+              <p-inputNumber
+                size="small"
+                formControlName="total"
+                mode="currency"
+                currency="HNL"
+                [locale]="'es-HN'"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                styleClass="w-full font-bold"
+                [inputStyle]="{ 'width': '100%', 'font-weight': 'bold', 'font-size': '1.1rem' }"
+                [readonly]="true"
+                [useGrouping]="true"
+              />
+            </div>
           </div>
         </form>
       </p-card>
@@ -51208,7 +50267,7 @@ export class RendicionCaja implements OnInit {
             <th style="width: 6rem" class="text-right">Cantidad</th>
             <th style="width: 7rem" class="text-right">P. Compra</th>
             <th style="width: 7rem" class="text-right">P. Venta</th>
-            <th style="width: 7rem" class="text-right">Subtotal</th>
+            <th style="width: 7rem" class="text-right">Total</th>
             <th style="width: 6rem">Acciones</th>
           </tr>
         </ng-template>
@@ -51636,11 +50695,10 @@ export class ComprasManager implements OnInit {
   formMae = this.fb.group({
     proveedorId: [null as number | null, Validators.required],
     bodegaId: [null as number | null, Validators.required],
-    TipoCompra: ['FCO' as 'FCO' | 'FCC' | 'ORC', Validators.required],
+    TipoCompra: ['FCO' as 'FCO' | 'FCC' | 'ORC',Validators.required],
     documentoId: [null as number | null],
     monedaId: [null as number | null, Validators.required],
     nroreferencia: [''],
-    subtotal: [0],
     descuento: [0],
     impuesto: [0],
     total: [0],
@@ -51783,7 +50841,12 @@ export class ComprasManager implements OnInit {
 
   seleccionar(compra: CompraMae) {
     this.seleccionado.set(compra);
-    this.formMae.patchValue(compra);
+    this.formMae.patchValue({
+      ...compra,
+      descuento: compra.descuento || 0,
+      impuesto: compra.impuesto || 0,
+      total: compra.total || 0,
+    });
     this.formDet.reset({ productoId: null, codbarra: '', descripcion: '', cantidad: 1, precio: 0, precioventa: 0, preciovtaId: this.preciovtaDefaultId });
     this.itemEditando.set(null);
     this.productoSeleccionado = null;
@@ -51794,7 +50857,14 @@ export class ComprasManager implements OnInit {
     this.cargandoDet.set(true);
     this.service.getDetallesByCompra(compraId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
-        this.detalles.set((data || []).sort((a, b) => (b.nrofila || 0) - (a.nrofila || 0)));
+        const dets = (data || []).sort((a, b) => (b.nrofila || 0) - (a.nrofila || 0));
+        this.detalles.set(dets);
+        const subtotal = dets.reduce((sum, d) => sum + Number(d.subtotal || 0), 0);
+        const desc = Number(this.formMae.value.descuento || 0);
+        const imp = Number(this.formMae.value.impuesto || 0);
+        const total = Math.max(0, subtotal - desc + imp);
+        this.formMae.patchValue({ total }, { emitEvent: false });
+        this.seleccionado.update(s => s ? { ...s, subtotal, descuento: desc, impuesto: imp, total } : s);
         this.cargandoDet.set(false);
       },
       error: () => {
@@ -51802,6 +50872,27 @@ export class ComprasManager implements OnInit {
         this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los detalles' });
       },
     });
+  }
+
+  recalcularTotalHeader() {
+    const sub = this.detalles().reduce((sum, d) => sum + Number(d.subtotal || 0), 0);
+    const desc = Number(this.formMae.value.descuento || 0);
+    const imp = Number(this.formMae.value.impuesto || 0);
+    const total = Math.max(0, sub - desc + imp);
+    this.formMae.patchValue({ total }, { emitEvent: false });
+    const mae = this.seleccionado();
+    if (mae && mae.compraId !== 0) {
+      this.service.updateCompra(mae.compraId, {
+        subtotal: sub,
+        descuento: desc,
+        impuesto: imp,
+        total: total,
+      }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          this.seleccionado.update(s => s ? { ...s, subtotal: sub, descuento: desc, impuesto: imp, total } : s);
+        }
+      });
+    }
   }
 
   volver() {
@@ -51818,7 +50909,6 @@ export class ComprasManager implements OnInit {
       documentoId: null,
       monedaId: null,
       nroreferencia: '',
-      subtotal: 0,
       descuento: 0,
       impuesto: 0,
       total: 0,
@@ -51834,7 +50924,6 @@ export class ComprasManager implements OnInit {
       bodegaId: 0,
       proveedorId: 0,
       documentoId: 0,
-      subtotal: 0,
       descuento: 0,
       impuesto: 0,
       total: 0,
@@ -52097,6 +51186,22 @@ export class ComprasManager implements OnInit {
   procesar() {
     const mae = this.seleccionado();
     if (!mae) return;
+
+    const sumaDetalles = this.detalles().reduce((sum, d) => sum + Number(d.subtotal || 0), 0);
+    const headerTotal = Number(this.formMae.value.total || 0);
+    const desc = Number(this.formMae.value.descuento || 0);
+    const imp = Number(this.formMae.value.impuesto || 0);
+    const esperadoTotal = Math.max(0, sumaDetalles - desc + imp);
+
+    if (Math.abs(headerTotal - esperadoTotal) > 0.01) {
+      this.msgs.add({
+        severity: 'error',
+        summary: 'Discrepancia en Total',
+        detail: `El total del header (${this.moneda(headerTotal)}) no coincide con el total del detalle (${this.moneda(esperadoTotal)}). El total del detalle debe ser igual al total del header.`,
+      });
+      return;
+    }
+
     this.confirm.confirm({
       message: `¿Procesar compra #${mae.compraId}? Se registrará entrada en kardex y movimiento CxP (débito).`,
       header: 'Procesar compra',
@@ -57312,7 +56417,7 @@ export class Dashboard {
         <span class="p-input-icon-left">
           <input pInputText type="text" pSize="small"
             placeholder="Buscar por # factura o nombre del cliente..."
-            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" class="busqueda-input" />
+            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" class="busqueda-input" />
         </span>
       </div>
       <div class="filtros-acciones">
@@ -59085,6 +58190,7 @@ export class CombosForm implements OnInit {
             [ngModel]="q()"
             (ngModelChange)="q.set($event)"
             (keyup.enter)="buscar()"
+            pTooltip="Presione enter para consultar"
             pSize="small"
           />
         </div>
@@ -60646,6 +59752,7 @@ export class ConsultaFacturaDetalle implements OnInit {
             [ngModel]="q()"
             (ngModelChange)="q.set($event)"
             (keyup.enter)="buscar()"
+            pTooltip="Presione enter para consultar"
             class="busqueda-input"
           />
         </span>
@@ -61351,7 +60458,7 @@ export class ConsultaFacturaDetalle implements OnInit {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -61374,6 +60481,7 @@ import { TodoPagoService, TodoPagoTransaccion } from '../../../core/services/tod
 export class ConsultaFacturas implements OnInit {
   private api = inject(ApiService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
   private auth = inject(AuthService);
@@ -61383,6 +60491,7 @@ export class ConsultaFacturas implements OnInit {
   filtered = signal<any[]>([]);
   cargando = signal(false);
   q = signal('');
+  usuarioFiltro = signal<string | null>(null);
 
   dialogCorreo = signal(false);
   emailDestino = signal('');
@@ -61399,12 +60508,22 @@ export class ConsultaFacturas implements OnInit {
   linkGenerando = signal(false);
 
   ngOnInit() {
-    this.load();
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+      const u = params['usuario'];
+      if (u) {
+        this.usuarioFiltro.set(u);
+      }
+      this.load();
+    });
   }
 
   load() {
     this.cargando.set(true);
-    this.api.get<any>('/facturacion/facturas').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    const params: any = {};
+    if (this.usuarioFiltro()) {
+      params.usuario = this.usuarioFiltro();
+    }
+    this.api.get<any>('/facturacion/facturas', params).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res: any) => {
         const items = Array.isArray(res) ? res : (res?.value ?? []);
         this.facturas.set(items);
@@ -61758,7 +60877,10 @@ export class ConsultaFacturas implements OnInit {
             <ng-template #body let-row let-idx="rowIndex">
               <tr>
                 <td>
-                  <p-button type="button" icon="pi pi-times" severity="danger" text rounded size="small" (onClick)="quitarFila(idx)" />
+                  <p-button type="button"
+                   icon="pi pi-times" severity="danger" 
+                   rounded=[true] 
+                   size="small" (onClick)="quitarFila(idx)" />
                 </td>
                 <td class="celda-img">
                   @if (row.imagenUrl) {
@@ -63236,7 +62358,7 @@ export class CotizacionesForm implements OnInit {
         <span class="p-input-icon-left">
           <input pInputText type="text" pSize="small"
             placeholder="Buscar por # cotización, nombre del cliente o atendió..."
-            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" class="busqueda-input" />
+            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" class="busqueda-input" />
         </span>
       </div>
       <div class="filtros-acciones">
@@ -66187,7 +65309,6 @@ export class MaestroDetalle implements OnInit {
 
 ```typescript
 <section class="page">
-
   <span>Facturación</span>
   <form [formGroup]="form">
     <div class="grid">
@@ -66197,106 +65318,169 @@ export class MaestroDetalle implements OnInit {
           <div class="field col col-12 md:col">
             <div class="nf-busqueda">
               <p-iconfield styleClass="w-full">
-                <input pInputText type="text" pSize="small" style="width: 100%;" [value]="qProducto()"
-                  (input)="onBuscarProducto($event)" fluid
-                  placeholder="Buscar producto o escanear código de barras..." />
+                <input
+                  pInputText
+                  type="text"
+                  pSize="small"
+                  style="width: 100%"
+                  [value]="qProducto()"
+                  (input)="onBuscarProducto($event)"
+                  fluid
+                  placeholder="Buscar producto o escanear código de barras..."
+                />
                 <p-inputicon class="ml-10">
-                  <p-button id="btnbuscar" size="small"
-                   icon="pi pi-search" pTooltip="ALT + 1 Buscar producto" showDelay="1000"
-                    hideDelay="300" severity="info"
+                  <p-button
+                    id="btnbuscar"
+                    size="small"
+                    icon="pi pi-search"
+                    pTooltip="ALT + 1 Buscar producto"
+                    showDelay="1000"
+                    hideDelay="300"
+                    severity="info"
                     [rounded]="true"
-                    variant="text" (onClick)="showHelperProductos()" />
+                    variant="text"
+                    (onClick)="showHelperProductos()"
+                  />
                 </p-inputicon>
-
               </p-iconfield>
-
             </div>
           </div>
         </div>
 
-        <div style="height: calc(100vh - 280px);">
+        <div style="height: calc(100vh - 280px)">
+          <p-table
+            [value]="filas()"
+            size="small"
+            [scrollable]="true"
+            scrollHeight="flex"
+            stripedRows
+            [tableStyle]="{ 'min-width': '50rem' }"
+            styleClass="det-table"
+            [rows]="5"
+          >
+            <ng-template #header>
+              <tr>
+                <th style="color: var(--color-texto-label); width: 17rem">Producto</th>
+                <th style="color: var(--color-texto-label); width: 3rem">Imagen</th>
+                <th style="color: var(--color-texto-label); width: 12rem">Cantidad</th>
+                <th style="color: var(--color-texto-label); width: 10rem">Promo</th>
+                <th style="color: var(--color-texto-label); width: 8rem">PrecioVta</th>
+                <th style="color: var(--color-texto-label); width: 8rem">Subtotal</th>
+                <th style="color: var(--color-texto-label); width: 5rem">Acción</th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-row let-idx="rowIndex">
+              <tr>
+                <td class="cell-producto">
+                  <span class="cod-barra">Cod. {{ row.codbarra }}</span>
+                  <span class="desc-linea">{{ row.descripcion }}</span>
+                  <span class="desc-linea">
+                    Stock..
+                    <p-tag
+                      [value]="getExistencia(row.productoId) + ''"
+                      severity="secondary"
+                      styleClass="tag-sm"
+                    />
+                    disp..
+                    <p-tag
+                      [value]="row.estado"
+                      [severity]="getSeverity(row.estado)"
+                      styleClass="tag-sm"
+                    />
+                  </span>
+                </td>
 
-        <p-table [value]="filas()" size="small"
-          [scrollable]="true" scrollHeight="flex"
-          stripedRows
-          [tableStyle]="{ 'min-width': '50rem' }" styleClass="det-table" [rows]="5">
-          <ng-template #header>
-            <tr>
-              <th style="color: var(--color-texto-label); width: 17rem">Producto</th>
-              <th style="color: var(--color-texto-label); width: 3rem">Imagen</th>
-              <th style="color: var(--color-texto-label); width: 12rem;">Cantidad</th>
-              <th style="color: var(--color-texto-label); width: 10rem;">Promo</th>
-              <th style="color: var(--color-texto-label); width: 8rem;">PrecioVta</th>
-              <th style="color: var(--color-texto-label); width: 8rem;">Subtotal</th>
-              <th style="color: var(--color-texto-label); width: 5rem">Acción</th>
-            </tr>
-          </ng-template>
-          <ng-template #body let-row let-idx="rowIndex">
-            <tr>
-              <td class="cell-producto">
-                <span class="cod-barra">Cod. {{ row.codbarra }}</span>
-                <span class="desc-linea">{{ row.descripcion }}</span>
-                <span class="desc-linea">
-                  Stock.. <p-tag
-                  [value]="getExistencia(row.productoId) + ''"
-                    severity="secondary"
-                   styleClass="tag-sm" />
-                  disp.. <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)"
-                    styleClass="tag-sm" />
-                </span>
-              </td>
-
-              <td>
-                @if (row.imagenUrl) {
-                <img [src]="row.imagenUrl" [alt]="row.descripcion" width="50" class="img-producto"
-                  (mouseenter)="onImgHover(row.imagenUrl, $event)" (mousemove)="onImgMove($event)"
-                  (mouseleave)="onImgLeave()" />
-                } @else {
-                <i class="pi pi-images" style="color: slateblue"></i>
-                }
-              </td>
-
-              <td>
-                <p-inputnumber [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" [min]="0" [step]="1"
-                  [showButtons]="true" spinnerMode="horizontal" buttonLayout="horizontal" size="small" mode="currency"
-                  currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
-                  styleClass="w-10rem" [inputStyle]="{ 'width': '100%' }" (ngModelChange)="recalcularFila(row)">
-                  <ng-template #incrementbuttonicon>
-                    <span class="pi pi-plus"></span>
-                  </ng-template>
-                  <ng-template #decrementbuttonicon>
-                    <span class="pi pi-minus"></span>
-                  </ng-template>
-                </p-inputnumber>
-              </td>
-
-            <!-- ARFM20260913 REALIZAR AQUI LAS MEJORA POR EL CALCULA
-              DE DESCUENTO, CUYO ORIGEN SON PROMOCIONES, OFERTAS ETC, ETC -->
-              @if (esOferta(row.productoId)) {
                 <td>
-                  @if (row.descuento > getOferta(row.productoId)!.porcentaje) {
-                    <p-tag [value]="'Promo -' + getOferta(row.productoId)!.porcentaje + '% + Tercera -' + (row.descuento - getOferta(row.productoId)!.porcentaje) + '%'" severity="success" styleClass="tag-sm" />
+                  @if (row.imagenUrl) {
+                  <!-- ARFM20261030 wrapper retroiluminado + click = popover de existencia
+                     (reemplaza al hover-zoom anterior) -->
+                  <span
+                    class="img-backlight img-clickable"
+                    (click)="mostrarExistenciaImagen($event, row)"
+                  >
+                    <img
+                      [src]="row.imagenUrl"
+                      [alt]="row.descripcion"
+                      width="80"
+                      class="img-producto"
+                    />
+                  </span>
                   } @else {
-                    <p-tag [value]="'Descuento -' + getOferta(row.productoId)!.porcentaje + '%'" severity="success" styleClass="tag-sm" />
+                  <i class="pi pi-images" style="color: slateblue"></i>
                   }
                 </td>
-              } @else {
+
+                <td>
+                  <p-inputnumber
+                    [(ngModel)]="row.cantidad"
+                    [ngModelOptions]="{ standalone: true }"
+                    [min]="0"
+                    [step]="1"
+                    [showButtons]="true"
+                    spinnerMode="horizontal"
+                    buttonLayout="horizontal"
+                    size="small"
+                    mode="currency"
+                    currency="HNL"
+                    [locale]="'es-HN'"
+                    [minFractionDigits]="2"
+                    [maxFractionDigits]="2"
+                    [useGrouping]="true"
+                    styleClass="w-10rem"
+                    [inputStyle]="{ 'width': '100%' }"
+                    (ngModelChange)="recalcularFila(row)"
+                  >
+                    <ng-template #incrementbuttonicon>
+                      <span class="pi pi-plus"></span>
+                    </ng-template>
+                    <ng-template #decrementbuttonicon>
+                      <span class="pi pi-minus"></span>
+                    </ng-template>
+                  </p-inputnumber>
+                </td>
+
+                <!-- ARFM20260913 REALIZAR AQUI LAS MEJORA POR EL CALCULA
+              DE DESCUENTO, CUYO ORIGEN SON PROMOCIONES, OFERTAS ETC, ETC -->
+                @if (esOferta(row.productoId)) {
+                <td>
+                  @if (row.descuento > getOferta(row.productoId)!.porcentaje) {
+                  <p-tag
+                    [value]="'Promo -' + getOferta(row.productoId)!.porcentaje + '% + Tercera -' + (row.descuento - getOferta(row.productoId)!.porcentaje) + '%'"
+                    severity="success"
+                    styleClass="tag-sm"
+                  />
+                  } @else {
+                  <p-tag
+                    [value]="'Descuento -' + getOferta(row.productoId)!.porcentaje + '%'"
+                    severity="success"
+                    styleClass="tag-sm"
+                  />
+                  }
+                </td>
+                } @else {
                 <td></td>
-              }
+                }
 
-              <td>{{ moneda(row.precioventa) }}</td>
+                <td>{{ moneda(row.precioventa) }}</td>
 
-              <td>{{ moneda(row.subTotal) }}</td>
+                <td>{{ moneda(row.subTotal) }}</td>
 
-              <td>
-                <p-button icon="pi pi-times" [rounded]="true" severity="danger" (onClick)="quitarFila(idx)"
-                  size="small" />
-              </td>
-
-            </tr>
-          </ng-template>
-          <ng-template #footer>
-            @for (empty of emptyRows; track $index) {
+                <td>
+                  <p-button
+                    icon="pi pi-times"
+                    [rounded]="true"
+                    severity="danger"
+                    (onClick)="quitarFila(idx)"
+                    size="small"
+                  />
+                </td>
+              </tr>
+            </ng-template>
+            <!-- ARFM20261030 MEJORA consumida aquí: emptyRows (MIN_ROWS=9) pinta filas en
+               blanco en el footer de la tabla hasta completar 9 filas — mismo criterio
+               que pedido-form.html -->
+            <ng-template #footer>
+              @for (empty of emptyRows; track $index) {
               <tr class="empty-row">
                 <td>&nbsp;</td>
                 <td>&nbsp;</td>
@@ -66306,18 +65490,62 @@ export class MaestroDetalle implements OnInit {
                 <td>&nbsp;</td>
                 <td>&nbsp;</td>
               </tr>
-            }
-          </ng-template>
+              }
+            </ng-template>
 
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="100" class="text-center p-3">Sin producto. Agregue su primer producto.</td>
-            </tr>
-          </ng-template>
-        </p-table>
-   </div>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="100" class="text-center p-3">
+                  Sin producto. Agregue su primer producto.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
 
+          <!-- ARFM20261030 Popover de existencia (mismo patrón que pedido-form).
+             FUERA de la p-table; se abre con click en la imagen de la fila. -->
+          <p-popover #op (onHide)="productoSeleccionado.set(null)">
+            <ng-template #content>
+              @if (productoSeleccionado(); as row) {
+              <!-- Card estilo menú de restaurante: imagen grande arriba + ficha abajo -->
+              <div class="menu-card">
+                <div class="menu-card-media">
+                  @if (row.imagenUrl) {
+                  <img
+                    [src]="row.imagenUrl"
+                    [alt]="row.descripcion"
+                    class="img-producto img-producto-lg"
+                  />
+                  } @else {
+                  <i class="pi pi-images icono-sin-imagen"></i>
+                  }
+                  <p-tag
+                    [value]="row.estado"
+                    [severity]="getSeverity(row.estado)"
+                    styleClass="tag-sm menu-card-tag"
+                  />
+                </div>
 
+                <div class="menu-card-body">
+                  <span class="menu-card-cod">Cod. {{ row.codbarra }}</span>
+                  <div class="menu-card-desc">{{ row.descripcion }}</div>
+
+                  <div class="menu-card-meta">
+                    <span class="menu-card-precio">{{ moneda(row.precioventa) }}</span>
+                    <span
+                      class="menu-card-stock"
+                      [ngClass]="'nivel-' + (row.estado || '').toLowerCase()"
+                    >
+                      <i class="pi pi-box"></i>
+                      Existencia: {{ getExistencia(row.productoId) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              }
+            </ng-template>
+          </p-popover>
+        </div>
 
         <div class="mt-2 nf-totales">
           <div class="nf-totales-split">
@@ -66327,7 +65555,7 @@ export class MaestroDetalle implements OnInit {
                 <div>{{ moneda(totales().subTotal) }}</div>
               </div>
               <div class="nf-total-block nf-total-grand">
-                <div>Impuesto </div>
+                <div>Impuesto</div>
                 <div>{{ moneda(totales().impuesto) }}</div>
               </div>
               <div class="nf-total-block nf-total-grand">
@@ -66342,13 +65570,49 @@ export class MaestroDetalle implements OnInit {
           </div>
         </div>
 
-        <div class="alt9">Presione Alt+9 para ver ventana de atajos</div>
-      </div> <!-- Fin campos de header izquierdo-->
+        <div>
+          <div class="invoice-side">
+            <div class="pago-block">
+              <div class="invoice-party-title">Resumen de Pago</div>
+              <div class="pago-resumen">
+                <div class="pago-resumen-inline">
+                  <span
+                    >Total de Factura:
+                    <span class="font-bold">{{ moneda(totales().total) }}</span></span
+                  >
+                  <span
+                    >Total de Pagos:
+                    <span
+                      class="font-bold"
+                      [class.text-ok]="totalPagos() >= totales().total"
+                      [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"
+                      >{{ moneda(totalPagos()) }}</span
+                    ></span
+                  >
+                  @if (pendiente() > 0) {
+                  <span
+                    >Pendiente de pago:
+                    <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span
+                  >
+                  } @if (pagosConImporte().length === 0) {
+                  <span>, ingrese el importe de pago presionando el boton pagar</span>
+                  } @if (cambioTotal() > 0) {
+                  <span
+                    >Cambio:
+                    <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span
+                  >
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Fin campos de header izquierdo-->
 
       <!-- Columna 2: Campos de header derecho-->
       <div class="col-12 xl:col-3 nf-panel-col">
         <div class="p-2 for-border-color-alls border-2 border-round m-2 nf-side-panel">
-
           @if (linkPago(); as link) {
           <div class="tp-link-card">
             <div class="tp-link-head">
@@ -66357,64 +65621,131 @@ export class MaestroDetalle implements OnInit {
               <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
             </div>
             <div class="tp-link-monto">
-              {{ moneda(link.monto) }}
-              @if (link.sandbox) {
+              {{ moneda(link.monto) }} @if (link.sandbox) {
               <span class="tp-sandbox-tag">SANDBOX</span>
               }
             </div>
-            <input pInputText pSize="small" class="w-full tp-link-url" [ngModel]="link.url"
-              [ngModelOptions]="{ standalone: true }" readonly />
+            <input
+              pInputText
+              pSize="small"
+              class="w-full tp-link-url"
+              [ngModel]="link.url"
+              [ngModelOptions]="{ standalone: true }"
+              readonly
+            />
             <div class="tp-link-actions">
-              <p-button size="small" [label]="linkCopiado() ? 'Copiado' : 'Copiar'" icon="pi pi-copy"
-                severity="secondary" variant="text" [rounded]="true" (onClick)="copiarLink()" />
-              <p-button size="small" label="Abrir" icon="pi pi-external-link" severity="success" variant="text"
-                [rounded]="true" (onClick)="abrirLink()" />
-              <p-button size="small" label="Estado" icon="pi pi-refresh" severity="info" variant="text" [rounded]="true"
-                (onClick)="consultarEstadoLink()" />
-              <p-button size="small" icon="pi pi-times" severity="danger" variant="text" [rounded]="true"
-                pTooltip="Cerrar" [appendTo]="'body'" (onClick)="cerrarLink()" />
+              <p-button
+                size="small"
+                [label]="linkCopiado() ? 'Copiado' : 'Copiar'"
+                icon="pi pi-copy"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                (onClick)="copiarLink()"
+              />
+              <p-button
+                size="small"
+                label="Abrir"
+                icon="pi pi-external-link"
+                severity="success"
+                variant="text"
+                [rounded]="true"
+                (onClick)="abrirLink()"
+              />
+              <p-button
+                size="small"
+                label="Estado"
+                icon="pi pi-refresh"
+                severity="info"
+                variant="text"
+                [rounded]="true"
+                (onClick)="consultarEstadoLink()"
+              />
+              <p-button
+                size="small"
+                icon="pi pi-times"
+                severity="danger"
+                variant="text"
+                [rounded]="true"
+                pTooltip="Cerrar"
+                [appendTo]="'body'"
+                (onClick)="cerrarLink()"
+              />
             </div>
           </div>
           }
 
           <div class="field">
-            <div class="p-0 grid ">
+            <div class="p-0 grid">
               <div class="p-0 ml-2 mt-2 col">
                 <div class="campo">
                   <label for="tipofactura">Tipo factura<span class="req">*</span></label>
-                  <p-selectbutton id="cbotipofactura"
-                  size="small" id="tipofactura" [options]="tipoOptions" formControlName="tipofactura"
-                    optionLabel="label" optionValue="value" aria-labelledby="tipo-factura"
-                    (onChange)="onTipoFacturaChange()" />
+                  <p-selectbutton
+                    id="cbotipofactura"
+                    size="small"
+                    id="tipofactura"
+                    [options]="tipoOptions"
+                    formControlName="tipofactura"
+                    optionLabel="label"
+                    optionValue="value"
+                    aria-labelledby="tipo-factura"
+                    (onChange)="onTipoFacturaChange()"
+                  />
                 </div>
               </div>
               <div class="p-0 mt-5 mr-2">
                 <p-button
-                 id="btnaddnewcustomer"
-                icon="pi pi-plus" size="small" severity="info"
-                label="Nuevo cliente" variant="text"
-                  [raised]="true" [rounded]="true" pTooltip="ALT + 2 Agregar nuevo cliente" [appendTo]="'body'"
-                  showDelay="1000" hideDelay="300" (onClick)="abrirNuevoCliente()" />
+                  id="btnaddnewcustomer"
+                  icon="pi pi-plus"
+                  size="small"
+                  severity="info"
+                  label="Nuevo cliente"
+                  variant="text"
+                  [raised]="true"
+                  [rounded]="true"
+                  pTooltip="ALT + 2 Agregar nuevo cliente"
+                  [appendTo]="'body'"
+                  showDelay="1000"
+                  hideDelay="300"
+                  (onClick)="abrirNuevoCliente()"
+                />
               </div>
             </div>
-
           </div>
 
           <div class="field">
             <div class="campo campo-inline">
               <label for="snFacturaconNombreId">Factura con nombre</label>
-              <p-selectbutton size="small" id="snFacturaconNombreId" [options]="snNombreOptions"
-                formControlName="snNombreOptions" optionLabel="label" optionValue="value"
-                aria-labelledby="snFacturaconNombreId" />
+              <p-selectbutton
+                size="small"
+                id="snFacturaconNombreId"
+                [options]="snNombreOptions"
+                formControlName="snNombreOptions"
+                optionLabel="label"
+                optionValue="value"
+                aria-labelledby="snFacturaconNombreId"
+              />
             </div>
           </div>
           <div class="p-0 field">
             <div class="campo">
               <label for="clienteId">Cliente <span class="req">*</span></label>
-              <p-select size="small" id="clienteId" formControlName="clienteId" [options]="clientes()"
-                optionLabel="label" optionValue="value" filter showClear placeholder="Seleccionar cliente..."
-                styleClass="w-full" [appendTo]="'body'" (onChange)="onClienteChange()"
-                [ngClass]="{ 'ng-invalid': invalid('clienteId') }" [disabled]="esContado()" />
+              <p-select
+                size="small"
+                id="clienteId"
+                formControlName="clienteId"
+                [options]="clientes()"
+                optionLabel="label"
+                optionValue="value"
+                filter
+                showClear
+                placeholder="Seleccionar cliente..."
+                styleClass="w-full"
+                [appendTo]="'body'"
+                (onChange)="onClienteChange()"
+                [ngClass]="{ 'ng-invalid': invalid('clienteId') }"
+                [disabled]="esContado()"
+              />
               @if (invalid('clienteId')) {
               <small class="err">Seleccione el cliente</small>
               }
@@ -66422,52 +65753,99 @@ export class MaestroDetalle implements OnInit {
             <div class="field">
               @if (esContado() && form.get('snNombreOptions')?.value === 'S') {
               <div class="campo ml-campo">
-                <label for="nombreClienteManual">Nombre del cliente<span class="req">*</span></label>
-                <input pInputText id="nombreClienteManual" pSize="small" [ngModel]="nombreClienteManual()"
-                  (ngModelChange)="nombreClienteManual.set($event)" [ngModelOptions]="{ standalone: true }"
-                  placeholder="Nombre del cliente" class="w-full" />
+                <label for="nombreClienteManual"
+                  >Nombre del cliente<span class="req">*</span></label
+                >
+                <input
+                  pInputText
+                  id="nombreClienteManual"
+                  pSize="small"
+                  [ngModel]="nombreClienteManual()"
+                  (ngModelChange)="nombreClienteManual.set($event)"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="Nombre del cliente"
+                  class="w-full"
+                />
               </div>
               }
             </div>
 
-        <div class="field">
-          <label for="rtnCliente">RTN del cliente</label>
-          <input pInputText id="rtnCliente" pSize="small" formControlName="rtn_cliente"
-            maxlength="20" placeholder="RTN del cliente" class="w-full" />
-        </div>
+            <div class="field">
+              <label for="rtnCliente">RTN del cliente</label>
+              <input
+                pInputText
+                id="rtnCliente"
+                pSize="small"
+                formControlName="rtn_cliente"
+                maxlength="20"
+                placeholder="RTN del cliente"
+                class="w-full"
+              />
+            </div>
 
-        <div class="field">
-          <label for="gestorId">Gestor de ventas</label>
-          <p-select size="small" id="gestorId" formControlName="gestorId" [options]="gestores()"
-            optionLabel="label" optionValue="value" filter showClear placeholder="Seleccionar gestor..."
-            styleClass="w-full" [appendTo]="'body'" />
-        </div>
+            <div class="field">
+              <label for="gestorId">Gestor de ventas</label>
+              <p-select
+                size="small"
+                id="gestorId"
+                formControlName="gestorId"
+                [options]="gestores()"
+                optionLabel="label"
+                optionValue="value"
+                filter
+                showClear
+                placeholder="Seleccionar gestor..."
+                styleClass="w-full"
+                [appendTo]="'body'"
+              />
+            </div>
 
-        <div class="field">
-          <label>Descuento</label>
-          <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
-            placeholder="Sin descuento" [showClear]="true" style="width: 100%;" [appendTo]="'body'"
-            [ngModel]="descuentoGlobalId()" [ngModelOptions]="{ standalone: true }"
-            (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()" />
-        </div>
+            <div class="field">
+              <label>Descuento</label>
+              <p-select
+                size="small"
+                [options]="descuentos()"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Sin descuento"
+                [showClear]="true"
+                style="width: 100%"
+                [appendTo]="'body'"
+                [ngModel]="descuentoGlobalId()"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()"
+              />
+            </div>
 
             <div class="field">
               <div class="campo campo-inline">
                 <label>Exenta de ISV</label>
-                <p-selectbutton size="small" [options]="snOptions" formControlName="sn_excenta" optionLabel="label"
-                  optionValue="value" (onChange)="recalcularExenta()" />
+                <p-selectbutton
+                  size="small"
+                  [options]="snOptions"
+                  formControlName="sn_excenta"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="recalcularExenta()"
+                />
               </div>
             </div>
-
-
 
             <div class="field">
               <div class="campo ml-campo">
                 <label for="tipoconstancia">Tipo Constancia</label>
-                <p-select id="tipoconstancia" formControlName="tipoconstancia" [options]="tipoConstanciaOpciones"
-                  optionLabel="label" optionValue="value" placeholder="Seleccionar..." size="small"
-                  styleClass="w-full" [appendTo]="'body'"
-                  [disabled]="form.get('sn_excenta')?.value !== 'S'" />
+                <p-select
+                  id="tipoconstancia"
+                  formControlName="tipoconstancia"
+                  [options]="tipoConstanciaOpciones"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccionar..."
+                  size="small"
+                  styleClass="w-full"
+                  [appendTo]="'body'"
+                  [disabled]="form.get('sn_excenta')?.value !== 'S'"
+                />
                 @if (form.get('sn_excenta')?.value === 'S' && invalid('tipoconstancia')) {
                 <small class="err">Seleccione el tipo de constancia</small>
                 }
@@ -66477,9 +65855,15 @@ export class MaestroDetalle implements OnInit {
             <div class="field">
               <div class="campo ml-campo">
                 <label for="nroconstancia">Nro. Constancia</label>
-                <input pInputText id="nroconstancia" formControlName="nroconstancia" pSize="small" placeholder="Constancia"
+                <input
+                  pInputText
+                  id="nroconstancia"
+                  formControlName="nroconstancia"
+                  pSize="small"
+                  placeholder="Constancia"
                   [attr.readonly]="form.get('sn_excenta')?.value !== 'S' || null"
-                  [class.p-inputtext-disabled]="form.get('sn_excenta')?.value !== 'S'" />
+                  [class.p-inputtext-disabled]="form.get('sn_excenta')?.value !== 'S'"
+                />
                 @if (form.get('sn_excenta')?.value === 'S' && invalid('nroconstancia')) {
                 <small class="err">Ingrese el número de constancia</small>
                 }
@@ -66489,89 +65873,114 @@ export class MaestroDetalle implements OnInit {
             <div class="field">
               <div class="campo ml-campo">
                 <label for="importe_excento">Importe Excento</label>
-                <p-inputNumber id="importe_excento" formControlName="importe_excento" mode="currency" currency="HNL"
-                  [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
-                  size="small" styleClass="w-full" [inputStyle]="{ width: '100%' }" [readonly]="true" />
+                <p-inputNumber
+                  id="importe_excento"
+                  formControlName="importe_excento"
+                  mode="currency"
+                  currency="HNL"
+                  [locale]="'es-HN'"
+                  [minFractionDigits]="2"
+                  [maxFractionDigits]="2"
+                  [useGrouping]="true"
+                  size="small"
+                  styleClass="w-full"
+                  [inputStyle]="{ width: '100%' }"
+                  [readonly]="true"
+                />
               </div>
             </div>
 
             <div class="field">
-              <div class="nf-col nf-col-right">
-                <div class="invoice-side">
-                  <div class="pago-block">
-                    <div class="invoice-party-title">Resumen de Pago</div>
-                    <div class="pago-resumen">
-                      <div class="pago-resumen-inline">
-                        <span>Total Factura: <span class="font-bold">{{ moneda(totales().total) }}</span></span>
-                        <span>Total Pagos: <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
-                            [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0">{{
-                            moneda(totalPagos())
-                            }}</span></span>
-                        @if (pendiente() > 0) {
-                        <span>Pendiente: <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span>
-                        }
-                        @if (cambioTotal() > 0) {
-                        <span>Cambio: <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span>
-                        }
-                      </div>
-                    </div>
-                    @if (pagosConImporte().length === 0) {
-                    <small class="text-muted mt-1 block">Ingrese importe en las formas de pago</small>
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
+              <p-button
+                type="button"
+                label="Salir"
+                variant="text"
+                severity="secondary"
+                icon="pi pi-sign-out"
+                size="small"
+                [rounded]="true"
+                (onClick)="salir()"
+              />
 
-
-            <div class="field">
-
-              <p-button type="button" label="Salir" variant="text" severity="secondary" icon="pi pi-sign-out"
-                size="small" [rounded]="true" (onClick)="salir()" />
-
-              <p-button type="button" label="Nueva" icon="pi pi-file" variant="text" severity="success" size="small"
-                [rounded]="true" (onClick)="nueva()" pTooltip="ESC Cancelar" />
+              <p-button
+                type="button"
+                label="Nueva"
+                icon="pi pi-file"
+                variant="text"
+                severity="success"
+                size="small"
+                [rounded]="true"
+                (onClick)="nueva()"
+                pTooltip="ESC Cancelar"
+              />
               @if (form.get('tipofactura')?.value === 'C') {
-              <p-button type="button" label="Facturar" icon="pi pi-check-circle" size="small" [rounded]="true"
-                variant="text" severity="success" [loading]="guardando()" (onClick)="facturar()"
-                pTooltip="ALT + 8 Finalizar" />
+              <p-button
+                type="button"
+                label="Facturar"
+                icon="pi pi-check-circle"
+                size="small"
+                [rounded]="true"
+                variant="text"
+                severity="success"
+                [loading]="guardando()"
+                (onClick)="facturar()"
+                pTooltip="ALT + 8 Finalizar"
+              />
               } @else {
-              <p-button type="button" label="Pagar" variant="text" severity="info" icon="pi pi-credit-card" size="small"
-                [rounded]="true" (onClick)="abrirPagos()"
+              <p-button
+                type="button"
+                label="Pagar"
+                variant="text"
+                severity="info"
+                icon="pi pi-credit-card"
+                size="small"
+                [rounded]="true"
+                (onClick)="abrirPagos()"
                 [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
-                pTooltip="ALT + 6 Pago" />
+                pTooltip="ALT + 6 Pago"
+              />
               }
-
             </div>
-
-
-
-
           </div>
-
         </div>
-
-
+        <div class="field">
+          <span class="alt9">Presione Alt+9 para ver ventana de atajos</span>
+        </div>
       </div>
     </div>
-
-
-
-
   </form>
 </section>
 
-
-<p-dialog header="Formas de Pago" [(visible)]="dialogPagos" [modal]="true" [style]="{ width: '80vw', height: '85vh' }"
-  [contentStyle]="{ overflow: 'auto' }" [draggable]="false" [resizable]="false"
-  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+<p-dialog
+  header="Formas de Pago"
+  [(visible)]="dialogPagos"
+  [modal]="true"
+  [style]="{ width: '80vw', height: '85vh' }"
+  [contentStyle]="{ overflow: 'auto' }"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+>
   <div class="pago-dialog-body">
     <div class="pago-add-row">
-      <p-button size="small" label="Agregar pago" icon="pi pi-plus" severity="success" variant="text" [raised]="true"
-        [rounded]="true" (onClick)="agregarPago()" />
+      <p-button
+        size="small"
+        label="Agregar pago"
+        icon="pi pi-plus"
+        severity="success"
+        variant="text"
+        [raised]="true"
+        [rounded]="true"
+        (onClick)="agregarPago()"
+      />
     </div>
-    <p-table [value]="pagos()" size="small" [scrollable]="true" scrollHeight="flex"
-      [tableStyle]="{ 'min-width': '100%' }">
+    <p-table
+      [value]="pagos()"
+      size="small"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '100%' }"
+    >
       <ng-template #header>
         <tr>
           <th style="color: var(--color-texto-label); width: 25%">Forma de Pago</th>
@@ -66585,36 +65994,83 @@ export class MaestroDetalle implements OnInit {
       <ng-template #body let-pago let-idx="rowIndex">
         <tr>
           <td>
-            <p-select size="small" [options]="formaspago()" optionLabel="label" optionValue="value"
-              placeholder="Seleccionar..." styleClass="w-full" [(ngModel)]="pago.formapagoId"
-              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" (onChange)="onFormaPagoChange(pago)" />
+            <p-select
+              size="small"
+              [options]="formaspago()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              [(ngModel)]="pago.formapagoId"
+              [ngModelOptions]="{ standalone: true }"
+              [appendTo]="'body'"
+              (onChange)="onFormaPagoChange(pago)"
+            />
           </td>
           <td>
             @if (esTarjeta(pago)) {
-            <p-select size="small" [options]="tarjetas()" optionLabel="label" optionValue="value"
-              placeholder="Seleccionar..." styleClass="w-full" showClear [(ngModel)]="pago.tarjetacreditoId"
-              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" />
+            <p-select
+              size="small"
+              [options]="tarjetas()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              showClear
+              [(ngModel)]="pago.tarjetacreditoId"
+              [ngModelOptions]="{ standalone: true }"
+              [appendTo]="'body'"
+            />
             }
           </td>
           <td>
             @if (esTarjeta(pago)) {
-            <input pInputText pSize="small" [(ngModel)]="pago.nrotarjeta" [ngModelOptions]="{ standalone: true }"
-              placeholder="Nro. tarjeta" class="w-full" />
+            <input
+              pInputText
+              pSize="small"
+              [(ngModel)]="pago.nrotarjeta"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Nro. tarjeta"
+              class="w-full"
+            />
             }
           </td>
           <td>
             @if (esTarjeta(pago) || esTransferencia(pago)) {
-            <input pInputText pSize="small" [(ngModel)]="pago.nroautorizacion" [ngModelOptions]="{ standalone: true }"
-              placeholder="Autorización" class="w-full" />
+            <input
+              pInputText
+              pSize="small"
+              [(ngModel)]="pago.nroautorizacion"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Autorización"
+              class="w-full"
+            />
             }
           </td>
           <td>
-            <p-inputnumber size="small" [(ngModel)]="pago.importe" [ngModelOptions]="{ standalone: true }" [min]="0"
-              mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
-              [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
+            <p-inputnumber
+              size="small"
+              [(ngModel)]="pago.importe"
+              [ngModelOptions]="{ standalone: true }"
+              [min]="0"
+              mode="currency"
+              currency="HNL"
+              [locale]="'es-HN'"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [useGrouping]="true"
+              [inputStyle]="{ 'width': '100%' }"
+              styleClass="w-full"
+            />
           </td>
           <td class="text-center">
-            <p-button icon="pi pi-times" [rounded]="true" severity="danger" size="small" (onClick)="quitarPago(idx)" />
+            <p-button
+              icon="pi pi-times"
+              [rounded]="true"
+              severity="danger"
+              size="small"
+              (onClick)="quitarPago(idx)"
+            />
           </td>
         </tr>
       </ng-template>
@@ -66628,7 +66084,6 @@ export class MaestroDetalle implements OnInit {
     </p-table>
   </div>
   <ng-template pTemplate="footer">
-
     <div class="grid w-full">
       <div class="col-12 md:col-6 lg:col-3">
         <span>Total Factura:</span>
@@ -66636,15 +66091,19 @@ export class MaestroDetalle implements OnInit {
       </div>
       <div class="col-12 md:col-6 lg:col-3">
         <span>Total Pagos:</span>
-        <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
-          [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"> {{ moneda(totalPagos()) }}</span>
+        <span
+          class="font-bold"
+          [class.text-ok]="totalPagos() >= totales().total"
+          [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"
+        >
+          {{ moneda(totalPagos()) }}</span
+        >
       </div>
       <div class="col-12 md:col-6 lg:col-3">
         @if (pendiente() > 0) {
         <span> Pendiente:</span>
         <span class="font-bold text-warn"> {{ moneda(pendiente()) }}</span>
         }
-
       </div>
 
       <div class="col-12 md:col-6 lg:col-3">
@@ -66653,24 +66112,55 @@ export class MaestroDetalle implements OnInit {
         <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span>
         }
       </div>
-
     </div>
 
     <div class="pago-dialog-actions">
-      <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small"
-        [rounded]="true" (onClick)="dialogPagos.set(false)" />
-      <p-button type="button" label="Facturar" icon="pi pi-shopping-cart" [loading]="guardando()" size="small"
-        severity="success" variant="text" [rounded]="true" (onClick)="facturar()" />
+      <p-button
+        type="button"
+        label="Cancelar"
+        icon="pi pi-times"
+        variant="text"
+        severity="secondary"
+        size="small"
+        [rounded]="true"
+        (onClick)="dialogPagos.set(false)"
+      />
+      <p-button
+        type="button"
+        label="Facturar"
+        icon="pi pi-shopping-cart"
+        [loading]="guardando()"
+        size="small"
+        severity="success"
+        variant="text"
+        [rounded]="true"
+        (onClick)="facturar()"
+      />
     </div>
   </ng-template>
 </p-dialog>
 
-<p-dialog header="Ventas Suspendidas (ALT + 4)" [(visible)]="dialogSuspendidas" [modal]="true"
-  [style]="{ width: '70vw' }" [draggable]="false" [resizable]="false"
-  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
-  <p-table [value]="ventasSuspendidas()" size="small" [scrollable]="true" scrollHeight="400px" styleClass="det-table"
-    [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
-    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">
+<p-dialog
+  header="Ventas Suspendidas (ALT + 4)"
+  [(visible)]="dialogSuspendidas"
+  [modal]="true"
+  [style]="{ width: '70vw' }"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+>
+  <p-table
+    [value]="ventasSuspendidas()"
+    size="small"
+    [scrollable]="true"
+    scrollHeight="400px"
+    styleClass="det-table"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+  >
     <ng-template #header>
       <tr>
         <th style="width: 10rem">Fecha</th>
@@ -66687,10 +66177,22 @@ export class MaestroDetalle implements OnInit {
         <td>{{ v.filas?.length ?? 0 }}</td>
         <td class="text-right">{{ moneda(v.totales?.total) }}</td>
         <td class="text-center">
-          <p-button icon="pi pi-upload" [rounded]="true" severity="success" size="small" pTooltip="Restaurar"
-            (onClick)="restaurarVenta(v)" />
-          <p-button icon="pi pi-trash" [rounded]="true" severity="danger" size="small" pTooltip="Eliminar"
-            (onClick)="eliminarVentaSuspendida(v)" />
+          <p-button
+            icon="pi pi-upload"
+            [rounded]="true"
+            severity="success"
+            size="small"
+            pTooltip="Restaurar"
+            (onClick)="restaurarVenta(v)"
+          />
+          <p-button
+            icon="pi pi-trash"
+            [rounded]="true"
+            severity="danger"
+            size="small"
+            pTooltip="Eliminar"
+            (onClick)="eliminarVentaSuspendida(v)"
+          />
         </td>
       </tr>
     </ng-template>
@@ -66702,8 +66204,15 @@ export class MaestroDetalle implements OnInit {
   </p-table>
 </p-dialog>
 
-<p-dialog header="Atajos de Teclado (ALT + 9)" [(visible)]="dialogAtajos" [modal]="true" [style]="{ width: '420px' }"
-  [draggable]="false" [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+<p-dialog
+  header="Atajos de Teclado (ALT + 9)"
+  [(visible)]="dialogAtajos"
+  [modal]="true"
+  [style]="{ width: '420px' }"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+>
   <div class="atajos-list">
     @for (a of atajos; track a.tecla) {
     <div class="atajo-row">
@@ -66715,8 +66224,14 @@ export class MaestroDetalle implements OnInit {
 </p-dialog>
 
 <!-- Diálogo headless TodoPago: notificación llamativa del link (y del pago confirmado) -->
-<p-confirmdialog key="tp-link" styleClass="tp-hl-dialog" [modal]="true" [style]="{ width: '460px' }"
-  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [dismissableMask]="true">
+<p-confirmdialog
+  key="tp-link"
+  styleClass="tp-hl-dialog"
+  [modal]="true"
+  [style]="{ width: '460px' }"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [dismissableMask]="true"
+>
   <ng-template #headless let-message let-onAccept="onAccept" let-onReject="onReject">
     @if (linkPago(); as link) {
     <div class="tp-hl">
@@ -66732,8 +66247,15 @@ export class MaestroDetalle implements OnInit {
         <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
       </div>
       <div class="tp-hl-actions">
-        <p-button size="small" label="Entendido" icon="pi pi-check" severity="success" [raised]="true" [rounded]="true"
-          (onClick)="onAccept()" />
+        <p-button
+          size="small"
+          label="Entendido"
+          icon="pi pi-check"
+          severity="success"
+          [raised]="true"
+          [rounded]="true"
+          (onClick)="onAccept()"
+        />
       </div>
       } @else {
       <!-- Variante: link generado (pendiente) -->
@@ -66743,35 +66265,64 @@ export class MaestroDetalle implements OnInit {
       <span class="tp-hl-title">Link de pago generado</span>
       <p class="tp-hl-sub">Factura #{{ nroFacturaLink() }} — comparta el link con el cliente</p>
       <div class="tp-hl-monto">
-        {{ moneda(link.monto) }}
-        @if (link.sandbox) {
+        {{ moneda(link.monto) }} @if (link.sandbox) {
         <span class="tp-hl-sandbox">SANDBOX</span>
         }
       </div>
       <div class="tp-hl-status">
         <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
       </div>
-      <input pInputText pSize="small" class="w-full tp-hl-url" [ngModel]="link.url"
-        [ngModelOptions]="{ standalone: true }" readonly />
+      <input
+        pInputText
+        pSize="small"
+        class="w-full tp-hl-url"
+        [ngModel]="link.url"
+        [ngModelOptions]="{ standalone: true }"
+        readonly
+      />
       <div class="tp-hl-actions">
-        <p-button size="small" [label]="linkCopiado() ? 'Copiado' : 'Copiar link'" icon="pi pi-copy"
-          severity="success" [raised]="true" [rounded]="true" (onClick)="copiarLink()" />
-        <p-button size="small" label="Abrir link" icon="pi pi-external-link" severity="info" variant="text"
-          [rounded]="true" (onClick)="abrirLink()" />
-        <p-button size="small" label="Estado" icon="pi pi-refresh" severity="secondary" variant="text" [rounded]="true"
-          (onClick)="consultarEstadoLink()" />
-        <p-button size="small" label="Cerrar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
-          (onClick)="onReject()" />
+        <p-button
+          size="small"
+          [label]="linkCopiado() ? 'Copiado' : 'Copiar link'"
+          icon="pi pi-copy"
+          severity="success"
+          [raised]="true"
+          [rounded]="true"
+          (onClick)="copiarLink()"
+        />
+        <p-button
+          size="small"
+          label="Abrir link"
+          icon="pi pi-external-link"
+          severity="info"
+          variant="text"
+          [rounded]="true"
+          (onClick)="abrirLink()"
+        />
+        <p-button
+          size="small"
+          label="Estado"
+          icon="pi pi-refresh"
+          severity="secondary"
+          variant="text"
+          [rounded]="true"
+          (onClick)="consultarEstadoLink()"
+        />
+        <p-button
+          size="small"
+          label="Cerrar"
+          icon="pi pi-times"
+          severity="secondary"
+          variant="text"
+          [rounded]="true"
+          (onClick)="onReject()"
+        />
       </div>
       }
     </div>
     }
   </ng-template>
 </p-confirmdialog>
-
-@if (zoomVisible()) {
-<img [src]="zoomUrl()" class="img-zoom-overlay" [style.left.px]="zoomX()" [style.top.px]="zoomY()" />
-}
 
 ```
 
@@ -67224,41 +66775,196 @@ export class MaestroDetalle implements OnInit {
 }
 
 .alt9 {
-  display: block;
-  font-weight: 300;
   margin-left: 5px;
-  font-size: 1.05rem;
-  color: var(--c-warning);
+  font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--c-warning);
 }
 
-.img-producto {
-  mix-blend-mode: multiply;
-  background: transparent;
-  border-radius: 7px;
-  object-fit: contain;
-  /* Asegura que la imagen no se deforme */
+// ARFM20261030 Imagen de producto con efecto retroiluminado (mismo que pedido-form):
+// la luz va de ATRÁS hacia DELANTE (halo detrás del círculo), la imagen conserva
+// su propio color de fondo, forma casi redonda y bordes suavizados (máscara radial).
+.img-backlight {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 50px;
-  /* Ajusta según el tamaño en tu tabla */
   height: 50px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0);
-  /* Separa la imagen del fondo oscuro */
+  border-radius: 50%;
+  overflow: hidden;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--c-border) 45%, transparent),
+    0 0 8px 1px color-mix(in srgb, var(--c-border) 55%, transparent),
+    0 0 18px 3px color-mix(in srgb, var(--c-border) 32%, transparent),
+    0 0 30px 6px color-mix(in srgb, var(--c-border) 16%, transparent);
+}
+
+.img-clickable {
+  cursor: pointer;
+}
+.img-producto {
+  background: transparent;
+  object-fit: contain;
+  width: 50px;
+  height: 50px;
+  border-radius: 46%;
+    -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    box-shadow: none;
 }
 
 .campo-full {
   grid-column: 1 / -1;
 }
 
-.img-zoom-overlay {
-  position: fixed;
-  width: 250px;
-  height: 250px;
+// ═══════════════════════════════════════════════════════════════════════════
+// ARFM20261030 Popover de existencia — card estilo menú de restaurante
+// (idéntico a pedido-form.scss; reemplaza al hover-zoom .img-zoom-overlay)
+// ═══════════════════════════════════════════════════════════════════════════
+
+.icono-sin-imagen {
+  color: slateblue;
+}
+
+// Panel del popover: sin padding del PrimeNG, bordes redondeados, sombra propia
+::ng-deep .p-popover {
+  border: 1px solid var(--c-border-strong);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+  .p-popover-content {
+    padding: 0;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+}
+
+.menu-card {
+  width: 19rem;
+  background: var(--c-card-background);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+// Media: imagen grande centrada con halo radial de --c-primary detrás
+.menu-card-media {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 14rem;
+  padding: 1rem;
+  // recorta el zoom para que no se desborde del media
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 45%,
+      color-mix(in srgb, var(--c-primary) 12%, transparent),
+      transparent 70%);
+}
+
+// Tag de estado superpuesto en la esquina del media — SIEMPRE por encima del zoom
+.menu-card-tag {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+}
+
+.img-producto-lg {
+  position: relative;
+  z-index: 1;
+  background: transparent;
   object-fit: contain;
-  background: var(--c-bg-white);
-  border: 2px solid var(--surface-border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  z-index: 9999;
-  pointer-events: none;
+  width: 170px;
+    height: 170px;
+    border-radius: 46%;
+    -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    box-shadow: none;
+    // zoom suave al pasar el mouse (la tag queda por encima por z-index)
+    transition: transform 0.25s ease;
+  
+    .menu-card-media:hover & {
+      transform: scale(1.35);
+    }
+  }
+  
+  // Ficha inferior: código, descripción, precio + chip de existencia
+  .menu-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.75rem 0.9rem 0.9rem;
+  }
+  
+  .menu-card-cod {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+  }
+  
+  .menu-card-desc {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #fff;
+  }
+  
+  .menu-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+  }
+  
+  .menu-card-precio {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-primary);
+  }
+  
+  // Chip de existencia (en lugar del botón "Buy" del ejemplo PrimeNG)
+  .menu-card-stock {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+  
+    i {
+      font-size: 0.75rem;
+    }
+  
+    // Niveles según row.estado (ALTA / BAJO / AGOTADO / SIN_STOCK)
+    &.nivel-alta {
+      color: var(--c-success);
+      background: color-mix(in srgb, var(--c-success) 14%, transparent);
+      border-color: color-mix(in srgb, var(--c-success) 45%, transparent);
+    }
+  
+    &.nivel-bajo {
+      color: var(--c-warning);
+      background: color-mix(in srgb, var(--c-warning) 14%, transparent);
+      border-color: color-mix(in srgb, var(--c-warning) 45%, transparent);
+    }
+  
+    &.nivel-agotado {
+      color: var(--c-danger);
+      background: color-mix(in srgb, var(--c-danger) 14%, transparent);
+      border-color: color-mix(in srgb, var(--c-danger) 45%, transparent);
+    }
+  
+    &.nivel-sin_stock {
+      color: var(--c-info);
+      background: color-mix(in srgb, var(--c-info) 14%, transparent);
+      border-color: color-mix(in srgb, var(--c-info) 45%, transparent);
+    }
 }
 
 .text-right {
@@ -67293,6 +66999,48 @@ export class MaestroDetalle implements OnInit {
 
   .nf-busqueda {
     margin-top: 0;
+// Ícono de lupa: fijarlo a la derecha (con left:97% se sale del input en
+  // pantallas angostas) — mismo fix que pedido-form
+  ::ng-deep .p-inputicon {
+    left: auto;
+    right: 0.75rem;
+    margin-left: 0;
+  }
+
+  input[pinputtext] {
+    padding-right: 2.75rem;
+  }
+}
+
+// Controles apilados: label arriba, control abajo a 100% (una fila por
+// campo) — mismo criterio que .pedido-header-controls en móvil
+.campo-inline {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+
+  label {
+    white-space: normal;
+  }
+
+  ::ng-deep .p-select,
+  ::ng-deep .p-selectbutton,
+  p-selectbutton {
+    width: 100%;
+  }
+}
+
+.campo {
+  width: 100%;
+
+  ::ng-deep .p-select,
+  ::ng-deep .p-selectbutton,
+  p-selectbutton,
+  p-select,
+  p-inputnumber,
+  p-datepicker {
+    width: 100%;
+  }
   }
 
   .nf-totales .nf-totales-col-data {
@@ -67507,6 +67255,8 @@ export class MaestroDetalle implements OnInit {
 ::ng-deep .tp-hl-dialog .p-dialog-footer {
   display: none;
 }
+// ARFM20261030 MEJORA consumida aquí: alturas de las filas en blanco del footer
+// (emptyRows / MIN_ROWS=9) — mismo criterio que pedido-form.scss
 .empty-row td {
   height: 45px;
 }
@@ -67518,7 +67268,7 @@ export class MaestroDetalle implements OnInit {
 ## 📄 src\app\features\facturacion\nueva-factura\nueva-factura.ts
 
 ```typescript
-import { Component, inject, signal, computed, OnInit, DestroyRef, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -67554,6 +67304,7 @@ import { BadgeModule } from 'primeng/badge';
 import { DividerModule } from 'primeng/divider';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { PopoverModule, Popover } from 'primeng/popover';
 
 interface Opcion {
   label: string;
@@ -67605,6 +67356,7 @@ interface PagoFactura {
     DividerModule,
     InputIconModule,
     IconFieldModule,
+    PopoverModule,
     ConfirmDialogModule,
   ],
   // ConfirmationService local: aisla nuestro p-confirmdialog del global de main-layout
@@ -67650,6 +67402,8 @@ export class NuevaFactura implements OnInit {
   filas = signal<FilaDet[]>([]);
   pagos = signal<PagoFactura[]>([]);
 
+  // ARFM20261030 MEJORA consumida en nueva-factura.html (<ng-template #footer>):
+  // filas en blanco mínimas para que la tabla nunca quede "a media altura".
   readonly MIN_ROWS = 9;
 
   get emptyRows(): any[] {
@@ -67701,10 +67455,11 @@ export class NuevaFactura implements OnInit {
   dialogAtajos = signal(false);
   dialogSuspendidas = signal(false);
   ventasSuspendidas = signal<any[]>([]);
-  zoomVisible = signal(false);
-  zoomUrl = signal('');
-  zoomX = signal(0);
-  zoomY = signal(0);
+
+  // ARFM20261030 Popover de existencia al hacer click en la imagen de la fila
+  // (patrón Popover#datatable de PrimeNG v21 — reemplaza al hover-zoom anterior)
+  @ViewChild('op') op?: Popover;
+  productoSeleccionado = signal<FilaDet | null>(null);
 
   readonly atajos = [
     { tecla: 'ESC', accion: 'Cancelar factura actual' },
@@ -68097,20 +67852,23 @@ export class NuevaFactura implements OnInit {
     return this.form.get('tipofactura')?.value === 'E';
   }
 
-  onImgHover(url: string, event: MouseEvent) {
-    this.zoomUrl.set(url);
-    this.zoomX.set(event.clientX + 12);
-    this.zoomY.set(event.clientY - 100);
-    this.zoomVisible.set(true);
+  /** Abre/cierra el popover de existencia al hacer click en la imagen de la fila */
+  mostrarExistenciaImagen(event: Event, row: FilaDet) {
+    if (this.productoSeleccionado()?.fila === row.fila) {
+      this.op?.hide();
+      this.productoSeleccionado.set(null);
+    } else {
+      this.productoSeleccionado.set(row);
+      this.op?.show(event);
+      if (this.op?.container) {
+        this.op.align();
+      }
+    }
   }
 
-  onImgMove(event: MouseEvent) {
-    this.zoomX.set(event.clientX + 12);
-    this.zoomY.set(event.clientY - 100);
-  }
-
-  onImgLeave() {
-    this.zoomVisible.set(false);
+  ocultarPopoverExistencia() {
+    this.op?.hide();
+    this.productoSeleccionado.set(null);
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -69874,36 +69632,76 @@ export class PagoConfirmado implements OnInit {
 
 ```typescript
 <section class="page">
-
   <div class="page-header-pedido">
     <span>Pedidos/Facturación</span>
     <div class="pedido-estado">
       <!-- Fila 1: chips de estado del pedido -->
       <div class="pedido-chips">
-        <p-tag [value]="'Pedido ' + (pedidoId() ? '#' + pedidoId() : 'nuevo')" severity="info" styleClass="tag-sm" />
-        <p-tag [value]="estadoPedidoLabel()" [severity]="estadoPedidoSeverity()" styleClass="tag-sm" />
+        <p-tag
+          [value]="'Pedido ' + (pedidoId() ? '#' + pedidoId() : 'nuevo')"
+          severity="info"
+          styleClass="tag-sm"
+        />
+        <p-tag
+          [value]="estadoPedidoLabel()"
+          [severity]="estadoPedidoSeverity()"
+          styleClass="tag-sm"
+        />
         @if (snFacturado() === 'S' && (nrofactura() || facturaId())) {
-        <p-tag [value]="'Factura #' + (nrofactura() ?? facturaId())" severity="success" styleClass="tag-sm" />
-        }
-        @if (soloLectura()) {
-        <span class="badge-readonly"><i class="pi pi-lock"></i> Solo lectura — pedido facturado</span>
+        <p-tag
+          [value]="'Factura #' + (nrofactura() ?? facturaId())"
+          severity="success"
+          styleClass="tag-sm"
+        />
+        } @if (soloLectura()) {
+        <span class="badge-readonly"
+          ><i class="pi pi-lock"></i> Solo lectura — pedido facturado</span
+        >
         }
       </div>
       <!-- Fila 2: controles (Gestor → Teléfono → Envío gratis) -->
       <div class="pedido-header-controls">
         <label for="gestorId">Gestor de venta</label>
-        <p-select size="small" id="gestorId" [ngModel]="gestorId()" (ngModelChange)="gestorId.set($event)"
-          [options]="gestores()" optionLabel="label" optionValue="value" filter showClear
-          placeholder="Seleccionar gestor..." styleClass="w-16rem" [appendTo]="'body'"
-          [ngModelOptions]="{ standalone: true }" [disabled]="soloLectura()" />
+        <p-select
+          size="small"
+          id="gestorId"
+          [ngModel]="gestorId()"
+          (ngModelChange)="gestorId.set($event)"
+          [options]="gestores()"
+          optionLabel="label"
+          optionValue="value"
+          filter
+          showClear
+          placeholder="Seleccionar gestor..."
+          styleClass="w-16rem"
+          [appendTo]="'body'"
+          [ngModelOptions]="{ standalone: true }"
+          [disabled]="soloLectura()"
+        />
         <label for="telefono">Teléfono</label>
-        <input pInputText id="telefono" pSize="small" [ngModel]="telefono()"
-          (ngModelChange)="onTelChange($event)" [ngModelOptions]="{ standalone: true }" maxlength="20"
-          placeholder="Teléfono del cliente" class="w-10rem" [disabled]="soloLectura()" />
+        <input
+          pInputText
+          id="telefono"
+          pSize="small"
+          [ngModel]="telefono()"
+          (ngModelChange)="onTelChange($event)"
+          [ngModelOptions]="{ standalone: true }"
+          maxlength="20"
+          placeholder="Teléfono del cliente"
+          class="w-10rem"
+          [disabled]="soloLectura()"
+        />
         <label for="envioGratis">Envío gratis</label>
-        <p-selectbutton size="small" id="envioGratis" [options]="snOptions" [ngModel]="envioGratis()"
-          (ngModelChange)="onEnvioChange($event)" optionLabel="label" optionValue="value"
-          [disabled]="soloLectura()" />
+        <p-selectbutton
+          size="small"
+          id="envioGratis"
+          [options]="snOptions"
+          [ngModel]="envioGratis()"
+          (ngModelChange)="onEnvioChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          [disabled]="soloLectura()"
+        />
       </div>
     </div>
   </div>
@@ -69915,98 +69713,240 @@ export class PagoConfirmado implements OnInit {
         <div class="field col col-12 md:col">
           <div class="nf-busqueda">
             <p-iconfield styleClass="w-full">
-              <input pInputText type="text" pSize="small" class="w-full" [value]="qProducto()"
-                (input)="onBuscarProducto($event)" placeholder="Buscar producto o escanear código de barras..."
-                [disabled]="soloLectura()" />
+              <input
+                pInputText
+                type="text"
+                pSize="small"
+                class="w-full"
+                [value]="qProducto()"
+                (input)="onBuscarProducto($event)"
+                placeholder="Buscar producto o escanear código de barras..."
+                [disabled]="soloLectura()"
+              />
               <p-inputicon class="ml-10">
-                <p-button id="btnbuscar" size="small" icon="pi pi-search" pTooltip="ALT + 1 Buscar producto"
-                  showDelay="1000" hideDelay="300" severity="info" [rounded]="true" variant="text"
-                  [disabled]="soloLectura()" (onClick)="showHelperProductos()" />
+                <p-button
+                  id="btnbuscar"
+                  size="small"
+                  icon="pi pi-search"
+                  pTooltip="ALT + 1 Buscar producto"
+                  showDelay="1000"
+                  hideDelay="300"
+                  severity="info"
+                  [rounded]="true"
+                  variant="text"
+                  [disabled]="soloLectura()"
+                  (onClick)="showHelperProductos()"
+                />
               </p-inputicon>
             </p-iconfield>
           </div>
         </div>
       </div>
 
-      <p-table [value]="filas()" size="small" [scrollable]="true" scrollHeight="280px"
-        [tableStyle]="{ 'min-width': '50rem' }" styleClass="det-table" [rows]="5">
-        <ng-template #header>
-          <tr>
-            <th class="th-label width-producto">Producto</th>
-            <th class="th-label width-imagen">Imagen</th>
-            <th class="th-label width-cantidad">Cantidad</th>
-            <th class="th-label width-promo">Promo</th>
-            <th class="th-label width-precio">PrecioVta</th>
-            <th class="th-label width-subtotal">Subtotal</th>
-            <th class="th-label width-accion">Acción</th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-row let-idx="rowIndex">
-          <tr>
-            <td class="cell-producto">
-              <span class="cod-barra">Cod. {{ row.codbarra }}</span>
-              <span class="desc-linea">{{ row.descripcion }}</span>
-              <span class="desc-linea">
-                Stock..
-                <p-tag [value]="getExistencia(row.productoId) + ''" severity="secondary" styleClass="tag-sm" />
-                disp..
-                <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)" styleClass="tag-sm" />
-              </span>
-            </td>
+      <!-- ARFM20261030 scrollHeight="flex" (igual que nueva-factura): el contenedor llena
+           calc(100vh - 360px) para que las 9 filas en blanco del footer (MIN_ROWS) quepan
+           sin scroll — con "280px" se cortaban y el tfoot sticky se encimaba -->
+      <div style="height: calc(100vh - 360px)">
+        <p-table
+          [value]="filas()"
+          size="small"
+          stripedRows
+          [scrollable]="true"
+          scrollHeight="flex"
+          [tableStyle]="{ 'min-width': '50rem' }"
+          styleClass="det-table"
+          [rows]="7"
+        >
+          <ng-template #header>
+            <tr>
+              <th class="th-label width-producto">Producto</th>
+              <th class="th-label width-imagen">Imagen</th>
+              <th class="th-label width-cantidad">Cantidad</th>
+              <th class="th-label width-promo">Promo</th>
+              <th class="th-label width-precio">PrecioVta</th>
+              <th class="th-label width-subtotal">Subtotal</th>
+              <th class="th-label width-accion">Acción</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-row let-idx="rowIndex">
+            <tr>
+              <td class="cell-producto">
+                <span class="cod-barra">Cod. {{ row.codbarra }}</span>
+                <span class="desc-linea">{{ row.descripcion }}</span>
+                <span class="desc-linea">
+                  Stock..
+                  <p-tag
+                    [value]="getExistencia(row.productoId) + ''"
+                    severity="secondary"
+                    styleClass="tag-sm"
+                  />
+                  disp..
+                  <p-tag
+                    [value]="row.estado"
+                    [severity]="getSeverity(row.estado)"
+                    styleClass="tag-sm"
+                  />
+                </span>
+              </td>
 
-            <td>
-              @if (row.imagenUrl) {
-              <img [src]="row.imagenUrl" [alt]="row.descripcion" width="50" class="img-producto" />
+              <td>
+                @if (row.imagenUrl) {
+                <!-- ARFM20261030 wrapper retroiluminado: la luz va de atrás hacia adelante
+                     alrededor de la imagen; click = popover de existencia -->
+                <span
+                  class="img-backlight img-clickable"
+                  (click)="mostrarExistenciaImagen($event, row)"
+                >
+                  <img
+                    [src]="row.imagenUrl"
+                    [alt]="row.descripcion"
+                    width="80"
+                    class="img-producto"
+                  />
+                </span>
+                } @else {
+                <i class="pi pi-images icono-sin-imagen"></i>
+                }
+              </td>
+
+              <td>
+                <p-inputnumber
+                  [(ngModel)]="row.cantidad"
+                  [ngModelOptions]="{ standalone: true }"
+                  [min]="0"
+                  [step]="1"
+                  [showButtons]="true"
+                  spinnerMode="horizontal"
+                  buttonLayout="horizontal"
+                  size="small"
+                  mode="currency"
+                  currency="HNL"
+                  [locale]="'es-HN'"
+                  [minFractionDigits]="2"
+                  [maxFractionDigits]="2"
+                  [useGrouping]="true"
+                  styleClass="w-10rem"
+                  [inputStyle]="{ 'width': '100%' }"
+                  (ngModelChange)="recalcularFila(row)"
+                  [disabled]="soloLectura()"
+                >
+                  <ng-template #incrementbuttonicon>
+                    <span class="pi pi-plus"></span>
+                  </ng-template>
+                  <ng-template #decrementbuttonicon>
+                    <span class="pi pi-minus"></span>
+                  </ng-template>
+                </p-inputnumber>
+              </td>
+
+              @if (esOferta(row.productoId)) {
+              <td>
+                @if (row.descuento > getOferta(row.productoId)!.porcentaje) {
+                <p-tag
+                  [value]="'Promo -' + getOferta(row.productoId)!.porcentaje + '% + Tercera -' + (row.descuento -
+                getOferta(row.productoId)!.porcentaje) + '%'"
+                  severity="success"
+                  styleClass="tag-sm"
+                />
+                } @else {
+                <p-tag
+                  [value]="'Descuento -' + getOferta(row.productoId)!.porcentaje + '%'"
+                  severity="success"
+                  styleClass="tag-sm"
+                />
+                }
+              </td>
               } @else {
-              <i class="pi pi-images icono-sin-imagen"></i>
+              <td></td>
               }
-            </td>
 
-            <td>
-              <p-inputnumber [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" [min]="0" [step]="1"
-                [showButtons]="true" spinnerMode="horizontal" buttonLayout="horizontal" size="small" mode="currency"
-                currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
-                styleClass="w-10rem" [inputStyle]="{ 'width': '100%' }" (ngModelChange)="recalcularFila(row)"
-                [disabled]="soloLectura()">
-                <ng-template #incrementbuttonicon>
-                  <span class="pi pi-plus"></span>
-                </ng-template>
-                <ng-template #decrementbuttonicon>
-                  <span class="pi pi-minus"></span>
-                </ng-template>
-              </p-inputnumber>
-            </td>
+              <td>{{ moneda(row.precioventa) }}</td>
 
-            @if (esOferta(row.productoId)) {
-            <td>
-              @if (row.descuento > getOferta(row.productoId)!.porcentaje) {
-              <p-tag [value]="'Promo -' + getOferta(row.productoId)!.porcentaje + '% + Tercera -' + (row.descuento -
-                getOferta(row.productoId)!.porcentaje) + '%'" severity="success" styleClass="tag-sm" />
-              } @else {
-              <p-tag [value]="'Descuento -' + getOferta(row.productoId)!.porcentaje + '%'" severity="success"
-                styleClass="tag-sm" />
-              }
-            </td>
-            } @else {
-            <td></td>
+              <td>{{ moneda(row.subTotal) }}</td>
+
+              <td>
+                <p-button
+                  icon="pi pi-times"
+                  [rounded]="true"
+                  severity="danger"
+                  (onClick)="quitarFila(idx)"
+                  size="small"
+                  [disabled]="soloLectura()"
+                />
+              </td>
+            </tr>
+          </ng-template>
+          <!-- ARFM20261030 MEJORA consumida aquí: emptyRows (MIN_ROWS=9) pinta filas en
+               blanco en el footer de la tabla hasta completar 9 filas — mismo criterio
+               que nueva-factura.html -->
+          <ng-template #footer>
+            @for (empty of emptyRows; track $index) {
+              <tr class="empty-row">
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
             }
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="100" class="text-center p-3">
+                Sin artículos. Agregue el primer artículo.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
 
-            <td>{{ moneda(row.precioventa) }}</td>
+        <!-- ARFM20261030 Popover de existencia (patrón Popover#datatable PrimeNG v21).
+             FUERA de la p-table para que no se renderice por fila. Se abre con click
+             en la imagen; en lugar del botón "Buy" muestra la existencia del producto. -->
+        <p-popover #op (onHide)="productoSeleccionado.set(null)">
+          <ng-template #content>
+            @if (productoSeleccionado(); as row) {
+            <!-- Card estilo menú de restaurante: imagen grande arriba + ficha abajo -->
+            <div class="menu-card">
+              <div class="menu-card-media">
+                @if (row.imagenUrl) {
+                <img
+                  [src]="row.imagenUrl"
+                  [alt]="row.descripcion"
+                  class="img-producto img-producto-lg"
+                />
+                } @else {
+                <i class="pi pi-images icono-sin-imagen"></i>
+                }
+                <p-tag
+                  [value]="row.estado"
+                  [severity]="getSeverity(row.estado)"
+                  styleClass="tag-sm menu-card-tag"
+                />
+              </div>
 
-            <td>{{ moneda(row.subTotal) }}</td>
+              <div class="menu-card-body">
+                <span class="menu-card-cod">Cod. {{ row.codbarra }}</span>
+                <div class="menu-card-desc">{{ row.descripcion }}</div>
 
-            <td>
-              <p-button icon="pi pi-times" [rounded]="true" severity="danger" (onClick)="quitarFila(idx)" size="small"
-                [disabled]="soloLectura()" />
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="100" class="text-center p-3">Sin artículos. Agregue el primer artículo.</td>
-          </tr>
-        </ng-template>
-      </p-table>
+                <div class="menu-card-meta">
+                  <span class="menu-card-precio">{{ moneda(row.precioventa) }}</span>
+                  <!-- En lugar de "Buy": existencia disponible -->
+                  <span
+                    class="menu-card-stock"
+                    [ngClass]="'nivel-' + (row.estado || '').toLowerCase()"
+                  >
+                    <i class="pi pi-box"></i>
+                    Existencia: {{ getExistencia(row.productoId) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            }
+          </ng-template>
+        </p-popover>
+      </div>
 
       <div class="mt-2 nf-totales">
         <div class="nf-totales-split">
@@ -70035,9 +69975,10 @@ export class PagoConfirmado implements OnInit {
     </div>
 
     <!-- Columna 2: panel lateral -->
-    <div style="margin-top: -100px"  class="col-12 xl:col-3 nf-side-panel-col">
+    <!-- ARFM20261030 margin-top: -100px ahora vive en SCSS (.nf-side-panel-col) para poder
+         anularlo solo en mobile sin !important -->
+    <div class="col-12 xl:col-3 nf-side-panel-col">
       <div class="p-2 for-border-color-alls border-2 border-round m-2 nf-side-panel">
-
         <div class="field">
           <div class="p-0 grid">
             <div class="p-0 mt-2 ml-2 col">
@@ -70045,18 +69986,34 @@ export class PagoConfirmado implements OnInit {
                 <label for="tipoFactura">Tipo factura<span class="req">*</span></label>
                 <p-selectbutton
                   id="cbotipofactura"
-                  size="small" id="tenipoFactura" [options]="tipoOptions" [ngModel]="tipoFactura()"
-                  (ngModelChange)="tipoFactura.set($event); onTipoFacturaChange()" optionLabel="label"
-                  optionValue="value" [disabled]="soloLectura()" />
+                  size="small"
+                  id="tenipoFactura"
+                  [options]="tipoOptions"
+                  [ngModel]="tipoFactura()"
+                  (ngModelChange)="tipoFactura.set($event); onTipoFacturaChange()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [disabled]="soloLectura()"
+                />
               </div>
             </div>
             <div class="p-0 mt-5 mr-2">
               <p-button
-               id="btnaddnewcustomer"
-               label="Nuevo cliente" variant="text"
-               icon="pi pi-plus" size="small" severity="info" [raised]="true" [rounded]="true"
-                pTooltip="ALT + 2 Agregar nuevo cliente" [appendTo]="'body'" showDelay="1000" hideDelay="300"
-                (onClick)="abrirNuevoCliente()" [disabled]="soloLectura()" />
+                id="btnaddnewcustomer"
+                label="Nuevo cliente"
+                variant="text"
+                icon="pi pi-plus"
+                size="small"
+                severity="info"
+                [raised]="true"
+                [rounded]="true"
+                pTooltip="ALT + 2 Agregar nuevo cliente"
+                [appendTo]="'body'"
+                showDelay="1000"
+                hideDelay="300"
+                (onClick)="abrirNuevoCliente()"
+                [disabled]="soloLectura()"
+              />
             </div>
           </div>
         </div>
@@ -70064,58 +70021,111 @@ export class PagoConfirmado implements OnInit {
         <div class="field">
           <div class="campo">
             <label for="clienteId">Cliente <span class="req">*</span></label>
-            <p-select size="small" id="clienteId" [ngModel]="clienteId()" (ngModelChange)="onClienteChange($event)"
-              [options]="clientes()" optionLabel="label" optionValue="value" filter showClear
-              placeholder="Seleccionar cliente..." styleClass="w-full" [appendTo]="'body'"
-              [disabled]="soloLectura()" />
+            <p-select
+              size="small"
+              id="clienteId"
+              [ngModel]="clienteId()"
+              (ngModelChange)="onClienteChange($event)"
+              [options]="clientes()"
+              optionLabel="label"
+              optionValue="value"
+              filter
+              showClear
+              placeholder="Seleccionar cliente..."
+              styleClass="w-full"
+              [appendTo]="'body'"
+              [disabled]="soloLectura()"
+            />
           </div>
         </div>
 
         <div class="field">
           <div class="campo">
             <label for="nombreCliente">Nombre del cliente<span class="req">*</span></label>
-            <input pInputText id="nombreCliente" pSize="small" [ngModel]="nombreCliente()"
-              (ngModelChange)="onNombreChange($event)" [ngModelOptions]="{ standalone: true }"
-              placeholder="Nombre del cliente" class="w-full" [disabled]="soloLectura()" />
+            <input
+              pInputText
+              id="nombreCliente"
+              pSize="small"
+              [ngModel]="nombreCliente()"
+              (ngModelChange)="onNombreChange($event)"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Nombre del cliente"
+              class="w-full"
+              [disabled]="soloLectura()"
+            />
           </div>
         </div>
 
         <div class="field">
           <div class="campo">
             <label for="rtnCliente">RTN del cliente</label>
-            <input pInputText id="rtnCliente" pSize="small" [ngModel]="rtnCliente()"
-              (ngModelChange)="onRtnChange($event)" [ngModelOptions]="{ standalone: true }" maxlength="20"
-              placeholder="RTN del cliente" class="w-full" [disabled]="soloLectura()" />
+            <input
+              pInputText
+              id="rtnCliente"
+              pSize="small"
+              [ngModel]="rtnCliente()"
+              (ngModelChange)="onRtnChange($event)"
+              [ngModelOptions]="{ standalone: true }"
+              maxlength="20"
+              placeholder="RTN del cliente"
+              class="w-full"
+              [disabled]="soloLectura()"
+            />
           </div>
         </div>
 
         <div class="field">
           <div class="campo">
             <label>Descuento</label>
-            <p-select size="small" [options]="descuentos()" optionLabel="label" optionValue="value"
-              placeholder="Sin descuento" [showClear]="true" styleClass="w-full" [appendTo]="'body'"
-              [ngModel]="descuentoGlobalId()" [ngModelOptions]="{ standalone: true }"
+            <p-select
+              size="small"
+              [options]="descuentos()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Sin descuento"
+              [showClear]="true"
+              styleClass="w-full"
+              [appendTo]="'body'"
+              [ngModel]="descuentoGlobalId()"
+              [ngModelOptions]="{ standalone: true }"
               (ngModelChange)="descuentoGlobalId.set($event); onDescuentoGlobalChange()"
-              [disabled]="soloLectura()" />
+              [disabled]="soloLectura()"
+            />
           </div>
         </div>
 
         <div class="field">
           <div class="campo campo-inline">
             <label>Exenta de ISV</label>
-            <p-selectbutton size="small" [options]="snOptions" [ngModel]="snExcenta()"
-              (ngModelChange)="snExcenta.set($event); recalcularExenta()" optionLabel="label" optionValue="value"
-              [disabled]="soloLectura()" />
+            <p-selectbutton
+              size="small"
+              [options]="snOptions"
+              [ngModel]="snExcenta()"
+              (ngModelChange)="snExcenta.set($event); recalcularExenta()"
+              optionLabel="label"
+              optionValue="value"
+              [disabled]="soloLectura()"
+            />
           </div>
         </div>
 
         <div class="field">
           <div class="campo">
             <label for="tipoConstancia">Tipo Constancia</label>
-            <p-select id="tipoConstancia" [ngModel]="tipoConstancia()" [ngModelOptions]="{ standalone: true }"
-              (ngModelChange)="onTipoConstanciaChange($event)" [options]="tipoConstanciaOpciones"
-              optionLabel="label" optionValue="value" placeholder="Seleccionar..." size="small" styleClass="w-full"
-              [appendTo]="'body'" [disabled]="snExcenta() !== 'S' || soloLectura()" />
+            <p-select
+              id="tipoConstancia"
+              [ngModel]="tipoConstancia()"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="onTipoConstanciaChange($event)"
+              [options]="tipoConstanciaOpciones"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              size="small"
+              styleClass="w-full"
+              [appendTo]="'body'"
+              [disabled]="snExcenta() !== 'S' || soloLectura()"
+            />
             @if (snExcenta() === 'S' && !tipoConstancia()) {
             <small class="err">Seleccione el tipo de constancia</small>
             }
@@ -70125,10 +70135,18 @@ export class PagoConfirmado implements OnInit {
         <div class="field">
           <div class="campo">
             <label for="nroConstancia">Nro. Constancia</label>
-            <input pInputText id="nroConstancia" [ngModel]="nroConstancia()"
-              (ngModelChange)="onNroConstanciaChange($event)" [ngModelOptions]="{ standalone: true }"
-              pSize="small" placeholder="Constancia" class="w-full" maxlength="20"
-              [readonly]="snExcenta() !== 'S' || soloLectura()" />
+            <input
+              pInputText
+              id="nroConstancia"
+              [ngModel]="nroConstancia()"
+              (ngModelChange)="onNroConstanciaChange($event)"
+              [ngModelOptions]="{ standalone: true }"
+              pSize="small"
+              placeholder="Constancia"
+              class="w-full"
+              maxlength="20"
+              [readonly]="snExcenta() !== 'S' || soloLectura()"
+            />
             @if (snExcenta() === 'S' && !nroConstancia().trim()) {
             <small class="err">Ingrese el número de constancia</small>
             }
@@ -70138,9 +70156,21 @@ export class PagoConfirmado implements OnInit {
         <div class="field">
           <div class="campo">
             <label for="importeExcento">Importe Excento</label>
-            <p-inputNumber id="importeExcento" [ngModel]="importeExcento()" [ngModelOptions]="{ standalone: true }"
-              mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
-              [useGrouping]="true" size="small" styleClass="w-full" [inputStyle]="{ width: '100%' }" [readonly]="true" />
+            <p-inputNumber
+              id="importeExcento"
+              [ngModel]="importeExcento()"
+              [ngModelOptions]="{ standalone: true }"
+              mode="currency"
+              currency="HNL"
+              [locale]="'es-HN'"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [useGrouping]="true"
+              size="small"
+              styleClass="w-full"
+              [inputStyle]="{ width: '100%' }"
+              [readonly]="true"
+            />
           </div>
         </div>
 
@@ -70151,16 +70181,29 @@ export class PagoConfirmado implements OnInit {
                 <div class="invoice-party-title">Resumen de Pago</div>
                 <div class="pago-resumen">
                   <div class="pago-resumen-inline">
-                    <span>Total Pedido: <span class="font-bold">{{ moneda(totales().total) }}</span></span>
-                    <span>Total Pagos: <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
-                        [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0">{{
-                        moneda(totalPagos())
-                        }}</span></span>
+                    <span
+                      >Total Pedido:
+                      <span class="font-bold">{{ moneda(totales().total) }}</span></span
+                    >
+                    <span
+                      >Total Pagos:
+                      <span
+                        class="font-bold"
+                        [class.text-ok]="totalPagos() >= totales().total"
+                        [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"
+                        >{{ moneda(totalPagos()) }}</span
+                      ></span
+                    >
                     @if (pendiente() > 0) {
-                    <span>Pendiente: <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span>
-                    }
-                    @if (cambioTotal() > 0) {
-                    <span>Cambio: <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span>
+                    <span
+                      >Pendiente:
+                      <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span
+                    >
+                    } @if (cambioTotal() > 0) {
+                    <span
+                      >Cambio:
+                      <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span
+                    >
                     }
                   </div>
                 </div>
@@ -70181,22 +70224,56 @@ export class PagoConfirmado implements OnInit {
               <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
             </div>
             <div class="tp-link-monto">
-              {{ moneda(link.monto) }}
-              @if (link.sandbox) {
+              {{ moneda(link.monto) }} @if (link.sandbox) {
               <span class="tp-sandbox-tag">SANDBOX</span>
               }
             </div>
-            <input pInputText pSize="small" class="w-full tp-link-url" [ngModel]="link.url"
-              [ngModelOptions]="{ standalone: true }" readonly />
+            <input
+              pInputText
+              pSize="small"
+              class="w-full tp-link-url"
+              [ngModel]="link.url"
+              [ngModelOptions]="{ standalone: true }"
+              readonly
+            />
             <div class="tp-link-actions">
-              <p-button size="small" [label]="linkCopiado() ? 'Copiado' : 'Copiar'" icon="pi pi-copy"
-                severity="secondary" variant="text" [rounded]="true" (onClick)="copiarLink()" />
-              <p-button size="small" label="Abrir" icon="pi pi-external-link" severity="success" variant="text"
-                [rounded]="true" (onClick)="abrirLink()" />
-              <p-button size="small" label="Estado" icon="pi pi-refresh" severity="info" variant="text" [rounded]="true"
-                (onClick)="consultarEstadoLink()" />
-              <p-button size="small" icon="pi pi-times" severity="danger" variant="text" [rounded]="true"
-                pTooltip="Cerrar" [appendTo]="'body'" (onClick)="cerrarLink()" />
+              <p-button
+                size="small"
+                [label]="linkCopiado() ? 'Copiado' : 'Copiar'"
+                icon="pi pi-copy"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                (onClick)="copiarLink()"
+              />
+              <p-button
+                size="small"
+                label="Abrir"
+                icon="pi pi-external-link"
+                severity="success"
+                variant="text"
+                [rounded]="true"
+                (onClick)="abrirLink()"
+              />
+              <p-button
+                size="small"
+                label="Estado"
+                icon="pi pi-refresh"
+                severity="info"
+                variant="text"
+                [rounded]="true"
+                (onClick)="consultarEstadoLink()"
+              />
+              <p-button
+                size="small"
+                icon="pi pi-times"
+                severity="danger"
+                variant="text"
+                [rounded]="true"
+                pTooltip="Cerrar"
+                [appendTo]="'body'"
+                (onClick)="cerrarLink()"
+              />
             </div>
           </div>
         </div>
@@ -70205,50 +70282,114 @@ export class PagoConfirmado implements OnInit {
         <div class="field mt-3 acciones-pedido">
           <!-- Fila 1: acción principal (ancho completo) -->
           <div class="acciones-fila acciones-fila-guardar">
-            <p-button type="button" 
-            label="Guardar" 
-           variant="text"
-            icon="pi pi-check" size="small" [rounded]="true" 
-              severity="warn" [loading]="guardando()" (onClick)="guardar()" [disabled]="soloLectura()"
-              pTooltip="Guardar pedido" />
+            <p-button
+              type="button"
+              label="Guardar"
+              variant="text"
+              icon="pi pi-check"
+              size="small"
+              [rounded]="true"
+              severity="warn"
+              [loading]="guardando()"
+              (onClick)="guardar()"
+              [disabled]="soloLectura()"
+              pTooltip="Guardar pedido"
+            />
           </div>
           <!-- Fila 2: acciones secundarias -->
           <div class="acciones-fila">
-            <p-button type="button" label="Salir" variant="text" severity="secondary" icon="pi pi-sign-out" size="small"
-              [rounded]="true" (onClick)="volver()" />
+            <p-button
+              type="button"
+              label="Salir"
+              variant="text"
+              severity="secondary"
+              icon="pi pi-sign-out"
+              size="small"
+              [rounded]="true"
+              (onClick)="volver()"
+            />
 
-            <p-button type="button" label="Nueva" icon="pi pi-file" variant="text" severity="success" size="small"
-              [rounded]="true" (onClick)="nueva()" pTooltip="ESC Salir" [disabled]="soloLectura()" />
+            <p-button
+              type="button"
+              label="Nueva"
+              icon="pi pi-file"
+              variant="text"
+              severity="success"
+              size="small"
+              [rounded]="true"
+              (onClick)="nueva()"
+              pTooltip="ESC Salir"
+              [disabled]="soloLectura()"
+            />
 
             @if (tipoFactura() === 'C') {
-            <p-button type="button" label="Facturar" icon="pi pi-check-circle" size="small" [rounded]="true"
-              variant="text" severity="success" [loading]="procesando()" (onClick)="facturar()"
-              [disabled]="soloLectura()" pTooltip="Facturar a crédito (sin pago)" />
+            <p-button
+              type="button"
+              label="Facturar"
+              icon="pi pi-check-circle"
+              size="small"
+              [rounded]="true"
+              variant="text"
+              severity="success"
+              [loading]="procesando()"
+              (onClick)="facturar()"
+              [disabled]="soloLectura()"
+              pTooltip="Facturar a crédito (sin pago)"
+            />
             } @else {
-            <p-button type="button" label="Pagar" icon="pi pi-credit-card" size="small" [rounded]="true"
-              variant="text" severity="info" [loading]="procesando()" (onClick)="facturar()" [disabled]="soloLectura()"
+            <p-button
+              type="button"
+              label="Pagar"
+              icon="pi pi-credit-card"
+              size="small"
+              [rounded]="true"
+              variant="text"
+              severity="info"
+              [loading]="procesando()"
+              (onClick)="facturar()"
+              [disabled]="soloLectura()"
               [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
-              pTooltip="Cobrar pedido" />
+              pTooltip="Cobrar pedido"
+            />
             }
           </div>
         </div>
-
       </div>
     </div>
   </div>
 </section>
 
 <!-- Diálogo de pago: tabla de formas de pago idéntica a Nueva Factura -->
-<p-dialog header="Formas de Pago" [(visible)]="dialogPago" [modal]="true" [style]="{ width: '80vw', height: '85vh' }"
-  [contentStyle]="{ overflow: 'auto' }" [draggable]="false" [resizable]="false"
-  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+<p-dialog
+  header="Formas de Pago"
+  [(visible)]="dialogPago"
+  [modal]="true"
+  [style]="{ width: '80vw', height: '85vh' }"
+  [contentStyle]="{ overflow: 'auto' }"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+>
   <div class="pago-dialog-body">
     <div class="pago-add-row">
-      <p-button size="small" label="Agregar pago" icon="pi pi-plus" severity="success" variant="text" [raised]="true"
-        [rounded]="true" (onClick)="agregarPago()" />
+      <p-button
+        size="small"
+        label="Agregar pago"
+        icon="pi pi-plus"
+        severity="success"
+        variant="text"
+        [raised]="true"
+        [rounded]="true"
+        (onClick)="agregarPago()"
+      />
     </div>
-    <p-table [value]="pagos()" size="small" [scrollable]="true" scrollHeight="flex"
-      [tableStyle]="{ 'min-width': '100%' }">
+    <p-table
+      [value]="pagos()"
+      size="small"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '100%' }"
+    >
       <ng-template #header>
         <tr>
           <th class="th-label width-fp">Forma de Pago</th>
@@ -70262,36 +70403,83 @@ export class PagoConfirmado implements OnInit {
       <ng-template #body let-pago let-idx="rowIndex">
         <tr>
           <td>
-            <p-select size="small" [options]="formaspago()" optionLabel="label" optionValue="value"
-              placeholder="Seleccionar..." styleClass="w-full" [(ngModel)]="pago.formapagoId"
-              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" (onChange)="onFormaPagoChange(pago)" />
+            <p-select
+              size="small"
+              [options]="formaspago()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              [(ngModel)]="pago.formapagoId"
+              [ngModelOptions]="{ standalone: true }"
+              [appendTo]="'body'"
+              (onChange)="onFormaPagoChange(pago)"
+            />
           </td>
           <td>
             @if (esTarjeta(pago)) {
-            <p-select size="small" [options]="tarjetasCredito()" optionLabel="label" optionValue="value"
-              placeholder="Seleccionar..." styleClass="w-full" showClear [(ngModel)]="pago.tarjetacreditoId"
-              [ngModelOptions]="{ standalone: true }" [appendTo]="'body'" />
+            <p-select
+              size="small"
+              [options]="tarjetasCredito()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              showClear
+              [(ngModel)]="pago.tarjetacreditoId"
+              [ngModelOptions]="{ standalone: true }"
+              [appendTo]="'body'"
+            />
             }
           </td>
           <td>
             @if (esTarjeta(pago)) {
-            <input pInputText pSize="small" [(ngModel)]="pago.nrotarjeta" [ngModelOptions]="{ standalone: true }"
-              placeholder="Nro. tarjeta" class="w-full" />
+            <input
+              pInputText
+              pSize="small"
+              [(ngModel)]="pago.nrotarjeta"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Nro. tarjeta"
+              class="w-full"
+            />
             }
           </td>
           <td>
             @if (esTarjeta(pago) || esTransferencia(pago)) {
-            <input pInputText pSize="small" [(ngModel)]="pago.nroautorizacion" [ngModelOptions]="{ standalone: true }"
-              placeholder="Autorización" class="w-full" />
+            <input
+              pInputText
+              pSize="small"
+              [(ngModel)]="pago.nroautorizacion"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Autorización"
+              class="w-full"
+            />
             }
           </td>
           <td>
-            <p-inputnumber size="small" [(ngModel)]="pago.importe" [ngModelOptions]="{ standalone: true }" [min]="0"
-              mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2"
-              [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
+            <p-inputnumber
+              size="small"
+              [(ngModel)]="pago.importe"
+              [ngModelOptions]="{ standalone: true }"
+              [min]="0"
+              mode="currency"
+              currency="HNL"
+              [locale]="'es-HN'"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [useGrouping]="true"
+              [inputStyle]="{ 'width': '100%' }"
+              styleClass="w-full"
+            />
           </td>
           <td class="text-center">
-            <p-button icon="pi pi-times" [rounded]="true" severity="danger" size="small" (onClick)="quitarPago(idx)" />
+            <p-button
+              icon="pi pi-times"
+              [rounded]="true"
+              severity="danger"
+              size="small"
+              (onClick)="quitarPago(idx)"
+            />
           </td>
         </tr>
       </ng-template>
@@ -70305,7 +70493,6 @@ export class PagoConfirmado implements OnInit {
     </p-table>
   </div>
   <ng-template pTemplate="footer">
-
     <div class="grid w-full">
       <div class="col-12 md:col-6 lg:col-3">
         <span>Total Pedido:</span>
@@ -70313,8 +70500,13 @@ export class PagoConfirmado implements OnInit {
       </div>
       <div class="col-12 md:col-6 lg:col-3">
         <span>Total Pagos:</span>
-        <span class="font-bold" [class.text-ok]="totalPagos() >= totales().total"
-          [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"> {{ moneda(totalPagos()) }}</span>
+        <span
+          class="font-bold"
+          [class.text-ok]="totalPagos() >= totales().total"
+          [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"
+        >
+          {{ moneda(totalPagos()) }}</span
+        >
       </div>
       <div class="col-12 md:col-6 lg:col-3">
         @if (pendiente() > 0) {
@@ -70329,22 +70521,45 @@ export class PagoConfirmado implements OnInit {
         <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span>
         }
       </div>
-
     </div>
 
     <div class="pago-dialog-actions">
-      <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small"
-        [rounded]="true" (onClick)="dialogPago.set(false)" [disabled]="procesando()" />
-      <p-button type="button" label="Facturar" icon="pi pi-shopping-cart" [loading]="procesando()" size="small"
-        severity="success" variant="text" [rounded]="true" (onClick)="procesarPago()"
-        [disabled]="!formularioPagoValido()" />
+      <p-button
+        type="button"
+        label="Cancelar"
+        icon="pi pi-times"
+        variant="text"
+        severity="secondary"
+        size="small"
+        [rounded]="true"
+        (onClick)="dialogPago.set(false)"
+        [disabled]="procesando()"
+      />
+      <p-button
+        type="button"
+        label="Facturar"
+        icon="pi pi-shopping-cart"
+        [loading]="procesando()"
+        size="small"
+        severity="success"
+        variant="text"
+        [rounded]="true"
+        (onClick)="procesarPago()"
+        [disabled]="!formularioPagoValido()"
+      />
     </div>
   </ng-template>
 </p-dialog>
 
 <!-- Diálogo headless TodoPago: notificación llamativa del link (y del pago confirmado) -->
-<p-confirmdialog key="tp-link" styleClass="tp-hl-dialog" [modal]="true" [style]="{ width: '460px' }"
-  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [dismissableMask]="true">
+<p-confirmdialog
+  key="tp-link"
+  styleClass="tp-hl-dialog"
+  [modal]="true"
+  [style]="{ width: '460px' }"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [dismissableMask]="true"
+>
   <ng-template #headless let-message let-onAccept="onAccept" let-onReject="onReject">
     @if (linkPago(); as link) {
     <div class="tp-hl">
@@ -70360,8 +70575,15 @@ export class PagoConfirmado implements OnInit {
         <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
       </div>
       <div class="tp-hl-actions">
-        <p-button size="small" label="Entendido" icon="pi pi-check" severity="success" [raised]="true" [rounded]="true"
-          (onClick)="onAccept()" />
+        <p-button
+          size="small"
+          label="Entendido"
+          icon="pi pi-check"
+          severity="success"
+          [raised]="true"
+          [rounded]="true"
+          (onClick)="onAccept()"
+        />
       </div>
       } @else {
       <!-- Variante: link generado (pendiente) -->
@@ -70371,25 +70593,58 @@ export class PagoConfirmado implements OnInit {
       <span class="tp-hl-title">Link de pago generado</span>
       <p class="tp-hl-sub">Factura #{{ nrofactura() }} — comparta el link con el cliente</p>
       <div class="tp-hl-monto">
-        {{ moneda(link.monto) }}
-        @if (link.sandbox) {
+        {{ moneda(link.monto) }} @if (link.sandbox) {
         <span class="tp-hl-sandbox">SANDBOX</span>
         }
       </div>
       <div class="tp-hl-status">
         <p-tag [value]="labelEstadoLink()" [severity]="severityEstadoLink()" />
       </div>
-      <input pInputText pSize="small" class="w-full tp-hl-url" [ngModel]="link.url"
-        [ngModelOptions]="{ standalone: true }" readonly />
+      <input
+        pInputText
+        pSize="small"
+        class="w-full tp-hl-url"
+        [ngModel]="link.url"
+        [ngModelOptions]="{ standalone: true }"
+        readonly
+      />
       <div class="tp-hl-actions">
-        <p-button size="small" [label]="linkCopiado() ? 'Copiado' : 'Copiar link'" icon="pi pi-copy"
-          severity="success" [raised]="true" [rounded]="true" (onClick)="copiarLink()" />
-        <p-button size="small" label="Abrir link" icon="pi pi-external-link" severity="info" variant="text"
-          [rounded]="true" (onClick)="abrirLink()" />
-        <p-button size="small" label="Estado" icon="pi pi-refresh" severity="secondary" variant="text" [rounded]="true"
-          (onClick)="consultarEstadoLink()" />
-        <p-button size="small" label="Cerrar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
-          (onClick)="onReject()" />
+        <p-button
+          size="small"
+          [label]="linkCopiado() ? 'Copiado' : 'Copiar link'"
+          icon="pi pi-copy"
+          severity="success"
+          [raised]="true"
+          [rounded]="true"
+          (onClick)="copiarLink()"
+        />
+        <p-button
+          size="small"
+          label="Abrir link"
+          icon="pi pi-external-link"
+          severity="info"
+          variant="text"
+          [rounded]="true"
+          (onClick)="abrirLink()"
+        />
+        <p-button
+          size="small"
+          label="Estado"
+          icon="pi pi-refresh"
+          severity="secondary"
+          variant="text"
+          [rounded]="true"
+          (onClick)="consultarEstadoLink()"
+        />
+        <p-button
+          size="small"
+          label="Cerrar"
+          icon="pi pi-times"
+          severity="secondary"
+          variant="text"
+          [rounded]="true"
+          (onClick)="onReject()"
+        />
       </div>
       }
     </div>
@@ -70416,6 +70671,11 @@ export class PagoConfirmado implements OnInit {
   min-height: 200px;
 }
 
+// ARFM20261030 Columna 2 (panel lateral): en desktop xl se sube para alinear con la tabla;
+// en mobile (col-12 apilado debajo) se anula para que baje y no quede encima de la columna 1
+.nf-side-panel-col {
+  margin-top: -100px;
+}
 .nf-col {
   min-width: 0;
 }
@@ -70575,11 +70835,11 @@ export class PagoConfirmado implements OnInit {
   }
 
   ::ng-deep .p-datatable-tbody>tr>td {
-    padding: 0.25rem 0.75rem;
+    padding: 0.25rem 0.55rem;
   }
 
   ::ng-deep .p-datatable-thead>tr>th {
-    padding: 0.4rem 0.75rem;
+    padding: 0.4rem 0.55rem;
   }
 }
 
@@ -70677,6 +70937,8 @@ export class PagoConfirmado implements OnInit {
 // Totales (idéntico a nueva-factura)
 .nf-totales {
 
+  background: var(--master-background);
+    border-radius: 8px;
   .nf-totales-split {
     display: flex;
     align-items: center;
@@ -70715,7 +70977,7 @@ export class PagoConfirmado implements OnInit {
 }
 
 .nf-total-grand {
-  border-left: 1px solid var(--c-border);
+  border-left: 1px solid var(--master-background);
   padding-left: 1rem;
 
   >div:last-child {
@@ -70751,14 +71013,194 @@ export class PagoConfirmado implements OnInit {
   }
 }
 
-.img-producto {
-  mix-blend-mode: multiply;
-  background: transparent;
-  border-radius: 7px;
+// ARFM20261030 Imagen de producto con efecto retroiluminado:
+// la luz va de ATRÁS hacia DELANTE (halo detrás del círculo), la imagen conserva
+// su propio color de fondo (mix-blend-mode: multiply la deja transparente sobre la luz),
+// forma casi 100% redonda y bordes suavizados (máscara radial, sin corte seco).
+.img-backlight {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  // ARFM20261030 interior del círculo en blanco
+  background: #fff;
+  background-image:
+    radial-gradient(circle closest-side,
+      #fff,
+      #fff);
+  // contorno retroiluminado con --c-primary (de atrás hacia adelante)
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--c-border) 45%, transparent),
+    0 0 8px 1px color-mix(in srgb, var(--c-border) 55%, transparent),
+    0 0 18px 3px color-mix(in srgb, var(--c-border) 32%, transparent),
+    0 0 30px 6px color-mix(in srgb, var(--c-border) 16%, transparent);
+}
+                                .img-producto {
+    // ARFM20261030 sin mix-blend-mode: se conserva el color de fondo propio de la imagen;
+      // la luz del wrapper se filtra por los bordes desvanecidos (máscara radial)
+      background: transparent;
   object-fit: contain;
   width: 50px;
   height: 50px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0);
+  // casi redondo (no 50% exacto para que conserve un guiño de forma natural)
+    border-radius: 46%;
+    // bordes suavizados: el borde se desvanece en vez de cortarse
+    -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    box-shadow: none;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ARFM20261030 Popover de existencia — card estilo menú de restaurante
+// (panel de PrimeNG + contenido .menu-card del ng-template #content)
+// ═══════════════════════════════════════════════════════════════════════════
+
+.img-clickable {
+    cursor: pointer;
+}
+
+// Panel del popover: sin padding del PrimeNG, bordes redondeados, sombra propia
+::ng-deep .p-popover {
+    border: 1px solid var(--c-border-strong);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+    .p-popover-content {
+        padding: 0;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+}
+
+.menu-card {
+    width: 19rem;
+    background: var(--c-card-background);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+// Media: imagen grande centrada con halo radial de --c-primary detrás
+.menu-card-media {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 14rem;
+    padding: 1rem;
+    // recorta el zoom para que no se desborde del media
+    overflow: hidden;
+    background:
+        radial-gradient(
+            circle at 50% 45%,
+            color-mix(in srgb, var(--c-primary) 12%, transparent),
+            transparent 70%
+        );
+}
+
+// Tag de estado superpuesto en la esquina del media — SIEMPRE por encima del zoom
+.menu-card-tag {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 2;
+}
+
+.img-producto-lg {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    object-fit: contain;
+    width: 170px;
+    height: 170px;
+    border-radius: 46%;
+    -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    mask-image: radial-gradient(circle closest-side at 50% 50%, #000 78%, transparent 100%);
+    box-shadow: none;
+    // zoom suave al pasar el mouse (la tag queda por encima por z-index)
+    transition: transform 0.25s ease;
+
+    .menu-card-media:hover & {
+        transform: scale(1.35);
+    }
+}
+
+// Ficha inferior: código, descripción, precio + chip de existencia
+.menu-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.75rem 0.9rem 0.9rem;
+}
+
+.menu-card-cod {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+}
+
+.menu-card-desc {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #fff;
+}
+
+.menu-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+}
+
+.menu-card-precio {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-primary);
+}
+
+// Chip de existencia (en lugar del botón "Buy" del ejemplo PrimeNG)
+.menu-card-stock {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+
+    i {
+        font-size: 0.75rem;
+    }
+
+    // Niveles según row.estado (ALTA / BAJO / AGOTADO / SIN_STOCK)
+    &.nivel-alta {
+        color: var(--c-success);
+        background: color-mix(in srgb, var(--c-success) 14%, transparent);
+        border-color: color-mix(in srgb, var(--c-success) 45%, transparent);
+    }
+
+    &.nivel-bajo {
+        color: var(--c-warning);
+        background: color-mix(in srgb, var(--c-warning) 14%, transparent);
+        border-color: color-mix(in srgb, var(--c-warning) 45%, transparent);
+    }
+
+    &.nivel-agotado {
+        color: var(--c-danger);
+        background: color-mix(in srgb, var(--c-danger) 14%, transparent);
+        border-color: color-mix(in srgb, var(--c-danger) 45%, transparent);
+    }
+
+    &.nivel-sin_stock {
+        color: var(--c-info);
+        background: color-mix(in srgb, var(--c-info) 14%, transparent);
+        border-color: color-mix(in srgb, var(--c-info) 45%, transparent);
+    }
 }
 
 .text-right {
@@ -70830,6 +71272,14 @@ export class PagoConfirmado implements OnInit {
   width: 5%;
 }
 
+@media (max-width: 1279px) {
+
+  // ARFM20261030 Mobile/tablet: xl:col-3 deja de estar al lado (se apila debajo de col-9),
+  // así que el -100px ya no aplica — la columna 2 baja a su posición natural
+  .nf-side-panel-col {
+    margin-top: 0;
+  }
+}
 @media (max-width: 767px) {
   section.page {
     overflow-x: hidden;
@@ -70838,6 +71288,39 @@ export class PagoConfirmado implements OnInit {
 
   .nf-busqueda {
     margin-top: 0;
+// ARFM20261030 Mobile: el botón de buscar producto (p-inputicon ml-10) con left:97%
+  // se salía del margen derecho y no se veía — se ancla por la derecha, hacia adentro,
+  // y el input reserva espacio para que el texto no quede debajo del ícono
+  ::ng-deep .p-inputicon {
+    left: auto;
+    right: 0.75rem;
+    margin-left: 0;
+  }
+
+  input[pinputtext] {
+    padding-right: 2.75rem;
+  }
+}
+
+// ARFM20261030 Mobile: controles del header apilados, 1 por fila y al 100% del ancho
+// (Gestor → select / Teléfono → input / Envío gratis → selectbutton)
+.pedido-header-controls {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+
+  label {
+    white-space: normal;
+  }
+
+  input[pinputtext] {
+    width: 100%;
+  }
+
+  ::ng-deep .p-select,
+  ::ng-deep .p-selectbutton {
+    width: 100%;
+  }
   }
 
   .nf-totales .nf-totales-col-data {
@@ -71011,6 +71494,11 @@ export class PagoConfirmado implements OnInit {
   display: none;
 }
 
+// ARFM20261030 MEJORA consumida aquí: alturas de las filas en blanco del footer
+// (emptyRows / MIN_ROWS=9) — mismo criterio que nueva-factura.scss
+.empty-row td {
+  height: 45px;
+}
 ```
 
 ---
@@ -71018,7 +71506,7 @@ export class PagoConfirmado implements OnInit {
 ## 📄 src\app\features\facturacion\pedidos\pedido-form.ts
 
 ```typescript
-import { Component, OnInit, inject, signal, computed, DestroyRef, HostListener } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, DestroyRef, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -71037,6 +71525,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { PopoverModule, Popover } from 'primeng/popover';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ApiService } from '../../../core/services/api.service';
@@ -71113,6 +71602,7 @@ interface PagoPedido {
     TooltipModule,
     IconFieldModule,
     InputIconModule,
+    PopoverModule,
     ConfirmDialogModule,
   ],
   // ConfirmationService local: aisla nuestro p-confirmdialog del global de main-layout
@@ -71185,9 +71675,24 @@ export class PedidoForm implements OnInit {
   //── Líneas (tabla) ──
   filas = signal<FilaPedido[]>([]);
   private contadorFila = 0;
+
+  // ARFM20261030 MEJORA consumida en pedido-form.html (<ng-template #footer>):
+  // filas en blanco mínimas para que la tabla nunca quede "a media altura".
+  readonly MIN_ROWS = 7;
+
+  get emptyRows(): any[] {
+    const missingRows = this.MIN_ROWS - this.filas().length;
+    return missingRows > 0 ? new Array(missingRows) : [];
+  }
+
   qProducto = signal('');
   cargando = signal(false);
   guardando = signal(false);
+
+  //── Popover de existencia al hacer click en la imagen de la fila ──
+  // (patrón Popover#datatable de PrimeNG v21, con "Buy" reemplazado por la existencia)
+  @ViewChild('op') op?: Popover;
+  productoSeleccionado = signal<FilaPedido | null>(null);
 
   totales = signal({ subTotal: 0, descuento: 0, impuesto: 0, total: 0 });
 
@@ -71339,10 +71844,18 @@ export class PedidoForm implements OnInit {
   /** Catálogo base en paralelo: clientes, productos, existencias, imágenes, ofertas */
   private cargarCatalogos(): Promise<void> {
     const clientes$ = this.api.get<any>('/cxc/clientes').pipe(catchError(() => of(null)));
-    const existencias$ = this.api.get<any[]>('/inventario/existencias').pipe(catchError(() => of([] as any[])));
-    const productos$ = this.api.get<any[]>('/inventario/productos').pipe(catchError(() => of([] as any[])));
-    const imagenes$ = this.api.get<any[]>('/inventario/productos-img').pipe(catchError(() => of([] as any[])));
-    const ofertas$ = this.api.get<any>('/facturacion/combos-ofertas').pipe(catchError(() => of(null)));
+    const existencias$ = this.api
+      .get<any[]>('/inventario/existencias')
+      .pipe(catchError(() => of([] as any[])));
+    const productos$ = this.api
+      .get<any[]>('/inventario/productos')
+      .pipe(catchError(() => of([] as any[])));
+    const imagenes$ = this.api
+      .get<any[]>('/inventario/productos-img')
+      .pipe(catchError(() => of([] as any[])));
+    const ofertas$ = this.api
+      .get<any>('/facturacion/combos-ofertas')
+      .pipe(catchError(() => of(null)));
 
     return firstValueFrom(forkJoin([clientes$, existencias$, productos$, imagenes$, ofertas$]))
       .then(([resCli, existencias, productos, imagenes, resOfertas]) => {
@@ -71393,9 +71906,9 @@ export class PedidoForm implements OnInit {
     this.cargando.set(true);
     forkJoin({
       pedido: this.api.get<any>(`/facturacion/pedidos/${pedidoId}`),
-      detalles: this.api.get<any[]>(`/facturacion/pedidos-det/pedido/${pedidoId}`).pipe(
-        catchError(() => of([] as any[])),
-      ),
+      detalles: this.api
+        .get<any[]>(`/facturacion/pedidos-det/pedido/${pedidoId}`)
+        .pipe(catchError(() => of([] as any[]))),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -71416,7 +71929,9 @@ export class PedidoForm implements OnInit {
           this.nroConstancia.set(pedido.nroconstancia ?? '');
           this.importeExcento.set(Number(pedido.importe_excento) || 0);
           this.diasCredito.set(Number(pedido.diascredito) || 0);
-          this.fechaVencimiento.set(pedido.fechavencimiento ? new Date(pedido.fechavencimiento) : null);
+          this.fechaVencimiento.set(
+            pedido.fechavencimiento ? new Date(pedido.fechavencimiento) : null,
+          );
           this.gestorId.set(pedido.gestorId ?? null);
 
           const nuevas: FilaPedido[] = (detalles ?? []).map((d) => this.filaDesdeDetalle(d));
@@ -71439,15 +71954,20 @@ export class PedidoForm implements OnInit {
   /** Convierte un pospeddet en fila de edición (enriquece descripción/imagen desde catálogo) */
   private filaDesdeDetalle(d: any): FilaPedido {
     const productoId = Number(d.productoId);
-    const prod = this.productosArray.find((p) => Number(p.produtoId ?? p.productoId) === productoId);
+    const prod = this.productosArray.find(
+      (p) => Number(p.produtoId ?? p.productoId) === productoId,
+    );
     const cantidad = Number(d.cantidad) || 0;
     const precio = Number(d.precioventa) || 0;
     const bruto = cantidad * precio;
     const descMonto = Number(d.descuento) || 0;
     const impuesto = Number(d.impuesto) || 0;
-    const descPct = d.p_descuento != null
-      ? Number(d.p_descuento) || 0
-      : bruto > 0 ? Math.round((descMonto / bruto) * 10000) / 100 : 0;
+    const descPct =
+      d.p_descuento != null
+        ? Number(d.p_descuento) || 0
+        : bruto > 0
+          ? Math.round((descMonto / bruto) * 10000) / 100
+          : 0;
     const existencia = this.getExistencia(productoId);
     return {
       fila: ++this.contadorFila,
@@ -71468,8 +71988,12 @@ export class PedidoForm implements OnInit {
   /** ISV: param-fac (módulo 3) + catálogo de impuestos — mismo criterio que nueva-factura */
   private cargarISV() {
     forkJoin({
-      impuestos: this.api.get<any[]>('/parametros/impuestos').pipe(catchError(() => of([] as any[]))),
-      param: this.api.get<any>('/parametros/parametros/objeto?moduloId=3').pipe(catchError(() => of(null))),
+      impuestos: this.api
+        .get<any[]>('/parametros/impuestos')
+        .pipe(catchError(() => of([] as any[]))),
+      param: this.api
+        .get<any>('/parametros/parametros/objeto?moduloId=3')
+        .pipe(catchError(() => of(null))),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({ impuestos, param }) => {
@@ -71484,8 +72008,11 @@ export class PedidoForm implements OnInit {
 
   private aplicarTasa() {
     if (!this.impuestos.length) return;
-    const porId = this.impuestos.find((i) => i.impuestoId === this.impuestoId && i.sn_activo === 'S');
-    const porModulo = porId || this.impuestos.find((i) => Number(i.moduloId) === 3 && i.sn_activo === 'S');
+    const porId = this.impuestos.find(
+      (i) => i.impuestoId === this.impuestoId && i.sn_activo === 'S',
+    );
+    const porModulo =
+      porId || this.impuestos.find((i) => Number(i.moduloId) === 3 && i.sn_activo === 'S');
     if (porModulo && Number(porModulo.porcentaje) > 0) {
       this.tasaImpuestoPct = Number(porModulo.porcentaje);
       this.tasaImpuesto = this.tasaImpuestoPct / 100;
@@ -71495,45 +72022,61 @@ export class PedidoForm implements OnInit {
   /** Formas de pago y tarjetas (para el diálogo de checkout) */
   private cargarPagos() {
     forkJoin({
-      formaspago: this.api.get<any[]>('/parametros/formas-pago').pipe(catchError(() => of([] as any[]))),
-      tarjetas: this.api.get<any[]>('/parametros/tarjetas-credito').pipe(catchError(() => of([] as any[]))),
+      formaspago: this.api
+        .get<any[]>('/parametros/formas-pago')
+        .pipe(catchError(() => of([] as any[]))),
+      tarjetas: this.api
+        .get<any[]>('/parametros/tarjetas-credito')
+        .pipe(catchError(() => of([] as any[]))),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({ formaspago, tarjetas }) => {
         // El ERP usa TODAS las formas de pago (a diferencia del CRM online que filtra)
-        this.formaspago.set((formaspago ?? []).map((f) => ({ label: f.descripcion, value: f.formapagoId })));
-        this.tarjetasCredito.set((tarjetas ?? []).map((t) => ({ label: t.descripcion, value: t.tarjetacreditoId })));
+        this.formaspago.set(
+          (formaspago ?? []).map((f) => ({ label: f.descripcion, value: f.formapagoId })),
+        );
+        this.tarjetasCredito.set(
+          (tarjetas ?? []).map((t) => ({ label: t.descripcion, value: t.tarjetacreditoId })),
+        );
       });
   }
 
   /** Descuentos globales — mismo criterio que Nueva Factura */
   private cargarDescuentos() {
-    this.api.get<any>('/facturacion/descuentos').pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => {
-      const items = res?.value ?? res ?? [];
-      this.descuentosMap.clear();
-      this.descAcumulables.clear();
-      for (const d of items) {
-        this.descuentosMap.set(d.descuentoId, Number(d.porcentaje) || 0);
-        // Detectar descuentos acumulables (tercera edad, vejez, etc.)
-        const desc = (d.descripcion ?? '').toLowerCase();
-        if (desc.includes('tercera') || desc.includes('vejez') || desc.includes('adulto mayor')) {
-          this.descAcumulables.add(d.descuentoId);
+    this.api
+      .get<any>('/facturacion/descuentos')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((res) => {
+        const items = res?.value ?? res ?? [];
+        this.descuentosMap.clear();
+        this.descAcumulables.clear();
+        for (const d of items) {
+          this.descuentosMap.set(d.descuentoId, Number(d.porcentaje) || 0);
+          // Detectar descuentos acumulables (tercera edad, vejez, etc.)
+          const desc = (d.descripcion ?? '').toLowerCase();
+          if (desc.includes('tercera') || desc.includes('vejez') || desc.includes('adulto mayor')) {
+            this.descAcumulables.add(d.descuentoId);
+          }
         }
-      }
-      this.descuentos.set(items
-        .filter((d: any) => d.sn_activo === 'S')
-        .map((d: any) => ({ label: d.descripcion, value: d.descuentoId })));
-    });
+        this.descuentos.set(
+          items
+            .filter((d: any) => d.sn_activo === 'S')
+            .map((d: any) => ({ label: d.descripcion, value: d.descuentoId })),
+        );
+      });
   }
 
   /** Días de crédito + fecha de vencimiento (param CxC módulo 4) — igual que Nueva Factura */
   private cargarParamCxc() {
-    this.api.get<any>('/parametros/parametros/objeto?moduloId=4').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (p) => {
-        this.diasCredito.set(Number(p?.diasPlazo ?? 0));
-        this.refrescarVencimiento();
-      },
-    });
+    this.api
+      .get<any>('/parametros/parametros/objeto?moduloId=4')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (p) => {
+          this.diasCredito.set(Number(p?.diasPlazo ?? 0));
+          this.refrescarVencimiento();
+        },
+      });
   }
 
   private refrescarVencimiento() {
@@ -71547,21 +72090,24 @@ export class PedidoForm implements OnInit {
     const usuarioId = this.auth.currentUser()?.usuarioId;
     if (!usuarioId) return;
 
-    this.api.get<any[]>('/parametros/gestores').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (items) => {
-        // Solo gestores de VENTAS: módulo 3 (Facturación) y activos (el backend ya filtra por empresa)
-        const ventas = (items ?? []).filter(
-          (g) => Number(g.moduloId) === 3 && g.sn_activo !== 'N' && !!g.nombre,
-        );
-        this.gestores.set(
-          ventas.map((g) => ({ label: String(g.nombre), value: Number(g.gestorId) })),
-        );
-        // Precarga: si el usuario actual tiene gestor asignado en facturación, se preselecciona
-        const propio = ventas.find((g) => Number(g.usuarioId) === usuarioId);
-        if (propio) this.gestorId.set(Number(propio.gestorId));
-      },
-      error: () => this.gestores.set([]),
-    });
+    this.api
+      .get<any[]>('/parametros/gestores')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          // Solo gestores de VENTAS: módulo 3 (Facturación) y activos (el backend ya filtra por empresa)
+          const ventas = (items ?? []).filter(
+            (g) => Number(g.moduloId) === 3 && g.sn_activo !== 'N' && !!g.nombre,
+          );
+          this.gestores.set(
+            ventas.map((g) => ({ label: String(g.nombre), value: Number(g.gestorId) })),
+          );
+          // Precarga: si el usuario actual tiene gestor asignado en facturación, se preselecciona
+          const propio = ventas.find((g) => Number(g.usuarioId) === usuarioId);
+          if (propio) this.gestorId.set(Number(propio.gestorId));
+        },
+        error: () => this.gestores.set([]),
+      });
   }
 
   // ═════════════════════════════════════════════════════════════════════════
@@ -71580,7 +72126,9 @@ export class PedidoForm implements OnInit {
         .subscribe({
           next: (res) => {
             const items = Array.isArray(res) ? res : (res?.value ?? []);
-            const producto = items.find((p: any) => (p.codbarra ?? '').trim().startsWith(texto.trim()));
+            const producto = items.find((p: any) =>
+              (p.codbarra ?? '').trim().startsWith(texto.trim()),
+            );
             if (producto) {
               this.agregarProducto(producto);
               this.qProducto.set('');
@@ -71594,6 +72142,25 @@ export class PedidoForm implements OnInit {
           },
         });
     }
+  }
+
+  /** Abre/cierra el popover de existencia al hacer click en la imagen de la fila */
+  mostrarExistenciaImagen(event: Event, row: FilaPedido) {
+    if (this.productoSeleccionado()?.fila === row.fila) {
+      this.op?.hide();
+      this.productoSeleccionado.set(null);
+    } else {
+      this.productoSeleccionado.set(row);
+      this.op?.show(event);
+      if (this.op?.container) {
+        this.op.align();
+      }
+    }
+  }
+
+  ocultarPopoverExistencia() {
+    this.op?.hide();
+    this.productoSeleccionado.set(null);
   }
 
   /** Abre el helper de productos (DynamicDialog — mismo patrón que nueva-factura) */
@@ -71702,7 +72269,8 @@ export class PedidoForm implements OnInit {
 
     if (this.impuestoIncluido) {
       const subConImp = bruto * (1 + this.tasaImpuesto) * (1 - descPct / 100);
-      const isvCalculado = Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
+      const isvCalculado =
+        Math.round(((subConImp * this.tasaImpuesto) / (1 + this.tasaImpuesto)) * 100) / 100;
       row.impuesto = exenta ? 0 : isvCalculado;
       row.impuestoExcento = exenta ? isvCalculado : 0;
       row.subTotal = Math.round(subConImp * 100) / 100;
@@ -71788,7 +72356,9 @@ export class PedidoForm implements OnInit {
     this.clienteId.set(value);
     const c = this.clientesArray.find((i) => i.clienteId === value);
     if (c) {
-      this.nombreCliente.set(`${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim() || c.razonsocial || '');
+      this.nombreCliente.set(
+        `${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim() || c.razonsocial || '',
+      );
       // RTN: en crédito se lee del cliente; en contado queda limpio (manual)
       this.rtnCliente.set(this.tipoFactura() === 'C' ? (c.rtn ?? '') : '');
     }
@@ -71874,7 +72444,11 @@ export class PedidoForm implements OnInit {
    */
   private async asegurarGuardado(): Promise<boolean> {
     if (this.soloLectura()) {
-      this.msgs.add({ severity: 'warn', summary: 'Pedido facturado', detail: 'El pedido ya fue facturado y no se puede modificar' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Pedido facturado',
+        detail: 'El pedido ya fue facturado y no se puede modificar',
+      });
       return false;
     }
     if (!this.clienteId()) {
@@ -71882,20 +72456,36 @@ export class PedidoForm implements OnInit {
       return false;
     }
     if (!this.nombreCliente().trim()) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el nombre del cliente' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Ingrese el nombre del cliente',
+      });
       return false;
     }
     if (this.filas().length === 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Agregue al menos un producto' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Agregue al menos un producto',
+      });
       return false;
     }
     if (this.snExcenta() === 'S') {
       if (!this.tipoConstancia()) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione el tipo de constancia' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: 'Seleccione el tipo de constancia',
+        });
         return false;
       }
       if (!this.nroConstancia().trim()) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el número de constancia' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: 'Ingrese el número de constancia',
+        });
         return false;
       }
     }
@@ -71931,9 +72521,9 @@ export class PedidoForm implements OnInit {
         await firstValueFrom(this.api.put<any>('/facturacion/pedidos', this.pedidoId(), mae));
         if (this.sucio) {
           const existentes: any[] = await firstValueFrom(
-            this.api.get<any[]>(`/facturacion/pedidos-det/pedido/${this.pedidoId()}`).pipe(
-              catchError(() => of([] as any[])),
-            ),
+            this.api
+              .get<any[]>(`/facturacion/pedidos-det/pedido/${this.pedidoId()}`)
+              .pipe(catchError(() => of([] as any[]))),
           );
           await this.sincronizarDetalles(existentes ?? []);
         }
@@ -71945,7 +72535,11 @@ export class PedidoForm implements OnInit {
     } catch (err) {
       console.error('Error al guardar pedido', err);
       this.guardando.set(false);
-      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el pedido' });
+      this.msgs.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo guardar el pedido',
+      });
       return false;
     }
   }
@@ -71983,7 +72577,11 @@ export class PedidoForm implements OnInit {
     const ok = await this.asegurarGuardado();
     if (!ok) return;
     const id = this.pedidoId();
-    this.msgs.add({ severity: 'success', summary: `Pedido #${id} guardado`, detail: 'Pedido listo para facturar' });
+    this.msgs.add({
+      severity: 'success',
+      summary: `Pedido #${id} guardado`,
+      detail: 'Pedido listo para facturar',
+    });
     this.router.navigate(['/facturacion/pedidos']);
   }
 
@@ -71991,7 +72589,11 @@ export class PedidoForm implements OnInit {
    *  contado → diálogo de pago; crédito → facturar directo sin pagos */
   async facturar() {
     if (this.snFacturado() === 'S') {
-      this.msgs.add({ severity: 'warn', summary: 'Pedido facturado', detail: 'El pedido ya fue facturado' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Pedido facturado',
+        detail: 'El pedido ya fue facturado',
+      });
       return;
     }
     const ok = await this.asegurarGuardado();
@@ -72010,11 +72612,15 @@ export class PedidoForm implements OnInit {
 
     this.procesando.set(true);
     this.api
-      .post<any>('/facturacion/pedidos/checkout', {
-        pospedmaeId: id,
-        nombrecliente: this.nombreCliente().trim(),
-        nrotelefono: this.telefono().trim() || 'N/A',
-      }, { sinContexto: true })
+      .post<any>(
+        '/facturacion/pedidos/checkout',
+        {
+          pospedmaeId: id,
+          nombrecliente: this.nombreCliente().trim(),
+          nrotelefono: this.telefono().trim() || 'N/A',
+        },
+        { sinContexto: true },
+      )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (resp) => {
@@ -72032,7 +72638,11 @@ export class PedidoForm implements OnInit {
         error: (err) => {
           console.error('Error en checkout de pedido (crédito)', err);
           this.procesando.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo facturar el pedido' });
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo facturar el pedido',
+          });
         },
       });
   }
@@ -72094,23 +72704,39 @@ export class PedidoForm implements OnInit {
     const t = this.totales();
 
     if (pagos.length === 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese importe en las formas de pago' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: 'Ingrese importe en las formas de pago',
+      });
       return;
     }
     for (const p of pagos) {
       if (this.esTarjeta(p)) {
         const num = p.nrotarjeta?.replace(/\s/g, '') || '';
         if (num.length < 13 || !this.validarLuhn(num)) {
-          this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Número de tarjeta inválido' });
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Validación',
+            detail: 'Número de tarjeta inválido',
+          });
           return;
         }
         if (!p.tarjetacreditoId) {
-          this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione el tipo de tarjeta' });
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Validación',
+            detail: 'Seleccione el tipo de tarjeta',
+          });
           return;
         }
       }
       if (this.esTransferencia(p) && !p.nroautorizacion?.trim()) {
-        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el número de autorización' });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Validación',
+          detail: 'Ingrese el número de autorización',
+        });
         return;
       }
     }
@@ -72127,11 +72753,12 @@ export class PedidoForm implements OnInit {
     const id = this.pedidoId();
     if (!id) return;
     const primero = pagos[0];
-    const tipopago = primero.esEfectivo || this.esEfectivoFila(primero)
-      ? 'E'
-      : this.esTarjeta(primero)
-        ? 'T'
-        : 'TR';
+    const tipopago =
+      primero.esEfectivo || this.esEfectivoFila(primero)
+        ? 'E'
+        : this.esTarjeta(primero)
+          ? 'T'
+          : 'TR';
 
     // ── TodoPago: si algún pago es por link, la factura nace pendiente y
     //    tras el checkout se genera el link (el TP no entra a posfaccaja) ──
@@ -72139,25 +72766,31 @@ export class PedidoForm implements OnInit {
 
     this.procesando.set(true);
     this.api
-      .post<any>('/facturacion/pedidos/checkout', {
-        pospedmaeId: id,
-        nombrecliente: this.nombreCliente().trim(),
-        nrotelefono: this.telefono().trim() || 'N/A',
-        formapagoId: primero.formapagoId,
-        efectivo_recibido: totalPagado,
-        tarjetacreditoId: this.esTarjeta(primero) ? primero.tarjetacreditoId ?? undefined : undefined,
-        nrotarjeta: this.esTarjeta(primero) ? primero.nrotarjeta || undefined : undefined,
-        nroautorizacion: primero.nroautorizacion || undefined,
-        tipopago,
-        pagos: pagos.map((p) => ({
-          formapagoId: p.formapagoId,
-          tarjetacreditoId: p.tarjetacreditoId || undefined,
-          nrotarjeta: p.nrotarjeta || undefined,
-          nroautorizacion: p.nroautorizacion || undefined,
-          importe: Number(p.importe) || 0,
-          esEfectivo: this.esEfectivoFila(p),
-        })),
-      }, { sinContexto: true })
+      .post<any>(
+        '/facturacion/pedidos/checkout',
+        {
+          pospedmaeId: id,
+          nombrecliente: this.nombreCliente().trim(),
+          nrotelefono: this.telefono().trim() || 'N/A',
+          formapagoId: primero.formapagoId,
+          efectivo_recibido: totalPagado,
+          tarjetacreditoId: this.esTarjeta(primero)
+            ? (primero.tarjetacreditoId ?? undefined)
+            : undefined,
+          nrotarjeta: this.esTarjeta(primero) ? primero.nrotarjeta || undefined : undefined,
+          nroautorizacion: primero.nroautorizacion || undefined,
+          tipopago,
+          pagos: pagos.map((p) => ({
+            formapagoId: p.formapagoId,
+            tarjetacreditoId: p.tarjetacreditoId || undefined,
+            nrotarjeta: p.nrotarjeta || undefined,
+            nroautorizacion: p.nroautorizacion || undefined,
+            importe: Number(p.importe) || 0,
+            esEfectivo: this.esEfectivoFila(p),
+          })),
+        },
+        { sinContexto: true },
+      )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (resp) => {
@@ -72181,7 +72814,11 @@ export class PedidoForm implements OnInit {
         error: (err) => {
           console.error('Error en checkout de pedido', err);
           this.procesando.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo facturar el pedido' });
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo facturar el pedido',
+          });
         },
       });
   }
@@ -72190,24 +72827,27 @@ export class PedidoForm implements OnInit {
 
   /** Genera el link para la factura creada por el checkout y abre el diálogo headless */
   private generarLinkPago(fac: { facturaId: number; nrofactura?: number }) {
-    this.todp.generarLink(fac.facturaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (link) => {
-        this.linkPago.set(link);
-        this.linkStatus.set(link.status || 'pending');
-        this.linkCopiado.set(false);
-        this.iniciarPollingLink(link.operationId);
-        // El toast queda reemplazado por el diálogo headless (llamativo)
-        this.mostrarDialogoLink();
-      },
-      error: (err) => {
-        console.error('Error al generar link de pago', err);
-        this.msgs.add({
-          severity: 'warn',
-          summary: 'Link de pago',
-          detail: `Factura #${fac.nrofactura} creada, pero no se pudo generar el link`,
-        });
-      },
-    });
+    this.todp
+      .generarLink(fac.facturaId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (link) => {
+          this.linkPago.set(link);
+          this.linkStatus.set(link.status || 'pending');
+          this.linkCopiado.set(false);
+          this.iniciarPollingLink(link.operationId);
+          // El toast queda reemplazado por el diálogo headless (llamativo)
+          this.mostrarDialogoLink();
+        },
+        error: (err) => {
+          console.error('Error al generar link de pago', err);
+          this.msgs.add({
+            severity: 'warn',
+            summary: 'Link de pago',
+            detail: `Factura #${fac.nrofactura} creada, pero no se pudo generar el link`,
+          });
+        },
+      });
   }
 
   /** Consulta el estado cada 10 s mientras esté pendiente */
@@ -72218,32 +72858,37 @@ export class PedidoForm implements OnInit {
         this.detenerPollingLink();
         return;
       }
-      this.todp.getStatus(operationId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-        next: (tx) => {
-          this.linkStatus.set(tx.status);
-          if (tx.status !== 'pending') {
-            this.detenerPollingLink();
-            if (tx.status === 'completed') {
-              this.msgs.add({
-                severity: 'success',
-                summary: 'Pago confirmado',
-                detail: `Factura #${tx.nrofactura || tx.facturaid} pagada vía TodoPago`,
-                life: 8000,
-              });
-              // Reabre el diálogo headless con la variante "¡Pago confirmado!"
-              this.mostrarDialogoLink();
-            } else if (tx.status === 'failed' || tx.status === 'expired') {
-              this.msgs.add({
-                severity: 'warn',
-                summary: 'Pago no completado',
-                detail: 'La transacción TodoPago finalizó sin completarse',
-                life: 8000,
-              });
+      this.todp
+        .getStatus(operationId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (tx) => {
+            this.linkStatus.set(tx.status);
+            if (tx.status !== 'pending') {
+              this.detenerPollingLink();
+              if (tx.status === 'completed') {
+                this.msgs.add({
+                  severity: 'success',
+                  summary: 'Pago confirmado',
+                  detail: `Factura #${tx.nrofactura || tx.facturaid} pagada vía TodoPago`,
+                  life: 8000,
+                });
+                // Reabre el diálogo headless con la variante "¡Pago confirmado!"
+                this.mostrarDialogoLink();
+              } else if (tx.status === 'failed' || tx.status === 'expired') {
+                this.msgs.add({
+                  severity: 'warn',
+                  summary: 'Pago no completado',
+                  detail: 'La transacción TodoPago finalizó sin completarse',
+                  life: 8000,
+                });
+              }
             }
-          }
-        },
-        error: () => { /* el polling tolera fallos transitorios */ },
-      });
+          },
+          error: () => {
+            /* el polling tolera fallos transitorios */
+          },
+        });
     }, 10000);
     this.destroyRef.onDestroy(() => this.detenerPollingLink());
   }
@@ -72282,21 +72927,31 @@ export class PedidoForm implements OnInit {
   /** Estado visible de la card del link */
   labelEstadoLink(): string {
     switch (this.linkStatus()) {
-      case 'completed': return 'Pagado';
-      case 'failed': return 'Fallido';
-      case 'expired': return 'Expirado';
-      case 'reversed': return 'Reversado';
-      default: return 'Pendiente';
+      case 'completed':
+        return 'Pagado';
+      case 'failed':
+        return 'Fallido';
+      case 'expired':
+        return 'Expirado';
+      case 'reversed':
+        return 'Reversado';
+      default:
+        return 'Pendiente';
     }
   }
 
   severityEstadoLink(): 'success' | 'warn' | 'danger' | 'info' {
     switch (this.linkStatus()) {
-      case 'completed': return 'success';
-      case 'failed': return 'danger';
-      case 'expired': return 'warn';
-      case 'reversed': return 'danger';
-      default: return 'info';
+      case 'completed':
+        return 'success';
+      case 'failed':
+        return 'danger';
+      case 'expired':
+        return 'warn';
+      case 'reversed':
+        return 'danger';
+      default:
+        return 'info';
     }
   }
 
@@ -72307,7 +72962,12 @@ export class PedidoForm implements OnInit {
       await navigator.clipboard.writeText(url);
       this.linkCopiado.set(true);
       setTimeout(() => this.linkCopiado.set(false), 2500);
-      this.msgs.add({ severity: 'success', summary: 'Copiado', detail: 'Link copiado al portapapeles', life: 2500 });
+      this.msgs.add({
+        severity: 'success',
+        summary: 'Copiado',
+        detail: 'Link copiado al portapapeles',
+        life: 2500,
+      });
     } catch {
       this.msgs.add({ severity: 'warn', summary: 'Copiar', detail: 'No se pudo copiar el link' });
     }
@@ -72328,22 +72988,30 @@ export class PedidoForm implements OnInit {
   consultarEstadoLink(): void {
     const link = this.linkPago();
     if (!link) return;
-    this.todp.getStatus(link.operationId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (tx) => {
-        this.linkStatus.set(tx.status);
-        if (tx.status !== 'pending') this.detenerPollingLink();
-        if (tx.status === 'completed') {
+    this.todp
+      .getStatus(link.operationId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (tx) => {
+          this.linkStatus.set(tx.status);
+          if (tx.status !== 'pending') this.detenerPollingLink();
+          if (tx.status === 'completed') {
+            this.msgs.add({
+              severity: 'success',
+              summary: 'Pago confirmado',
+              detail: `Factura #${tx.nrofactura || tx.facturaid} pagada vía TodoPago`,
+              life: 8000,
+            });
+            this.mostrarDialogoLink();
+          }
+        },
+        error: () =>
           this.msgs.add({
-            severity: 'success',
-            summary: 'Pago confirmado',
-            detail: `Factura #${tx.nrofactura || tx.facturaid} pagada vía TodoPago`,
-            life: 8000,
-          });
-          this.mostrarDialogoLink();
-        }
-      },
-      error: () => this.msgs.add({ severity: 'warn', summary: 'Estado', detail: 'No se pudo consultar el estado' }),
-    });
+            severity: 'warn',
+            summary: 'Estado',
+            detail: 'No se pudo consultar el estado',
+          }),
+      });
   }
 
   /** Auto-asignar el importe pendiente al elegir TodoPago como forma de pago */
@@ -72382,11 +73050,11 @@ export class PedidoForm implements OnInit {
   }
 
   getExistencia(productoId: number | null): number {
-    return productoId ? this.existenciasMap.get(productoId) ?? 0 : 0;
+    return productoId ? (this.existenciasMap.get(productoId) ?? 0) : 0;
   }
 
   getOferta(productoId: number | null): { porcentaje: number; precioConDescuento: number } | null {
-    return productoId ? this.ofertasMap.get(productoId) ?? null : null;
+    return productoId ? (this.ofertasMap.get(productoId) ?? null) : null;
   }
 
   esOferta(productoId: number | null): boolean {
@@ -72436,7 +73104,7 @@ export class PedidoForm implements OnInit {
         <span class="p-input-icon-left">
           <input pInputText type="text" pSize="small"
             placeholder="Buscar por # pedido, nombre del cliente o teléfono..."
-            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" class="busqueda-input" />
+            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" class="busqueda-input" />
         </span>
       </div>
       <div class="filtros-acciones">
@@ -74113,7 +74781,7 @@ $sidebar-width: 380px;
         </div>
         <div class="cart-item-right">
           <span class="cart-item-subtotal">{{ formatearPrecio(item.subtotal) }}</span>
-          <button class="cart-item-remove" (click)="eliminarDelPedido(item)" pTooltip="Eliminar">
+          <button class="cart-item-remove" (click)="eliminarDelPedido(item)" pTooltip="Eliminar" tooltipPosition="left">
             <i class="pi pi-times"></i>
           </button>
         </div>
@@ -74149,8 +74817,8 @@ $sidebar-width: 380px;
   <main class="tienda-main">
     <div class="tienda-toolbar">
       <div class="toolbar-left">
-        <p-button icon="pi pi-arrow-left" label="Volver" size="small" [rounded]="true" variant="text"
-          severity="secondary" pTooltip="Volver al listado" (onClick)="volver()" />
+         <p-button icon="pi pi-arrow-left" label="Volver" size="small" [rounded]="true" variant="text"
+           severity="secondary" pTooltip="Volver al listado" tooltipPosition="left" (onClick)="volver()" />
         <h2 class="toolbar-title"><i class="pi pi-shopping-cart"></i> Pedidos</h2>
         <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's'
           : '' }}</span>
@@ -74166,15 +74834,15 @@ $sidebar-width: 380px;
           optionValue="value" styleClass="sort-select" />
         <div class="view-toggles desktop-only">
           <button class="view-btn" [class.active]="layout() === 'grid'" (click)="layout.set('grid')"
-            pTooltip="Cuadrícula">
+            pTooltip="Cuadrícula" tooltipPosition="left">
             <i class="pi pi-th-large"></i>
           </button>
-          <button class="view-btn" [class.active]="layout() === 'list'" (click)="layout.set('list')" pTooltip="Lista">
+          <button class="view-btn" [class.active]="layout() === 'list'" (click)="layout.set('list')" pTooltip="Lista" tooltipPosition="left">
             <i class="pi pi-list"></i>
           </button>
         </div>
         <p-button size="small" label="Ofertas" [rounded]="true" [raised]="true" variant="text" severity="success"
-          [class.active]="soloOfertas()" (click)="soloOfertas.set(!soloOfertas())" pTooltip="Solo ofertas">
+          [class.active]="soloOfertas()" (click)="soloOfertas.set(!soloOfertas())" pTooltip="Solo ofertas" tooltipPosition="left">
         </p-button>
 
       </div>
@@ -74230,9 +74898,9 @@ $sidebar-width: 380px;
             }
             <div class="card-acciones">
               <p-button icon="pi pi-images" [rounded]="true" [raised]="true" variant="text" severity="secondary"
-                (click)="abrirGaleria(producto)" pTooltip="Ver galería" />
+                (click)="abrirGaleria(producto)" pTooltip="Ver galería" tooltipPosition="left" />
               <p-button icon="pi pi-cart-plus" [rounded]="true" [raised]="true" variant="text"
-                [disabled]="producto.existencia <= 0" (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
+                [disabled]="producto.existencia <= 0" (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" tooltipPosition="left" />
             </div>
           </div>
         </div>
@@ -74280,9 +74948,9 @@ $sidebar-width: 380px;
         </div>
         <div class="list-accion">
           <p-button icon="pi pi-images" [rounded]="true" variant="text" severity="secondary"
-            (click)="abrirGaleria(producto)" pTooltip="Ver galería" />
+            (click)="abrirGaleria(producto)" pTooltip="Ver galería" tooltipPosition="left" />
           <p-button icon="pi pi-cart-plus" [rounded]="true" [disabled]="producto.existencia <= 0"
-            (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" />
+            (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" tooltipPosition="left" />
         </div>
       </div>
       } @empty {
@@ -76952,6 +77620,7 @@ export class PedidosVirtual implements OnInit {
 $drawer-width: 40%;
 $bp-angosto: 992px;
 $mesa-size: 2.75rem;
+$topbar-height: 60px;
 
 :host {
   display: block;
@@ -77168,10 +77837,14 @@ $mesa-size: 2.75rem;
 /* ═════════ Drawer (columnas 2 y 3) ═════════ */
 :host ::ng-deep .rest-drawer {
   background: var(--c-surface);
-  border-left: 1px solid var(--c-border);
-  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.06);
 }
 
+@media (min-width: 992px) {
+  :host ::ng-deep .rest-drawer {
+    top: 60px !important;
+    height: calc(100vh - 60px) !important;
+  }
+}
 .rest-drawer-body {
   display: grid;
   grid-template-columns: 1fr 1fr; // 20% : 20% del ancho total
@@ -79694,6 +80367,7 @@ width: 100% !important;
             [class.active]="soloOfertas()"
             (click)="soloOfertas.set(!soloOfertas())"
             pTooltip="Solo ofertas"
+            tooltipPosition="left"
           >
           </p-button>
         </div>
@@ -82225,6 +82899,7 @@ export class TiendaService {
             placeholder="Buscar por # factura o cliente..."
             [ngModel]="q()"
             (ngModelChange)="q.set($event)"
+            pTooltip="Presione enter para consultar"
             class="busqueda-input"
           />
         </span>
@@ -83114,12 +83789,43 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InfoHelper } from './info';
 import { ProductosService } from '../../core/services/productos.service';
-import { Producto } from '../../core/models/inventario.models';
+import { Producto, ProductoImg } from '../../core/models/inventario.models';
 
 @Component({
   providers: [DialogService, MessageService, ProductosService],
   standalone: true,
   imports: [TableModule, ButtonModule, FormsModule, InputTextModule],
+  styles: [
+    `
+      .img-cell {
+        text-align: center;
+      }
+      .img-cell img {
+        width: 4.5rem;
+        height: 4.5rem;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid var(--c-border, #e2e8f0);
+        background: var(--c-surface-ground, #f8fafc);
+        display: block;
+        margin: 0 auto;
+      }
+      .img-cell .img-placeholder {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 4.5rem;
+        height: 4.5rem;
+        border-radius: 8px;
+        border: 1px dashed var(--c-border, #e2e8f0);
+        color: var(--c-text-muted, #64748b);
+        font-size: 1.4rem;
+      }
+      ::ng-deep .p-datatable-tbody > tr > td {
+        vertical-align: middle;
+      }
+    `,
+  ],
   template: `
     <p-table
       dataKey="produtoId"
@@ -83131,16 +83837,17 @@ import { Producto } from '../../core/models/inventario.models';
     >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="codbarra">
-            <div class="flex align-items-center gap-2">
-              Código
-              <p-sortIcon field="codbarra"></p-sortIcon>
-            </div>
-          </th>
+          <th style="width: 6rem">Imagen</th>
           <th pSortableColumn="descripcion">
             <div class="flex align-items-center gap-2">
               Descripción
               <p-sortIcon field="descripcion"></p-sortIcon>
+            </div>
+          </th>
+          <th pSortableColumn="codbarra">
+            <div class="flex align-items-center gap-2">
+              Código
+              <p-sortIcon field="codbarra"></p-sortIcon>
             </div>
           </th>
           <th pSortableColumn="precioventa" style="width: 12rem" class="text-right">
@@ -83152,16 +83859,7 @@ import { Producto } from '../../core/models/inventario.models';
           <th style="width: 4em"></th>
         </tr>
         <tr class="filtros-row">
-          <th>
-            <input
-              pInputText
-              type="text"
-              [ngModel]="filtroCodbarra()"
-              (ngModelChange)="filtroCodbarra.set($event)"
-              placeholder="Filtrar código"
-              class="w-full"
-            />
-          </th>
+          <th></th>
           <th>
             <input
               pInputText
@@ -83172,6 +83870,16 @@ import { Producto } from '../../core/models/inventario.models';
               class="w-full"
             />
           </th>
+          <th>
+            <input
+              pInputText
+              type="text"
+              [ngModel]="filtroCodbarra()"
+              (ngModelChange)="filtroCodbarra.set($event)"
+              placeholder="Filtrar código"
+              class="w-full"
+            />
+          </th>
           <th></th>
           <th></th>
         </tr>
@@ -83179,8 +83887,15 @@ import { Producto } from '../../core/models/inventario.models';
 
       <ng-template pTemplate="body" let-product>
         <tr (click)="selectProduct(product)" class="row-selectable">
-          <td>{{ product.codbarra }}</td>
+          <td class="img-cell">
+            @if (imagenDe(product)) {
+              <img [src]="imagenDe(product)" [alt]="product.descripcion" loading="lazy" />
+            } @else {
+              <span class="img-placeholder"><i class="pi pi-image"></i></span>
+            }
+          </td>
           <td>{{ product.descripcion }}</td>
+          <td>{{ product.codbarra }}</td>
           <td class="text-right">{{ product.precioventa }}</td>
           <td>
             <p-button
@@ -83196,7 +83911,7 @@ import { Producto } from '../../core/models/inventario.models';
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="4" class="text-center p-3">Sin resultados</td>
+          <td colspan="5" class="text-center p-3">Sin resultados</td>
         </tr>
       </ng-template>
     </p-table>
@@ -83204,6 +83919,10 @@ import { Producto } from '../../core/models/inventario.models';
 })
 export class ProductosHelperList implements OnInit {
   products = signal<Producto[]>([]);
+
+  /** Map productoId → imagen dataURL (de /inventario/productos-img).
+   *  Debe ser signal para que la tabla redibuje al llegar (ARFM20261030). */
+  private imagenesMap = signal<Map<number, string>>(new Map());
 
   filtroCodbarra = signal('');
   filtroDescripcion = signal('');
@@ -83233,6 +83952,32 @@ export class ProductosHelperList implements OnInit {
         console.error('Error al cargar productos', error);
       },
     });
+
+    // Imágenes de productos (ARFM20261030): solo activas, 1ª por producto
+    this.productService.getImgAll().subscribe({
+      next: (items: ProductoImg[]) => {
+        const m = new Map<number, string>(this.imagenesMap());
+        for (const i of items ?? []) {
+          const id = Number(i.productoId);
+          if (i.sn_activo === 'S' && i.img && !m.has(id)) {
+            m.set(id, this.resolverImagen(i.img));
+          }
+        }
+        this.imagenesMap.set(m);
+      },
+      error: (error) => {
+        console.error('Error al cargar imágenes de productos', error);
+      },
+    });
+  }
+
+  /** Imagen del producto para la tabla (dataURL) o '' si no tiene */
+  imagenDe(product: Producto): string {
+    return this.imagenesMap().get(Number(product.produtoId)) ?? '';
+  }
+
+  private resolverImagen(img: string): string {
+    return /^data:/i.test(img) ? img : `data:image/png;base64,${img}`;
   }
 
   selectProduct(product: Producto) {
@@ -83912,7 +84657,7 @@ export class Ajustes implements OnInit {
         pInputText type="text"
         pSize="small"
         placeholder="Buscar..." [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
-        (keyup.enter)="buscar()" />
+        (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" />
     </div>
     <div class="campo acciones">
       <p-button label="Buscar"
@@ -84031,6 +84776,7 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
 
@@ -84053,7 +84799,7 @@ export interface CatalogoConfig {
 @Component({
   selector: 'app-catalogo-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule],
   templateUrl: './catalogo-list.html',
   styleUrl: './catalogo-list.scss',
 })
@@ -85551,557 +86297,634 @@ export class Kardex implements OnInit {
   </header>
 
   @if (cargando()) {
-    <div class="card">Cargando datos...</div>
+  <div class="card">Cargando datos...</div>
   } @else {
-    <div class="producto-layout">
-      <!-- ═══════════════ COLUMNA IZQUIERDA ═══════════════ -->
-      <div class="producto-col-izq">
-        <form [formGroup]="form" (ngSubmit)="guardar()">
+  <div class="producto-layout">
+    <!-- ═══════════════ COLUMNA IZQUIERDA ═══════════════ -->
+    <div class="producto-col-izq">
+      <form [formGroup]="form" (ngSubmit)="guardar()">
+        <!-- Datos basicos -->
+        <div class="card mb-3">
+          <div class="p-fluid">
+            <div class="campo">
+              <label for="descripcion">Descripción <span class="req">*</span></label>
+              <input
+                pInputText
+                pSize="small"
+                id="descripcion"
+                formControlName="descripcion"
+                maxlength="250"
+                placeholder="Descripción del producto"
+                [ngClass]="{ 'ng-invalid': invalid('descripcion') }"
+              />
+              @if (invalid('descripcion')) {
+              <small class="err">La descripción es obligatoria</small>
+              }
+            </div>
 
-          <!-- Datos basicos -->
-          <div class="card mb-3">
-            <div class="p-fluid">
-              <div class="campo">
-                <label for="descripcion">Descripción <span class="req">*</span></label>
-                <input
-                  pInputText
-                  pSize="small"
-                  id="descripcion"
-                  formControlName="descripcion"
-                  maxlength="250"
-                  placeholder="Descripción del producto"
-                  [ngClass]="{ 'ng-invalid': invalid('descripcion') }"
-                />
-                @if (invalid('descripcion')) {
-                  <small class="err">La descripción es obligatoria</small>
-                }
-              </div>
+            <div class="campo">
+              <label for="descripcion_corta">Descripción corta</label>
+              <input
+                pInputText
+                pSize="small"
+                id="descripcion_corta"
+                formControlName="descripcion_corta"
+                maxlength="50"
+                placeholder="Nombre corto"
+              />
+            </div>
 
-              <div class="campo">
-                <label for="descripcion_corta">Descripción corta</label>
-                <input
-                  pInputText
-                  pSize="small"
-                  id="descripcion_corta"
-                  formControlName="descripcion_corta"
-                  maxlength="50"
-                  placeholder="Nombre corto"
-                />
-              </div>
+            <div class="campo">
+              <label for="codigo_sku">SKU <span class="req">*</span></label>
+              <input
+                pInputText
+                pSize="small"
+                id="codigo_sku"
+                formControlName="codigo_sku"
+                maxlength="20"
+                placeholder="Código interno (SKU)"
+                [ngClass]="{ 'ng-invalid': invalid('codigo_sku') }"
+              />
+              @if (invalid('codigo_sku')) {
+              <small class="err">El SKU es obligatorio</small>
+              }
+            </div>
 
-              <div class="campo">
-                <label for="codigo_sku">SKU <span class="req">*</span></label>
-                <input
-                  pInputText
-                  pSize="small"
-                  id="codigo_sku"
-                  formControlName="codigo_sku"
-                  maxlength="20"
-                  placeholder="Código interno (SKU)"
-                  [ngClass]="{ 'ng-invalid': invalid('codigo_sku') }"
-                />
-                @if (invalid('codigo_sku')) {
-                  <small class="err">El SKU es obligatorio</small>
-                }
-              </div>
-
-              <div class="campo">
-                <label for="codbarra">Código de barras</label>
-                <input
-                  pInputText
-                  pSize="small"
-                  id="codbarra"
-                  formControlName="codbarra"
-                  maxlength="20"
-                  placeholder="Código de barras"
-                />
-              </div>
+            <div class="campo">
+              <label for="codbarra">Código de barras</label>
+              <input
+                pInputText
+                pSize="small"
+                id="codbarra"
+                formControlName="codbarra"
+                maxlength="20"
+                placeholder="Código de barras"
+              />
             </div>
           </div>
+        </div>
 
-          <!-- Accordion: Costos y Precio de Venta -->
-          <p-accordion class="mb-3" [value]="['0']">
-            <p-accordion-panel value="0">
-              <p-accordion-header>Costos y Precio de Venta</p-accordion-header>
-              <p-accordion-content>
-                <div class="p-fluid">
-                  <div class="form-grid-2">
-                    <div class="campo">
-                      <label for="cstounit">Costo unitario</label>
-                      <p-inputnumber size="small"
-                        id="cstounit"
-                        formControlName="cstounit"
-                        mode="currency"
-                        currency="HNL"
-                        [locale]="'es-HN'"
-                        [minFractionDigits]="2"
-                        [maxFractionDigits]="2"
-                        [useGrouping]="true"
-                        [inputStyle]="{ 'width': '100%' }"
-                      />
-                    </div>
+        <!-- Accordion: Costos y Precio de Venta -->
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header>Costos y Precio de Venta del producto</p-accordion-header>
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="form-grid-2">
+                  <div class="campo">
+                    <label for="cstounit">Costo unitario</label>
+                    <p-inputnumber
+                      size="small"
+                      id="cstounit"
+                      formControlName="cstounit"
+                      mode="currency"
+                      currency="HNL"
+                      [locale]="'es-HN'"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [useGrouping]="true"
+                      [inputStyle]="{ 'width': '100%' }"
+                    />
+                  </div>
 
-                    <div class="campo">
-                      <label for="cstoprom">Costo promedio</label>
-                      <p-inputnumber size="small"
-                        id="cstoprom"
-                        formControlName="cstoprom"
-                        mode="currency"
-                        currency="HNL"
-                        [locale]="'es-HN'"
-                        [minFractionDigits]="2"
-                        [maxFractionDigits]="2"
-                        [useGrouping]="true"
-                        [inputStyle]="{ 'width': '100%' }"
-                      />
-                    </div>
+                  <div class="campo">
+                    <label for="cstoprom">Costo promedio</label>
+                    <p-inputnumber
+                      size="small"
+                      id="cstoprom"
+                      formControlName="cstoprom"
+                      mode="currency"
+                      currency="HNL"
+                      [locale]="'es-HN'"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [useGrouping]="true"
+                      [inputStyle]="{ 'width': '100%' }"
+                    />
+                  </div>
 
-                    <div class="campo">
-                      <label for="puntoretorno">Punto de retorno</label>
-                      <p-inputnumber size="small"
-                        id="puntoretorno"
-                        formControlName="puntoretorno"
-                        mode="currency"
-                        currency="HNL"
-                        [locale]="'es-HN'"
-                        [minFractionDigits]="2"
-                        [maxFractionDigits]="2"
-                        [useGrouping]="true"
-                        [inputStyle]="{ 'width': '100%' }"
-                      />
-                    </div>
+                  <div class="campo">
+                    <label for="puntoretorno">Punto de retorno</label>
+                    <p-inputnumber
+                      size="small"
+                      id="puntoretorno"
+                      formControlName="puntoretorno"
+                      mode="currency"
+                      currency="HNL"
+                      [locale]="'es-HN'"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [useGrouping]="true"
+                      [inputStyle]="{ 'width': '100%' }"
+                    />
+                  </div>
 
-                    <div class="campo">
-                      <label for="precioventa">Precio de venta</label>
-                      <p-inputnumber size="small"
-                        id="precioventa"
-                        formControlName="precioventa"
-                        mode="currency"
-                        currency="HNL"
-                        [locale]="'es-HN'"
-                        [minFractionDigits]="2"
-                        [maxFractionDigits]="2"
-                        [useGrouping]="true"
-                        [inputStyle]="{ 'width': '100%' }"
-                      />
-                    </div>
+                  <div class="campo">
+                    <label for="precioventa">Precio de venta</label>
+                    <p-inputnumber
+                      size="small"
+                      id="precioventa"
+                      formControlName="precioventa"
+                      mode="currency"
+                      currency="HNL"
+                      [locale]="'es-HN'"
+                      [minFractionDigits]="2"
+                      [maxFractionDigits]="2"
+                      [useGrouping]="true"
+                      [inputStyle]="{ 'width': '100%' }"
+                    />
                   </div>
                 </div>
-              </p-accordion-content>
-            </p-accordion-panel>
-          </p-accordion>
-
-          <!-- Accordion: Impuesto -->
-          <p-accordion class="mb-3" [value]="['0']">
-            <p-accordion-panel value="0">
-              <p-accordion-header>Impuestos</p-accordion-header>
-              <p-accordion-content>
-                <div class="p-fluid">
-                  <div class="form-grid-2">
-
-                    <div class="campo">
-                      <label for="impuestoId">Impuesto <span class="req">*</span></label>
-                      <p-select
-                        size="small"
-                        id="impuestoId"
-                        formControlName="impuestoId"
-                        [options]="impuestos()"
-                        optionLabel="descripcion"
-                        optionValue="impuestoId"
-                        placeholder="Seleccionar impuesto"
-                        styleClass="w-full"
-                        [appendTo]="'body'"
-                        [ngClass]="{ 'ng-invalid': invalid('impuestoId') }"
-                      />
-                      @if (invalid('impuestoId')) {
-                        <small class="err">Seleccione un impuesto</small>
-                      }
-                    </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
 
 
+        <!-- Accordion: Departamento, Categoría, Marca, Pasillo, Estado -->
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header
+              >Atributos de Departamento, Categoría, Marca, Pasillo</p-accordion-header
+            >
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="form-grid-2">
+                  <div class="campo">
+                    <!-- 20261015 ARFM select real de departamentos (tinvdeptos) -->
+                    <label for="deptoId">Departamento <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      id="deptoId"
+                      formControlName="deptoId"
+                      [options]="departamentos()"
+                      optionLabel="descripcion"
+                      optionValue="deptoId"
+                      placeholder="Seleccione un departamento"
+                      styleClass="w-full"
+                      [showClear]="true"
+                      [loading]="departamentosCargando()"
+                      [ngClass]="{ 'ng-invalid': invalid('deptoId') }"
+                      [appendTo]="'body'"
+                    />
+                    @if (invalid('deptoId')) {
+                    <small class="err">Seleccione un departamento</small>
+                    }
+                  </div>
+
+                  <div class="campo">
+                    <label for="categoriaId">Categoría <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      id="categoriaId"
+                      formControlName="categoriaId"
+                      [options]="categorias()"
+                      optionLabel="descripcion"
+                      optionValue="categoriaId"
+                      placeholder="Seleccione categoría"
+                      styleClass="w-full"
+                      [showClear]="true"
+                      [loading]="categoriasCargando()"
+                      [ngClass]="{ 'ng-invalid': invalid('categoriaId') }"
+                      [appendTo]="'body'"
+                    />
+                    @if (invalid('categoriaId')) {
+                    <small class="err">Seleccione una categoría</small>
+                    }
+                  </div>
+
+                  <div class="campo">
+                    <label for="marcaId">Marca <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      id="marcaId"
+                      formControlName="marcaId"
+                      [options]="marcas()"
+                      optionLabel="descripcion"
+                      optionValue="marcaId"
+                      placeholder="Seleccione una marca"
+                      styleClass="w-full"
+                      [showClear]="true"
+                      [loading]="marcasCargando()"
+                      [ngClass]="{ 'ng-invalid': invalid('marcaId') }"
+                      [appendTo]="'body'"
+                    />
+                    @if (invalid('marcaId')) {
+                    <small class="err">Seleccione una marca</small>
+                    }
+                  </div>
+
+                  <div class="campo">
+                    <label for="pasilloId">Pasillo <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      id="pasilloId"
+                      formControlName="pasilloId"
+                      [options]="pasillos()"
+                      optionLabel="descripcion"
+                      optionValue="pasilloId"
+                      placeholder="Seleccione un pasillo"
+                      styleClass="w-full"
+                      [showClear]="true"
+                      [loading]="pasillosCargando()"
+                      [ngClass]="{ 'ng-invalid': invalid('pasilloId') }"
+                      [appendTo]="'body'"
+                    />
+                    @if (invalid('pasilloId')) {
+                    <small class="err">Seleccione un pasillo</small>
+                    }
+                  </div>
+
+                </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
+
+        <!-- Accordion: Farmacias -->
+
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header>Atributo de Farmacias</p-accordion-header>
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="form-grid-2">
+                  <div class="campo">
+                    <label for="sn_controlado">Control</label>
+                    <p-select
+                      size="small"
+                      id="sn_controlado"
+                      formControlName="sn_controlado"
+                      [options]="snControladoOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Producto controlado"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    />
+                  </div>
+
+                  <div class="campo">
+                    <label for="sn_droga">Droga / Psicotrópico</label>
+                    <p-select
+                      size="small"
+                      id="sn_droga"
+                      formControlName="sn_droga"
+                      [options]="snControladoOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Regulado como droga"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    />
+                  </div>
+
+                  <div class="campo">
+                    <label for="sn_valida_lote">Valida Lote / Vencimiento</label>
+                    <p-select
+                      size="small"
+                      id="sn_valida_lote"
+                      formControlName="sn_valida_lote"
+                      [options]="snValidarOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Valida lote"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    />
                   </div>
                 </div>
-              </p-accordion-content>
-            </p-accordion-panel>
-          </p-accordion>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
 
+        <!-- Accordion: Restaurante -->
 
-          <!-- Accordion: Departamento, Categoría, Marca, Pasillo, Estado -->
-          <p-accordion class="mb-3" [value]="['0']">
-            <p-accordion-panel value="0">
-              <p-accordion-header>Departamento, Categoría, Marca, Pasillo y Control</p-accordion-header>
-              <p-accordion-content>
-                <div class="p-fluid">
-                  <div class="form-grid-2">
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header>Atributo de restaurante</p-accordion-header>
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="campo">
+                  <label for="sn_enviar_a_cocina">Enviar a Cocina</label>
+                  <p-select
+                    size="small"
+                    id="sn_enviar_a_cocina"
+                    formControlName="sn_enviar_a_cocina"
+                    [options]="snValidarOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Enviar a cocina"
+                    styleClass="w-full"
+                    [appendTo]="'body'"
+                  />
+                </div>
 
-                    <div class="campo">
-                      <!-- 20261015 ARFM select real de departamentos (tinvdeptos) -->
-                      <label for="deptoId">Departamento <span class="req">*</span></label>
-                      <p-select
-                        size="small"
-                        id="deptoId"
-                        formControlName="deptoId"
-                        [options]="departamentos()"
-                        optionLabel="descripcion"
-                        optionValue="deptoId"
-                        placeholder="Seleccione un departamento"
-                        styleClass="w-full"
-                        [showClear]="true"
-                        [loading]="departamentosCargando()"
-                        [ngClass]="{ 'ng-invalid': invalid('deptoId') }"
-                        [appendTo]="'body'"
-                      />
-                      @if (invalid('deptoId')) {
-                        <small class="err">Seleccione un departamento</small>
-                      }
-                    </div>
+                <div class="p-fluid"></div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
 
-
-                    <div class="campo">
-                      <label for="categoriaId">Categoría <span class="req">*</span></label>
-                      <p-select
-                        size="small"
-                        id="categoriaId"
-                        formControlName="categoriaId"
-                        [options]="categorias()"
-                        optionLabel="descripcion"
-                        optionValue="categoriaId"
-                        placeholder="Seleccione categoría"
-                        styleClass="w-full"
-                        [showClear]="true"
-                        [loading]="categoriasCargando()"
-                        [ngClass]="{ 'ng-invalid': invalid('categoriaId') }"
-                        [appendTo]="'body'"
-                      />
-                      @if (invalid('categoriaId')) {
-                        <small class="err">Seleccione una categoría</small>
-                      }
-                    </div>
-
-                    <div class="campo">
-                      <label for="marcaId">Marca <span class="req">*</span></label>
-                      <p-select
-                        size="small"
-                        id="marcaId"
-                        formControlName="marcaId"
-                        [options]="marcas()"
-                        optionLabel="descripcion"
-                        optionValue="marcaId"
-                        placeholder="Seleccione una marca"
-                        styleClass="w-full"
-                        [showClear]="true"
-                        [loading]="marcasCargando()"
-                        [ngClass]="{ 'ng-invalid': invalid('marcaId') }"
-                        [appendTo]="'body'"
-                      />
-                      @if (invalid('marcaId')) {
-                        <small class="err">Seleccione una marca</small>
-                      }
-                    </div>
-
-                    <div class="campo">
-                      <label for="pasilloId">Pasillo <span class="req">*</span></label>
-                      <p-select
-                        size="small"
-                        id="pasilloId"
-                        formControlName="pasilloId"
-                        [options]="pasillos()"
-                        optionLabel="descripcion"
-                        optionValue="pasilloId"
-                        placeholder="Seleccione un pasillo"
-                        styleClass="w-full"
-                        [showClear]="true"
-                        [loading]="pasillosCargando()"
-                        [ngClass]="{ 'ng-invalid': invalid('pasilloId') }"
-                        [appendTo]="'body'"
-                      />
-                      @if (invalid('pasilloId')) {
-                        <small class="err">Seleccione un pasillo</small>
-                      }
-                    </div>
-
-                    <div class="campo">
-                      <label for="sn_controlado">Control</label>
-                      <p-select
-                        size="small"
-                        id="sn_controlado"
-                        formControlName="sn_controlado"
-                        [options]="snControladoOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Producto controlado"
-                        styleClass="w-full"
-                        [appendTo]="'body'"
-                      />
-                    </div>
-
-                    <div class="campo">
-                      <label for="sn_droga">Droga / Psicotrópico</label>
-                      <p-select
-                        size="small"
-                        id="sn_droga"
-                        formControlName="sn_droga"
-                        [options]="snControladoOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Regulado como droga"
-                        styleClass="w-full"
-                        [appendTo]="'body'"
-                      />
-                    </div>
-
-                    @if (esEdicion()) {
-                      <div class="campo">
-                        <label>Estado <span class="req">*</span></label>
-                        <p-select size="small"
-                          [options]="snOptions"
-                          formControlName="sn_activo"
-                          optionLabel="label"
-                          optionValue="value"
-                          placeholder="Estado"
-                          styleClass="w-full"
-                          [appendTo]="'body'"
-                        />
-                      </div>
+        <!-- Accordion: Impuesto -->
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header>Impuesto del producto</p-accordion-header>
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="form-grid-2">
+                  <div class="campo">
+                    <label for="impuestoId">Impuesto <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      id="impuestoId"
+                      formControlName="impuestoId"
+                      [options]="impuestos()"
+                      optionLabel="descripcion"
+                      optionValue="impuestoId"
+                      placeholder="Seleccionar impuesto"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                      [ngClass]="{ 'ng-invalid': invalid('impuestoId') }"
+                    />
+                    @if (invalid('impuestoId')) {
+                    <small class="err">Seleccione un impuesto</small>
                     }
                   </div>
                 </div>
-              </p-accordion-content>
-            </p-accordion-panel>
-          </p-accordion>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
 
-          <!-- Acciones -->
-          <div class="acciones-form">
-            <p-button
-              type="button"
-              label="Cancelar"
-              icon="pi pi-times"
-              severity="secondary"
-              size="small"
-              rounded
-              (onClick)="volver()"
-            />
-            <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
-          </div>
-        </form>
-      </div>
+        <!-- Accordion: Estado -->
+        <p-accordion class="mb-3" [value]="['0']">
+          <p-accordion-panel value="0">
+            <p-accordion-header>Estado del producto</p-accordion-header>
+            <p-accordion-content>
+              <div class="p-fluid">
+                <div class="form-grid-2">
+                  @if (esEdicion()) {
+                  <div class="campo">
+                    <label>Estado <span class="req">*</span></label>
+                    <p-select
+                      size="small"
+                      [options]="snOptions"
+                      formControlName="sn_activo"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Estado"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    />
+                  </div>
+                  }
 
-      <!-- ═══════════════ COLUMNA DERECHA ═══════════════ -->
-      <div class="producto-col-der">
-        <!-- Imágenes -->
-        <div class="card mb-3">
-          <div class="img-header">
-            <div>
-              <h3 class="card-title">Imágenes del Producto</h3>
-              <p class="card-hint">Máximo {{ MAX_IMAGENES }} imágenes. Formato JPG/PNG.</p>
-            </div>
-            @if (puedeAgregarImagen) {
-              <p-button
-                size="small"
-                icon="pi pi-plus"
-                label="Agregar"
-                severity="success"
-                variant="text"
-                [rounded]="true"
-                (click)="fileInput.click()"
-              />
-            }
-          </div>
-          <input
-            #fileInput
-            type="file"
-            accept="image/*"
-            hidden
-            (change)="onSeleccionarImagen($event, imagenesCount)"
+                </div>
+              </div>
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
+
+
+        <!-- Acciones -->
+        <div class="acciones-form">
+          <p-button
+            type="button"
+            label="Cancelar"
+            icon="pi pi-times"
+            severity="secondary"
+            size="small"
+            rounded
+            (onClick)="volver()"
           />
+          <p-button
+            type="submit"
+            label="Guardar"
+            icon="pi pi-check"
+            rounded
+            size="small"
+            [loading]="guardando()"
+          />
+        </div>
+      </form>
+    </div>
 
-          @if (imagenes().length > 0) {
-            <p-galleria
-              [(value)]="imagenes"
-              [activeIndex]="activeIndex()"
-              (onActiveIndexChange)="activeIndex.set($event)"
-              [showThumbnails]="true"
-              [showItemNavigators]="true"
-              [circular]="true"
-              [numVisible]="5"
-              [thumbnailsPosition]="'left'"
-              [containerStyle]="{ 'max-width': '98%' }"
-              styleClass="producto-galleria"
-            >
-              <ng-template #item let-item>
-                <div class="galleria-item">
-                  <img [src]="getImagenUrl(item)" style="width: 100%; display: block" />
-                </div>
-              </ng-template>
-              <ng-template #thumbnail let-item>
-                <div class="galleria-thumb">
-                  <img [src]="getImagenUrl(item)" />
-                  <button
-                    type="button"
-                    class="galleria-thumb-remove"
-                    (click)="eliminarImagen(item); $event.stopPropagation()"
-                    pTooltip="Eliminar"
-                  >
-                    <i class="pi pi-times"></i>
-                  </button>
-                </div>
-              </ng-template>
-            </p-galleria>
-          } @else {
-            <div class="img-empty-state" (click)="fileInput.click()">
-              <i class="pi pi-images"></i>
-              <span>Sin imágenes — clic para agregar</span>
-            </div>
+    <!-- ═══════════════ COLUMNA DERECHA ═══════════════ -->
+    <div class="producto-col-der">
+      <!-- Imágenes -->
+      <div class="card mb-3">
+        <div class="img-header">
+          <div>
+            <h3 class="card-title">Imágenes del Producto</h3>
+            <p class="card-hint">Máximo {{ MAX_IMAGENES }} imágenes. Formato JPG/PNG.</p>
+          </div>
+          @if (puedeAgregarImagen) {
+          <p-button
+            size="small"
+            icon="pi pi-plus"
+            label="Agregar"
+            severity="success"
+            variant="text"
+            [rounded]="true"
+            (click)="fileInput.click()"
+          />
           }
         </div>
+        <input
+          #fileInput
+          type="file"
+          accept="image/*"
+          hidden
+          (change)="onSeleccionarImagen($event, imagenesCount)"
+        />
 
-        <!-- Fieldset: Información Específica -->
-        <div class="fieldset-wrapper">
-          <p-accordion class="mb-3" [value]="['1']">
-            <p-accordion-panel value="1">
-              <p-accordion-header>Información adicional</p-accordion-header>
-              <p-accordion-content>
-          <!-- Formulario de atributo -->
-          <div class="atributo-form" [formGroup]="atributoForm">
-            <div class="p-fluid">
-              <div class="form-grid-3">
-                <div class="campo">
-                  <label>Tipo <span class="req">*</span></label>
-                  <p-select
-                    size="small"
-                    formControlName="tipo"
-                    [options]="TIPOS_OPTIONS"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Seleccione tipo"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                    [ngClass]="{ 'ng-invalid': invalidAtributo('tipo') }"
-                  />
-                </div>
-
-                <div class="campo">
-                  <label>Descripción <span class="req">*</span></label>
-                  <input
-                    pInputText
-                    pSize="small"
-                    formControlName="descripcion"
-                    maxlength="30"
-                    placeholder="Descripción"
-                    [ngClass]="{ 'ng-invalid': invalidAtributo('descripcion') }"
-                  />
-                </div>
-
-                <div class="campo">
-                  <label>Estado</label>
-                  <p-select
-                    size="small"
-                    formControlName="sn_activo"
-                    [options]="snOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Estado"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                  />
-                </div>
-              </div>
-
-              <div class="atributo-acciones">
-                <p-button
-                  size="small"
-                  label="Limpiar"
-                  icon="pi pi-times"
-                  severity="secondary"
-                  variant="text"
-                  [rounded]="true"
-                  (onClick)="cancelarAtributo()"
-                />
-                <p-button
-                  size="small"
-                  [label]="atributoEditando() ? 'Actualizar' : 'Agregar'"
-                  [icon]="atributoEditando() ? 'pi pi-check' : 'pi pi-plus'"
-                  severity="success"
-                  variant="text"
-                  [raised]="true"
-                  [rounded]="true"
-                  [loading]="guardandoAtributo()"
-                  (onClick)="guardarAtributo()"
-                />
-              </div>
+        @if (imagenes().length > 0) {
+        <p-galleria
+          [(value)]="imagenes"
+          [activeIndex]="activeIndex()"
+          (onActiveIndexChange)="activeIndex.set($event)"
+          [showThumbnails]="true"
+          [showItemNavigators]="true"
+          [circular]="true"
+          [numVisible]="5"
+          [thumbnailsPosition]="'left'"
+          [containerStyle]="{ 'max-width': '98%' }"
+          styleClass="producto-galleria"
+        >
+          <ng-template #item let-item>
+            <div class="galleria-item">
+              <img [src]="getImagenUrl(item)" style="width: 100%; display: block" />
             </div>
-          </div>
+          </ng-template>
+          <ng-template #thumbnail let-item>
+            <div class="galleria-thumb">
+              <img [src]="getImagenUrl(item)" />
+              <button
+                type="button"
+                class="galleria-thumb-remove"
+                (click)="eliminarImagen(item); $event.stopPropagation()"
+                pTooltip="Eliminar"
+              >
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          </ng-template>
+        </p-galleria>
+        } @else {
+        <div class="img-empty-state" (click)="fileInput.click()">
+          <i class="pi pi-images"></i>
+          <span>Sin imágenes — clic para agregar</span>
+        </div>
+        }
+      </div>
 
-          <!-- Tabla de atributos -->
-          @if (atributos().length > 0) {
-            <p-table
-              id="gridinfoadd"
-              [value]="atributos()"
-              size="small"
-              [paginator]="true"
-              [rows]="5"
-              [rowsPerPageOptions]="[5, 10, 25]"
-              [showCurrentPageReport]="true"
-              currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-            >
-              <ng-template pTemplate="header">
-                <tr>
-                  <th style="width: 30%">Tipo</th>
-                  <th>Descripción</th>
-                  <th style="width: 15%">Estado</th>
-                  <th style="width: 15%">Acciones</th>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="body" let-attr>
-                <tr>
-                  <td>
-                    <span>{{ getTipoLabel(attr.tipo) }}</span>
-                  </td>
-                  <td>{{ attr.descripcion }}</td>
-                  <td>
-                    @if (attr.sn_activo === 'S') {
+      <!-- Fieldset: Información Específica -->
+      <div class="fieldset-wrapper">
+        <p-accordion class="mb-3" [value]="['1']">
+          <p-accordion-panel value="1">
+            <p-accordion-header>Información adicional</p-accordion-header>
+            <p-accordion-content>
+              <!-- Formulario de atributo -->
+              <div class="atributo-form" [formGroup]="atributoForm">
+                <div class="p-fluid">
+                  <div class="form-grid-3">
+                    <div class="campo">
+                      <label>Tipo <span class="req">*</span></label>
+                      <p-select
+                        size="small"
+                        formControlName="tipo"
+                        [options]="TIPOS_OPTIONS"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Seleccione tipo"
+                        styleClass="w-full"
+                        [appendTo]="'body'"
+                        [ngClass]="{ 'ng-invalid': invalidAtributo('tipo') }"
+                      />
+                    </div>
+
+                    <div class="campo">
+                      <label>Descripción <span class="req">*</span></label>
+                      <input
+                        pInputText
+                        pSize="small"
+                        formControlName="descripcion"
+                        maxlength="30"
+                        placeholder="Descripción"
+                        [ngClass]="{ 'ng-invalid': invalidAtributo('descripcion') }"
+                      />
+                    </div>
+
+                    <div class="campo">
+                      <label>Estado</label>
+                      <p-select
+                        size="small"
+                        formControlName="sn_activo"
+                        [options]="snOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Estado"
+                        styleClass="w-full"
+                        [appendTo]="'body'"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="atributo-acciones">
+                    <p-button
+                      size="small"
+                      label="Limpiar"
+                      icon="pi pi-times"
+                      severity="secondary"
+                      variant="text"
+                      [rounded]="true"
+                      (onClick)="cancelarAtributo()"
+                    />
+                    <p-button
+                      size="small"
+                      [label]="atributoEditando() ? 'Actualizar' : 'Agregar'"
+                      [icon]="atributoEditando() ? 'pi pi-check' : 'pi pi-plus'"
+                      severity="success"
+                      variant="text"
+                      [raised]="true"
+                      [rounded]="true"
+                      [loading]="guardandoAtributo()"
+                      (onClick)="guardarAtributo()"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tabla de atributos -->
+              @if (atributos().length > 0) {
+              <p-table
+                id="gridinfoadd"
+                [value]="atributos()"
+                size="small"
+                [paginator]="true"
+                [rows]="5"
+                [rowsPerPageOptions]="[5, 10, 25]"
+                [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+              >
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th style="width: 30%">Tipo</th>
+                    <th>Descripción</th>
+                    <th style="width: 15%">Estado</th>
+                    <th style="width: 15%">Acciones</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-attr>
+                  <tr>
+                    <td>
+                      <span>{{ getTipoLabel(attr.tipo) }}</span>
+                    </td>
+                    <td>{{ attr.descripcion }}</td>
+                    <td>
+                      @if (attr.sn_activo === 'S') {
 
                       <p-badge value="Activo" severity="success" badgeSize="small" />
-                    } @else {
-                      <p-badge value="Inactivo"  severity="warn" badgeSize="small" />
-                    }
-                  </td>
-                  <td>
-                    <div class="d-flex gap-1">
-                      <p-button
-                        size="small"
-                        icon="pi pi-pencil"
-                        severity="warn"
-                        variant="text"
-                        [rounded]="true"
-                        pTooltip="Editar"
-                        (onClick)="editarAtributo(attr)"
-                      />
-                      <p-button
-                        size="small"
-                        icon="pi pi-trash"
-                        severity="danger"
-                        variant="text"
-                        [rounded]="true"
-                        pTooltip="Eliminar"
-                        (onClick)="eliminarAtributo(attr)"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              </ng-template>
-            </p-table>
-          } @else {
-            <p class="text-muted text-center">Sin atributos registrados</p>
-          }
-
-              </p-accordion-content>
-            </p-accordion-panel>
-          </p-accordion>
-
-        </div>
+                      } @else {
+                      <p-badge value="Inactivo" severity="warn" badgeSize="small" />
+                      }
+                    </td>
+                    <td>
+                      <div class="d-flex gap-1">
+                        <p-button
+                          size="small"
+                          icon="pi pi-pencil"
+                          severity="warn"
+                          variant="text"
+                          [rounded]="true"
+                          pTooltip="Editar"
+                          (onClick)="editarAtributo(attr)"
+                        />
+                        <p-button
+                          size="small"
+                          icon="pi pi-trash"
+                          severity="danger"
+                          variant="text"
+                          [rounded]="true"
+                          pTooltip="Eliminar"
+                          (onClick)="eliminarAtributo(attr)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+              } @else {
+              <p class="text-muted text-center">Sin atributos registrados</p>
+              }
+            </p-accordion-content>
+          </p-accordion-panel>
+        </p-accordion>
       </div>
     </div>
+  </div>
   }
 </section>
 
@@ -86590,6 +87413,12 @@ export class ProductoForm implements OnInit {
     { label: 'Controlado', value: 'S' },
   ];
 
+  /** Opciones del indicador si o no */
+  readonly snValidarOptions = [
+    { label: 'Si', value: 'N' },
+    { label: 'No', value: 'S' },
+  ];
+
   readonly TIPO_LABELS = TIPO_LABELS;
 
   private produtoId = 0;
@@ -86620,10 +87449,14 @@ export class ProductoForm implements OnInit {
       // NOT NULL en BD + FK a ttipoimpuestos → obligatorio
       impuestoId: [null as number | null, Validators.required],
 
-       // Producto controlado (fármacos, material agroindustrial) → default 'N'
-       sn_controlado: ['N' as 'S' | 'N'],
-       // Producto regulado como droga o psicotrópico → default 'N'
-       sn_droga: ['N' as 'S' | 'N'],
+      // Producto controlado (fármacos, material agroindustrial) → default 'N'
+      sn_controlado: ['N' as 'S' | 'N'],
+      // Producto regulado como droga o psicotrópico → default 'N'
+      sn_droga: ['N' as 'S' | 'N'],
+      // Valida lote de vencimiento → default 'N'
+      sn_valida_lote: ['N' as 'S' | 'N'],
+      // Solicitable a cocina → default 'N'
+      sn_enviar_a_cocina: ['N' as 'S' | 'N'],
     });
 
     this.atributoForm = this.fb.group({
@@ -86660,6 +87493,8 @@ export class ProductoForm implements OnInit {
             sn_activo: p.sn_activo === 'S' ? 'S' : 'N',
             sn_controlado: p.sn_controlado === 'S' ? 'S' : 'N',
             sn_droga: p.sn_droga === 'S' ? 'S' : 'N',
+            sn_valida_lote: (p as any).sn_valida_lote === 'S' ? 'S' : 'N',
+            sn_enviar_a_cocina: (p as any).sn_enviar_a_cocina === 'S' ? 'S' : 'N',
             // 20261015 ARFM clasificación: los productos antiguos traen 0 →
             // se dejan en null para que el select quede vacío y el usuario
             // asigne el valor real (los 3 campos son obligatorios).
@@ -100377,6 +101212,6547 @@ export class RetencionesRevision implements OnInit {
 
 ---
 
+## 📄 src\app\features\prestamos\antiguedad-saldos\antiguedad-saldos.html
+
+```typescript
+<div class="antiguedad-saldos">
+  <p-toolbar>
+    <ng-template #start>
+      <div class="toolbar-title">
+        <i class="pi pi-chart-bar"></i>
+        <span>Balance de Cuotas Vencidas</span>
+      </div>
+    </ng-template>
+    <ng-template #end>
+      <p-button
+        label="Actualizar"
+        icon="pi pi-refresh"
+        (click)="load()"
+        [loading]="cargando()"
+        [rounded]="true"
+        size="small"
+      ></p-button>
+    </ng-template>
+  </p-toolbar>
+
+  <div class="search-bar">
+    <div class="search-input-wrapper">
+      <i class="pi pi-search"></i>
+      <input
+        type="text"
+        pInputText
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        placeholder="Buscar por nombre o Nro. préstamo..."
+        class="search-input"
+      />
+      <p-button
+        *ngIf="q()"
+        icon="pi pi-times"
+        (click)="limpiarFiltros()"
+        severity="secondary"
+        [rounded]="true"
+        size="small"
+        class="clear-btn"
+      ></p-button>
+    </div>
+  </div>
+
+  <div class="resumen-grid">
+    <div class="resumen-card total">
+      <div class="resumen-label">Total Cuotas</div>
+      <div class="resumen-value">{{ moneda(totalGeneral()) }}</div>
+    </div>
+    <div class="resumen-card corriente">
+      <div class="resumen-label">Al día</div>
+      <div class="resumen-value">{{ moneda(totalCorriente()) }}</div>
+      <div class="resumen-pct">{{ getPorcentaje(totalCorriente(), totalGeneral()) }}</div>
+    </div>
+    <div class="resumen-card vencido30">
+      <div class="resumen-label">1-30 Días</div>
+      <div class="resumen-value">{{ moneda(totalVencido30()) }}</div>
+      <div class="resumen-pct">{{ getPorcentaje(totalVencido30(), totalGeneral()) }}</div>
+    </div>
+    <div class="resumen-card vencido60">
+      <div class="resumen-label">31-60 Días</div>
+      <div class="resumen-value">{{ moneda(totalVencido60()) }}</div>
+      <div class="resumen-pct">{{ getPorcentaje(totalVencido60(), totalGeneral()) }}</div>
+    </div>
+    <div class="resumen-card vencido90">
+      <div class="resumen-label">60+ Días</div>
+      <div class="resumen-value">{{ moneda(totalVencido90()) }}</div>
+      <div class="resumen-pct">{{ getPorcentaje(totalVencido90(), totalGeneral()) }}</div>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <p-table
+      [value]="filtered()"
+      [loading]="cargando()"
+      [paginator]="true"
+      [rows]="15"
+      [rowsPerPageOptions]="[10, 15, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+      [globalFilterFields]="['cliente', 'nrocliente']"
+      styleClass="p-datatable-striped"
+      size="small"
+    >
+      <ng-template #header>
+        <tr>
+          <th style="width: 100px">Nro. Préstamo</th>
+          <th pSortableColumn="cliente">Cliente <p-sortIcon field="cliente"></p-sortIcon></th>
+          <th class="col-importe" pSortableColumn="total">Total <p-sortIcon field="total"></p-sortIcon></th>
+          <th class="col-importe" pSortableColumn="corriente">Al día <p-sortIcon field="corriente"></p-sortIcon></th>
+          <th class="col-importe" pSortableColumn="vencido30">1-30 Días <p-sortIcon field="vencido30"></p-sortIcon></th>
+          <th class="col-importe" pSortableColumn="vencido60">31-60 Días <p-sortIcon field="vencido60"></p-sortIcon></th>
+          <th class="col-importe" pSortableColumn="vencido90">60+ Días <p-sortIcon field="vencido90"></p-sortIcon></th>
+          <th style="width: 100px">Estado</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr>
+          <td>{{ item.nrocliente }}</td>
+          <td>
+            <span class="cliente-nombre">{{ item.cliente }}</span>
+          </td>
+          <td class="col-importe fw-bold">{{ moneda(item.total) }}</td>
+          <td class="col-importe text-success">{{ moneda(item.corriente) }}</td>
+          <td class="col-importe" [class.text-danger]="item.vencido30 > 0">{{ moneda(item.vencido30) }}</td>
+          <td class="col-importe" [class.text-danger]="item.vencido60 > 0">{{ moneda(item.vencido60) }}</td>
+          <td class="col-importe" [class.text-danger]="item.vencido90 > 0">{{ moneda(item.vencido90) }}</td>
+          <td>
+            <p-tag
+              [value]="item.vencido90 > 0 ? 'Mora Alta' : item.vencido60 > 0 ? 'Mora Media' : item.vencido30 > 0 ? 'Mora Baja' : 'Al día'"
+              [severity]="getSeverity(item)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="text-center p-4">
+            <div class="empty-state">
+              <i class="pi pi-inbox empty-icon"></i>
+              <p>No se encontraron cuotas vencidas.</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #summary>
+        <div class="table-summary">
+          <div class="summary-row">
+            <span class="summary-label">Total Registros:</span>
+            <span class="summary-value">{{ filtered().length }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Total Cuotas:</span>
+            <span class="summary-value fw-bold">{{ moneda(totalGeneral()) }}</span>
+          </div>
+        </div>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\antiguedad-saldos\antiguedad-saldos.scss
+
+```typescript
+@import '../../cxc/antiguedad-saldos/antiguedad-saldos.scss';
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\antiguedad-saldos\antiguedad-saldos.ts
+
+```typescript
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TagModule } from 'primeng/tag';
+import { MessageService } from 'primeng/api';
+import { ToolbarModule } from 'primeng/toolbar';
+import { CxcService } from '../../../core/services/cxc.service';
+
+export interface AntiguedadItem {
+  clienteId: number;
+  nrocliente: string;
+  cliente: string;
+  dni: string;
+  rtn?: string;
+  total: number;
+  corriente: number;
+  vencido30: number;
+  vencido60: number;
+  vencido90: number;
+}
+
+@Component({
+  selector: 'app-antiguedad-saldos',
+  standalone: true,
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, ToolbarModule],
+  templateUrl: './antiguedad-saldos.html',
+  styleUrl: './antiguedad-saldos.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AntiguedadSaldos implements OnInit {
+  private service = inject(CxcService);
+  private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+
+  data = signal<AntiguedadItem[]>([]);
+  cargando = signal(false);
+  q = signal('');
+
+  filtered = computed(() => {
+    const search = this.q().toLowerCase();
+    const items = this.data();
+    if (!search) return items;
+    return items.filter(item =>
+      item.cliente.toLowerCase().includes(search) ||
+      item.nrocliente.toLowerCase().includes(search) ||
+      item.dni.includes(search)
+    );
+  });
+
+  totalGeneral = computed(() => this.filtered().reduce((sum, item) => sum + item.total, 0));
+  totalCorriente = computed(() => this.filtered().reduce((sum, item) => sum + item.corriente, 0));
+  totalVencido30 = computed(() => this.filtered().reduce((sum, item) => sum + item.vencido30, 0));
+  totalVencido60 = computed(() => this.filtered().reduce((sum, item) => sum + item.vencido60, 0));
+  totalVencido90 = computed(() => this.filtered().reduce((sum, item) => sum + item.vencido90, 0));
+
+  ngOnInit() {
+    this.load();
+  }
+
+  load() {
+    this.cargando.set(true);
+    this.service.getAntiguedadSaldosPrestamosCuotas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.data.set(res ?? []);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar la antigüedad de saldos' });
+      },
+    });
+  }
+
+  moneda(n: number): string {
+    const val = Number(n) || 0;
+    const partes = val.toFixed(2).split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return partes.join('.');
+  }
+
+  getPorcentaje(valor: number, total: number): string {
+    if (total === 0) return '0%';
+    return `${((valor / total) * 100).toFixed(1)}%`;
+  }
+
+  getSeverity(item: AntiguedadItem): 'success' | 'warning' | 'danger' | 'info' {
+    if (item.vencido90 > 0) return 'danger';
+    if (item.vencido60 > 0) return 'warning';
+    if (item.vencido30 > 0) return 'info';
+    return 'success';
+  }
+
+  limpiarFiltros() {
+    this.q.set('');
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\caja-prestamos\caja-prestamos.html
+
+```typescript
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h3 class="page-title">Caja - Préstamos</h3>
+      <p class="page-subtitle">Abonos a cuenta de préstamos</p>
+    </div>
+    <div class="header-actions">
+      @if (esEdicion() && esAnulada()) {
+      <p-tag severity="danger" value="Anulada" icon="pi pi-ban" />
+      } @if (esEdicion() && !esAnulada()) {
+      <p-button
+        label="Imprimir"
+        icon="pi pi-print"
+        severity="secondary"
+        text
+        size="small"
+        rounded
+        [loading]="imprimiendo()"
+        (onClick)="imprimirRecibo()"
+      />
+      <p-button
+        label="Anular"
+        icon="pi pi-ban"
+        severity="danger"
+        text
+        size="small"
+        rounded
+        [loading]="anulando()"
+        (onClick)="anular()"
+      />
+      }
+      <p-button
+        label="Volver"
+        icon="pi pi-arrow-left"
+        severity="secondary"
+        text
+        size="small"
+        rounded
+        (onClick)="volver()"
+      />
+    </div>
+  </header>
+
+  @if (esAnulada()) {
+  <div class="card banner-anulada">
+    <i class="pi pi-ban"></i>
+    <span
+      >Esta caja fue anulada. Los movimientos fueron revertidos. No se puede modificar.</span
+    >
+  </div>
+  } @if (cargando()) {
+  <div class="card">Cargando datos...</div>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="guardar()">
+    <div class="card form-grid">
+      <div class="campo">
+        <label>Destino de abono <span class="req">*</span></label>
+        <p-select
+          size="small"
+          formControlName="destinoabono"
+          [options]="DESTINO_ABONO"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Destino..."
+          styleClass="w-full"
+          [appendTo]="'body'"
+          [disabled]="true"
+        />
+      </div>
+      <div class="campo campo-span-2">
+        <label>Cliente <span class="req">*</span></label>
+        <div class="flex gap-2">
+          <p-select
+            size="small"
+            formControlName="clienteId"
+            [options]="clientes()"
+            optionLabel="cliente"
+            optionValue="clienteId"
+            placeholder="Seleccionar cliente con préstamo..."
+            styleClass="w-full"
+            [filter]="true"
+            filterBy="cliente"
+            [appendTo]="'body'"
+            [disabled]="!puedeEditar()"
+          />
+          @if (puedeEditar()) {
+          <p-button
+            size="small"
+            type="button"
+            icon="pi pi-search"
+            severity="info"
+            [rounded]="true"
+            (onClick)="abrirClientes()"
+          />
+          }
+        </div>
+        @if (invalid('clienteId')) {
+        <small class="err">Cliente es obligatorio</small>
+        }
+      </div>
+    </div>
+
+    <div class="ml-1 mb-3 mt-2 grid">
+      <div class="col-fixed" style="width: 100%">
+        <label>Concepto de pago</label>
+        <input
+          pInputText
+          pSize="small"
+          formControlName="concepto"
+          maxlength="120"
+          placeholder="Ingrese el concepto de pago..."
+          class="w-full"
+          [disabled]="!puedeEditar()"
+        />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="detalles-head">
+        <h4 class="detalles-title">Detalle de pagos</h4>
+        @if (puedeEditar()) {
+        <p-button
+          type="button"
+          label="Agregar forma de pago"
+          icon="pi pi-plus"
+          variant="text"
+          severity="success"
+          size="small"
+          [rounded]="true"
+          (onClick)="nuevaFila()"
+        />
+        }
+      </div>
+
+      <div class="fp-lista">
+        @for (row of dets(); track row['nrofila']; let idx = $index) {
+        <div class="fp-fila">
+          <div class="fp-campo fp-fp">
+            <p-select
+              size="small"
+              [ngModel]="row['formapagoId']"
+              (ngModelChange)="row['formapagoId'] = $event; onFormaPagoChange(row)"
+              [ngModelOptions]="{ standalone: true }"
+              [options]="opcionesFp()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              [filter]="true"
+              filterBy="label"
+              [appendTo]="'body'"
+              [disabled]="!puedeEditar()"
+            />
+          </div>
+          <div class="fp-campo fp-importe">
+            <p-inputnumber
+              size="small"
+              [(ngModel)]="row['importe']"
+              [ngModelOptions]="{ standalone: true }"
+              [min]="0"
+              mode="currency"
+              currency="HNL"
+              [locale]="'es-HN'"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [useGrouping]="true"
+              styleClass="w-8rem"
+              [inputStyle]="{ 'width': '100%' }"
+              (ngModelChange)="recalcularTotal()"
+              [readonly]="!puedeEditar()"
+            />
+          </div>
+          @if (esTarjeta(row)) {
+          <div class="fp-campo fp-extra">
+            <p-select
+              size="small"
+              [ngModel]="row['tarjetacreditoId']"
+              (ngModelChange)="row['tarjetacreditoId'] = $event"
+              [ngModelOptions]="{ standalone: true }"
+              [options]="opcionesTarjeta()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="VISA/MASTERCARD"
+              styleClass="w-full"
+              [filter]="true"
+              filterBy="label"
+              [appendTo]="'body'"
+              [disabled]="!puedeEditar()"
+            />
+          </div>
+          <div class="fp-campo fp-extra">
+            <input
+              pInputText
+              pSize="small"
+              [(ngModel)]="row['nrotarjeta']"
+              [ngModelOptions]="{ standalone: true }"
+              [disabled]="!puedeEditar()"
+              placeholder="Nro. tarjeta"
+            />
+          </div>
+          } @if (esTransferencia(row)) {
+          <div class="fp-campo fp-extra">
+            <input
+              pInputText
+              pSize="small"
+              [(ngModel)]="row['nroautorizacion']"
+              [ngModelOptions]="{ standalone: true }"
+              [disabled]="!puedeEditar()"
+              placeholder="Autorización"
+            />
+          </div>
+          }
+          <div class="fp-campo fp-accion">
+            <p-button
+              type="button"
+              icon="pi pi-trash"
+              severity="danger"
+              variant="text"
+              [rounded]="true"
+              size="small"
+              [disabled]="!esNuevaFila(row) || !puedeEditar()"
+              (onClick)="quitarFila(idx)"
+            />
+          </div>
+        </div>
+        } @empty {
+        <div class="fp-vacio">Sin detalles de pagos, agregue una forma de pago.</div>
+        }
+      </div>
+
+      @if (totalPagos() > 0) {
+      <div class="total-linea">
+        <span class="total-label">Total efectivo:</span>
+        <span class="total-valor"
+          >{{ totalPagos() | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+        >
+      </div>
+      }
+    </div>
+
+    <div class="card cuotas-card">
+      <div class="detalles-head">
+        <h4 class="detalles-title"><i class="pi pi-wallet"></i> Cobro a préstamo</h4>
+      </div>
+      <div class="prestamo-select">
+        <label>Préstamo <span class="req">*</span></label>
+        <p-select
+          size="small"
+          formControlName="prestamoId"
+          [options]="prestamosCliente()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar préstamo..."
+          styleClass="w-full"
+          [filter]="true"
+          filterBy="label"
+          [appendTo]="'body'"
+          [disabled]="!puedeEditar()"
+          (ngModelChange)="onPrestamoChange($event)"
+        />
+      </div>
+
+      @if (repartoPrestamo(); as rp) {
+      <div class="cuota-virtual">
+        <div class="cv-header">
+          <span class="cv-num">Número de cuota a pagar.: {{ rp.ultcuotapagada}}</span>
+          <span class="ml-2 cv-vence"
+            >Importe minimo de cuota a pagar {{ rp.vlrcuota | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+          @if (rp.cumple) {
+          <p-tag severity="success" value="Abono completado" size="small" />
+          } @else {
+          <p-tag severity="warn" value="No cubre la cuota" size="small" />
+          }
+        </div>
+        <div class="grid">
+          <div class="col-3">
+            <span class="cv-label">Saldo pendiente</span>
+            <span class="ml-2 cv-value"
+              >{{ rp.saldo | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+            >
+          </div>
+          <div class="col-2">
+            <span class="cv-label">Días interés </span>
+            <span class="ml-2 cv-value">{{ rp.diasInteres }}</span>
+          </div>
+          @if (rp.diasGracia > 0) {
+          <div class="col-2">
+            <span class="cv-label">Días de gracia </span>
+            <span class="ml-2 cv-value">{{ rp.diasGracia }}</span>
+          </div>
+          }
+          <div class="col-2">
+            <span class="cv-label">Interés simple </span>
+            <span class="ml-2 cv-value"
+              >{{ rp.interes | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+            >
+          </div>
+          @if (rp.diasMora > 0) {
+          <div class="col-2">
+            <span class="cv-label">Días mora </span>
+            <span class="ml-2 cv-value mora-positiva">{{ rp.diasMora }}</span>
+          </div>
+          <div class="col-2">
+            <span class="cv-label">Interés moratorio </span>
+            <span class="ml-2 cv-value mora-positiva"
+              >{{ rp.mora | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+            >
+          </div>
+          }
+        </div>
+      </div>
+
+      <div class="resumen-cuotas">
+        <div class="rc">
+          <span class="rc-label">Efectivo recibido</span>
+          <span class="rc-value"
+            >{{ rp.efectivo | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        <div class="rc">
+          <span class="rc-label">(−) Cargos</span>
+          <span class="rc-value"
+            >{{ rp.cargos | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        <div class="rc rc-capital">
+          <span class="rc-label">(=) Abono a capital</span>
+          <span class="rc-value"
+            >{{ rp.abonoCapital | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+        <div class="rc">
+          <span class="rc-label">Saldo nuevo</span>
+          <span class="rc-value"
+            >{{ rp.saldoNuevo | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</span
+          >
+        </div>
+      </div>
+
+      @if (!rp.cumple && rp.efectivo > 0) {
+      <div class="aviso-cuota">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span
+          >El efectivo recibido (L {{ rp.efectivo.toFixed(2) }}) es menor a la cuota pactada (L {{
+          rp.vlrcuota.toFixed(2) }}).</span
+        >
+      </div>
+      } } @else if (form.get('prestamoId')?.value) {
+      <div class="cuota-vacia">
+        <i class="pi pi-check-circle"></i>
+        <span>Préstamo sin saldo de capital.</span>
+      </div>
+      }
+    </div>
+
+    @if (puedeEditar()) {
+    <div class="acciones-form">
+      <p-button
+        type="button"
+        label="Cancelar"
+        icon="pi pi-times"
+        variant="text"
+        severity="secondary"
+        size="small"
+        [rounded]="true"
+        (onClick)="volver()"
+      />
+      <p-button
+        type="submit"
+        label="Procesar abono"
+        icon="pi pi-check"
+        variant="text"
+        severity="success"
+        size="small"
+        [rounded]="true"
+        [loading]="guardando()"
+      />
+    </div>
+    }
+  </form>
+  }
+</section>
+
+<p-confirmdialog
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: '420px' }"
+/>
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\caja-prestamos\caja-prestamos.scss
+
+```typescript
+:host {
+  display: block;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.banner-anulada {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-left: 4px solid var(--c-error);
+  background: color-mix(in srgb, var(--c-error) 8%, transparent);
+  color: var(--c-error);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  i { font-size: 1.2rem; }
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  p-select, p-inputnumber, p-datepicker { width: 100%; }
+  label { font-size: 0.85rem; font-weight: 600; color: var(--color-texto-label); }
+}
+.campo-span-2 { grid-column: span 2; }
+.req { color: var(--c-error); margin-left: 0.15rem; }
+.err { color: var(--c-error); font-size: 0.75rem; margin-top: 0.25rem; display: block; }
+.acciones-form {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.detalles-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.detalles-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.fp-lista { display: flex; flex-direction: column; }
+.fp-fila { display: flex; align-items: center; gap: 0.75rem; padding: 0.4rem 0; }
+.fp-campo { display: flex; align-items: center; p-select, p-inputnumber, input { width: 100%; } }
+.fp-fp { flex: 0 0 200px; }
+.fp-importe { flex: 0 0 160px; }
+.fp-extra { flex: 0 0 180px; }
+.fp-accion { margin-left: auto; flex: 0 0 auto; }
+.fp-vacio { padding: 0.75rem; color: var(--c-text-muted); font-size: 0.9rem; text-align: center; }
+.total-linea {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--c-border);
+}
+.total-label { font-size: 0.9rem; font-weight: 600; color: var(--c-text-muted); }
+.total-valor { font-size: 1.1rem; font-weight: 700; color: var(--c-primary); font-variant-numeric: tabular-nums; }
+.cuotas-card { border-left: 3px solid var(--c-primary); }
+.prestamo-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  max-width: 480px;
+  label { font-size: 0.85rem; font-weight: 600; color: var(--color-texto-label); }
+  p-select { width: 100%; }
+}
+.cuota-virtual {
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: var(--c-surface);
+}
+.cv-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.cv-num { font-size: 1rem; color: var(--c-info); }
+.cv-vence { font-size: 1rem; color: var(--c-info); margin-right: auto; }
+.mora-positiva { color: var(--c-warning); }
+.cv-label { font-size: 1rem; color: var(--c-text-muted); }
+.cv-value { font-size: 1rem; width: 100%; color: var(--c-text); font-variant-numeric: tabular-nums; }
+.resumen-cuotas { width: 18%; }
+.rc { width: 90%; text-align: right; }
+.rc-label { font-size: 1rem; width: 100%; text-align: right; color: var(--c-text-muted); }
+.rc-value { font-size: 1rem; text-align: right; margin-left: 2px; color: var(--c-text); font-variant-numeric: tabular-nums; }
+.rc-capital { .rc-label, .rc-value { color: var(--c-primary); font-weight: 600; } }
+.cuota-vacia, .aviso-cuota {
+  display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; padding: 0.6rem 0.75rem; font-size: 0.85rem;
+}
+.cuota-vacia { border-left: 3px solid var(--c-success); background: color-mix(in srgb, var(--c-success) 10%, transparent); color: var(--c-text); i { color: var(--c-success); } }
+.aviso-cuota { border-left: 3px solid var(--c-warning); background: color-mix(in srgb, var(--c-warning) 10%, transparent); color: var(--c-text); i { color: var(--c-warning); } }
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\caja-prestamos\caja-prestamos.ts
+
+```typescript
+import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TagModule } from 'primeng/tag';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { FacturacionService } from '../../../core/services/facturacion.service';
+import { CxcService } from '../../../core/services/cxc.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
+import { EntitySelectorHelper, EntitySelectorConfig } from '../../helpers/entity-selector';
+import { FooterHelper } from '../../helpers/footer';
+
+@Component({
+  selector: 'app-caja-prestamos',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    InputNumberModule,
+    SelectModule,
+    ConfirmDialogModule,
+    TagModule,
+  ],
+  providers: [DialogService, ConfirmationService],
+  templateUrl: './caja-prestamos.html',
+  styleUrl: './caja-prestamos.scss',
+})
+export class CajaPrestamos implements OnInit {
+  private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private service = inject(FacturacionService);
+  private api = inject(ApiService);
+  private auth = inject(AuthService);
+  private destroyRef = inject(DestroyRef);
+  private dialogService = inject(DialogService);
+  private cxcService = inject(CxcService);
+  private navegacion = inject(NavegacionService);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  ref: DynamicDialogRef | undefined;
+
+  esEdicion = signal(false);
+  cargando = signal(false);
+  guardando = signal(false);
+  anulando = signal(false);
+  imprimiendo = signal(false);
+
+  clientes = signal<any[]>([]);
+  documentosFiscales = signal<any[]>([]);
+  formasPago = signal<any[]>([]);
+  tarjetas = signal<any[]>([]);
+  documentosPendientes = signal<any[]>([]);
+  documentosFiltrados = signal<any[]>([]);
+  nrosDocumento = signal<any[]>([]);
+
+  docSeleccionado = signal<any>(null);
+  totalPagos = signal(0);
+  esAnulada = signal(false);
+  destinoAbono = signal<number>(2);
+  readonly DESTINO_ABONO = [{ label: 'Préstamos', value: 2 }] as const;
+  prestamosCliente = signal<{ label: string; value: number; _raw: any }[]>([]);
+  prestamoSeleccionado = signal<any>(null);
+
+  esDestinoPrestamo = computed(() => this.destinoAbono() === 2);
+
+  vlrcuotaPactada = computed(() => {
+    const p = this.prestamoSeleccionado();
+    if (!p) return 0;
+    const persistido = Number(p.vlrcuota) || 0;
+    if (persistido > 0) return Math.round(persistido * 100) / 100;
+    const capitalneto =
+      Number(p.capitalneto) || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
+    const cuotas = Number(p.cuotas) || 0;
+    const i = (Number(p.tasa) || 0) / 100 / 12;
+    if (capitalneto <= 0 || cuotas <= 0) return 0;
+    const cuota = i > 0 ? capitalneto * (i / (1 - Math.pow(1 + i, -cuotas))) : capitalneto / cuotas;
+    return Math.round(cuota * 100) / 100;
+  });
+
+  repartoPrestamo = computed(() => {
+    const p = this.prestamoSeleccionado();
+    const r2 = (x: number) => Math.round(x * 100) / 100;
+    const efectivo = this.totalPagos();
+    const vlrcuota = this.vlrcuotaPactada();
+    if (!p) return null;
+    const saldo = Number(p.saldoactual) || Number(p.capitalneto) || Number(p.capital) || 0;
+    if (saldo <= 0) {
+      return {
+        saldo,
+        efectivo,
+        vlrcuota,
+        interes: 0,
+        mora: 0,
+        cargos: 0,
+        abonoCapital: 0,
+        saldoNuevo: 0,
+        diasInteres: 0,
+        diasMora: 0,
+        cumple: false,
+      };
+    }
+
+    const hoy = new Date();
+    const fechaBase =
+      (p.fechaUltPago ? new Date(p.fechaUltPago) : null) ??
+      (p.fechaEfectiva ? new Date(p.fechaEfectiva) : hoy);
+    const ultcuotapagada = p.ultcuotapagada;
+    const tasa = (Number(p.tasa) || 0) / 100;
+    const tasaMor = (Number(p.moratorio) || 0) / 100;
+    const diasPlazo = Number(p.diascuotas) || 0;
+    const gracia = Number(p.gracia) || 0;
+
+    const diasTrans = Math.max(0, this.diasEntre(fechaBase, hoy));
+    const proximo = this.sumarDias(fechaBase, diasPlazo);
+    const fechaMax = this.sumarDias(proximo, gracia);
+
+    let diasInteres = diasTrans;
+    let diasMora = 0;
+    let diasGracia = 0;
+    if (this.diasEntre(hoy, fechaMax) < 0) {
+      diasMora = this.diasEntre(fechaMax, hoy);
+    }
+
+    const interes = r2(saldo * tasa * (diasInteres / 360));
+    const cuotaBase = vlrcuota > 0 ? vlrcuota : efectivo > 0 ? efectivo : 0;
+    const saldoCapitalCuota = Math.max(0, cuotaBase - interes);
+    const mora = r2(saldoCapitalCuota * tasaMor * (diasMora / 360));
+    const cargos = r2(interes + mora);
+    const efectivoAplicar = efectivo > 0 ? efectivo : vlrcuota;
+    const abonoCapital = r2(Math.max(0, efectivoAplicar - cargos));
+    const saldoNuevo = r2(Math.max(0, saldo - abonoCapital));
+    return {
+      saldo,
+      fechaBase,
+      ultcuotapagada,
+      proximo,
+      fechaMax,
+      diasTrans,
+      diasInteres,
+      diasMora,
+      diasGracia,
+      interes,
+      mora,
+      cargos,
+      efectivo,
+      abonoCapital,
+      saldoNuevo,
+      vlrcuota,
+      cumple: efectivo >= vlrcuota - 0.01,
+    };
+  });
+
+  puedeEditar = computed(() => !this.esAnulada() && !this.guardando() && !this.anulando());
+  totalCargos = computed(() => {
+    const doc = this.docSeleccionado();
+    return doc?.esFacturaCredito ? Number(doc.totalCargos) || 0 : 0;
+  });
+  abonoCapital = computed(() => {
+    const pagos = this.totalPagos();
+    const cargos = this.totalCargos();
+    return Math.max(0, Math.round((pagos - cargos) * 100) / 100);
+  });
+  saldoNuevo = computed(() => {
+    const doc = this.docSeleccionado();
+    if (!doc) return 0;
+    const saldo = Number(doc.saldo) || 0;
+    return Math.round((saldo - this.abonoCapital()) * 100) / 100;
+  });
+  cargosCubiertos = computed(() => Math.min(this.totalCargos(), this.totalPagos()));
+  tieneInteres = computed(() => this.totalCargos() > 0);
+
+  dets = signal<any[]>([]);
+  detGuardados = new Set<number>();
+  private itemId = 0;
+  private contadorFila = 0;
+
+  form!: FormGroup;
+
+  ngOnInit() {
+    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    this.buildForm();
+    this.cargarOpciones();
+    this.vigilarCliente();
+    this.vigilarNroDocumento();
+
+    if (id && id !== 'nuevo') {
+      this.esEdicion.set(true);
+      this.itemId = Number(id);
+      this.cargando.set(true);
+      this.service.getMaeOne<any>('/cxc/caja-mae', this.itemId).subscribe({
+        next: (mae) => {
+          this.destinoAbono.set(Number(mae?.destinoabono) || 2);
+          this.cargarClientes();
+          this.form.patchValue({
+            moduloId: mae?.moduloId ?? 4,
+            clienteId: mae?.clienteId,
+            nrocliente: mae?.nrocliente ?? '',
+            nombrecliente: mae?.nombrecliente ?? '',
+            concepto: mae?.concepto ?? '',
+            destinoabono: Number(mae?.destinoabono) || 2,
+            prestamoId: mae?.prestamoId ?? null,
+            documentoId: mae?.documentoId,
+            nrodocumento: mae?.nrodocumento,
+            tipomov: mae?.tipomov ?? 'C',
+            sn_cotabilizada: mae?.sn_cotabilizada ?? 'N',
+            sn_anulado: mae?.sn_anulado ?? 'N',
+            fec_anulacion: mae?.fec_anulacion ?? null,
+            partidaId: mae?.partidaId ?? 0,
+          });
+          this.esAnulada.set(mae?.sn_anulado === 'S');
+          if (this.esAnulada()) this.form.disable();
+          if (this.destinoAbono() === 2 && mae?.prestamoId) {
+            this.cargarPrestamosCliente(mae.clienteId, () => this.onPrestamoChange(mae.prestamoId));
+          }
+          this.cargarDets();
+        },
+        error: () => {
+          this.cargando.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'Registro no encontrado' });
+          this.volver();
+        },
+      });
+    } else {
+      this.cargando.set(false);
+    }
+  }
+
+  private buildForm() {
+    this.form = this.fb.group({
+      moduloId: [4],
+      clienteId: [null, Validators.required],
+      nrocliente: [''],
+      nombrecliente: [''],
+      concepto: [''],
+      destinoabono: [2],
+      prestamoId: [null],
+      documentoId: [null],
+      nrodocumento: [null],
+      tipomov: ['C'],
+      sn_cotabilizada: ['N'],
+      sn_anulado: ['N'],
+      fec_anulacion: [null],
+      partidaId: [0],
+    });
+  }
+
+  private cargarOpciones() {
+    this.cargarClientes();
+    this.api.get<any>('/parametros/tcotipodocumentofiscal').subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data ?? []);
+        const filtrados = items.filter((i: any) => ['FAC', 'NDB', 'PRE'].includes(i.abreviatura));
+        this.documentosFiscales.set(
+          filtrados.map((i: any) => ({ label: i.descripcion, value: i.tipodocumentofiscalId })),
+        );
+      },
+    });
+    this.api.get<any>('/parametros/formas-pago').subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data ?? []);
+        this.formasPago.set(items.map((i: any) => ({ label: i.descripcion, value: i.formapagoId })));
+      },
+    });
+    this.api.get<any>('/parametros/tarjetas-credito').subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data ?? []);
+        this.tarjetas.set(items.map((i: any) => ({ label: i.descripcion, value: i.tarjetacreditoId })));
+      },
+    });
+  }
+
+  private cargarClientes() {
+    this.api.get<any>('/cxc/clientes-con-prestamos', { moduloId: 10 }).subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data ?? []);
+        const actual = this.form?.get('clienteId')?.value;
+        if (actual && !items.some((i: any) => i.clienteId === actual)) {
+          items.push({
+            clienteId: actual,
+            nrocliente: this.form.get('nrocliente')?.value ?? '',
+            cliente: this.form.get('nombrecliente')?.value || '(Cliente de la caja)',
+            dni: '',
+            rtn: '',
+            saldo: 0,
+          });
+        }
+        this.clientes.set(items);
+      },
+      error: () => this.clientes.set([]),
+    });
+  }
+
+  private vigilarCliente() {
+    this.form
+      .get('clienteId')
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((clienteId) => {
+        if (!clienteId) {
+          this.form.patchValue({ nrocliente: '', nombrecliente: '' });
+          this.prestamosCliente.set([]);
+          this.prestamoSeleccionado.set(null);
+          return;
+        }
+        this.api.get<any>(`/cxc/clientes/${clienteId}`).subscribe({
+          next: (cliente) =>
+            this.form.patchValue({
+              nrocliente: cliente?.nrocliente ?? '',
+              nombrecliente: `${cliente?.nombres ?? ''} ${cliente?.apellidos ?? ''}`.trim(),
+            }),
+          error: () => this.form.patchValue({ nrocliente: '', nombrecliente: '' }),
+        });
+
+        this.cargarPrestamosCliente(clienteId, () => {
+          const lista = this.prestamosCliente();
+          if (lista.length) {
+            this.onPrestamoChange(lista[0].value);
+          }
+        });
+      });
+  }
+
+  onDestinoChange() {
+    const destino = this.form.get('destinoabono')?.value ?? 2;
+    this.destinoAbono.set(Number(destino));
+    this.form.patchValue(
+      { clienteId: null, nrocliente: '', nombrecliente: '', prestamoId: null },
+      { emitEvent: false },
+    );
+    this.prestamosCliente.set([]);
+    this.prestamoSeleccionado.set(null);
+    this.cargarClientes();
+  }
+
+  private cargarPrestamosCliente(clienteId: number, after?: () => void) {
+    this.cxcService.getPrestamosByCliente(clienteId).subscribe({
+      next: (prestamos) => {
+        const activos = (prestamos ?? []).filter(
+          (p: any) =>
+            p.sn_activo === 'S' &&
+            p.sn_anulado !== 'S' &&
+            Number(p.saldoactual ?? p.capital ?? 0) > 0,
+        );
+        this.prestamosCliente.set(
+          activos.map((p: any) => ({
+            label: `${p.nroprestamo} · Saldo L ${Number(p.saldoactual ?? p.capital ?? 0).toFixed(2)} · Cuota L ${this.calcularVlrcuota(p).toFixed(2)}`,
+            value: p.prestamoId,
+            _raw: p,
+          })),
+        );
+        after?.();
+      },
+      error: () => {
+        this.prestamosCliente.set([]);
+        this.prestamoSeleccionado.set(null);
+      },
+    });
+  }
+
+  onPrestamoChange(prestamoId: number | null) {
+    this.form.patchValue({ prestamoId: prestamoId ?? null }, { emitEvent: false });
+    this.prestamoSeleccionado.set(
+      prestamoId
+        ? (this.prestamosCliente().find((p) => p.value === prestamoId)?._raw ?? null)
+        : null,
+    );
+  }
+
+  private calcularVlrcuota(p: any): number {
+    if (!p) return 0;
+    const capitalneto =
+      Number(p.capitalneto) || Math.max(0, (Number(p.capital) || 0) - (Number(p.prima) || 0));
+    const cuotas = Number(p.cuotas) || 0;
+    const i = (Number(p.tasa) || 0) / 100 / 12;
+    if (capitalneto <= 0 || cuotas <= 0) return 0;
+    const cuota = i > 0 ? capitalneto * (i / (1 - Math.pow(1 + i, -cuotas))) : capitalneto / cuotas;
+    return Math.round(cuota * 100) / 100;
+  }
+
+  private diasEntre(desde: Date, hasta: Date): number {
+    const d1 = new Date(Date.UTC(desde.getFullYear(), desde.getMonth(), desde.getDate()));
+    const d2 = new Date(Date.UTC(hasta.getFullYear(), hasta.getMonth(), hasta.getDate()));
+    return Math.round((d2.getTime() - d1.getTime()) / 86400000);
+  }
+
+  private sumarDias(fecha: Date, dias: number): Date {
+    const d = new Date(fecha.getTime());
+    d.setDate(d.getDate() + dias);
+    return d;
+  }
+
+  private vigilarNroDocumento() {}
+
+  onDocumentoIdChange() {}
+  onNroDocumentoChange(nro: any) {}
+
+  recalcularTotal() {
+    const total = this.dets().reduce((s, r) => s + (Number(r['importe']) || 0), 0);
+    this.totalPagos.set(Math.round(total * 100) / 100);
+  }
+
+  private validarLuhn(numero: string): boolean {
+    const limpio = numero.replace(/[\s-]/g, '');
+    if (limpio.length < 13 || limpio.length > 19) return false;
+    let suma = 0;
+    let alternar = false;
+    for (let i = limpio.length - 1; i >= 0; i--) {
+      let n = parseInt(limpio[i], 10);
+      if (isNaN(n)) return false;
+      if (alternar) {
+        n *= 2;
+        if (n > 9) n -= 9;
+      }
+      suma += n;
+      alternar = !alternar;
+    }
+    return suma % 10 === 0;
+  }
+
+  private validarDetalles(): boolean {
+    const filas = this.dets();
+    if (filas.length === 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Debe agregar al menos una forma de pago' });
+      return false;
+    }
+    for (let i = 0; i < filas.length; i++) {
+      const fila = filas[i];
+      const importe = Number(fila['importe']) || 0;
+      if (!fila['formapagoId']) {
+        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: `Fila ${i + 1}: seleccione la forma de pago` });
+        return false;
+      }
+      if (importe <= 0) {
+        this.msgs.add({ severity: 'warn', summary: 'Validación', detail: `Fila ${i + 1}: el importe debe ser mayor a cero` });
+        return false;
+      }
+      if (fila['nrotarjeta'] && String(fila['nrotarjeta']).trim()) {
+        const nrotarjeta = String(fila['nrotarjeta']).replace(/[\s-]/g, '');
+        if (nrotarjeta.length >= 13 && !this.validarLuhn(nrotarjeta)) {
+          this.msgs.add({ severity: 'warn', summary: 'Validación', detail: `Fila ${i + 1}: número de tarjeta inválido (Luhn)` });
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  abrirClientes() {
+    const config: EntitySelectorConfig = {
+      titulo: 'Seleccionar cliente con préstamo',
+      columns: [
+        { key: 'nrocliente', label: 'Nro.' },
+        { key: 'cliente', label: 'Nombre' },
+        { key: 'dni', label: 'DNI' },
+        { key: 'rtn', label: 'RTN' },
+        { key: 'saldo', label: 'Saldo Préstamo' },
+      ],
+      loadData: () => {
+        return new Promise<any[]>((resolve) => {
+          this.api.get<any>('/cxc/clientes-con-prestamos', { moduloId: 10 }).subscribe({
+            next: (res) => resolve(Array.isArray(res) ? res : (res?.data ?? [])),
+            error: () => resolve([]),
+          });
+        });
+      },
+    };
+
+    this.ref = this.dialogService.open(EntitySelectorHelper, {
+      header: config.titulo,
+      width: '60vw',
+      modal: true,
+      contentStyle: { overflow: 'auto' },
+      data: { config },
+      templates: { footer: FooterHelper },
+    });
+
+    this.ref.onClose.subscribe((cliente: any) => {
+      if (cliente) {
+        this.form.patchValue({
+          clienteId: cliente.clienteId,
+          nrocliente: cliente.nrocliente ?? '',
+          nombrecliente: `${cliente.nombres ?? ''} ${cliente.apellidos ?? ''}`.trim(),
+        });
+      }
+    });
+  }
+
+  opcionesFp() { return this.formasPago(); }
+  opcionesTarjeta() { return this.tarjetas(); }
+
+  private labelFp(row: any): string {
+    const opts = this.formasPago();
+    const selected = opts.find((o: any) => o.value === row['formapagoId']);
+    return selected ? String(selected.label) : '';
+  }
+
+  esEfectivo(row: any): boolean { return /efectivo/i.test(this.labelFp(row)); }
+  esTarjeta(row: any): boolean { return /tarjeta/i.test(this.labelFp(row)); }
+  esTransferencia(row: any): boolean { return /transferencia|transfer/i.test(this.labelFp(row)); }
+
+  onFormaPagoChange(row: any) {
+    if (!this.esTarjeta(row)) { row['tarjetacreditoId'] = null; row['nrotarjeta'] = ''; }
+    if (!this.esTransferencia(row)) { row['nroautorizacion'] = ''; }
+    if (this.esEfectivo(row)) { row['tarjetacreditoId'] = null; row['nrotarjeta'] = ''; row['nroautorizacion'] = ''; }
+  }
+
+  private cargarDets() {
+    this.service.getDet<any>(`/cxc/caja-det/factura/${this.itemId}`).subscribe({
+      next: (mios) => {
+        this.dets.set((mios ?? []).map((d) => ({ ...d })));
+        for (const d of mios ?? []) this.detGuardados.add(d['cxccajadetId']);
+        this.contadorFila = (mios ?? []).length;
+        this.recalcularTotal();
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.service.getDet<any>('/cxc/caja-det').subscribe({
+          next: (todos) => {
+            const mios = (todos ?? []).filter((d) => d['cxccajaId'] === this.itemId);
+            this.dets.set(mios.map((d) => ({ ...d })));
+            for (const d of mios) this.detGuardados.add(d['cxccajadetId']);
+            this.contadorFila = mios.length;
+            this.recalcularTotal();
+            this.cargando.set(false);
+          },
+          error: () => {
+            this.cargando.set(false);
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los detalles' });
+          },
+        });
+      },
+    });
+  }
+
+  nuevaFila() {
+    if (!this.puedeEditar()) return;
+    this.contadorFila += 1;
+    this.dets.update((d) => [
+      ...d,
+      {
+        __local: true,
+        nrofila: this.contadorFila,
+        formapagoId: null,
+        importe: 0,
+        tarjetacreditoId: null,
+        nrotarjeta: '',
+        nroautorizacion: '',
+        factordecambio: 0,
+      },
+    ]);
+  }
+
+  quitarFila(idx: number) {
+    if (!this.puedeEditar()) return;
+    const fila = this.dets()[idx];
+    if (fila['cxccajadetId'] && this.detGuardados.has(fila['cxccajadetId'])) return;
+    this.dets.update((d) => d.filter((_, i) => i !== idx));
+    this.recalcularTotal();
+  }
+
+  esNuevaFila(fila: any): boolean {
+    return !fila['cxccajadetId'] || !this.detGuardados.has(fila['cxccajadetId']);
+  }
+
+  invalid(ctrl: string): boolean {
+    const c = this.form.get(ctrl);
+    return !!c && c.invalid && (c.dirty || c.touched);
+  }
+
+  volver() {
+    this.navegacion.volver(['/prestamos/caja-prestamos']);
+  }
+
+  guardar() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    if (!this.validarDetalles()) return;
+
+    if (!this.form.get('prestamoId')?.value) {
+      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione el préstamo a pagar' });
+      return;
+    }
+    const rp = this.repartoPrestamo();
+    if (rp && !rp.cumple) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Validación',
+        detail: `El efectivo recibido (L ${rp.efectivo.toFixed(2)}) es menor a la cuota pactada (L ${rp.vlrcuota.toFixed(2)})`,
+      });
+      return;
+    }
+
+    this.confirm.confirm({
+      message: '¿Está seguro de aplicar el abono al préstamo?',
+      header: 'Confirmación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Sí', severity: 'success', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { label: 'No', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      accept: () => this.ejecutarGuardado(),
+    });
+  }
+
+  private ejecutarGuardado() {
+    const maeBody = {
+      ...this.form.getRawValue(),
+      ...(this.esEdicion() ? {} : { empresaId: this.auth.currentUser()?.empresaId }),
+    };
+
+    this.guardando.set(true);
+    const maeOp = this.esEdicion()
+      ? this.service.updateMae<any>('/cxc/caja-mae', this.itemId, maeBody)
+      : this.service.createMae<any>('/cxc/caja-mae', maeBody);
+
+    maeOp.subscribe({
+      next: (mae) => {
+        const maeId = this.esEdicion() ? this.itemId : mae['cxccajaId'];
+        this.guardarDets(maeId);
+      },
+      error: () => {
+        this.guardando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la caja' });
+      },
+    });
+  }
+
+  private guardarDets(maeId: number) {
+    const pendientes = this.dets().length;
+    if (pendientes === 0) {
+      this.procesarYFinalizar(maeId);
+      return;
+    }
+
+    let completados = 0;
+    const ok = () => {
+      completados += 1;
+      if (completados === pendientes) this.procesarYFinalizar(maeId);
+    };
+    const fail = () => {
+      this.guardando.set(false);
+      this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar uno de los detalles' });
+    };
+
+    const empresaId = this.auth.currentUser()?.empresaId;
+    for (const fila of this.dets()) {
+      const detId = fila['cxccajadetId'];
+      const body = { ...fila, cxccajaId: maeId, empresaId };
+      delete body.__local;
+      if (detId && this.detGuardados.has(detId)) {
+        this.service.updateDet<any>('/cxc/caja-det', detId, body).subscribe({ next: ok, error: fail });
+      } else {
+        this.service.createDet<any>('/cxc/caja-det', body).subscribe({ next: ok, error: fail });
+      }
+    }
+  }
+
+  private procesarYFinalizar(maeId: number) {
+    const payload = { prestamoId: this.form.get('prestamoId')?.value };
+    this.cxcService.procesarAbono(maeId, payload).subscribe({
+      next: (res) => {
+        if (res?.motivo) {
+          this.msgs.add({ severity: 'warn', summary: 'Cobro a préstamo', detail: res.motivo });
+        } else {
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Cobro a préstamo',
+            detail: `Interés L ${(res!.interes || 0).toFixed(2)} · Mora L ${(res!.mora || 0).toFixed(2)} · Abono capital L ${(res!.abonoCapital || 0).toFixed(2)} · Nuevo saldo L ${(res!.saldoNuevo || 0).toFixed(2)}`,
+          });
+        }
+        this.finalizar(maeId);
+      },
+      error: () => {
+        this.finalizar(maeId);
+        this.msgs.add({ severity: 'warn', summary: 'Caja guardada', detail: 'Cobro guardado, pero no se pudo aplicar al préstamo' });
+      },
+    });
+  }
+
+  private finalizar(nuevoId?: number) {
+    this.guardando.set(false);
+    const idParaImprimir = nuevoId ?? this.itemId;
+    this.msgs.add({ severity: 'success', summary: 'Guardado', detail: this.esEdicion() ? 'Caja actualizada' : 'Caja creada correctamente' });
+    this.form.reset({
+      moduloId: 4,
+      clienteId: null,
+      nrocliente: '',
+      nombrecliente: '',
+      concepto: '',
+      destinoabono: 2,
+      prestamoId: null,
+      documentoId: null,
+      nrodocumento: null,
+      tipomov: 'C',
+      sn_cotabilizada: 'N',
+      sn_anulado: 'N',
+      fec_anulacion: null,
+      partidaId: 0,
+    });
+    this.dets.set([]);
+    this.detGuardados.clear();
+    this.contadorFila = 0;
+    this.prestamosCliente.set([]);
+    this.prestamoSeleccionado.set(null);
+    this.totalPagos.set(0);
+    this.esEdicion.set(false);
+    this.esAnulada.set(false);
+    this.itemId = 0;
+  }
+
+  imprimirRecibo(cajaId?: number) {}
+  anular() {}
+}
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\cartas-recordatorio\cartas-recordatorio.html
+
+```typescript
+<div class="cartas-recordatorio">
+  <p-toolbar>
+    <ng-template #start>
+      <div class="toolbar-title">
+        <i class="pi pi-envelope"></i>
+        <span>Cartas de Recordatorio de Cobro</span>
+      </div>
+    </ng-template>
+    <ng-template #end>
+      <p-button
+        label="Actualizar"
+        icon="pi pi-refresh"
+        (click)="load()"
+        [loading]="cargando()"
+        [rounded]="true"
+        size="small"
+      ></p-button>
+    </ng-template>
+  </p-toolbar>
+
+  <div class="filtros-bar">
+    <div class="search-input-wrapper">
+      <i class="pi pi-search"></i>
+      <input
+        type="text"
+        pInputText
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        placeholder="Buscar por nombre o Nro. préstamo..."
+        class="search-input"
+      />
+      <p-button
+        *ngIf="q()"
+        icon="pi pi-times"
+        (click)="limpiarFiltros()"
+        severity="secondary"
+        [rounded]="true"
+        size="small"
+        class="clear-btn"
+      ></p-button>
+    </div>
+
+    <div class="filtro-tipo">
+      <label>Tipo de deuda:</label>
+      <p-select size="small"
+        [options]="tipoOptions"
+        [ngModel]="tipoFiltro()"
+        (ngModelChange)="tipoFiltro.set($event)"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="w-full"
+        [appendTo]="'body'"
+        placeholder="Seleccionar tipo"
+      ></p-select>
+    </div>
+
+    <div class="filtro-fecha">
+      <label>Fecha de carta:</label>
+      <p-datepicker
+        [ngModel]="fechaCarta()"
+        (ngModelChange)="fechaCarta.set($event)"
+        dateFormat="dd/mm/yy"
+        [showIcon]="true"
+        [inline]="false"
+      ></p-datepicker>
+    </div>
+  </div>
+
+  <!-- Acciones -->
+  <div class="acciones-bar">
+    <p-button
+      label="Generar Cartas"
+      icon="pi pi-file-edit"
+      (click)="generarCartas()"
+      [rounded]="true"
+      size="small"
+    ></p-button>
+    <p-button
+      label="Imprimir Todas"
+      icon="pi pi-print"
+      severity="secondary"
+      (click)="imprimirTodas()"
+      [disabled]="cartasGeneradas().length === 0"
+      [rounded]="true"
+      size="small"
+    ></p-button>
+    <span class="cartas-count" *ngIf="cartasGeneradas().length > 0">
+      {{ cartasGeneradas().length }} cartas generadas
+    </span>
+  </div>
+
+  <!-- Tabla de Clientes con Saldo -->
+  <div class="table-container">
+    <p-table
+      [value]="filtered()"
+      [loading]="cargando()"
+      [paginator]="true"
+      [rows]="15"
+      [rowsPerPageOptions]="[10, 15, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+      styleClass="p-datatable-striped"
+      size="small"
+    >
+      <ng-template #header>
+        <tr>
+          <th style="width: 100px">Nro. Préstamo</th>
+          <th>Cliente</th>
+          <th class="col-importe">Total</th>
+          <th class="col-importe">1-30 Días</th>
+          <th class="col-importe">31-60 Días</th>
+          <th class="col-importe">60+ Días</th>
+          <th style="width: 120px">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-cliente>
+        <tr>
+          <td>{{ cliente.nrocliente }}</td>
+          <td>
+            <span class="cliente-nombre">{{ cliente.cliente }}</span>
+          </td>
+          <td class="col-importe fw-bold">{{ moneda(cliente.total) }}</td>
+          <td class="col-importe" [class.text-danger]="cliente.vencido30 > 0">{{ moneda(cliente.vencido30) }}</td>
+          <td class="col-importe" [class.text-danger]="cliente.vencido60 > 0">{{ moneda(cliente.vencido60) }}</td>
+          <td class="col-importe" [class.text-danger]="cliente.vencido90 > 0">{{ moneda(cliente.vencido90) }}</td>
+          <td>
+            <div class="action-buttons">
+              <p-button
+                *ngIf="cliente.vencido30 > 0"
+                icon="pi pi-calendar"
+                (click)="imprimirCarta({cliente, tipo: '30', fecha: fechaCarta(), saldo: cliente.vencido30})"
+                pTooltip="Carta 30 días"
+                tooltipPosition="top"
+                [rounded]="true"
+                size="small"
+                text
+              ></p-button>
+              <p-button
+                *ngIf="cliente.vencido60 > 0"
+                icon="pi pi-calendar-plus"
+                (click)="imprimirCarta({cliente, tipo: '60', fecha: fechaCarta(), saldo: cliente.vencido60})"
+                pTooltip="Carta 60 días"
+                tooltipPosition="top"
+                [rounded]="true"
+                size="small"
+                text
+              ></p-button>
+              <p-button
+                *ngIf="cliente.vencido90 > 0"
+                icon="pi pi-exclamation-triangle"
+                (click)="imprimirCarta({cliente, tipo: '90', fecha: fechaCarta(), saldo: cliente.vencido90})"
+                pTooltip="Carta 60+ días"
+                tooltipPosition="top"
+                [rounded]="true"
+                size="small"
+                text
+              ></p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center p-4">
+            <div class="empty-state">
+              <i class="pi pi-inbox empty-icon"></i>
+              <p>No se encontraron clientes con saldo vencido.</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #summary>
+        <div class="table-summary">
+          <div class="summary-row">
+            <span class="summary-label">Clientes con saldo:</span>
+            <span class="summary-value">{{ filtered().length }}</span>
+          </div>
+        </div>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\cartas-recordatorio\cartas-recordatorio.scss
+
+```typescript
+@import '../../cxc/cartas-recordatorio/cartas-recordatorio.scss';
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\cartas-recordatorio\cartas-recordatorio.ts
+
+```typescript
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService } from 'primeng/api';
+import { ToolbarModule } from 'primeng/toolbar';
+import { forkJoin } from 'rxjs';
+import { CxcService } from '../../../core/services/cxc.service';
+
+export interface ClienteSaldo {
+  clienteId: number;
+  nrocliente: string;
+  cliente: string;
+  dni: string;
+  rtn?: string;
+  direccion?: string;
+  telefono?: string;
+  total: number;
+  corriente: number;
+  vencido30: number;
+  vencido60: number;
+  vencido90: number;
+  fechaUltimoMov?: string;
+}
+
+export interface CartaRecordatorio {
+  cliente: ClienteSaldo;
+  tipo: '30' | '60' | '90';
+  fecha: Date;
+  saldo: number;
+}
+
+@Component({
+  selector: 'app-cartas-recordatorio',
+  standalone: true,
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, SelectModule, DatePickerModule, TooltipModule, ToolbarModule],
+  templateUrl: './cartas-recordatorio.html',
+  styleUrl: './cartas-recordatorio.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class CartasRecordatorio implements OnInit {
+  private service = inject(CxcService);
+  private msgs = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+
+  data = signal<ClienteSaldo[]>([]);
+  cargando = signal(false);
+  q = signal('');
+  tipoFiltro = signal<string>('todos');
+  fechaCarta = signal<Date>(new Date());
+
+  readonly tipoOptions = [
+    { label: 'Todos', value: 'todos' },
+    { label: '30 Días', value: '30' },
+    { label: '60 Días', value: '60' },
+    { label: '90+ Días', value: '90' },
+  ];
+
+  filtered = computed(() => {
+    const search = this.q().toLowerCase();
+    const tipo = this.tipoFiltro();
+    let items = this.data();
+
+    if (search) {
+      items = items.filter(item =>
+        item.cliente.toLowerCase().includes(search) ||
+        item.nrocliente.toLowerCase().includes(search)
+      );
+    }
+
+    if (tipo !== 'todos') {
+      items = items.filter(item => {
+        if (tipo === '30') return item.vencido30 > 0;
+        if (tipo === '60') return item.vencido60 > 0;
+        if (tipo === '90') return item.vencido90 > 0;
+        return true;
+      });
+    }
+
+    return items;
+  });
+
+  cartasGeneradas = signal<CartaRecordatorio[]>([]);
+
+  ngOnInit() {
+    this.load();
+  }
+
+  load() {
+    this.cargando.set(true);
+    this.service.getAntiguedadSaldosPrestamosCuotas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.data.set(res ?? []);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las cartas de recordatorio' });
+      },
+    });
+  }
+
+  moneda(n: number): string {
+    const val = Number(n) || 0;
+    const partes = val.toFixed(2).split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return partes.join('.');
+  }
+
+  getSaldoPorTipo(cliente: ClienteSaldo, tipo: string): number {
+    if (tipo === '30') return cliente.vencido30;
+    if (tipo === '60') return cliente.vencido60;
+    if (tipo === '90') return cliente.vencido90;
+    return cliente.total;
+  }
+
+  getTipoLabel(tipo: string): string {
+    const labels: Record<string, string> = {
+      '30': '30 Días',
+      '60': '60 Días',
+      '90': '90+ Días',
+    };
+    return labels[tipo] || tipo;
+  }
+
+  getTipoSeverity(tipo: string): 'success' | 'warning' | 'danger' | 'info' {
+    if (tipo === '90') return 'danger';
+    if (tipo === '60') return 'warning';
+    if (tipo === '30') return 'info';
+    return 'success';
+  }
+
+  generarCartas() {
+    const clientes = this.filtered();
+    if (clientes.length === 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Sin datos', detail: 'No hay clientes para generar cartas' });
+      return;
+    }
+
+    const cartas: CartaRecordatorio[] = [];
+    const fecha = this.fechaCarta();
+
+    clientes.forEach(cliente => {
+      if (cliente.vencido90 > 0) {
+        cartas.push({ cliente, tipo: '90', fecha, saldo: cliente.vencido90 });
+      }
+      if (cliente.vencido60 > 0) {
+        cartas.push({ cliente, tipo: '60', fecha, saldo: cliente.vencido60 });
+      }
+      if (cliente.vencido30 > 0) {
+        cartas.push({ cliente, tipo: '30', fecha, saldo: cliente.vencido30 });
+      }
+    });
+
+    this.cartasGeneradas.set(cartas);
+    this.msgs.add({ severity: 'success', summary: 'Cartas generadas', detail: `Se generaron ${cartas.length} cartas de recordatorio` });
+  }
+
+  imprimirCarta(carta: CartaRecordatorio) {
+    const contenido = this.generarContenidoCarta(carta);
+    const ventana = window.open('', '_blank');
+    if (ventana) {
+      ventana.document.write(contenido);
+      ventana.document.close();
+      ventana.print();
+    }
+  }
+
+  imprimirTodas() {
+    const cartas = this.cartasGeneradas();
+    if (cartas.length === 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Sin cartas', detail: 'Primero genere las cartas' });
+      return;
+    }
+
+    const contenido = cartas.map(c => this.generarContenidoCarta(c)).join('<div style="page-break-after: always;"></div>');
+    const ventana = window.open('', '_blank');
+    if (ventana) {
+      ventana.document.write(contenido);
+      ventana.document.close();
+      ventana.print();
+    }
+  }
+
+  private generarContenidoCarta(carta: CartaRecordatorio): string {
+    const fechaStr = carta.fecha.toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+    const cliente = carta.cliente;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Carta de Recordatorio - ${cliente.cliente}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #0066cc; padding-bottom: 20px; }
+          .header h1 { color: #0066cc; margin: 0; font-size: 24px; }
+          .header p { color: #666; margin: 5px 0 0; }
+          .fecha { text-align: right; margin-bottom: 20px; }
+          .cliente-info { margin-bottom: 20px; }
+          .cliente-info p { margin: 5px 0; }
+          .saldo-box { background: #f5f5f5; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .saldo-box .label { font-size: 14px; color: #666; }
+          .saldo-box .monto { font-size: 24px; font-weight: bold; color: #cc0000; }
+          .mensaje { margin: 20px 0; line-height: 1.6; }
+          .firma { margin-top: 40px; }
+          .firma .linea { border-top: 1px solid #333; width: 200px; margin-top: 50px; }
+          .firma .cargo { font-size: 12px; color: #666; margin-top: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>CARTA DE RECORDATORIO DE COBRO</h1>
+          <p>Cuentas por Cobrar</p>
+        </div>
+
+        <div class="fecha">
+          <p><strong>Fecha:</strong> ${fechaStr}</p>
+        </div>
+
+        <div class="cliente-info">
+          <p><strong>Señor(a):</strong> ${cliente.cliente}</p>
+          <p><strong>Cliente N.°:</strong> ${cliente.nrocliente}</p>
+          <p><strong>DNI:</strong> ${cliente.dni}</p>
+          ${cliente.direccion ? `<p><strong>Dirección:</strong> ${cliente.direccion}</p>` : ''}
+          ${cliente.telefono ? `<p><strong>Teléfono:</strong> ${cliente.telefono}</p>` : ''}
+        </div>
+
+        <div class="mensaje">
+          <p>Estimado(a) cliente:</p>
+          <p>Por medio de la presente, le recordamos que mantiene un saldo pendiente de pago correspondiente a la categoría de <strong>${this.getTipoLabel(carta.tipo)}</strong>.</p>
+          <p>Le solicitamos amablemente realizar el pago a la brevedad posible para evitar inconvenientes con su cuenta.</p>
+        </div>
+
+        <div class="saldo-box">
+          <div class="label">Saldo Vencido (${this.getTipoLabel(carta.tipo)}):</div>
+          <div class="monto">L ${this.moneda(carta.saldo)}</div>
+        </div>
+
+        <div class="mensaje">
+          <p>Si ya realizó el pago, por favor disculpe las molestias que este pueda causarle.</p>
+          <p>Para cualquier consulta, no dude en comunicarse con nosotros.</p>
+        </div>
+
+        <div class="firma">
+          <p>Atentamente,</p>
+          <div class="linea"></div>
+          <div class="cargo">Departamento de Cobros</div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  limpiarFiltros() {
+    this.q.set('');
+    this.tipoFiltro.set('todos');
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\clientes\cliente-form.html
+
+```typescript
+@if (cargando()) {
+  <div class="card mb-3">Cargando datos...</div>
+} @else {
+  <div class="card mb-3" [class.modo-facturacion]="modoFacturacion()">
+    <div class="prestamo-form-columns" [formGroup]="form">
+      <div class="form-col">
+        @if (modoFacturacion()) {
+          <h5 class="form-col-title">Datos del Cliente</h5>
+        } @else {
+          <h5 class="form-col-title">Datos Personales</h5>
+        }
+        @if (!modoFacturacion()) {
+        <div class="p-field">
+          <label>Nro. cliente <span class="req">*</span></label>
+          <input pInputText pSize="small" [formControl]="form.get('nrocliente')" maxlength="20" placeholder="Número de cliente" />
+          @if (form.get('nrocliente')?.invalid && form.get('nrocliente')?.touched) {
+            <small class="p-error">El número de cliente es obligatorio</small>
+          }
+        </div>
+        }
+        <div class="p-field">
+          <label>Nombres <span class="req">*</span></label>
+          <input #primerCampo pInputText pSize="small" [formControl]="form.get('nombres')" maxlength="50" placeholder="Nombres" />
+          @if (form.get('nombres')?.invalid && form.get('nombres')?.touched) {
+            <small class="p-error">Los nombres son obligatorios</small>
+          }
+        </div>
+        <div class="p-field">
+          <label>Apellidos <span class="req">*</span></label>
+          <input pInputText pSize="small" [formControl]="form.get('apellidos')" maxlength="50" placeholder="Apellidos" />
+          @if (form.get('apellidos')?.invalid && form.get('apellidos')?.touched) {
+            <small class="p-error">Los apellidos son obligatorios</small>
+          }
+        </div>
+        @if (!modoFacturacion()) {
+        <div class="p-field">
+          <label>Razón social</label>
+          <input pInputText pSize="small" [formControl]="form.get('razonsocial')" maxlength="120" placeholder="Razón social" />
+        </div>
+        }
+        <div class="p-field">
+          <label>DNI <span class="req">*</span></label>
+          <input pInputText pSize="small" [formControl]="form.get('dni')" maxlength="20" placeholder="DNI" />
+          @if (form.get('dni')?.invalid && form.get('dni')?.touched) {
+            <small class="p-error">El DNI es obligatorio</small>
+          }
+        </div>
+        @if (!modoFacturacion()) {
+        <div class="p-field">
+          <label>RTN</label>
+          <input pInputText pSize="small" [formControl]="form.get('rtn')" maxlength="50" placeholder="RTN" />
+        </div>
+        }
+        <div class="form-row">
+          <div class="p-field">
+            <label>Sexo</label>
+            <p-select size="small" [formControl]="form.get('sexo')" [options]="sexoOptions" optionLabel="label" optionValue="value" placeholder="Seleccione sexo" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
+          </div>
+          <div class="p-field">
+            <label>Fecha de nacimiento</label>
+            <p-datepicker
+            [formControl]="form.get('fechanacimiento')" dateFormat="dd/mm/yy"
+            [showIcon]="true" size="small" styleClass="w-full" />
+          </div>
+        </div>
+      </div>
+      @if (!modoFacturacion()) {
+      <div class="form-col">
+        <h5 class="form-col-title">Clasificación y Crédito</h5>
+        <div class="p-field">
+          <label>Estado civil</label>
+          <p-select size="small" [formControl]="form.get('estadocivil')" [options]="estadoCivilOptions" optionLabel="label" optionValue="value" placeholder="Seleccione estado civil" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
+        </div>
+        <div class="p-field">
+          <label>Categoría</label>
+          <p-select size="small" [formControl]="form.get('categoria')" [options]="categoriaOptions" optionLabel="label" optionValue="value" placeholder="Seleccione categoría" [showClear]="true" styleClass="w-full" [appendTo]="'body'" />
+        </div>
+        <div class="p-field">
+          <label>Límite de crédito</label>
+          <p-inputNumber size="small" [formControl]="form.get('limiteCredito')" mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" />
+        </div>
+        <div class="p-field">
+          <label>Días de plazo</label>
+          <p-inputNumber size="small" [formControl]="form.get('diasplazo')" [min]="0" [max]="999" [useGrouping]="false" />
+        </div>
+        <div class="p-field">
+          <label>Interés (%)</label>
+          <p-inputNumber size="small" [formControl]="form.get('interes')" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }" />
+        </div>
+        <div class="p-field">
+          <label>Moratorio (%)</label>
+          <p-inputNumber size="small" [formControl]="form.get('moratorio')" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }" />
+        </div>
+        @if (esEdicion()) {
+          <div class="p-field">
+            <label>Estado <span class="req">*</span></label>
+            <p-selectButton size="small" [formControl]="form.get('sn_activo')" [options]="snOptions" optionLabel="label" optionValue="value" />
+          </div>
+        }
+      </div>
+      }
+    </div>
+    <div class="form-actions">
+      @if (modoFacturacion()) {
+        <p-button label="Cancelar" icon="pi pi-times" size="small" variant="text" severity="secondary" [rounded]="true" (onClick)="cancelar()" />
+      } @else {
+        <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" severity="secondary" [rounded]="true" (onClick)="cancelar()" />
+      }
+      <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" severity="success" [rounded]="true" [loading]="guardando()" (onClick)="guardar()" />
+    </div>
+  </div>
+}
+
+<p-dialog
+  [visible]="dialogoDni()"
+  (visibleChange)="dialogoDni.set($event)"
+  header="DNI duplicado - registro bloqueado"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '30rem' }"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+>
+  <div class="dni-bloqueo">
+    <i class="pi pi-exclamation-triangle"></i>
+    <div class="dni-bloqueo-msg">
+      <p class="titulo">
+        No se puede guardar: el DNI <strong>{{ bloqueoDni()?.dni }}</strong> ya esta asignado
+        @if (bloqueoDni()?.nombre) {
+          a <strong>{{ bloqueoDni()?.nombre }}</strong>
+          @if (bloqueoDni()?.numero) {
+            <span class="numero">(No. {{ bloqueoDni()?.numero }})</span>
+          }
+        }
+      </p>
+      @if (bloqueoDni()?.detalle) {
+        <p class="detalle">{{ bloqueoDni()?.detalle }}</p>
+      }
+      <p class="nota">El DNI es la llave maestra de los clientes por empresa y no admite duplicados. Corrija el DNI e intente de nuevo.</p>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Entendido" icon="pi pi-check" size="small" variant="text" severity="secondary" [rounded]="true" (onClick)="dialogoDni.set(false)" />
+  </ng-template>
+</p-dialog>
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\clientes\cliente-form.scss
+
+```typescript
+@import '../../cxc/clientes/cliente-form.scss';
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\clientes\cliente-form.ts
+
+```typescript
+import { Component, inject, signal, OnInit, input, output, effect, Injector, ViewChild, ElementRef, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { DatePickerModule } from 'primeng/datepicker';
+import { DialogModule } from 'primeng/dialog';
+import { MessageService } from 'primeng/api';
+import { CxcService } from '../../../core/services/cxc.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
+import { ParametroUnificadoService } from '../../../core/services/parametro-unificado.service';
+
+@Component({
+  selector: 'app-cliente-form',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    InputNumberModule,
+    SelectModule,
+    SelectButtonModule,
+    DatePickerModule,
+    DialogModule,
+  ],
+  templateUrl: './cliente-form.html',
+  styleUrl: './cliente-form.scss',
+})
+export class ClienteForm implements OnInit {
+  private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private service = inject(CxcService);
+  private auth = inject(AuthService);
+  private nav = inject(NavegacionService);
+  private msgs = inject(MessageService);
+  private paramsUnif = inject(ParametroUnificadoService);
+  private destroyRef = inject(DestroyRef);
+
+  clienteIdInput = input<number | null>(null);
+  saved = output<void>();
+  cancelled = output<void>();
+
+  private _clienteId = 0;
+  private _modoInline = false;
+  private injector = inject(Injector);
+
+  esEdicion = signal(false);
+  cargando = signal(false);
+  guardando = signal(false);
+  titulo = signal('Nuevo cliente');
+  modoFacturacion = signal(false);
+  dialogoDni = signal(false);
+  bloqueoDni = signal<{ dni: string; nombre: string | null; numero: string | null; detalle?: string } | null>(null);
+
+  @ViewChild('primerCampo') primerCampo?: ElementRef<HTMLInputElement>;
+
+  focusPrimerCampo() {
+    setTimeout(() => this.primerCampo?.nativeElement?.focus(), 100);
+  }
+
+  private _clienteEffect = effect(() => {
+    const id = this.clienteIdInput();
+    if (this._modoInline) {
+      this._clienteId = id ?? 0;
+      this.esEdicion.set(!!id);
+      this.titulo.set(id ? 'Editar cliente' : 'Nuevo cliente');
+      if (id) {
+        this.cargarCliente(id);
+      } else if (this.form) {
+        this.form.reset({
+          nombres: '', apellidos: '', razonsocial: '', nrocliente: '',
+          dni: '', sexo: 'M', estadocivil: 'S', rtn: '',
+          limiteCredito: 0, diasplazo: 0, interes: 0, moratorio: 0,
+          categoria: 'A', sn_activo: 'S', fechanacimiento: null,
+        });
+        this.cargarDefaultsCreditos();
+        this.cargando.set(false);
+      }
+    }
+  }, { injector: this.injector });
+
+  readonly snOptions = [
+    { label: 'Activo', value: 'S' },
+    { label: 'Inactivo', value: 'N' },
+  ];
+
+  readonly sexoOptions = [
+    { label: 'Masculino', value: 'M' },
+    { label: 'Femenino', value: 'F' },
+  ];
+
+  readonly estadoCivilOptions = [
+    { label: 'Soltero', value: 'S' },
+    { label: 'Casado', value: 'C' },
+    { label: 'Divorciado', value: 'D' },
+    { label: 'Viudo', value: 'V' },
+    { label: 'Unión libre', value: 'U' },
+  ];
+
+  readonly categoriaOptions = [
+    { label: 'A', value: 'A' },
+    { label: 'B', value: 'B' },
+    { label: 'C', value: 'C' },
+    { label: 'D', value: 'D' },
+    { label: 'E', value: 'E' },
+  ];
+
+  form!: FormGroup;
+
+  ngOnInit() {
+    this.form = this.fb.group({
+      nrocliente: [''],
+      nombres: ['', Validators.required],
+      apellidos: ['', Validators.required],
+      razonsocial: [''],
+      fechanacimiento: [null as Date | null],
+      dni: [''],
+      sexo: ['M' as 'M' | 'F'],
+      estadocivil: ['S' as 'S' | 'C' | 'D' | 'V' | 'U'],
+      rtn: [''],
+      limiteCredito: [0],
+      diasplazo: [0],
+      interes: [0],
+      moratorio: [0],
+      categoria: ['A' as 'A' | 'B' | 'C' | 'D' | 'E'],
+      sn_activo: ['S' as 'S' | 'N'],
+    });
+
+    const modo = this.route.snapshot.queryParamMap.get('modo');
+    if (modo === 'facturacion') {
+      this.modoFacturacion.set(true);
+      this.form.get('nombres')?.setValidators([Validators.required]);
+      this.form.get('apellidos')?.setValidators([Validators.required]);
+      this.form.get('dni')?.setValidators([Validators.required]);
+    }
+
+    const inlineId = this.clienteIdInput();
+    if (inlineId !== undefined) {
+      this._modoInline = true;
+      this._clienteId = inlineId ?? 0;
+      this.esEdicion.set(!!inlineId);
+      this.titulo.set(inlineId ? 'Editar cliente' : 'Nuevo cliente');
+      if (inlineId) {
+        this.cargarCliente(inlineId);
+      }
+    } else {
+      const id = this.route.snapshot.paramMap.get('id');
+      if (id) {
+        this.esEdicion.set(true);
+        this.titulo.set('Editar cliente');
+        this._clienteId = Number(id);
+        this.cargarCliente(this._clienteId);
+      } else {
+        this.cargarDefaultsCreditos();
+      }
+    }
+  }
+
+  private cargarDefaultsCreditos(): void {
+    this.paramsUnif.getAsObject(4).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((obj) => {
+      this.form.patchValue({
+        limiteCredito: Number(obj['cxc_limitecredito'] ?? 0),
+        diasplazo: Number(obj['cxc_diasPlazo'] ?? 0),
+        interes: Number(obj['cxc_interes'] ?? 0),
+        moratorio: Number(obj['cxc_mora'] ?? 0),
+      });
+    });
+  }
+
+  private cargarCliente(id: number) {
+    this.cargando.set(true);
+    this.service.getCliente(id).subscribe({
+      next: (c) => {
+        this.form.patchValue({
+          nrocliente: c.nrocliente,
+          nombres: c.nombres,
+          apellidos: c.apellidos,
+          razonsocial: c.razonsocial,
+          fechanacimiento: c.fechanacimiento ? new Date(c.fechanacimiento) : null,
+          dni: c.dni,
+          sexo: c.sexo,
+          estadocivil: c.estadocivil,
+          rtn: c.rtn,
+          limiteCredito: Number(c.limiteCredito),
+          diasplazo: Number(c.diasplazo),
+          interes: Number(c.interes),
+          moratorio: Number(c.moratorio),
+          categoria: c.categoria,
+          sn_activo: c.sn_activo === 'S' ? 'S' : 'N',
+        });
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'Cliente no encontrado' });
+        this.cancelar();
+      },
+    });
+  }
+
+  invalid(ctrl: string): boolean {
+    const c = this.form.get(ctrl);
+    return !!c && c.invalid && (c.dirty || c.touched);
+  }
+
+  cancelar() {
+    if (this._modoInline) {
+      this.cancelled.emit();
+    } else {
+      this.nav.volver(['/prestamos/prestamos']);
+    }
+  }
+
+  guardar() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.form.getRawValue();
+
+    const cleanPayload = (obj: any) => {
+      const result: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (value !== null && value !== undefined && value !== '') {
+          result[key] = value instanceof Date ? value.toISOString() : value;
+        }
+      }
+      return result;
+    };
+
+    let payload: any;
+    if (this.esEdicion()) {
+      payload = { ...cleanPayload(raw) };
+    } else {
+      const cleaned = cleanPayload(raw);
+      if (this.modoFacturacion()) {
+        delete cleaned.diasplazo;
+        delete cleaned.interes;
+        delete cleaned.moratorio;
+        delete cleaned.limiteCredito;
+      }
+      payload = {
+        ...cleaned,
+        moduloId: 10,
+        empresaId: this.auth.currentUser()?.empresaId,
+        sn_activo: 'S',
+      };
+    }
+
+    this.guardando.set(true);
+    const dniEfectivo = ((raw.dni as string) || '').trim() || '0000000000000';
+
+    this.service.dniExiste(dniEfectivo, this.esEdicion() ? this._clienteId : undefined).subscribe({
+      next: (r) => {
+        if (r.existe) {
+          this.guardando.set(false);
+          this.bloqueoDni.set({ dni: dniEfectivo, nombre: r.nombre, numero: r.numero });
+          this.dialogoDni.set(true);
+          return;
+        }
+        this.registrar(payload);
+      },
+      error: () => this.registrar(payload),
+    });
+  }
+
+  private registrar(payload: any): void {
+    const dniEfectivo = (((this.form.getRawValue().dni as string) || '').trim()) || '0000000000000';
+    const op = this.esEdicion()
+      ? this.service.updateCliente(this._clienteId, payload as any)
+      : this.service.createCliente(payload as any);
+
+    op.subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.msgs.add({
+          severity: 'success',
+          summary: 'Guardado',
+          detail: this.esEdicion() ? 'Cliente actualizado' : 'Cliente creado correctamente',
+        });
+        if (this._modoInline) {
+          this.saved.emit();
+        } else {
+          this.nav.volver(['/prestamos/prestamos']);
+        }
+      },
+      error: (err: any) => {
+        this.guardando.set(false);
+        if (err?.status === 409) {
+          this.bloqueoDni.set({ dni: dniEfectivo, nombre: null, numero: null, detalle: err?.error?.message });
+          this.dialogoDni.set(true);
+        } else {
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el cliente' });
+        }
+      },
+    });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\clientes\clientes-manager.html
+
+```typescript
+<div class="clientes-manager">
+  <div class="split-layout" [class.form-active]="showForm()">
+    <div class="left-column">
+      @if (!selectedCliente() && !showForm() && !nuevoCliente()) {
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Pulse un cliente</h3>
+        <p>Haga clic en un cliente de la lista para ver su información</p>
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input
+                type="text"
+                pSize="small"
+                pInputText
+                [ngModel]="q()"
+                (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..."
+                class="mr-1"
+              />
+              <p-button
+                *ngIf="q()"
+                icon="pi pi-times"
+                (click)="limpiarFiltros()"
+                severity="secondary"
+                variant="text"
+                [rounded]="true"
+                size="small"
+              ></p-button>
+            </p-iconField>
+          </div>
+        </div>
+
+        <p-button
+          label="Agregar nuevo cliente"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          class="mr-2"
+          size="small"
+        ></p-button>
+      </div>
+      }
+
+      @if ((selectedCliente() || nuevoCliente()) && !showForm()) {
+      <div class="cliente-detail">
+        <p-tabs [value]="activeTabValue()" (valueChange)="activeTabValue.set($event)">
+          <p-tablist>
+            <p-tab value="0">
+              <i class="pi pi-wallet"></i>
+              <span>Cliente</span>
+            </p-tab>
+            <p-tab value="1" [disabled]="nuevoCliente()">
+              <i class="pi pi-info-circle"></i>
+              <span>Inf. Adicional</span>
+            </p-tab>
+            <p-tab value="2" [disabled]="nuevoCliente()">
+              <i class="pi pi-wallet"></i>
+              <span>Estado de Cuenta</span>
+            </p-tab>
+            <p-tab value="3" [disabled]="nuevoCliente()">
+              <i class="pi pi-address-book"></i>
+              <span>Referencias</span>
+            </p-tab>
+            <p-tab value="4" [disabled]="nuevoCliente()">
+              <i class="pi pi-users"></i>
+              <span>Parientes</span>
+            </p-tab>
+          </p-tablist>
+
+          <p-tabpanels>
+            <p-tabpanel value="0">
+              <div class="tab-content">
+                <app-cliente-form
+                  #clienteFormRef
+                  [clienteIdInput]="nuevoCliente() ? null : (selectedCliente()?.clienteId ?? null)"
+                  (saved)="onFormSaved()"
+                  (cancelled)="onFormCancelled()"
+                />
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="1">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Información Adicional</h4>
+                </div>
+
+                <p-accordion>
+                  <p-accordionTab header="Información de contacto">
+                    <div class="accordion-panel-body">
+                      <h5 class="form-col-title">
+                        {{ infoModel().id != null ? 'Editar información de contacto' : 'Nueva información de contacto' }}
+                      </h5>
+
+                      <div class="info-form-row">
+                        <div class="p-field">
+                          <label>Tipo</label>
+                          <p-select
+                            size="small"
+                            [options]="infoTipoOptions"
+                            [ngModel]="infoModel().tipo"
+                            (ngModelChange)="infoModel.set({...infoModel(), tipo: $event})"
+                            placeholder="Seleccione tipo"
+                            styleClass="w-full"
+                            [appendTo]="'body'"
+                          ></p-select>
+                        </div>
+                        <div class="p-field field-grow">
+                          <label>Descripción</label>
+                          <input
+                            pInputText
+                            pSize="small"
+                            [ngModel]="infoModel().descripcion"
+                            (ngModelChange)="infoModel.set({...infoModel(), descripcion: $event})"
+                            placeholder="Valor del contacto"
+                            class="w-full"
+                          />
+                        </div>
+                        <div class="p-field">
+                          <label>Estado</label>
+                          <p-select
+                            size="small"
+                            [options]="infoEstadoOptions"
+                            [ngModel]="infoModel().sn_activo"
+                            (ngModelChange)="infoModel.set({...infoModel(), sn_activo: $event})"
+                            placeholder="Seleccione estado"
+                            styleClass="w-full"
+                            [appendTo]="'body'"
+                          ></p-select>
+                        </div>
+                        <div class="info-form-buttons">
+                          @if (infoModel().id != null) {
+                          <p-button
+                            label="Cancelar"
+                            icon="pi pi-times"
+                            variant="text"
+                            severity="secondary"
+                            (click)="cancelarInfo()"
+                            [rounded]="true"
+                            size="small"
+                          ></p-button>
+                          } @else {
+                          <p-button
+                            label="Limpiar"
+                            icon="pi pi-times"
+                            variant="text"
+                            severity="secondary"
+                            (click)="cancelarInfo()"
+                            [rounded]="true"
+                            size="small"
+                          ></p-button>
+                          }
+                          <p-button
+                            label="Agregar"
+                            icon="pi pi-plus"
+                            variant="text"
+                            severity="success"
+                            [loading]="infoSaving()"
+                            (click)="guardarInfo()"
+                            [rounded]="true"
+                            size="small"
+                          ></p-button>
+                        </div>
+                      </div>
+
+                      <h5 class="form-col-title detalle-title">Detalle</h5>
+                      <p-table
+                        [value]="infoData()"
+                        [loading]="infoLoading()"
+                        showGridlines
+                        styleClass="tabla-card"
+                        [tableStyle]="{ 'min-width': '15rem' }"
+                        size="small"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th class="col-acciones">Acción</th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-info>
+                          <tr>
+                            <td class="col-tipo">{{ infoTipoLabel(info.tipo) }}</td>
+                            <td>{{ info.descripcion || '—' }}</td>
+                            <td class="col-estado text-center">
+                              <p-tag
+                                [value]="info.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+                                [severity]="info.sn_activo === 'S' ? 'success' : 'danger'"
+                              />
+                            </td>
+                            <td class="col-acciones">
+                              <p-button
+                                icon="pi pi-pencil"
+                                (click)="editarInfo(info)"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="secondary"
+                                pTooltip="Editar"
+                                tooltipPosition="left"
+                              />
+                              <p-button
+                                icon="pi pi-trash"
+                                (click)="eliminarInfo(info)"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="danger"
+                                pTooltip="Eliminar"
+                                tooltipPosition="left"
+                              />
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                          <tr>
+                            <td colspan="4" class="text-center text-muted">
+                              No tiene información registrada
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
+                    </div>
+                  </p-accordionTab>
+
+                  <p-accordionTab header="Cartera contable">
+                    <div class="accordion-panel-body">
+                      <div class="info-form-row">
+                        <div class="p-field">
+                          <label>Cartera</label>
+                          <p-select
+                            size="small"
+                            [options]="carterasDisponibles()"
+                            [ngModel]="carteraSeleccionada()"
+                            (ngModelChange)="carteraSeleccionada.set($event)"
+                            placeholder="Seleccione cartera"
+                            styleClass="w-full"
+                            [appendTo]="'body'"
+                            [showClear]="true"
+                          ></p-select>
+                          @if (carterasDisponibles().length === 0) {
+                          <small class="carteras-sin-opciones">
+                            No hay carteras disponibles para asignar
+                          </small>
+                          }
+                        </div>
+                        <div class="p-field field-grow">
+                          <label>Cuenta contable</label>
+                          <input
+                            pInputText
+                            pSize="small"
+                            [value]="carteraSeleccionada() ? (ctaCartera(carteraSeleccionada()!) || '—') : ''"
+                            readonly
+                            placeholder="Seleccione una cartera"
+                            class="w-full"
+                          />
+                        </div>
+                        <div class="info-form-buttons">
+                          <p-button
+                            label="Asignar"
+                            icon="pi pi-plus"
+                            variant="text"
+                            severity="success"
+                            [rounded]="true"
+                            size="small"
+                            [loading]="carteraSaving()"
+                            (click)="agregarCartera()"
+                          ></p-button>
+                        </div>
+                      </div>
+
+                      <h5 class="form-col-title detalle-title">Detalle</h5>
+                      <p-table
+                        [value]="carterasCliente()"
+                        [loading]="carteraLoading()"
+                        showGridlines
+                        styleClass="tabla-card"
+                        [tableStyle]="{ 'min-width': '15rem' }"
+                        size="small"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Cartera</th>
+                            <th class="col-cta">Cuenta</th>
+                            <th>Cuenta contable</th>
+                            <th class="col-acciones">Acción</th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-cartera>
+                          <tr>
+                            <td class="celda-cartera">{{ nombreCartera(cartera.carteractaId) }}</td>
+                            <td class="col-cta">{{ ctaCartera(cartera.carteractaId) || '—' }}</td>
+                            <td class="celda-cta-desc">
+                              {{ descripcionCtaCartera(cartera.carteractaId) || '—' }}
+                            </td>
+                            <td class="col-acciones">
+                              <p-button
+                                icon="pi pi-trash"
+                                [rounded]="true"
+                                size="small"
+                                text
+                                severity="danger"
+                                pTooltip="Quitar"
+                                tooltipPosition="left"
+                                (click)="eliminarCartera(cartera)"
+                              />
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                          <tr>
+                            <td colspan="4" class="text-center text-muted">
+                              No tiene carteras contables asignadas
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
+                    </div>
+                  </p-accordionTab>
+                </p-accordion>
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="2">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Estado de Cuenta</h4>
+                  <div class="saldo-total">
+                    Saldo: <strong>{{ moneda(getSaldoPendiente()) }}</strong>
+                  </div>
+                </div>
+
+                <div
+                  class="detalle-estado-cuenta"
+                  *ngIf="!estadoCuentaLoading(); else loadingSkeleton"
+                >
+                  <div class="table-responsive">
+                    <table class="table table-striped">
+                      <thead>
+                        <tr>
+                          <th class="col-fila">Fila</th>
+                          <th>Fecha</th>
+                          <th>D/C</th>
+                          <th class="col-ref">Referencia</th>
+                          <th>Concepto</th>
+                          <th class="col-importe">Importe</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let mov of estadoCuentaData()">
+                          <td class="col-fila">{{ mov.clienteMovId }}</td>
+                          <td>{{ mov.fecharegistro | date:'dd/MM/yyyy' }}</td>
+                          <td>
+                            <span class="badge" [ngClass]="getTipoMovSeverity(mov.tipomov)">
+                              {{ getTipoMovLabel(mov.tipomov) }}
+                            </span>
+                          </td>
+                          <td class="col-ref">{{ mov.nroreferencia || '—' }}</td>
+                          <td>{{ mov.concepto }}</td>
+                          <td
+                            class="col-importe"
+                            [ngClass]="{
+                              'text-success': mov.tipomov === 'D',
+                              'text-danger': mov.tipomov === 'C' || mov.tipomov === 'A',
+                              'text-warning': mov.tipomov === 'I'
+                            }"
+                          >
+                            {{ mov.tipomov === 'D' ? '+' : (mov.tipomov === 'I' ? '' : '-') }}{{ moneda(mov.importe) }}
+                          </td>
+                        </tr>
+                        <tr *ngIf="estadoCuentaData().length === 0">
+                          <td colspan="6" class="text-center text-muted">
+                            No tiene movimientos el cliente
+                          </td>
+                        </tr>
+                      </tbody>
+                      <tfoot>
+                        <tr class="fw-bold">
+                          <td colspan="6" class="text-end">Saldo Total:</td>
+                          <td class="col-importe">{{ moneda(getSaldoPendiente()) }}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+
+                <ng-template #loadingSkeleton>
+                  <div class="loading-skeleton">
+                    @for (i of [1,2,3,4,5]; track i) {
+                    <div class="skeleton-row">
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                      <div class="skeleton-col"></div>
+                    </div>
+                    }
+                  </div>
+                </ng-template>
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="3">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Referencias</h4>
+                </div>
+
+                <div class="prestamo-form-columns mb-3">
+                  <div class="form-col">
+                    <h5 class="form-col-title">Datos Personales</h5>
+                    <div class="p-fluid">
+                      <div class="p-field">
+                        <label>Nombres</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().nombres"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), nombres: $event})"
+                          placeholder="Nombres"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Apellidos</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().apellidos"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), apellidos: $event})"
+                          placeholder="Apellidos"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>DNI</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().dni"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), dni: $event})"
+                          placeholder="DNI"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Fecha de Nacimiento</label>
+                        <p-datepicker
+                          [ngModel]="referenciaFecha()"
+                          (ngModelChange)="onReferenciaFechaChange($event)"
+                          dateFormat="dd/mm/yy"
+                          [showIcon]="true"
+                        ></p-datepicker>
+                      </div>
+                      <div class="p-field">
+                        <label>Tipo</label>
+                        <p-select
+                          size="small"
+                          [options]="referenciaTipoOptions"
+                          [ngModel]="referenciaModel().tipo"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), tipo: $event})"
+                          placeholder="Seleccione tipo"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-col">
+                    <h5 class="form-col-title">Contacto y Ubicación</h5>
+                    <div class="p-fluid">
+                      <div class="p-field">
+                        <label>Teléfono</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().telefono"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), telefono: $event})"
+                          placeholder="Teléfono fijo"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Celular</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().celular"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), celular: $event})"
+                          placeholder="Celular"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Parentesco</label>
+                        <p-select
+                          size="small"
+                          [options]="referenciaParentescoOptions"
+                          [ngModel]="referenciaModel().parentesco"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), parentesco: $event})"
+                          placeholder="Seleccione parentesco"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                      <div class="p-field">
+                        <label>Dirección</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().direccion1"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), direccion1: $event})"
+                          placeholder="Dirección"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Lugar de Trabajo</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="referenciaModel().lugarTrabajo"
+                          (ngModelChange)="referenciaModel.set({...referenciaModel(), lugarTrabajo: $event})"
+                          placeholder="Lugar de trabajo"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions mb-3">
+                  <p-button
+                    label="Limpiar"
+                    icon="pi pi-times"
+                    variant="text"
+                    severity="secondary"
+                    (click)="cancelarReferencia()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
+                  <p-button
+                    label="Guardar"
+                    icon="pi pi-check"
+                    variant="text"
+                    severity="success"
+                    [loading]="referenciaSaving()"
+                    (click)="guardarReferencia()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
+                </div>
+
+                <p-dataView
+                  [value]="referenciasData()"
+                  [loading]="referenciasLoading()"
+                  size="small"
+                  layout="list"
+                  class="referencias-dataview"
+                >
+                  <ng-template #list let-ref>
+                    <div class="referencia-item">
+                      <div class="ref-nombre">{{ ref.nombres || ref.nombre }}</div>
+                      <div class="ref-telefono">{{ ref.telefono || ref.celular }}</div>
+                      <div class="ref-tipo">{{ ref.tipo || ref.parentesco }}</div>
+                    </div>
+                  </ng-template>
+                </p-dataView>
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="4">
+              <div class="tab-content">
+                <div class="tab-header">
+                  <h4>Parientes</h4>
+                </div>
+
+                <div class="prestamo-form-columns mb-3">
+                  <div class="form-col">
+                    <h5 class="form-col-title">Datos del Pariente</h5>
+                    <div class="p-fluid">
+                      <div class="p-field">
+                        <label>Nombres</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().nombres"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), nombres: $event})"
+                          placeholder="Nombres"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>Apellidos</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().apellidos"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), apellidos: $event})"
+                          placeholder="Apellidos"
+                        />
+                      </div>
+                      <div class="p-field">
+                        <label>DNI</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().dni"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), dni: $event})"
+                          placeholder="DNI"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-col">
+                    <h5 class="form-col-title">Contacto</h5>
+                    <div class="p-fluid">
+                      <div class="p-field">
+                        <label>Parentesco</label>
+                        <p-select
+                          size="small"
+                          [options]="parienteParentescoOptions"
+                          [ngModel]="parienteModel().parentesco"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), parentesco: $event})"
+                          placeholder="Seleccione parentesco"
+                          styleClass="w-full"
+                          [appendTo]="'body'"
+                        ></p-select>
+                      </div>
+                      <div class="p-field">
+                        <label>Teléfono</label>
+                        <input
+                          pInputText
+                          pSize="small"
+                          [ngModel]="parienteModel().telefono"
+                          (ngModelChange)="parienteModel.set({...parienteModel(), telefono: $event})"
+                          placeholder="Teléfono de contacto"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions mb-3">
+                  <p-button
+                    label="Limpiar"
+                    icon="pi pi-times"
+                    variant="text"
+                    severity="secondary"
+                    (click)="cancelarPariente()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
+                  <p-button
+                    label="Guardar"
+                    icon="pi pi-check"
+                    variant="text"
+                    severity="success"
+                    [loading]="parienteSaving()"
+                    (click)="guardarPariente()"
+                    [rounded]="true"
+                    size="small"
+                  ></p-button>
+                </div>
+
+                <p-dataView
+                  [value]="parientesData()"
+                  [loading]="parientesLoading()"
+                  size="small"
+                  layout="list"
+                  class="parientes-dataview"
+                >
+                  <ng-template #list let-par>
+                    <div class="pariente-item">
+                      <div class="par-nombre">{{ par.nombres }} {{ par.apellidos }}</div>
+                      <div class="par-parentesco">{{ par.parentesco }}</div>
+                      <div class="par-telefono">{{ par.telefono }}</div>
+                    </div>
+                  </ng-template>
+                </p-dataView>
+              </div>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+      </div>
+      }
+    </div>
+
+    <div class="right-column" [class.hidden]="showForm()">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            pInputText
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event)"
+            placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..."
+            class="search-input"
+          />
+          <p-button
+            *ngIf="q()"
+            label="Limpiar"
+            icon="pi pi-times"
+            (click)="limpiarFiltros()"
+            severity="secondary"
+            [rounded]="true"
+            size="small"
+            class="clear-btn"
+          ></p-button>
+        </div>
+
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          variant="text"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        ></p-button>
+      </div>
+
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay clientes</h3>
+        <p>No se encontraron clientes registrados.</p>
+        <p-button
+          label="Nuevo"
+          icon="pi pi-plus"
+          (click)="nuevo()"
+          severity="success"
+          [rounded]="true"
+          size="small"
+        ></p-button>
+      </div>
+      } @else {
+      <div class="clientes-lista">
+        @for (cliente of data(); track cliente.clienteId) {
+        <div
+          class="cliente-item-ficha"
+          [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)"
+        >
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ cliente.nrocliente }}</span>
+            <p-tag
+              [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}"
+            />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ cliente.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ cliente.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ cliente.dni }}</span>
+          </div>
+          @if (cliente.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ cliente.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Disponible Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa interes:</span>
+            <span class="ficha-value">{{ cliente.interes }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa moratoria:</span>
+            <span class="ficha-value">{{ cliente.moratorio }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ cliente.categoria }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Estado:</span>
+            <span class="ficha-value">{{ cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo' }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Razon social:</span>
+            <span class="ficha-value">{{ cliente.razonsocial }}</span>
+          </div>
+          <div class="item-ficha-actions">
+            <p-button
+              icon="pi pi-pencil"
+              (click)="editarCliente(cliente, $event)"
+              [rounded]="true"
+              size="small"
+              text
+              pTooltip="Editar"
+              tooltipPosition="left"
+            />
+          </div>
+        </div>
+        }
+      </div>
+
+      <p-paginator
+        [first]="(page() - 1) * limit()"
+        [rows]="limit()"
+        [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]"
+        (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"
+      ></p-paginator>
+      }
+    </div>
+  </div>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\clientes\clientes-manager.scss
+
+```typescript
+@import '../../cxc/clientes/clientes-manager.scss';
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\clientes\clientes-manager.ts
+
+```typescript
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
+import { timeout, catchError, of } from 'rxjs';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { DataViewModule } from 'primeng/dataview';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { TabsModule } from 'primeng/tabs';
+import { AccordionModule } from 'primeng/accordion';
+import { SkeletonModule } from 'primeng/skeleton';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { DatePickerModule } from 'primeng/datepicker';
+import { PaginatorModule } from 'primeng/paginator';
+import { CxcService } from '../../../core/services/cxc.service';
+import { ContabilidadService } from '../../../core/services/contabilidad.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { CxcCliente, CxcClienteInfo, CxcCarteraCliente, TipoInfoCliente } from '../../../core/models/cxc.models';
+import { ClienteForm } from './cliente-form';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+
+@Component({
+  selector: 'app-clientes-manager',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    InputTextModule,
+    DataViewModule,
+    TagModule,
+    TooltipModule,
+    TabsModule,
+    AccordionModule,
+    SkeletonModule,
+    SelectModule,
+    TableModule,
+    DatePickerModule,
+    PaginatorModule,
+    IconFieldModule,
+    InputIconModule, 
+    ClienteForm,
+  ],
+  templateUrl: './clientes-manager.html',
+  styleUrl: './clientes-manager.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ClientesManager implements OnInit {
+  private service = inject(CxcService);
+  private contabilidad = inject(ContabilidadService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private auth = inject(AuthService);
+  private destroyRef = inject(DestroyRef);
+
+  readonly referenciaTipoOptions = [
+    { label: 'Personal', value: 'Personal' },
+    { label: 'Comercial', value: 'Comercial' },
+    { label: 'Bancaria', value: 'Bancaria' },
+    { label: 'Familiar', value: 'Familiar' },
+  ];
+
+  readonly referenciaParentescoOptions = [
+    { label: 'Padre/Madre', value: 'Padre/Madre' },
+    { label: 'Hermano/a', value: 'Hermano/a' },
+    { label: 'Cónyuge', value: 'Cónyuge' },
+    { label: 'Amigo/a', value: 'Amigo/a' },
+    { label: 'Otro', value: 'Otro' },
+  ];
+
+  readonly parienteParentescoOptions = [
+    { label: 'Padre', value: 'Padre' },
+    { label: 'Madre', value: 'Madre' },
+    { label: 'Hermano', value: 'Hermano' },
+    { label: 'Hermana', value: 'Hermana' },
+    { label: 'Hijo/a', value: 'Hijo/a' },
+    { label: 'Cónyuge', value: 'Cónyuge' },
+    { label: 'Abuelo/a', value: 'Abuelo/a' },
+    { label: 'Tío/a', value: 'Tío/a' },
+    { label: 'Otro', value: 'Otro' },
+  ];
+
+  readonly infoTipoOptions = [
+    { label: 'Celular', value: 'CELULAR' },
+    { label: 'Dirección', value: 'DIRECCION' },
+    { label: 'Correo', value: 'CORREO' },
+  ];
+
+  readonly infoEstadoOptions = [
+    { label: 'Activo', value: 'S' },
+    { label: 'Inactivo', value: 'N' },
+  ];
+
+  infoData = signal<CxcClienteInfo[]>([]);
+  infoLoading = signal(false);
+  infoSaving = signal(false);
+
+  infoModel = signal<{
+    id: number | null;
+    tipo: TipoInfoCliente | '';
+    descripcion: string;
+    sn_activo: 'S' | 'N';
+  }>({
+    id: null,
+    tipo: '',
+    descripcion: '',
+    sn_activo: 'S',
+  });
+
+  private readonly MODULO_CXC = 4;
+
+  carterasCatalogo = signal<{ label: string; value: number; ctacontable?: string | null }[]>([]);
+  cuentasContables = signal<Map<string, string>>(new Map());
+  carterasCliente = signal<CxcCarteraCliente[]>([]);
+  carteraSeleccionada = signal<number | null>(null);
+  carteraLoading = signal(false);
+  carteraSaving = signal(false);
+
+  carterasDisponibles = computed(() => {
+    const asignadas = new Set(this.carterasCliente().map((c) => c.carteractaId));
+    return this.carterasCatalogo().filter((o) => !asignadas.has(o.value));
+  });
+
+  showForm = signal(false);
+  editingCliente = signal<CxcCliente | null>(null);
+
+  private _searchEffect = effect(() => {
+    this.q();
+    this.page.set(1);
+    untracked(() => this.loadClientes());
+  });
+
+  data = signal<CxcCliente[]>([]);
+  totalClientes = signal(0);
+  page = signal(1);
+  limit = signal(10);
+  cargando = signal(false);
+
+  q = signal('');
+
+  referenciaSaving = signal(false);
+  referenciaModel = signal<any>({
+    clienteId: null,
+    nombres: '',
+    apellidos: '',
+    telefono: '',
+    celular: '',
+    tipo: '',
+    parentesco: '',
+    direccion1: '',
+    lugarTrabajo: '',
+    fechanacimiento: null,
+    dni: '',
+  });
+
+  referenciaFecha = computed(() => {
+    const f = this.referenciaModel().fechanacimiento;
+    if (!f) return null;
+    const d = new Date(f);
+    return isNaN(d.getTime()) ? null : d;
+  });
+
+  onReferenciaFechaChange(d: Date | null) {
+    this.referenciaModel.set({ ...this.referenciaModel(), fechanacimiento: d ? d.toISOString() : null });
+  }
+
+  parienteSaving = signal(false);
+  parienteModel = signal<any>({
+    clienteId: null,
+    dni: '',
+    nombres: '',
+    apellidos: '',
+    parentesco: '',
+    telefono: '',
+  });
+
+  selectedCliente = signal<CxcCliente | null>(null);
+  nuevoCliente = signal(false);
+
+  @ViewChild('clienteFormRef') clienteFormRef?: any;
+
+  estadoCuentaData = signal<any[]>([]);
+  estadoCuentaLoading = signal(false);
+
+  referenciasData = signal<any[]>([]);
+  referenciasLoading = signal(false);
+
+  parientesData = signal<any[]>([]);
+  parientesLoading = signal(false);
+
+  activeTabValue = signal<string>('0');
+
+  saldoPendiente = computed(() =>
+    this.estadoCuentaData().reduce((sum, m) => {
+      const importe = Number(m.importe || 0);
+      if (m.tipomov === 'D') return sum + importe;
+      if (m.tipomov === 'I') return sum;
+      return sum - importe;
+    }, 0)
+  );
+
+  ngOnInit() {
+    this.cargarCatalogoCarteras();
+    this.cargarCuentasContables();
+  }
+
+  private cargarCuentasContables() {
+    this.contabilidad.getCuentas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const mapa = new Map<string, string>();
+        for (const c of res ?? []) {
+          if (c?.ctacontable) mapa.set(c.ctacontable, c.descripcion || '');
+        }
+        this.cuentasContables.set(mapa);
+      },
+      error: () => this.cuentasContables.set(new Map()),
+    });
+  }
+
+  private cargarCatalogoCarteras() {
+    this.contabilidad.getCarteras().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const opts = (res ?? [])
+          .filter((c) => c.moduloId === this.MODULO_CXC && c.sn_activo !== 'N')
+          .map((c) => ({
+            label: c.descripcion || `Cartera ${c.tcocarteraId}`,
+            value: c.tcocarteraId,
+            ctacontable: c.ctacontable ?? null,
+          }));
+        this.carterasCatalogo.set(opts);
+      },
+      error: () => this.carterasCatalogo.set([]),
+    });
+  }
+
+  loadClientes() {
+    this.cargando.set(true);
+    this.service.getClientes(this.page(), this.limit(), this.q(), 10).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(10000),
+      catchError(() => of({ data: [], total: 0 }))
+    ).subscribe({
+      next: (res) => {
+        this.data.set(res.data);
+        this.totalClientes.set(res.total);
+        this.cargando.set(false);
+      },
+      error: () => this.cargando.set(false),
+    });
+  }
+
+  onPageChange(event: any) {
+    this.page.set(event.page + 1);
+    this.limit.set(event.rows);
+    this.loadClientes();
+  }
+
+  cancelarReferencia() {
+    this.referenciaModel.set({
+      nombres: '',
+      apellidos: '',
+      telefono: '',
+      celular: '',
+      tipo: '',
+      parentesco: '',
+      direccion1: '',
+      lugarTrabajo: '',
+      fechanacimiento: null,
+      dni: '',
+    });
+  }
+
+  guardarReferencia() {
+    const cliente = this.selectedCliente();
+    if (!cliente) {
+      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear una referencia' });
+      return;
+    }
+
+    const raw = { ...this.referenciaModel() };
+    const payload: any = {
+      clienteId: cliente.clienteId,
+      nombres: raw.nombres,
+      apellidos: raw.apellidos,
+      dni: raw.dni,
+      fechanacimiento: raw.fechanacimiento,
+      telefono1: raw.telefono,
+      telefono2: raw.celular,
+      direccion1: raw.direccion1,
+      lugarTrabajo: raw.lugarTrabajo,
+    };
+
+    if (!payload.nombres || !payload.telefono1) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Complete nombre y telefono' });
+      return;
+    }
+
+    const user = this.auth.currentUser();
+    if (user) {
+      payload.empresaId = payload.empresaId ?? user.empresaId;
+      if (user.idsucursal != null) payload.Idsucursal = payload.Idsucursal ?? user.idsucursal;
+      payload.usuarioCreated = payload.usuarioCreated ?? user.usuario ?? user.nombre;
+    }
+
+    this.referenciaSaving.set(true);
+    this.service.createReferencia(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.referenciasData.set([...(this.referenciasData() || []), res]);
+        this.referenciaSaving.set(false);
+        this.referenciaModel.set({ nombres: '', telefono: '', celular: '', tipo: '', parentesco: '' });
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Referencia registrada correctamente' });
+      },
+      error: (err) => {
+        let detail = 'No se pudo guardar la referencia';
+        if (err?.error?.message) detail = err.error.message;
+        else if (err?.message) detail = err.message;
+        this.referenciaSaving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail });
+      },
+    });
+  }
+
+  cancelarPariente() {
+    this.parienteModel.set({ dni: '', nombres: '', apellidos: '', parentesco: '', telefono: '' });
+  }
+
+  guardarPariente() {
+    const cliente = this.selectedCliente();
+    if (!cliente) {
+      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear un pariente' });
+      return;
+    }
+
+    const raw = { ...this.parienteModel() };
+    const payload: any = { ...raw, clienteId: cliente.clienteId };
+
+    if (!payload.nombres || !payload.apellidos || !payload.parentesco || !payload.telefono) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Complete todos los campos' });
+      return;
+    }
+
+    const user = this.auth.currentUser();
+    if (user) {
+      payload.empresaId = payload.empresaId ?? user.empresaId;
+      if (user.idsucursal != null) payload.Idsucursal = payload.Idsucursal ?? user.idsucursal;
+      payload.usuarioCreated = payload.usuarioCreated ?? user.usuario ?? user.nombre;
+    }
+
+    this.parienteSaving.set(true);
+    this.service.createPariente(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.parientesData.set([...(this.parientesData() || []), res]);
+        this.parienteSaving.set(false);
+        this.parienteModel.set({ dni: '', nombres: '', apellidos: '', parentesco: '', telefono: '' });
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Pariente registrado correctamente' });
+      },
+      error: (err) => {
+        let detail = 'No se pudo guardar el pariente';
+        if (err?.error?.message) detail = err.error.message;
+        else if (err?.message) detail = err.message;
+        this.parienteSaving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail });
+      },
+    });
+  }
+
+  private limpiarModelInfo() {
+    this.infoModel.set({ id: null, tipo: '', descripcion: '', sn_activo: 'S' });
+  }
+
+  private cargarInfoCliente(clienteId: number) {
+    this.limpiarModelInfo();
+    this.infoLoading.set(true);
+    this.service.getClienteInfoByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.infoData.set(res ?? []);
+        this.infoLoading.set(false);
+      },
+      error: () => {
+        this.infoData.set([]);
+        this.infoLoading.set(false);
+      },
+    });
+  }
+
+  editarInfo(row: CxcClienteInfo) {
+    this.infoModel.set({
+      id: row.id,
+      tipo: row.tipo,
+      descripcion: row.descripcion ?? '',
+      sn_activo: row.sn_activo === 'N' ? 'N' : 'S',
+    });
+  }
+
+  cancelarInfo() {
+    this.limpiarModelInfo();
+  }
+
+  guardarInfo() {
+    const cliente = this.selectedCliente();
+    if (!cliente) return;
+    const raw = this.infoModel();
+    if (!raw.tipo || !(raw.descripcion ?? '').trim()) return;
+
+    const payload = { tipo: raw.tipo, descripcion: (raw.descripcion ?? '').trim(), sn_activo: raw.sn_activo };
+    this.infoSaving.set(true);
+    const op = raw.id != null
+      ? this.service.updateClienteInfo(raw.id, payload)
+      : this.service.createClienteInfo({ ...payload, clienteid: cliente.clienteId });
+
+    op.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.infoSaving.set(false);
+        this.limpiarModelInfo();
+        this.msgs.add({ severity: 'success', summary: 'Guardado' });
+        this.cargarInfoCliente(cliente.clienteId);
+      },
+      error: (err) => {
+        this.infoSaving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'Error' });
+      },
+    });
+  }
+
+  eliminarInfo(row: CxcClienteInfo) {
+    this.confirm.confirm({
+      message: '¿Está seguro de desactivar este registro?',
+      accept: () => {
+        const cliente = this.selectedCliente();
+        this.service.removeClienteInfo(row.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => {
+            if (this.infoModel().id === row.id) this.limpiarModelInfo();
+            if (cliente) this.cargarInfoCliente(cliente.clienteId);
+          },
+        });
+      },
+    });
+  }
+
+  infoTipoLabel(tipo: string): string {
+    const mapa: Record<string, string> = { CELULAR: 'Celular', DIRECCION: 'Dirección', CORREO: 'Correo' };
+    return mapa[tipo] || tipo;
+  }
+
+  private cargarCarterasCliente(clienteId: number) {
+    this.carteraSeleccionada.set(null);
+    this.carteraLoading.set(true);
+    this.service.getCarterasCliente().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.carterasCliente.set((res ?? []).filter((c) => c.clienteId === clienteId));
+        this.carteraLoading.set(false);
+      },
+      error: () => {
+        this.carterasCliente.set([]);
+        this.carteraLoading.set(false);
+      },
+    });
+  }
+
+  agregarCartera() {
+    const cliente = this.selectedCliente();
+    const carteractaId = this.carteraSeleccionada();
+    if (!cliente || !carteractaId) return;
+
+    this.carteraSaving.set(true);
+    this.service.createCarteraCliente({ clienteId: cliente.clienteId, carteractaId }).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: () => {
+        this.carteraSaving.set(false);
+        this.carteraSeleccionada.set(null);
+        this.cargarCarterasCliente(cliente.clienteId);
+      },
+      error: () => this.carteraSaving.set(false),
+    });
+  }
+
+  eliminarCartera(row: CxcCarteraCliente) {
+    this.confirm.confirm({
+      message: '¿Quitar cartera contable?',
+      accept: () => {
+        const cliente = this.selectedCliente();
+        this.service.removeCarteraCliente(row.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: () => { if (cliente) this.cargarCarterasCliente(cliente.clienteId); },
+        });
+      },
+    });
+  }
+
+  nombreCartera(carteractaId: number): string {
+    return this.carterasCatalogo().find((o) => o.value === carteractaId)?.label || `Cartera ${carteractaId}`;
+  }
+
+  ctaCartera(carteractaId: number): string | null {
+    return this.carterasCatalogo().find((o) => o.value === carteractaId)?.ctacontable ?? null;
+  }
+
+  descripcionCtaCartera(carteractaId: number): string | null {
+    const cta = this.ctaCartera(carteractaId);
+    return cta ? this.cuentasContables().get(cta) ?? null : null;
+  }
+
+  limpiarFiltros() {
+    this.q.set('');
+    this.selectedCliente.set(null);
+    this.nuevoCliente.set(false);
+    this.showForm.set(false);
+    this.editingCliente.set(null);
+    this.activeTabValue.set('0');
+    this.estadoCuentaData.set([]);
+    this.referenciasData.set([]);
+    this.parientesData.set([]);
+    this.infoData.set([]);
+    this.limpiarModelInfo();
+    this.carterasCliente.set([]);
+    this.carteraSeleccionada.set(null);
+  }
+
+  nuevo() {
+    this.selectedCliente.set(null);
+    this.nuevoCliente.set(true);
+    this.activeTabValue.set('0');
+    this.estadoCuentaData.set([]);
+    this.referenciasData.set([]);
+    this.parientesData.set([]);
+    this.infoData.set([]);
+    this.limpiarModelInfo();
+    this.carterasCliente.set([]);
+    this.carteraSeleccionada.set(null);
+
+    setTimeout(() => {
+      this.clienteFormRef?.nativeElement?.focusPrimerCampo();
+    }, 200);
+  }
+
+  onFormSaved() {
+    this.nuevoCliente.set(false);
+    this.showForm.set(false);
+    this.editingCliente.set(null);
+    this.loadClientes();
+  }
+
+  onFormCancelled() {
+    this.nuevoCliente.set(false);
+    this.showForm.set(false);
+    this.editingCliente.set(null);
+  }
+
+  editarCliente(cliente: CxcCliente, event: Event) {
+    event.stopPropagation();
+    this.seleccionarCliente(cliente);
+  }
+
+  seleccionarCliente(cliente: CxcCliente) {
+    this.nuevoCliente.set(false);
+    this.selectedCliente.set(cliente);
+    this.activeTabValue.set('0');
+    this.estadoCuentaData.set([]);
+    this.referenciasData.set([]);
+    this.parientesData.set([]);
+    this.cargarDatosCliente(cliente.clienteId);
+  }
+
+  private cargarDatosCliente(clienteId: number) {
+    this.cargarInfoCliente(clienteId);
+    this.cargarCarterasCliente(clienteId);
+
+    this.estadoCuentaLoading.set(true);
+    this.service.getMovimientosByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const vigentes = (res || []).filter((m: any) => m?.sn_doc_anulado !== 'S');
+        this.estadoCuentaData.set(vigentes);
+        this.estadoCuentaLoading.set(false);
+      },
+      error: () => this.estadoCuentaLoading.set(false),
+    });
+
+    this.referenciasLoading.set(true);
+    this.service.getReferenciasByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => { this.referenciasData.set(res); this.referenciasLoading.set(false); },
+      error: () => this.referenciasLoading.set(false),
+    });
+
+    this.parientesLoading.set(true);
+    this.service.getParientesByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => { this.parientesData.set(res); this.parientesLoading.set(false); },
+      error: () => this.parientesLoading.set(false),
+    });
+  }
+
+  onTabChange(index: string) {
+    this.activeTabValue.set(index);
+  }
+
+  getClienteNombre(c: CxcCliente): string {
+    const nombres = c.nombres || '';
+    const apellidos = c.apellidos || '';
+    const full = `${nombres} ${apellidos}`.trim();
+    return full || c.razonsocial || c.nrocliente || 'Sin nombre';
+  }
+
+  getTipoMovLabel(tipo: string): string {
+    const tipos: Record<string, string> = { 'C': 'Credito', 'A': 'Abono', 'D': 'Debito', 'I': 'Interes/Mora' };
+    return tipos[tipo] || tipo;
+  }
+
+  getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'warning' | 'info' {
+    if (tipo === 'A') return 'success';
+    if (tipo === 'C') return 'info';
+    if (tipo === 'I') return 'warning';
+    return 'danger';
+  }
+
+  moneda(n: number | undefined): string {
+    const val = Number(n) || 0;
+    if (isNaN(val)) return '0.00';
+    const partes = val.toFixed(2).split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return partes.join('.');
+  }
+
+  getSaldoPendiente(): number {
+    return this.saldoPendiente();
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\historico\historico-manager.html
+
+```typescript
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Histórico de Movimientos</h1>
+      <p class="page-subtitle">Consulta de movimientos de cuentas por cobrar por cliente</p>
+    </div>
+  </header>
+
+  <!-- FILTROS -->
+  <div class="filtros">
+    <div class="filtros-fila filtros-fila--persona">
+      <div class="campo">
+        <label>Cliente</label>
+        <p-select size="small" [options]="clienteOpciones()" [ngModel]="cliente()"
+          (ngModelChange)="cliente.set($event)" placeholder="Seleccionar cliente" showClear filter
+          filterBy="label" styleClass="w-full" [appendTo]="'body'"></p-select>
+      </div>
+    </div>
+    <div class="filtros-fila filtros-fila--fechas">
+      <div class="campo">
+        <label>Desde</label>
+        <p-datepicker size="small" appendTo="body" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)"
+          dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+      </div>
+      <div class="campo">
+        <label>Hasta</label>
+        <p-datepicker size="small" appendTo="body" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)"
+          dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datepicker>
+      </div>
+    </div>
+    <div class="filtros-acciones">
+      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" [raised]="true"
+        severity="success"></p-button>
+      <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
+        (onClick)="limpiarFiltros()"></p-button>
+    </div>
+  </div>
+
+  <!-- TABLA DE RESULTADOS -->
+  <div class="tabla card">
+    <p-table id="gridhisto" [value]="filtered()" [loading]="cargando()" [paginator]="true" [rows]="limit()"
+      [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}" size="small"
+      [tableStyle]="{ 'min-width': '20rem' }" selectionMode="single" [(selection)]="selectedRow" dataKey="clienteMovId"
+      [globalFilterFields]="['cliente', 'nrocliente', 'concepto']">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 8rem">Fecha</th>
+          <th style="width: 6rem">Nro. Cliente</th>
+          <th>Cliente</th>
+          <th style="width: 8rem">Módulo</th>
+          <th style="width: 6rem">Ref.</th>
+          <th style="width: 6rem">Tipo</th>
+          <th style="width: 6rem">Importe</th>
+          <th>Concepto</th>
+          <th style="width: 6rem">Anulado</th>
+          <th style="width: 6rem">Contabil.</th>
+          <th style="width: 4rem"></th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-item>
+        <tr [class.selected-row]="selectedRow?.clienteMovId === item.clienteMovId">
+          <td>{{ getFecha(item.fecharegistro) }}</td>
+          <td>{{ item.nrocliente }}</td>
+          <td>{{ item.cliente }}</td>
+          <td>{{ item.modulo }}</td>
+          <td>{{ item.nroreferencia }}</td>
+          <td>
+            <p-tag [value]="getTipoMovLabel(item.tipomov)"
+             [severity]="getTipoMovSeverity(item.tipomov)"
+             />
+          </td>
+          <td class="font-bold">{{ moneda(item.importe) }}</td>
+          <td>{{ item.concepto || '-' }}</td>
+          <td class="text-center">
+            <p-tag [value]="item.sn_doc_anulado === 'S' ? 'Sí' : 'No'"
+              [severity]="item.sn_doc_anulado === 'S' ? 'danger' : 'success'" />
+          </td>
+          <td class="text-center">
+            <p-tag [value]="item.sn_cotabilizada === 'S' ? 'Sí' : 'No'"
+              [severity]="item.sn_cotabilizada === 'S' ? 'info' : 'success'" />
+          </td>
+          <td class="text-center">
+            <p-button label="Ver" icon="pi pi-eye" size="small" variant="text" [rounded]="true" severity="info"
+              (onClick)="irAmovimientos(item)" />
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="empty">
+        <tr>
+          <td colspan="12" class="text-center p-4">No hay registros.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  @if (selectedRow) {
+  <div class="detalle card mt-3">
+    <div class="p-fluid">
+      <div class="p-grid">
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Fecha</label>
+            <input pInputText [value]="getFecha(selectedRow.fecharegistro)" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Cliente</label>
+            <input pInputText [value]="selectedRow.cliente" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Nro. Cliente</label>
+            <input pInputText [value]="selectedRow.nrocliente" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Módulo</label>
+            <input pInputText [value]="selectedRow.modulo" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Abreviatura</label>
+            <input pInputText [value]="selectedRow.abreviatura" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Referencia</label>
+            <input pInputText [value]="selectedRow.nroreferencia" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Tipo de Movimiento</label>
+            <p-select [value]="selectedRow.tipomov" [options]="tipoMovOptions" disabled styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Importe</label>
+            <p-inputNumber [value]="selectedRow.importe" mode="currency" currency="HNL" [locale]="'es-HN'"
+              [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
+              disabled></p-inputNumber>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-8">
+          <div class="p-field">
+            <label>Concepto</label>
+            <input pInputText [value]="selectedRow.concepto" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Documento Anulado</label>
+            <p-select [value]="selectedRow.sn_doc_anulado"
+              [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]" disabled
+              styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Contabilizado</label>
+            <p-select [value]="selectedRow.sn_cotabilizada"
+              [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]" disabled
+              styleClass="w-full"></p-select>
+          </div>
+        </div>
+        <div class="p-col-12 p-md-4">
+          <div class="p-field">
+            <label>Cliente Mov ID</label>
+            <input pInputText [value]="selectedRow.clienteMovId" disabled readonly styleClass="w-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+</section>
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\historico\historico-manager.scss
+
+```typescript
+@import '../../cxc/historico/historico-manager.scss';
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\historico\historico-manager.ts
+
+```typescript
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timeout, catchError, of } from 'rxjs';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TableModule } from 'primeng/table';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { TagModule } from 'primeng/tag';
+import { MessageService } from 'primeng/api';
+import { CxcService } from '../../../core/services/cxc.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { CxcHistorico, CxcCliente } from '../../../core/models/cxc.models';
+
+@Component({
+  selector: 'app-historico-manager',
+  standalone: true,
+  host: { class: 'historico-manager' },
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    InputTextModule,
+    TableModule,
+    InputNumberModule,
+    SelectModule,
+    DatePickerModule,
+    TagModule,
+  ],
+  templateUrl: './historico-manager.html',
+  styleUrl: './historico-manager.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class HistoricoManager implements OnInit {
+  private service = inject(CxcService);
+  private msgs = inject(MessageService);
+  private auth = inject(AuthService);
+  private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+
+  cliente = signal<string | null>(null);
+  clienteOpciones = signal<{ label: string; value: string }[]>([]);
+  fechaDesde = signal<string | null>(null);
+  fechaHasta = signal<string | null>(null);
+
+  data = signal<CxcHistorico[]>([]);
+  filtered = signal<CxcHistorico[]>([]);
+  cargando = signal(false);
+  totalRecords = signal(0);
+
+  selectedRow: CxcHistorico | null = null;
+
+  page = signal(1);
+  limit = signal(20);
+
+  readonly tipoMovOptions = [
+    { label: 'Debito', value: 'D' },
+    { label: 'Credito', value: 'C' },
+    { label: 'Interés/Mora', value: 'I' },
+  ];
+
+  ngOnInit() {
+    this.cargarClientes();
+    this.cargarHistorico();
+  }
+
+  private cargarClientes() {
+    this.service.getClientes(1, 1000, '', 10).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(15000),
+      catchError(() => of({ data: [] as CxcCliente[], total: 0 })),
+    ).subscribe((res) => {
+      const opciones = (res?.data ?? [])
+        .filter((c) => c.sn_activo !== 'N')
+        .map((c) => {
+          const label = (c.razonsocial && c.razonsocial.trim()) ||
+            `${c.nombres ?? ''} ${c.apellidos ?? ''}`.trim();
+          return { label, value: label };
+        })
+        .filter((o) => o.label !== '')
+        .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+      this.clienteOpciones.set(opciones);
+    });
+  }
+
+  private cargarHistorico() {
+    this.cargando.set(true);
+    this.service
+      .getHistoricoConFiltros('', this.cliente() ?? '', this.fechaDesde(), this.fechaHasta())
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        timeout(15000),
+        catchError(() => of([])),
+      )
+      .subscribe({
+        next: (res) => {
+          const datos = res ?? [];
+          this.data.set(datos);
+          this.filtered.set(datos);
+          this.totalRecords.set(datos.length);
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.cargando.set(false);
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudieron cargar los registros históricos',
+          });
+        },
+      });
+  }
+
+  buscar() {
+    this.cargarHistorico();
+  }
+
+  limpiarFiltros() {
+    this.cliente.set(null);
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.selectedRow = null;
+    this.cargarHistorico();
+  }
+
+  getTipoMovLabel(tipo: string): string {
+    const tipos: Record<string, string> = { C: 'Crédito', D: 'Débito', I: 'Interés/Mora' };
+    return tipos[tipo] || tipo;
+  }
+
+  getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'info' | 'warning' | 'help' {
+    if (tipo === 'C') return 'info';
+    if (tipo === 'I') return 'help';
+    return 'danger';
+  }
+
+  moneda(val: any): string {
+    const num = Number(val) || 0;
+    if (isNaN(num)) return '0.00';
+    const partes = num.toFixed(2).split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return partes.join('.');
+  }
+
+  getNombreCliente(item: CxcHistorico): string {
+    return item.cliente || item.nrocliente || 'Sin nombre';
+  }
+
+  getFecha(fecha: string): string {
+    if (!fecha) return '';
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return fecha;
+    return d.toLocaleDateString('es-HN');
+  }
+
+  irAmovimientos(item: CxcHistorico) {
+    this.router.navigate(['/prestamos/movimientos'], {
+      queryParams: { clienteId: item.clienteId },
+      state: { movimiento: item },
+    });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\movimientos\movimientos-manager.html
+
+```typescript
+<div class="movimientos-manager">
+  @if (partidaId()) {
+    <div class="barra-origen">
+      <span class="barra-origen__texto">
+        <i class="pi pi-file-edit"></i>
+        Movimiento abierto desde una partida contable
+      </span>
+      <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+        variant="text" [rounded]="true" (onClick)="volverAPartida()" />
+    </div>
+  } @else if (desdeHistorico()) {
+    <div class="barra-origen">
+      <span class="barra-origen__texto">
+        <i class="pi pi-history"></i>
+        Movimiento abierto desde el Histórico de Clientes
+      </span>
+      <p-button label="Volver al histórico" icon="pi pi-arrow-left" size="small" severity="secondary"
+        variant="text" [rounded]="true" (onClick)="volverAHistorico()" />
+    </div>
+  }
+
+  <div class="split-layout">
+    <div class="left-column">
+      @if (!selectedCliente()) {
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Seleccione un cliente</h3>
+        <p>Haga clic en un cliente de la lista para gestionar movimientos</p>
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
+              <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
+                [rounded]="true" size="small"></p-button>
+            </p-iconField>
+          </div>
+        </div>
+      </div>
+      }
+
+      @if (selectedCliente()) {
+      <div class="cliente-detail">
+        <div class="tab-content">
+          <div class="tab-header tab-header--stacked">
+            <h4>Movimientos</h4>
+            <span>Cod. {{ selectedCliente()?.clienteId }} - {{ selectedCliente()?.nombres }} {{ selectedCliente()?.apellidos }}</span>
+          </div>
+
+          <div class="prestamo-form-columns mb-3">
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Datos del Movimiento</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Tipo</label>
+                  <p-select size="small" [options]="tipoMovOptions" [ngModel]="movimientoModel().tipomov"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), tipomov: $event, nroreferencia: ''})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar tipo"></p-select>
+                </div>
+
+                <div class="p-field">
+                  <label>¿Es un documento manual?</label>
+                  <p-select size="small" [options]="snDocManualOptions"
+                    [ngModel]="movimientoModel().sn_doc_manual || 'S'"
+                    (ngModelChange)="onModoManualChange($event)"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar origen"></p-select>
+                </div>
+
+                <div class="p-field">
+                  <label>Documento Fiscal</label>
+                  <p-select id="cbodocfiscal" size="small" [options]="documentosOptions()" [ngModel]="documentoSelected()"
+                    (ngModelChange)="documentoSelected.set($event)" placeholder="Seleccionar documento"
+                    styleClass="w-full" [appendTo]="'body'"></p-select>
+                </div>
+
+                <div class="p-field">
+                  <label>Nro. Referencia</label>
+                  @if (esManual()) {
+                    <input pInputText pSize="small" [ngModel]="movimientoModel().nroreferencia"
+                      (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
+                      placeholder="Escriba el numero de documento" />
+                  } @else {
+                    <p-select size="small"
+                      [options]="debitoReferencias().map(r => ({label: r.nroreferencia + ' - Saldo: ' + moneda(r.saldo), value: r.nroreferencia}))"
+                      [ngModel]="movimientoModel().nroreferencia"
+                      (ngModelChange)="onRefSelect($event)"
+                      placeholder="Seleccione documento" styleClass="w-full" [appendTo]="'body'"></p-select>
+                  }
+                </div>
+
+                <div class="p-field">
+                  <label>Concepto</label>
+                  <input pInputText pSize="small" [ngModel]="movimientoModel().concepto"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), concepto: $event})"
+                    placeholder="Descripcion del movimiento" />
+                </div>
+              </div>
+            </div>
+
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Referencia y Fecha</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Fecha del documento</label>
+                  <p-datepicker [ngModel]="movimientoFecha()"
+                   size="small"
+                   (ngModelChange)="onMovimientoFechaChange($event)"
+                   dateFormat="dd/mm/yy" [showIcon]="true"></p-datepicker>
+                </div>
+
+                <div class="p-field">
+                  <label>Cartera Contable</label>
+                  <p-select size="small" [options]="carterasOptions()" [ngModel]="movimientoModel().carteracontableId"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), carteracontableId: $event})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar cartera"
+                    [showClear]="true"></p-select>
+                </div>
+
+                <div class="p-field">
+                  <label>Importe del documento</label>
+                  <p-inputNumber size="small" [ngModel]="movimientoModel().importe"
+                    (ngModelChange)="movimientoModel.set({...movimientoModel(), importe: $event})" mode="currency"
+                    currency="HNL" [locale]="'es-HN'" [min]="0.01" [minFractionDigits]="2"
+                    [maxFractionDigits]="2" [useGrouping]="true"
+                    [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="prestamo-actions mb-3">
+            <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
+              (click)="cancelarMovimiento()" [rounded]="true" size="small"></p-button>
+            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
+              [loading]="movimientoSaving()" (click)="guardarMovimiento()" [rounded]="true"
+              size="small"></p-button>
+          </div>
+
+          <div class="movs-block">
+            <div class="movs-header">
+              <h5 class="prestamo-col-title">Movimientos del cliente</h5>
+              <div class="movs-saldos">
+                <span class="movs-saldo-item">Debitos: <b>{{ moneda(totalDebitos()) }}</b></span>
+                <span class="movs-saldo-item">Creditos: <b>{{ moneda(totalCreditos()) }}</b></span>
+                <span class="movs-saldo-item movs-saldo-uno">Saldo: <b>{{ moneda(saldoCliente()) }}</b></span>
+              </div>
+            </div>
+
+            @if (movimientosLoading()) {
+              <p-skeleton styleClass="mb-2" />
+              <p-skeleton styleClass="mb-2" />
+              <p-skeleton />
+            } @else if (movimientosData().length === 0) {
+              <div class="movs-vacio">
+                <i class="pi pi-inbox"></i>
+                <p>Este cliente no tiene movimientos registrados</p>
+              </div>
+            } @else {
+              <p-table [value]="movimientosData()" size="small" [paginator]="true" [rows]="10"
+                [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} movimientos"
+                styleClass="movs-table">
+                <ng-template #header>
+                  <tr>
+                    <th style="width:4rem">#</th>
+                    <th style="width:6rem">Fecha</th>
+                    <th style="width:6rem">Tipo</th>
+                    <th style="width:8rem">Referencia</th>
+                    <th>Concepto</th>
+                    <th style="width:8rem" class="text-right">Importe</th>
+                    <th style="width:7rem">Estado</th>
+                    <th style="width:7rem">Origen</th>
+                    <th style="width:4rem" class="acciones-header">Acciones</th>
+                  </tr>
+                </ng-template>
+                <ng-template #body let-m>
+                  <tr [class.mov-anulado]="m.sn_doc_anulado === 'S'">
+                    <td>{{ m.nromovimiento }}</td>
+                    <td>{{ fechaCorta(m.fecharegistro) }}</td>
+                    <td>
+                      <p-tag [value]="getTipoMovLabel(m.tipomov)" [severity]="getTipoMovSeverity(m.tipomov)"
+                        styleClass="tag-sm" />
+                    </td>
+                    <td>{{ m.nroreferencia || '—' }}</td>
+                    <td class="mov-concepto" [title]="m.concepto">{{ m.concepto }}</td>
+                    <td class="text-right">{{ moneda(m.importe) }}</td>
+                    <td>
+                      @if (m.sn_doc_anulado === 'S') {
+                        <p-tag value="Anulada" severity="danger" styleClass="tag-sm" />
+                      } @else if (m.sn_cotabilizada === 'S') {
+                        <p-tag value="Contab." severity="info" styleClass="tag-sm" />
+                      } @else {
+                        <p-tag value="Sin contab." severity="secondary" styleClass="tag-sm" />
+                      }
+                    </td>
+                    <td>
+                      <p-tag [value]="getOrigenLabel(m)" [severity]="getOrigenSeverity(m)" styleClass="tag-sm" />
+                    </td>
+                    <td class="acciones-cell">
+                      <p-button icon="pi pi-ban" severity="danger" text rounded size="small"
+                        [disabled]="bloqueoAnulacion(m) !== null"
+                        [pTooltip]="bloqueoAnulacion(m) || 'Anular movimiento'" tooltipPosition="top"
+                        (onClick)="anularMovimiento(m)" />
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                  <tr>
+                    <td colspan="9" class="movs-vacio">
+                      <p>No hay movimientos registrados</p>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            }
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+            (keyup.enter)="loadClientes()" placeholder="Buscar por nombre, DNI, RTN..."
+            class="search-input" />
+          <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
+            [rounded]="true" size="small" class="clear-btn"></p-button>
+        </div>
+      </div>
+
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay clientes</h3>
+        <p>No se encontraron clientes registrados.</p>
+      </div>
+      } @else {
+      <div class="clientes-lista">
+        @for (cliente of data(); track cliente.clienteId) {
+        <div class="cliente-item-ficha"
+          [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)">
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ cliente.nrocliente }}</span>
+            <p-tag [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ cliente.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ cliente.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ cliente.dni }}</span>
+          </div>
+          @if (cliente.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ cliente.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ cliente.categoria }}</span>
+          </div>
+        </div>
+        }
+      </div>
+
+      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"></p-paginator>
+      }
+    </div>
+  </div>
+</div>
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\movimientos\movimientos-manager.scss
+
+```typescript
+@import '../../cxc/movimientos/movimientos-manager.scss';
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\movimientos\movimientos-manager.ts
+
+```typescript
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { timeout, catchError, of } from 'rxjs';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { DataViewModule } from 'primeng/dataview';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { CardModule } from 'primeng/card';
+import { SkeletonModule } from 'primeng/skeleton';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { PaginatorModule } from 'primeng/paginator';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { TableModule } from 'primeng/table';
+import { CxcService } from '../../../core/services/cxc.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { NavegacionService } from '../../../core/services/navegacion.service';
+import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
+import { CxcCliente, CxcMovimiento } from '../../../core/models/cxc.models';
+
+@Component({
+  selector: 'app-movimientos-manager',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ToolbarModule,
+    ButtonModule,
+    InputTextModule,
+    DataViewModule,
+    TagModule,
+    TooltipModule,
+    CardModule,
+    SkeletonModule,
+    InputNumberModule,
+    SelectModule,
+    DatePickerModule,
+    PaginatorModule,
+    IconFieldModule,
+    InputIconModule,
+    TableModule,
+  ],
+  templateUrl: './movimientos-manager.html',
+  styleUrl: './movimientos-manager.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class MovimientosManager implements OnInit {
+  private service = inject(CxcService);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private auth = inject(AuthService);
+  private destroyRef = inject(DestroyRef);
+  private catalogService = inject(CatalogoParametrosService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private nav = inject(NavegacionService);
+
+  partidaId = signal<number | null>(null);
+  readonly desdeHistorico = signal(false);
+
+  data = signal<CxcCliente[]>([]);
+  cargando = signal(false);
+  selectedCliente = signal<CxcCliente | null>(null);
+  q = signal('');
+  page = signal(1);
+  limit = signal(15);
+  totalClientes = signal(0);
+
+  private vieneDeHistorico = false;
+  private _qAnterior = '';
+  private _searchEffect = effect(() => {
+    const q = this.q();
+    if (q !== this._qAnterior) {
+      this._qAnterior = q;
+      this.page.set(1);
+      untracked(() => this.loadClientes());
+    }
+  });
+
+  movimientosData = signal<CxcMovimiento[]>([]);
+  movimientosLoading = signal(false);
+  movimientoSaving = signal(false);
+  movimientoModel = signal<any>({
+    clienteId: null,
+    tipomov: 'D',
+    sn_doc_manual: 'S',
+    concepto: '',
+    importe: 0,
+    nroreferencia: '',
+    fecharegistro: new Date().toISOString(),
+    carteracontableId: null,
+  });
+
+  movimientoFecha = computed(() => {
+    const f = this.movimientoModel().fecharegistro;
+    if (!f) return null;
+    const d = new Date(f);
+    return isNaN(d.getTime()) ? null : d;
+  });
+
+  documentosOptions = signal<{ label: string; value: any }[]>([]);
+  documentoSelected = signal<any>(null);
+  carterasOptions = signal<{ label: string; value: any }[]>([]);
+
+  readonly tipoMovOptions = [
+    { label: 'Debito', value: 'D' },
+    { label: 'Credito', value: 'C' },
+  ];
+
+  readonly snDocManualOptions = [
+    { label: 'Si - Documento manual', value: 'S' },
+    { label: 'No - Generado por el sistema', value: 'N' },
+  ];
+
+  debitoReferencias = computed(() => {
+    const movs = this.movimientosData();
+    const mapa = new Map<string, { nroreferencia: string; saldo: number; documentoId: number | null }>();
+    const docsPermitidos = new Set(this.documentosOptions().map(o => Number(o.value)));
+
+    for (const m of movs) {
+      if (m.sn_doc_anulado === 'S') continue;
+      if (m.tipomov !== 'D' || !m.nroreferencia) continue;
+      if (m.documentoId != null && !docsPermitidos.has(Number(m.documentoId))) continue;
+      const ref = String(m.nroreferencia);
+      const existente = mapa.get(ref);
+      if (existente) {
+        existente.saldo += Number(m.importe) || 0;
+      } else {
+        mapa.set(ref, {
+          nroreferencia: ref,
+          saldo: Number(m.importe) || 0,
+          documentoId: m.documentoId != null ? Number(m.documentoId) : null,
+        });
+      }
+    }
+
+    for (const m of movs) {
+      if (m.sn_doc_anulado === 'S') continue;
+      if (m.tipomov !== 'C' || !m.nroreferencia) continue;
+      const ref = String(m.nroreferencia);
+      const existente = mapa.get(ref);
+      if (existente) {
+        existente.saldo -= Number(m.importe) || 0;
+      }
+    }
+
+    return Array.from(mapa.values()).filter(d => d.saldo > 0);
+  });
+
+  ngOnInit() {
+    this.loadDocumentos();
+    this.loadCarteras();
+
+    const partidaParam = Number(this.route.snapshot.queryParamMap.get('partidaId'));
+    if (!isNaN(partidaParam) && partidaParam > 0) this.partidaId.set(partidaParam);
+
+    const movIdParam = this.route.snapshot.queryParamMap.get('movimientoId');
+    if (movIdParam) {
+      const movId = Number(movIdParam);
+      if (!isNaN(movId) && movId > 0) {
+        this.service.getMovimiento(movId).pipe(
+          takeUntilDestroyed(this.destroyRef),
+          timeout(10000),
+          catchError(() => {
+            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el movimiento de origen' });
+            this.loadClientes();
+            return of(null);
+          }),
+        ).subscribe({
+          next: (mov) => {
+            const clienteId = mov ? Number(mov['clienteId']) : 0;
+            if (clienteId > 0) {
+              this.vieneDeHistorico = true;
+              this.autoSelectCliente(clienteId, mov);
+            } else {
+              this.loadClientes();
+            }
+          },
+        });
+        return;
+      }
+    }
+
+    const clienteIdParam = this.route.snapshot.queryParamMap.get('clienteId');
+    const movimientoState = (history.state as any)?.movimiento ?? null;
+
+    if (clienteIdParam) {
+      const id = Number(clienteIdParam);
+      if (!isNaN(id) && id > 0) {
+        this.vieneDeHistorico = true;
+        this.desdeHistorico.set(true);
+        this.autoSelectCliente(id, movimientoState);
+        return;
+      }
+    }
+
+    this.loadClientes();
+  }
+
+  volverAPartida(): void {
+    if (!this.partidaId()) return;
+    this.router.navigate(['/contabilidad/copdamae'], {
+      queryParams: { partidaId: this.partidaId() },
+    });
+  }
+
+  volverAHistorico(): void {
+    this.nav.volver(['/prestamos/historico']);
+  }
+
+  private autoSelectCliente(clienteId: number, movimiento?: any) {
+    this.cargando.set(true);
+    this.service.getCliente(clienteId).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(10000),
+      catchError(() => {
+        this.cargando.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el cliente' });
+        return of(null);
+      })
+    ).subscribe({
+      next: (cliente) => {
+        this.cargando.set(false);
+        if (cliente) {
+          if (this.vieneDeHistorico) {
+            this.data.set([cliente]);
+            this.totalClientes.set(1);
+          } else {
+            const lista = this.data();
+            const existe = lista.find(c => c.clienteId === cliente.clienteId);
+            if (!existe) {
+              this.data.set([cliente, ...lista]);
+            }
+          }
+          this.seleccionarCliente(cliente);
+          if (movimiento) {
+            this.precargarMovimiento(movimiento);
+          }
+        }
+      },
+    });
+  }
+
+  private precargarMovimiento(movimiento: any) {
+    this.movimientoModel.set({
+      clienteId: movimiento.clienteId,
+      tipomov: movimiento.tipomov || 'D',
+      sn_doc_manual: movimiento.sn_doc_manual === 'N' ? 'N' : 'S',
+      concepto: movimiento.concepto || '',
+      importe: Number(movimiento.importe) || 0,
+      nroreferencia: movimiento.nroreferencia || '',
+      fecharegistro: movimiento.fecharegistro || new Date().toISOString(),
+    });
+    this.documentoSelected.set(movimiento.documentoId ?? null);
+  }
+
+  loadClientes() {
+    this.cargando.set(true);
+    this.service.getClientes(this.page(), this.limit(), this.q(), 10).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      timeout(10000),
+      catchError(() => of({ data: [], total: 0 }))
+    ).subscribe({
+      next: (res) => {
+        this.data.set(res.data);
+        this.totalClientes.set(res.total);
+        this.cargando.set(false);
+      },
+      error: () => this.cargando.set(false),
+    });
+  }
+
+  onPageChange(event: any) {
+    this.page.set(event.page + 1);
+    this.limit.set(event.rows);
+    this.loadClientes();
+  }
+
+  limpiarFiltros() {
+    this.q.set('');
+    this.selectedCliente.set(null);
+    this.movimientosData.set([]);
+  }
+
+  seleccionarCliente(cliente: CxcCliente) {
+    this.selectedCliente.set(cliente);
+    this.loadMovimientos(cliente.clienteId);
+  }
+
+  getClienteNombre(c: CxcCliente): string {
+    const nombres = c.nombres || '';
+    const apellidos = c.apellidos || '';
+    const full = `${nombres} ${apellidos}`.trim();
+    return full || c.razonsocial || c.nrocliente || 'Sin nombre';
+  }
+
+  moneda(val: any): string {
+    const num = Number(val) || 0;
+    if (isNaN(num)) return '0.00';
+    const partes = num.toFixed(2).split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return partes.join('.');
+  }
+
+  private readonly DOCS_APLICABLES_ND_NC = ['FAC', 'PPR', 'TCK', 'RHP', 'BDC', 'CDD', 'OCA'];
+
+  loadDocumentos() {
+    const user = this.auth.currentUser();
+    this.catalogService.getAll<any>('/parametros/tcotipodocumentofiscal').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const filtered = (res || []).filter((r: any) => {
+          const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
+          const mismaEmpresa = user?.empresaId ? Number(r.empresaId) === Number(user.empresaId) : true;
+          const aplicaNdNc = this.DOCS_APLICABLES_ND_NC.includes(String(r.abreviatura || '').toUpperCase());
+          return activo && mismaEmpresa && aplicaNdNc;
+        });
+        const opts = filtered.map((r: any) => ({
+          label: r.descripcion || r.nombre || r.descripcioncorta || String(r.tipodocumentofiscalId || r.documentoId || r.id),
+          value: r.tipodocumentofiscalId ?? r.documentoId ?? r.id,
+        }));
+        this.documentosOptions.set(opts);
+      },
+      error: () => this.documentosOptions.set([]),
+    });
+  }
+
+  loadCarteras() {
+    const user = this.auth.currentUser();
+    this.catalogService.getAll<any>('/contabilidad/carteras').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const filtered = (res || []).filter((r: any) => {
+          const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
+          const mismaEmpresa = user?.empresaId ? Number(r.empresaId) === Number(user.empresaId) : true;
+          const mismoModulo = Number(r.moduloId) === 4;
+          return activo && mismaEmpresa && mismoModulo;
+        });
+        const opts = filtered.map((r: any) => ({
+          label: r.descripcion || String(r.tcocarteraId || r.id),
+          value: r.tcocarteraId ?? r.id,
+        }));
+        this.carterasOptions.set(opts);
+      },
+      error: () => this.carterasOptions.set([]),
+    });
+  }
+
+  private loadMovimientos(clienteId: number) {
+    this.movimientosLoading.set(true);
+    this.service.getMovimientosByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const vigentes = (res || []).filter((m) => m?.sn_doc_anulado !== 'S');
+        this.movimientosData.set(vigentes);
+        this.movimientosLoading.set(false);
+      },
+      error: () => this.movimientosLoading.set(false),
+    });
+  }
+
+  onMovimientoFechaChange(d: Date | null) {
+    this.movimientoModel.set({ ...this.movimientoModel(), fecharegistro: d ? d.toISOString() : null });
+  }
+
+  onModoManualChange(valor: string) {
+    this.movimientoModel.set({
+      ...this.movimientoModel(),
+      sn_doc_manual: valor === 'N' ? 'N' : 'S',
+      nroreferencia: '',
+    });
+  }
+
+  esManual(): boolean {
+    return this.movimientoModel().sn_doc_manual !== 'N';
+  }
+
+  onRefSelect(nroReferencia: string) {
+    const refSel = this.debitoReferencias().find(r => r.nroreferencia === nroReferencia);
+    this.movimientoModel.set({
+      ...this.movimientoModel(),
+      nroreferencia: nroReferencia,
+      importe: 0,
+    });
+    if (refSel?.documentoId != null) {
+      this.documentoSelected.set(refSel.documentoId);
+    }
+  }
+
+  cancelarMovimiento() {
+    this.movimientoModel.set({
+      clienteId: this.selectedCliente()?.clienteId ?? null,
+      tipomov: 'D',
+      sn_doc_manual: 'S',
+      concepto: '',
+      importe: 0,
+      nroreferencia: '',
+      fecharegistro: new Date().toISOString(),
+      carteracontableId: null,
+    });
+    this.documentoSelected.set(null);
+  }
+
+  guardarMovimiento() {
+    const cliente = this.selectedCliente();
+    if (!cliente) {
+      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear un movimiento' });
+      return;
+    }
+
+    const raw = { ...this.movimientoModel() };
+    const payload: any = {
+      ...raw,
+      clienteId: cliente.clienteId,
+      importe: Number(raw.importe) || 0,
+      tipomov: raw.tipomov || 'D',
+    };
+
+    try {
+      if (payload.fecharegistro) {
+        const d = new Date(payload.fecharegistro);
+        if (!isNaN(d.getTime())) payload.fecharegistro = d.toISOString();
+      }
+    } catch (e) { }
+
+    if (!payload.concepto || !payload.clienteId) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Complete concepto y cliente' });
+      return;
+    }
+
+    if (!this.documentoSelected()) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Documento Fiscal requerido',
+        detail: 'Seleccione el tipo de documento fiscal de la referencia',
+      });
+      return;
+    }
+
+    if (typeof payload.importe !== 'number' || payload.importe <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Importe invalido', detail: 'El importe debe ser mayor que 0' });
+      return;
+    }
+
+    const esManual = raw.sn_doc_manual !== 'N';
+    const ref = String(payload.nroreferencia ?? '').trim();
+
+    if (!ref) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Referencia requerida',
+        detail: esManual ? 'Ingrese el numero de documento' : 'Seleccione el documento de referencia',
+      });
+      return;
+    }
+    payload.nroreferencia = ref;
+
+    if (!esManual && payload.tipomov === 'C') {
+      const refSel = this.debitoReferencias().find(r => r.nroreferencia === ref);
+      if (!refSel) {
+        this.msgs.add({ severity: 'warn', summary: 'Referencia invalida', detail: `La referencia "${ref}" no corresponde a ningun debito existente` });
+        return;
+      }
+      if (payload.importe > refSel.saldo) {
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Excede el saldo',
+          detail: `El importe (${this.moneda(payload.importe)}) supera el saldo pendiente de ${refSel.nroreferencia} (${this.moneda(refSel.saldo)})`,
+        });
+        return;
+      }
+    }
+
+    const user = this.auth.currentUser();
+    if (user) {
+      payload.empresaId = payload.empresaId ?? user.empresaId;
+      if (user.idsucursal != null) payload.Idsucursal = payload.Idsucursal ?? user.idsucursal;
+      payload.usuarioCreated = payload.usuarioCreated ?? user.usuario ?? user.nombre;
+    }
+
+    payload.nrocliente = payload.nrocliente ?? cliente.nrocliente;
+    payload.moduloId = payload.moduloId ?? 4;
+    payload.sn_doc_anulado = 'N';
+    payload.sn_cotilizada = 'N';
+    payload.sn_doc_manual = raw.sn_doc_manual === 'N' ? 'N' : 'S';
+    payload.factordecambio = payload.factordecambio || 1;
+    payload.documentoId = this.documentoSelected();
+    if (payload.tipodocumentofiscalId == null) {
+      payload.tipodocumentofiscalId = this.documentoSelected();
+    }
+
+    this.movimientoSaving.set(true);
+    this.service.createMovimiento(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.movimientoSaving.set(false);
+        this.cancelarMovimiento();
+        this.loadMovimientos(cliente.clienteId);
+        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Movimiento registrado correctamente' });
+      },
+      error: (err) => {
+        let detail = 'No se pudo guardar el movimiento';
+        if (err?.error?.message) detail = err.error.message;
+        else if (err?.message) detail = err.message;
+        this.movimientoSaving.set(false);
+        this.msgs.add({ severity: 'error', summary: 'Error', detail });
+      },
+    });
+  }
+
+  getTipoMovLabel(tipo: string): string {
+    const tipos: Record<string, string> = { 'C': 'Credito', 'A': 'Abono', 'D': 'Debito', 'I': 'Interés/Mora' };
+    return tipos[tipo] || tipo;
+  }
+
+  getTipoMovSeverity(tipo: string): 'success' | 'danger' | 'warning' | 'info' {
+    if (tipo === 'A') return 'success';
+    if (tipo === 'C') return 'info';
+    if (tipo === 'I') return 'warning';
+    return 'danger';
+  }
+
+  fechaCorta(valor: string | null | undefined): string {
+    if (!valor) return '—';
+    const d = new Date(valor);
+    if (isNaN(d.getTime())) return '—';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}/${d.getFullYear()}`;
+  }
+
+  getOrigenLabel(m: CxcMovimiento): string {
+    return m.sn_doc_manual === 'S' ? 'Manual' : 'Automatico';
+  }
+
+  getOrigenSeverity(m: CxcMovimiento): 'success' | 'secondary' {
+    return m.sn_doc_manual === 'S' ? 'success' : 'secondary';
+  }
+
+  totalDebitos(): number {
+    return this.movimientosData()
+      .filter(m => m.tipomov === 'D' && m.sn_doc_anulado !== 'S')
+      .reduce((s, m) => s + (Number(m.importe) || 0), 0);
+  }
+
+  totalCreditos(): number {
+    return this.movimientosData()
+      .filter(m => (m.tipomov === 'C' || m.tipomov === 'I') && m.sn_doc_anulado !== 'S')
+      .reduce((s, m) => s + (Number(m.importe) || 0), 0);
+  }
+
+  saldoCliente(): number {
+    return this.totalDebitos() - this.totalCreditos();
+  }
+
+  bloqueoAnulacion(m: CxcMovimiento): string | null {
+    if (m.sn_doc_anulado === 'S') return 'Movimiento ya anulado';
+    if (m.sn_doc_manual !== 'S') return 'Movimiento automatico: se anula desde su documento origen';
+    if (m.partidaId != null) return 'Movimiento con partida contable: requiere reversa de la partida';
+    return null;
+  }
+
+  anularMovimiento(m: CxcMovimiento) {
+    const motivo = this.bloqueoAnulacion(m);
+    if (motivo) {
+      this.msgs.add({ severity: 'warn', summary: 'No anulable', detail: motivo });
+      return;
+    }
+
+    this.confirm.confirm({
+      message: `¿Anular el movimiento #${m.nromovimiento} (${this.getTipoMovLabel(m.tipomov)}) por L ${this.moneda(m.importe)}?<br/>Referencia: ${m.nroreferencia || '—'}`,
+      header: 'Confirmar anulacion',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Si, anular',
+      rejectLabel: 'Cancelar',
+      accept: () => this.ejecutarAnulacion(m),
+    });
+  }
+
+  private ejecutarAnulacion(m: CxcMovimiento) {
+    this.movimientosLoading.set(true);
+    this.service.anularMovimiento(m.clienteMovId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.loadMovimientos(m.clienteId);
+        this.msgs.add({ severity: 'success', summary: 'Movimiento anulado', detail: `Movimiento #${m.nromovimiento} anulado correctamente` });
+      },
+      error: (err) => {
+        this.movimientosLoading.set(false);
+        let detail = 'No se pudo anular el movimiento';
+        if (err?.error?.message) detail = err.error.message;
+        else if (err?.message) detail = err.message;
+        this.msgs.add({ severity: 'error', summary: 'Error', detail });
+      },
+    });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\prestamos\prestamos-manager.html
+
+```typescript
+<div class="prestamos-manager">
+  <div class="split-layout">
+
+    <!-- Columna izquierda: formulario prestamo + plan de pago -->
+    <div class="left-column">
+      @if (!selectedCliente()) {
+      <div class="empty-state">
+        <i class="pi pi-arrow-right empty-icon"></i>
+        <h3>Seleccione un cliente</h3>
+        <p>Haga clic en un cliente de la lista para ver su prestamo</p>
+
+        <div class="grid">
+          <div class="col-12 flex flex-wrap justify-center gap-2">
+            <p-iconField>
+              <p-inputIcon class="pi pi-search" />
+              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+                placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
+              <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
+                [rounded]="true" size="small"></p-button>
+            </p-iconField>
+          </div>
+        </div>
+      </div>
+      }
+
+      @if (selectedCliente()) {
+      <div class="cliente-detail">
+        <div class="cliente-header-inline">
+          <span class="cliente-inline-codigo">Codigo.: {{ selectedCliente()?.nrocliente }} -</span>
+          <span class="cliente-inline-nombre">{{ getClienteNombre(selectedCliente()) }}</span>
+        </div>
+
+        @if (prestamosLoading()) {
+        <div class="loading-center">
+          <p-progressSpinner strokeWidth="4" fill="transparent" animationDuration=".8s"></p-progressSpinner>
+          <span class="loading-text">Cargando prestamo...</span>
+        </div>
+        } @else {
+        <div class="tab-content">
+          <!-- Formulario dos columnas -->
+          <div class="prestamo-form-columns mb-3">
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Datos del Prestamo</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Nro. Prestamo</label>
+                  <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo || ''"
+                    placeholder="Se asigna al aprobar" [readonly]="true" />
+                </div>
+                <div class="p-field">
+                  <label>Capital Solicitado</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().capital"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), capital: $event})"
+                    (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'"
+                    [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    locale="es-HN"
+                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Prima (aporte del cliente)</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().prima"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), prima: $event})"
+                    (blur)="calcularCuota()" mode="currency" currency="HNL" [locale]="'es-HN'"
+                    [min]="0" [minFractionDigits]="2" [maxFractionDigits]="2"
+                    locale="es-HN"
+                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Capital Neto (solo lectura)</label>
+                  <p-inputNumber size="small" [ngModel]="capitalnetoCalc()" [readonly]="true"
+                    mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0"
+                    [minFractionDigits]="2" [maxFractionDigits]="2" locale="es-HN"
+                    [useGrouping]="true" [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Cuotas</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().cuotas"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), cuotas: $event})"
+                    (blur)="calcularCuota()" [min]="1"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Valor Cuota</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().vlrcuota" [readonly]="true"
+                    mode="currency" currency="HNL" [locale]="'es-HN'" [min]="0"
+                    [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
+                    [inputStyle]="{ 'width': '100%' }"></p-inputNumber>
+                </div>
+              </div>
+            </div>
+
+            <div class="prestamo-col">
+              <h5 class="prestamo-col-title">Tasas y Control</h5>
+              <div class="p-fluid">
+                <div class="p-field">
+                  <label>Tasa anual %</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().tasa"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), tasa: $event})"
+                    (blur)="calcularCuota()" mode="decimal" [min]="0" [step]="0.01"
+                    locale="es-HN"
+                    [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [inputStyle]="{ 'width': '100%' }"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Tasa moratoria %</label>
+                  <p-inputNumber size="small" [ngModel]="prestamoModel().moratorio"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), moratorio: $event})"
+                    mode="decimal" [min]="0" [step]="0.01"
+                    locale="es-HN"
+                    [minFractionDigits]="2" [maxFractionDigits]="2"
+                    [inputStyle]="{ 'width': '100%' }"
+                    [disabled]="!!prestamoData()"></p-inputNumber>
+                </div>
+                <div class="p-field">
+                  <label>Fecha Aprobación</label>
+                  <p-datepicker [ngModel]="prestamoFecha()" (ngModelChange)="onPrestamoFechaChange($event)"
+                    dateFormat="dd/mm/yy" [showIcon]="true" size="small" [appendTo]="'body'"
+                    styleClass="w-full"
+                    [disabled]="!!prestamoData()"></p-datepicker>
+                </div>
+                <div class="p-field">
+                  <label>Fecha 1er Cuota (aprobación + 30 días)</label>
+                  <input pInputText pSize="small"
+                    [value]="(fechaEfectivaCalc() | date:'dd/MM/yyyy') || ''" [readonly]="true" />
+                </div>
+                <div class="p-field">
+                  <label>Estado del flujo</label>
+                  <div class="estado-flujo-tags">
+                    @if (prestamoData(); as pres) {
+                      <p-tag [value]="pres.sn_preaprobado === 'S' ? 'Pre-aprobado' : 'Sin pre-aprobar'"
+                        [severity]="pres.sn_preaprobado === 'S' ? 'warn' : 'secondary'"></p-tag>
+                      <p-tag [value]="pres.sn_aprobado === 'S' ? 'Aprobado' : 'Sin aprobar'"
+                        [severity]="pres.sn_aprobado === 'S' ? 'success' : 'secondary'"></p-tag>
+                      <p-tag [value]="pres.sn_contabilizado === 'S' ? 'Contabilizado' : 'Sin contabilizar'"
+                        [severity]="pres.sn_contabilizado === 'S' ? 'info' : 'secondary'"></p-tag>
+                    } @else {
+                      <p-tag value="Nuevo" severity="secondary"></p-tag>
+                    }
+                  </div>
+                </div>
+                <div class="p-field">
+                  <label>Estado</label>
+                  <p-select size="small" [options]="estadoOptions" [ngModel]="prestamoModel().sn_activo"
+                    (ngModelChange)="prestamoModel.set({...prestamoModel(), sn_activo: $event})"
+                    styleClass="w-full" [appendTo]="'body'" placeholder="Seleccionar estado"
+                    [disabled]="!!prestamoData()"></p-select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Control del préstamo -->
+          @if (prestamoData(); as pres) {
+          <div class="prestamo-info-control mb-3">
+            <table class="pic-tabla">
+              <thead>
+                <tr>
+                  <th>Capital</th>
+                  <th>Fecha</th>
+                  <th>Fecha efectiva</th>
+                  <th>Saldo</th>
+                  <th>Fecha</th>
+                  <th>Nro Cuota</th>
+                </tr>
+                <tr>
+                  <th>Neto aprobado</th>
+                  <th>Aprobación</th>
+                  <th>(1era cuota)</th>
+                  <th>Actual</th>
+                  <th>Ult. pago</th>
+                  <th>Ult. pagada</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="pic-valor">{{ moneda(pres.capitalneto) }}</td>
+                  <td class="pic-valor">{{ (pres.fecha_aprobacion | date:'dd/MM/yyyy') || '—' }}</td>
+                  <td class="pic-valor">{{ (pres.fechaEfectiva | date:'dd/MM/yyyy') || '—' }}</td>
+                  <td class="pic-valor pic-saldo">{{ moneda(pres.saldoactual) }}</td>
+                  <td class="pic-valor">{{ (pres.fechaUltPago | date:'dd/MM/yyyy') || '—' }}</td>
+                  <td class="pic-valor">{{ pres.ultcuotapagada ? '#' + pres.ultcuotapagada : '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          }
+
+          <!-- Botones del flujo -->
+          <div class="prestamo-actions mb-3">
+            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary"
+              (click)="cancelar()" [rounded]="true" size="small"></p-button>
+
+            <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
+              (click)="generarPlanPago()" [rounded]="true" size="small"
+              [disabled]="!puedeGenerarPlan()"
+              [pTooltip]="motivoBloqueoPlan()" tooltipPosition="bottom"></p-button>
+
+            <p-button label="Pre-Aprobación" icon="pi pi-check-circle" variant="text" severity="warn"
+              [loading]="prestamoSaving()" (click)="preaprobar()" [rounded]="true" size="small"
+              [disabled]="!puedePreaprobar()"
+              [pTooltip]="motivoBloqueoPreaprobado()" tooltipPosition="bottom"></p-button>
+
+            <p-button label="Aprobación" icon="pi pi-verified" variant="text" severity="success"
+              [loading]="prestamoSaving()" (click)="confirmarAprobar()" [rounded]="true" size="small"
+              [disabled]="!puedeAprobar()"
+              [pTooltip]="motivoBloqueoAprobar()" tooltipPosition="bottom"></p-button>
+
+            <p-button label="Contabilización" icon="pi pi-book" variant="text" severity="info"
+              [loading]="prestamoSaving()" (click)="confirmarContabilizar()" [rounded]="true" size="small"
+              [disabled]="!puedeContabilizar()"
+              [pTooltip]="motivoBloqueoContabilizar()" tooltipPosition="bottom"></p-button>
+          </div>
+
+          <!-- Plan de pago -->
+          @if (showPlanPago() && planPago().length > 0) {
+          <div class="card">
+            <div class="tab-header">
+              <h4>Plan de Pago - Amortizacion</h4>
+              <span class="cuotas-info">{{ planPago().length }} cuotas</span>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Cuota</th>
+                    <th>Fecha Pago</th>
+                    <th class="col-importe">Cuota</th>
+                    <th class="col-importe">Capital</th>
+                    <th class="col-importe">Interes</th>
+                    <th class="col-importe">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (fila of planPago(); track fila.nrofila) {
+                  <tr [class.fila-pagada]="fila.sn_pagada === 'S'">
+                    <td>{{ fila.nrofila }}</td>
+                    <td>{{ fila.FechaPago | date:'dd/MM/yyyy' }}</td>
+                    <td class="col-importe">{{ moneda(fila.vlrcuota) }}</td>
+                    <td class="col-importe">{{ moneda(fila.capital) }}</td>
+                    <td class="col-importe">{{ moneda(fila.interes) }}</td>
+                    <td class="col-importe">{{ moneda(fila.saldo) }}</td>
+                  </tr>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr class="fw-bold">
+                    <td colspan="2">Totales</td>
+                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.vlrcuota || 0), 0)) }}</td>
+                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.capital || 0), 0)) }}</td>
+                    <td class="col-importe">{{ moneda(planPago().reduce((s, f) => s + (+f.interes || 0), 0)) }}</td>
+                    <td class="col-importe"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+          }
+        </div>
+        }
+      </div>
+      }
+    </div>
+
+    <!-- Columna derecha: lista de clientes -->
+    <div class="right-column">
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search"></i>
+          <input type="text" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+            (keyup.enter)="loadClientes()" placeholder="Buscar por nombre, DNI, RTN..."
+            class="search-input" />
+          <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
+            [rounded]="true" size="small" class="clear-btn"></p-button>
+        </div>
+      </div>
+
+      @if (cargando()) {
+      <div class="loading-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-item">
+          <p-skeleton width="60%" height="1.5rem" styleClass="mb-2" />
+          <p-skeleton width="100%" height="0.75rem" styleClass="mb-1" />
+          <p-skeleton width="80%" height="0.75rem" styleClass="mb-1" />
+        </div>
+        }
+      </div>
+      } @else if (data().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users empty-icon"></i>
+        <h3>No hay clientes</h3>
+        <p>No se encontraron clientes registrados.</p>
+      </div>
+      } @else {
+      <div class="clientes-lista">
+        @for (cliente of data(); track cliente.clienteId) {
+        <div class="cliente-item-ficha"
+          [class.selected]="selectedCliente()?.clienteId === cliente.clienteId"
+          (click)="seleccionarCliente(cliente)">
+          <div class="item-ficha-header">
+            <span class="ficha-label">Codigo:</span>
+            <span class="ficha-value">{{ cliente.nrocliente }}</span>
+            <p-tag [value]="cliente.sn_activo === 'S' ? 'Activo' : 'Inactivo'"
+              [severity]="cliente.sn_activo === 'S' ? 'success' : 'danger'"
+              [style]="{'font-size':'0.65rem', 'margin-left': 'auto'}" />
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Apellidos:</span>
+            <span class="ficha-value">{{ cliente.apellidos }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Nombres:</span>
+            <span class="ficha-value">{{ cliente.nombres }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">DNI:</span>
+            <span class="ficha-value">{{ cliente.dni }}</span>
+          </div>
+          @if (cliente.rtn) {
+          <div class="item-ficha-row">
+            <span class="ficha-label">RTN:</span>
+            <span class="ficha-value">{{ cliente.rtn }}</span>
+          </div>
+          }
+          <div class="item-ficha-row">
+            <span class="ficha-label">Dias plazo:</span>
+            <span class="ficha-value">{{ cliente.diasplazo }} dias</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Limite Credito:</span>
+            <span class="ficha-value">{{ moneda(cliente.limiteCredito) }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Tasa interes:</span>
+            <span class="ficha-value">{{ cliente.interes }}%</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Categoria:</span>
+            <span class="ficha-value">{{ cliente.categoria }}</span>
+          </div>
+        </div>
+        }
+      </div>
+
+      <p-paginator [first]="(page() - 1) * limit()" [rows]="limit()" [totalRecords]="totalClientes()"
+        [rowsPerPageOptions]="[5, 10, 15]" (onPageChange)="onPageChange($event)"
+        styleClass="paginator-compact"></p-paginator>
+      }
+    </div>
+  </div>
+</div>
+
+<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\prestamos\prestamos-manager.scss
+
+```typescript
+.prestamos-manager {
+  height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+}
+.split-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+.left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg);
+  overflow: hidden;
+}
+.right-column {
+  width: 380px;
+  min-width: 350px;
+  border-left: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+}
+.mb-3 { margin-bottom: 1rem; }
+.search-bar {
+  padding: 1rem;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  .search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+}
+.search-input-wrapper .pi-search {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--c-text-muted);
+  z-index: 1;
+}
+.search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+  border: 1px solid var(--for-border-color-alls);
+  border-radius: 6px;
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+.clear-btn { position: absolute; right: 0.25rem; }
+.loading-center {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 2rem;
+  .loading-text { font-size: 0.85rem; color: var(--c-text-muted); }
+}
+.empty-state {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--c-text-muted); padding: 2rem; text-align: center;
+  .empty-icon { font-size: 3rem; color: var(--c-primary); opacity: 0.6; }
+  h3 { margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--c-text); }
+  p { margin: 0; font-size: 0.85rem; color: var(--c-text-secondary, #6c757d); }
+}
+.loading-skeleton { padding: 20px; }
+.skeleton-item { border: 1px solid var(--c-border); padding: 15px; margin: 10px; border-radius: 4px; background: var(--c-bg); }
+.clientes-lista {
+  flex: 1; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;
+}
+.cliente-item-ficha {
+  padding: 0.75rem 1rem; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-surface); cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s;
+  &:hover { border-color: var(--c-primary); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); }
+  &.selected { border-color: var(--for-border-color-alls); background: var(--master-background); }
+}
+.item-ficha-header { display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.375rem; margin-bottom: 0.375rem; border-bottom: 1px solid var(--c-border); }
+.item-ficha-row { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.15rem 0; line-height: 1.3; }
+.ficha-label { font-size: 0.8rem; font-weight: 600; color: var(--c-text-muted); min-width: 120px; flex-shrink: 0; }
+.ficha-value { font-size: 0.85rem; color: var(--c-text); font-weight: 500; }
+.cliente-detail { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.cliente-header-inline {
+  display: flex; align-items: baseline; gap: 0.5rem; padding: 0.5rem 1.5rem; border-bottom: 1px solid var(--c-border); background: var(--c-surface); min-height: 2.2rem;
+}
+.cliente-inline-codigo { font-size: 0.85rem; font-weight: 600; color: var(--c-text-muted); white-space: nowrap; }
+.cliente-inline-nombre { font-size: 1.1rem; font-weight: 600; color: var(--c-text); }
+.tab-content { flex: 1; overflow-y: auto; padding: 1.5rem; min-height: 0; }
+.tab-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--c-border);
+  h4 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+  .cuotas-info { font-size: 0.8rem; color: var(--c-text-muted); }
+}
+.prestamo-form-columns {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 8px; padding: 1.25rem;
+}
+.prestamo-col { display: flex; flex-direction: column; gap: 0.75rem; }
+.prestamo-col-title {
+  margin: 0 0 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--c-text-muted); padding-bottom: 0.5rem; border-bottom: 1px solid var(--c-border);
+}
+.prestamo-col .p-field { display: flex; flex-direction: column; gap: 0.375rem; }
+.prestamo-col label { font-size: 0.8rem; font-weight: 500; color: var(--c-text-muted); }
+.prestamo-col input.p-inputtext, .prestamo-col .p-select, .prestamo-col .p-inputnumber, .prestamo-col .p-datepicker { width: 100%; }
+.prestamo-actions {
+  display: flex; gap: 0.5rem; justify-content: flex-end; padding: 0.75rem 1rem; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 8px;
+}
+.estado-flujo-tags {
+  display: flex; flex-wrap: wrap; gap: 0.375rem; align-items: center;
+  .p-tag { font-size: 0.7rem; font-weight: 500; }
+}
+.table-responsive { overflow-x: auto; }
+.table {
+  width: 100%; border-collapse: collapse;
+  th, td { padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--c-surface); font-weight: 600; font-size: 0.85rem; color: var(--c-text-muted); border-bottom: 2px solid var(--c-border); }
+  td { border-bottom: 1px solid var(--c-border); font-size: 0.9rem; }
+  .col-importe { text-align: right; font-variant-numeric: tabular-nums; }
+  .fw-bold { font-weight: 600; }
+}
+.table-striped tbody tr:nth-child(even) { background: var(--c-surface-muted); }
+.fila-pagada { opacity: 0.5; }
+.prestamo-info-control {
+  padding: 0.75rem 1rem; background: var(--c-surface-muted); border: 1px solid var(--c-border); border-radius: 6px;
+  .pic-tabla {
+    width: 100%; border-collapse: collapse; text-align: center;
+    th { font-size: 0.7rem; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; padding: 0.15rem 0.5rem; white-space: nowrap; }
+    td.pic-valor { font-size: 0.95rem; color: var(--c-text); font-weight: 600; padding: 0.3rem 0.5rem; }
+    .pic-saldo { color: var(--c-primary); font-size: 1.05rem; }
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\prestamos\prestamos-manager.ts
+
+```typescript
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy, DestroyRef, effect, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { timeout, catchError, of } from 'rxjs';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { DataViewModule } from 'primeng/dataview';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { CardModule } from 'primeng/card';
+import { SkeletonModule } from 'primeng/skeleton';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { CxcService } from '../../../core/services/cxc.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { CxcCliente } from '../../../core/models/cxc.models';
+
+@Component({
+  selector: 'app-prestamos-manager',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    InputTextModule,
+    DataViewModule,
+    TagModule,
+    TooltipModule,
+    CardModule,
+    SkeletonModule,
+    ConfirmDialogModule,
+    InputNumberModule,
+    SelectModule,
+    DatePickerModule,
+    ProgressSpinnerModule,
+    IconFieldModule,
+    InputIconModule,
+  ],
+  providers: [ConfirmationService],
+  templateUrl: './prestamos-manager.html',
+  styleUrl: './prestamos-manager.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class PrestamosManager implements OnInit {
+  private service = inject(CxcService);
+  private msgs = inject(MessageService);
+  private confirm = inject(ConfirmationService);
+  private auth = inject(AuthService);
+  private destroyRef = inject(DestroyRef);
+
+  // ===== CLIENTES =====
+  data = signal<CxcCliente[]>([]);
+  cargando = signal(false);
+  selectedCliente = signal<CxcCliente | null>(null);
+  q = signal('');
+  page = signal(1);
+  limit = signal(15);
+  totalClientes = signal(0);
+
+  private _searchEffect = effect(() => {
+    this.q();
+    this.page.set(1);
+    untracked(() => this.loadClientes());
+  });
+
+  // ===== PRESTAMO (maximo 1 por cliente) =====
+  prestamoData = signal<any | null>(null);
+  prestamosLoading = signal(false);
+  prestamoSaving = signal(false);
+
+  prestamoModel = signal<any>({
+    clienteId: null,
+    nroprestamo: '',
+    capital: 0,
+    prima: 0,
+    capitalneto: 0,
+    cuotas: 1,
+    tasa: 0,
+    moratorio: 0,
+    vlrcuota: 0,
+    fecha_aprobacion: new Date().toISOString(),
+    sn_preaprobado: 'N',
+    sn_activo: 'S',
+  });
+
+  prestamoFecha = computed(() => {
+    const f = this.prestamoModel().fecha_aprobacion;
+    if (!f) return null;
+    const d = new Date(f);
+    return isNaN(d.getTime()) ? null : d;
+  });
+
+  /** Capital neto = capital - prima (solo lectura en el form). */
+  capitalnetoCalc = computed(() => {
+    const m = this.prestamoModel();
+    return Math.round(((Number(m.capital) || 0) - (Number(m.prima) || 0)) * 100) / 100;
+  });
+
+  /** Fecha de la 1er cuota = fecha de aprobación + 30 días (regla de negocio). */
+  fechaEfectivaCalc = computed(() => {
+    const f = this.prestamoModel().fecha_aprobacion;
+    if (!f) return null;
+    const d = new Date(f);
+    if (isNaN(d.getTime())) return null;
+    d.setDate(d.getDate() + 30);
+    return d;
+  });
+
+  planPago = signal<any[]>([]);
+  showPlanPago = signal(false);
+
+  readonly estadoOptions = [
+    { label: 'Activo', value: 'S' },
+    { label: 'Inactivo', value: 'N' },
+  ];
+
+  /** Guarda pendiente: pre-aprobacion solicitada sobre un préstamo sin guardar. */
+  private pendingPreaprobado = false;
+
+  ngOnInit() {}
+
+  // ===== CLIENTES =====
+  loadClientes() {
+    this.cargando.set(true);
+    this.service
+      .getClientes(this.page(), this.limit(), this.q(), 10)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        timeout(10000),
+        catchError(() => of({ data: [], total: 0 })),
+      )
+      .subscribe({
+        next: (res) => {
+          this.data.set(res.data);
+          this.totalClientes.set(res.total);
+          this.cargando.set(false);
+        },
+        error: () => this.cargando.set(false),
+      });
+  }
+
+  onPageChange(event: any) {
+    this.page.set(event.page + 1);
+    this.limit.set(event.rows);
+    this.loadClientes();
+  }
+
+  limpiarFiltros() {
+    this.q.set('');
+    this.selectedCliente.set(null);
+    this.prestamoData.set(null);
+    this.planPago.set([]);
+    this.showPlanPago.set(false);
+    this.limpiarFormulario();
+  }
+
+  seleccionarCliente(cliente: CxcCliente) {
+    this.selectedCliente.set(cliente);
+    this.prestamoData.set(null);
+    this.planPago.set([]);
+    this.showPlanPago.set(false);
+    this.loadPrestamoCliente(cliente.clienteId);
+  }
+
+  getClienteNombre(c: CxcCliente): string {
+    const nombres = c.nombres || '';
+    const apellidos = c.apellidos || '';
+    const full = `${nombres} ${apellidos}`.trim();
+    return full || c.razonsocial || c.nrocliente || 'Sin nombre';
+  }
+
+  moneda(val: any): string {
+    const num = Number(val) || 0;
+    if (isNaN(num)) return '0.00';
+    const partes = num.toFixed(2).split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return partes.join('.');
+  }
+
+  // ===== PRESTAMO =====
+  private loadPrestamoCliente(clienteId: number) {
+    this.prestamosLoading.set(true);
+    this.service
+      .getPrestamosByCliente(clienteId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: any) => {
+          const pres = Array.isArray(res) ? res[0] : res?.value ? res.value[0] : res;
+          if (pres && pres.prestamoId) {
+            this.prestamoData.set(pres);
+            const capitalneto =
+              Number(pres.capitalneto) || (Number(pres.capital) || 0) - (Number(pres.prima) || 0);
+            this.prestamoModel.set({
+              prestamoId: pres.prestamoId,
+              clienteId: pres.clienteId,
+              nroprestamo: pres.nroprestamo || '',
+              capital: Number(pres.capital) || 0,
+              prima: Number(pres.prima) || 0,
+              capitalneto,
+              cuotas: Number(pres.cuotas) || 0,
+              tasa: Number(pres.tasa) || 0,
+              moratorio: Number(pres.moratorio) || 0,
+              vlrcuota:
+                Number(pres.vlrcuota) ||
+                this.calcularCuotaValue(capitalneto, Number(pres.cuotas), Number(pres.tasa)),
+              fecha_aprobacion: pres.fecha_aprobacion || pres.fecharegistro,
+              sn_preaprobado: pres.sn_preaprobado || 'N',
+              sn_activo: pres.sn_activo || 'S',
+            });
+            this.loadPlanPago(pres.prestamoId);
+          } else {
+            this.prestamoData.set(null);
+            this.limpiarFormulario();
+            this.planPago.set([]);
+            this.showPlanPago.set(false);
+            this.prestamosLoading.set(false);
+          }
+        },
+        error: () => this.prestamosLoading.set(false),
+      });
+  }
+
+  private loadPlanPago(prestamoId: number) {
+    this.showPlanPago.set(false);
+    this.planPago.set([]);
+    this.service
+      .getPrestamoPPByPrestamo(prestamoId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const cuotas = (res || []).sort((a: any, b: any) => (a.nrofila || 0) - (b.nrofila || 0));
+          this.planPago.set(cuotas);
+          this.showPlanPago.set(cuotas.length > 0);
+          this.prestamosLoading.set(false);
+        },
+        error: () => {
+          this.planPago.set([]);
+          this.showPlanPago.set(false);
+          this.prestamosLoading.set(false);
+        },
+      });
+  }
+
+  private calcularCuotaValue(capital: number, cuotas: number, tasaAnual: number): number {
+    if (capital <= 0 || cuotas <= 0 || tasaAnual <= 0) return 0;
+    const tasaMensual = tasaAnual / 100 / 12;
+    const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
+    return Math.round(capital * factor * 100) / 100;
+  }
+
+  onPrestamoFechaChange(d: Date | null) {
+    this.prestamoModel.set({
+      ...this.prestamoModel(),
+      fecha_aprobacion: d ? d.toISOString() : null,
+    });
+  }
+
+  calcularCuota() {
+    const raw = this.prestamoModel();
+    const capitalneto =
+      Math.round(((Number(raw.capital) || 0) - (Number(raw.prima) || 0)) * 100) / 100;
+    const cuotas = Number(raw.cuotas) || 0;
+    const tasaAnual = Number(raw.tasa) || 0;
+    const vlrcuota = this.calcularCuotaValue(capitalneto, cuotas, tasaAnual);
+    this.prestamoModel.set({ ...this.prestamoModel(), capitalneto, vlrcuota });
+  }
+
+  cancelar() {
+    this.limpiarFormulario();
+  }
+
+  private limpiarFormulario() {
+    this.pendingPreaprobado = false;
+    this.prestamoModel.set({
+      clienteId: this.selectedCliente()?.clienteId ?? null,
+      nroprestamo: '',
+      capital: 0,
+      prima: 0,
+      capitalneto: 0,
+      cuotas: 1,
+      tasa: 0,
+      moratorio: 0,
+      vlrcuota: 0,
+      fecha_aprobacion: new Date().toISOString(),
+      sn_preaprobado: 'N',
+      sn_activo: 'S',
+    });
+  }
+
+  guardarPrestamo() {
+    const cliente = this.selectedCliente();
+    if (!cliente) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Seleccione',
+        detail: 'Seleccione un cliente antes de crear un prestamo',
+      });
+      return;
+    }
+
+    if (this.prestamoData()) {
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Ya existe',
+        detail: 'Este cliente ya tiene un prestamo registrado',
+      });
+      return;
+    }
+
+    const raw = { ...this.prestamoModel() };
+    const capital = Number(raw.capital) || 0;
+    const prima = Number(raw.prima) || 0;
+    const capitalneto = Math.round((capital - prima) * 100) / 100;
+    const payload: any = {
+      clienteId: cliente.clienteId,
+      capital,
+      prima,
+      capitalneto,
+      vlrcuota: Number(raw.vlrcuota) || 0,
+      cuotas: Number(raw.cuotas) || 1,
+      tasa: Number(raw.tasa) || 0,
+      moratorio: Number(raw.moratorio) || 0,
+      fecha_aprobacion: raw.fecha_aprobacion,
+      sn_preaprobado: 'N',
+      sn_activo: raw.sn_activo || 'S',
+      sn_contabilizado: 'N',
+    };
+
+    if (capital <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital debe ser mayor a 0' });
+      return;
+    }
+    if (prima < 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'La prima no puede ser negativa' });
+      return;
+    }
+    if (capitalneto <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital neto (capital - prima) debe ser mayor a 0' });
+      return;
+    }
+    if (!payload.cuotas || payload.cuotas <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Las cuotas deben ser mayor a 0' });
+      return;
+    }
+
+    const user = this.auth.currentUser();
+    if (user) {
+      payload.empresaId = payload.empresaId ?? user.empresaId;
+      if (user.idsucursal != null) payload.Idsucursal = payload.Idsucursal ?? user.idsucursal;
+      payload.usuarioCreated = payload.usuarioCreated ?? user.usuario ?? user.nombre;
+    }
+
+    this.prestamoSaving.set(true);
+    this.service
+      .createPrestamo(payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.prestamoData.set(res);
+          this.prestamoModel.set({
+            ...this.prestamoModel(),
+            prestamoId: res.prestamoId,
+            nroprestamo: res.nroprestamo || '',
+          });
+          this.prestamoSaving.set(false);
+          this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Prestamo registrado correctamente' });
+
+          const plan = this.planPago();
+          if (plan.length > 0 && res?.prestamoId) {
+            this.guardarPlanPagoConPrestamo(res.prestamoId, plan, cliente.clienteId);
+          }
+
+          if (this.pendingPreaprobado) {
+            this.pendingPreaprobado = false;
+            this.preaprobar();
+          }
+        },
+        error: (err) => {
+          let detail = 'No se pudo guardar el prestamo';
+          if (err?.error?.message) detail = err.error.message;
+          else if (err?.message) detail = err.message;
+          this.prestamoSaving.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail });
+        },
+      });
+  }
+
+  private guardarPlanPagoConPrestamo(prestamoId: number, plan: any[], clienteId: number) {
+    const user = this.auth.currentUser();
+    const requests = plan.map((fila) => {
+      const payload = {
+        ...fila,
+        prestamoId,
+        clienteId,
+        empresaId: user?.empresaId,
+        usuarioCreated: user?.usuario || user?.nombre,
+      };
+      return this.service.createPrestamoPP(payload);
+    });
+
+    let completadas = 0;
+    let errores = 0;
+    const total = plan.length;
+
+    requests.forEach((req) => {
+      req.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          completadas++;
+          if (completadas + errores === total) {
+            this.prestamoSaving.set(false);
+            this.msgs.add({ severity: 'success', summary: 'Plan de pago', detail: `${completadas} cuotas guardadas` });
+          }
+        },
+        error: () => {
+          errores++;
+          if (completadas + errores === total) {
+            this.prestamoSaving.set(false);
+            this.msgs.add({
+              severity: errores > 0 ? 'warn' : 'success',
+              summary: 'Plan de pago',
+              detail: `${completadas} guardadas, ${errores} errores`,
+            });
+          }
+        },
+      });
+    });
+  }
+
+  generarPlanPago() {
+    const raw = this.prestamoModel();
+    const capital = Number(raw.capital) || 0;
+    const prima = Number(raw.prima) || 0;
+    const capitalneto = Math.round((capital - prima) * 100) / 100;
+    const cuotas = Number(raw.cuotas) || 0;
+    const tasaAnual = Number(raw.tasa) || 0;
+
+    if (capital <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital debe ser mayor a 0' });
+      return;
+    }
+    if (capitalneto <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'El capital neto (capital - prima) debe ser mayor a 0' });
+      return;
+    }
+    if (cuotas <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Las cuotas deben ser mayor a 0' });
+      return;
+    }
+    if (tasaAnual <= 0) {
+      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'La tasa de interes debe ser mayor a 0' });
+      return;
+    }
+
+    const tasaMensual = tasaAnual / 100 / 12;
+    const factor = tasaMensual / (1 - Math.pow(1 + tasaMensual, -cuotas));
+    const cuotaFija = capitalneto * factor;
+
+    const plan: any[] = [];
+    let saldo = capitalneto;
+    const fechaEfectiva = this.fechaEfectivaCalc() ?? new Date();
+
+    for (let i = 1; i <= cuotas; i++) {
+      const interes = saldo * tasaMensual;
+      const capitalPago = cuotaFija - interes;
+      saldo = saldo - capitalPago;
+
+      const fechaPago = new Date(fechaEfectiva);
+      fechaPago.setMonth(fechaPago.getMonth() + (i - 1));
+
+      plan.push({
+        nrofila: i,
+        FechaPago: fechaPago.toISOString(),
+        vlrcuota: Math.round(cuotaFija * 100) / 100,
+        capital: Math.round(capitalPago * 100) / 100,
+        interes: Math.round(interes * 100) / 100,
+        mora: 0,
+        saldo: Math.round(Math.abs(saldo) * 100) / 100,
+        sn_pagada: 'N',
+        sn_anulada: 'N',
+      });
+    }
+
+    this.planPago.set(plan);
+    this.showPlanPago.set(true);
+    this.prestamoModel.set({
+      ...this.prestamoModel(),
+      capitalneto,
+      vlrcuota: Math.round(cuotaFija * 100) / 100,
+    });
+
+    const p = this.prestamoData();
+    if (p?.prestamoId) {
+      this.prestamoSaving.set(true);
+      this.service
+        .deletePrestamoPPByPrestamo(p.prestamoId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => this.guardarPlanPagoConPrestamo(p.prestamoId, plan, p.clienteId),
+          error: (err) => {
+            this.prestamoSaving.set(false);
+            this.msgs.add({
+              severity: 'error',
+              summary: 'Plan de pago',
+              detail: err.error?.message || 'No se pudo regenerar el plan',
+            });
+          },
+        });
+    }
+  }
+
+  puedeGenerarPlan = computed(() => {
+    const p = this.prestamoData();
+    if (!p) return true;
+    return p.sn_preaprobado !== 'S' && p.sn_aprobado !== 'S';
+  });
+
+  puedePreaprobar = computed(() => {
+    const p = this.prestamoData();
+    if (!p) return true;
+    return p.sn_preaprobado !== 'S' && p.sn_aprobado !== 'S';
+  });
+
+  motivoBloqueoPlan = computed(() => {
+    const p = this.prestamoData();
+    if (!p) return '';
+    if (p.sn_preaprobado === 'S') return 'El préstamo está pre-aprobado: el plan de pagos está bloqueado';
+    if (p.sn_aprobado === 'S') return 'El préstamo está aprobado: el plan de pagos está bloqueado';
+    return '';
+  });
+
+  motivoBloqueoPreaprobado = computed(() => {
+    const p = this.prestamoData();
+    if (!p) return '';
+    if (p.sn_preaprobado === 'S') return 'El préstamo ya está pre-aprobado';
+    if (p.sn_aprobado === 'S') return 'El préstamo ya está aprobado';
+    return '';
+  });
+
+  motivoBloqueoAprobar = computed(() => {
+    const p = this.prestamoData();
+    if (!p) return 'Guarde o pre-aprobee el préstamo primero';
+    if (p.sn_preaprobado !== 'S') return 'El préstamo debe estar pre-aprobado antes de aprobarlo';
+    if (p.sn_aprobado === 'S') return 'El préstamo ya está aprobado';
+    return '';
+  });
+
+  motivoBloqueoContabilizar = computed(() => {
+    const p = this.prestamoData();
+    if (!p) return 'El préstamo debe estar aprobado antes de contabilizarlo';
+    if (p.sn_aprobado !== 'S') return 'El préstamo debe estar aprobado antes de contabilizarlo';
+    if (p.sn_contabilizado === 'S') return 'El préstamo ya está contabilizado';
+    return '';
+  });
+
+  puedeAprobar = computed(() => {
+    const p = this.prestamoData();
+    return !!p && p.sn_preaprobado === 'S' && p.sn_aprobado !== 'S';
+  });
+
+  puedeContabilizar = computed(() => {
+    const p = this.prestamoData();
+    return !!p && p.sn_aprobado === 'S' && p.sn_contabilizado !== 'S';
+  });
+
+  preaprobar() {
+    const p = this.prestamoData();
+    if (!p) {
+      this.pendingPreaprobado = true;
+      this.guardarPrestamo();
+      return;
+    }
+    this.prestamoSaving.set(true);
+    this.service
+      .preaprobarPrestamo(p.prestamoId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.prestamoData.set(res);
+          this.prestamoModel.set({
+            ...this.prestamoModel(),
+            nroprestamo: res.nroprestamo || '',
+            sn_preaprobado: 'S',
+          });
+          this.prestamoSaving.set(false);
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Pre-aprobado',
+            detail: `Préstamo #${res.prestamoId} pre-aprobado. El plan de pagos queda bloqueado.`,
+          });
+        },
+        error: (err) => {
+          this.prestamoSaving.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo pre-aprobar' });
+        },
+      });
+  }
+
+  confirmarAprobar() {
+    const p = this.prestamoData();
+    if (!p) return;
+    this.confirm.confirm({
+      message: `¿Está seguro de APROBAR el préstamo #${p.prestamoId}?<br/>Se generará el número de préstamo y el plan de pagos quedará bloqueado.`,
+      header: 'Confirmar Aprobación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Sí, aprobar', severity: 'success', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      accept: () => this.aprobar(),
+    });
+  }
+
+  aprobar() {
+    const p = this.prestamoData();
+    if (!p) return;
+    this.prestamoSaving.set(true);
+    this.service
+      .aprobarPrestamo(p.prestamoId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.prestamoData.set(res);
+          this.prestamoModel.set({
+            ...this.prestamoModel(),
+            nroprestamo: res.nroprestamo,
+            sn_aprobado: 'S',
+          });
+          this.prestamoSaving.set(false);
+          this.msgs.add({ severity: 'success', summary: 'Aprobado', detail: `Préstamo ${res.nroprestamo} aprobado` });
+        },
+        error: (err) => {
+          this.prestamoSaving.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo aprobar' });
+        },
+      });
+  }
+
+  confirmarContabilizar() {
+    const p = this.prestamoData();
+    if (!p) return;
+    this.confirm.confirm({
+      message: `¿Está seguro de CONTABILIZAR el préstamo ${p.nroprestamo}?<br/>Se generará la partida y el movimiento de débito por L ${Number(p.capitalneto || 0).toFixed(2)}.`,
+      header: 'Confirmar Contabilización',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Sí, contabilizar', severity: 'success', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { label: 'Cancelar', severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      accept: () => this.contabilizar(),
+    });
+  }
+
+  contabilizar() {
+    const p = this.prestamoData();
+    if (!p) return;
+    this.prestamoSaving.set(true);
+    this.service
+      .contabilizarPrestamo(p.prestamoId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.prestamoData.set(res.prestamo);
+          this.prestamoModel.set({ ...this.prestamoModel(), sn_contabilizado: 'S' });
+          this.prestamoSaving.set(false);
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Contabilizado',
+            detail: `Partida #${res.partidaId} y movimiento #${res.movimientoId} generados`,
+          });
+        },
+        error: (err) => {
+          this.prestamoSaving.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo contabilizar' });
+        },
+      });
+  }
+}
+
+```
+
+---
+
+## 📄 src\app\features\prestamos\prestamos.routes.ts
+
+```typescript
+import { Routes } from '@angular/router';
+
+export const PRESTAMOS_ROUTES: Routes = [
+
+  // Caja Préstamos - réplica de Caja para cobros a préstamos
+  {
+    path: 'caja-prestamos',
+    loadComponent: () =>
+      import('./caja-prestamos/caja-prestamos').then((m) => m.CajaPrestamos),
+  },
+  {
+    path: 'caja-prestamos/editar/:id',
+    loadComponent: () =>
+      import('./caja-prestamos/caja-prestamos').then((m) => m.CajaPrestamos),
+  },
+
+  // Clientes - Nuevo gestor con layout dividido
+  {
+    path: 'clientes',
+    loadComponent: () => import('./clientes/clientes-manager').then((m) => m.ClientesManager),
+  },
+  {
+    path: 'clientes/nuevo',
+    loadComponent: () => import('./clientes/cliente-form').then((m) => m.ClienteForm),
+  },
+  {
+    path: 'clientes/editar/:id',
+    loadComponent: () => import('./clientes/cliente-form').then((m) => m.ClienteForm),
+  },
+  {
+    path: 'prestamos',
+    loadComponent: () =>
+      import('./prestamos/prestamos-manager').then((m) => m.PrestamosManager),
+  },
+
+  // Consultas (solo lectura)
+  {
+    path: 'antiguedad-saldos',
+    loadComponent: () =>
+      import('./antiguedad-saldos/antiguedad-saldos').then((m) => m.AntiguedadSaldos),
+  },
+  {
+    path: 'cartas-recordatorio',
+    loadComponent: () =>
+      import('./cartas-recordatorio/cartas-recordatorio').then((m) => m.CartasRecordatorio),
+  },
+  {
+    path: 'movimientos',
+    loadComponent: () =>
+      import('./movimientos/movimientos-manager').then((m) => m.MovimientosManager),
+  },
+  {
+    path: 'historico',
+    loadComponent: () =>
+      import('./historico/historico-manager').then((m) => m.HistoricoManager),
+  },
+
+
+  // Carteras contables por cliente (catálogo genérico)
+  {
+    path: 'carteras-cliente',
+    data: { nombre: 'carteras-cliente' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+  },
+  {
+    path: 'carteras-cliente/editar/:id',
+    data: { nombre: 'carteras-cliente' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+  },
+
+  // Información de clientes - celulares, direcciones y correos (catálogo genérico)
+  {
+    path: 'clientes-info',
+    data: { nombre: 'clientes-info' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-generico').then((m) => m.CatalogoGenerico),
+  },
+  {
+    path: 'clientes-info/editar/:id',
+    data: { nombre: 'clientes-info' },
+    loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
+  },
+
+  { path: '**', redirectTo: 'caja' },
+];
+
+```
+
+---
+
 ## 📄 src\app\features\usuarios\lista-usuarios\lista-usuarios.html
 
 ```typescript
@@ -107871,8 +115247,11 @@ export class LoginDialog {
     <header class="topbar">
       <div class="topbar-left">
         <p-button [icon]="toggleIcon" (onClick)="toggleSidebar()"
-          severity="secondary" raised="true" iconOnly rounded size="small"
-          class="sidebar-toggle"></p-button>
+          severity="secondary" 
+          raised="true" iconOnly 
+          rounded size="small"
+          class="sidebar-toggle">
+          </p-button>
       </div>
       <div class="topbar-right">
 
@@ -107916,12 +115295,16 @@ export class LoginDialog {
 <app-quick-nav />
 
 <!-- Login headless (diálogo estilo login) — botón "Cuenta" del topbar -->
+
+
 <app-login-dialog
   #loginDlg
   [tipoPersona]="tipoPersona()"
   (tipoPersonaChange)="onTipoPersonaChange($event)"
   (registro)="registroDlg.abrir()"
 />
+
+<app-registro-dialog #registroDlg (solicitarLogin)="loginDlg.abrir()" />
 
 <!-- Menú de usuario del topbar (anclado al botón circle-user) -->
 <p-popover #popUsuario styleClass="usuario-popover">
@@ -108061,7 +115444,7 @@ $topbar-height: 60px;
   top: 0;
   left: 0;
   bottom: 0;
-  z-index: 100;
+  z-index: 1000;
   overflow-x: hidden;
   overflow-y: hidden;
   user-select: none;
@@ -108472,7 +115855,7 @@ $topbar-height: 60px;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: 1100;
   gap: 1rem;
 }
 
@@ -108563,8 +115946,10 @@ $topbar-height: 60px;
 
 // Botón toggle del sidebar (naranja)
 .sidebar-toggle {
+font-size: 1.45rem;
   :deep(.p-button) {
     color: #fb923c;
+    font-size: 1.45rem;
 
     &:hover {
       color: #ffffff;
@@ -108659,7 +116044,7 @@ $topbar-height: 60px;
 
   .topbar {
     padding: 0 0.75rem;
-    z-index: 201;
+    z-index: 1100;
   }
 
   .sidebar-toggle {
@@ -108870,7 +116255,6 @@ import { TooltipModule } from 'primeng/tooltip';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
-import { Message } from 'primeng/message';
 import { AuthService } from '../../core/services/auth.service';
 import { MenuConfigService } from '../../core/services/menu-config.service';
 import { QuickNavService } from '../../core/services/quick-nav.service';
@@ -108903,7 +116287,6 @@ interface Opcion {
     InputTextModule,
     PasswordModule,
     TooltipModule,
-    Message,
     DrawerModule,
     PopoverModule,
     DialogModule,
@@ -109192,22 +116575,36 @@ export class MainPrivateLayout {
     const nueva = this.passwordNueva.trim();
     const confirm = this.passwordConfirm.trim();
     if (!this.pwdValida) {
-      this.msgs.add({ severity: 'warn', summary: 'Contraseña no cumple requisitos', detail: 'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Contraseña no cumple requisitos',
+        detail:
+          'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.',
+      });
       return;
     }
     if (nueva !== confirm) {
-      this.msgs.add({ severity: 'warn', summary: 'No coinciden', detail: 'La confirmación de contraseña no coincide.' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'No coinciden',
+        detail: 'La confirmación de contraseña no coincide.',
+      });
       return;
     }
 
     this.cambiandoPassword = true;
-    this.api.putBase('/users/password/actualizar', { passwordNueva: nueva })
+    this.api
+      .putBase('/users/password/actualizar', { passwordNueva: nueva })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
           this.cambiandoPassword = false;
           this.dialogCambiarPassword = false;
-          this.msgs.add({ severity: 'success', summary: 'Contraseña actualizada', detail: 'Tu contraseña ha sido cambiada exitosamente' });
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Contraseña actualizada',
+            detail: 'Tu contraseña ha sido cambiada exitosamente',
+          });
         },
         error: (err) => {
           this.cambiandoPassword = false;
@@ -109374,14 +116771,18 @@ export class MainPrivateLayout {
           <span class="usuario-menu-email">{{ u.email || 'Sin correo' }}</span>
         </div>
       </div>
-      @if (esCliente()) {
-        <!-- Solo clientes con sesión: acceso al CRM de pedidos -->
-        <div class="usuario-menu-separador"></div>
-        <button type="button" class="usuario-menu-item" (click)="irAPedidosDesdePopover()">
-          <i class="pi pi-shopping-cart"></i>
-          <span>Pedidos</span>
-        </button>
-      }
+       @if (esCliente()) {
+         <!-- Solo clientes con sesión: acceso al CRM de pedidos -->
+         <div class="usuario-menu-separador"></div>
+         <button type="button" class="usuario-menu-item" (click)="irAPedidosDesdePopover()">
+           <i class="pi pi-shopping-cart"></i>
+           <span>Pedidos</span>
+         </button>
+         <button type="button" class="usuario-menu-item" (click)="irAConsultaFacturasDesdePopover()">
+           <i class="pi pi-file"></i>
+           <span>Consultar Facturas</span>
+         </button>
+       }
       <div class="usuario-menu-separador"></div>
       <button type="button" class="usuario-menu-item" (click)="abrirCambiarPassword()">
         <i class="pi pi-key"></i>
@@ -110421,6 +117822,13 @@ export class MainLayoutPublic {
   irAPedidosDesdePopover() {
     this.popUsuario?.hide();
     this.router.navigate(['/facturacion/pedidos-virtual']);
+  }
+
+  /** "Consultar Facturas" → navega a consulta de facturas filtradas por usuario */
+  irAConsultaFacturasDesdePopover() {
+    this.popUsuario?.hide();
+    const usuario = this.auth.currentUser()?.usuario;
+    this.router.navigate(['/facturacion/consultas'], { queryParams: { usuario } });
   }
 
   /** "Cerrar sesión" (con sesión) → confirmación y logout ( AuthService limpia todo) */
@@ -112678,7 +120086,7 @@ export class Loading {
 ```typescript
 export const environment = {
   production: true,
-  apiUrl: '',
+  apiUrl: 'https://arcas-io-backend.onrender.com/api',
   currencySymbol: 'L ',
   VALIDAR_SESSION: 'S',
   EMPRESA_ID: 2,
@@ -112693,9 +120101,9 @@ export const environment = {
 ```typescript
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000/api',
+  apiUrl: 'https://arcas-io-backend.onrender.com/api',
   currencySymbol: 'L ',
-  VALIDAR_SESSION: 'N',
+  VALIDAR_SESSION: 'S',
   empresaId: 2,
 };
 
@@ -112714,7 +120122,7 @@ export const environment = {
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" href="assets/images/logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   </head>
@@ -112842,6 +120250,7 @@ bootstrapApplication(App, appConfig)
 :root {
   --font-family: 'Figtree', 'Mukta', sans-serif;
 
+  --c2: #fffff;
   --color-font-sidebar: #dbe7f0;
   --color-texto-label: rgba(255, 255, 255, 0.4);
   --color-texto-input: rgba(255, 255, 255, 0.808);

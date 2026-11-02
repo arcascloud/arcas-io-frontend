@@ -1,5 +1,8 @@
 name = "hn"
 compatibility_date = "2026-11-02"
 
+[vars]
+API_URL = "https://arcas-io-backend.onrender.com/api"
+
 [assets]
 directory = "./dist/arcas-software/browser"
