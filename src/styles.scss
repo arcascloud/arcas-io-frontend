@@ -52,8 +52,8 @@
   font-display: swap;
 }
 @font-face {
-   font-family: 'astrospace';
-  src: url('/assets/fonts/astrospace/AstroSpace.ttf') format('truetype');
+  font-family: 'AstroSpace';
+    src: url('/assets/fonts/AstroSpace/AstroSpace-0Wl3o.otf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
@@ -468,7 +468,7 @@ ul {
 
 .page-title {
   font-size: 1.3rem;
-  font-weight: 800;
+  font-weight: 500;
   color: var(--c-text);
   margin: 0;
   line-height: 1.2;
