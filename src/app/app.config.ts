@@ -65,6 +65,7 @@ const ArcasPreset = definePreset(Aura, {
       },
     },
   },
+
 });
 
 export const appConfig: ApplicationConfig = {
