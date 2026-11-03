@@ -241,22 +241,17 @@
   --p-button-contrast-border-color: var(--c-bg-black);
   --p-button-contrast-color: var(--c-bg-white);
   /* Tamaño pequeño (sm) */
-    --p-button-sm-font-size: 0.75rem !important;
-    --p-button-sm-padding-x: 0.5rem !important;
-    --p-button-sm-padding-y: 0.25rem !important;
+    --p-button-sm-font-size: 0.92rem !important;
+      --p-button-sm-padding-x: 0.7rem !important;
+      --p-button-sm-padding-y: 0.45rem !important;
     --p-button-sm-icon-only-width: 1.75rem !important;
   
     /* Bordes de los botones */
     --p-button-border-radius: 4px !important;
     --p-button-rounded-border-radius: 9999px !important;
+
 }
 
-.p-component {
-  font-family: mukta, figtree, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
-      "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-    font-size: var(--p-form-field-sm-font-size, 0.875rem);
-  font-weight: normal;
-}
 
 .p-dataview {
   --p-dataview-content-padding: 0.25rem;
