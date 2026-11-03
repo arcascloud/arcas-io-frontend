@@ -53,7 +53,7 @@
 }
 @font-face {
    font-family: 'astrospace';
-  src: url('/assets/fonts/astrospace/astrospace.ttf') format('truetype');
+  src: url('/assets/fonts/astrospace/AstroSpace.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
@@ -243,6 +243,13 @@
 }
 
 
+.p-component {
+  font-family: mukta, figtree, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: '{form.field.sm.font.size}';
+  font-weight: normal;
+
+}
 .p-dataview {
   --p-dataview-content-padding: 0.25rem;
   /* Modifica el padding general del contenedor de contenido */
