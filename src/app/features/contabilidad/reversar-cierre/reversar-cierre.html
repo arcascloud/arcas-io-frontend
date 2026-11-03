@@ -5,7 +5,7 @@
   <!-- Header -->
   <div class="page-header">
     <h2><i class="pi pi-replay"></i> Revertir Cierre / Reabrir Período</h2>
-    <p-button size="small" label="Volver al cierre" icon="pi pi-arrow-left" severity="secondary" variant="text" [rounded]="true"
+    <p-button [size]="'small'" label="Volver al cierre" icon="pi pi-arrow-left" severity="secondary" variant="text" [rounded]="true"
               (onClick)="volver()" />
   </div>
 
@@ -33,10 +33,10 @@
 
           <div class="p-field mb-3">
             <label>Motivo de la reversión (opcional)</label>
-            <input pInputText [(ngModel)]="motivo" class="w-full" pSize="small" placeholder="Motivo de la reapertura" />
+            <input pInputText [(ngModel)]="motivo" class="w-full" [pSize]="'small'" placeholder="Motivo de la reapertura" />
           </div>
 
-          <p-button size="small" label="Revertir Cierre" icon="pi pi-replay" severity="danger" variant="text" [raised]="true" [rounded]="true"
+          <p-button [size]="'small'" label="Revertir Cierre" icon="pi pi-replay" severity="danger" variant="text" [raised]="true" [rounded]="true"
                     [loading]="cargando()" (onClick)="revertir()" styleClass="w-full" />
         </div>
       </div>
@@ -84,7 +84,7 @@
               </td>
               <td class="text-center">
                 @if (esUltimoCerrado(periodo)) {
-                  <p-button size="small" icon="pi pi-replay" severity="danger" variant="text" [rounded]="true"
+                  <p-button [size]="'small'" icon="pi pi-replay" severity="danger" variant="text" [rounded]="true"
                             pTooltip="Revertir este cierre" (onClick)="seleccionarYRevertir(periodo)" />
                 } @else {
                   <i class="pi pi-lock text-warning" pTooltip="Cierre no reversible: existen cierres más recientes" tooltipPosition="left"></i>

@@ -4,7 +4,7 @@
       <h1 class="page-title">Roles de Usuario</h1>
       <p class="page-subtitle">Asignación de roles (admin, supervisor, contador, auxiliar, etc.)</p>
     </div>
-    <p-button label="Asignar rol" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+    <p-button label="Asignar rol" icon="pi pi-plus" rounded [size]="'small'" (onClick)="nuevo()" />
   </header>
 
   <div class="filtros card">
@@ -12,7 +12,7 @@
       <label>Buscar</label>
       <input
         pInputText
-        pSize="small"
+        [pSize]="'small'"
         type="text"
         placeholder="Usuario, nombre o rol..."
         [ngModel]="q()"
@@ -21,13 +21,13 @@
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" [size]="'small'" (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -70,7 +70,7 @@
             (onClick)="editar(r.rol_id, $event)"
             severity="warn"
             text
-            size="small"
+            [size]="'small'"
             rounded
             class="mr-1"
           />
@@ -80,7 +80,7 @@
             (onClick)="eliminar(r, $event)"
             severity="danger"
             text
-            size="small"
+            [size]="'small'"
             rounded
           />
         </td>

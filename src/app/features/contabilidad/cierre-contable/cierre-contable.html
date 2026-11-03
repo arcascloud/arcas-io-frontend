@@ -11,7 +11,7 @@
           <i class="pi pi-file-edit"></i>
           Abierto desde una partida contable
         </span>
-        <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+        <p-button label="Volver a la partida" icon="pi pi-arrow-left" [size]="'small'" severity="secondary"
           variant="text" [rounded]="true" (onClick)="volverAPartida()" />
       </div>
     }
@@ -40,10 +40,10 @@
 
           <div class="p-field mb-3">
             <label>Observación (opcional)</label>
-            <input pInputText [ngModel]="observacion()" (ngModelChange)="observacion.set($event)" class="w-full" pSize="small" placeholder="Motivo del cierre" />
+            <input pInputText [ngModel]="observacion()" (ngModelChange)="observacion.set($event)" class="w-full" [pSize]="'small'" placeholder="Motivo del cierre" />
           </div>
 
-          <p-button size="small" label="Realizar Cierre" icon="pi pi-lock" severity="danger" variant="text" [raised]="true" [rounded]="true"
+          <p-button [size]="'small'" label="Realizar Cierre" icon="pi pi-lock" severity="danger" variant="text" [raised]="true" [rounded]="true"
                     [loading]="cargando()" (onClick)="realizarCierre()" styleClass="w-full" />
         </div>
       </div>
@@ -86,7 +86,7 @@
               </td>
               <td class="text-center">
                 @if (periodo.sn_abierto === 'S') {
-                  <p-button size="small" icon="pi pi-lock-open" severity="success" variant="text" [rounded]="true"
+                  <p-button [size]="'small'" icon="pi pi-lock-open" severity="success" variant="text" [rounded]="true"
                             pTooltip="Cerrar período" (onClick)="periodoSeleccionado.set(periodo.nromes); anioSeleccionado.set(periodo.nroanio)" />
                 }
               </td>

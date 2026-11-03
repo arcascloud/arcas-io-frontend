@@ -4,7 +4,7 @@
       <h1 class="page-title">Permisos por Usuario</h1>
       <p class="page-subtitle">Permisos de autorización por usuario</p>
     </div>
-    <p-button label="Nuevo permiso" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+    <p-button label="Nuevo permiso" icon="pi pi-plus" rounded [size]="'small'" (onClick)="nuevo()" />
   </header>
 
   <div class="filtros card">
@@ -20,13 +20,13 @@
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" [size]="'small'" (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -64,9 +64,9 @@
         <td><p-tag [value]="snLbl(p.sn_auth_reversion)" [severity]="snSev(p.sn_auth_reversion)" /></td>
         <td>
           <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(p.usuariomodauthId, $event)"
-            severity="warn" text size="small" rounded class="mr-1" />
+            severity="warn" text [size]="'small'" rounded class="mr-1" />
           <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(p, $event)"
-            severity="danger" text size="small" rounded />
+            severity="danger" text [size]="'small'" rounded />
         </td>
       </tr>
     </ng-template>

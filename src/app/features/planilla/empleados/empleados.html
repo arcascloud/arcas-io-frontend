@@ -8,7 +8,7 @@
       label="Nuevo empleado"
       icon="pi pi-plus"
       rounded
-      size="small"
+      [size]="'small'"
       (onClick)="nuevo()"
     />
   </header>
@@ -38,12 +38,12 @@
           <th style="width: 6rem; text-align: center">Acciones</th>
         </tr>
         <tr>
-          <th><input pInputText type="text" pSize="small" placeholder="Buscar nombre" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
-          <th><input pInputText type="text" pSize="small" placeholder="Buscar apellido" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
-          <th><input pInputText type="text" pSize="small" placeholder="Buscar DNI" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
+          <th><input pInputText type="text" [pSize]="'small'" placeholder="Buscar nombre" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
+          <th><input pInputText type="text" [pSize]="'small'" placeholder="Buscar apellido" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
+          <th><input pInputText type="text" [pSize]="'small'" placeholder="Buscar DNI" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
           <th></th>
           <th></th>
-          <th><input pInputText type="text" pSize="small" placeholder="Buscar email" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
+          <th><input pInputText type="text" [pSize]="'small'" placeholder="Buscar email" (input)="dt.filterGlobal($any($event.target).value, 'contains')" /></th>
           <th></th>
           <th></th>
         </tr>
@@ -67,7 +67,7 @@
             <p-button
               icon="pi pi-money"
               severity="secondary"
-              size="small"
+              [size]="'small'"
               rounded
               [text]="true"
               pTooltip="Afectaciones económicas"
@@ -77,7 +77,7 @@
             <p-button
               icon="pi pi-pencil"
               severity="secondary"
-              size="small"
+              [size]="'small'"
               rounded
               [text]="true"
               pTooltip="Editar"

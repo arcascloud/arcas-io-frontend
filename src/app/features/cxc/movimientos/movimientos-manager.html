@@ -6,7 +6,7 @@
         <i class="pi pi-file-edit"></i>
         Movimiento abierto desde una partida contable
       </span>
-      <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+      <p-button label="Volver a la partida" icon="pi pi-arrow-left" [size]="'small'" severity="secondary"
         variant="text" [rounded]="true" (onClick)="volverAPartida()" />
     </div>
   } @else if (desdeHistorico()) {
@@ -16,7 +16,7 @@
         <i class="pi pi-history"></i>
         Movimiento abierto desde el Histórico de Clientes
       </span>
-      <p-button label="Volver al histórico" icon="pi pi-arrow-left" size="small" severity="secondary"
+      <p-button label="Volver al histórico" icon="pi pi-arrow-left" [size]="'small'" severity="secondary"
         variant="text" [rounded]="true" (onClick)="volverAHistorico()" />
     </div>
   }
@@ -35,10 +35,10 @@
           <div class="col-12 flex flex-wrap justify-center gap-2">
             <p-iconField>
               <p-inputIcon class="pi pi-search" />
-              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+              <input type="text" [pSize]="'small'" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
                 placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
               <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
-                [rounded]="true" size="small"></p-button>
+                [rounded]="true" [size]="'small'"></p-button>
             </p-iconField>
           </div>
         </div>
@@ -84,7 +84,7 @@
                   <label>Nro. Referencia</label>
                   @if (esManual()) {
                     <!-- Manual: referencia libre escrita por el usuario -->
-                    <input pInputText pSize="small" [ngModel]="movimientoModel().nroreferencia"
+                    <input pInputText [pSize]="'small'" [ngModel]="movimientoModel().nroreferencia"
                       (ngModelChange)="movimientoModel.set({...movimientoModel(), nroreferencia: $event})"
                       placeholder="Escriba el numero de documento" />
                   } @else if (movimientoModel().tipomov === 'C') {
@@ -106,7 +106,7 @@
 
                 <div class="p-field">
                   <label>Concepto</label>
-                  <input pInputText pSize="small" [ngModel]="movimientoModel().concepto"
+                  <input pInputText [pSize]="'small'" [ngModel]="movimientoModel().concepto"
                     (ngModelChange)="movimientoModel.set({...movimientoModel(), concepto: $event})"
                     placeholder="Descripcion del movimiento" />
                 </div>
@@ -147,10 +147,10 @@
           <!-- Botones de accion -->
           <div class="prestamo-actions mb-3">
             <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
-              (click)="cancelarMovimiento()" [rounded]="true" size="small"></p-button>
+              (click)="cancelarMovimiento()" [rounded]="true" [size]="'small'"></p-button>
             <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
               [loading]="movimientoSaving()" (click)="guardarMovimiento()" [rounded]="true"
-              size="small"></p-button>
+              [size]="'small'"></p-button>
           </div>
 
           <!-- Historial de movimientos del cliente -->
@@ -215,7 +215,7 @@
                       <p-tag [value]="getOrigenLabel(m)" [severity]="getOrigenSeverity(m)" styleClass="tag-sm" />
                     </td>
                     <td class="acciones-cell">
-                      <p-button icon="pi pi-ban" severity="danger" text rounded size="small"
+                      <p-button icon="pi pi-ban" severity="danger" text rounded [size]="'small'"
                         [disabled]="bloqueoAnulacion(m) !== null"
                         [pTooltip]="bloqueoAnulacion(m) || 'Anular movimiento'" tooltipPosition="top"
                         (onClick)="anularMovimiento(m)" />
@@ -248,7 +248,7 @@
             (keyup.enter)="loadClientes()" placeholder="Buscar por nombre, DNI, RTN..."
             class="search-input" />
           <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
-            [rounded]="true" size="small" class="clear-btn"></p-button>
+            [rounded]="true" [size]="'small'" class="clear-btn"></p-button>
         </div>
       </div>
 

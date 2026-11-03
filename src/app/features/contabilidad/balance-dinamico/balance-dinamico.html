@@ -6,7 +6,7 @@
     <h2><i class="pi pi-chart-pie"></i> Balances Dinámicos</h2>
     <div class="header-actions">
       <p-button
-        size="small"
+        [size]="'small'"
         label="PDF"
         icon="pi pi-file-pdf"
         severity="danger"
@@ -17,7 +17,7 @@
         pTooltip="Ver PDF en pantalla"
       />
       <p-button
-        size="small"
+        [size]="'small'"
         label="Excel"
         icon="pi pi-file-excel"
         severity="success"
@@ -28,7 +28,7 @@
         pTooltip="Descargar Excel"
       />
       <p-button
-        size="small"
+        [size]="'small'"
         label="Word"
         icon="pi pi-file-word"
         severity="info"
@@ -105,7 +105,7 @@
         </div>
         <div class="p-col-12 p-col-2 d-flex align-items-end">
           <p-button
-            size="small"
+            [size]="'small'"
             label="Generar"
             icon="pi pi-play"
             severity="success"
@@ -209,7 +209,7 @@
   </div>
   <ng-template pTemplate="footer">
     <p-button
-      size="small"
+      [size]="'small'"
       label="Descargar PDF"
       icon="pi pi-download"
       severity="danger"
@@ -219,7 +219,7 @@
       (onClick)="descargarPDF()"
     />
     <p-button
-      size="small"
+      [size]="'small'"
       label="Cerrar"
       icon="pi pi-times"
       severity="secondary"

@@ -24,13 +24,13 @@
           </div>
         </div>
         <div class="p-col-12 p-col-7 d-flex align-items-end gap-2">
-          <p-button size="small" label="Generar Todos" icon="pi pi-refresh" severity="success" variant="text" [raised]="true" [rounded]="true"
+          <p-button [size]="'small'" label="Generar Todos" icon="pi pi-refresh" severity="success" variant="text" [raised]="true" [rounded]="true"
                     [loading]="cargando()" (onClick)="generarTodos()" />
-          <p-button size="small" label="Balance" icon="pi pi-chart-line" severity="info" variant="text" [rounded]="true"
+          <p-button [size]="'small'" label="Balance" icon="pi pi-chart-line" severity="info" variant="text" [rounded]="true"
                     [loading]="cargando()" (onClick)="generarBalanceComprobacion()" />
-          <p-button size="small" label="Diario" icon="pi pi-book" severity="info" variant="text" [rounded]="true"
+          <p-button [size]="'small'" label="Diario" icon="pi pi-book" severity="info" variant="text" [rounded]="true"
                     [loading]="cargando()" (onClick)="generarLibroDiario()" />
-          <p-button size="small" label="Mayor" icon="pi pi-list" severity="info" variant="text" [rounded]="true"
+          <p-button [size]="'small'" label="Mayor" icon="pi pi-list" severity="info" variant="text" [rounded]="true"
                     [loading]="cargando()" (onClick)="generarLibroMayor()" />
         </div>
       </div>

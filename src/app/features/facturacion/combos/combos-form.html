@@ -9,7 +9,7 @@
       icon="pi pi-arrow-left"
       severity="secondary"
       text
-      size="small"
+      [size]="'small'"
       rounded
       (onClick)="volver()"
     />
@@ -27,7 +27,7 @@
             id="descripcion"
             formControlName="descripcion"
             maxlength="50"
-            pSize="small"
+            [pSize]="'small'"
             placeholder="Descripción del combo"
             [ngClass]="{ 'ng-invalid': invalid('descripcion') }"
           />
@@ -96,11 +96,11 @@
             label="Cancelar"
             icon="pi pi-times"
             severity="secondary"
-            size="small"
+            [size]="'small'"
             rounded
             (onClick)="volver()"
           />
-          <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+          <p-button type="submit" label="Guardar" icon="pi pi-check" rounded [size]="'small'" [loading]="guardando()" />
         </div>
       </div>
 
@@ -166,7 +166,7 @@
                     <p-button
                       icon="pi pi-plus"
                       [rounded]="true"
-                      size="small"
+                      [size]="'small'"
                       (click)="agregarAlCombo(producto)"
                       pTooltip="Agregar al combo"
                     />
@@ -206,7 +206,7 @@
                   <div class="resumen-item-price-row">
                     <span class="resumen-item-price-label">Precio:</span>
                     <p-inputnumber
-                      size="small"
+                      [size]="'small'"
                       [ngModel]="item.precioventa"
                       (ngModelChange)="onPrecioChange(item, $event)"
                       [ngModelOptions]="{ standalone: true }"

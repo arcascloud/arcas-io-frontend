@@ -19,13 +19,13 @@
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" [size]="'small'" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         rounded
         (onClick)="limpiarFiltros()"
       />

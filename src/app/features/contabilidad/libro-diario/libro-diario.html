@@ -4,11 +4,11 @@
     <div class="page-header">
       <h2>Libro Diario</h2>
       <div class="header-actions">
-        <p-button size="small" label="PDF" icon="pi pi-file-pdf" severity="danger" variant="text" [rounded]="true"
+        <p-button [size]="'small'" label="PDF" icon="pi pi-file-pdf" severity="danger" variant="text" [rounded]="true"
           pTooltip="Exportar a PDF" (onClick)="exportPDF()" [disabled]="partidas().length === 0" />
-        <p-button size="small" label="Excel" icon="pi pi-file-excel" severity="success" variant="text" [rounded]="true"
+        <p-button [size]="'small'" label="Excel" icon="pi pi-file-excel" severity="success" variant="text" [rounded]="true"
           pTooltip="Exportar a Excel" (onClick)="exportExcel()" [disabled]="partidas().length === 0" />
-        <p-button size="small" label="Word" icon="pi pi-file-word" severity="info" variant="text" [rounded]="true"
+        <p-button [size]="'small'" label="Word" icon="pi pi-file-word" severity="info" variant="text" [rounded]="true"
           pTooltip="Exportar a Word" (onClick)="exportWord()" [disabled]="partidas().length === 0" />
       </div>
     </div>
@@ -43,9 +43,9 @@
           <div class="p-field filter-actions">
             <label class="invisible-label">Acciones</label>
             <div class="d-flex gap-2">
-              <p-button size="small" icon="pi pi-search" label="Buscar" severity="success" variant="text" [rounded]="true"
+              <p-button [size]="'small'" icon="pi pi-search" label="Buscar" severity="success" variant="text" [rounded]="true"
                 [loading]="cargando()" (onClick)="buscar()" />
-              <p-button size="small" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
+              <p-button [size]="'small'" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
                 pTooltip="Limpiar filtros" (onClick)="limpiar()" />
             </div>
           </div>
@@ -70,9 +70,9 @@
         <strong>Diferencia:</strong> L {{ (granTotalDebito - granTotalCredito) | number:'1.2-2' }}
       </span>
       <div class="resumen-actions">
-        <p-button size="small" icon="pi pi-chevron-down" severity="secondary" variant="text" [rounded]="true"
+        <p-button [size]="'small'" icon="pi pi-chevron-down" severity="secondary" variant="text" [rounded]="true"
           pTooltip="Expandir todo" (onClick)="expandirTodo()" />
-        <p-button size="small" icon="pi pi-chevron-up" severity="secondary" variant="text" [rounded]="true"
+        <p-button [size]="'small'" icon="pi pi-chevron-up" severity="secondary" variant="text" [rounded]="true"
           pTooltip="Colapsar todo" (onClick)="colapsarTodo()" />
       </div>
     </div>
@@ -179,7 +179,7 @@
   <ng-template pTemplate="header">
     <div class="pdf-viewer-header">
       <span>Libro Diario - Visor PDF</span>
-      <p-button size="small" icon="pi pi-download" label="Descargar" severity="success" variant="text" [rounded]="true"
+      <p-button [size]="'small'" icon="pi pi-download" label="Descargar" severity="success" variant="text" [rounded]="true"
         (onClick)="descargarPDF()" />
     </div>
   </ng-template>

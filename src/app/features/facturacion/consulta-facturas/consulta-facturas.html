@@ -13,7 +13,7 @@
           <input
             pInputText
             type="text"
-            pSize="small"
+            [pSize]="'small'"
             placeholder="Buscar por # factura o nombre del cliente..."
             [ngModel]="q()"
             (ngModelChange)="q.set($event)"
@@ -30,7 +30,7 @@
           icon="pi pi-times"
           severity="secondary"
           text
-          size="small"
+          [size]="'small'"
           [rounded]="true"
           (onClick)="limpiar()"
         />
@@ -105,7 +105,7 @@
                 severity="info"
                 text
                 rounded
-                size="small"
+                [size]="'small'"
                 (onClick)="ver(f.facturaId); $event.stopPropagation()"
                 pTooltip="Ver factura"
                 tooltipPosition="top"
@@ -116,7 +116,7 @@
                   severity="help"
                   text
                   rounded
-                  size="small"
+                  [size]="'small'"
                   (onClick)="abrirLink(f, $event)"
                   pTooltip="Ver link de pago"
                   tooltipPosition="top"
@@ -127,7 +127,7 @@
                 severity="secondary"
                 text
                 rounded
-                size="small"
+                [size]="'small'"
                 (onClick)="reimprimir(f, $event)"
                 pTooltip="Reimprimir"
                 tooltipPosition="top"
@@ -137,7 +137,7 @@
                 severity="warn"
                 text
                 rounded
-                size="small"
+                [size]="'small'"
                 (onClick)="abrirCorreo(f, $event)"
                 pTooltip="Enviar por correo"
                 tooltipPosition="top"
@@ -147,7 +147,7 @@
                 severity="success"
                 text
                 rounded
-                size="small"
+                [size]="'small'"
                 (onClick)="compartirWhatsapp(f, $event)"
                 pTooltip="WhatsApp"
                 tooltipPosition="top"
@@ -186,7 +186,7 @@
       <input
         pInputText
         type="email"
-        pSize="small"
+        [pSize]="'small'"
         [ngModel]="emailDestino()"
         (ngModelChange)="emailDestino.set($event)"
         placeholder="correo@ejemplo.com"
@@ -199,14 +199,14 @@
           label="Cancelar"
           severity="secondary"
           text
-          size="small"
+          [size]="'small'"
           [rounded]="true"
           (onClick)="dialogCorreo.set(false)"
         />
         <p-button
           label="Enviar"
           icon="pi pi-send"
-          size="small"
+          [size]="'small'"
           [rounded]="true"
           (onClick)="enviarCorreo()"
           [loading]="enviando()"
@@ -243,13 +243,13 @@
             />
           </div>
           <div class="link-url-row">
-            <input pInputText type="text" pSize="small" readonly [ngModel]="lv.url" class="link-url-input" />
+            <input pInputText type="text" [pSize]="'small'" readonly [ngModel]="lv.url" class="link-url-input" />
             <p-button
               icon="pi pi-copy"
               severity="secondary"
               text
               rounded
-              size="small"
+              [size]="'small'"
               (onClick)="copiarLinkUrl(lv.url)"
               pTooltip="Copiar link"
               tooltipPosition="top"
@@ -259,7 +259,7 @@
               severity="info"
               text
               rounded
-              size="small"
+              [size]="'small'"
               (onClick)="abrirLinkUrl(lv.url)"
               pTooltip="Abrir link"
               tooltipPosition="top"
@@ -278,7 +278,7 @@
               icon="pi pi-refresh"
               severity="danger"
               variant="outlined"
-              size="small"
+              [size]="'small'"
               [rounded]="true"
               [loading]="linkGenerando()"
               (onClick)="generarLinkFactura()"
@@ -294,7 +294,7 @@
             label="Generar link"
             icon="pi pi-plus"
             severity="success"
-            size="small"
+            [size]="'small'"
             [rounded]="true"
             [loading]="linkGenerando()"
             (onClick)="generarLinkFactura()"
@@ -338,7 +338,7 @@
           label="Cerrar"
           severity="secondary"
           text
-          size="small"
+          [size]="'small'"
           [rounded]="true"
           (onClick)="dialogLink.set(false)"
         />

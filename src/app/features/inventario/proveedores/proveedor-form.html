@@ -9,7 +9,7 @@
       icon="pi pi-arrow-left"
       severity="secondary"
       text
-      size="small"
+      [size]="'small'"
       rounded
       (onClick)="volver()"
     />
@@ -133,7 +133,7 @@
 
       <div class="campo">
         <label for="limiteCredito">Límite de crédito</label>
-        <p-inputnumber size="small"
+        <p-inputnumber [size]="'small'"
           id="limiteCredito"
           formControlName="limiteCredito"
           mode="currency"
@@ -148,7 +148,7 @@
 
       <div class="campo">
         <label for="diasplazo">Días de plazo</label>
-        <p-inputnumber size="small"
+        <p-inputnumber [size]="'small'"
           id="diasplazo"
           formControlName="diasplazo"
           [min]="0"
@@ -160,7 +160,7 @@
 
       <div class="campo">
         <label for="interes">Interés (%)</label>
-        <p-inputnumber size="small"
+        <p-inputnumber [size]="'small'"
           id="interes"
           formControlName="interes"
           [minFractionDigits]="2"
@@ -172,7 +172,7 @@
 
       <div class="campo">
         <label for="moratorio">Moratorio (%)</label>
-        <p-inputnumber size="small"
+        <p-inputnumber [size]="'small'"
           id="moratorio"
           formControlName="moratorio"
           [minFractionDigits]="2"
@@ -220,11 +220,11 @@
           label="Cancelar"
           icon="pi pi-times"
           severity="secondary"
-          size="small"
+          [size]="'small'"
           rounded
           (onClick)="volver()"
         />
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded [size]="'small'" [loading]="guardando()" />
       </div>
     </form>
   }
@@ -260,6 +260,6 @@
     </div>
   </div>
   <ng-template pTemplate="footer">
-    <p-button label="Entendido" icon="pi pi-check" size="small" variant="text" severity="secondary" [rounded]="true" (onClick)="dialogoDni.set(false)" />
+    <p-button label="Entendido" icon="pi pi-check" [size]="'small'" variant="text" severity="secondary" [rounded]="true" (onClick)="dialogoDni.set(false)" />
   </ng-template>
 </p-dialog>

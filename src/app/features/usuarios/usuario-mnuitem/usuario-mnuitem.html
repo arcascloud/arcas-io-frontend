@@ -41,7 +41,7 @@
           [appendTo]="'body'"
         />
       </div>
-      <p-button label="Nuevo menu item" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+      <p-button label="Nuevo menu item" icon="pi pi-plus" rounded [size]="'small'" (onClick)="nuevo()" />
     </div>
   </header>
 
@@ -89,7 +89,7 @@
               tooltipPosition="top"
               severity="success"
               text
-              size="small"
+              [size]="'small'"
               rounded
               [loading]="clonando() === rowData.usuario"
               (onClick)="clonarMenu(rowData.usuario, $event)"
@@ -134,7 +134,7 @@
               (onClick)="editar(rowData.id, $event)"
               severity="warn"
               text
-              size="small"
+              [size]="'small'"
               rounded
               class="mr-1"
             />
@@ -144,7 +144,7 @@
               (onClick)="eliminar(rowData, $event)"
               severity="danger"
               text
-              size="small"
+              [size]="'small'"
               rounded
             />
           </td>

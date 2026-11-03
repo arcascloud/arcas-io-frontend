@@ -115,7 +115,7 @@
             label="Nueva orden"
             icon="pi pi-plus"
             severity="success"
-            size="small"
+            [size]="'small'"
             [disabled]="ocupado() || mesaSeleccionada() == null"
             pTooltip="Elija una mesa libre primero"
             tooltipPosition="left"

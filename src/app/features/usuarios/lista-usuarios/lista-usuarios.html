@@ -4,7 +4,7 @@
       <h1 class="page-title">Usuarios</h1>
       <p class="page-subtitle">Administración de usuarios del sistema</p>
     </div>
-    <p-button label="Nuevo usuario" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+    <p-button label="Nuevo usuario" icon="pi pi-plus" rounded [size]="'small'" (onClick)="nuevo()" />
   </header>
 
   <div class="filtros card">
@@ -31,13 +31,13 @@ size="small"         [options]="estadoOptions"
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" [size]="'small'" (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -71,7 +71,7 @@ size="small"         [options]="estadoOptions"
         <td><p-tag [value]="activoLbl(u.sn_activo)" [severity]="activoSev(u.sn_activo)" /></td>
         <td>
           <p-button icon="pi pi-pencil" pTooltip="Editar" (onClick)="editar(u.usuario, $event)"
-            severity="warn" text size="small" rounded />
+            severity="warn" text [size]="'small'" rounded />
         </td>
       </tr>
     </ng-template>

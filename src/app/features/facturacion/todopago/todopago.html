@@ -17,7 +17,7 @@
         icon="pi pi-refresh"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         [rounded]="true"
         [loading]="cargando()"
         (onClick)="load()"
@@ -32,7 +32,7 @@
           <input
             pInputText
             type="text"
-            pSize="small"
+            [pSize]="'small'"
             placeholder="Buscar por # factura o cliente..."
             [ngModel]="q()"
             (ngModelChange)="q.set($event)"
@@ -98,7 +98,7 @@
                 severity="secondary"
                 text
                 rounded
-                size="small"
+                [size]="'small'"
                 [disabled]="!l.url"
                 (onClick)="copiar(l, $event)"
                 pTooltip="Copiar link"
@@ -109,7 +109,7 @@
                 severity="info"
                 text
                 rounded
-                size="small"
+                [size]="'small'"
                 [disabled]="!l.url"
                 (onClick)="abrir(l, $event)"
                 pTooltip="Abrir link"
@@ -120,7 +120,7 @@
                 severity="warn"
                 text
                 rounded
-                size="small"
+                [size]="'small'"
                 [loading]="consultandoId() === l.id"
                 [disabled]="consultandoId() !== null && consultandoId() !== l.id"
                 (onClick)="consultarEstado(l, $event)"
@@ -132,7 +132,7 @@
                 severity="danger"
                 text
                 rounded
-                size="small"
+                [size]="'small'"
                 [loading]="regenerandoId() === l.id"
                 [disabled]="regenerandoId() !== null && regenerandoId() !== l.id"
                 (onClick)="confirmarRegenerar(l, $event)"

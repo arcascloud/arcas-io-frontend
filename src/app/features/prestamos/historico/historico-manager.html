@@ -29,9 +29,9 @@
       </div>
     </div>
     <div class="filtros-acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" [raised]="true"
+      <p-button label="Buscar" icon="pi pi-search" [size]="'small'" [rounded]="true" (onClick)="buscar()" [raised]="true"
         severity="success"></p-button>
-      <p-button label="Limpiar" icon="pi pi-times" size="small" variant="text" [rounded]="true" severity="secondary"
+      <p-button label="Limpiar" icon="pi pi-times" [size]="'small'" variant="text" [rounded]="true" severity="secondary"
         (onClick)="limpiarFiltros()"></p-button>
     </div>
   </div>
@@ -82,7 +82,7 @@
               [severity]="item.sn_cotabilizada === 'S' ? 'info' : 'success'" />
           </td>
           <td class="text-center">
-            <p-button label="Ver" icon="pi pi-eye" size="small" variant="text" [rounded]="true" severity="info"
+            <p-button label="Ver" icon="pi pi-eye" [size]="'small'" variant="text" [rounded]="true" severity="info"
               (onClick)="irAmovimientos(item)" />
           </td>
         </tr>

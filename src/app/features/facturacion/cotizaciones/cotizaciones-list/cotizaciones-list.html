@@ -5,7 +5,7 @@
       <p class="page-subtitle">Cotizaciones de venta</p>
     </div>
     <div>
-      <p-button label="Nueva" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="nuevo()" />
+      <p-button label="Nueva" icon="pi pi-plus" [size]="'small'" [rounded]="true" (onClick)="nuevo()" />
     </div>
   </header>
 
@@ -13,14 +13,14 @@
     <div class="filtros-row">
       <div class="campo campo-busqueda">
         <span class="p-input-icon-left">
-          <input pInputText type="text" pSize="small"
+          <input pInputText type="text" [pSize]="'small'"
             placeholder="Buscar por # cotización, nombre del cliente o atendió..."
             [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" class="busqueda-input" />
         </span>
       </div>
       <div class="filtros-acciones">
         <i class="pi pi-search"></i>
-        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="limpiar()" />
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text [size]="'small'" [rounded]="true" (onClick)="limpiar()" />
       </div>
     </div>
   </div>
@@ -58,12 +58,12 @@
           </td>
           <td class="acciones-cell">
             <div class="acciones-row">
-              <p-button icon="pi pi-pencil" severity="info" text rounded size="small"
+              <p-button icon="pi pi-pencil" severity="info" text rounded [size]="'small'"
                 (onClick)="editar(item.poscotmaeId); $event.stopPropagation()" pTooltip="Editar" tooltipPosition="top" />
-              <p-button icon="pi pi-envelope" severity="warn" text rounded size="small"
+              <p-button icon="pi pi-envelope" severity="warn" text rounded [size]="'small'"
                 (onClick)="abrirCorreo(item, $event)" pTooltip="Enviar por correo" tooltipPosition="top"
                 [disabled]="!esActiva(item)" />
-              <p-button icon="pi pi-trash" severity="danger" text rounded size="small"
+              <p-button icon="pi pi-trash" severity="danger" text rounded [size]="'small'"
                 (onClick)="eliminar(item, $event)" pTooltip="Eliminar" tooltipPosition="top"
                 [disabled]="!esActiva(item)" />
             </div>
@@ -89,13 +89,13 @@
     [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true" styleClass="correo-dialog">
     <div class="correo-form">
       <label class="correo-label">Correo electrónico del destinatario</label>
-      <input pInputText type="email" pSize="small" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
+      <input pInputText type="email" [pSize]="'small'" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
         placeholder="correo@ejemplo.com" class="correo-input" />
     </div>
     <ng-template pTemplate="footer">
       <div class="correo-footer">
-        <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
-        <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="enviando()" />
+        <p-button label="Cancelar" severity="secondary" text [size]="'small'" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+        <p-button label="Enviar" icon="pi pi-send" [size]="'small'" [rounded]="true" (onClick)="enviarCorreo()" [loading]="enviando()" />
       </div>
     </ng-template>
   </p-dialog>

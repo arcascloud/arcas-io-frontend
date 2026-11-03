@@ -9,7 +9,7 @@
       icon="pi pi-arrow-left"
       severity="secondary"
       text
-      size="small"
+      [size]="'small'"
       rounded
       (onClick)="volver()"
     />
@@ -104,12 +104,12 @@ size="small"           id="moduloId"
 
       <div class="campo">
         <label for="parentId">Padre ID</label>
-        <p-inputnumber size="small" id="parentId" formControlName="parentId" [min]="0" [showButtons]="true" />
+        <p-inputnumber [size]="'small'" id="parentId" formControlName="parentId" [min]="0" [showButtons]="true" />
       </div>
 
       <div class="campo">
         <label for="levelId">Nivel</label>
-        <p-inputnumber size="small" id="levelId" formControlName="levelId" [min]="0" [showButtons]="true" />
+        <p-inputnumber [size]="'small'" id="levelId" formControlName="levelId" [min]="0" [showButtons]="true" />
       </div>
 
       @if (esEdicion()) {
@@ -130,11 +130,11 @@ size="small"           id="moduloId"
           label="Cancelar"
           icon="pi pi-times"
           severity="secondary"
-          size="small"
+          [size]="'small'"
           rounded
           (onClick)="volver()"
         />
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded [size]="'small'" [loading]="guardando()" />
       </div>
     </form>
   }

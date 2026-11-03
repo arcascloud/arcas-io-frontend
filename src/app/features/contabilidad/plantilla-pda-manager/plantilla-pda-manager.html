@@ -28,7 +28,7 @@
             (plantillaSeleccionada()?.descripcion ?? '') }}
           </h3>
           <p-button
-            size="small"
+            [size]="'small'"
             icon="pi pi-arrow-right"
             severity="secondary"
             variant="text"
@@ -59,7 +59,7 @@
                 <label>Descripción *</label>
                 <input
                   pInputText
-                  pSize="small"
+                  [pSize]="'small'"
                   formControlName="descripcion"
                   maxlength="50"
                   class="w-full"
@@ -136,7 +136,7 @@
                       severity="danger"
                       [text]="true"
                       [rounded]="true"
-                      size="small"
+                      [size]="'small'"
                       [tabindex]="-1"
                       aria-label="Quitar línea"
                       (onClick)="quitar(l.id)"
@@ -182,7 +182,7 @@
         <!-- Footer -->
         <div class="detail-footer">
           <p-button
-            size="small"
+            [size]="'small'"
             label="Cancelar"
             rounded
             variant="text"
@@ -190,7 +190,7 @@
             (onClick)="volver()"
           />
           <p-button
-            size="small"
+            [size]="'small'"
             label="Guardar"
             icon="pi pi-check-circle"
             severity="success"
@@ -214,7 +214,7 @@
           <h3>{{ plantilla.descripcion }}</h3>
           <div class="detail-header-actions">
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-pencil"
               severity="warn"
               variant="text"
@@ -223,7 +223,7 @@
               (onClick)="editarPlantilla(plantilla)"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-trash"
               severity="danger"
               variant="text"
@@ -232,7 +232,7 @@
               (onClick)="eliminarPlantilla(plantilla)"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-arrow-left"
               severity="secondary"
               variant="text"
@@ -328,7 +328,7 @@
       <div class="left-header">
         <h3><i class="pi pi-book"></i> Conceptos Contables</h3>
         <p-button
-          size="small"
+          [size]="'small'"
           label="Nueva"
           icon="pi pi-plus"
           severity="success"
@@ -358,7 +358,7 @@
           <label>Descripción</label>
           <input
             pInputText
-            pSize="small"
+            [pSize]="'small'"
             placeholder="Buscar..."
             [ngModel]="filtroDescripcion()"
             (ngModelChange)="filtroDescripcion.set($event)"
@@ -384,7 +384,7 @@
           severity="success"
           variant="text"
           [rounded]="true"
-          size="small"
+          [size]="'small'"
           (onClick)="nuevaPlantilla()"
         />
       </div>
@@ -408,7 +408,7 @@
           </div>
           <div class="partida-item-actions">
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-eye"
               severity="info"
               variant="text"
@@ -417,7 +417,7 @@
               (onClick)="verPlantilla(plantilla); $event.stopPropagation()"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-pencil"
               severity="warn"
               variant="text"
@@ -426,7 +426,7 @@
               (onClick)="editarPlantilla(plantilla); $event.stopPropagation()"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-trash"
               severity="danger"
               variant="text"

@@ -10,7 +10,7 @@
       [raised]="true"
       variant="text"
       severity="success"
-      icon="pi pi-plus" size="small" (onClick)="nuevo()" />
+      icon="pi pi-plus" [size]="'small'" (onClick)="nuevo()" />
     </div>
   </header>
 
@@ -20,20 +20,20 @@
       <input
 
         pInputText type="text"
-        pSize="small"
+        [pSize]="'small'"
         placeholder="Buscar..." [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
         (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" />
     </div>
     <div class="campo acciones">
       <p-button label="Buscar"
        [rounded]="true"
-       icon="pi pi-search" size="small"
+       icon="pi pi-search" [size]="'small'"
         severity="info"
        (onClick)="buscar()" />
       <p-button label="Limpiar"
        [rounded]="true"
         icon="pi pi-times"
-        severity="secondary" text size="small"
+        severity="secondary" text [size]="'small'"
         (onClick)="limpiarFiltros()" />
     </div>
   </div>
@@ -74,7 +74,7 @@
         <td class="text-center">
           <p-button
             icon="pi pi-pencil"
-            size="small"
+            [size]="'small'"
             variant="text"
             [rounded]="true"
             severity="secondary"

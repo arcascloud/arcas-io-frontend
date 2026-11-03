@@ -24,7 +24,7 @@
           rounded="true"
           variant="text"
           iconOnly
-          size="small"
+          [size]="'small'"
           styleClass="botton-bg-transparente sidebar-toggle"
           pTooltip="Departamentos"
         ></p-button>
@@ -212,9 +212,9 @@
     </div>
   </div>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" size="small" rounded variant="text" severity="secondary"
+    <p-button label="Cancelar" [size]="'small'" rounded variant="text" severity="secondary"
       [disabled]="cambiandoPassword" (onClick)="dialogCambiarPassword = false" />
-    <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" [raised]="true" [rounded]="true"
+    <p-button label="Guardar" icon="pi pi-check" [size]="'small'" variant="text" [raised]="true" [rounded]="true"
       severity="success" [loading]="cambiandoPassword" (onClick)="guardarPassword()" />
   </ng-template>
 </p-dialog>

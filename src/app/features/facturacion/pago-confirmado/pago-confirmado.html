@@ -27,12 +27,12 @@
     @if (!cargando()) {
     <div class="tp-confirm-acciones">
       @if (!exito) {
-      <p-button size="small" label="Reintentar" icon="pi pi-refresh" severity="warn" variant="text" [rounded]="true"
+      <p-button [size]="'small'" label="Reintentar" icon="pi pi-refresh" severity="warn" variant="text" [rounded]="true"
         (onClick)="reintentar()" />
       }
-      <p-button size="small" label="Nueva factura" icon="pi pi-plus" severity="secondary" variant="text" [rounded]="true"
+      <p-button [size]="'small'" label="Nueva factura" icon="pi pi-plus" severity="secondary" variant="text" [rounded]="true"
         (onClick)="irANueva()" />
-      <p-button size="small" label="Ver facturas" icon="pi pi-list" severity="success" variant="text" [rounded]="true"
+      <p-button [size]="'small'" label="Ver facturas" icon="pi pi-list" severity="success" variant="text" [rounded]="true"
         (onClick)="irAFacturas()" />
     </div>
     }

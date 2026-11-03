@@ -80,7 +80,7 @@
   <main class="tienda-main">
     <div class="tienda-toolbar">
       <div class="toolbar-left">
-         <p-button icon="pi pi-arrow-left" label="Volver" size="small" [rounded]="true" variant="text"
+         <p-button icon="pi pi-arrow-left" label="Volver" [size]="'small'" [rounded]="true" variant="text"
            severity="secondary" pTooltip="Volver al listado" tooltipPosition="left" (onClick)="volver()" />
         <h2 class="toolbar-title"><i class="pi pi-shopping-cart"></i> Pedidos</h2>
         <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's'
@@ -104,7 +104,7 @@
             <i class="pi pi-list"></i>
           </button>
         </div>
-        <p-button size="small" label="Ofertas" [rounded]="true" [raised]="true" variant="text" severity="success"
+        <p-button [size]="'small'" label="Ofertas" [rounded]="true" [raised]="true" variant="text" severity="success"
           [class.active]="soloOfertas()" (click)="soloOfertas.set(!soloOfertas())" pTooltip="Solo ofertas" tooltipPosition="left">
         </p-button>
 
@@ -290,7 +290,7 @@
   }
 
   <ng-template pTemplate="footer">
-    <p-button label="Cerrar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogGaleria.set(false)" />
+    <p-button label="Cerrar" icon="pi pi-times" severity="secondary" text [size]="'small'" [rounded]="true" (onClick)="dialogGaleria.set(false)" />
   </ng-template>
 </p-dialog>
 
@@ -347,7 +347,7 @@
         <h3 class="section-title"><i class="pi pi-arrow-right-arrow-left"></i> Transferencia</h3>
         <div class="campo">
           <label>Número de autorización *</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.nroautorizacion"
+          <input pInputText [pSize]="'small'" [(ngModel)]="checkout.nroautorizacion"
             placeholder="Autorización de la transferencia" class="w-full" />
         </div>
         }
@@ -414,9 +414,9 @@
     </div>
   </div>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" size="small" rounded variant="text" severity="secondary"
+    <p-button label="Cancelar" [size]="'small'" rounded variant="text" severity="secondary"
       [disabled]="guardandoPedido()" (onClick)="dialogGuardarPedido.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" [raised]="true" [rounded]="true"
+    <p-button label="Guardar" icon="pi pi-check" [size]="'small'" variant="text" [raised]="true" [rounded]="true"
       severity="success" [loading]="guardandoPedido()" (onClick)="guardarPedido()" />
   </ng-template>
 </p-dialog>

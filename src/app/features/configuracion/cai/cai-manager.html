@@ -23,7 +23,7 @@
               <h5 class="form-col-title">Código CAI</h5>
               <div class="p-field">
                 <label>Código <span class="req">*</span> <small class="text-muted">(mínimo 35 caracteres, letras/números/guiones)</small></label>
-                <input pInputText pSize="small" formControlName="cai" placeholder="Ejemplo: A1B2FF-C3D4FF-E5F6BB-G7H8GG-I9J0TT-K1" class="cai-input-mono" />
+                <input pInputText [pSize]="'small'" formControlName="cai" placeholder="Ejemplo: A1B2FF-C3D4FF-E5F6BB-G7H8GG-I9J0TT-K1" class="cai-input-mono" />
                 @if (caiForm.get('cai')?.touched && caiForm.get('cai')?.invalid) {
                 <small class="err">
                   @if (caiForm.get('cai')?.errors?.['minlength']) {
@@ -44,8 +44,8 @@
             </div>
           </div>
           <div class="form-actions">
-            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarForm()" />
-            <p-button [label]="formMode() === 'editar' ? 'Actualizar CAI' : 'Crear CAI'" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingCai()" (onClick)="guardarCai()" />
+            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (onClick)="cancelarForm()" />
+            <p-button [label]="formMode() === 'editar' ? 'Actualizar CAI' : 'Crear CAI'" icon="pi pi-check" variant="text" severity="success" [rounded]="true" [size]="'small'" [loading]="savingCai()" (onClick)="guardarCai()" />
           </div>
         </div>
       </div>
@@ -55,7 +55,7 @@
         <i class="pi pi-arrow-left empty-icon"></i>
         <h3>Pulse un CAI</h3>
         <p>Seleccione un CAI de la lista para ver sus rangos de facturación</p>
-        <p-button label="Nuevo CAI" icon="pi pi-plus" severity="success" [rounded]="true" size="small" (onClick)="nuevo()" />
+        <p-button label="Nuevo CAI" icon="pi pi-plus" severity="success" [rounded]="true" [size]="'small'" (onClick)="nuevo()" />
       </div>
       } @else {
       <!-- ===== Detalle del CAI seleccionado ===== -->
@@ -67,8 +67,8 @@
             <p-tag [value]="getEstadoLabel(selected()!.sn_activo)" [severity]="getEstadoSeverity(selected()!.sn_activo)" styleClass="tag-sm" />
           </div>
           <div class="detail-actions">
-            <p-button label="Editar" icon="pi pi-pencil" variant="text" severity="warn" [rounded]="true" size="small" (onClick)="editarCai(selected()!)" />
-            <p-button label="Eliminar" icon="pi pi-trash" variant="text" severity="danger" [rounded]="true" size="small" (onClick)="eliminarCai(selected()!)" />
+            <p-button label="Editar" icon="pi pi-pencil" variant="text" severity="warn" [rounded]="true" [size]="'small'" (onClick)="editarCai(selected()!)" />
+            <p-button label="Eliminar" icon="pi pi-trash" variant="text" severity="danger" [rounded]="true" [size]="'small'" (onClick)="eliminarCai(selected()!)" />
           </div>
         </div>
 
@@ -89,11 +89,11 @@
               <div class="form-col">
                 <div class="p-field">
                   <label>Rango Desde <span class="req">*</span></label>
-                  <input pInputText pSize="small" formControlName="rangoDesde" placeholder="000-001-01-00120001" />
+                  <input pInputText [pSize]="'small'" formControlName="rangoDesde" placeholder="000-001-01-00120001" />
                 </div>
                 <div class="p-field">
                   <label>Rango Hasta <span class="req">*</span></label>
-                  <input pInputText pSize="small" formControlName="rangoHasta" placeholder="000-001-01-00127000" />
+                  <input pInputText [pSize]="'small'" formControlName="rangoHasta" placeholder="000-001-01-00127000" />
                 </div>
               </div>
               <div class="form-col">
@@ -111,9 +111,9 @@
 
           <div class="form-actions">
             @if (corrEditando()) {
-            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarCorr()" />
+            <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (onClick)="cancelarCorr()" />
             }
-            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingCorr()" (onClick)="guardarCorrelativo()" />
+            <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" [size]="'small'" [loading]="savingCorr()" (onClick)="guardarCorrelativo()" />
           </div>
         </div>
 
@@ -161,8 +161,8 @@
               <td class="col-estado"><p-tag [value]="getRangoLabel(corr.Idsucursal)" [severity]="getRangoEstadoSeverity(corr.Idsucursal)" styleClass="tag-sm" /></td>
               <td>{{ formatFecha(corr.fechaLimite) }}</td>
               <td class="col-acciones">
-                <p-button icon="pi pi-pencil" (click)="editarCorr(corr)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
-                <p-button icon="pi pi-trash" (click)="eliminarCorr(corr)" [rounded]="true" size="small" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
+                <p-button icon="pi pi-pencil" (click)="editarCorr(corr)" [rounded]="true" [size]="'small'" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                <p-button icon="pi pi-trash" (click)="eliminarCorr(corr)" [rounded]="true" [size]="'small'" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
               </td>
             </tr>
           </ng-template>
@@ -181,12 +181,12 @@
       <div class="search-bar">
         <div class="search-input-wrapper">
           <i class="pi pi-search"></i>
-          <input pInputText pSize="small" [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Buscar CAI..." />
+          <input pInputText [pSize]="'small'" [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Buscar CAI..." />
           @if (q()) {
           <button class="search-clear" (click)="limpiarFiltros()">×</button>
           }
         </div>
-        <p-button label="Nuevo" icon="pi pi-plus" severity="success" [rounded]="true" size="small" (onClick)="nuevo()" />
+        <p-button label="Nuevo" icon="pi pi-plus" severity="success" [rounded]="true" [size]="'small'" (onClick)="nuevo()" />
       </div>
 
       @if (cargando()) {
@@ -199,7 +199,7 @@
       <div class="lista-empty">
         <i class="pi pi-inbox"></i>
         <p>No hay CAIs registrados</p>
-        <p-button label="Crear el primero" icon="pi pi-plus" severity="success" variant="text" [rounded]="true" size="small" (onClick)="nuevo()" />
+        <p-button label="Crear el primero" icon="pi pi-plus" severity="success" variant="text" [rounded]="true" [size]="'small'" (onClick)="nuevo()" />
       </div>
       } @else {
       <div class="cai-lista">
@@ -208,8 +208,8 @@
           <div class="item-ficha-header">
             <p-tag [value]="getEstadoLabel(cai.sn_activo)" [severity]="getEstadoSeverity(cai.sn_activo)" styleClass="tag-sm" />
             <div class="item-ficha-actions">
-              <p-button size="small" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (click)="editarCai(cai); $event.stopPropagation()" />
-              <p-button size="small" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (click)="eliminarCai(cai); $event.stopPropagation()" />
+              <p-button [size]="'small'" icon="pi pi-pencil" severity="warn" variant="text" [rounded]="true" pTooltip="Editar" (click)="editarCai(cai); $event.stopPropagation()" />
+              <p-button [size]="'small'" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" pTooltip="Eliminar" (click)="eliminarCai(cai); $event.stopPropagation()" />
             </div>
           </div>
           <div class="ficha-codigo">{{ cai.cai }}</div>

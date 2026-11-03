@@ -4,7 +4,7 @@
       <h1 class="page-title">{{ titulo() }}</h1>
       <p class="page-subtitle">Cotización de venta</p>
     </div>
-    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text size="small" rounded (onClick)="volver()" />
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text [size]="'small'" rounded (onClick)="volver()" />
   </header>
 
   @if (cargando()) {
@@ -18,15 +18,15 @@
               <div class="toolbar-campos">
                 <div class="campo">
                   <label>Nombre Cliente <span class="req">*</span></label>
-                  <input pInputText pSize="small" formControlName="Nombrecliente" placeholder="Nombre del cliente" [ngClass]="{ 'ng-invalid': invalid('Nombrecliente') }" />
+                  <input pInputText [pSize]="'small'" formControlName="Nombrecliente" placeholder="Nombre del cliente" [ngClass]="{ 'ng-invalid': invalid('Nombrecliente') }" />
                 </div>
                 <div class="campo">
                   <label>Dirección <span class="req">*</span></label>
-                  <input pInputText pSize="small" formControlName="direccion" placeholder="Dirección" [ngClass]="{ 'ng-invalid': invalid('direccion') }" />
+                  <input pInputText [pSize]="'small'" formControlName="direccion" placeholder="Dirección" [ngClass]="{ 'ng-invalid': invalid('direccion') }" />
                 </div>
                 <div class="campo">
                   <label>Atendió <span class="req">*</span></label>
-                  <input pInputText pSize="small" formControlName="atendio" placeholder="Quien atendió" [ngClass]="{ 'ng-invalid': invalid('atendio') }" />
+                  <input pInputText [pSize]="'small'" formControlName="atendio" placeholder="Quien atendió" [ngClass]="{ 'ng-invalid': invalid('atendio') }" />
                 </div>
                 <div class="campo">
                   <label>Gestor <span class="req">*</span></label>
@@ -34,12 +34,12 @@
                 </div>
                 <!-- Fila 3, columna 1: todas las acciones -->
                 <div class="toolbar-acciones">
-                  <p-button label="Nueva" icon="pi pi-plus" severity="secondary" size="small" [rounded]="true" (onClick)="volver()" />
-                  <p-button label="Guardar" icon="pi pi-check" size="small" [rounded]="true" [loading]="guardando()" (onClick)="guardar()" />
-                  <p-button icon="pi pi-print" severity="secondary" size="small" [rounded]="true" (onClick)="imprimirPDF()" pTooltip="Imprimir" />
-                  <p-button icon="pi pi-download" severity="secondary" size="small" [rounded]="true" (onClick)="descargarPDF()" pTooltip="Descargar PDF" />
-                  <p-button icon="pi pi-envelope" severity="info" size="small" [rounded]="true" (onClick)="abrirDialogCorreo()" [disabled]="!esEdicion()" pTooltip="Enviar por correo" />
-                  <p-button icon="pi pi-whatsapp" severity="success" size="small" [rounded]="true" (onClick)="compartir()" pTooltip="Compartir" styleClass="btn-whatsapp" />
+                  <p-button label="Nueva" icon="pi pi-plus" severity="secondary" [size]="'small'" [rounded]="true" (onClick)="volver()" />
+                  <p-button label="Guardar" icon="pi pi-check" [size]="'small'" [rounded]="true" [loading]="guardando()" (onClick)="guardar()" />
+                  <p-button icon="pi pi-print" severity="secondary" [size]="'small'" [rounded]="true" (onClick)="imprimirPDF()" pTooltip="Imprimir" />
+                  <p-button icon="pi pi-download" severity="secondary" [size]="'small'" [rounded]="true" (onClick)="descargarPDF()" pTooltip="Descargar PDF" />
+                  <p-button icon="pi pi-envelope" severity="info" [size]="'small'" [rounded]="true" (onClick)="abrirDialogCorreo()" [disabled]="!esEdicion()" pTooltip="Enviar por correo" />
+                  <p-button icon="pi pi-whatsapp" severity="success" [size]="'small'" [rounded]="true" (onClick)="compartir()" pTooltip="Compartir" styleClass="btn-whatsapp" />
                 </div>
               </div>
             </ng-template>
@@ -49,11 +49,11 @@
             <ng-template #start>
               <div class="buscador-fila">
                 <p-iconfield styleClass="w-full">
-                  <input pInputText type="text" pSize="small" [value]="qProducto()"
+                  <input pInputText type="text" [pSize]="'small'" [value]="qProducto()"
                     (input)="onBuscarProducto($event)" fluid
                     placeholder="Buscar producto o escanear código de barras..." />
                   <p-inputicon class="ml-10">
-                    <p-button size="small" icon="pi pi-search" pTooltip="Buscar producto" showDelay="1000"
+                    <p-button [size]="'small'" icon="pi pi-search" pTooltip="Buscar producto" showDelay="1000"
                       hideDelay="300" severity="info" [rounded]="true" variant="text"
                       (onClick)="showHelperProductos()" />
                   </p-inputicon>
@@ -90,7 +90,7 @@
                   <p-button type="button"
                    icon="pi pi-times" severity="danger" 
                    rounded=[true] 
-                   size="small" (onClick)="quitarFila(idx)" />
+                   [size]="'small'" (onClick)="quitarFila(idx)" />
                 </td>
                 <td class="celda-img">
                   @if (row.imagenUrl) {
@@ -108,13 +108,13 @@
                   </div>
                 </td>
                 <td>
-                  <p-inputnumber size="small" [(ngModel)]="row.precio" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recalcularFila(row)" [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" />
+                  <p-inputnumber [size]="'small'" [(ngModel)]="row.precio" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recalcularFila(row)" [min]="0" mode="currency" currency="HNL" [locale]="'es-HN'" [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true" [inputStyle]="{ 'width': '100%' }" />
                 </td>
                 <td>
                   <p-tag [value]="row.estado" [severity]="getSeverity(row.estado)" styleClass="tag-sm" />
                 </td>
                 <td>
-                  <p-inputnumber size="small" [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recalcularFila(row)" [min]="0" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }" />
+                  <p-inputnumber [size]="'small'" [(ngModel)]="row.cantidad" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recalcularFila(row)" [min]="0" [maxFractionDigits]="2" [inputStyle]="{ 'width': '100%' }" />
                 </td>
                 <td>
                   <span class="text-right">{{ moneda(row.subTotal) }}</span>
@@ -181,7 +181,7 @@
       <label>Correo electrónico del destinatario <span class="req">*</span></label>
       <p-iconfield>
         <i class="pi pi-envelope"></i>
-        <input pInputText pSize="small" type="email" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
+        <input pInputText [pSize]="'small'" type="email" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
           (keyup.enter)="emailValido() && enviarCorreo()" placeholder="correo@ejemplo.com" class="correo-input" />
       </p-iconfield>
       @if (emailDestino().trim().length > 0 && !emailValido()) {
@@ -191,8 +191,8 @@
 
     <ng-template pTemplate="footer">
       <div class="correo-footer">
-        <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
-        <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()"
+        <p-button label="Cancelar" severity="secondary" text [size]="'small'" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+        <p-button label="Enviar" icon="pi pi-send" [size]="'small'" [rounded]="true" (onClick)="enviarCorreo()"
           [loading]="guardando()" [disabled]="!emailValido()" />
       </div>
     </ng-template>

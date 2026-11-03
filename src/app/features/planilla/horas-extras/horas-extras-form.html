@@ -16,7 +16,7 @@
       <p-button
         label="Volver"
         icon="pi pi-arrow-left"
-        size="small"
+        [size]="'small'"
         rounded
         variant="text"
         severity="secondary"
@@ -26,7 +26,7 @@
         <p-button
           label="Eliminar"
           icon="pi pi-trash"
-          size="small"
+          [size]="'small'"
           rounded
           variant="text"
           severity="danger"
@@ -37,7 +37,7 @@
       <p-button
         label="Guardar"
         icon="pi pi-check"
-        size="small"
+        [size]="'small'"
         rounded
         severity="success"
         [loading]="guardando()"
@@ -134,7 +134,7 @@
 
       <div class="campo">
         <label>Ejercicio / Período</label>
-        <input pInputText pSize="small" [value]="periodoLabel()" readonly />
+        <input pInputText [pSize]="'small'" [value]="periodoLabel()" readonly />
       </div>
 
       <div class="campo campo--full">
@@ -174,7 +174,7 @@
         <p-button
           label="Agregar"
           icon="pi pi-plus"
-          size="small"
+          [size]="'small'"
           rounded
           severity="success"
           [disabled]="empleadoAAgregar() == null"
@@ -214,7 +214,7 @@
             <p-button
               icon="pi pi-times"
               severity="danger"
-              size="small"
+              [size]="'small'"
               rounded
               text
               pTooltip="Quitar de la autorización"
@@ -249,7 +249,7 @@
       <p-button
         label="Calcular"
         icon="pi pi-calculator"
-        size="small"
+        [size]="'small'"
         rounded
         severity="success"
         [loading]="calculando()"

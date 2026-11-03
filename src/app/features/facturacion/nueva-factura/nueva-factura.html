@@ -11,7 +11,7 @@
                 <input
                   pInputText
                   type="text"
-                  pSize="small"
+                  [pSize]="'small'"
                   style="width: 100%"
                   [value]="qProducto()"
                   (input)="onBuscarProducto($event)"
@@ -21,7 +21,7 @@
                 <p-inputicon class="ml-10">
                   <p-button
                     id="btnbuscar"
-                    size="small"
+                    [size]="'small'"
                     icon="pi pi-search"
                     pTooltip="ALT + 1 Buscar producto"
                     showDelay="1000"
@@ -109,7 +109,7 @@
                     [showButtons]="true"
                     spinnerMode="horizontal"
                     buttonLayout="horizontal"
-                    size="small"
+                    [size]="'small'"
                     mode="currency"
                     currency="HNL"
                     [locale]="'es-HN'"
@@ -161,7 +161,7 @@
                     [rounded]="true"
                     severity="danger"
                     (onClick)="quitarFila(idx)"
-                    size="small"
+                    [size]="'small'"
                   />
                 </td>
               </tr>
@@ -317,7 +317,7 @@
             </div>
             <input
               pInputText
-              pSize="small"
+              [pSize]="'small'"
               class="w-full tp-link-url"
               [ngModel]="link.url"
               [ngModelOptions]="{ standalone: true }"
@@ -325,7 +325,7 @@
             />
             <div class="tp-link-actions">
               <p-button
-                size="small"
+                [size]="'small'"
                 [label]="linkCopiado() ? 'Copiado' : 'Copiar'"
                 icon="pi pi-copy"
                 severity="secondary"
@@ -334,7 +334,7 @@
                 (onClick)="copiarLink()"
               />
               <p-button
-                size="small"
+                [size]="'small'"
                 label="Abrir"
                 icon="pi pi-external-link"
                 severity="success"
@@ -343,7 +343,7 @@
                 (onClick)="abrirLink()"
               />
               <p-button
-                size="small"
+                [size]="'small'"
                 label="Estado"
                 icon="pi pi-refresh"
                 severity="info"
@@ -352,7 +352,7 @@
                 (onClick)="consultarEstadoLink()"
               />
               <p-button
-                size="small"
+                [size]="'small'"
                 icon="pi pi-times"
                 severity="danger"
                 variant="text"
@@ -387,7 +387,7 @@
                 <p-button
                   id="btnaddnewcustomer"
                   icon="pi pi-plus"
-                  size="small"
+                  [size]="'small'"
                   severity="info"
                   label="Nuevo cliente"
                   variant="text"
@@ -451,7 +451,7 @@
                 <input
                   pInputText
                   id="nombreClienteManual"
-                  pSize="small"
+                  [pSize]="'small'"
                   [ngModel]="nombreClienteManual()"
                   (ngModelChange)="nombreClienteManual.set($event)"
                   [ngModelOptions]="{ standalone: true }"
@@ -467,7 +467,7 @@
               <input
                 pInputText
                 id="rtnCliente"
-                pSize="small"
+                [pSize]="'small'"
                 formControlName="rtn_cliente"
                 maxlength="20"
                 placeholder="RTN del cliente"
@@ -551,7 +551,7 @@
                   pInputText
                   id="nroconstancia"
                   formControlName="nroconstancia"
-                  pSize="small"
+                  [pSize]="'small'"
                   placeholder="Constancia"
                   [attr.readonly]="form.get('sn_excenta')?.value !== 'S' || null"
                   [class.p-inputtext-disabled]="form.get('sn_excenta')?.value !== 'S'"
@@ -589,7 +589,7 @@
                 variant="text"
                 severity="secondary"
                 icon="pi pi-sign-out"
-                size="small"
+                [size]="'small'"
                 [rounded]="true"
                 (onClick)="salir()"
               />
@@ -600,7 +600,7 @@
                 icon="pi pi-file"
                 variant="text"
                 severity="success"
-                size="small"
+                [size]="'small'"
                 [rounded]="true"
                 (onClick)="nueva()"
                 pTooltip="ESC Cancelar"
@@ -610,7 +610,7 @@
                 type="button"
                 label="Facturar"
                 icon="pi pi-check-circle"
-                size="small"
+                [size]="'small'"
                 [rounded]="true"
                 variant="text"
                 severity="success"
@@ -625,7 +625,7 @@
                 variant="text"
                 severity="info"
                 icon="pi pi-credit-card"
-                size="small"
+                [size]="'small'"
                 [rounded]="true"
                 (onClick)="abrirPagos()"
                 [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
@@ -656,7 +656,7 @@
   <div class="pago-dialog-body">
     <div class="pago-add-row">
       <p-button
-        size="small"
+        [size]="'small'"
         label="Agregar pago"
         icon="pi pi-plus"
         severity="success"
@@ -719,7 +719,7 @@
             @if (esTarjeta(pago)) {
             <input
               pInputText
-              pSize="small"
+              [pSize]="'small'"
               [(ngModel)]="pago.nrotarjeta"
               [ngModelOptions]="{ standalone: true }"
               placeholder="Nro. tarjeta"
@@ -731,7 +731,7 @@
             @if (esTarjeta(pago) || esTransferencia(pago)) {
             <input
               pInputText
-              pSize="small"
+              [pSize]="'small'"
               [(ngModel)]="pago.nroautorizacion"
               [ngModelOptions]="{ standalone: true }"
               placeholder="Autorización"
@@ -741,7 +741,7 @@
           </td>
           <td>
             <p-inputnumber
-              size="small"
+              [size]="'small'"
               [(ngModel)]="pago.importe"
               [ngModelOptions]="{ standalone: true }"
               [min]="0"
@@ -760,7 +760,7 @@
               icon="pi pi-times"
               [rounded]="true"
               severity="danger"
-              size="small"
+              [size]="'small'"
               (onClick)="quitarPago(idx)"
             />
           </td>
@@ -813,7 +813,7 @@
         icon="pi pi-times"
         variant="text"
         severity="secondary"
-        size="small"
+        [size]="'small'"
         [rounded]="true"
         (onClick)="dialogPagos.set(false)"
       />
@@ -822,7 +822,7 @@
         label="Facturar"
         icon="pi pi-shopping-cart"
         [loading]="guardando()"
-        size="small"
+        [size]="'small'"
         severity="success"
         variant="text"
         [rounded]="true"
@@ -873,7 +873,7 @@
             icon="pi pi-upload"
             [rounded]="true"
             severity="success"
-            size="small"
+            [size]="'small'"
             pTooltip="Restaurar"
             (onClick)="restaurarVenta(v)"
           />
@@ -881,7 +881,7 @@
             icon="pi pi-trash"
             [rounded]="true"
             severity="danger"
-            size="small"
+            [size]="'small'"
             pTooltip="Eliminar"
             (onClick)="eliminarVentaSuspendida(v)"
           />
@@ -940,7 +940,7 @@
       </div>
       <div class="tp-hl-actions">
         <p-button
-          size="small"
+          [size]="'small'"
           label="Entendido"
           icon="pi pi-check"
           severity="success"
@@ -966,7 +966,7 @@
       </div>
       <input
         pInputText
-        pSize="small"
+        [pSize]="'small'"
         class="w-full tp-hl-url"
         [ngModel]="link.url"
         [ngModelOptions]="{ standalone: true }"
@@ -974,7 +974,7 @@
       />
       <div class="tp-hl-actions">
         <p-button
-          size="small"
+          [size]="'small'"
           [label]="linkCopiado() ? 'Copiado' : 'Copiar link'"
           icon="pi pi-copy"
           severity="success"
@@ -983,7 +983,7 @@
           (onClick)="copiarLink()"
         />
         <p-button
-          size="small"
+          [size]="'small'"
           label="Abrir link"
           icon="pi pi-external-link"
           severity="info"
@@ -992,7 +992,7 @@
           (onClick)="abrirLink()"
         />
         <p-button
-          size="small"
+          [size]="'small'"
           label="Estado"
           icon="pi pi-refresh"
           severity="secondary"
@@ -1001,7 +1001,7 @@
           (onClick)="consultarEstadoLink()"
         />
         <p-button
-          size="small"
+          [size]="'small'"
           label="Cerrar"
           icon="pi pi-times"
           severity="secondary"

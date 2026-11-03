@@ -9,7 +9,7 @@
       <p class="page-subtitle">Conteo fisico de existencias por bodega</p>
     </div>
     <p-button label="Nueva Toma" raised="true" rounded="true" variant="text" severity="success" icon="pi pi-plus"
-      size="small" (onClick)="nuevoMae()" />
+      [size]="'small'" (onClick)="nuevoMae()" />
   </header>
 
   <p-table id="grid1" [value]="maestros()" [loading]="cargando()" dataKey="invfisId" [paginator]="true" [rows]="10"
@@ -38,7 +38,7 @@
         </td>
         <td>{{ row.usuarioCreated }}</td>
         <td>
-          <p-button icon="pi pi-trash" severity="danger" text size="small"
+          <p-button icon="pi pi-trash" severity="danger" text [size]="'small'"
             (onClick)="$event.stopPropagation(); eliminarMae(row)" [disabled]="row.sn_anulado === 'S'" />
         </td>
       </tr>
@@ -63,7 +63,7 @@
             </div>
             <div>
               <label class="block mb-1 text-sm font-medium">Concepto *</label>
-              <input pInputText formControlName="concepto" class="w-full" pSize="small"
+              <input pInputText formControlName="concepto" class="w-full" [pSize]="'small'"
                 placeholder="Ej: Toma fisica Agosto 2026" />
             </div>
           </div>
@@ -92,7 +92,7 @@
         </div>
         <div class="w-full">
           <label class="block mb-1 text-sm font-medium">Descripción</label>
-          <input pInputText formControlName="descripcion" class="w-full" pSize="small"
+          <input pInputText formControlName="descripcion" class="w-full" [pSize]="'small'"
             placeholder="Nombre del producto" [readonly]="productoSeleccionado?.produtoId != null" />
         </div>
         <div>
@@ -102,13 +102,13 @@
         </div>
         <div class="flex align-items-end gap-1">
           @if (itemEditando()) {
-          <p-button size="small" label="Actualizar" icon="pi pi-check"
+          <p-button [size]="'small'" label="Actualizar" icon="pi pi-check"
             severity="warn" (onClick)="guardarDet()"
             variant="text" [rounded]="true"
             [disabled]="formDet.invalid || seleccionado()!.sn_anulado === 'S'" />
-          <p-button size="small" icon="pi pi-times" severity="secondary" text (onClick)="cancelarEdicion()" />
+          <p-button [size]="'small'" icon="pi pi-times" severity="secondary" text (onClick)="cancelarEdicion()" />
           } @else {
-          <p-button size="small" label="Agregar" icon="pi pi-plus"
+          <p-button [size]="'small'" label="Agregar" icon="pi pi-plus"
             variant="text" [raised]="true" [rounded]="true"
             severity="success" (onClick)="guardarDet()"
             [disabled]="formDet.invalid || seleccionado()!.sn_anulado === 'S' || seleccionado()!.sn_procesado === 'S'" />
@@ -118,24 +118,24 @@
       }
 
       <div class="acciones-card">
-        <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" text (onClick)="volver()" />
+        <p-button [size]="'small'" label="Cancelar" rounded variant="text" severity="secondary" text (onClick)="volver()" />
         @if (seleccionado()?.invfisId === 0) {
-        <p-button size="small" label="Guardar Toma" icon="pi pi-check" (onClick)="guardarMae()" variant="text"
+        <p-button [size]="'small'" label="Guardar Toma" icon="pi pi-check" (onClick)="guardarMae()" variant="text"
           [disabled]="formMae.invalid || seleccionado()!.sn_anulado === 'S'" />
         }
         @if (seleccionado()?.invfisId !== 0) {
-        <p-button label="Importar" icon="pi pi-upload" size="small" variant="text" severity="secondary"
+        <p-button label="Importar" icon="pi pi-upload" [size]="'small'" variant="text" severity="secondary"
           (onClick)="abrirImport()" [rounded]="true"
           [disabled]="todosAplicados() || seleccionado()!.sn_anulado === 'S'" pTooltip="Importar desde CSV/JSON/XML" />
         @if (itemsSeleccionados().length > 0) {
-        <p-button label="Eliminar ({{ itemsSeleccionados().length }})" icon="pi pi-trash" size="small" severity="danger"
+        <p-button label="Eliminar ({{ itemsSeleccionados().length }})" icon="pi pi-trash" [size]="'small'" severity="danger"
           variant="text" (onClick)="eliminarSeleccionados()" [rounded]="true"
           [disabled]="todosAplicados()" />
         }
-        <p-button label="Procesar" icon="pi pi-check-circle" size="small" variant="text" [rounded]="true"
+        <p-button label="Procesar" icon="pi pi-check-circle" [size]="'small'" variant="text" [rounded]="true"
           severity="success" (onClick)="procesar()"
           [disabled]="detalles().length === 0 || todosAplicados()" />
-        <p-button label="Anular" icon="pi pi-times-circle" size="small" severity="danger" variant="text"
+        <p-button label="Anular" icon="pi pi-times-circle" [size]="'small'" severity="danger" variant="text"
           (onClick)="eliminarMae(seleccionado()!)" [rounded]="true"
           [disabled]="seleccionado()!.sn_anulado === 'S'" />
         }
@@ -201,11 +201,11 @@
             </td>
             <td>
               <div class="flex gap-1">
-                <p-button icon="pi pi-pencil" text severity="warn" size="small" (onClick)="editarItem(row)"
+                <p-button icon="pi pi-pencil" text severity="warn" [size]="'small'" (onClick)="editarItem(row)"
                   [disabled]="row.sn_aplicado === 'S'" pTooltip="Editar" />
-                <p-button icon="pi pi-refresh" text severity="info" size="small" (onClick)="cargarExistencia(row)"
+                <p-button icon="pi pi-refresh" text severity="info" [size]="'small'" (onClick)="cargarExistencia(row)"
                   pTooltip="Cargar existencia del sistema" />
-                <p-button icon="pi pi-trash" text severity="danger" size="small" (onClick)="eliminarDet(row)"
+                <p-button icon="pi pi-trash" text severity="danger" [size]="'small'" (onClick)="eliminarDet(row)"
                   [disabled]="row.sn_aplicado === 'S'" pTooltip="Eliminar" />
               </div>
             </td>
@@ -253,8 +253,8 @@
     }
   </div>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text size="small" rounded (onClick)="dialogImport.set(false)" />
-    <p-button label="Importar" icon="pi pi-upload" size="small" rounded severity="success" [raised]="true"
+    <p-button label="Cancelar" severity="secondary" text [size]="'small'" rounded (onClick)="dialogImport.set(false)" />
+    <p-button label="Importar" icon="pi pi-upload" [size]="'small'" rounded severity="success" [raised]="true"
       (onClick)="confirmarImport()" [disabled]="itemsImport().length === 0" />
   </ng-template>
 </p-dialog>

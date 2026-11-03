@@ -9,7 +9,7 @@
       icon="pi pi-arrow-left"
       severity="secondary"
       text
-      size="small"
+      [size]="'small'"
       rounded
       (onClick)="volver()"
     />
@@ -27,7 +27,7 @@
             <label for="nombres">Nombres <span class="req">*</span></label>
             <input
               pInputText
-              pSize="small"
+              [pSize]="'small'"
               id="nombres"
               formControlName="nombres"
               maxlength="50"
@@ -43,7 +43,7 @@
             <label for="apellidos">Apellidos <span class="req">*</span></label>
             <input
               pInputText
-              pSize="small"
+              [pSize]="'small'"
               id="apellidos"
               formControlName="apellidos"
               maxlength="50"
@@ -59,7 +59,7 @@
             <label for="nrodocumento">DNI <span class="req">*</span></label>
             <input
               pInputText
-              pSize="small"
+              [pSize]="'small'"
               id="nrodocumento"
               formControlName="nrodocumento"
               maxlength="20"
@@ -168,17 +168,17 @@
           <!-- Fila 4: Nro. seguro | Celular | Teléfono -->
           <div class="campo">
             <label for="nroseguro">Nro. seguro</label>
-            <input pInputText pSize="small" id="nroseguro" formControlName="nroseguro" maxlength="20" placeholder="Nro. seguro" />
+            <input pInputText [pSize]="'small'" id="nroseguro" formControlName="nroseguro" maxlength="20" placeholder="Nro. seguro" />
           </div>
 
           <div class="campo">
             <label for="celular">Celular</label>
-            <input pInputText pSize="small" id="celular" formControlName="celular" maxlength="20" placeholder="Celular" />
+            <input pInputText [pSize]="'small'" id="celular" formControlName="celular" maxlength="20" placeholder="Celular" />
           </div>
 
           <div class="campo">
             <label for="telefono">Teléfono</label>
-            <input pInputText pSize="small" id="telefono" formControlName="telefono" maxlength="20" placeholder="Teléfono" />
+            <input pInputText [pSize]="'small'" id="telefono" formControlName="telefono" maxlength="20" placeholder="Teléfono" />
           </div>
 
           <!-- Fila 5: Email | Tipo empleado | Techo seguro -->
@@ -186,7 +186,7 @@
             <label for="email">Email <span class="req">*</span></label>
             <input
               pInputText
-              pSize="small"
+              [pSize]="'small'"
               id="email"
               formControlName="email"
               maxlength="30"
@@ -289,7 +289,7 @@
           <!-- Fila 7: Cuenta bancaria | Fecha alta | Fecha baja -->
           <div class="campo">
             <label for="cuentabancaria">Cuenta bancaria</label>
-            <input pInputText pSize="small" id="cuentabancaria" formControlName="cuentabancaria" maxlength="20" placeholder="Cuenta bancaria" />
+            <input pInputText [pSize]="'small'" id="cuentabancaria" formControlName="cuentabancaria" maxlength="20" placeholder="Cuenta bancaria" />
           </div>
 
           <div class="campo">
@@ -353,7 +353,7 @@
 
           <div class="campo">
             <label for="lugardenacimiento">Lugar de nacimiento</label>
-            <input pInputText pSize="small" id="lugardenacimiento" formControlName="lugardenacimiento" maxlength="200" placeholder="Lugar de nacimiento" />
+            <input pInputText [pSize]="'small'" id="lugardenacimiento" formControlName="lugardenacimiento" maxlength="200" placeholder="Lugar de nacimiento" />
           </div>
 
           <!-- Fila 9: Estado + Jornada + botones en la misma línea -->
@@ -391,7 +391,7 @@
                 label="Cancelar"
                 icon="pi pi-times"
                 severity="secondary"
-                size="small"
+                [size]="'small'"
                 rounded
                 (onClick)="volver()"
               />
@@ -401,13 +401,13 @@
                 icon="pi pi-briefcase"
                 severity="warn"
                 variant="outlined"
-                size="small"
+                [size]="'small'"
                 rounded
                 [loading]="aplicando()"
                 [disabled]="aplicando()"
                 (onClick)="darDerechosLaborales()"
               />
-              <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+              <p-button type="submit" label="Guardar" icon="pi pi-check" rounded [size]="'small'" [loading]="guardando()" />
             </div>
           </div>
         </div>
@@ -444,7 +444,7 @@
               icon="pi pi-trash"
               severity="danger"
               variant="text"
-              size="small"
+              [size]="'small'"
               rounded
               (onClick)="quitarFoto()"
             />

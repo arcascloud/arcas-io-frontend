@@ -6,7 +6,7 @@
         <i class="pi pi-file-edit"></i>
         Movimiento abierto desde una partida contable
       </span>
-      <p-button label="Volver a la partida" icon="pi pi-arrow-left" size="small" severity="secondary"
+      <p-button label="Volver a la partida" icon="pi pi-arrow-left" [size]="'small'" severity="secondary"
         variant="text" [rounded]="true" (onClick)="volverAPartida()" />
     </div>
   }
@@ -50,7 +50,7 @@
                 </div>
                 <div class="p-field">
                   <label>Concepto</label>
-                  <input pInputText pSize="small" [ngModel]="movimientoModel().concepto"
+                  <input pInputText [pSize]="'small'" [ngModel]="movimientoModel().concepto"
                     (ngModelChange)="movimientoModel.set({...movimientoModel(), concepto: $event})"
                     placeholder="Descripcion del movimiento" />
                 </div>
@@ -107,10 +107,10 @@
           <!-- Botones de accion -->
           <div class="prestamo-actions mb-3">
             <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary"
-              (click)="cancelarMovimiento()" [rounded]="true" size="small"></p-button>
+              (click)="cancelarMovimiento()" [rounded]="true" [size]="'small'"></p-button>
             <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success"
               [loading]="movimientoSaving()" (click)="guardarMovimiento()" [rounded]="true"
-              size="small"></p-button>
+              [size]="'small'"></p-button>
           </div>
 
 
@@ -128,7 +128,7 @@
             (keyup.enter)="loadProveedores()" placeholder="Buscar por nombre, RTN, nro. proveedor..."
             class="search-input" />
           <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
-            [rounded]="true" size="small" class="clear-btn"></p-button>
+            [rounded]="true" [size]="'small'" class="clear-btn"></p-button>
         </div>
       </div>
 

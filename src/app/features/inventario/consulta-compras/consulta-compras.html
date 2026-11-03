@@ -8,7 +8,7 @@
       <h3 class="page-title">Consulta de Compras</h3>
       <p class="page-subtitle">Órdenes de compra y facturas de proveedores</p>
     </div>
-    <p-button label="Nueva Compra" icon="pi pi-plus" size="small" rounded (onClick)="nuevoMae()" />
+    <p-button label="Nueva Compra" icon="pi pi-plus" [size]="'small'" rounded (onClick)="nuevoMae()" />
   </header>
 
   <p-table [value]="compras()" [loading]="cargando()" dataKey="compraId" [paginator]="true" [rows]="10"
@@ -49,7 +49,7 @@
             [severity]="row.sn_anulada === 'S' ? 'danger' : 'success'" [style]="{'font-size':'0.75rem'}" />
         </td>
         <td>
-          <p-button icon="pi pi-trash" severity="danger" text size="small" rounded
+          <p-button icon="pi pi-trash" severity="danger" text [size]="'small'" rounded
             (onClick)="$event.stopPropagation(); anularCompra(row)" [disabled]="row.sn_anulada === 'S'" />
         </td>
       </tr>
@@ -63,7 +63,7 @@
   } @else {
   <header class="page-header">
     <div class="flex align-items-center gap-2">
-      <p-button icon="pi pi-arrow-left" text size="small" rounded (onClick)="volver()" />
+      <p-button icon="pi pi-arrow-left" text [size]="'small'" rounded (onClick)="volver()" />
       <div>
         <h3 class="page-title">Compra #{{ seleccionado()!.compraId }}</h3>
         <p class="page-subtitle">
@@ -74,11 +74,11 @@
       </div>
     </div>
     <div class="flex gap-2">
-      <p-button label="Agregar Item" icon="pi pi-plus" size="small" rounded (onClick)="nuevoDet()"
+      <p-button label="Agregar Item" icon="pi pi-plus" [size]="'small'" rounded (onClick)="nuevoDet()"
         [disabled]="seleccionado()!.sn_anulada === 'S'" />
-      <p-button label="Procesar" icon="pi pi-check-circle" size="small" rounded severity="success" (onClick)="procesar()"
+      <p-button label="Procesar" icon="pi pi-check-circle" [size]="'small'" rounded severity="success" (onClick)="procesar()"
         [disabled]="detalles().length === 0 || seleccionado()!.sn_anulada === 'S'" />
-      <p-button label="Anular" icon="pi pi-times-circle" size="small" rounded severity="danger"
+      <p-button label="Anular" icon="pi pi-times-circle" [size]="'small'" rounded severity="danger"
         (onClick)="anularCompra(seleccionado()!)" [disabled]="seleccionado()!.sn_anulada === 'S'" />
     </div>
   </header>
@@ -105,7 +105,7 @@
         <td class="text-right">{{ moneda(row.precio) }}</td>
         <td class="text-right font-bold">{{ moneda(row.subtotal) }}</td>
         <td>
-          <p-button icon="pi pi-trash" text severity="danger" size="small" rounded (onClick)="eliminarDet(row)"
+          <p-button icon="pi pi-trash" text severity="danger" [size]="'small'" rounded (onClick)="eliminarDet(row)"
             [disabled]="seleccionado()!.sn_anulada === 'S'" />
         </td>
       </tr>
@@ -179,8 +179,8 @@
     </div>
   </form>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text size="small" rounded (onClick)="dialogMae.set(false)" />
-    <p-button label="Crear Compra" icon="pi pi-check" size="small" rounded severity="success" [raised]="true" (onClick)="guardarMae()" [disabled]="formMae.invalid" />
+    <p-button label="Cancelar" severity="secondary" text [size]="'small'" rounded (onClick)="dialogMae.set(false)" />
+    <p-button label="Crear Compra" icon="pi pi-check" [size]="'small'" rounded severity="success" [raised]="true" (onClick)="guardarMae()" [disabled]="formMae.invalid" />
   </ng-template>
 </p-dialog>
 
@@ -217,7 +217,7 @@
     </div>
   </form>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" severity="secondary" text size="small" rounded (onClick)="dialogDet.set(false)" />
-    <p-button label="Agregar" icon="pi pi-check" size="small" rounded severity="success" [raised]="true" (onClick)="guardarDet()" [disabled]="formDet.invalid" />
+    <p-button label="Cancelar" severity="secondary" text [size]="'small'" rounded (onClick)="dialogDet.set(false)" />
+    <p-button label="Agregar" icon="pi pi-check" [size]="'small'" rounded severity="success" [raised]="true" (onClick)="guardarDet()" [disabled]="formDet.invalid" />
   </ng-template>
 </p-dialog>

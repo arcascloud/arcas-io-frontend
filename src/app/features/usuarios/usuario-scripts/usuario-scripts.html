@@ -4,7 +4,7 @@
       <h1 class="page-title">Scripts por Usuario</h1>
       <p class="page-subtitle">Asignación de scripts personalizados por usuario</p>
     </div>
-    <p-button label="Asignar script" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+    <p-button label="Asignar script" icon="pi pi-plus" rounded [size]="'small'" (onClick)="nuevo()" />
   </header>
 
   <div class="filtros card">
@@ -20,13 +20,13 @@
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" [size]="'small'" (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -56,7 +56,7 @@
         <td>{{ s.script }}</td>
         <td>
           <p-button icon="pi pi-trash" pTooltip="Eliminar" (onClick)="eliminar(s, $event)"
-            severity="danger" text size="small" rounded />
+            severity="danger" text [size]="'small'" rounded />
         </td>
       </tr>
     </ng-template>

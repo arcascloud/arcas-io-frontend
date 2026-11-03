@@ -7,7 +7,7 @@
       <p class="page-subtitle">Emisión de cheques para personas no proveedoras</p>
     </div>
     <a routerLink="/bancos/cheques">
-      <p-button label="Volver a Cheques Proveedores" icon="pi pi-arrow-left" size="small" variant="text" severity="secondary" [rounded]="true" />
+      <p-button label="Volver a Cheques Proveedores" icon="pi pi-arrow-left" [size]="'small'" variant="text" severity="secondary" [rounded]="true" />
     </a>
   </header>
 
@@ -39,7 +39,7 @@
         <div class="p-col-12 p-col-6">
           <div class="campo">
             <label>Beneficiario <span class="req">*</span></label>
-            <input pInputText formControlName="beneficiario" placeholder="Nombre de la persona" pSize="small" />
+            <input pInputText formControlName="beneficiario" placeholder="Nombre de la persona" [pSize]="'small'" />
           </div>
         </div>
         <div class="p-col-12">
@@ -64,7 +64,7 @@
             </div>
           }
           <div class="form-actions">
-            <p-button size="small" label="Emitir Cheque" icon="pi pi-check-circle" severity="success"
+            <p-button [size]="'small'" label="Emitir Cheque" icon="pi pi-check-circle" severity="success"
               variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
               [disabled]="form.invalid || saldoInsuficiente()" (click)="emitir()" />
           </div>
@@ -79,9 +79,9 @@
   <div class="overlay-impresion" (click)="cerrarImpresion()">
     <div class="cheque-container" (click)="$event.stopPropagation()">
       <div class="cheque-actions no-print">
-        <p-button icon="pi pi-print" size="small" label="Imprimir" severity="success"
+        <p-button icon="pi pi-print" [size]="'small'" label="Imprimir" severity="success"
           variant="text" [raised]="true" [rounded]="true" (click)="windowPrint()" />
-        <p-button icon="pi pi-times" size="small" severity="secondary"
+        <p-button icon="pi pi-times" [size]="'small'" severity="secondary"
           variant="text" [rounded]="true" (click)="cerrarImpresion()" />
       </div>
 

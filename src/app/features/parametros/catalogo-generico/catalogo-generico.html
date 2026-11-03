@@ -9,7 +9,7 @@
       <p-button
         label="Nuevo"
         icon="pi pi-plus"
-        size="small"
+        [size]="'small'"
         (onClick)="nuevo()"
         variant="text"
         [raised]="true"
@@ -41,7 +41,7 @@
       <input
         pInputText
         type="text"
-        pSize="small"
+        [pSize]="'small'"
         [placeholder]="'Filtrar ' + f.label.toLowerCase() + '...'"
         [ngModel]="filtrosValores()[f.key] ?? ''"
         (ngModelChange)="setFiltro(f.key, $event)"
@@ -65,7 +65,7 @@
         severity="info"
         variant="text"
         icon="pi pi-search"
-        size="small"
+        [size]="'small'"
         (onClick)="buscar()"
         [rounded]="true"
       />
@@ -75,7 +75,7 @@
         icon="pi pi-times"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -149,7 +149,7 @@
             } @else {
             <p-button
               icon="pi pi-pencil"
-              size="small"
+              [size]="'small'"
               variant="text"
               [rounded]="true"
               severity="secondary"

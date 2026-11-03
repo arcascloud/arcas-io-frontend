@@ -12,7 +12,7 @@
         icon="pi pi-calculator"
         severity="warn"
         variant="outlined"
-        size="small"
+        [size]="'small'"
         rounded
         pTooltip="Revisión de ISR e Impuesto Vecinal por empleado"
         (onClick)="irARetenciones()"
@@ -47,7 +47,7 @@
             <input
               pInputText
               type="text"
-              pSize="small"
+              [pSize]="'small'"
               placeholder="Buscar nombre"
               (input)="dt.filterGlobal($any($event.target).value, 'contains')"
             />
@@ -56,7 +56,7 @@
             <input
               pInputText
               type="text"
-              pSize="small"
+              [pSize]="'small'"
               placeholder="Buscar apellido"
               (input)="dt.filterGlobal($any($event.target).value, 'contains')"
             />
@@ -65,7 +65,7 @@
             <input
               pInputText
               type="text"
-              pSize="small"
+              [pSize]="'small'"
               placeholder="Buscar DNI"
               (input)="dt.filterGlobal($any($event.target).value, 'contains')"
             />
@@ -74,7 +74,7 @@
             <input
               pInputText
               type="text"
-              pSize="small"
+              [pSize]="'small'"
               placeholder="Buscar email"
               (input)="dt.filterGlobal($any($event.target).value, 'contains')"
             />
@@ -100,7 +100,7 @@
             <p-button
               icon="pi pi-money-bill"
               severity="secondary"
-              size="small"
+              [size]="'small'"
               rounded="true"
               [text]="true"
               pTooltip="Ver ingresos y egresos"

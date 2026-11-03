@@ -42,7 +42,7 @@
         <p-button [icon]="toggleIcon" (onClick)="toggleSidebar()"
           severity="secondary" 
           raised="true" iconOnly 
-          rounded size="small"
+          rounded [size]="'small'"
           class="sidebar-toggle">
           </p-button>
       </div>
@@ -50,7 +50,7 @@
 
 
         <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-search"
-          (onClick)="quickNav.abrir()" size="small" iconOnly
+          (onClick)="quickNav.abrir()" [size]="'small'" iconOnly
           pTooltip="Navegación rápida (Ctrl+Alt+1)" tooltipPosition="bottom" />
 
          <!-- Menú de usuario (p-popover): login/registro sin sesión, cerrar sesión con sesión -->
@@ -67,7 +67,7 @@
 
 <!--
         <p-button [rounded]="true" [text]="true" severity="secondary" icon="pi pi-sign-out" (onClick)="cerrarSesion()"
-          size="small" iconOnly pTooltip="Presione para salir de la app" tooltipPosition="bottom" />
+          [size]="'small'" iconOnly pTooltip="Presione para salir de la app" tooltipPosition="bottom" />
 -->
       </div>
     </header>
@@ -177,9 +177,9 @@
     </div>
   </div>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" size="small" rounded variant="text" severity="secondary"
+    <p-button label="Cancelar" [size]="'small'" rounded variant="text" severity="secondary"
       [disabled]="cambiandoPassword" (onClick)="dialogCambiarPassword = false" />
-    <p-button label="Guardar" icon="pi pi-check" size="small" variant="text" [raised]="true" [rounded]="true"
+    <p-button label="Guardar" icon="pi pi-check" [size]="'small'" variant="text" [raised]="true" [rounded]="true"
       severity="success" [loading]="cambiandoPassword" (onClick)="guardarPassword()" />
   </ng-template>
 </p-dialog>

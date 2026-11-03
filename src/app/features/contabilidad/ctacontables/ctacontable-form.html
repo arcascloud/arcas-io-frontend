@@ -18,7 +18,7 @@
         <label>Cuenta <span class="req">*</span></label>
         <input
           pInputText
-          pSize="small"
+          [pSize]="'small'"
           formControlName="ctacontable"
           class="w-full"
           maxlength="20"
@@ -35,7 +35,7 @@
         <label>Descripción <span class="req">*</span></label>
         <input
           pInputText
-          pSize="small"
+          [pSize]="'small'"
           formControlName="descripcion"
           class="w-full"
           maxlength="50"
@@ -137,7 +137,7 @@
       <div class="campo">
         <label>Cuenta Mayor</label>
         @if (esNivelRaiz()) {
-        <input pInputText pSize="small" class="w-full" disabled placeholder="Nivel 1 — No aplica" />
+        <input pInputText [pSize]="'small'" class="w-full" disabled placeholder="Nivel 1 — No aplica" />
         <small class="field-hint">Las cuentas de nivel 1 no tienen cuenta mayor</small>
         } @else {
         <p-select
@@ -184,7 +184,7 @@
 <!-- Acciones -->
 <div class="acciones-form">
   <p-button
-    size="small"
+    [size]="'small'"
     label="Cancelar"
     icon="pi pi-times"
     severity="secondary"
@@ -193,7 +193,7 @@
     (onClick)="onCancelar()"
   />
   <p-button
-    size="small"
+    [size]="'small'"
     label="Guardar"
     icon="pi pi-check"
     severity="success"

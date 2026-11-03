@@ -69,7 +69,7 @@
           </td>
           <td class="text-center">
             @if (cheque.sn_doc_anulado !== 'S') {
-              <p-button icon="pi pi-ban" size="small" variant="text" [rounded]="true" severity="danger"
+              <p-button icon="pi pi-ban" [size]="'small'" variant="text" [rounded]="true" severity="danger"
                 pTooltip="Anular cheque" (click)="anular(cheque)" />
             }
           </td>

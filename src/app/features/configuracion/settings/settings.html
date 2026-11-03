@@ -15,9 +15,9 @@
           <label [for]="c.key">{{ c.label }}</label>
 
           @if (c.tipo === 'texto') {
-            <input pInputText pSize="small" [id]="c.key" [formControlName]="c.key" maxlength="50" [placeholder]="c.label" />
+            <input pInputText [pSize]="'small'" [id]="c.key" [formControlName]="c.key" maxlength="50" [placeholder]="c.label" />
           } @else if (c.tipo === 'numero') {
-            <p-inputnumber size="small" [formControlName]="c.key" [showButtons]="true" inputId="integeronly" />
+            <p-inputnumber [size]="'small'" [formControlName]="c.key" [showButtons]="true" inputId="integeronly" />
           } @else if (c.tipo === 'select') {
             <p-select size="small"
               [formControlName]="c.key"
@@ -32,7 +32,7 @@
       }
 
       <div class="acciones-form">
-        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+        <p-button type="submit" label="Guardar" icon="pi pi-check" rounded [size]="'small'" [loading]="guardando()" />
       </div>
     </form>
   }

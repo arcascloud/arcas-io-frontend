@@ -8,7 +8,7 @@
       <p class="page-subtitle">Registro de depósitos, retiros, transferencias y pagos</p>
     </div>
     <a routerLink="/bancos/historial">
-      <p-button label="Historial de Movimientos" icon="pi pi-clock" size="small" variant="text" severity="secondary" [rounded]="true" />
+      <p-button label="Historial de Movimientos" icon="pi pi-clock" [size]="'small'" variant="text" severity="secondary" [rounded]="true" />
     </a>
   </header>
 
@@ -63,7 +63,7 @@
       @if (cuentaSeleccionada()) {
         <div class="col-der-header">
           <div class="flex align-items-center gap-2">
-            <p-button icon="pi pi-arrow-left" text size="small" rounded (click)="volver()" />
+            <p-button icon="pi pi-arrow-left" text [size]="'small'" rounded (click)="volver()" />
             <div class="cuenta-info">
               <h3 class="cuenta-titulo">Cuenta: {{ cuentaSeleccionada()!.nrocuenta }} - {{ bancoNombre(cuentaSeleccionada()!.bancoId) }} - {{ monedaNombre(cuentaSeleccionada()!.monedaId) }}</h3>
               <p class="cuenta-subtitulo">Movimientos registrados</p>
@@ -98,13 +98,13 @@
               <div class="p-col-12">
                 <div class="campo">
                   <label>Nro. Referencia</label>
-                  <input pInputText formControlName="nroreferencia" pSize="small" placeholder="Número de referencia" fluid />
+                  <input pInputText formControlName="nroreferencia" [pSize]="'small'" placeholder="Número de referencia" fluid />
                 </div>
               </div>
               <div class="p-col-12">
                 <div class="campo">
                   <label>Concepto</label>
-                  <input pInputText formControlName="concepto" pSize="small" placeholder="Descripción del movimiento" fluid />
+                  <input pInputText formControlName="concepto" [pSize]="'small'" placeholder="Descripción del movimiento" fluid />
                 </div>
               </div>
               <div class="p-col-12 p-col-4">
@@ -140,10 +140,10 @@
               <div class="p-col-12">
                 <div class="form-actions">
                   @if (editando()) {
-                    <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text"
+                    <p-button [size]="'small'" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text"
                       [rounded]="true" (click)="limpiarForm()" />
                   }
-                  <p-button size="small" [label]="editando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check"
+                  <p-button [size]="'small'" [label]="editando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check"
                     severity="success" variant="text" [raised]="true" [rounded]="true"
                     [loading]="guardando()" [disabled]="form.invalid || saldoInsuficiente()" (click)="guardar()" />
                 </div>

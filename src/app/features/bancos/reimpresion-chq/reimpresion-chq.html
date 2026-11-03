@@ -7,7 +7,7 @@
       <p class="page-subtitle">Consultar e imprimir cheques emitidos</p>
     </div>
     <a routerLink="/bancos/cheques">
-      <p-button label="Volver a Emisión" icon="pi pi-arrow-left" size="small" variant="text" severity="secondary" [rounded]="true" />
+      <p-button label="Volver a Emisión" icon="pi pi-arrow-left" [size]="'small'" variant="text" severity="secondary" [rounded]="true" />
     </a>
   </header>
 
@@ -66,7 +66,7 @@
           </td>
           <td class="text-center">
             @if (cheque.sn_doc_anulado !== 'S') {
-              <p-button icon="pi pi-print" size="small" variant="text" [rounded]="true" severity="secondary"
+              <p-button icon="pi pi-print" [size]="'small'" variant="text" [rounded]="true" severity="secondary"
                 pTooltip="Reimprimir" (click)="imprimirCheque(cheque)" />
             }
           </td>
@@ -86,9 +86,9 @@
   <div class="overlay-impresion" (click)="cerrarImpresion()">
     <div class="cheque-container" (click)="$event.stopPropagation()">
       <div class="cheque-actions no-print">
-        <p-button icon="pi pi-print" size="small" label="Imprimir" severity="success"
+        <p-button icon="pi pi-print" [size]="'small'" label="Imprimir" severity="success"
           variant="text" [raised]="true" [rounded]="true" (click)="windowPrint()" />
-        <p-button icon="pi pi-times" size="small" severity="secondary"
+        <p-button icon="pi pi-times" [size]="'small'" severity="secondary"
           variant="text" [rounded]="true" (click)="cerrarImpresion()" />
       </div>
 

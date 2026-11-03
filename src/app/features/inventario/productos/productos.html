@@ -4,7 +4,7 @@
       <h1 class="page-title">Productos</h1>
       <p class="page-subtitle">Administración del catálogo de productos</p>
     </div>
-    <p-button label="Nuevo producto" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+    <p-button label="Nuevo producto" icon="pi pi-plus" rounded [size]="'small'" (onClick)="nuevo()" />
   </header>
 
   <div class="filtros card">
@@ -20,13 +20,13 @@
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" rounded (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" [size]="'small'" rounded (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         rounded
         (onClick)="limpiarFiltros()"
       />
@@ -65,7 +65,7 @@
         <td class="text-center">
           <p-button
             icon="pi pi-pencil"
-            size="small"
+            [size]="'small'"
             variant="text"
             [rounded]="true"
             severity="secondary"

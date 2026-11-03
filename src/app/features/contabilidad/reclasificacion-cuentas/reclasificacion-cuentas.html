@@ -95,9 +95,9 @@
 
     <!-- Acciones -->
     <div class="d-flex gap-2 justify-content-end mt-3">
-      <p-button size="small" label="Limpiar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
+      <p-button [size]="'small'" label="Limpiar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
                 (onClick)="limpiar()" />
-      <p-button size="small" label="Reclasificar" icon="pi pi-arrow-right-arrow-left" severity="warn" variant="text" [raised]="true" [rounded]="true"
+      <p-button [size]="'small'" label="Reclasificar" icon="pi pi-arrow-right-arrow-left" severity="warn" variant="text" [raised]="true" [rounded]="true"
                 [disabled]="!puedeReclasificar" [loading]="cargando()" (onClick)="confirmarReclasificacion()" />
     </div>
   </div>
@@ -163,12 +163,12 @@
 
   <ng-template pTemplate="footer">
     @if (resultadoReclasificacion()) {
-      <p-button size="small" label="Cerrar" severity="secondary" variant="text" [rounded]="true"
+      <p-button [size]="'small'" label="Cerrar" severity="secondary" variant="text" [rounded]="true"
                 (onClick)="cerrarDialog(); limpiar()" />
     } @else {
-      <p-button size="small" label="Cancelar" severity="secondary" variant="text" [rounded]="true"
+      <p-button [size]="'small'" label="Cancelar" severity="secondary" variant="text" [rounded]="true"
                 (onClick)="cerrarDialog()" />
-      <p-button size="small" label="Confirmar Reclasificación" icon="pi pi-check" severity="danger" variant="text" [raised]="true" [rounded]="true"
+      <p-button [size]="'small'" label="Confirmar Reclasificación" icon="pi pi-check" severity="danger" variant="text" [raised]="true" [rounded]="true"
                 [loading]="cargando()" (onClick)="ejecutarReclasificacion()" />
     }
   </ng-template>

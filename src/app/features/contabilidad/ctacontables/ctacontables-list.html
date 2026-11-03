@@ -9,7 +9,7 @@
   <div class="page-header">
     <h2><i class="pi pi-list"></i> Plan de cuentas contable</h2>
     <p-button
-      size="small"
+      [size]="'small'"
       label="Nueva Cuenta"
       icon="pi pi-plus"
       severity="success"
@@ -59,7 +59,7 @@
               pInputText
               placeholder="Código o descripción..."
               class="w-full"
-              pSize="small"
+              [pSize]="'small'"
               [ngModel]="filtroBuscar()"
               (ngModelChange)="filtroBuscar.set($event)"
             />
@@ -69,7 +69,7 @@
           <div class="p-field">
             <label>&nbsp;</label>
             <p-button
-              size="small"
+              [size]="'small'"
               label="Limpiar"
               icon="pi pi-times"
               severity="secondary"
@@ -148,7 +148,7 @@
           <td>
             <div class="d-flex gap-1 justify-content-center">
               <p-button
-                size="small"
+                [size]="'small'"
                 icon="pi pi-plus"
                 severity="success"
                 variant="text"
@@ -157,7 +157,7 @@
                 (onClick)="nuevaCuenta()"
               />
               <p-button
-                size="small"
+                [size]="'small'"
                 icon="pi pi-pencil"
                 severity="warn"
                 variant="text"
@@ -166,7 +166,7 @@
                 (onClick)="editarCuenta(cuenta)"
               />
               <p-button
-                size="small"
+                [size]="'small'"
                 icon="pi pi-trash"
                 severity="danger"
                 variant="text"

@@ -30,7 +30,7 @@
       <p-button
         label="Nuevo rango"
         icon="pi pi-plus"
-        size="small"
+        [size]="'small'"
         rounded
         [raised]="true"
         severity="success"
@@ -90,7 +90,7 @@
                 <p-button
                   label="Seleccionar"
                   icon="pi pi-check"
-                  size="small"
+                  [size]="'small'"
                   rounded
                   variant="text"
                   severity="success"
@@ -100,7 +100,7 @@
                 <p-button
                   label="Borrar"
                   icon="pi pi-trash"
-                  size="small"
+                  [size]="'small'"
                   rounded
                   variant="text"
                   severity="danger"
@@ -182,14 +182,14 @@
             severity="danger"
             variant="text"
             rounded
-            size="small"
+            [size]="'small'"
             class="accion-izq"
             (onClick)="eliminarRango()"
           />
           }
           <p-button
             label="Cancelar"
-            size="small"
+            [size]="'small'"
             rounded
             variant="text"
             severity="secondary"
@@ -203,7 +203,7 @@
             variant="text"
             [raised]="true"
             rounded
-            size="small"
+            [size]="'small'"
             [loading]="guardando()"
             (onClick)="guardar()"
           />
@@ -250,7 +250,7 @@
                     variant="text"
                     [raised]="true"
                     rounded
-                    size="small"
+                    [size]="'small'"
                     [disabled]="!nuevoUsuario() || seleccion() == null || !puedeEscribir()"
                     [loading]="guardandoItem()"
                     (onClick)="agregarItem()"
@@ -312,7 +312,7 @@
                   icon="pi pi-trash"
                   severity="danger"
                   variant="text"
-                  size="small"
+                  [size]="'small'"
                   rounded
                   pTooltip="Quitar"
                   (onClick)="quitarItem(row)"

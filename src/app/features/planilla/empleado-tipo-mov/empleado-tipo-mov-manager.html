@@ -16,7 +16,7 @@
         icon="pi pi-user-edit"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         rounded
         (onClick)="editarEmpleado()"
       />
@@ -25,7 +25,7 @@
         icon="pi pi-arrow-left"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         rounded
         (onClick)="volver()"
       />
@@ -136,13 +136,13 @@
                 icon="pi pi-times"
                 severity="secondary"
                 text
-                size="small"
+                [size]="'small'"
                 rounded
                 (onClick)="limpiarFormulario()"
               />
               <p-button
                 label="Guardar"
-                size="small"
+                [size]="'small'"
                 icon="pi pi-check"
                 severity="success"
                 [raised]="true"
@@ -222,7 +222,7 @@
                   severity="warn"
                   variant="text"
                   [rounded]="true"
-                  size="small"
+                  [size]="'small'"
                   pTooltip="Editar"
                   (onClick)="editar(row)"
                 />
@@ -231,7 +231,7 @@
                   severity="danger"
                   variant="text"
                   [rounded]="true"
-                  size="small"
+                  [size]="'small'"
                   pTooltip="Eliminar"
                   (onClick)="eliminar(row)"
                 />
@@ -308,7 +308,7 @@
                   severity="warn"
                   variant="text"
                   [rounded]="true"
-                  size="small"
+                  [size]="'small'"
                   pTooltip="Editar"
                   (onClick)="editar(row)"
                 />
@@ -317,7 +317,7 @@
                   severity="danger"
                   variant="text"
                   [rounded]="true"
-                  size="small"
+                  [size]="'small'"
                   pTooltip="Eliminar"
                   (onClick)="eliminar(row)"
                 />

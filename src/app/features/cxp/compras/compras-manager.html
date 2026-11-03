@@ -15,7 +15,7 @@
       variant="text"
       severity="success"
       icon="pi pi-plus"
-      size="small"
+      [size]="'small'"
       (onClick)="nuevoMae()"
     />
   </header>
@@ -96,7 +96,7 @@
             icon="pi pi-trash"
             severity="danger"
             text
-            size="small"
+            [size]="'small'"
             (onClick)="$event.stopPropagation(); anularCompra(row)"
             [disabled]="row.sn_anulada === 'S'"
           />
@@ -188,7 +188,7 @@
                 pInputText
                 formControlName="nroreferencia"
                 class="w-full"
-                pSize="small"
+                [pSize]="'small'"
                 placeholder="Nro. factura o referencia del proveedor"
               />
             </div>
@@ -299,7 +299,7 @@
               formControlName="descripcion"
               styleClass="w-24rem"
               [inputStyle]="{ 'width': '100%' }"
-              pSize="small"
+              [pSize]="'small'"
               fluid
               placeholder="Nombre del producto"
               [readonly]="productoSeleccionado?.produtoId != null"
@@ -374,7 +374,7 @@
           <div class="col-1">
             @if (itemEditando()) {
             <p-button
-              size="small"
+              [size]="'small'"
               label="Actualizar"
               icon="pi pi-check"
               severity="warn"
@@ -384,7 +384,7 @@
               [disabled]="formDet.invalid"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-times"
               severity="secondary"
               text
@@ -392,7 +392,7 @@
             />
             } @else {
             <p-button
-              size="small"
+              [size]="'small'"
               label="Agregar"
               icon="pi pi-plus"
               variant="text"
@@ -410,7 +410,7 @@
       }
       <div class="acciones-card">
         <p-button
-          size="small"
+          [size]="'small'"
           label="Cancelar"
           rounded
           variant="text"
@@ -420,7 +420,7 @@
         />
         @if (seleccionado()?.compraId === 0) {
         <p-button
-          size="small"
+          [size]="'small'"
           label="Guardar Compra"
           icon="pi pi-check"
           (onClick)="guardarMae()"
@@ -433,7 +433,7 @@
         <p-button
           label="OCR Factura"
           icon="pi pi-camera"
-          size="small"
+          [size]="'small'"
           variant="text"
           severity="info"
           (onClick)="dialogOcr.set(true)"
@@ -446,7 +446,7 @@
         <p-button
           label="Eliminar ({{ itemsSeleccionados().length }})"
           icon="pi pi-trash"
-          size="small"
+          [size]="'small'"
           severity="danger"
           variant="text"
           (onClick)="eliminarSeleccionados()"
@@ -458,7 +458,7 @@
           label="Procesar"
           icon="pi pi-check-circle"
           variant="text"
-          size="small"
+          [size]="'small'"
           [rounded]="true"
           severity="success"
           (onClick)="procesar()"
@@ -467,7 +467,7 @@
         <p-button
           label="Anular"
           icon="pi pi-times-circle"
-          size="small"
+          [size]="'small'"
           severity="danger"
           variant="text"
           (onClick)="anularCompra(seleccionado()!)"
@@ -477,7 +477,7 @@
         <p-button
           label="Imprimir"
           icon="pi pi-printer"
-          size="small"
+          [size]="'small'"
           severity="secondary"
           variant="text"
           (onClick)="imprimir()"
@@ -584,7 +584,7 @@
                   icon="pi pi-pencil"
                   text
                   severity="warn"
-                  size="small"
+                  [size]="'small'"
                   (onClick)="editarItem(row)"
                   [disabled]="seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'"
                   pTooltip="Editar"
@@ -593,7 +593,7 @@
                   icon="pi pi-trash"
                   text
                   severity="danger"
-                  size="small"
+                  [size]="'small'"
                   (onClick)="eliminarDet(row)"
                   [disabled]="seleccionado()!.sn_anulada === 'S' || seleccionado()!.sn_procesada === 'S'"
                   pTooltip="Eliminar"
@@ -638,7 +638,7 @@
       <label class="block mb-1 text-sm font-medium">Código de Barra</label>
       <input
         pInputText
-        pSize="small"
+        [pSize]="'small'"
         formControlName="codbarra"
         class="w-full"
       />
@@ -647,7 +647,7 @@
       <label class="block mb-1 text-sm font-medium">Descripción *</label>
       <input
         pInputText
-        pSize="small"
+        [pSize]="'small'"
         formControlName="descripcion"
         class="w-full"
       />

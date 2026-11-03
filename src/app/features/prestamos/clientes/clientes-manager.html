@@ -13,7 +13,7 @@
               <p-inputIcon class="pi pi-search" />
               <input
                 type="text"
-                pSize="small"
+                [pSize]="'small'"
                 pInputText
                 [ngModel]="q()"
                 (ngModelChange)="q.set($event)"
@@ -27,7 +27,7 @@
                 severity="secondary"
                 variant="text"
                 [rounded]="true"
-                size="small"
+                [size]="'small'"
               ></p-button>
             </p-iconField>
           </div>
@@ -41,7 +41,7 @@
           severity="success"
           [rounded]="true"
           class="mr-2"
-          size="small"
+          [size]="'small'"
         ></p-button>
       </div>
       }
@@ -114,7 +114,7 @@
                           <label>Descripción</label>
                           <input
                             pInputText
-                            pSize="small"
+                            [pSize]="'small'"
                             [ngModel]="infoModel().descripcion"
                             (ngModelChange)="infoModel.set({...infoModel(), descripcion: $event})"
                             placeholder="Valor del contacto"
@@ -142,7 +142,7 @@
                             severity="secondary"
                             (click)="cancelarInfo()"
                             [rounded]="true"
-                            size="small"
+                            [size]="'small'"
                           ></p-button>
                           } @else {
                           <p-button
@@ -152,7 +152,7 @@
                             severity="secondary"
                             (click)="cancelarInfo()"
                             [rounded]="true"
-                            size="small"
+                            [size]="'small'"
                           ></p-button>
                           }
                           <p-button
@@ -163,7 +163,7 @@
                             [loading]="infoSaving()"
                             (click)="guardarInfo()"
                             [rounded]="true"
-                            size="small"
+                            [size]="'small'"
                           ></p-button>
                         </div>
                       </div>
@@ -200,7 +200,7 @@
                                 icon="pi pi-pencil"
                                 (click)="editarInfo(info)"
                                 [rounded]="true"
-                                size="small"
+                                [size]="'small'"
                                 text
                                 severity="secondary"
                                 pTooltip="Editar"
@@ -210,7 +210,7 @@
                                 icon="pi pi-trash"
                                 (click)="eliminarInfo(info)"
                                 [rounded]="true"
-                                size="small"
+                                [size]="'small'"
                                 text
                                 severity="danger"
                                 pTooltip="Eliminar"
@@ -255,7 +255,7 @@
                           <label>Cuenta contable</label>
                           <input
                             pInputText
-                            pSize="small"
+                            [pSize]="'small'"
                             [value]="carteraSeleccionada() ? (ctaCartera(carteraSeleccionada()!) || '—') : ''"
                             readonly
                             placeholder="Seleccione una cartera"
@@ -269,7 +269,7 @@
                             variant="text"
                             severity="success"
                             [rounded]="true"
-                            size="small"
+                            [size]="'small'"
                             [loading]="carteraSaving()"
                             (click)="agregarCartera()"
                           ></p-button>
@@ -304,7 +304,7 @@
                               <p-button
                                 icon="pi pi-trash"
                                 [rounded]="true"
-                                size="small"
+                                [size]="'small'"
                                 text
                                 severity="danger"
                                 pTooltip="Quitar"
@@ -423,7 +423,7 @@
                         <label>Nombres</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="referenciaModel().nombres"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), nombres: $event})"
                           placeholder="Nombres"
@@ -433,7 +433,7 @@
                         <label>Apellidos</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="referenciaModel().apellidos"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), apellidos: $event})"
                           placeholder="Apellidos"
@@ -443,7 +443,7 @@
                         <label>DNI</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="referenciaModel().dni"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), dni: $event})"
                           placeholder="DNI"
@@ -479,7 +479,7 @@
                         <label>Teléfono</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="referenciaModel().telefono"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), telefono: $event})"
                           placeholder="Teléfono fijo"
@@ -489,7 +489,7 @@
                         <label>Celular</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="referenciaModel().celular"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), celular: $event})"
                           placeholder="Celular"
@@ -511,7 +511,7 @@
                         <label>Dirección</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="referenciaModel().direccion1"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), direccion1: $event})"
                           placeholder="Dirección"
@@ -521,7 +521,7 @@
                         <label>Lugar de Trabajo</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="referenciaModel().lugarTrabajo"
                           (ngModelChange)="referenciaModel.set({...referenciaModel(), lugarTrabajo: $event})"
                           placeholder="Lugar de trabajo"
@@ -539,7 +539,7 @@
                     severity="secondary"
                     (click)="cancelarReferencia()"
                     [rounded]="true"
-                    size="small"
+                    [size]="'small'"
                   ></p-button>
                   <p-button
                     label="Guardar"
@@ -549,7 +549,7 @@
                     [loading]="referenciaSaving()"
                     (click)="guardarReferencia()"
                     [rounded]="true"
-                    size="small"
+                    [size]="'small'"
                   ></p-button>
                 </div>
 
@@ -585,7 +585,7 @@
                         <label>Nombres</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="parienteModel().nombres"
                           (ngModelChange)="parienteModel.set({...parienteModel(), nombres: $event})"
                           placeholder="Nombres"
@@ -595,7 +595,7 @@
                         <label>Apellidos</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="parienteModel().apellidos"
                           (ngModelChange)="parienteModel.set({...parienteModel(), apellidos: $event})"
                           placeholder="Apellidos"
@@ -605,7 +605,7 @@
                         <label>DNI</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="parienteModel().dni"
                           (ngModelChange)="parienteModel.set({...parienteModel(), dni: $event})"
                           placeholder="DNI"
@@ -632,7 +632,7 @@
                         <label>Teléfono</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="parienteModel().telefono"
                           (ngModelChange)="parienteModel.set({...parienteModel(), telefono: $event})"
                           placeholder="Teléfono de contacto"
@@ -650,7 +650,7 @@
                     severity="secondary"
                     (click)="cancelarPariente()"
                     [rounded]="true"
-                    size="small"
+                    [size]="'small'"
                   ></p-button>
                   <p-button
                     label="Guardar"
@@ -660,7 +660,7 @@
                     [loading]="parienteSaving()"
                     (click)="guardarPariente()"
                     [rounded]="true"
-                    size="small"
+                    [size]="'small'"
                   ></p-button>
                 </div>
 
@@ -706,7 +706,7 @@
             (click)="limpiarFiltros()"
             severity="secondary"
             [rounded]="true"
-            size="small"
+            [size]="'small'"
             class="clear-btn"
           ></p-button>
         </div>
@@ -718,7 +718,7 @@
           variant="text"
           severity="success"
           [rounded]="true"
-          size="small"
+          [size]="'small'"
         ></p-button>
       </div>
 
@@ -743,7 +743,7 @@
           (click)="nuevo()"
           severity="success"
           [rounded]="true"
-          size="small"
+          [size]="'small'"
         ></p-button>
       </div>
       } @else {
@@ -818,7 +818,7 @@
               icon="pi pi-pencil"
               (click)="editarCliente(cliente, $event)"
               [rounded]="true"
-              size="small"
+              [size]="'small'"
               text
               pTooltip="Editar"
               tooltipPosition="left"

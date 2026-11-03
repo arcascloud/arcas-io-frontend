@@ -69,7 +69,7 @@
             label="Actualizar a la fecha del servidor"
             icon="pi pi-refresh"
             severity="danger"
-            size="small"
+            [size]="'small'"
             rounded
             [loading]="actualizandoFecha()"
             (onClick)="actualizarFechaSistema()"
@@ -85,7 +85,7 @@
           icon="pi pi-sync"
           severity="secondary"
           variant="text"
-          size="small"
+          [size]="'small'"
           rounded
           [loading]="cargandoFecha()"
           (onClick)="cargarEstadoFecha()"

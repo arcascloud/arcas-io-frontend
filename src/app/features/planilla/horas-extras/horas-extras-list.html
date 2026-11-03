@@ -11,7 +11,7 @@
         label="Nueva autorización"
         icon="pi pi-plus"
         rounded
-        size="small"
+        [size]="'small'"
         severity="success"
         (onClick)="nuevo()"
       />
@@ -24,7 +24,7 @@
       <input
         pInputText
         type="text"
-        pSize="small"
+        [pSize]="'small'"
         placeholder="Buscar por depto, jefe, gerente o período"
         styleClass="w-20rem"
         [ngModel]="q()"
@@ -33,7 +33,7 @@
     </span>
     <p-button
       icon="pi pi-times"
-      size="small"
+      [size]="'small'"
       rounded
       text
       severity="secondary"
@@ -77,7 +77,7 @@
             <p-button
               icon="pi pi-pencil"
               severity="secondary"
-              size="small"
+              [size]="'small'"
               rounded
               text
               pTooltip="Editar / ver horas extras"
@@ -87,7 +87,7 @@
             <p-button
               icon="pi pi-trash"
               severity="danger"
-              size="small"
+              [size]="'small'"
               rounded
               text
               pTooltip="Eliminar"

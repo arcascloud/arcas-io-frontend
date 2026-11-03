@@ -33,7 +33,7 @@
             }
           </div>
           <p-button
-            size="small"
+            [size]="'small'"
             icon="pi pi-arrow-right"
             severity="secondary"
             variant="text"
@@ -89,7 +89,7 @@
                 <label>Referencia</label>
                 <input
                   pInputText
-                  pSize="small"
+                  [pSize]="'small'"
                   formControlName="nroreferencia"
                   maxlength="30"
                   class="w-full"
@@ -153,7 +153,7 @@
                     <input
                       pInputText
                       class="w-full"
-                      pSize="small"
+                      [pSize]="'small'"
                       maxlength="200"
                       [ngModel]="l.descripcion"
                       (ngModelChange)="editar(l.id, { descripcion: $event })"
@@ -193,7 +193,7 @@
                       severity="danger"
                       [text]="true"
                       [rounded]="true"
-                      size="small"
+                      [size]="'small'"
                       [tabindex]="-1"
                       aria-label="Quitar línea"
                       (onClick)="quitar(l.id)"
@@ -277,7 +277,7 @@
         <!-- Footer -->
         <div class="detail-footer">
           <p-button
-            size="small"
+            [size]="'small'"
             label="Cancelar"
             rounded
             variant="text"
@@ -285,7 +285,7 @@
             (onClick)="volver()"
           />
           <p-button
-            size="small"
+            [size]="'small'"
             label="Contabilizar"
             icon="pi pi-check-circle"
             severity="success"
@@ -309,7 +309,7 @@
           <h3>Partida #{{ partida.nropartida }}</h3>
           <div class="detail-header-actions">
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-undo"
               severity="danger"
               variant="text"
@@ -319,7 +319,7 @@
               (onClick)="contraPartida(partida)"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-pencil"
               severity="warn"
               variant="text"
@@ -329,7 +329,7 @@
               (onClick)="editarPartida(partida)"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-trash"
               severity="danger"
               variant="text"
@@ -339,7 +339,7 @@
               (onClick)="eliminarPartida(partida)"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-arrow-left"
               severity="secondary"
               variant="text"
@@ -434,7 +434,7 @@
                   </span>
                   @let origen = enlaceOrigen(partida); @if (origen) {
                   <p-button
-                    size="small"
+                    [size]="'small'"
                     label="Ver documento"
                     icon="pi pi-external-link"
                     severity="info"
@@ -530,7 +530,7 @@
         <h3><i class="pi pi-book"></i> Partidas de Diario</h3>
         <div class="left-header-actions">
           <p-button
-            size="small"
+            [size]="'small'"
             label="Inicial"
             icon="pi pi-file-excel"
             severity="info"
@@ -540,7 +540,7 @@
             (onClick)="abrePartidaInicial()"
           />
           <p-button
-            size="small"
+            [size]="'small'"
             label="Nueva"
             icon="pi pi-plus"
             severity="success"
@@ -603,7 +603,7 @@
             <label>Concepto</label>
             <input
               pInputText
-              pSize="small"
+              [pSize]="'small'"
               placeholder="Buscar concepto o referencia..."
               [ngModel]="filtroConcepto()"
               (ngModelChange)="filtroConcepto.set($event)"
@@ -630,7 +630,7 @@
           severity="success"
           variant="text"
           [rounded]="true"
-          size="small"
+          [size]="'small'"
           (onClick)="nuevaPartida()"
         />
       </div>
@@ -687,7 +687,7 @@
               }
             </div>
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-eye"
               severity="info"
               variant="text"
@@ -696,7 +696,7 @@
               (onClick)="verPartida(partida); $event.stopPropagation()"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-undo"
               severity="danger"
               variant="text"
@@ -706,7 +706,7 @@
               (onClick)="contraPartida(partida); $event.stopPropagation()"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-pencil"
               severity="warn"
               variant="text"
@@ -716,7 +716,7 @@
               (onClick)="editarPartida(partida); $event.stopPropagation()"
             />
             <p-button
-              size="small"
+              [size]="'small'"
               icon="pi pi-trash"
               severity="danger"
               variant="text"
@@ -877,7 +877,7 @@
 
   <ng-template pTemplate="footer">
     <p-button
-      size="small"
+      [size]="'small'"
       label="Cancelar"
       rounded
       variant="text"
@@ -886,7 +886,7 @@
       (onClick)="cierraPartidaInicial(false)"
     />
     <p-button
-      size="small"
+      [size]="'small'"
       label="Cargar partida"
       icon="pi pi-check"
       [raised]="true"

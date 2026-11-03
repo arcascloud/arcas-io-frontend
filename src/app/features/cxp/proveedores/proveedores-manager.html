@@ -14,7 +14,7 @@
               <p-inputIcon class="pi pi-search" />
               <input
                 type="text"
-                pSize="small"
+                [pSize]="'small'"
                 pInputText
                 [ngModel]="q()"
                 (ngModelChange)="q.set($event)"
@@ -28,7 +28,7 @@
                 severity="secondary"
                 variant="text"
                 [rounded]="true"
-                size="small"
+                [size]="'small'"
               ></p-button>
               }
             </p-iconField>
@@ -43,7 +43,7 @@
           severity="success"
           [rounded]="true"
           class="mr-2"
-          size="small"
+          [size]="'small'"
         ></p-button>
       </div>
       }
@@ -113,7 +113,7 @@
                         <label>Descripción</label>
                         <input
                           pInputText
-                          pSize="small"
+                          [pSize]="'small'"
                           [ngModel]="infoModel().descripcion"
                           (ngModelChange)="infoModel.set({...infoModel(), descripcion: $event})"
                           placeholder="Valor del contacto"
@@ -142,7 +142,7 @@
                         severity="secondary"
                         (click)="cancelarInfo()"
                         [rounded]="true"
-                        size="small"
+                        [size]="'small'"
                       ></p-button>
                       } @else {
                       <p-button
@@ -152,7 +152,7 @@
                         severity="secondary"
                         (click)="cancelarInfo()"
                         [rounded]="true"
-                        size="small"
+                        [size]="'small'"
                       ></p-button>
                       }
                       <p-button
@@ -163,7 +163,7 @@
                         [loading]="infoSaving()"
                         (click)="guardarInfo()"
                         [rounded]="true"
-                        size="small"
+                        [size]="'small'"
                       ></p-button>
                     </div>
 
@@ -198,7 +198,7 @@
                         variant="text"
                         severity="success"
                         [rounded]="true"
-                        size="small"
+                        [size]="'small'"
                         [loading]="carteraSaving()"
                         (click)="agregarCartera()"
                       ></p-button>
@@ -227,7 +227,7 @@
                             <p-button
                               icon="pi pi-trash"
                               [rounded]="true"
-                              size="small"
+                              [size]="'small'"
                               text
                               severity="danger"
                               pTooltip="Quitar"
@@ -286,7 +286,7 @@
                                 icon="pi pi-pencil"
                                 (click)="editarInfo(info)"
                                 [rounded]="true"
-                                size="small"
+                                [size]="'small'"
                                 text
                                 severity="secondary"
                                 pTooltip="Editar"
@@ -296,7 +296,7 @@
                                 icon="pi pi-trash"
                                 (click)="eliminarInfo(info)"
                                 [rounded]="true"
-                                size="small"
+                                [size]="'small'"
                                 text
                                 severity="danger"
                                 pTooltip="Desactivar"
@@ -466,7 +466,7 @@
             (click)="limpiarFiltros()"
             severity="secondary"
             [rounded]="true"
-            size="small"
+            [size]="'small'"
             class="clear-btn"
           ></p-button>
           }
@@ -479,7 +479,7 @@
           variant="text"
           severity="success"
           [rounded]="true"
-          size="small"
+          [size]="'small'"
         ></p-button>
       </div>
 
@@ -504,7 +504,7 @@
           (click)="nuevo()"
           severity="success"
           [rounded]="true"
-          size="small"
+          [size]="'small'"
         ></p-button>
       </div>
       } @else {
@@ -575,7 +575,7 @@
               icon="pi pi-pencil"
               (click)="editarProveedor(proveedor, $event)"
               [rounded]="true"
-              size="small"
+              [size]="'small'"
               text
               pTooltip="Editar"
               tooltipPosition="left"

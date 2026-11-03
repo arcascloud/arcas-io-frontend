@@ -13,7 +13,7 @@
         icon="pi pi-print"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         rounded
         [loading]="imprimiendo()"
         (onClick)="imprimirRecibo()"
@@ -23,7 +23,7 @@
         icon="pi pi-ban"
         severity="danger"
         text
-        size="small"
+        [size]="'small'"
         rounded
         [loading]="anulando()"
         (onClick)="anular()"
@@ -34,7 +34,7 @@
         icon="pi pi-arrow-left"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         rounded
         (onClick)="volver()"
       />
@@ -86,7 +86,7 @@
           />
           @if (puedeEditar()) {
           <p-button
-            size="small"
+            [size]="'small'"
             type="button"
             icon="pi pi-search"
             severity="info"
@@ -141,7 +141,7 @@
         <label>Concepto de pago</label>
         <input
           pInputText
-          pSize="small"
+          [pSize]="'small'"
           formControlName="concepto"
           maxlength="120"
           placeholder="Ingrese el concepto de pago..."
@@ -161,7 +161,7 @@
           icon="pi pi-plus"
           variant="text"
           severity="success"
-          size="small"
+          [size]="'small'"
           [rounded]="true"
           (onClick)="nuevaFila()"
         />
@@ -190,7 +190,7 @@
           </div>
           <div class="fp-campo fp-importe">
             <p-inputnumber
-              size="small"
+              [size]="'small'"
               [(ngModel)]="row['importe']"
               [ngModelOptions]="{ standalone: true }"
               [min]="0"
@@ -227,7 +227,7 @@
           <div class="fp-campo fp-extra">
             <input
               pInputText
-              pSize="small"
+              [pSize]="'small'"
               [(ngModel)]="row['nrotarjeta']"
               [ngModelOptions]="{ standalone: true }"
               [disabled]="!puedeEditar()"
@@ -238,7 +238,7 @@
           <div class="fp-campo fp-extra">
             <input
               pInputText
-              pSize="small"
+              [pSize]="'small'"
               [(ngModel)]="row['nroautorizacion']"
               [ngModelOptions]="{ standalone: true }"
               [disabled]="!puedeEditar()"
@@ -253,7 +253,7 @@
               severity="danger"
               variant="text"
               [rounded]="true"
-              size="small"
+              [size]="'small'"
               [disabled]="!esNuevaFila(row) || !puedeEditar()"
               (onClick)="quitarFila(idx)"
             />
@@ -478,7 +478,7 @@
         icon="pi pi-times"
         variant="text"
         severity="secondary"
-        size="small"
+        [size]="'small'"
         [rounded]="true"
         (onClick)="volver()"
       />
@@ -488,7 +488,7 @@
         icon="pi pi-check"
         variant="text"
         severity="success"
-        size="small"
+        [size]="'small'"
         [rounded]="true"
         [loading]="guardando()"
       />

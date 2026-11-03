@@ -30,7 +30,7 @@
             </div>
 
             <!-- agregar nuevo cliente -->
-            <p-button icon="pi pi-plus-circle" class="ml-campo btn-add-cliente" size="small" variant="text" severity="info"
+            <p-button icon="pi pi-plus-circle" class="ml-campo btn-add-cliente" [size]="'small'" variant="text" severity="info"
               [rounded]="true"
               pTooltip="ALT + 2 Buscar cliente | Agregar nuevo cliente" showDelay="1000" hideDelay="300"
               (onClick)="abrirNuevoCliente()" />
@@ -38,7 +38,7 @@
             @if (esContado() && form.get('snNombreOptions')?.value === 'S') {
             <div class="campo ml-campo">
               <label for="nombreClienteManual">Nombre del cliente<span class="req">*</span></label>
-              <input pInputText id="nombreClienteManual" pSize="small" [ngModel]="nombreClienteManual()"
+              <input pInputText id="nombreClienteManual" [pSize]="'small'" [ngModel]="nombreClienteManual()"
                 (ngModelChange)="nombreClienteManual.set($event)" [ngModelOptions]="{ standalone: true }"
                 placeholder="Nombre del cliente" class="w-full" />
             </div>
@@ -50,7 +50,7 @@
 
           <ng-template #end>
 
-            <p-button label="volver" icon="pi pi-arrow-left" [rounded]="true" variant="text" severity="secondary" size="small"
+            <p-button label="volver" icon="pi pi-arrow-left" [rounded]="true" variant="text" severity="secondary" [size]="'small'"
               (onClick)="salir()" />
 
           </ng-template>
@@ -60,10 +60,10 @@
         <p-toolbar class="mb-3 nf-toolbar">
           <ng-template #start>
             <div class="nf-busqueda">
-              <input pInputText type="text" pSize="small" [value]="qProducto()" (input)="onBuscarProducto($event)"
+              <input pInputText type="text" [pSize]="'small'" [value]="qProducto()" (input)="onBuscarProducto($event)"
                 placeholder="Buscar producto o escanear código de barras..." />
               <!-- Buscar producto-->
-              <p-button size="small" icon="pi pi-search" pTooltip="ALT + 1 Buscar producto"
+              <p-button [size]="'small'" icon="pi pi-search" pTooltip="ALT + 1 Buscar producto"
                 showDelay="1000" hideDelay="300" variant="text" severity="info" [rounded]="true" (onClick)="showHelperProductos()" />
             </div>
 
@@ -87,7 +87,7 @@
             @if (form.get('nrocarnet')?.value && form.get('sn_excenta')?.value === 'S') {
             <div class="campo ml-campo">
               <label for="nrocarnet">Nro. Carnet<span class="req">*</span></label>
-              <input pInputText id="nrocarnet" formControlName="nrocarnet" pSize="small" placeholder="Carnet" />
+              <input pInputText id="nrocarnet" formControlName="nrocarnet" [pSize]="'small'" placeholder="Carnet" />
               @if (invalid('nrocarnet')) {
               <small class="err">Ingrese el número de carnet</small>
               }
@@ -116,7 +116,7 @@
               <td>
                 <p-button icon="pi pi-times"
                 [rounded]="true" severity="danger" (onClick)="quitarFila(idx)"
-                  size="small"
+                  [size]="'small'"
                   />
               </td>
 
@@ -150,7 +150,7 @@
                   [showButtons]="true"
                   spinnerMode="horizontal"
                   buttonLayout="horizontal"
-                  size="small"
+                  [size]="'small'"
                   mode="currency" currency="HNL" [locale]="'es-HN'"
                   [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
                   [inputStyle]="{ 'width': '100%' }"
@@ -179,13 +179,13 @@
           <div class="nf-totales-split">
             <div class="nf-totales-col-btns">
               <p-button type="button" label="Nueva" icon="pi pi-file" variant="text" severity="success"
-                size="small" [rounded]="true" (onClick)="nueva()" pTooltip="ESC Cancelar" />
+                [size]="'small'" [rounded]="true" (onClick)="nueva()" pTooltip="ESC Cancelar" />
               @if (form.get('tipofactura')?.value === 'C') {
-              <p-button type="button" label="Facturar" icon="pi pi-check-circle" size="small" [rounded]="true"
+              <p-button type="button" label="Facturar" icon="pi pi-check-circle" [size]="'small'" [rounded]="true"
                 variant="text" severity="success" [loading]="guardando()" (onClick)="facturar()" pTooltip="ALT + 8 Finalizar" />
               } @else {
               <p-button type="button"
-                label="Pagar" variant="text" severity="info" icon="pi pi-credit-card" size="small"
+                label="Pagar" variant="text" severity="info" icon="pi pi-credit-card" [size]="'small'"
                  [rounded]="true"
                  (onClick)="dialogPagos.set(true)"
                 [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
@@ -194,7 +194,7 @@
               <p-button type="button" label="Salir"
               variant="text" severity="secondary"
                 icon="pi pi-sign-out"
-                size="small" [rounded]="true" (onClick)="salir()" />
+                [size]="'small'" [rounded]="true" (onClick)="salir()" />
             </div>
             <div class="nf-totales-col-data">
               <div class="nf-total-block">
@@ -294,13 +294,13 @@
             }
           </td>
           <td>
-            <p-inputnumber size="small" [(ngModel)]="pago.importe" [ngModelOptions]="{ standalone: true }" [min]="0"
+            <p-inputnumber [size]="'small'" [(ngModel)]="pago.importe" [ngModelOptions]="{ standalone: true }" [min]="0"
               mode="currency" currency="HNL" [locale]="'es-HN'"
               [minFractionDigits]="2" [maxFractionDigits]="2" [useGrouping]="true"
               [inputStyle]="{ 'width': '100%' }" styleClass="w-full" />
           </td>
           <td class="text-center">
-            <p-button icon="pi pi-times" [rounded]="true" severity="danger" size="small"
+            <p-button icon="pi pi-times" [rounded]="true" severity="danger" [size]="'small'"
               (onClick)="quitarPago(idx)" />
           </td>
         </tr>
@@ -340,9 +340,9 @@
         }
       </div>
       <div class="pago-dialog-actions">
-        <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small" [rounded]="true"
+        <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [size]="'small'" [rounded]="true"
           (onClick)="dialogPagos.set(false)" />
-        <p-button type="button" label="Facturar" icon="pi pi-shopping-cart" [loading]="guardando()" size="small"
+        <p-button type="button" label="Facturar" icon="pi pi-shopping-cart" [loading]="guardando()" [size]="'small'"
           severity="success" variant="text" [rounded]="true"
           (onClick)="facturar()" />
       </div>
@@ -373,9 +373,9 @@
         <td>{{ v.filas?.length ?? 0 }}</td>
         <td class="text-right">{{ moneda(v.totales?.total) }}</td>
         <td class="text-center">
-          <p-button icon="pi pi-upload" [rounded]="true" severity="success" size="small"
+          <p-button icon="pi pi-upload" [rounded]="true" severity="success" [size]="'small'"
             pTooltip="Restaurar" (onClick)="restaurarVenta(v)" />
-          <p-button icon="pi pi-trash" [rounded]="true" severity="danger" size="small"
+          <p-button icon="pi pi-trash" [rounded]="true" severity="danger" [size]="'small'"
             pTooltip="Eliminar" (onClick)="eliminarVentaSuspendida(v)" />
         </td>
       </tr>

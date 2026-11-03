@@ -13,7 +13,7 @@
         (click)="load()"
         [loading]="cargando()"
         [rounded]="true"
-        size="small"
+        [size]="'small'"
       ></p-button>
     </ng-template>
   </p-toolbar>
@@ -35,7 +35,7 @@
         (click)="limpiarFiltros()"
         severity="secondary"
         [rounded]="true"
-        size="small"
+        [size]="'small'"
         class="clear-btn"
       ></p-button>
     </div>

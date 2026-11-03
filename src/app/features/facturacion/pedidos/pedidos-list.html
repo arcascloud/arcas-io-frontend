@@ -5,7 +5,7 @@
       <p class="page-subtitle">Pedidos de clientes</p>
     </div>
     <div>
-      <p-button label="Nuevo" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="nuevo()" />
+      <p-button label="Nuevo" icon="pi pi-plus" [size]="'small'" [rounded]="true" (onClick)="nuevo()" />
     </div>
   </header>
 
@@ -13,14 +13,14 @@
     <div class="filtros-row">
       <div class="campo campo-busqueda">
         <span class="p-input-icon-left">
-          <input pInputText type="text" pSize="small"
+          <input pInputText type="text" [pSize]="'small'"
             placeholder="Buscar por # pedido, nombre del cliente o teléfono..."
             [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" class="busqueda-input" />
         </span>
       </div>
       <div class="filtros-acciones">
         <i class="pi pi-search"></i>
-        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="limpiar()" />
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text [size]="'small'" [rounded]="true" (onClick)="limpiar()" />
       </div>
     </div>
   </div>
@@ -64,9 +64,9 @@
           <td class="text-right">{{ moneda(p.total) }}</td>
           <td class="acciones-cell">
             <div class="acciones-row">
-              <p-button icon="pi pi-pencil" severity="info" text rounded size="small"
+              <p-button icon="pi pi-pencil" severity="info" text rounded [size]="'small'"
                 (onClick)="editar(p.pospedmaeId); $event.stopPropagation()" pTooltip="Editar" tooltipPosition="top" />
-              <p-button icon="pi pi-print" severity="secondary" text rounded size="small"
+              <p-button icon="pi pi-print" severity="secondary" text rounded [size]="'small'"
                 [loading]="imprimiendo() === p.pospedmaeId" [disabled]="imprimiendo() != null && imprimiendo() !== p.pospedmaeId"
                 (onClick)="imprimir(p); $event.stopPropagation()" pTooltip="Imprimir detalle" tooltipPosition="top" />
             </div>

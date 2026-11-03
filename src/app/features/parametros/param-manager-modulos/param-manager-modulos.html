@@ -7,7 +7,7 @@
     <p-button
       label="Nuevo Parámetro"
       icon="pi pi-plus"
-      size="small"
+      [size]="'small'"
       severity="success"
       variant="text"
       [raised]="true"
@@ -115,7 +115,7 @@
         <td class="cell-valor">
           <input
             pInputText
-            pSize="small"
+            [pSize]="'small'"
             class="w-full valor-input"
             [ngModel]="param.valor"
             (ngModelChange)="param.valor = $event"
@@ -131,7 +131,7 @@
         <td class="text-center">
           <p-button
             icon="pi pi-trash"
-            size="small"
+            [size]="'small'"
             variant="text"
             [rounded]="true"
             severity="danger"
@@ -274,7 +274,7 @@
     <!-- Acciones -->
     <div class="form-actions">
       <p-button
-        size="small"
+        [size]="'small'"
         label="Cancelar"
         rounded
         variant="text"
@@ -282,7 +282,7 @@
         (onClick)="drawer.set(false)"
       />
       <p-button
-        size="small"
+        [size]="'small'"
         [label]="editando() ? 'Actualizar' : 'Guardar'"
         icon="pi pi-check"
         variant="text"

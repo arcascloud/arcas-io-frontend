@@ -9,9 +9,9 @@
     <pre style="white-space: pre-wrap; font-size: 0.85rem; margin: 0;">{{ confirmMessage() }}</pre>
   </div>
   <ng-template pTemplate="footer">
-    <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary"
+    <p-button [size]="'small'" label="Cancelar" rounded variant="text" severity="secondary"
       (onClick)="cancelarConfirmacion()" />
-    <p-button size="small" label="Emitir" icon="pi pi-check" variant="text" [raised]="true" [rounded]="true"
+    <p-button [size]="'small'" label="Emitir" icon="pi pi-check" variant="text" [raised]="true" [rounded]="true"
       severity="success" [loading]="emitando()" (onClick)="aceptarConfirmacion()" />
   </ng-template>
 </p-dialog>
@@ -25,15 +25,15 @@
     <div class="flex gap-2 align-items-center">
       <span #btnVerResumen>
         @if (facturasSeleccionadas.length > 0) {
-          <p-button size="small" label="Ver Resumen ({{ facturasSeleccionadas.length }})" icon="pi pi-list"
+          <p-button [size]="'small'" label="Ver Resumen ({{ facturasSeleccionadas.length }})" icon="pi pi-list"
             severity="success" [raised]="true" [rounded]="true" (click)="abrirResumen()" />
         }
       </span>
       <a routerLink="/bancos/cheques/particulares">
-        <p-button label="Cheque a Particular" icon="pi pi-user" size="small" variant="text" severity="secondary" [rounded]="true" />
+        <p-button label="Cheque a Particular" icon="pi pi-user" [size]="'small'" variant="text" severity="secondary" [rounded]="true" />
       </a>
       <a routerLink="/bancos/cheques/reimpresionchq">
-        <p-button label="Reimpresión de Cheques" icon="pi pi-print" size="small" variant="text" severity="secondary" [rounded]="true" />
+        <p-button label="Reimpresión de Cheques" icon="pi pi-print" [size]="'small'" variant="text" severity="secondary" [rounded]="true" />
       </a>
     </div>
   </header>
@@ -86,7 +86,7 @@
       <div class="flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">Facturas Pendientes de Pago</h5>
         <div class="flex gap-2 align-items-center">
-          <input pInputText placeholder="Buscar proveedor..." [(ngModel)]="busqueda" pSize="small"
+          <input pInputText placeholder="Buscar proveedor..." [(ngModel)]="busqueda" [pSize]="'small'"
             style="width: 250px" />
         </div>
       </div>
@@ -156,7 +156,7 @@
               <td>{{ cheque.proveedor }}</td>
               <td class="text-right font-bold">{{ formatCurrency(cheque.importe) }}</td>
               <td class="text-center">
-                <p-button icon="pi pi-print" size="small" variant="text" [rounded]="true" severity="secondary"
+                <p-button icon="pi pi-print" [size]="'small'" variant="text" [rounded]="true" severity="secondary"
                   pTooltip="Imprimir cheque" (click)="imprimirCheque(cheque)" />
               </td>
             </tr>
@@ -212,7 +212,7 @@
 
     <!-- Botón emitir cheques apilado (vertical stack) -->
     <div class="flex flex-column gap-1 mt-2 w-full">
-      <p-button size="small" label="Emitir Cheques" icon="pi pi-check-circle" severity="success"
+      <p-button [size]="'small'" label="Emitir Cheques" icon="pi pi-check-circle" severity="success"
         variant="text" [raised]="true" [rounded]="true" [loading]="emitando()"
         [disabled]="saldoInsuficiente() || facturasSeleccionadas.length === 0"
         styleClass="w-full"
@@ -226,9 +226,9 @@
   <div class="overlay-impresion" (click)="cerrarImpresion()">
     <div class="cheque-container" (click)="$event.stopPropagation()">
       <div class="cheque-actions no-print">
-        <p-button icon="pi pi-print" size="small" label="Imprimir" severity="success"
+        <p-button icon="pi pi-print" [size]="'small'" label="Imprimir" severity="success"
           variant="text" [raised]="true" [rounded]="true" (click)="windowPrint()" />
-        <p-button icon="pi pi-times" size="small" severity="secondary"
+        <p-button icon="pi pi-times" [size]="'small'" severity="secondary"
           variant="text" [rounded]="true" (click)="cerrarImpresion()" />
       </div>
 

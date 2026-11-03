@@ -18,7 +18,7 @@
         icon="pi pi-refresh"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         rounded
         [loading]="cargando()"
         (onClick)="cargar()"
@@ -28,7 +28,7 @@
         icon="pi pi-arrow-left"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         rounded
         (onClick)="irAEmpleados()"
       />
@@ -103,7 +103,7 @@
             [icon]="soloPendientes() ? 'pi pi-filter-fill' : 'pi pi-filter'"
             [severity]="soloPendientes() ? 'warn' : 'secondary'"
             variant="outlined"
-            size="small"
+            [size]="'small'"
             rounded
             (onClick)="toggleSoloPendientes()"
           />
@@ -113,7 +113,7 @@
               icon="pi pi-times"
               severity="secondary"
               text
-              size="small"
+              [size]="'small'"
               rounded
               (onClick)="limpiarFiltro()"
             />
@@ -186,7 +186,7 @@
                 severity="secondary"
                 variant="text"
                 [rounded]="true"
-                size="small"
+                [size]="'small'"
                 pTooltip="Ver afectaciones económicas"
                 (onClick)="verEmpleado(row)"
               />

@@ -8,7 +8,7 @@
         <h3 class="page-title">Traslados de Productos</h3>
         <p class="page-subtitle">Movimiento de productos entre bodegas</p>
       </div>
-      <p-button label="Nuevo Traslado" icon="pi pi-plus" size="small" rounded (onClick)="nuevoMae()" />
+      <p-button label="Nuevo Traslado" icon="pi pi-plus" [size]="'small'" rounded (onClick)="nuevoMae()" />
     </header>
 
     <p-table [value]="traslados()" [loading]="cargando()" dataKey="invtrasladomaeId" [paginator]="true" [rows]="10"
@@ -40,7 +40,7 @@
             <p-tag [value]="row.sn_anulado === 'S' ? 'Anulado' : 'Activo'" [severity]="row.sn_anulado === 'S' ? 'danger' : 'success'" />
           </td>
           <td>
-            <p-button icon="pi pi-trash" severity="danger" text size="small" rounded
+            <p-button icon="pi pi-trash" severity="danger" text [size]="'small'" rounded
               (onClick)="$event.stopPropagation(); seleccionar(row)" [disabled]="row.sn_procesado === 'S' || row.sn_anulado === 'S'" />
           </td>
         </tr>
@@ -56,7 +56,7 @@
   @if (seleccionado()) {
     <header class="page-header">
       <div class="flex align-items-center gap-2">
-        <p-button icon="pi pi-arrow-left" text size="small" rounded (onClick)="volver()" />
+        <p-button icon="pi pi-arrow-left" text [size]="'small'" rounded (onClick)="volver()" />
         <div>
           <h3 class="page-title">Traslado #{{ seleccionado()!.invtrasladomaeId || 'Nuevo' }}</h3>
           <p class="page-subtitle">Movimiento de productos entre bodegas</p>
@@ -64,9 +64,9 @@
       </div>
       <div class="flex gap-2">
         @if (seleccionado()!.invtrasladomaeId && seleccionado()!.sn_procesado === 'N' && seleccionado()!.sn_anulado === 'N') {
-          <p-button label="Procesar" icon="pi pi-check-circle" size="small" rounded severity="success" (onClick)="procesar()"
+          <p-button label="Procesar" icon="pi pi-check-circle" [size]="'small'" rounded severity="success" (onClick)="procesar()"
             [disabled]="detalles().length === 0" />
-          <p-button label="Anular" icon="pi pi-times-circle" size="small" rounded severity="danger" (onClick)="anularTraslado()" />
+          <p-button label="Anular" icon="pi pi-times-circle" [size]="'small'" rounded severity="danger" (onClick)="anularTraslado()" />
         }
       </div>
     </header>
@@ -96,8 +96,8 @@
           </div>
         </div>
         <div class="acciones-form">
-          <p-button type="button" label="Cancelar" severity="secondary" text size="small" rounded (onClick)="volver()" />
-          <p-button type="submit" label="Crear Traslado" icon="pi pi-check" size="small" rounded severity="success" [raised]="true"
+          <p-button type="button" label="Cancelar" severity="secondary" text [size]="'small'" rounded (onClick)="volver()" />
+          <p-button type="submit" label="Crear Traslado" icon="pi pi-check" [size]="'small'" rounded severity="success" [raised]="true"
             [loading]="guardando()" [disabled]="formMae.invalid" />
         </div>
       </form>
@@ -121,7 +121,7 @@
               <div class="flex gap-1">
                 <input pInputText [ngModel]="codBusqueda()" (ngModelChange)="onCodBarraInput($event)"
                   (keyup.enter)="buscarProducto()" placeholder="Escanear o escribir codigo..." [ngModelOptions]="{standalone: true}" />
-                <p-button icon="pi pi-search" size="small" rounded severity="secondary" (onClick)="showHelperProductos()" />
+                <p-button icon="pi pi-search" [size]="'small'" rounded severity="secondary" (onClick)="showHelperProductos()" />
               </div>
             </div>
             <div class="campo campo-cantidad">
@@ -136,7 +136,7 @@
                 [inputStyle]="{ 'width': '100%' }" styleClass="w-full" [readonly]="true" />
             </div>
             <div class="campo-btn">
-              <p-button icon="pi pi-plus" size="small" rounded severity="success" (onClick)="buscarProducto(); agregarItem()"
+              <p-button icon="pi pi-plus" [size]="'small'" rounded severity="success" (onClick)="buscarProducto(); agregarItem()"
                 [loading]="guardando()" [disabled]="!formDet.value.descripcion || seleccionado()!.sn_procesado === 'S' || seleccionado()!.sn_anulado === 'S'" />
             </div>
           </div>
@@ -180,7 +180,7 @@
             <td class="text-right font-bold">{{ moneda(row.costoTotal) }}</td>
             @if (seleccionado()!.sn_procesado === 'N' && seleccionado()!.sn_anulado === 'N') {
               <td class="text-center">
-                <p-button icon="pi pi-trash" text severity="danger" size="small" rounded (onClick)="eliminarItem(row)" />
+                <p-button icon="pi pi-trash" text severity="danger" [size]="'small'" rounded (onClick)="eliminarItem(row)" />
               </td>
             }
           </tr>

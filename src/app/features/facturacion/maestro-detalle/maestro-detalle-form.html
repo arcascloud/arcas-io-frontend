@@ -4,7 +4,7 @@
       <h1 class="page-title">{{ titulo() }}</h1>
       <p class="page-subtitle">{{ config?.subtitulo }}</p>
     </div>
-    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text size="small" rounded
+    <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text [size]="'small'" rounded
       (onClick)="volver()" />
   </header>
 
@@ -20,13 +20,13 @@
 
         @if (c.tipo === 'texto') {
         @if (c.soloLectura) {
-        <input pInputText pSize="small" [id]="c.key" [formControlName]="c.key" readonly class="bg-gray-100" />
+        <input pInputText [pSize]="'small'" [id]="c.key" [formControlName]="c.key" readonly class="bg-gray-100" />
         } @else {
         <input pInputText [id]="c.key" [formControlName]="c.key" maxlength="120" [placeholder]="c.label"
           [ngClass]="{ 'ng-invalid': invalid(c.key) }" />
         }
         } @else if (c.tipo === 'numero') {
-        <p-inputnumber size="small" [formControlName]="c.key" [showButtons]="true"
+        <p-inputnumber [size]="'small'" [formControlName]="c.key" [showButtons]="true"
           [ngClass]="{ 'ng-invalid': invalid(c.key) }" />
         } @else if (c.tipo === 'select') {
         <div class="flex gap-2">
@@ -63,7 +63,7 @@
     <div class="card">
       <div class="detalles-head">
         <h2 class="detalles-title">Detalles</h2>
-        <p-button type="button" label="Agregar fila" icon="pi pi-plus" variant="text" severity="success" size="small"
+        <p-button type="button" label="Agregar fila" icon="pi pi-plus" variant="text" severity="success" [size]="'small'"
           [rounded]="true" (onClick)="nuevaFila()" />
       </div>
 
@@ -86,7 +86,7 @@
             @if (!c.oculto) {
             <td>
               @if (c.tipo === 'numero') {
-              <p-inputnumber size="small" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" />
+              <p-inputnumber [size]="'small'" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" />
               } @else if (c.tipo === 'fecha') {
               <p-datepicker [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy"
                 styleClass="w-full" />
@@ -103,7 +103,7 @@
                 appendTo="body" [disabled]="isCampoDesactivado(row, c.key)" />
               }
               } @else {
-              <input pInputText pSize="small" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }"
+              <input pInputText [pSize]="'small'" [(ngModel)]="row[c.key]" [ngModelOptions]="{ standalone: true }"
                 [disabled]="isCampoDesactivado(row, c.key)"
                 [placeholder]="isCampoDesactivado(row, c.key) ? '' : c.label" />
               }
@@ -111,7 +111,7 @@
             }
             }
             <td>
-              <p-button type="button" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" size="small"
+              <p-button type="button" icon="pi pi-trash" severity="danger" variant="text" [rounded]="true" [size]="'small'"
                 [disabled]="!esNuevaFila(row)" (onClick)="quitarFila(idx)" />
             </td>
           </tr>
@@ -126,9 +126,9 @@
     }
 
     <div class="acciones-form">
-      <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" size="small"
+      <p-button type="button" label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [size]="'small'"
         [rounded]="true" (onClick)="volver()" />
-      <p-button type="submit" label="Guardar" icon="pi pi-check" variant="text" severity="success" size="small"
+      <p-button type="submit" label="Guardar" icon="pi pi-check" variant="text" severity="success" [size]="'small'"
         [rounded]="true" [loading]="guardando()" />
     </div>
   </form>

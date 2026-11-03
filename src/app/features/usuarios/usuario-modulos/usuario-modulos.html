@@ -4,7 +4,7 @@
       <h1 class="page-title">Módulos por Usuario</h1>
       <p class="page-subtitle">Asignación de módulos y submenús por usuario</p>
     </div>
-    <p-button label="Asignar módulo" icon="pi pi-plus" rounded size="small" (onClick)="nuevo()" />
+    <p-button label="Asignar módulo" icon="pi pi-plus" rounded [size]="'small'" (onClick)="nuevo()" />
   </header>
 
   <div class="filtros card">
@@ -20,13 +20,13 @@
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" [size]="'small'" (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         text
-        size="small"
+        [size]="'small'"
         (onClick)="limpiarFiltros()"
       />
     </div>
@@ -71,7 +71,7 @@
               tooltipPosition="top"
               severity="success"
               text
-              size="small"
+              [size]="'small'"
               rounded
               (onClick)="nuevo(rowData.usuario); $event.stopPropagation()"
             />

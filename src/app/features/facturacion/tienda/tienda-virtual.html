@@ -126,7 +126,7 @@
             </button>
           </div>
           <p-button
-            size="small"
+            [size]="'small'"
             label="Ofertas"
             [rounded]="true"
             [raised]="true"
@@ -339,7 +339,7 @@
   }
 
   <ng-template pTemplate="footer">
-    <p-button label="Cerrar" icon="pi pi-times" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogGaleria.set(false)" />
+    <p-button label="Cerrar" icon="pi pi-times" severity="secondary" text [size]="'small'" [rounded]="true" (onClick)="dialogGaleria.set(false)" />
   </ng-template>
 </p-dialog>
 
@@ -357,11 +357,11 @@
         <h3 class="section-title"><i class="pi pi-user"></i> Información del Cliente</h3>
         <div class="campo">
           <label>Nombre completo *</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.nombrecliente" placeholder="Nombre del cliente" class="w-full" />
+          <input pInputText [pSize]="'small'" [(ngModel)]="checkout.nombrecliente" placeholder="Nombre del cliente" class="w-full" />
         </div>
         <div class="campo">
           <label>Dirección</label>
-          <input pInputText pSize="small" [(ngModel)]="checkout.direccion" placeholder="Dirección de entrega (opcional)" class="w-full" />
+          <input pInputText [pSize]="'small'" [(ngModel)]="checkout.direccion" placeholder="Dirección de entrega (opcional)" class="w-full" />
         </div>
 
         <h3 class="section-title"><i class="pi pi-credit-card"></i> Tarjeta de Crédito</h3>
@@ -481,8 +481,8 @@ size="small"             [(ngModel)]="checkout.tarjetacreditoId"
     <span>¿Está seguro de vaciar el carrito? Se eliminarán {{ carritoItems().length }} producto(s).</span>
   </div>
   <ng-template pTemplate="footer">
-    <p-button size="small" label="No" rounded variant="text" severity="secondary" (onClick)="dialogVaciar.set(false)" />
-    <p-button size="small" label="Sí, vaciar" icon="pi pi-trash" rounded variant="text" severity="danger" (onClick)="vaciarCarrito()" />
+    <p-button [size]="'small'" label="No" rounded variant="text" severity="secondary" (onClick)="dialogVaciar.set(false)" />
+    <p-button [size]="'small'" label="Sí, vaciar" icon="pi pi-trash" rounded variant="text" severity="danger" (onClick)="vaciarCarrito()" />
   </ng-template>
 </p-dialog>
 

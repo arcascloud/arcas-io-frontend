@@ -13,10 +13,10 @@
           <div class="col-12 flex flex-wrap justify-center gap-2">
             <p-iconField>
               <p-inputIcon class="pi pi-search" />
-              <input type="text" pSize="small" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
+              <input type="text" [pSize]="'small'" pInputText [ngModel]="q()" (ngModelChange)="q.set($event)"
                 placeholder="Buscar por nombre, DNI, RTN o Nro. cliente..." class="mr-1" />
               <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary" variant="text"
-                [rounded]="true" size="small"></p-button>
+                [rounded]="true" [size]="'small'"></p-button>
             </p-iconField>
           </div>
         </div>
@@ -44,7 +44,7 @@
               <div class="p-fluid">
                 <div class="p-field">
                   <label>Nro. Prestamo</label>
-                  <input pInputText pSize="small" [ngModel]="prestamoModel().nroprestamo || ''"
+                  <input pInputText [pSize]="'small'" [ngModel]="prestamoModel().nroprestamo || ''"
                     placeholder="Se asigna al aprobar" [readonly]="true" />
                 </div>
                 <div class="p-field">
@@ -123,7 +123,7 @@
                 </div>
                 <div class="p-field">
                   <label>Fecha 1er Cuota (aprobación + 30 días)</label>
-                  <input pInputText pSize="small"
+                  <input pInputText [pSize]="'small'"
                     [value]="(fechaEfectivaCalc() | date:'dd/MM/yyyy') || ''" [readonly]="true" />
                 </div>
                 <div class="p-field">
@@ -191,25 +191,25 @@
           <!-- Botones del flujo -->
           <div class="prestamo-actions mb-3">
             <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary"
-              (click)="cancelar()" [rounded]="true" size="small"></p-button>
+              (click)="cancelar()" [rounded]="true" [size]="'small'"></p-button>
 
             <p-button label="Generar Plan de Pago" icon="pi pi-table" variant="text" severity="secondary"
-              (click)="generarPlanPago()" [rounded]="true" size="small"
+              (click)="generarPlanPago()" [rounded]="true" [size]="'small'"
               [disabled]="!puedeGenerarPlan()"
               [pTooltip]="motivoBloqueoPlan()" tooltipPosition="bottom"></p-button>
 
             <p-button label="Pre-Aprobación" icon="pi pi-check-circle" variant="text" severity="warn"
-              [loading]="prestamoSaving()" (click)="preaprobar()" [rounded]="true" size="small"
+              [loading]="prestamoSaving()" (click)="preaprobar()" [rounded]="true" [size]="'small'"
               [disabled]="!puedePreaprobar()"
               [pTooltip]="motivoBloqueoPreaprobado()" tooltipPosition="bottom"></p-button>
 
             <p-button label="Aprobación" icon="pi pi-verified" variant="text" severity="success"
-              [loading]="prestamoSaving()" (click)="confirmarAprobar()" [rounded]="true" size="small"
+              [loading]="prestamoSaving()" (click)="confirmarAprobar()" [rounded]="true" [size]="'small'"
               [disabled]="!puedeAprobar()"
               [pTooltip]="motivoBloqueoAprobar()" tooltipPosition="bottom"></p-button>
 
             <p-button label="Contabilización" icon="pi pi-book" variant="text" severity="info"
-              [loading]="prestamoSaving()" (click)="confirmarContabilizar()" [rounded]="true" size="small"
+              [loading]="prestamoSaving()" (click)="confirmarContabilizar()" [rounded]="true" [size]="'small'"
               [disabled]="!puedeContabilizar()"
               [pTooltip]="motivoBloqueoContabilizar()" tooltipPosition="bottom"></p-button>
           </div>
@@ -273,7 +273,7 @@
             (keyup.enter)="loadClientes()" placeholder="Buscar por nombre, DNI, RTN..."
             class="search-input" />
           <p-button *ngIf="q()" icon="pi pi-times" (click)="limpiarFiltros()" severity="secondary"
-            [rounded]="true" size="small" class="clear-btn"></p-button>
+            [rounded]="true" [size]="'small'" class="clear-btn"></p-button>
         </div>
       </div>
 

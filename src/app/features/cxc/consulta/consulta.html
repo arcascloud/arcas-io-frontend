@@ -17,17 +17,17 @@
         (ngModelChange)="q.set($event)"
         (keyup.enter)="buscar()"
         pTooltip="Presione enter para consultar"
-        pSize="small"
+        [pSize]="'small'"
       />
     </div>
     <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" size="small" [rounded]="true" (onClick)="buscar()" />
+      <p-button label="Buscar" icon="pi pi-search" [size]="'small'" [rounded]="true" (onClick)="buscar()" />
       <p-button
         label="Limpiar"
         icon="pi pi-times"
         severity="secondary"
         variant="text"
-        size="small"
+        [size]="'small'"
         [rounded]="true"
         (onClick)="limpiarFiltros()"
       />

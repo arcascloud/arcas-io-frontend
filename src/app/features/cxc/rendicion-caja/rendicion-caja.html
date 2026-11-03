@@ -6,10 +6,10 @@
     </div>
     <div class="header-actions">
       @if (rendicion()) {
-      <p-button label="Imprimir" icon="pi pi-print" severity="secondary" text size="small" rounded
+      <p-button label="Imprimir" icon="pi pi-print" severity="secondary" text [size]="'small'" rounded
         (onClick)="imprimir()" />
       }
-      <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text size="small" rounded
+      <p-button label="Volver" icon="pi pi-arrow-left" severity="secondary" text [size]="'small'" rounded
         (onClick)="volver()" />
     </div>
   </header>
@@ -108,7 +108,7 @@
             <td class="concepto-cell">{{ row.concepto || '—' }}</td>
             <td class="text-right font-semibold">{{ row.totalPagos | currency:'HNL':'symbol-narrow':'1.2-2':'es-HN' }}</td>
             <td class="text-center">
-              <p-button icon="pi pi-print" severity="secondary" variant="text" [rounded]="true" size="small"
+              <p-button icon="pi pi-print" severity="secondary" variant="text" [rounded]="true" [size]="'small'"
                 pTooltip="Reimprimir recibo" [loading]="imprimiendo() === row.cxccajaId"
                 (onClick)="imprimirRecibo(row.cxccajaId)" />
             </td>

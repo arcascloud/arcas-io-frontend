@@ -1,7 +1,7 @@
 <section class="page">
   <header class="page-header">
     <div class="header-left">
-      <p-button icon="pi pi-arrow-left" severity="secondary" text rounded size="small" (onClick)="volver()"
+      <p-button icon="pi pi-arrow-left" severity="secondary" text rounded [size]="'small'" (onClick)="volver()"
         [pTooltip]="partidaId() ? 'Volver a la partida' : 'Volver a la lista'" />
       <div>
         <h1 class="page-title">Factura #{{ factura()?.nrofactura }}</h1>
@@ -10,9 +10,9 @@
     </div>
     <div class="header-actions">
       <p-button icon="pi pi-print" [rounded]="true"
-      rainsed="true" label="Imprimir" size="small" (onClick)="imprimir()" pTooltip="Imprimir factura" severity="contrast" />
+      rainsed="true" label="Imprimir" [size]="'small'" (onClick)="imprimir()" pTooltip="Imprimir factura" severity="contrast" />
       <p-button icon="pi pi-download"
-      rainsed="true" [rounded]="true" label="PDF" severity="secondary" size="small" (onClick)="descargarPdf()" pTooltip="Descargar PDF" />
+      rainsed="true" [rounded]="true" label="PDF" severity="secondary" [size]="'small'" (onClick)="descargarPdf()" pTooltip="Descargar PDF" />
     </div>
   </header>
 
@@ -220,13 +220,13 @@
     [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [closable]="true" styleClass="correo-dialog">
     <div class="correo-form">
       <label class="correo-label">Correo electronico del destinatario</label>
-      <input pInputText pSize="small" type="email" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
+      <input pInputText [pSize]="'small'" type="email" [ngModel]="emailDestino()" (ngModelChange)="emailDestino.set($event)"
         placeholder="correo@ejemplo.com" class="correo-input" />
     </div>
     <ng-template pTemplate="footer">
       <div class="correo-footer">
-        <p-button label="Cancelar" severity="secondary" text size="small" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
-        <p-button label="Enviar" icon="pi pi-send" size="small" [rounded]="true" (onClick)="enviarCorreo()" [loading]="enviando()" />
+        <p-button label="Cancelar" severity="secondary" text [size]="'small'" [rounded]="true" (onClick)="dialogCorreo.set(false)" />
+        <p-button label="Enviar" icon="pi pi-send" [size]="'small'" [rounded]="true" (onClick)="enviarCorreo()" [loading]="enviando()" />
       </div>
     </ng-template>
   </p-dialog>

@@ -19,7 +19,7 @@
               <p-inputIcon class="pi pi-search" />
               <input
                 type="text"
-                pSize="small"
+                [pSize]="'small'"
                 pInputText
                 [ngModel]="q()"
                 (ngModelChange)="q.set($event); filtrar()"
@@ -33,7 +33,7 @@
                 severity="secondary"
                 variant="text"
                 [rounded]="true"
-                size="small"
+                [size]="'small'"
               />
               }
             </p-iconField>
@@ -47,7 +47,7 @@
           variant="text"
           severity="success"
           [rounded]="true"
-          size="small"
+          [size]="'small'"
           class="mr-2"
         />
       </div>
@@ -96,7 +96,7 @@
                       <h5 class="form-col-title">Información General</h5>
                       <div class="p-field">
                         <label for="descripcion">Descripción <span class="req">*</span></label>
-                        <input pInputText pSize="small" id="descripcion" formControlName="descripcion" placeholder="Nombre de la empresa" />
+                        <input pInputText [pSize]="'small'" id="descripcion" formControlName="descripcion" placeholder="Nombre de la empresa" />
                         @if (empresaForm.get('descripcion')?.invalid && empresaForm.get('descripcion')?.touched) {
                         <small class="err">Ingrese la descripción</small>
                         }
@@ -120,7 +120,7 @@
                     </div>
                   </div>
                   <div class="form-actions">
-                    <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="saving()" (onClick)="guardarEmpresa()" />
+                    <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" [size]="'small'" [loading]="saving()" (onClick)="guardarEmpresa()" />
                   </div>
                 </div>
               </div>
@@ -144,17 +144,17 @@
                       </div>
                       <div class="p-field">
                         <label>Valor <span class="req">*</span></label>
-                        <input pInputText pSize="small" formControlName="descripcion" placeholder="Valor del dato" />
+                        <input pInputText [pSize]="'small'" formControlName="descripcion" placeholder="Valor del dato" />
                       </div>
                     </div>
 
                     <div class="form-actions info-form-actions">
                       @if (detEditando()) {
-                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarDet()" />
+                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (click)="cancelarDet()" />
                       } @else {
-                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarDet()" />
+                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (click)="cancelarDet()" />
                       }
-                      <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingDet()" (click)="guardarDet()" />
+                      <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" [size]="'small'" [loading]="savingDet()" (click)="guardarDet()" />
                     </div>
                   </div>
 
@@ -189,8 +189,8 @@
                             <p-tag [value]="getEstadoLabel(det.sn_activo)" [severity]="getEstadoSeverity(det.sn_activo)" styleClass="tag-sm" />
                           </td>
                           <td class="col-acciones">
-                            <p-button icon="pi pi-pencil" (click)="editarDet(det)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
-                            <p-button icon="pi pi-trash" (click)="eliminarDet(det)" [rounded]="true" size="small" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
+                            <p-button icon="pi pi-pencil" (click)="editarDet(det)" [rounded]="true" [size]="'small'" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                            <p-button icon="pi pi-trash" (click)="eliminarDet(det)" [rounded]="true" [size]="'small'" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
                           </td>
                         </tr>
                       </ng-template>
@@ -223,7 +223,7 @@
                     <div class="form-col" [formGroup]="sucForm">
                       <div class="p-field">
                         <label>Descripción <span class="req">*</span></label>
-                        <input pInputText pSize="small" formControlName="descripcion" placeholder="Nombre sucursal" />
+                        <input pInputText [pSize]="'small'" formControlName="descripcion" placeholder="Nombre sucursal" />
                       </div>
                       <div class="p-field">
                         <label>Estado</label>
@@ -233,11 +233,11 @@
 
                     <div class="form-actions info-form-actions">
                       @if (sucEditando()) {
-                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarSuc()" />
+                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (click)="cancelarSuc()" />
                       } @else {
-                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (click)="cancelarSuc()" />
+                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (click)="cancelarSuc()" />
                       }
-                      <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingSuc()" (click)="guardarSucursal()" />
+                      <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" [size]="'small'" [loading]="savingSuc()" (click)="guardarSucursal()" />
                     </div>
                   </div>
 
@@ -272,7 +272,7 @@
                             <p-tag [value]="getEstadoLabel(suc.sn_activo)" [severity]="getEstadoSeverity(suc.sn_activo)" styleClass="tag-sm" />
                           </td>
                           <td class="col-acciones">
-                            <p-button icon="pi pi-pencil" (click)="editarSuc(suc)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                            <p-button icon="pi pi-pencil" (click)="editarSuc(suc)" [rounded]="true" [size]="'small'" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
                           </td>
                         </tr>
                       </ng-template>
@@ -316,8 +316,8 @@
                       <input type="file" accept="image/png,image/jpeg,image/jpg" (change)="onLogoSelect($event)" />
                     </label>
                     @if (logoPreview()) {
-                    <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingLogo()" (onClick)="guardarLogo()" />
-                    <p-button label="Eliminar" icon="pi pi-trash" variant="text" severity="danger" [rounded]="true" size="small" (onClick)="eliminarLogo()" />
+                    <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" [size]="'small'" [loading]="savingLogo()" (onClick)="guardarLogo()" />
+                    <p-button label="Eliminar" icon="pi pi-trash" variant="text" severity="danger" [rounded]="true" [size]="'small'" (onClick)="eliminarLogo()" />
                     }
                   </div>
                 </div>
@@ -342,7 +342,7 @@
                     <div class="form-col" [formGroup]="impForm">
                       <div class="p-field">
                         <label>Descripción</label>
-                        <input pInputText pSize="small" formControlName="descripcion" placeholder="Nombre de la impresora" />
+                        <input pInputText [pSize]="'small'" formControlName="descripcion" placeholder="Nombre de la impresora" />
                       </div>
                       <div class="p-field">
                         <label>Formato</label>
@@ -358,21 +358,21 @@
                       </div>
                       <div class="p-field">
                         <label>Driver</label>
-                        <input pInputText pSize="small" formControlName="driver" placeholder="Ej: EPSON, BIXOLON" />
+                        <input pInputText [pSize]="'small'" formControlName="driver" placeholder="Ej: EPSON, BIXOLON" />
                       </div>
                       <div class="p-field">
                         <label>Puerto</label>
-                        <input pInputText pSize="small" formControlName="puerto" placeholder="Ej: USB, LPT1, COM1" />
+                        <input pInputText [pSize]="'small'" formControlName="puerto" placeholder="Ej: USB, LPT1, COM1" />
                       </div>
                     </div>
 
                     <div class="form-actions info-form-actions">
                       @if (impEditando()) {
-                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarImp()" />
+                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (onClick)="cancelarImp()" />
                       } @else {
-                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" size="small" (onClick)="cancelarImp()" />
+                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (onClick)="cancelarImp()" />
                       }
-                      <p-button [label]="impEditando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check" variant="text" severity="success" [rounded]="true" size="small" [loading]="savingImp()" (onClick)="guardarImpresora()" />
+                      <p-button [label]="impEditando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check" variant="text" severity="success" [rounded]="true" [size]="'small'" [loading]="savingImp()" (onClick)="guardarImpresora()" />
                     </div>
                   </div>
 
@@ -411,8 +411,8 @@
                           <td>{{ imp.driver || '-' }}</td>
                           <td>{{ imp.puerto || '-' }}</td>
                           <td class="col-acciones">
-                            <p-button icon="pi pi-pencil" (click)="editarImp(imp)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
-                            <p-button icon="pi pi-trash" (click)="eliminarImp(imp)" [rounded]="true" size="small" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
+                            <p-button icon="pi pi-pencil" (click)="editarImp(imp)" [rounded]="true" [size]="'small'" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+                            <p-button icon="pi pi-trash" (click)="eliminarImp(imp)" [rounded]="true" [size]="'small'" text severity="danger" pTooltip="Eliminar" tooltipPosition="left" />
                           </td>
                         </tr>
                       </ng-template>
@@ -452,7 +452,7 @@
             (click)="limpiarFiltros()"
             severity="secondary"
             [rounded]="true"
-            size="small"
+            [size]="'small'"
             class="clear-btn"
           />
           }
@@ -464,7 +464,7 @@
           variant="text"
           severity="success"
           [rounded]="true"
-          size="small"
+          [size]="'small'"
         />
       </div>
 
@@ -483,7 +483,7 @@
         <i class="pi pi-building empty-icon"></i>
         <h3>No hay empresas</h3>
         <p>Registre una empresa para comenzar</p>
-        <p-button label="Nuevo" icon="pi pi-plus" (click)="nueva()" severity="success" [rounded]="true" size="small" />
+        <p-button label="Nuevo" icon="pi pi-plus" (click)="nueva()" severity="success" [rounded]="true" [size]="'small'" />
       </div>
       } @else {
       <div class="empresas-lista">
@@ -511,7 +511,7 @@
             <span class="ficha-value">{{ emp.usuarioCreated || '—' }}</span>
           </div>
           <div class="item-ficha-actions">
-            <p-button icon="pi pi-pencil" (click)="editarEmpresa(emp, $event)" [rounded]="true" size="small" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
+            <p-button icon="pi pi-pencil" (click)="editarEmpresa(emp, $event)" [rounded]="true" [size]="'small'" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
           </div>
         </div>
         }

@@ -9,7 +9,7 @@
       icon="pi pi-arrow-left"
       severity="secondary"
       text
-      size="small"
+      [size]="'small'"
       rounded
       (onClick)="cancel()"
     />
@@ -54,11 +54,11 @@ size="small"         id="usuario"
           label="Cancelar"
           icon="pi pi-times"
           severity="secondary"
-          size="small"
+          [size]="'small'"
           rounded
           (onClick)="cancel()"
         />
-      <p-button type="submit" label="Guardar" icon="pi pi-check" rounded size="small" [loading]="guardando()" />
+      <p-button type="submit" label="Guardar" icon="pi pi-check" rounded [size]="'small'" [loading]="guardando()" />
     </div>
   </form>
 </section>

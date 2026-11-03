@@ -15,7 +15,7 @@
 
       <div class="mt-3 mb-3">
         <p-button label="Nueva entidad bancaria" icon="pi pi-plus"
-          size="small" [rounded]="true" variant="text" severity="success"
+          [size]="'small'" [rounded]="true" variant="text" severity="success"
           (click)="nuevoBanco()" />
       </div>
 
@@ -41,7 +41,7 @@
               <p-tag [value]="activoLbl(banco.sn_activo)" [severity]="activoSev(banco.sn_activo)" />
             </td>
             <td class="text-center">
-              <p-button icon="pi pi-pencil" size="small" variant="text" [rounded]="true" severity="secondary"
+              <p-button icon="pi pi-pencil" [size]="'small'" variant="text" [rounded]="true" severity="secondary"
                 pTooltip="Editar banco" (click)="$event.stopPropagation(); editarBanco(banco)" />
             </td>
           </tr>
@@ -69,7 +69,7 @@
                       <div class="p-col-12 p-col-6">
                         <div class="campo">
                           <label>Teléfono <span class="req">*</span></label>
-                          <input pInputText formControlName="telefono" pSize="small" placeholder="Ej: 2234-5678" />
+                          <input pInputText formControlName="telefono" [pSize]="'small'" placeholder="Ej: 2234-5678" />
                         </div>
                       </div>
                       <div class="p-col-12 p-col-3">
@@ -84,10 +84,10 @@
                           <label>&nbsp;</label>
                           <div class="d-flex gap-2">
                             @if (telEditando()) {
-                              <p-button size="small" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
+                              <p-button [size]="'small'" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
                                 (click)="telForm.reset({telefono:'',sn_activo:'S'}); telEditando.set(false); telEditId.set(null)" />
                             }
-                            <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text"
+                            <p-button [size]="'small'" label="Guardar" icon="pi pi-check" severity="success" variant="text"
                               [raised]="true" [rounded]="true" [disabled]="telForm.invalid" (click)="guardarTelefono()" />
                           </div>
                         </div>
@@ -113,9 +113,9 @@
                           <p-tag [value]="activoLbl(tel.sn_activo)" [severity]="activoSev(tel.sn_activo)" styleClass="tag-sm" />
                         </td>
                         <td class="text-center">
-                          <p-button icon="pi pi-pencil" size="small" variant="text" [rounded]="true" severity="warn"
+                          <p-button icon="pi pi-pencil" [size]="'small'" variant="text" [rounded]="true" severity="warn"
                             pTooltip="Editar" (click)="editarTelefono(tel)" />
-                          <p-button icon="pi pi-trash" size="small" variant="text" [rounded]="true" severity="danger"
+                          <p-button icon="pi pi-trash" [size]="'small'" variant="text" [rounded]="true" severity="danger"
                             pTooltip="Eliminar" (click)="eliminarTelefono(tel)" />
                         </td>
                       </tr>
@@ -143,7 +143,7 @@
                       <div class="p-col-12 p-col-8">
                         <div class="campo">
                           <label>Dirección <span class="req">*</span></label>
-                          <input pInputText formControlName="descripcion" pSize="small" placeholder="Dirección completa" />
+                          <input pInputText formControlName="descripcion" [pSize]="'small'" placeholder="Dirección completa" />
                         </div>
                       </div>
                       <div class="p-col-12 p-col-4">
@@ -156,10 +156,10 @@
                       <div class="p-col-12">
                         <div class="form-actions">
                           @if (dirEditando()) {
-                            <p-button size="small" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
+                            <p-button [size]="'small'" label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true"
                               (click)="dirForm.reset({descripcion:'',sn_activo:'S'}); dirEditando.set(false); dirEditId.set(null)" />
                           }
-                          <p-button size="small" label="Guardar" icon="pi pi-check" severity="success" variant="text"
+                          <p-button [size]="'small'" label="Guardar" icon="pi pi-check" severity="success" variant="text"
                             [raised]="true" [rounded]="true" [disabled]="dirForm.invalid" (click)="guardarDireccion()" />
                         </div>
                       </div>
@@ -184,9 +184,9 @@
                           <p-tag [value]="activoLbl(dir.sn_activo)" [severity]="activoSev(dir.sn_activo)" styleClass="tag-sm" />
                         </td>
                         <td class="text-center">
-                          <p-button icon="pi pi-pencil" size="small" variant="text" [rounded]="true" severity="warn"
+                          <p-button icon="pi pi-pencil" [size]="'small'" variant="text" [rounded]="true" severity="warn"
                             pTooltip="Editar" (click)="editarDireccion(dir)" />
-                          <p-button icon="pi pi-trash" size="small" variant="text" [rounded]="true" severity="danger"
+                          <p-button icon="pi pi-trash" [size]="'small'" variant="text" [rounded]="true" severity="danger"
                             pTooltip="Eliminar" (click)="eliminarDireccion(dir)" />
                         </td>
                       </tr>
@@ -210,7 +210,7 @@
       @if (formCatalogo() === 'bancos') {
         <div class="col-der-header">
           <div class="flex align-items-center gap-2">
-            <p-button icon="pi pi-arrow-left" text size="small" rounded (click)="formCatalogo.set(null)" />
+            <p-button icon="pi pi-arrow-left" text [size]="'small'" rounded (click)="formCatalogo.set(null)" />
             <div>
               <h3 class="page-title" style="font-size: 1rem; margin: 0">Banco</h3>
               <p class="page-subtitle" style="margin: 0">{{ formItemId() === 'nuevo' ? 'Nuevo banco' : 'Editar banco' }}</p>
@@ -225,7 +225,7 @@
       } @else if (bancoSeleccionado()) {
         <div class="col-der-header">
           <div class="flex align-items-center gap-2">
-            <p-button icon="pi pi-arrow-left" text size="small" rounded (click)="volver()" />
+            <p-button icon="pi pi-arrow-left" text [size]="'small'" rounded (click)="volver()" />
             <div>
               <h3 class="page-title" style="font-size: 1rem; margin: 0">{{ bancoSeleccionado()!.descripcion }}</h3>
               <p class="page-subtitle" style="margin: 0">Cuentas bancarias</p>
@@ -235,7 +235,7 @@
 
         <!-- Botón nueva cuenta -->
         <div class="mb-3">
-          <p-button label="Nueva cuenta" icon="pi pi-plus" size="small" [rounded]="true"
+          <p-button label="Nueva cuenta" icon="pi pi-plus" [size]="'small'" [rounded]="true"
             variant="text" severity="success" (click)="nuevaCuenta()" />
         </div>
 
@@ -261,7 +261,7 @@
                   <p-tag [value]="activoLbl(cuenta.sn_activo)" [severity]="activoSev(cuenta.sn_activo)" styleClass="tag-sm" />
                 </td>
                 <td class="text-center">
-                  <p-button icon="pi pi-pencil" size="small" variant="text" [rounded]="true" severity="secondary"
+                  <p-button icon="pi pi-pencil" [size]="'small'" variant="text" [rounded]="true" severity="secondary"
                     pTooltip="Editar cuenta" (click)="editarCuenta(cuenta)" />
                 </td>
               </tr>

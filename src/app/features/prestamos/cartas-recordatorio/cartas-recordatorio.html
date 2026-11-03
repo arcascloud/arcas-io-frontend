@@ -13,7 +13,7 @@
         (click)="load()"
         [loading]="cargando()"
         [rounded]="true"
-        size="small"
+        [size]="'small'"
       ></p-button>
     </ng-template>
   </p-toolbar>
@@ -35,7 +35,7 @@
         (click)="limpiarFiltros()"
         severity="secondary"
         [rounded]="true"
-        size="small"
+        [size]="'small'"
         class="clear-btn"
       ></p-button>
     </div>
@@ -73,7 +73,7 @@
       icon="pi pi-file-edit"
       (click)="generarCartas()"
       [rounded]="true"
-      size="small"
+      [size]="'small'"
     ></p-button>
     <p-button
       label="Imprimir Todas"
@@ -82,7 +82,7 @@
       (click)="imprimirTodas()"
       [disabled]="cartasGeneradas().length === 0"
       [rounded]="true"
-      size="small"
+      [size]="'small'"
     ></p-button>
     <span class="cartas-count" *ngIf="cartasGeneradas().length > 0">
       {{ cartasGeneradas().length }} cartas generadas

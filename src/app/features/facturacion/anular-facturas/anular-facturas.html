@@ -10,14 +10,14 @@
     <div class="filtros-row">
       <div class="campo campo-busqueda">
         <span class="p-input-icon-left">
-          <input pInputText type="text" pSize="small"
+          <input pInputText type="text" [pSize]="'small'"
             placeholder="Buscar por # factura o nombre del cliente..."
             [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" class="busqueda-input" />
         </span>
       </div>
       <div class="filtros-acciones">
-        <p-button label="Buscar" icon="pi pi-search" size="small" (onClick)="buscar()" />
-        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text size="small" (onClick)="limpiar()" />
+        <p-button label="Buscar" icon="pi pi-search" [size]="'small'" (onClick)="buscar()" />
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text [size]="'small'" (onClick)="limpiar()" />
       </div>
     </div>
   </div>
@@ -60,9 +60,9 @@
           </td>
           <td class="acciones-cell">
             <div class="acciones-row">
-              <p-button icon="pi pi-eye" severity="info" text rounded size="small"
+              <p-button icon="pi pi-eye" severity="info" text rounded [size]="'small'"
                 (onClick)="ver(f.facturaId); $event.stopPropagation()" pTooltip="Ver factura" tooltipPosition="top" />
-              <p-button icon="pi pi-ban" severity="danger" text rounded size="small"
+              <p-button icon="pi pi-ban" severity="danger" text rounded [size]="'small'"
                 (onClick)="anular(f, $event)" [disabled]="f.sn_anulada === 'S'"
                 pTooltip="Anular factura" tooltipPosition="top" />
             </div>

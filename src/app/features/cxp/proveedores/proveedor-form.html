@@ -9,7 +9,7 @@
       icon="pi pi-arrow-left"
       severity="secondary"
       text
-      size="small"
+      [size]="'small'"
       rounded
       (onClick)="cancelar()"
     />
@@ -29,7 +29,7 @@
           <input
             #primerCampo
             pInputText
-            pSize="small"
+            [pSize]="'small'"
             [formControl]="form.get('nroproveedor')"
             maxlength="20"
             placeholder="Número de proveedor"
@@ -43,7 +43,7 @@
           <label>Nombres <span class="req">*</span></label>
           <input
             pInputText
-            pSize="small"
+            [pSize]="'small'"
             [formControl]="form.get('nombres')"
             maxlength="50"
             placeholder="Nombres"
@@ -57,7 +57,7 @@
           <label>Apellidos <span class="req">*</span></label>
           <input
             pInputText
-            pSize="small"
+            [pSize]="'small'"
             [formControl]="form.get('apellidos')"
             maxlength="50"
             placeholder="Apellidos"
@@ -71,7 +71,7 @@
           <label>Razón social</label>
           <input
             pInputText
-            pSize="small"
+            [pSize]="'small'"
             [formControl]="form.get('razonsocial')"
             maxlength="120"
             placeholder="Razón social"
@@ -80,12 +80,12 @@
 
         <div class="p-field">
           <label>DNI</label>
-          <input pInputText pSize="small" [formControl]="form.get('dni')" maxlength="20" placeholder="DNI" />
+          <input pInputText [pSize]="'small'" [formControl]="form.get('dni')" maxlength="20" placeholder="DNI" />
         </div>
 
         <div class="p-field">
           <label>RTN</label>
-          <input pInputText pSize="small" [formControl]="form.get('rtn')" maxlength="50" placeholder="RTN" />
+          <input pInputText [pSize]="'small'" [formControl]="form.get('rtn')" maxlength="50" placeholder="RTN" />
         </div>
 
         <div class="form-row">
@@ -208,7 +208,7 @@
         <p-button
           label="Cancelar"
           icon="pi pi-times"
-          size="small"
+          [size]="'small'"
           variant="text"
           severity="secondary"
           [rounded]="true"
@@ -218,7 +218,7 @@
         <p-button
           label="Limpiar"
           icon="pi pi-times"
-          size="small"
+          [size]="'small'"
           variant="text"
           severity="secondary"
           [rounded]="true"
@@ -228,7 +228,7 @@
       <p-button
         label="Guardar"
         icon="pi pi-check"
-        size="small"
+        [size]="'small'"
         variant="text"
         severity="success"
         [rounded]="true"
@@ -269,6 +269,6 @@
     </div>
   </div>
   <ng-template pTemplate="footer">
-    <p-button label="Entendido" icon="pi pi-check" size="small" variant="text" severity="secondary" [rounded]="true" (onClick)="dialogoDni.set(false)" />
+    <p-button label="Entendido" icon="pi pi-check" [size]="'small'" variant="text" severity="secondary" [rounded]="true" (onClick)="dialogoDni.set(false)" />
   </ng-template>
 </p-dialog>
