@@ -47,12 +47,13 @@
                 { "type": "anyComponentStyle", "maximumWarning": "24kB", "maximumError": "40kB" }
               ],
               "outputHashing": "all",
-                  "optimization": {
-      "scripts": true,
-      "styles": {
-        "minify": true,
-        "inlineCritical": false  // IMPORTANTE: ponlo en false 
-      }
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                }
+              }
             },
             "development": {
               "optimization": false,

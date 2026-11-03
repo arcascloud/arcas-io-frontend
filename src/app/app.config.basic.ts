@@ -30,6 +30,7 @@ const ArcasPreset = definePreset(Aura, {
       900: '{emerald.900}',
       950: '{emerald.950}',
     },
+
   },
 });
 

@@ -40,6 +40,16 @@
 :root {
   --font-family: 'mukta', sans-serif;
 
+      --50: #E6EBF5; // Lightest shade - like a whisper of blue
+        --100: #B3C1E0; // Getting a bit more confident
+        --200: #8097CC; // Now we're talking
+        --300: #4D6DB8; // Getting serious
+        --400: #1A43A3; // Business time
+        --500: #003591; // The main character - your primary color
+        --600: #0f204b; // Darker and moodier
+        --700: #0C1A3D; // Even more dramatic
+        --800: #091430; // Almost brooding
+        --900: #060D22; // The darkest timeline
   /* ===== Design tokens ===== */
   --c-bg: #f1f5f9;
   --c-surface: #ffffff;

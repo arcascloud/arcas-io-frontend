@@ -1,6 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
 @layer primeng {}
-
 @font-face {
   font-family: 'mukta';
   src: url('/assets/fonts/mukta/mukta-regular.ttf') format('truetype');
@@ -306,6 +305,7 @@
   --p-inputtext-border-color: var(--c-bg-white);
   --p-inputtext-color: var(--c-bg-white);
 }
+
 body {
   font-family: var(--font-family);
   color: var(--c-text);

@@ -1,0 +1,313 @@
+PrimeNG Theme Override Guide: Making Buttons Beautiful (And Not Boring)
+Geetha
+Geetha
+
+Follow
+6 min read
+·
+Sep 10, 2025
+4
+
+
+
+
+Because default themes are like vanilla ice cream — perfectly fine, but sometimes you crave rocky road.
+
+Press enter or click to view image in full size
+
+Step 1: Set Up Your Angular Playground
+First things first, let’s get our Angular 20 project up and running with PrimeNG 20. Think of this as laying the foundation before we paint the house (except the house is made of components and the paint is CSS).
+
+ng new my-awesome-project
+cd my-awesome-project
+npm install primeng@20
+Step 2: Create Your Custom Theme Preset (The Fun Part!)
+Time to create our my-preset.ts file - this is where the magic happens. Think of this as your color palette, but instead of Bob Ross painting happy little trees, you're painting happy little components.
+
+import { definePreset } from '@primeuix/themes';
+import Aura from '@primeuix/themes/aura';
+const MyPreset = definePreset(Aura, {
+    semantic: {
+        primary: {
+            50: '#E6EBF5',  // Lightest shade - like a whisper of blue
+            100: '#B3C1E0', // Getting a bit more confident
+            200: '#8097CC', // Now we're talking
+            300: '#4D6DB8', // Getting serious
+            400: '#1A43A3', // Business time
+            500: '#003591', // The main character - your primary color
+            600: '#0f204b', // Darker and moodier
+            700: '#0C1A3D', // Even more dramatic
+            800: '#091430', // Almost brooding
+            900: '#060D22'  // The darkest timeline
+        }
+    },
+});
+export default MyPreset;
+What’s happening here? We’re extending PrimeNG’s built-in Aura theme (because why reinvent the wheel when you can just put fancy rims on it?). The definePreset function takes the base theme and our customizations. Those numbers (50-900) represent different shades of your primary color - from "barely there" to "Batman's cape dark."
+
+Step 3: Button Makeover Time!
+Create a _base.scss file - this is where we turn boring default buttons into something your designer would actually approve of:
+
+@layer primeng {
+    .p-button {
+        font-family: 'Nunito Sans', sans-serif;  // Because Comic Sans is still a no-go
+        font-weight: 700;                        // Bold and proud
+        font-size: var(--dnv-font-button-l);   // Using CSS custom properties like a pro
+        padding: 0.571rem 1.143rem;            // Goldilocks padding - not too much, not too little
+        border-radius: 10px;                    // Rounded corners (because sharp edges hurt)
+        background: var(--primary-500);        // Using our custom primary color
+        border: none;                           // Borders are so last century
+        color: #ffffff;                         // Classic white text for contrast
+        line-height: 20px;
+        letter-spacing: 0;                      // No need to spread out like social distancing
+        transition: background-color 0.2s;     // Smooth transitions = happy users
+// Hover state - because buttons should respond to attention
+        &:enabled:hover {
+            background: var(--primary-600);    // Slightly darker on hover
+            border: none;
+        }
+        // Active state - for when users actually click (revolutionary!)
+        &:enabled:active {
+            background: var(--primary-700);    // Even darker when pressed
+            border: none;
+        }
+        // Focus state - accessibility matters, people!
+        &:enabled:focus {
+            box-shadow: none;                   // Removing default focus shadow
+        }
+        .p-button-label {
+            font-weight: 700;                   // Extra emphasis on the text
+        }
+        // Outlined button variant - for when you want to be subtle but not invisible
+        &.p-button-outlined {
+                background: transparent;         // See-through like good intentions
+                color: var(--primary-500);     // Colored text instead of background
+                border: 2px solid var(--primary-500);  // A nice border to frame it all
+                box-shadow: none;
+                font-weight: 700;
+                font-family: 'Nunito Sans', sans-serif;
+                transition: background-color 0.2s, color 0.2s, border-color 0.2s;  // Triple transition combo!
+                &:hover {
+                    background: var(--primary-50);     // Light background on hover
+                    color: var(--primary-600);         // Slightly darker text
+                    border-color: var(--primary-600);  // Matching border
+                }
+                &:active {
+                    background: var(--primary-100);    // More pronounced active state
+                    color: var(--primary-700);
+                    border-color: var(--primary-700);
+                }
+                &:focus {
+                    box-shadow: none;
+                    outline: none;                      // Custom focus handling
+                }
+                &:disabled {
+                    color: #707070;                     // Gray for "I can't be clicked"
+                    border-color: #e6e6e5;
+                    background: transparent;
+                }
+        }
+        // Text button - when you want a button but make it fashion
+        &.p-button-text {
+            background-color: transparent;
+            color: var(--primary-500);
+            border: none;                           // Minimalist AF
+        }
+    }
+}
+The @layer directive is CSS's way of organizing styles - think of it as putting your clothes in the right drawer. It ensures our custom styles play nicely with PrimeNG's existing styles without getting into fights.
+
+Step 4: Global Styles Setup
+In your styles.scss, we're importing fonts and setting up the foundation:
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+html {
+  font-size: 14px;                              // Base font size - the root of all font calculations
+  font-family: 'Nunito Sans', sans-serif;      // Making everything look consistent
+}
+@import './app/base';                           // Importing our custom button styles
+Why Nunito Sans? Because it’s friendly, readable, and doesn’t make your users squint. Plus, it has that “modern but not trying too hard” vibe.
+
+Step 5: Wire It All Together
+Time to configure Angular to use our beautiful custom theme in app.config.ts:
+
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { provideRouter } from '@angular/router';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { providePrimeNG } from 'primeng/config';
+import MyPreset from './my-preset';  // Our custom theme preset
+import { routes } from './app.routes';
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideRouter(routes),
+    provideAnimationsAsync(),                    // Because animations make everything better
+    providePrimeNG({
+        theme: {
+            preset: MyPreset,                    // Using our custom theme
+            options: {
+                cssLayer: {
+                    name: 'primeng',             // Naming our CSS layer
+                    order: 'primeng, app-styles' // Setting the order of CSS layers
+                }
+            }
+        }
+    })
+  ]
+};
+The CSS layer order is like a z-index for your entire stylesheet — it determines which styles win when there’s a conflict. We’re putting PrimeNG first, then our app styles, so we can override things cleanly.
+
+Get Geetha’s stories in your inbox
+Join Medium for free to get updates from this writer.
+
+Enter your email
+Subscribe
+
+Remember me for faster sign in
+
+Preset Component Override alternative to css layering
+
+To acheive the same button override using primeng preset component level override refer to the token name present for specific theme
+
+primeuix/packages/themes/src/presets/aura/button/index.ts at main · primefaces/primeuix
+PrimeUIX is a shared package used by all Prime libraries, allowing PrimeTek teams to unify theming. …
+github.com
+
+and override accordingly
+
+import { definePreset } from '@primeuix/themes';
+import Aura from '@primeuix/themes/aura';
+
+const MyPreset = definePreset(Aura, {
+  semantic: {
+    primary: {
+      50: '#E6EBF5',
+      100: '#B3C1E0',
+      200: '#8097CC',
+      300: '#4D6DB8',
+      400: '#1A43A3',
+      500: '#003591', // DNV Sea Blue
+      600: '#0f204b', // DNV Dark Blue
+      700: '#0C1A3D',
+      800: '#091430',
+      900: '#060D22'
+    }
+  },
+   components: {
+    button: {
+      root: {
+        borderRadius: '10px', // DNV override
+        roundedBorderRadius: '2rem',
+        gap: '0.75rem',
+        paddingX: '1.143rem',
+        paddingY: '0.571rem',
+        iconOnlyWidth: '2.5rem',
+        sm: {
+          fontSize: '{form.field.sm.font.size}',
+          paddingX: '{form.field.sm.padding.x}',
+          paddingY: '{form.field.sm.padding.y}',
+          iconOnlyWidth: '2rem'
+        },
+        lg: {
+          fontSize: '{form.field.lg.font.size}',
+          paddingX: '{form.field.lg.padding.x}',
+          paddingY: '{form.field.lg.padding.y}',
+          iconOnlyWidth: '3rem'
+        },
+        label: {
+          fontWeight: '700' // DNV override
+        },
+        raisedShadow: '0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12)',
+        focusRing: {
+          width: '{focus.ring.width}',
+          style: '{focus.ring.style}',
+          offset: '{focus.ring.offset}'
+        },
+        badgeSize: '1rem',
+        transitionDuration: '{form.field.transition.duration}'
+      },
+      colorScheme: {
+        light: {
+          root: {
+            primary: {
+              background: '{primary.color}',
+              hoverBackground: '{primary.hover.color}',
+              activeBackground: '{primary.active.color}',
+              borderColor: '{primary.color}',
+              hoverBorderColor: '{primary.hover.color}',
+              activeBorderColor: '{primary.active.color}',
+              color: '{primary.contrast.color}',
+              hoverColor: '{primary.contrast.color}',
+              activeColor: '{primary.contrast.color}',
+              focusRing: {
+                color: '{primary.color}',
+                shadow: 'none'
+              }
+            }
+            // Add other variants (secondary, info, success, etc.) if needed
+          },
+          outlined: {
+            primary: {
+              hoverBackground: '{primary.50}',
+              activeBackground: '{primary.100}',
+              borderColor: '{primary.200}',
+              color: '{primary.color}'
+            }
+            // Add other variants if needed
+          },
+          text: {
+            primary: {
+              hoverBackground: '{primary.50}',
+              activeBackground: '{primary.100}',
+              color: '{primary.color}'
+            }
+            // Add other variants if needed
+          },
+          link: {
+            color: '{primary.color}',
+            hoverColor: '{primary.color}',
+            activeColor: '{primary.color}'
+          }
+        },
+        dark: {
+          // Add dark theme overrides if needed
+          root: {
+            primary: {
+              background: '{primary.color}',
+              hoverBackground: '{primary.hover.color}',
+              activeBackground: '{primary.active.color}',
+              borderColor: '{primary.color}',
+              hoverBorderColor: '{primary.hover.color}',
+              activeBorderColor: '{primary.active.color}',
+              color: '{primary.contrast.color}',
+              hoverColor: '{primary.contrast.color}',
+              activeColor: '{primary.contrast.color}',
+              focusRing: {
+                color: '{primary.color}',
+                shadow: 'none'
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+});
+
+export default MyPreset;
+Step 6: Show Off Your Beautiful Buttons
+Finally, let’s see our creation in action with some app.html:
+
+<div style="display: flex; flex-direction: row; gap: 1rem;">
+  <p-button label="Check" />                                    <!-- Solid button with our custom styling -->
+  <p-button label="Cancel" styleClass="p-button-outlined" />   <!-- Outlined variant for variety -->
+</div>
+And voilà! You now have buttons that don’t look like they were designed in 2003. The first button will use your solid primary styling, while the second shows off that sleek outlined variant.
+
+Pro Tips for Theme Customization Success
+Test your colors — Make sure there’s enough contrast for accessibility
+Keep it consistent — Use your color palette systematically across components
+Document your changes — Future you will thank present you
+Start small — Override one component at a time rather than everything at once
+Remember: Good theming is like good seasoning — enough to enhance the flavor, but not so much that it overwhelms the dish. Now go forth and make beautiful, functional interfaces that don’t make users weep tears of aesthetic despair!
