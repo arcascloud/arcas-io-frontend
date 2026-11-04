@@ -1,4 +1,5 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -7,14 +8,20 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { DrawerModule } from 'primeng/drawer';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { ToggleButtonModule } from 'primeng/togglebutton';
 import { TooltipModule } from 'primeng/tooltip';
 import { TiendaService } from '../../../core/services/tienda.service';
 import { ProductoTienda } from '../../../core/models/tienda.models';
 import { RestauranteService } from '../../../core/services/restaurante.service';
-import { ConfigISV, MesaVista, NUM_MESAS, OrdenItem, OrdenRestaurante } from '../../../core/models/restaurante.models';
+import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
+import { ApiService } from '../../../core/services/api.service';
+import { FORMAPAGO_TODOPAGO } from '../../../core/services/todopago.service';
+import { ConfigISV, MesaVista, NUM_MESAS, OrdenItem, OrdenRestaurante, PagoOrden } from '../../../core/models/restaurante.models';
 
 /** Productos sin existencia no se pueden agregar. Ponlo en false si los platos preparados no llevan kardex. */
 const VALIDAR_EXISTENCIA = true;
@@ -30,7 +37,8 @@ const VALIDAR_EXISTENCIA = true;
   standalone: true,
   imports: [
     CommonModule, FormsModule, ButtonModule, DialogModule, DrawerModule,
-    InputNumberModule, SelectModule, TagModule, ToastModule, TooltipModule,
+    InputNumberModule, InputTextModule, SelectModule, TableModule,
+    TagModule, ToastModule, ToggleButtonModule, TooltipModule,
   ],
   templateUrl: './restaurante.html',
   styleUrl: './restaurante.scss',
@@ -38,7 +46,9 @@ const VALIDAR_EXISTENCIA = true;
 export class Restaurante implements OnInit {
   private srv = inject(RestauranteService);
   private tienda = inject(TiendaService);
+  private api = inject(ApiService);
   private msg = inject(MessageService);
+  private impresion = inject(FacturaImpresionService);
   private destroyRef = inject(DestroyRef);
 
   readonly mesasNumeros = Array.from({ length: NUM_MESAS }, (_, i) => i + 1);
@@ -96,23 +106,26 @@ export class Restaurante implements OnInit {
   estrecha = signal(false);
   totalItemsOrden = computed(() => this.items().reduce((s, i) => s + i.cantidad, 0));
 
-  /** Config de ISV (tasa e indicador de precio con ISV incluido) */
-  isv = signal<ConfigISV>({ tasa: 0, incluido: false });
+  /** Config de ISV (tasa, precio con ISV incluido) y sn_imprimefactura (param-fac módulo 3) */
+  isv = signal<ConfigISV>({ tasa: 0, incluido: false, snImprimeFactura: false });
 
-  // ── Cobro ──
+  // ── Cobro (tabla de múltiples pagos, igual que Nueva Factura / Pedidos) ──
   dialogPago = signal(false);
   formasPago = signal<{ label: string; value: number }[]>([]);
-  pagoFormapagoId: number | null = null;
-  pagoEfectivo: number | null = null;
+  tarjetasCredito = signal<{ label: string; value: number }[]>([]);
+  pagos = signal<PagoOrden[]>([]);
 
   ngOnInit() {
     this.configurarResponsive();
     this.srv.cargarISV().subscribe((cfg) => this.isv.set(cfg));
     this.cargarProductos();
     this.cargarOrdenes();
-    this.srv.getFormasPago().subscribe((f) => {
-      this.formasPago.set(f);
-      this.pagoFormapagoId = f[0]?.value ?? null;
+    this.srv.getFormasPago().subscribe((f) => this.formasPago.set(f));
+    this.api.get<{ tarjetacreditoId: number; descripcion: string }[]>('/parametros/tarjetas-credito').subscribe({
+      next: (data) =>
+        this.tarjetasCredito.set(
+          (data ?? []).map((t) => ({ label: t.descripcion, value: t.tarjetacreditoId })),
+        ),
     });
 
     // Refresca el "hace X min" de la lista de entregas pendientes
@@ -207,19 +220,6 @@ export class Restaurante implements OnInit {
     });
   }
 
-  marcarEntregada(orden: OrdenRestaurante) {
-    if (this.ocupado()) return;
-    this.ocupado.set(true);
-    this.srv.marcarEntregada(orden.pospedmaeId).subscribe({
-      next: () => {
-        this.reemplazarOrden({ ...orden, sn_entregado: 'S' });
-        this.ocupado.set(false);
-        this.msg.add({ severity: 'success', summary: `Mesa ${orden.nromesa}`, detail: 'Pedido entregado.' });
-      },
-      error: (e) => this.fallo(e, 'No se pudo marcar como entregada'),
-    });
-  }
-
   cancelarOrdenVacia() {
     const o = this.ordenActiva();
     if (!o || this.items().length || this.ocupado()) return;
@@ -287,6 +287,14 @@ export class Restaurante implements OnInit {
     this.mutarItem(this.srv.quitarItem(item));
   }
 
+  /**
+   * Entrega por ítem (toggle del mesero): el backend guarda el estado de la línea
+   * y sincroniza la cabecera — la orden queda 'entregada' sola con el último ítem.
+   */
+  toggleEntregado(item: OrdenItem, entregado: boolean) {
+    this.mutarItem(this.srv.setItemEntregado(item, entregado));
+  }
+
   private mutarItem(peticion: ReturnType<RestauranteService['quitarItem']>) {
     if (this.ocupado()) return;
     this.ocupado.set(true);
@@ -321,36 +329,238 @@ export class Restaurante implements OnInit {
       this.msg.add({ severity: 'warn', summary: 'Orden vacía', detail: 'Agregue productos antes de cobrar.' });
       return;
     }
-    this.pagoEfectivo = null;
+    this.inicializarPagos();
     this.dialogPago.set(true);
   }
 
-  cambio(): number {
-    const total = this.ordenActiva()?.total ?? 0;
-    return Math.max(0, Math.round(((this.pagoEfectivo ?? 0) - total) * 100) / 100);
+  // ── Tabla de pagos (misma estructura que Nueva Factura / Pedidos) ──
+
+  /** Una fila por cada forma de pago del catálogo (efectivo, tarjeta, transferencia, todopago…) */
+  inicializarPagos() {
+    this.pagos.set(
+      this.formasPago().map((fp) => ({
+        formapagoId: fp.value,
+        tarjetacreditoId: null,
+        nrotarjeta: '',
+        nroautorizacion: '',
+        importe: 0,
+        esEfectivo: this.esEfectivoLabel(fp.label),
+      })),
+    );
+  }
+
+  agregarPago() {
+    this.pagos.update((p) => [
+      ...p,
+      { formapagoId: null, tarjetacreditoId: null, nrotarjeta: '', nroautorizacion: '', importe: 0, esEfectivo: false },
+    ]);
+  }
+
+  quitarPago(idx: number) {
+    this.pagos.update((p) => p.filter((_, i) => i !== idx));
+  }
+
+  pagosConImporte(): PagoOrden[] {
+    return this.pagos().filter((p) => (Number(p.importe) || 0) > 0);
+  }
+
+  /** Total de la orden activa */
+  totalOrden(): number {
+    return this.ordenActiva()?.total ?? 0;
+  }
+
+  totalPagos(): number {
+    return this.pagosConImporte().reduce((sum, p) => sum + (Number(p.importe) || 0), 0);
+  }
+
+  cambioTotal(): number {
+    return Math.max(0, Math.round((this.totalPagos() - this.totalOrden()) * 100) / 100);
+  }
+
+  pendiente(): number {
+    return Math.max(0, Math.round((this.totalOrden() - this.totalPagos()) * 100) / 100);
+  }
+
+  esTarjeta(pago: PagoOrden): boolean {
+    const fp = this.formasPago().find((f) => f.value === pago.formapagoId);
+    return fp?.label?.toLowerCase().includes('tarjeta') ?? false;
+  }
+
+  esTransferencia(pago: PagoOrden): boolean {
+    const fp = this.formasPago().find((f) => f.value === pago.formapagoId);
+    return fp?.label?.toLowerCase().includes('transferencia') ?? false;
+  }
+
+  esEfectivoLabel(label: string): boolean {
+    return (label ?? '').toLowerCase().includes('efectivo');
+  }
+
+  private esEfectivoFila(p: PagoOrden): boolean {
+    const fp = this.formasPago().find((f) => f.value === p.formapagoId);
+    return this.esEfectivoLabel(fp?.label ?? '');
+  }
+
+  validarLuhn(numero: string): boolean {
+    const digits = (numero || '').replace(/\D/g, '');
+    if (digits.length < 13 || digits.length > 19) return false;
+    let suma = 0;
+    let alternar = false;
+    for (let i = digits.length - 1; i >= 0; i--) {
+      let digito = parseInt(digits[i], 10);
+      if (alternar) {
+        digito *= 2;
+        if (digito > 9) digito = Math.floor(digito / 10) + (digito % 10);
+      }
+      suma += digito;
+      alternar = !alternar;
+    }
+    return suma % 10 === 0;
+  }
+
+  /**
+   * Al cambiar la forma de pago: limpia los campos que no aplican y, si es
+   * TodoPago, auto-asigna el importe pendiente (mismo flujo que Pedidos).
+   */
+  onFormaPagoChange(pago: PagoOrden): void {
+    pago.esEfectivo = this.esEfectivoFila(pago);
+    if (pago.esEfectivo) {
+      pago.tarjetacreditoId = null;
+      pago.nrotarjeta = '';
+      pago.nroautorizacion = '';
+    }
+    if (pago.formapagoId !== FORMAPAGO_TODOPAGO) return;
+    const otros = this.pagosConImporte()
+      .filter((p) => p !== pago && p.formapagoId !== FORMAPAGO_TODOPAGO)
+      .reduce((s, p) => s + (Number(p.importe) || 0), 0);
+    const pend = Math.round((this.totalOrden() - otros) * 100) / 100;
+    if (pend > 0) pago.importe = pend;
+  }
+
+  /**
+   * Validación de la tabla de pagos — DEBE ser método y NO computed(): las filas
+   * son objetos planos ligados con ngModel y un computed() se congelaría en false.
+   */
+  formularioPagoValido(): boolean {
+    const total = this.totalOrden();
+    if (total <= 0) return false;
+    const pagos = this.pagosConImporte();
+    if (pagos.length === 0) return false;
+    for (const p of pagos) {
+      if (p.formapagoId == null) return false;
+      if (this.esTarjeta(p)) {
+        const num = (p.nrotarjeta || '').replace(/\s/g, '');
+        if (!(num.length >= 13 && this.validarLuhn(num) && p.tarjetacreditoId)) return false;
+      }
+      if (this.esTransferencia(p) && !p.nroautorizacion?.trim()) return false;
+    }
+    return this.totalPagos() >= total;
   }
 
   confirmarPago() {
     const orden = this.ordenActiva();
-    if (!orden || this.pagoFormapagoId == null || this.ocupado()) return;
+    if (!orden || this.ocupado()) return;
+
+    const pagos = this.pagosConImporte();
+    if (pagos.length === 0) {
+      this.msg.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese importe en las formas de pago' });
+      return;
+    }
+    for (const p of pagos) {
+      if (p.formapagoId == null) {
+        this.msg.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione la forma de pago' });
+        return;
+      }
+      if (this.esTarjeta(p)) {
+        const num = (p.nrotarjeta || '').replace(/\s/g, '');
+        if (num.length < 13) {
+          this.msg.add({ severity: 'warn', summary: 'Validación', detail: 'El número de tarjeta debe tener al menos 13 dígitos' });
+          return;
+        }
+        if (!this.validarLuhn(num)) {
+          this.msg.add({ severity: 'warn', summary: 'Validación', detail: 'El número de tarjeta no es válido' });
+          return;
+        }
+        if (!p.tarjetacreditoId) {
+          this.msg.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione el tipo de tarjeta' });
+          return;
+        }
+        if (!p.nroautorizacion?.trim()) {
+          this.msg.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el número de autorización de la tarjeta' });
+          return;
+        }
+      }
+      if (this.esTransferencia(p) && !p.nroautorizacion?.trim()) {
+        this.msg.add({ severity: 'warn', summary: 'Validación', detail: 'Ingrese el número de autorización de la transferencia' });
+        return;
+      }
+    }
+    const total = this.totalOrden();
+    if (this.totalPagos() < total) {
+      this.msg.add({
+        severity: 'error',
+        summary: 'Validación',
+        detail: `La orden debe pagarse en su totalidad. Falta por pagar: ${this.moneda(total - this.totalPagos())}`,
+      });
+      return;
+    }
+
+    const pagosEnviar = pagos.map((p) => ({ ...p, esEfectivo: this.esEfectivoFila(p) }));
+
     this.ocupado.set(true);
-    this.srv
-      .facturar(orden, { formapagoId: this.pagoFormapagoId, efectivo_recibido: this.pagoEfectivo ?? undefined })
+    this.srv.facturar(orden, pagosEnviar).subscribe({
+      next: (f) => {
+        // La orden ya está facturada: la mesa vuelve a quedar libre
+        this.ordenes.update((l) => l.filter((x) => x.pospedmaeId !== orden.pospedmaeId));
+        this.ordenActivaId.set(null);
+        this.items.set([]);
+        this.dialogPago.set(false);
+        this.ocupado.set(false);
+        this.msg.add({
+          severity: f.conLink ? 'info' : 'success',
+          summary: `Factura #${f.nrofactura}`,
+          detail: f.conLink
+            ? `Mesa ${orden.nromesa}: pago TodoPago pendiente de confirmación`
+            : `Mesa ${orden.nromesa} cobrada: ${this.moneda(f.total)} (${pagosEnviar.length} pago(s))`,
+        });
+        // Ticket solo si ttipoparametros (módulo 3).sn_imprimefactura = 'S':
+        // mismo motor que Nueva Factura (GET /facturas/:id/ticket +
+        // FacturaImpresionService, formato TICKET/CARTA desde timpresoras).
+        // Si el parámetro no está en 'S', no se imprime nada en pantalla.
+        if (this.isv().snImprimeFactura && f.facturaId) {
+          this.imprimirTicket(f.facturaId);
+        }
+      },
+      error: (e) => {
+        this.ocupado.set(false);
+        this.fallo(e, 'No se pudo facturar la orden');
+      },
+    });
+  }
+
+  /**
+   * Ticket de la factura cobrada — misma carga y mismo motor que Nueva Factura
+   * (nueva-factura.ts → imprimirTicket): GET del ticket + FacturaImpresionService.
+   */
+  private imprimirTicket(facturaId: number) {
+    this.api
+      .get<any>(`/facturacion/facturas/${facturaId}/ticket`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (f) => {
-          // La orden ya está facturada: la mesa vuelve a quedar libre
-          this.ordenes.update((l) => l.filter((x) => x.pospedmaeId !== orden.pospedmaeId));
-          this.ordenActivaId.set(null);
-          this.items.set([]);
-          this.dialogPago.set(false);
-          this.ocupado.set(false);
+        next: (data: any) =>
+          this.impresion.imprimir(data).catch(() => {
+            this.msg.add({
+              severity: 'warn',
+              summary: 'Impresión',
+              detail: 'No se pudo imprimir la factura',
+            });
+          }),
+        error: () => {
           this.msg.add({
-            severity: 'success',
-            summary: `Factura #${f.nrofactura}`,
-            detail: `Mesa ${orden.nromesa} cobrada: ${this.formatearPrecio(f.total)}`,
+            severity: 'warn',
+            summary: 'Impresión',
+            detail: 'No se pudieron cargar los datos del ticket',
           });
         },
-        error: (e) => this.fallo(e, 'No se pudo facturar la orden'),
       });
   }
 
@@ -395,6 +605,11 @@ export class Restaurante implements OnInit {
 
   formatearPrecio(n: number | string): string {
     return `L ${Number(n).toFixed(2)}`;
+  }
+
+  /** Moneda local con locale es-HN — mismo formato que Nueva Factura */
+  moneda(n: number | undefined): string {
+    return (n ?? 0).toLocaleString('es-HN', { style: 'currency', currency: 'HNL' });
   }
 
   private error(detalle: string) {

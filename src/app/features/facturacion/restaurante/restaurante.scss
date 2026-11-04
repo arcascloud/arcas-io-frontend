@@ -491,10 +491,16 @@ $topbar-height: 60px;
 .orden-item {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   gap: 0.6rem;
   padding: 0.5rem;
   border-radius: 10px;
   background: var(--c-surface-ground);
+
+  &.entregado {
+    opacity: 0.72;
+    background: var(--c-surface);
+  }
 
   .orden-item-img {
     flex: 0 0 3.25rem;
@@ -559,6 +565,12 @@ $topbar-height: 60px;
     font-weight: 700;
     color: var(--c-primary);
     white-space: nowrap;
+  }
+
+  // Toggle de entrega por ítem: ocupa la línea completa bajo la fila
+  .orden-item-estado {
+    width: 100%;
+    margin-top: 0.1rem;
   }
 }
 
@@ -689,7 +701,6 @@ $topbar-height: 60px;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
   padding: 0.75rem 1rem;
   border-radius: 10px;
   background: var(--c-surface-ground);
@@ -700,22 +711,76 @@ $topbar-height: 60px;
   }
 }
 
-.pago-campo {
+/* Diálogo de pagos (tabla idéntica a Nueva Factura / Pedidos) */
+.pago-dialog-body {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  margin-bottom: 0.9rem;
-
-  label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--c-text);
-  }
+  height: 100%;
+  gap: 0.75rem;
 }
 
-.pago-cambio {
-  font-size: 0.95rem;
-  color: var(--c-text);
+.pago-add-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.pago-dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.th-label {
+  color: var(--color-texto-label);
+}
+
+.width-fp {
+  width: 25%;
+}
+
+.width-tarjeta {
+  width: 20%;
+}
+
+.width-nrotarjeta {
+  width: 15%;
+}
+
+.width-autoriza {
+  width: 15%;
+}
+
+.width-importe {
+  width: 10%;
+}
+
+.width-quitar {
+  width: 5%;
+}
+
+.text-ok {
+  color: var(--c-success, #10b981);
+}
+
+.text-warn {
+  color: var(--c-warning, #f59e0b);
+}
+
+.cambio-amount {
+  color: var(--c-primary, #10b981);
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+:host ::ng-deep .pago-tabla {
+  .p-datatable-tbody > tr > td {
+    padding: 0.25rem 0.55rem;
+  }
+
+  .p-datatable-thead > tr > th {
+    padding: 0.4rem 0.55rem;
+  }
 }
 
 /* ═════════ Pantallas angostas: el drawer ocupa todo y apila las columnas ═════════ */

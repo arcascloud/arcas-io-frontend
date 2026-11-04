@@ -38,7 +38,12 @@ export class RestauranteService {
             lista.find((i) => i.impuestoId === impuestoId && i.sn_activo === 'S') ??
             lista.find((i) => Number(i.moduloId) === 3 && i.sn_activo === 'S');
           const pct = Number(activo?.porcentaje) || 0;
-          return { tasa: pct > 0 ? pct / 100 : 0, incluido: param?.sn_impuestoincluido === 'S' };
+          return {
+            tasa: pct > 0 ? pct / 100 : 0,
+            incluido: param?.sn_impuestoincluido === 'S',
+            // ttipoparametros (módulo 3).field = sn_imprimefactura → gate del ticket
+            snImprimeFactura: param?.sn_imprimefactura === 'S',
+          };
         }),
         shareReplay(1),
       );
@@ -62,11 +67,25 @@ export class RestauranteService {
    * (nromesa >= 1). Los pedidos "huérfanos" con mesa 0 o sin mesa —y los de días
    * anteriores— no interesan y quedan fuera, igual que los pedidos de la tienda
    * virtual que viven en la misma tabla.
+   *
+   * "Hoy" NO se calcula con new Date() del navegador: el backend guarda
+   * fecharegistro como fecha de negocio a medianoche UTC (p.ej.
+   * '2026-11-04T00:00:00.000Z') y en Honduras (UTC-6) eso se leía como
+   * 03/11 → las órdenes del día desaparecían de la lista, la mesa se veía
+   * libre y "Nueva orden" chocaba con el 400 "La mesa X ya tiene una orden
+   * abierta". Se usa el MISMO criterio que valida el backend
+   * (tempresas.fechasistema vía GET /parametros/fechas-sistema) comparando
+   * cadenas YYYY-MM-DD, con el mismo `>=` de validarMesaLibre.
    */
   getOrdenesAbiertas(): Observable<OrdenRestaurante[]> {
-    return this.api.get<any[]>('/facturacion/pedidos').pipe(
-      map((lista) => {
-        const hoy = new Date();
+    return forkJoin({
+      lista: this.api.get<any[]>('/facturacion/pedidos'),
+      estado: this.api
+        .get<{ fechaSistema?: string | null }>('/parametros/fechas-sistema')
+        .pipe(catchError(() => of(null as any))),
+    }).pipe(
+      map(({ lista, estado }) => {
+        const hoy = (estado?.fechaSistema || '').slice(0, 10) || this.fechaLocal(new Date());
         return (lista ?? [])
           .filter((o) => {
             if (o.sn_facturado !== 'N') return false;
@@ -74,18 +93,28 @@ export class RestauranteService {
             const nromesa = o.nromesa != null ? Number(o.nromesa) : 0;
             if (nromesa < 1) return false; // sin mesa real no es una orden de restaurante
 
-            const f = o.fecharegistro ? new Date(o.fecharegistro) : null;
-            if (!f || isNaN(f.getTime())) return false;
-            return (
-              f.getFullYear() === hoy.getFullYear() &&
-              f.getMonth() === hoy.getMonth() &&
-              f.getDate() === hoy.getDate()
-            );
+            const dia = this.fechaDia(o.fecharegistro);
+            if (!dia) return false;
+            return dia >= hoy;
           })
           .map((o) => this.normalizarOrden(o))
           .sort((a, b) => (a.nromesa ?? 0) - (b.nromesa ?? 0));
       }),
     );
+  }
+
+  /** Día 'YYYY-MM-DD' de un valor de fecharegistro (string ISO o Date) sin zonas horarias. */
+  private fechaDia(f: any): string {
+    if (!f) return '';
+    if (typeof f === 'string') return f.slice(0, 10);
+    const d = f instanceof Date ? f : new Date(f);
+    return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+  }
+
+  /** Día local del navegador 'YYYY-MM-DD' (respaldo si el estado de fecha falla). */
+  private fechaLocal(d: Date): string {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   }
 
   /** La orden nace YA con su mesa: nunca existe un pedido sin mesa (nromesa >= 1). */
@@ -97,12 +126,6 @@ export class RestauranteService {
         nromesa,
         sn_entregado: 'N',
       })
-      .pipe(map((o) => this.normalizarOrden(o)));
-  }
-
-  marcarEntregada(ordenId: number): Observable<OrdenRestaurante> {
-    return this.api
-      .put<OrdenRestaurante>('/facturacion/pedidos', ordenId, { sn_entregado: 'S' })
       .pipe(map((o) => this.normalizarOrden(o)));
   }
 
@@ -123,6 +146,16 @@ export class RestauranteService {
     return this.api
       .get<OrdenItem[]>(`/facturacion/pedidos-det/pedido/${ordenId}`)
       .pipe(map((lista) => (lista ?? []).map((d) => this.normalizarItem(d)).sort((a, b) => a.nrofila - b.nrofila)));
+  }
+
+  /**
+   * Cambia el estado de entrega de un ítem (toggle del mesero).
+   * El backend sincroniza pospedmae.sn_entregado: 'S' cuando todos los ítems están en 'S'.
+   */
+  setItemEntregado(item: OrdenItem, entregado: boolean): Observable<OrdenItem> {
+    return this.api
+      .put<OrdenItem>('/facturacion/pedidos-det', item.pospeddetId, { sn_entregado: entregado ? 'S' : 'N' })
+      .pipe(map((d) => this.normalizarItem(d)));
   }
 
   agregarItem(
@@ -170,13 +203,35 @@ export class RestauranteService {
 
   // ───────────────────────── Cobro ─────────────────────────
 
-  /** Convierte la orden en factura (reusa /pedidos/checkout). */
-  facturar(orden: OrdenRestaurante, pago: PagoOrden): Observable<FacturaResultado> {
+  /**
+   * Convierte la orden en factura (reusa /pedidos/checkout).
+   * `pagos` = filas de la tabla de formas de pago (misma estructura que
+   * Nueva Factura / Pedidos): una fila en posfaccaja por cada pago.
+   */
+  facturar(orden: OrdenRestaurante, pagos: PagoOrden[]): Observable<FacturaResultado> {
+    const conImporte = pagos.filter((p) => (Number(p.importe) || 0) > 0);
+    const primero = conImporte[0];
+    const totalPagado = conImporte.reduce((s, p) => s + (Number(p.importe) || 0), 0);
+    const esTarjetaPrimero = !primero.esEfectivo && !!(primero.nrotarjeta || '').trim();
+    const tipopago = primero.esEfectivo ? 'E' : esTarjetaPrimero ? 'T' : 'TR';
+
     return this.api.post<FacturaResultado>('/facturacion/pedidos/checkout', {
       pospedmaeId: orden.pospedmaeId,
       nombrecliente: orden.nombrecliente || `Mesa ${orden.nromesa ?? ''}`.trim(),
-      formapagoId: pago.formapagoId,
-      efectivo_recibido: pago.efectivo_recibido,
+      formapagoId: primero.formapagoId ?? undefined,
+      efectivo_recibido: totalPagado,
+      tarjetacreditoId: esTarjetaPrimero ? (primero.tarjetacreditoId ?? undefined) : undefined,
+      nrotarjeta: esTarjetaPrimero ? primero.nrotarjeta : undefined,
+      nroautorizacion: primero.nroautorizacion || undefined,
+      tipopago,
+      pagos: conImporte.map((p) => ({
+        formapagoId: p.formapagoId,
+        tarjetacreditoId: p.tarjetacreditoId || undefined,
+        nrotarjeta: p.nrotarjeta || undefined,
+        nroautorizacion: p.nroautorizacion || undefined,
+        importe: Number(p.importe) || 0,
+        esEfectivo: p.esEfectivo,
+      })),
     });
   }
 
@@ -214,6 +269,7 @@ export class RestauranteService {
       impuesto: Number(d.impuesto) || 0,
       subtotal: Number(d.subtotal) || 0,
       nrofila: Number(d.nrofila) || 0,
+      sn_entregado: d.sn_entregado === 'S' ? 'S' : 'N',
     };
   }
 }

@@ -1675,3 +1675,55 @@ this.confirmationService.confirm({
 - (Antes: hallazgos 1/2 del espejo, normalización de coctamov, SP) → **todos resueltos o decididos**
 - Entrada de menú `/contabilidad/reversar-cierre`: el usuario indicó que ya está habilitada en el menú de usuario (no requirió INSERT)
 - **Balance Dinámico / Estado de Resultado**: el usuario indicó *"no me gustó el resultado, pero dejemos esos reportes para otro día"* — **el fix de la columna 0 quedó APLICADO** (decisión suya: no revertir). Pendiente de retomar cuando él lo indique; posible foco: revisar la presentación/criterio de `col0` y de `valor`, que es lo que no le convenció (la corrección numérica sí pasó todas las verificaciones).
+
+---
+
+## Bitácora – 04/11/2026
+
+### Completado
+
+#### Restaurante — Entrega por ítem de orden (toggle del mesero)
+- **Reglas definidas por el usuario**: solo el toggle del mesero (sin pantalla de cocina en esta iteración); `pospedmae.sn_entregado` pasa a `'S'` **automáticamente** cuando todos los ítems están entregados (se eliminó el botón manual "Marcar entregada").
+- **Estado inicial por ítem**: producto con `sn_enviar_a_cocina='S'` → ítem nace `'N'` (cocina despacha); `'N'` → ítem nace `'S'` (no pasa por cocina); sin catálogo → `'N'` (conservador).
+- **Backend**:
+  - `pospeddet.entity.ts` + columna `sn_entregado` (enum S/N default N — **ya existía en BD**, sin ALTER)
+  - `facturacion.service.ts`: `sincronizarEntregadoPedido(pospedmaeId, empresaId, currentUser?)` (transición `'N'→'S'` solo si todos los dets en `'S'`; `'S'→'N'` si queda alguno pendiente o la orden queda vacía; solo escribe si cambia), ejecutado en `createPedidoDet`, `updatePedidoDet` y `deletePedidoDet`
+  - `updatePedidoDet`: si el payload (tras filtrar meta `empresaId`/`Idsucursal`/`usuarioCreated`/`fecharegistro`) es **solo `sn_entregado`** → omite `recalcularTotalesPedido` (un toggle nunca mueve dinero)
+- **Frontend**: `restaurante.models.ts` (`OrdenItem.sn_entregado`), `restaurante.service.ts` (`setItemEntregado`, `normalizarItem`; `marcarEntregada` eliminado), `restaurante.ts|html|scss`: `p-togglebutton` por ítem ("Entregado"/"Pendiente en cocina"), fila con `&.entregado` (opacity .72), `ToggleButtonModule` importado, botones manuales quitados (pie + ✓ de lista de pendientes)
+- **Verificación E2E**: `Temp\opencode\test-entrega-items.js` **20/20 OK** — estado inicial por `sn_enviar_a_cocina`, auto-sync cabecera (N→S→N→S), PUT `sn_entregado` no altera totales (subTotal 98,000 = A×2+B×1), DELETE con sync, residuos 0, producto de prueba revertido
+- **Builds**: `nest build` ✅ + `npm run build` ✅ (0 errores)
+
+#### Fix crítico: 401 global en el backend (JWT)
+- **Causa raíz**: `ConfigModule.forRoot({isGlobal:true})` (app.module.ts) carga `.env` (`JWT_SECRET=${seed}` placeholder) **después** de que `JwtModule.register` evaluó el secret al importar el módulo → firma con el fallback y verifica con `'${seed}'` → 401 genérico en todos los endpoints autenticados
+- **Fix**: nuevo `src/modules/auth/jwt-secret.ts` → `secretoJwt()` (parsea `.env` perezoso, cachea, fuente única) usado en `auth.module.ts` (`secret`) y `jwt.strategy.ts` (`secretOrKey`); `.env` línea 13 cambiada a `JWT_SECRET=arcas-software-secret-key-2026` (mantiene tokens/cookies existentes válidos)
+- **Verificado**: login 201 + `/auth/me` 200
+
+#### Fix: "Nueva orden" / checkout TIENDA → 500 `ER_NO_DEFAULT_FOR_FIELD`
+- `cxcclientes` tiene columnas **NOT NULL sin default** en BD (`synchronize:false`); `obtenerClienteTienda()` y `checkoutTienda()` no las seteaban
+- Fix en ambos bloques de `facturacion.service.ts`: `diasgracia: 0`, `moduloId: 4`, `Idsucursal: 1` (replicando la lección de `cxc.service.ts:263` y `createCliente`)
+- **Lección**: antes de crear filas en tablas del legado, verificar `SHOW COLUMNS` de NOT NULL sin default (no confiar en los `default:` de la entity — TypeORM emite keyword `DEFAULT` que MySQL rechaza si la columna no lo tiene)
+
+#### Mantenimiento de entorno
+- **Fecha del Sistema** actualizada a `04/11/2026` vía `PUT /api/parametros/fechas-sistema` (aprobada por el usuario) → desbloquea los 409 `FECHA_SISTEMA`
+- `nest start --watch` zombie (desde 02/11, retenía el puerto 3000) eliminado; backend reiniciado con `node dist/main.js` y **logs con rutas absolutas** en `Backend\backend-out.log`/`backend-error.log` (`-RedirectStandard*` es relativo al CWD del llamador, no al `-WorkingDirectory` → antes caían en `Frontend\`)
+- netstat devuelve el mismo PID en IPv4+IPv6 → tomar solo el primer match antes de `taskkill` (con "PID PID" el taskkill falla y el viejo sigue vivo → `EADDRINUSE`)
+
+#### Fix: órdenes de hoy invisibles en Restaurante → "La mesa X ya tiene una orden abierta (#N)"
+- **Síntoma** (en prod, `https://arcas-io-backend.onrender.com/api`): "Nueva orden" en mesa 3 devolvía 400 "La mesa 3 ya tiene una orden abierta (#70)" aunque la UI mostraba la mesa como **libre**.
+- **Causa raíz**: `getOrdenesAbiertas()` (`restaurante.service.ts`) filtraba "hoy" con componentes **locales** de `new Date()`; el backend guarda `fecharegistro` como fecha de negocio a **medianoche UTC** (`2026-11-04T00:00:00.000Z`) → en HN (UTC-6) se leía como **03/11** → TODAS las órdenes del día (#70–#73) desaparecían de la lista, la mesa se veía libre y el backend (que sí valida correctamente) rechazaba la nueva.
+- **Fix** (solo frontend, funciona contra el backend actual de prod):
+  - Nuevo criterio = **mismo del backend**: `dia(fecharegistro) >= fechaSistema` comparando **cadenas `YYYY-MM-DD`** (sin zonas horarias), con `fechaSistema` de `GET /parametros/fechas-sistema` (existe en prod y devuelve `{"fechaSistema":"2026-11-04",...}`); respaldo = día local si el estado falla.
+  - Helpers `fechaDia()` (string ISO/Date → día) y `fechaLocal()` en `restaurante.service.ts`.
+- **Verificación** con datos reales de prod (TZ `America/Guatemala`): filtro viejo → **0 mesas visibles**; filtro nuevo → **4** (#70 mesa 3, #71 mesa 2, #72 mesa 4, #73 mesa 15); `npm run build` ✅.
+- **Nota**: es el ÚNICO filtro "hoy vs fecharegistro" con este patrón en el frontend (revisado con `getFullYear()` sobre `src/app`).
+
+#### Restaurante: ticket al cobrar (mismo motor que Nueva Factura)
+- Tras `confirmarPago()` exitoso → `imprimirTicket(f.facturaId)`: `GET /facturacion/facturas/:id/ticket` + `FacturaImpresionService.imprimir()` (formato TICKET/CARTA resuelto desde `timpresoras`), con los mismos toasts de error que `nueva-factura.ts`
+- **Gate por parámetro (decisión del usuario 04/11)**: imprime **solo si** `ttipoparametros` (módulo 3, `field='sn_imprimefactura'`) = `'S'`; si no está en `'S'` o el endpoint falla → **no se imprime nada**. El usuario ya insertó el parámetro en prod → respuesta actual: `{"...","sn_imprimefactura":"S"}`. El valor viaja en `ConfigISV.snImprimeFactura` (cargado en `cargarISV()`, cache `shareReplay(1)`); Nueva Factura (`cargarParamFac`) usa el mismo endpoint/param → también imprime en prod desde ahora
+- Endpoint verificado en prod: `GET /facturas/38/ticket?empresaId=2` → 200 (empresa AUTOSEL, detalles/pagos OK); `ApiService.get` inyecta `empresaId` → suficiente
+- `takeUntilDestroyed` viene de `@angular/core/rxjs-interop` (NO de `@angular/core`)
+
+### Pendiente
+- **Pantalla/monitor de cocina**: diferida a la siguiente iteración (decisión del usuario); el endpoint de estado ya queda disponible
+- **Catálogo cocina**: marcar los productos de cocina con `sn_enviar_a_cocina='S'` en Productos → Editar → "Enviar a Cocina" (los 33 están en `'N'`)
+- Deploy a Cloudflare (`_worker.js` sin commitear + build prod) cuando el usuario lo indique

@@ -141,18 +141,6 @@
                     Orden #{{ o.pospedmaeId }} · hace {{ minutos(o) }} min@if (o.sn_entregado === 'S') { · entregado }
                   </span>
                 </button>
-                @if (o.sn_entregado === 'N') {
-                  <p-button
-                    icon="pi pi-check"
-                    [rounded]="true"
-                    [text]="true"
-                    severity="success"
-                    pTooltip="Marcar como entregado"
-                    [attr.aria-label]="'Marcar la mesa ' + o.nromesa + ' como entregada'"
-                    [disabled]="ocupado()"
-                    (onClick)="marcarEntregada(o)"
-                  />
-                }
               </li>
             }
           </ul>
@@ -172,7 +160,7 @@
           <div class="orden-items">
             @for (item of items(); track item.pospeddetId) {
               @let info = infoItem(item);
-              <div class="orden-item">
+              <div class="orden-item" [class.entregado]="item.sn_entregado === 'S'">
                 <div class="orden-item-img">
                   @if (info.imagen) {
                     <img [src]="info.imagen" [alt]="info.nombre" loading="lazy" />
@@ -199,6 +187,17 @@
                     <i class="pi pi-times"></i>
                   </button>
                 </div>
+                <div class="orden-item-estado">
+                  <p-togglebutton
+                    [ngModel]="item.sn_entregado === 'S'"
+                    (ngModelChange)="toggleEntregado(item, $event)"
+                    onLabel="Entregado"
+                    offLabel="Pendiente en cocina"
+                    size="small"
+                    [fluid]="true"
+                    [disabled]="ocupado()"
+                  />
+                </div>
               </div>
             } @empty {
               <div class="rest-estado rest-vacio">
@@ -213,17 +212,6 @@
             <div class="linea"><span>ISV</span><span>{{ formatearPrecio(o.impuesto) }}</span></div>
             <div class="linea total"><span>Total</span><strong>{{ formatearPrecio(o.total) }}</strong></div>
 
-            @if (items().length && o.sn_entregado === 'N') {
-              <p-button
-                label="Marcar entregada"
-                icon="pi pi-check"
-                severity="secondary"
-                [outlined]="true"
-                [fluid]="true"
-                [disabled]="ocupado()"
-                (onClick)="marcarEntregada(o)"
-              />
-            }
             @if (!items().length) {
               <p-button label="Cancelar orden" icon="pi pi-trash" severity="danger" [text]="true" [fluid]="true" [disabled]="ocupado()" (onClick)="cancelarOrdenVacia()" />
             } @else {
@@ -251,53 +239,203 @@
   </button>
 }
 
-<!-- ═════════ Cobro ═════════ -->
+<!-- ═════════ Cobro: tabla de formas de pago (idéntica a Nueva Factura / Pedidos) ═════════ -->
 <p-dialog
   header="Cobrar orden"
   [(visible)]="dialogPago"
   [modal]="true"
   [closable]="!ocupado()"
-  [style]="{ width: 'min(26rem, 94vw)' }"
+  [style]="{ width: '80vw', height: '85vh' }"
+  [contentStyle]="{ overflow: 'auto' }"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
 >
-  @if (ordenActiva(); as o) {
-    <div class="pago-resumen">
-      <span>Mesa {{ o.nromesa }} · Orden #{{ o.pospedmaeId }}</span>
-      <strong>{{ formatearPrecio(o.total) }}</strong>
-    </div>
-
-    <div class="pago-campo">
-      <label for="pago-forma">Forma de pago</label>
-      <p-select
-        inputId="pago-forma"
-        [options]="formasPago()"
-        optionLabel="label"
-        optionValue="value"
-        [(ngModel)]="pagoFormapagoId"
-        [fluid]="true"
-        appendTo="body"
-      />
-    </div>
-
-    <div class="pago-campo">
-      <label for="pago-efectivo">Efectivo recibido (opcional)</label>
-      <p-inputnumber
-        inputId="pago-efectivo"
-        [(ngModel)]="pagoEfectivo"
-        mode="decimal"
-        prefix="L "
-        [minFractionDigits]="2"
-        [maxFractionDigits]="2"
-        [fluid]="true"
-      />
-    </div>
-
-    @if (pagoEfectivo) {
-      <div class="pago-cambio">Cambio: <strong>{{ formatearPrecio(cambio()) }}</strong></div>
+  <div class="pago-dialog-body">
+    @if (ordenActiva(); as o) {
+      <div class="pago-resumen">
+        <span>Mesa {{ o.nromesa }} · Orden #{{ o.pospedmaeId }}</span>
+        <strong>{{ moneda(o.total) }}</strong>
+      </div>
     }
-  }
 
-  <ng-template #footer>
-    <p-button label="Cancelar" severity="secondary" [text]="true" [disabled]="ocupado()" (onClick)="dialogPago.set(false)" />
-    <p-button label="Facturar" icon="pi pi-check" severity="success" [loading]="ocupado()" [disabled]="pagoFormapagoId == null" (onClick)="confirmarPago()" />
+    <div class="pago-add-row">
+      <p-button
+        [size]="'small'"
+        label="Agregar pago"
+        icon="pi pi-plus"
+        severity="success"
+        variant="text"
+        [raised]="true"
+        [rounded]="true"
+        (onClick)="agregarPago()"
+      />
+    </div>
+
+    <p-table
+      [value]="pagos()"
+      size="small"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '100%' }"
+      styleClass="pago-tabla"
+    >
+      <ng-template #header>
+        <tr>
+          <th class="th-label width-fp">Forma de Pago</th>
+          <th class="th-label width-tarjeta">Tarjeta</th>
+          <th class="th-label width-nrotarjeta">Nro. Tarjeta</th>
+          <th class="th-label width-autoriza">Autorización</th>
+          <th class="th-label width-importe">Importe</th>
+          <th class="th-label width-quitar"></th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-pago let-idx="rowIndex">
+        <tr>
+          <td>
+            <p-select
+              size="small"
+              [options]="formasPago()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              [(ngModel)]="pago.formapagoId"
+              [ngModelOptions]="{ standalone: true }"
+              [appendTo]="'body'"
+              (onChange)="onFormaPagoChange(pago)"
+            />
+          </td>
+          <td>
+            @if (esTarjeta(pago)) {
+            <p-select
+              size="small"
+              [options]="tarjetasCredito()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              showClear
+              [(ngModel)]="pago.tarjetacreditoId"
+              [ngModelOptions]="{ standalone: true }"
+              [appendTo]="'body'"
+            />
+            }
+          </td>
+          <td>
+            @if (esTarjeta(pago)) {
+            <input
+              pInputText
+              [pSize]="'small'"
+              [(ngModel)]="pago.nrotarjeta"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Nro. tarjeta"
+              class="w-full"
+            />
+            }
+          </td>
+          <td>
+            @if (esTarjeta(pago) || esTransferencia(pago)) {
+            <input
+              pInputText
+              [pSize]="'small'"
+              [(ngModel)]="pago.nroautorizacion"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Autorización"
+              class="w-full"
+            />
+            }
+          </td>
+          <td>
+            <p-inputnumber
+              [size]="'small'"
+              [(ngModel)]="pago.importe"
+              [ngModelOptions]="{ standalone: true }"
+              [min]="0"
+              mode="currency"
+              currency="HNL"
+              [locale]="'es-HN'"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [useGrouping]="true"
+              [inputStyle]="{ 'width': '100%' }"
+              styleClass="w-full"
+            />
+          </td>
+          <td class="text-center">
+            <p-button
+              icon="pi pi-times"
+              [rounded]="true"
+              severity="danger"
+              [size]="'small'"
+              (onClick)="quitarPago(idx)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-3">
+            Sin formas de pago. Presione "Agregar pago" para comenzar.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="grid w-full">
+      <div class="col-12 md:col-6 lg:col-3">
+        <span>Total Orden:</span>
+        <span class="font-bold">{{ moneda(totalOrden()) }}</span>
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        <span>Total Pagos:</span>
+        <span
+          class="font-bold"
+          [class.text-ok]="totalPagos() >= totalOrden()"
+          [class.text-warn]="totalPagos() < totalOrden() && totalPagos() > 0"
+          >{{ moneda(totalPagos()) }}</span
+        >
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        @if (pendiente() > 0) {
+        <span>Pendiente:</span>
+        <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span>
+        }
+      </div>
+      <div class="col-12 md:col-6 lg:col-3">
+        @if (cambioTotal() > 0) {
+        <span>Cambio:</span>
+        <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span>
+        }
+      </div>
+    </div>
+
+    <div class="pago-dialog-actions">
+      <p-button
+        type="button"
+        label="Cancelar"
+        icon="pi pi-times"
+        variant="text"
+        severity="secondary"
+        [size]="'small'"
+        [rounded]="true"
+        [disabled]="ocupado()"
+        (onClick)="dialogPago.set(false)"
+      />
+      <p-button
+        type="button"
+        label="Facturar"
+        icon="pi pi-shopping-cart"
+        [loading]="ocupado()"
+        [size]="'small'"
+        severity="success"
+        variant="text"
+        [rounded]="true"
+        [disabled]="!formularioPagoValido()"
+        (onClick)="confirmarPago()"
+      />
+    </div>
   </ng-template>
 </p-dialog>

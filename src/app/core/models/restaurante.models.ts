@@ -32,6 +32,8 @@ export interface OrdenItem {
   /** Bruto de la línea: cantidad × precio (igual que pedido-form) */
   subtotal: number;
   nrofila: number;
+  /** 'S' = entregado a la mesa; 'N' = pendiente (en cocina) */
+  sn_entregado: 'S' | 'N';
 }
 
 export interface MesaVista {
@@ -44,15 +46,28 @@ export interface ConfigISV {
   tasa: number;
   /** true = el precio de venta ya incluye ISV */
   incluido: boolean;
+  /**
+   * ttipoparametros (módulo 3).field = sn_imprimefactura: si es 'S' se
+   * imprime el ticket al cobrar; si no, no se imprime nada en pantalla.
+   */
+  snImprimeFactura: boolean;
 }
 
+/** Fila de la tabla de pagos — misma estructura que PagoPedido/PagoFactura */
 export interface PagoOrden {
-  formapagoId: number;
-  efectivo_recibido?: number;
+  formapagoId: number | null;
+  tarjetacreditoId: number | null;
+  nrotarjeta: string;
+  nroautorizacion: string;
+  importe: number;
+  /** true si la forma de pago es efectivo (importe_efectivo vs importe_otros) */
+  esEfectivo: boolean;
 }
 
 export interface FacturaResultado {
   facturaId: number;
   nrofactura: number;
   total: number;
+  /** true = pago por link TodoPago: la factura nace pendiente de confirmación */
+  conLink?: boolean;
 }
