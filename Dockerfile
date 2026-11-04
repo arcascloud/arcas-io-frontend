@@ -6,8 +6,8 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias (incluyendo el postinstall de PrimeNG)
-RUN npm install
+# Instalar dependencias usando --legacy-peer-deps para evitar conflictos de peer dependencies con Angular 22
+RUN npm install --legacy-peer-deps
 
 # Copiar el código fuente
 COPY . .
