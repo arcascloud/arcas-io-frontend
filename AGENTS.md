@@ -1734,7 +1734,11 @@ this.confirmationService.confirm({
   - **Prueba E2E local (`test-venta-libre.js`)**: 10/10 OK (crear, filtrar, agregar ítem sin mesa, verificar total, eliminar, 0 residuos).
   - `npm run build` ✅.
 
-### Pendiente
-- **Pantalla/monitor de cocina**: diferida a la siguiente iteración (decisión del usuario); el endpoint de estado ya queda disponible
-- **Catálogo cocina**: marcar los productos de cocina con `sn_enviar_a_cocina='S'` en Productos → Editar → "Enviar a Cocina" (los 33 están en `'N'`)
+#### Restaurante — Corrección rebaja de existencia y actualización en UI
+- **Backend (`facturacion.service.ts`)**:
+  - Corregido `moduloId: 1` por `moduloId: 3` (Facturación) en `procesarKardexFactura` y `registrarKardexReversa` para satisfacer la FK `fk_invkardex_tmodulos`.
+  - Eliminado el `try/catch` silencioso en `checkoutPedido` y `checkoutTienda` y agregado `throw new BadRequestException` si el kardex falla, asegurando que cualquier error de stock insuficiente o validación detenga el cobro y alerte al usuario en lugar de fallar silenciosamente sin rebajar inventario.
+- **Frontend (`restaurante.ts`)**:
+  - Agregado `this.cargarProductos()` tras un cobro exitoso (`confirmarPago`), invalidando la caché de `TiendaService` y refrescando instantáneamente las existencias de los productos en la pantalla de restaurante.
+- `npm run build` ✅.
 - Deploy a Cloudflare (`_worker.js` sin commitear + build prod) cuando el usuario lo indique

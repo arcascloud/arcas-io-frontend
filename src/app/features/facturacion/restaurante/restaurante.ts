@@ -590,7 +590,8 @@ export class Restaurante implements OnInit {
       .subscribe({
         next: (data: any) =>
           this.impresion.imprimir(data).catch(() => {
-            this.msg.add({
+        this.cargarProductos();
+        this.msg.add({
               severity: 'warn',
               summary: 'Impresión',
               detail: 'No se pudo imprimir la factura',
