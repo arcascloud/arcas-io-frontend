@@ -19,14 +19,14 @@ export class TiendaService {
   getProductos(forceRefresh = false): Observable<ProductoTienda[]> {
     if (forceRefresh) {
       this.invalidateCache();
-    }
+    } else {
+      if (this.productosCache$) return this.productosCache$;
 
-    if (this.productosCache$) return this.productosCache$;
-
-    const cached = this.leerCache();
-    if (cached) {
-      this.productosCache$ = of(cached).pipe(shareReplay(1));
-      return this.productosCache$;
+      const cached = this.leerCache();
+      if (cached) {
+        this.productosCache$ = of(cached).pipe(shareReplay(1));
+        return this.productosCache$;
+      }
     }
 
     this.productosCache$ = this.api.get<ProductoTienda[]>('/inventario/tienda/productos').pipe(
