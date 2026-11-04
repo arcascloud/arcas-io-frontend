@@ -28,6 +28,8 @@ import { Categoria } from '../../../core/models/inventario.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { CarritoStateService } from '../../../core/services/carrito-state.service';
 import { ApiService } from '../../../core/services/api.service';
+import { TableModule } from 'primeng/table';
+import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 import { LoginDialog } from '../../../layout/login-dialog/login-dialog';
 import { RegistroDialog } from '../../../layout/registro-dialog/registro-dialog';
 
@@ -38,7 +40,7 @@ import { RegistroDialog } from '../../../layout/registro-dialog/registro-dialog'
     CommonModule, FormsModule, DataViewModule, ButtonModule, DialogModule,
     InputNumberModule, InputTextModule, InputMaskModule, SelectModule, TagModule, ToastModule,
     BadgeModule, TooltipModule, MessageModule, GalleriaModule, BreadcrumbModule, MultiSelectModule,
-    LoginDialog, RegistroDialog,
+    LoginDialog, RegistroDialog, TableModule,
   ],
   providers: [],
   templateUrl: './tienda-virtual.html',
@@ -55,6 +57,10 @@ export class TiendaVirtual implements OnInit {
   private route = inject(ActivatedRoute);
   readonly filtroService = inject(TiendaFiltroService);
   private categoriasService = inject(CategoriasService);
+  private impresion = inject(FacturaImpresionService);
+
+  dialogResumenVenta = signal(false);
+  resumenVentaData = signal<any>(null);
 
   /** true si hay sesión activa — el botón "Pagar" solo se habilita autenticado (tienda es pública) */
   readonly autenticado = this.auth.isAuthenticated;
@@ -546,15 +552,51 @@ export class TiendaVirtual implements OnInit {
             summary: 'Venta procesada',
             detail: `Factura #${resp.nrofactura} — Total: L ${resp.total.toFixed(2)}`,
           });
-          this.limpiarTodo();
+          this.dialogCheckout.set(false);
           this.tiendaService.invalidateCache();
           this.procesando.set(false);
+
+          this.api.get<any>(`/facturacion/facturas/${resp.facturaId}/ticket`)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: (ticketData) => {
+                this.resumenVentaData.set(ticketData);
+                this.dialogResumenVenta.set(true);
+                this.limpiarTodo();
+              },
+              error: () => {
+                this.limpiarTodo();
+              }
+            });
         },
         error: () => {
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo procesar el pago' });
           this.procesando.set(false);
         },
       });
+  }
+
+  descargarPdfResumen() {
+    const data = this.resumenVentaData();
+    if (data) {
+      this.impresion.descargar(data).catch(() => {
+        this.messageService.add({ severity: 'warn', summary: 'PDF', detail: 'No se pudo generar el PDF' });
+      });
+    }
+  }
+
+  imprimirPdfResumen() {
+    const data = this.resumenVentaData();
+    if (data) {
+      this.impresion.imprimir(data).catch(() => {
+        this.messageService.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudo imprimir' });
+      });
+    }
+  }
+
+  cerrarResumenVenta() {
+    this.dialogResumenVenta.set(false);
+    this.resumenVentaData.set(null);
   }
 
   limpiarTodo() {

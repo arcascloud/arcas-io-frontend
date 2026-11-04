@@ -20,6 +20,8 @@ import { ProductoTienda, PedidoItem, CheckoutPedido } from '../../../core/models
 import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { TableModule } from 'primeng/table';
+import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 import { NavegacionService } from '../../../core/services/navegacion.service';
 
 @Component({
@@ -28,7 +30,7 @@ import { NavegacionService } from '../../../core/services/navegacion.service';
   imports: [
     CommonModule, FormsModule, DataViewModule, ButtonModule, DialogModule,
     InputNumberModule, InputTextModule, InputMaskModule, SelectModule, TagModule, ToastModule,
-    TooltipModule, MessageModule, GalleriaModule,
+    TooltipModule, MessageModule, GalleriaModule, TableModule,
   ],
   providers: [],
   templateUrl: './pedidos-virtual.html',
@@ -43,6 +45,10 @@ export class PedidosVirtual implements OnInit {
   private route = inject(ActivatedRoute);
   private navegacion = inject(NavegacionService);
   private router = inject(Router);
+  private impresion = inject(FacturaImpresionService);
+
+  dialogResumenVenta = signal(false);
+  resumenVentaData = signal<any>(null);
 
   productos = signal<ProductoTienda[]>([]);
   pedidoItems = signal<PedidoItem[]>([]);
@@ -668,15 +674,51 @@ export class PedidosVirtual implements OnInit {
             summary: 'Pedido facturado',
             detail: `Factura #${resp.nrofactura} — Total: L ${Number(resp.total).toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           });
-          this.limpiarTodo();
+          this.dialogCheckout.set(false);
           this.pedidosService.invalidateCache();
           this.procesando.set(false);
+
+          this.api.get<any>(`/facturacion/facturas/${resp.facturaId}/ticket`)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: (ticketData) => {
+                this.resumenVentaData.set(ticketData);
+                this.dialogResumenVenta.set(true);
+                this.limpiarTodo();
+              },
+              error: () => {
+                this.limpiarTodo();
+              }
+            });
         },
         error: () => {
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo procesar el pedido' });
           this.procesando.set(false);
         },
       });
+  }
+
+  descargarPdfResumen() {
+    const data = this.resumenVentaData();
+    if (data) {
+      this.impresion.descargar(data).catch(() => {
+        this.messageService.add({ severity: 'warn', summary: 'PDF', detail: 'No se pudo generar el PDF' });
+      });
+    }
+  }
+
+  imprimirPdfResumen() {
+    const data = this.resumenVentaData();
+    if (data) {
+      this.impresion.imprimir(data).catch(() => {
+        this.messageService.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudo imprimir' });
+      });
+    }
+  }
+
+  cerrarResumenVenta() {
+    this.dialogResumenVenta.set(false);
+    this.resumenVentaData.set(null);
   }
 
   limpiarTodo() {

@@ -488,3 +488,115 @@ size="small"             [(ngModel)]="checkout.tarjetacreditoId"
 
 <app-login-dialog #loginGate (registro)="registroGate.abrir()" (loginExito)="abrirCheckout()" />
 <app-registro-dialog #registroGate (solicitarLogin)="loginGate.abrir()" />
+
+<!-- Diálogo de Resumen de Venta / Order Summary (Poseidon template style) -->
+<p-dialog
+  [(visible)]="dialogResumenVenta"
+  header="Resumen de Venta / Orden Completada"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '85vw', '640px': '95vw' }"
+  [style]="{ width: '60vw' }"
+>
+  @if (resumenVentaData(); as data) {
+    <div class="flex flex-column gap-3 p-2">
+      <div class="flex align-items-center justify-content-between bg-emerald-50 p-3 border-round">
+        <div>
+          <h3 class="m-0 text-emerald-800 font-bold">¡Pedido realizado con éxito!</h3>
+          <p class="m-0 text-sm text-650">Factura #{{ data.factura?.nrofactura }}</p>
+        </div>
+        <i class="pi pi-check-circle text-emerald-600 text-3xl"></i>
+      </div>
+
+      <div class="grid grid-nogutter gap-2 text-sm">
+        <div class="col-12 md:col-6 p-2 surface-card border-round">
+          <span class="text-color-secondary block mb-1">Cliente</span>
+          <strong>{{ data.factura?.nombrecliente || 'CONSUMIDOR FINAL' }}</strong>
+          <span class="block text-xs text-color-secondary mt-1">RTN: {{ data.factura?.rtn_cliente || 'N/A' }}</span>
+        </div>
+        <div class="col-12 md:col-6 p-2 surface-card border-round">
+          <span class="text-color-secondary block mb-1">Fecha y Condición</span>
+          <strong>{{ data.factura?.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</strong>
+          <span class="block text-xs text-color-secondary mt-1">Condición: Contado</span>
+        </div>
+      </div>
+
+      <!-- Tabla de ítems -->
+      <p-table [value]="data.detalles || []" size="small" [tableStyle]="{ 'min-width': '100%' }">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Producto</th>
+            <th class="text-right">Cant</th>
+            <th class="text-right">Precio</th>
+            <th class="text-right">Total</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td>{{ item.descripcion || item.codbarra }}</td>
+            <td class="text-right">{{ item.cantidad }}</td>
+            <td class="text-right">{{ item.precioventa | currency:'HNL':'symbol':'2.2-2' }}</td>
+            <td class="text-right">{{ item.subTotal | currency:'HNL':'symbol':'2.2-2' }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <!-- Totales -->
+      <div class="flex flex-column align-items-end gap-1 p-3 surface-card border-round text-sm">
+        <div class="flex justify-content-between w-12 md:w-6">
+          <span>Subtotal:</span>
+          <strong>{{ data.factura?.subTotal | currency:'HNL':'symbol':'2.2-2' }}</strong>
+        </div>
+        <div class="flex justify-content-between w-12 md:w-6">
+          <span>ISV / Impuesto:</span>
+          <strong>{{ data.factura?.impuesto | currency:'HNL':'symbol':'2.2-2' }}</strong>
+        </div>
+        @if (data.factura?.descuento > 0) {
+          <div class="flex justify-content-between w-12 md:w-6">
+            <span>Descuento:</span>
+            <strong>- {{ data.factura?.descuento | currency:'HNL':'symbol':'2.2-2' }}</strong>
+          </div>
+        }
+        <div class="flex justify-content-between w-12 md:w-6 border-top-1 surface-border pt-2 text-base font-bold text-primary">
+          <span>Total:</span>
+          <span>{{ data.factura?.total | currency:'HNL':'symbol':'2.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-content-between w-full align-items-center">
+      <p-button
+        size="small"
+        label="Descargar PDF"
+        icon="pi pi-file-pdf"
+        severity="contrast"
+        variant="outlined"
+        [rounded]="true"
+        (onClick)="descargarPdfResumen()"
+      />
+      <div class="flex gap-2">
+        <p-button
+          size="small"
+          label="Imprimir"
+          icon="pi pi-print"
+          severity="secondary"
+          variant="text"
+          [rounded]="true"
+          (onClick)="imprimirPdfResumen()"
+        />
+        <p-button
+          size="small"
+          label="Aceptar / Nueva Venta"
+          icon="pi pi-check"
+          severity="success"
+          [rounded]="true"
+          [raised]="true"
+          (onClick)="cerrarResumenVenta()"
+        />
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
