@@ -1,4 +1,4 @@
---- ETAPA 1: Servir la aplicación con Nginx ---
+#--- ETAPA 1: Servir la aplicación con Nginx ---
 FROM nginx:alpine
 
 # Opcional: Eliminar la página de bienvenida por defecto de Nginx
