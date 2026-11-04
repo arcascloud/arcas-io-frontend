@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -50,6 +50,7 @@ export class Restaurante implements OnInit {
   private msg = inject(MessageService);
   private impresion = inject(FacturaImpresionService);
   private destroyRef = inject(DestroyRef);
+  private cdr = inject(ChangeDetectorRef);
 
   readonly mesasNumeros = Array.from({ length: NUM_MESAS }, (_, i) => i + 1);
 
@@ -134,15 +135,17 @@ export class Restaurante implements OnInit {
 
   ngOnInit() {
     this.configurarResponsive();
-    this.srv.cargarISV().subscribe((cfg) => this.isv.set(cfg));
+    this.srv.cargarISV().subscribe((cfg) => { this.isv.set(cfg); this.cdr.markForCheck(); });
     this.cargarProductos();
     this.cargarOrdenes();
-    this.srv.getFormasPago().subscribe((f) => this.formasPago.set(f));
+    this.srv.getFormasPago().subscribe((f) => { this.formasPago.set(f); this.cdr.markForCheck(); });
     this.api.get<{ tarjetacreditoId: number; descripcion: string }[]>('/parametros/tarjetas-credito').subscribe({
-      next: (data) =>
+      next: (data) => {
         this.tarjetasCredito.set(
           (data ?? []).map((t) => ({ label: t.descripcion, value: t.tarjetacreditoId })),
-        ),
+        );
+        this.cdr.markForCheck();
+      },
     });
 
     // Refresca el "hace X min" de la lista de entregas pendientes
@@ -158,18 +161,26 @@ export class Restaurante implements OnInit {
         const lista = (p ?? []).filter((prod) => prod.tipo_giro === 'R');
         this.productos.set(lista);
         this.cargandoProductos.set(false);
+        this.cdr.markForCheck();
       },
       error: () => {
         this.cargandoProductos.set(false);
         this.error('No se pudieron cargar los productos');
+        this.cdr.markForCheck();
       },
     });
   }
 
   private cargarOrdenes() {
     this.srv.getOrdenesAbiertas().subscribe({
-      next: (lista) => this.ordenes.set(lista),
-      error: () => this.error('No se pudieron cargar las órdenes abiertas'),
+      next: (lista) => {
+        this.ordenes.set(lista);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.error('No se pudieron cargar las órdenes abiertas');
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -574,6 +585,8 @@ export class Restaurante implements OnInit {
         this.items.set([]);
         this.dialogPago.set(false);
         this.ocupado.set(false);
+        this.cargarProductos();
+        this.cdr.markForCheck();
         this.msg.add({
           severity: f.conLink ? 'info' : 'success',
           summary: `Factura #${f.nrofactura}`,
