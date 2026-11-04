@@ -1,37 +1,17 @@
-# To change this license header, choose License Headers in Project Properties.
-# To change this template file, choose Tools | Templates
-# and open the template in the editor.
+--- ETAPA 1: Servir la aplicación con Nginx ---
+FROM nginx:alpine
 
-FROM jboss/wildfly:18.0.1.Final
+# Opcional: Eliminar la página de bienvenida por defecto de Nginx
+RUN rm -rf /usr/share/nginx/html/*
 
-COPY ./target/planilla.war /opt/jboss/wildfly/standalone/deployments/
-RUN /opt/jboss/wildfly/bin/add-user.sh admin Admin#123 --silent
+# Copiar el archivo de configuración personalizado de Nginx
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# JBoss ports
-EXPOSE 8080 9990 8009
+# Copiar la carpeta compilada de Angular al directorio que lee Nginx
+COPY dist/arcas-software/browser /usr/share/nginx/html
 
-CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "0.0.0.0", "-bmanagement", "0.0.0.0","-c", "standalone-ha.xml"]
+# Exponer el puerto 80 para acceder via web
+EXPOSE 80
 
-#RUN /bin/bash -c "echo '#!/bin/bash' > /tmp/jboss.sh"
-# IPADDRESS
-#RUN /bin/bash -c "echo 'IPADDRESS=\$(hostname -i)' >> /tmp/jboss.sh"
-#RUN /bin/bash -c "echo 'echo \"IPADDRESS=\$IPADDRESS\"' >> /tmp/jboss.sh"
-# MODIFY standalone-ha.xml
-#RUN /bin/bash -c "echo $'/opt/jboss/wildfly/bin/jboss-cli.sh <<EOF \n\
-#embed-server --std-out=echo --server-config=standalone-ha.xml \n\
-#/interface=multicast:add(inet-address=\$IPADDRESS) \n\
-#/socket-binding-group=standard-sockets/socket-binding=jgroups-mping:write-attribute(name=interface, value=multicast) \n\
-#/socket-binding-group=standard-sockets/socket-binding=jgroups-tcp:write-attribute(name=interface, value=multicast) \n\
-#/socket-binding-group=standard-sockets/socket-binding=jgroups-udp:write-attribute(name=interface, value=multicast) \n\
-#quit \n\
-#EOF\n'\
-#>> /tmp/jboss.sh"
-
-#RUN /bin/bash -c "echo \"/opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 -bmanagement 0.0.0.0 -server-config=standalone-ha.xml\" >> /tmp/jboss.sh"
-#RUN /bin/bash -c "chmod +x /tmp/jboss.sh"
-
-# START WILDFLY
-#CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "0.0.0.0", "-bmanagement", "0.0.0.0", "-server-config=standalone-ha.xml"]
-#CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "192.168.0.101", "-c", "standalone-ha.xml","-bmanagement", "192.168.0.101"]
-#CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "192.168.0.102", "-c", "standalone-ha.xml", "-bmanagement", "192.168.0.102"]
-#CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "192.168.0.108", "-c", "standalone-ha.xml", "-bmanagement", "192.168.0.108"]
+# Iniciar Nginx en primer plano para que el contenedor no se cierre
+CMD ["nginx", "-g", "daemon off;"]

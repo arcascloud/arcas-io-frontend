@@ -258,6 +258,34 @@
   /* Modifica el padding general del contenedor de contenido */
 }
 
+.p-datatable.p-datatable-sm .p-datatable-header {
+  padding: 0.72845rem 0.85rem;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-thead>tr>th {
+  padding: 0.28535rem 0.72845rem;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-tbody>tr>td {
+  padding: 0.28535rem 0.72845rem;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-tfoot>tr>td {
+  padding: 0.48535rem 0.85rem;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-footer {
+  padding: 0.48535rem 0.85rem;
+}
+
+.p-button.p-button-sm {
+  font-size: 0.875rem;
+  padding: 0.375375rem 0.875rem;
+}
+
+.p-button.p-button-sm .p-button-icon {
+  font-size: 0.875rem;
+}
 ::ng-deep .p-dataview .p-dataview-content .dataview-item {
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
