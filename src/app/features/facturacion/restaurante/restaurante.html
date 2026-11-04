@@ -41,7 +41,7 @@
         label="Buscar"
         icon="pi pi-search"
         severity="secondary"
-        [rounded]="true"
+        [rounded="true"
         (onClick)="buscarProducto()"
         pTooltip="Presione enter para buscar producto"
         tooltipPosition="bottom"
@@ -308,7 +308,6 @@
       @if (ordenActiva(); as o) {
         <div class="pago-resumen">
           <span>{{ etiquetaMesa(o) }} · Orden #{{ o.pospedmaeId }}</span>
-          <strong>{{ moneda(o.total) }}</strong>
         </div>
       }
 
