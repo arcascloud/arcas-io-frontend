@@ -1,13 +1,13 @@
 {
   "name": "hn",
   "compatibility_date": "2026-11-02",
-  "main": "_worker.js",
   "assets": {
-    "directory": "./dist/arcas-software/browser"
+    "directory": "./dist/arcas-software/browser",
+    "not_found_handling": "single-page-application",
   },
   "vars": {
     "API_URL": "https://arcas-io-backend.onrender.com/api",
     "PRODUCTION": "true",
-    "CURRENCY_SYMBOL": "L "
-  }
+    "CURRENCY_SYMBOL": "L ",
+  },
 }
