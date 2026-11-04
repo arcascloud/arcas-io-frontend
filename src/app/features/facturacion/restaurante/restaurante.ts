@@ -200,6 +200,48 @@ export class Restaurante implements OnInit {
     });
   }
 
+  /**
+   * Venta libre: pedido SIN mesa (nromesa = 0) para locales con concepto mixto
+   * tienda/restaurante. Cada pulso abre un pedido nuevo (tickets paralelos en
+   * la lista "Pedidos"); si la orden activa ya es una venta libre SIN productos
+   * no se crea otra (evita duplicados por doble clic).
+   */
+  ventaLibre() {
+    if (this.ocupado()) return;
+
+    const actual = this.ordenActiva();
+    if (actual && (actual.nromesa ?? 0) < 1 && this.items().length === 0) {
+      this.msg.add({
+        severity: 'info',
+        summary: `Venta libre #${actual.pospedmaeId}`,
+        detail: 'Ya hay una venta libre abierta y sin productos.',
+      });
+      return;
+    }
+
+    this.ocupado.set(true);
+    this.srv.crearOrden(0).subscribe({
+      next: (o) => {
+        this.ordenes.update((l) => [...l, o]);
+        this.ordenActivaId.set(o.pospedmaeId);
+        this.mesaSeleccionada.set(null);
+        this.items.set([]);
+        this.ocupado.set(false);
+        this.msg.add({
+          severity: 'success',
+          summary: 'Venta libre',
+          detail: `Pedido #${o.pospedmaeId} abierto sin mesa.`,
+        });
+      },
+      error: (e) => this.fallo(e, 'No se pudo abrir la venta libre'),
+    });
+  }
+
+  /** Etiqueta de cabecera/lista: 'Mesa 3' para mesas, 'Venta libre' sin mesa. */
+  etiquetaMesa(o: OrdenRestaurante): string {
+    return (o.nromesa ?? 0) >= 1 ? `Mesa ${o.nromesa}` : 'Venta libre';
+  }
+
   /** Mesa con orden → abrir su orden. Mesa libre → seleccionarla (para "Nueva orden"). */
   clickMesa(mesa: MesaVista) {
     if (this.ocupado()) return;
@@ -239,11 +281,11 @@ export class Restaurante implements OnInit {
   agregarProducto(p: ProductoTienda) {
     const orden = this.ordenActiva();
     if (!orden) {
-      this.msg.add({ severity: 'warn', summary: 'Sin orden', detail: 'Cree una orden o elija una mesa ocupada.' });
-      return;
-    }
-    if (!(orden.nromesa >= 1)) {
-      this.msg.add({ severity: 'warn', summary: 'Sin mesa', detail: 'La orden no tiene mesa asignada.' });
+      this.msg.add({
+        severity: 'warn',
+        summary: 'Sin orden',
+        detail: 'Cree una orden ("Nueva orden" en una mesa, o "Venta libre").',
+      });
       return;
     }
     if (this.ocupado()) return;
@@ -519,8 +561,8 @@ export class Restaurante implements OnInit {
           severity: f.conLink ? 'info' : 'success',
           summary: `Factura #${f.nrofactura}`,
           detail: f.conLink
-            ? `Mesa ${orden.nromesa}: pago TodoPago pendiente de confirmación`
-            : `Mesa ${orden.nromesa} cobrada: ${this.moneda(f.total)} (${pagosEnviar.length} pago(s))`,
+            ? `${this.etiquetaMesa(orden)}: pago TodoPago pendiente de confirmación`
+            : `${this.etiquetaMesa(orden)} cobrada: ${this.moneda(f.total)} (${pagosEnviar.length} pago(s))`,
         });
         // Ticket solo si ttipoparametros (módulo 3).sn_imprimefactura = 'S':
         // mismo motor que Nueva Factura (GET /facturas/:id/ticket +

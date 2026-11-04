@@ -106,6 +106,22 @@
           <span class="punto ocupada"></span> Con orden
         </p>
 
+        <!-- Fila 4 · Venta libre: pedido sin mesa (concepto mixto tienda/restaurante) -->
+        <div class="venta-libre-fila">
+          <p-button
+            label="Venta libre"
+            icon="pi pi-shop"
+            severity="warn"
+            [size]="'small'"
+            styleClass="w-full"
+            [disabled]="ocupado()"
+            pTooltip="Abrir un pedido sin reservar mesa"
+            tooltipPosition="bottom"
+            (onClick)="ventaLibre()"
+          />
+        </div>
+
+        <!-- Fila 5 · Pedidos abiertos + Nueva orden -->
         <div class="pedidos-cabecera">
           <h3 class="col-subtitulo">
             Pedidos
@@ -130,13 +146,13 @@
         }
 
         @if (pedidos().length === 0) {
-          <p class="vacio-texto">Sin pedidos. Seleccione una mesa libre y pulse "Nueva orden".</p>
+          <p class="vacio-texto">Sin pedidos. Seleccione una mesa libre y pulse "Nueva orden", o pulse "Venta libre".</p>
         } @else {
           <ul class="pendientes">
             @for (o of pedidos(); track o.pospedmaeId) {
               <li class="pendiente" [class.seleccionada]="o.pospedmaeId === ordenActivaId()">
                 <button type="button" class="pendiente-info" (click)="seleccionarOrden(o.pospedmaeId)">
-                  <strong>Mesa {{ o.nromesa }}</strong>
+                  <strong>{{ etiquetaMesa(o) }}</strong>
                   <span>
                     Orden #{{ o.pospedmaeId }} · hace {{ minutos(o) }} min@if (o.sn_entregado === 'S') { · entregado }
                   </span>
@@ -152,8 +168,8 @@
         @if (ordenActiva(); as o) {
           <header class="col-cabecera">
             <h2 class="col-titulo">Orden #{{ o.pospedmaeId }}</h2>
-            <span class="orden-mesa" [class.sin-mesa]="o.nromesa == null">
-              {{ o.nromesa != null ? 'Mesa ' + o.nromesa : 'Sin mesa' }}
+            <span class="orden-mesa" [class.sin-mesa]="(o.nromesa ?? 0) < 1">
+              {{ etiquetaMesa(o) }}
             </span>
           </header>
 
@@ -222,7 +238,7 @@
           <header class="col-cabecera"><h2 class="col-titulo">Orden</h2></header>
           <div class="rest-estado rest-vacio">
             <i class="pi pi-receipt"></i>
-            <p>Seleccione una mesa con orden para ver su detalle, o elija una mesa libre y pulse "Nueva orden".</p>
+            <p>Seleccione una mesa con orden para ver su detalle, o cree una con "Nueva orden" / "Venta libre".</p>
           </div>
         }
       </section>
@@ -252,12 +268,12 @@
   [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
 >
   <div class="pago-dialog-body">
-    @if (ordenActiva(); as o) {
-      <div class="pago-resumen">
-        <span>Mesa {{ o.nromesa }} · Orden #{{ o.pospedmaeId }}</span>
-        <strong>{{ moneda(o.total) }}</strong>
-      </div>
-    }
+      @if (ordenActiva(); as o) {
+        <div class="pago-resumen">
+          <span>{{ etiquetaMesa(o) }} · Orden #{{ o.pospedmaeId }}</span>
+          <strong>{{ moneda(o.total) }}</strong>
+        </div>
+      }
 
     <div class="pago-add-row">
       <p-button

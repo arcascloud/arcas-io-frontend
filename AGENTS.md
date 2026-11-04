@@ -1723,6 +1723,17 @@ this.confirmationService.confirm({
 - Endpoint verificado en prod: `GET /facturas/38/ticket?empresaId=2` → 200 (empresa AUTOSEL, detalles/pagos OK); `ApiService.get` inyecta `empresaId` → suficiente
 - `takeUntilDestroyed` viene de `@angular/core/rxjs-interop` (NO de `@angular/core`)
 
+#### Restaurante — Venta libre (pedidos sin mesa)
+- **Concepto**: Permitir abrir y cobrar pedidos sin reservar mesa para locales con modelo mixto tienda/restaurante.
+- **Implementación**:
+  - Botón "Venta libre" en la columna de mesas (Row 4, severity warn, icono `pi pi-shop`).
+  - Envía pedidos con `nromesa: 0` y `nombrecliente: 'Venta Libre'`. Backend (`validarMesaLibre` y `createPedido`) ya soporta `nromesa < 1` sin cambios.
+  - Filtro `getOrdenesAbiertas()` incluye `nromesa < 1` **solo si** `nombrecliente` es `'Venta Libre'` (excluye pedidos web/CRM con mesa 0 y huérfanos).
+  - Método `ventaLibre()` en componente con guard anti-duplicados (si la orden activa ya es una venta libre vacía, avisa y no duplica).
+  - Listado de pedidos, cabecera de orden y diálogo de pago adaptados con el helper `etiquetaMesa(o)` para mostrar "Venta libre" en vez de "Mesa 0".
+  - **Prueba E2E local (`test-venta-libre.js`)**: 10/10 OK (crear, filtrar, agregar ítem sin mesa, verificar total, eliminar, 0 residuos).
+  - `npm run build` ✅.
+
 ### Pendiente
 - **Pantalla/monitor de cocina**: diferida a la siguiente iteración (decisión del usuario); el endpoint de estado ya queda disponible
 - **Catálogo cocina**: marcar los productos de cocina con `sn_enviar_a_cocina='S'` en Productos → Editar → "Enviar a Cocina" (los 33 están en `'N'`)

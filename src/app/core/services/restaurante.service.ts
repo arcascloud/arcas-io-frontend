@@ -16,7 +16,14 @@ import {
  *
  * Requiere las columnas nuevas pospedmae.nromesa y pospedmae.sn_entregado
  * (ver CAMBIOS-BACKEND.md).
+ *
+ * VENTA LIBRE = pedido sin mesa (nromesa = 0, nombrecliente = 'Venta Libre')
+ * para locales con concepto mixto tienda de conveniencia + restaurante.
+ * Ese nombre es el que distingue estas órdenes de los pedidos web/CRM de la
+ * misma tabla (también con nromesa 0) — no existe columna de origen.
  */
+export const VENTA_LIBRE = 'Venta Libre';
+
 @Injectable({ providedIn: 'root' })
 export class RestauranteService {
   private api = inject(ApiService);
@@ -63,10 +70,11 @@ export class RestauranteService {
   // ───────────────────────── Órdenes ─────────────────────────
 
   /**
-   * Órdenes abiertas del restaurante: sin facturar, de HOY y con mesa asignada
-   * (nromesa >= 1). Los pedidos "huérfanos" con mesa 0 o sin mesa —y los de días
-   * anteriores— no interesan y quedan fuera, igual que los pedidos de la tienda
-   * virtual que viven en la misma tabla.
+   * Órdenes abiertas del restaurante: sin facturadas, de HOY y con mesa asignada
+   * (nromesa >= 1) **o** venta libre (nombrecliente = 'Venta Libre', nromesa 0).
+   * Los pedidos "huérfanos" con mesa 0 —y los de la tienda virtual/CRM que
+   * viven en la misma tabla con nromesa 0— quedan fuera por nombre, igual que
+   * los de días anteriores.
    *
    * "Hoy" NO se calcula con new Date() del navegador: el backend guarda
    * fecharegistro como fecha de negocio a medianoche UTC (p.ej.
@@ -91,7 +99,8 @@ export class RestauranteService {
             if (o.sn_facturado !== 'N') return false;
 
             const nromesa = o.nromesa != null ? Number(o.nromesa) : 0;
-            if (nromesa < 1) return false; // sin mesa real no es una orden de restaurante
+            const esVentaLibre = String(o.nombrecliente ?? '').trim().toUpperCase() === VENTA_LIBRE.toUpperCase();
+            if (nromesa < 1 && !esVentaLibre) return false; // web/CRM/tienda u huérfanos
 
             const dia = this.fechaDia(o.fecharegistro);
             if (!dia) return false;
@@ -117,13 +126,18 @@ export class RestauranteService {
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   }
 
-  /** La orden nace YA con su mesa: nunca existe un pedido sin mesa (nromesa >= 1). */
+  /**
+   * La orden nace YA con su mesa: nunca existe un pedido sin mesa (nromesa >= 1).
+   * `nromesa < 1` (0) = VENTA LIBRE: pedido sin mesa para el concepto mixto
+   * tienda/restaurante; se identifica por nombrecliente = 'Venta Libre'.
+   */
   crearOrden(nromesa: number): Observable<OrdenRestaurante> {
+    const esVentaLibre = !(nromesa >= 1);
     return this.api
       .post<OrdenRestaurante>('/facturacion/pedidos', {
-        nombrecliente: `Mesa ${nromesa}`,
+        nombrecliente: esVentaLibre ? VENTA_LIBRE : `Mesa ${nromesa}`,
         nrotelefono: 'N/A',
-        nromesa,
+        nromesa: esVentaLibre ? 0 : nromesa,
         sn_entregado: 'N',
       })
       .pipe(map((o) => this.normalizarOrden(o)));
