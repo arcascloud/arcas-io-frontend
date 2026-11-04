@@ -57,17 +57,34 @@ export class Restaurante implements OnInit {
   productos = signal<ProductoTienda[]>([]);
   cargandoProductos = signal(true);
   categoriaActiva = signal<string | null>(null);
+  busqueda = signal('');
 
-  categorias = computed(() => {
-    const cats = new Set(this.productos().map((p) => p.categoria).filter(Boolean) as string[]);
-    return Array.from(cats);
+  categoriasLista = computed(() => {
+    const base = ['Ron', 'Gaseosa', 'Cervezas', 'Platillos', 'Ensaladas', 'Whiski', 'Carnes', 'Sopas'];
+    const dinamicas = this.productos().map((p) => p.categoria).filter(Boolean) as string[];
+    const set = new Set([...base, ...dinamicas]);
+    return Array.from(set);
   });
 
   productosFiltrados = computed(() => {
     const cat = this.categoriaActiva();
+    const q = this.busqueda().trim().toLowerCase();
     const lista = this.productos();
+
+    if (q) {
+      return lista.filter((p) => {
+        const matchCod = (p.codbarra || '').toLowerCase().includes(q);
+        const matchDesc = (p.descripcion || '').toLowerCase().includes(q);
+        return matchCod || matchDesc;
+      });
+    }
+
     return cat ? lista.filter((p) => p.categoria === cat) : lista;
   });
+
+  buscarProducto() {
+    // Reactivo con signal busqueda
+  }
 
   private productoPorId = computed(() => new Map(this.productos().map((p) => [Number(p.produtoId), p])));
 

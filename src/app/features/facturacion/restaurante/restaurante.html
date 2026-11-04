@@ -3,17 +3,46 @@
 <div class="rest-layout" [class.rest-angosta]="estrecha()">
   <!-- ═════════ Columna 1 · Productos (55%) ═════════ -->
   <section class="rest-productos" aria-label="Productos">
+    <!-- Row 1: Categorías -->
     <nav class="rest-categorias" aria-label="Categorías">
-      <button type="button" class="cat-chip" [class.activa]="categoriaActiva() === null" (click)="categoriaActiva.set(null)">
+      <p-button type="button" 
+         size="small"
+      class="cat-chip" [class.activa]="categoriaActiva() === null" (click)="categoriaActiva.set(null)">
         Todos
-      </button>
-      @for (c of categorias(); track c) {
-        <button type="button" class="cat-chip" [class.activa]="categoriaActiva() === c" (click)="categoriaActiva.set(c)">
+      </p-button>
+      @for (c of categoriasLista(); track c) {
+        <p-button type="button"   size="small" class="cat-chip" [class.activa]="categoriaActiva() === c" (click)="categoriaActiva.set(c)">
           {{ c }}
-        </button>
+        </p-button>
       }
     </nav>
 
+    <!-- Row 2: Búsqueda por código de barra o nombre -->
+    <div class="rest-busqueda">
+      <input
+        pInputText
+        type="text"
+        pSize="small"
+        class="w-full"
+        [ngModel]="busqueda()"
+        (ngModelChange)="busqueda.set($event)"
+        (keyup.enter)="buscarProducto()"
+        placeholder="Buscar por código de barra o nombre de producto..."
+        pTooltip="Presione enter para buscar producto" 
+        tooltipPosition="bottom"
+      />
+      <p-button
+        size="small"
+        label="Buscar"
+        icon="pi pi-search"
+        severity="secondary"
+        (onClick)="buscarProducto()"
+        pTooltip="Presione enter para buscar producto"
+        tooltipPosition="bottom"
+      />
+    </div>
+
+    <!-- Row 3: Cards de productos -->
     @if (cargandoProductos()) {
       <div class="rest-estado">
         <i class="pi pi-spin pi-spinner"></i>
