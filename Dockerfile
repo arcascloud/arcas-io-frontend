@@ -1,17 +1,32 @@
-#--- ETAPA 1: Servir la aplicación con Nginx ---
+#--- ETAPA 1: Compilación de la aplicación con Node.js ---
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copiar archivos de dependencias
+COPY package*.json ./
+
+# Instalar dependencias (incluyendo el postinstall de PrimeNG)
+RUN npm install
+
+# Copiar el código fuente
+COPY . .
+
+# Generar environment y compilar para producción
+RUN npm run build
+
+#--- ETAPA 2: Servir la aplicación con Nginx ---
 FROM nginx:alpine
 
-# Opcional: Eliminar la página de bienvenida por defecto de Nginx
+# Eliminar la página por defecto de Nginx
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copiar el archivo de configuración personalizado de Nginx
+# Copiar configuración de Nginx para SPA
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copiar la carpeta compilada de Angular al directorio que lee Nginx
-COPY dist/arcas-software/browser /usr/share/nginx/html
+# Copiar los archivos compilados desde la etapa de compilación
+COPY --from=builder /app/dist/arcas-software/browser /usr/share/nginx/html
 
-# Exponer el puerto 80 para acceder via web
 EXPOSE 80
 
-# Iniciar Nginx en primer plano para que el contenedor no se cierre
 CMD ["nginx", "-g", "daemon off;"]
