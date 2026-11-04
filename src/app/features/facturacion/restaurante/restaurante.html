@@ -7,11 +7,16 @@
     <nav class="rest-categorias" aria-label="Categorías">
       <p-button type="button" 
          size="small"
-      class="cat-chip" [class.activa]="categoriaActiva() === null" (click)="categoriaActiva.set(null)">
+         rounded
+         severity="info"
+        [class.activa]="categoriaActiva() === null" (click)="categoriaActiva.set(null)">
         Todos
       </p-button>
       @for (c of categoriasLista(); track c) {
-        <p-button type="button"   size="small" class="cat-chip" [class.activa]="categoriaActiva() === c" (click)="categoriaActiva.set(c)">
+        <p-button type="button"  
+        severity="info" size="small" 
+        rounded 
+         [class.activa]="categoriaActiva() === c" (click)="categoriaActiva.set(c)">
           {{ c }}
         </p-button>
       }
@@ -140,8 +145,9 @@
           <p-button
             label="Venta libre"
             icon="pi pi-shop"
-            severity="warn"
+            severity="info"
             [size]="'small'"
+            [rounded]="true"
             styleClass="w-full"
             [disabled]="ocupado()"
             pTooltip="Abrir un pedido sin reservar mesa"
@@ -161,6 +167,7 @@
             icon="pi pi-plus"
             severity="success"
             [size]="'small'"
+            [rounded]="true"
             [disabled]="ocupado() || mesaSeleccionada() == null"
             pTooltip="Elija una mesa libre primero"
             tooltipPosition="left"
