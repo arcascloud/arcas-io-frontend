@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, model, DestroyRef, NgZone, ViewChild, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, model, DestroyRef, NgZone, ViewChild, effect, ChangeDetectorRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { filter, forkJoin } from 'rxjs';
@@ -28,6 +28,7 @@ import { Categoria } from '../../../core/models/inventario.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { CarritoStateService } from '../../../core/services/carrito-state.service';
 import { ApiService } from '../../../core/services/api.service';
+import { UsuariosService } from '../../../core/services/usuarios.service';
 import { TableModule } from 'primeng/table';
 import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 import { LoginDialog } from '../../../layout/login-dialog/login-dialog';
@@ -58,6 +59,8 @@ export class TiendaVirtual implements OnInit {
   readonly filtroService = inject(TiendaFiltroService);
   private categoriasService = inject(CategoriasService);
   private impresion = inject(FacturaImpresionService);
+  private usuariosService = inject(UsuariosService);
+  private cdr = inject(ChangeDetectorRef);
 
   dialogResumenVenta = signal(false);
   resumenVentaData = signal<any>(null);
@@ -254,10 +257,12 @@ export class TiendaVirtual implements OnInit {
         next: (data) => {
           this.productos.set(data);
           this.cargando.set(false);
+          this.cdr.markForCheck();
         },
         error: () => {
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los productos' });
           this.cargando.set(false);
+          this.cdr.markForCheck();
         },
       });
   }
@@ -489,18 +494,77 @@ export class TiendaVirtual implements OnInit {
       this.messageService.add({ severity: 'warn', summary: 'Carrito vacío', detail: 'Agrega productos antes de pagar' });
       return;
     }
-    this.checkout = {
-      poscotmaeId: this.carritoId()!,
-      nombrecliente: 'Cliente Tienda',
-      direccion: '',
-      formapagoId: 2,
-      efectivo_recibido: this.totalCarrito(),
-      nrotarjeta: '',
-      tarjetacreditoId: this.tarjetasCredito().length > 0 ? this.tarjetasCredito()[0].value : undefined,
-      fechaexpiracion: '',
-      cvv: '',
-    };
-    this.dialogCheckout.set(true);
+
+    const user = this.auth.currentUser();
+    const nombreCompleto = user?.nombre || user?.usuario || 'Cliente Tienda';
+    const esEmpleado = user?.tipoPersona === 'E' || user?.sn_cliente !== 'S';
+
+    if (esEmpleado) {
+      this.checkout = {
+        poscotmaeId: this.carritoId()!,
+        nombrecliente: nombreCompleto,
+        direccion: 'direccion-interna',
+        formapagoId: 2,
+        efectivo_recibido: this.totalCarrito(),
+        nrotarjeta: '',
+        tarjetacreditoId: this.tarjetasCredito().length > 0 ? this.tarjetasCredito()[0].value : undefined,
+        fechaexpiracion: '',
+        cvv: '',
+      };
+      this.dialogCheckout.set(true);
+      this.cdr.markForCheck();
+    } else {
+      if (user?.usuarioId) {
+        this.usuariosService.getInfo(user.usuarioId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (info) => {
+              this.checkout = {
+                poscotmaeId: this.carritoId()!,
+                nombrecliente: nombreCompleto,
+                direccion: info?.direccion || '',
+                formapagoId: 2,
+                efectivo_recibido: this.totalCarrito(),
+                nrotarjeta: '',
+                tarjetacreditoId: this.tarjetasCredito().length > 0 ? this.tarjetasCredito()[0].value : undefined,
+                fechaexpiracion: '',
+                cvv: '',
+              };
+              this.dialogCheckout.set(true);
+              this.cdr.markForCheck();
+            },
+            error: () => {
+              this.checkout = {
+                poscotmaeId: this.carritoId()!,
+                nombrecliente: nombreCompleto,
+                direccion: '',
+                formapagoId: 2,
+                efectivo_recibido: this.totalCarrito(),
+                nrotarjeta: '',
+                tarjetacreditoId: this.tarjetasCredito().length > 0 ? this.tarjetasCredito()[0].value : undefined,
+                fechaexpiracion: '',
+                cvv: '',
+              };
+              this.dialogCheckout.set(true);
+              this.cdr.markForCheck();
+            },
+          });
+      } else {
+        this.checkout = {
+          poscotmaeId: this.carritoId()!,
+          nombrecliente: nombreCompleto,
+          direccion: '',
+          formapagoId: 2,
+          efectivo_recibido: this.totalCarrito(),
+          nrotarjeta: '',
+          tarjetacreditoId: this.tarjetasCredito().length > 0 ? this.tarjetasCredito()[0].value : undefined,
+          fechaexpiracion: '',
+          cvv: '',
+        };
+        this.dialogCheckout.set(true);
+        this.cdr.markForCheck();
+      }
+    }
   }
 
   procesarPago() {
@@ -554,7 +618,9 @@ export class TiendaVirtual implements OnInit {
           });
           this.dialogCheckout.set(false);
           this.tiendaService.invalidateCache();
+          this.cargarProductos();
           this.procesando.set(false);
+          this.cdr.markForCheck();
 
           this.api.get<any>(`/facturacion/facturas/${resp.facturaId}/ticket`)
             .pipe(takeUntilDestroyed(this.destroyRef))

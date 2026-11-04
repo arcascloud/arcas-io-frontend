@@ -26,6 +26,7 @@ export interface UsuarioInfo {
   fecnac?: string | Date | null;
   empleadoId?: number | null;
   sn_cliente?: 'S' | 'N';
+  direccion?: string;
 }
 
 export interface UsuariosModule {

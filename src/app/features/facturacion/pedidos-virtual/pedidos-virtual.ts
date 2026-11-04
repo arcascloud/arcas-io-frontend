@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, DestroyRef, ChangeDetectorRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DataViewModule } from 'primeng/dataview';
 import { ButtonModule } from 'primeng/button';
@@ -46,6 +46,7 @@ export class PedidosVirtual implements OnInit {
   private navegacion = inject(NavegacionService);
   private router = inject(Router);
   private impresion = inject(FacturaImpresionService);
+  private cdr = inject(ChangeDetectorRef);
 
   dialogResumenVenta = signal(false);
   resumenVentaData = signal<any>(null);
@@ -264,10 +265,12 @@ export class PedidosVirtual implements OnInit {
         next: (data) => {
           this.productos.set(data);
           this.cargando.set(false);
+          this.cdr.markForCheck();
         },
         error: () => {
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los productos' });
           this.cargando.set(false);
+          this.cdr.markForCheck();
         },
       });
   }
@@ -676,7 +679,9 @@ export class PedidosVirtual implements OnInit {
           });
           this.dialogCheckout.set(false);
           this.pedidosService.invalidateCache();
+          this.cargarProductos();
           this.procesando.set(false);
+          this.cdr.markForCheck();
 
           this.api.get<any>(`/facturacion/facturas/${resp.facturaId}/ticket`)
             .pipe(takeUntilDestroyed(this.destroyRef))
