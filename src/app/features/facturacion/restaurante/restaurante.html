@@ -7,7 +7,7 @@
     <nav class="rest-categorias" aria-label="Categorías">
       <p-button type="button" 
          size="small"
-         rounded
+         [rounded]="'true'"
          severity="info"
         [class.activa]="categoriaActiva() === null" (click)="categoriaActiva.set(null)">
         Todos
@@ -41,7 +41,7 @@
         label="Buscar"
         icon="pi pi-search"
         severity="secondary"
-        [rounded="true"
+        [rounded]="'true'"
         (onClick)="buscarProducto()"
         pTooltip="Presione enter para buscar producto"
         tooltipPosition="bottom"
