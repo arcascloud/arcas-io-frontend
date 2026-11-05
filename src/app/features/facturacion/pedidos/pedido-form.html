@@ -750,114 +750,112 @@
         (onClick)="agregarPago()"
       />
     </div>
-    <p-table
-      [value]="pagos()"
-      size="small"
-      [scrollable]="true"
-      scrollHeight="flex"
-      [tableStyle]="{ 'min-width': '100%' }"
-    >
-      <ng-template #header>
-        <tr>
-          <th class="th-label width-fp">Forma de Pago</th>
-          <th class="th-label width-tarjeta">Tarjeta</th>
-          <th class="th-label width-nrotarjeta">Nro. Tarjeta</th>
-          <th class="th-label width-autoriza">Autorización</th>
-          <th class="th-label width-importe">Importe</th>
-          <th class="th-label width-quitar"></th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-pago let-idx="rowIndex">
-        <tr>
-          <td>
-            <p-select
-              size="small"
-              [options]="formaspago()"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Seleccionar..."
-              styleClass="w-full"
-              [(ngModel)]="pago.formapagoId"
-              [ngModelOptions]="{ standalone: true }"
-              [appendTo]="'body'"
-              (onChange)="onFormaPagoChange(pago)"
-            />
-          </td>
-          <td>
-            @if (esTarjeta(pago)) {
-            <p-select
-              size="small"
-              [options]="tarjetasCredito()"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Seleccionar..."
-              styleClass="w-full"
-              showClear
-              [(ngModel)]="pago.tarjetacreditoId"
-              [ngModelOptions]="{ standalone: true }"
-              [appendTo]="'body'"
-            />
-            }
-          </td>
-          <td>
-            @if (esTarjeta(pago)) {
-            <input
-              pInputText
-              [pSize]="'small'"
-              [(ngModel)]="pago.nrotarjeta"
-              [ngModelOptions]="{ standalone: true }"
-              placeholder="Nro. tarjeta"
-              class="w-full"
-            />
-            }
-          </td>
-          <td>
-            @if (esTarjeta(pago) || esTransferencia(pago)) {
-            <input
-              pInputText
-              [pSize]="'small'"
-              [(ngModel)]="pago.nroautorizacion"
-              [ngModelOptions]="{ standalone: true }"
-              placeholder="Autorización"
-              class="w-full"
-            />
-            }
-          </td>
-          <td>
-            <p-inputnumber
-              [size]="'small'"
-              [(ngModel)]="pago.importe"
-              [ngModelOptions]="{ standalone: true }"
-              [min]="0"
-              mode="currency"
-              currency="HNL"
-              [locale]="'es-HN'"
-              [minFractionDigits]="2"
-              [maxFractionDigits]="2"
-              [useGrouping]="true"
-              [inputStyle]="{ 'width': '100%' }"
-              styleClass="w-full"
-            />
-          </td>
-          <td class="text-center">
+    <div class="pagos-cards-container">
+      @for (pago of pagos(); track $index; let idx = $index) {
+        <div class="pago-card-item">
+          <div class="pago-card-header">
+            <span class="pago-card-title">Pago #{{ idx + 1 }}</span>
             <p-button
               icon="pi pi-times"
               [rounded]="true"
               severity="danger"
+              variant="text"
               [size]="'small'"
+              pTooltip="Quitar pago"
               (onClick)="quitarPago(idx)"
             />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="6" class="text-center p-3">
-            Sin formas de pago. Presione "Agregar pago" para comenzar.
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
+          </div>
+
+          <div class="pago-card-grid">
+            <!-- 1. Forma de pago -->
+            <div class="pago-field col-12">
+              <label class="block text-sm font-semibold mb-1">Forma de Pago</label>
+              <p-select
+                size="small"
+                [options]="formaspago()"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar..."
+                styleClass="w-full"
+                [(ngModel)]="pago.formapagoId"
+                [ngModelOptions]="{ standalone: true }"
+                [appendTo]="'body'"
+                (onChange)="onFormaPagoChange(pago)"
+              />
+            </div>
+
+            <!-- 2. Si es tarjeta: tipo y número -->
+            @if (esTarjeta(pago)) {
+              <div class="pago-field col-12 md:col-6">
+                <label class="block text-sm font-semibold mb-1">Tipo de Tarjeta</label>
+                <p-select
+                  size="small"
+                  [options]="tarjetasCredito()"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccionar tarjeta..."
+                  styleClass="w-full"
+                  showClear
+                  [(ngModel)]="pago.tarjetacreditoId"
+                  [ngModelOptions]="{ standalone: true }"
+                  [appendTo]="'body'"
+                />
+              </div>
+              <div class="pago-field col-12 md:col-6">
+                <label class="block text-sm font-semibold mb-1">Nro. de Tarjeta</label>
+                <input
+                  pInputText
+                  [pSize]="'small'"
+                  [(ngModel)]="pago.nrotarjeta"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="Ej: 4111222233334444"
+                  class="w-full"
+                />
+              </div>
+            }
+
+            <!-- 3. Si es tarjeta o transferencia: autorización -->
+            @if (esTarjeta(pago) || esTransferencia(pago)) {
+              <div class="pago-field col-12">
+                <label class="block text-sm font-semibold mb-1">Nro. de Autorización</label>
+                <input
+                  pInputText
+                  [pSize]="'small'"
+                  [(ngModel)]="pago.nroautorizacion"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="Número de autorización"
+                  class="w-full"
+                />
+              </div>
+            }
+
+            <!-- 4. Importe -->
+            <div class="pago-field col-12">
+              <label class="block text-sm font-semibold mb-1">Importe (HNL)</label>
+              <p-inputnumber
+                [size]="'small'"
+                [(ngModel)]="pago.importe"
+                [ngModelOptions]="{ standalone: true }"
+                [min]="0"
+                mode="currency"
+                currency="HNL"
+                [locale]="'es-HN'"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                [useGrouping]="true"
+                [inputStyle]="{ 'width': '100%' }"
+                styleClass="w-full"
+              />
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="rest-estado rest-vacio p-4">
+          <i class="pi pi-wallet"></i>
+          <p>Sin formas de pago. Presione "Agregar pago" para comenzar.</p>
+        </div>
+      }
+    </div>
   </div>
   <ng-template pTemplate="footer">
     <div class="grid w-full">

@@ -122,7 +122,17 @@ export class Restaurante implements OnInit {
   // ── Drawer / responsive ──
   drawerVisible = signal(true);
   estrecha = signal(false);
+  mobileTab = signal<'mesas' | 'orden'>('mesas');
   totalItemsOrden = computed(() => this.items().reduce((s, i) => s + i.cantidad, 0));
+
+  abrirFab() {
+    if (this.ordenActiva() || this.totalItemsOrden() > 0) {
+      this.mobileTab.set('orden');
+    } else {
+      this.mobileTab.set('mesas');
+    }
+    this.drawerVisible.set(true);
+  }
 
   /** Config de ISV (tasa, precio con ISV incluido) y sn_imprimefactura (param-fac módulo 3) */
   isv = signal<ConfigISV>({ tasa: 0, incluido: false, snImprimeFactura: false });
@@ -222,6 +232,7 @@ export class Restaurante implements OnInit {
         this.mesaSeleccionada.set(null);
         this.items.set([]);
         this.ocupado.set(false);
+        this.mobileTab.set('orden');
         this.msg.add({ severity: 'success', summary: `Mesa ${nromesa}`, detail: `Orden #${o.pospedmaeId} abierta.` });
       },
       error: (e) => this.fallo(e, 'No se pudo crear la orden'),
@@ -255,6 +266,7 @@ export class Restaurante implements OnInit {
         this.mesaSeleccionada.set(null);
         this.items.set([]);
         this.ocupado.set(false);
+        this.mobileTab.set('orden');
         this.msg.add({
           severity: 'success',
           summary: 'Venta libre',
@@ -276,6 +288,7 @@ export class Restaurante implements OnInit {
     if (mesa.orden) {
       this.mesaSeleccionada.set(null);
       this.seleccionarOrden(mesa.orden.pospedmaeId);
+      this.mobileTab.set('orden');
       return;
     }
     this.mesaSeleccionada.set(this.mesaSeleccionada() === mesa.nro ? null : mesa.nro);
@@ -284,24 +297,35 @@ export class Restaurante implements OnInit {
   seleccionarOrden(id: number) {
     this.ordenActivaId.set(id);
     this.items.set([]);
+    this.mobileTab.set('orden');
     this.srv.getItems(id).subscribe({
       next: (lista) => this.items.set(lista),
       error: () => this.error('No se pudo cargar la orden'),
     });
   }
 
-  cancelarOrdenVacia() {
+  cancelarOrden() {
     const o = this.ordenActiva();
-    if (!o || this.items().length || this.ocupado()) return;
+    if (!o || this.ocupado()) return;
     this.ocupado.set(true);
     this.srv.cancelarOrden(o.pospedmaeId).subscribe({
       next: () => {
         this.ordenes.update((l) => l.filter((x) => x.pospedmaeId !== o.pospedmaeId));
         this.ordenActivaId.set(null);
+        this.items.set([]);
         this.ocupado.set(false);
+        this.msg.add({ severity: 'success', summary: 'Orden cancelada', detail: `Orden #${o.pospedmaeId} cancelada.` });
       },
       error: (e) => this.fallo(e, 'No se pudo cancelar la orden'),
     });
+  }
+
+  volverDrawer() {
+    if (this.estrecha() && this.mobileTab() === 'orden') {
+      this.mobileTab.set('mesas');
+    } else {
+      this.drawerVisible.set(false);
+    }
   }
 
   // ───────────────────────── Líneas ─────────────────────────

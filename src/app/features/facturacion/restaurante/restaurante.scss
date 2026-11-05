@@ -664,6 +664,13 @@ $topbar-height: 60px;
       color: var(--c-text);
     }
   }
+
+  .orden-acciones-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
 }
 
 /* ═════════ Botón flotante (pantallas angostas) ═════════ */
@@ -796,22 +803,91 @@ $topbar-height: 60px;
   }
 }
 
-/* ═════════ Pantallas angostas: el drawer ocupa todo y apila las columnas ═════════ */
+/* ── Mobile Drawer Tabs ── */
+.rest-drawer-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.mobile-drawer-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+
+  .mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.5rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    background: var(--c-surface-ground);
+    color: var(--c-text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s ease;
+
+    i {
+      font-size: 1rem;
+    }
+
+    &.active {
+      background: var(--c-primary);
+      border-color: var(--c-primary);
+      color: #fff;
+    }
+
+    .tab-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      min-width: 1.25rem;
+      height: 1.25rem;
+      padding: 0 0.3rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--c-text-muted);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+
+      &.primary {
+        background: var(--c-error);
+      }
+    }
+  }
+}
+
+/* ═════════ Pantallas angostas: el drawer ocupa todo y usa pestañas ═════════ */
 @media (max-width: $bp-angosto) {
   .rest-drawer-body {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    height: 100%;
     overflow-y: auto;
   }
 
   .col-mesas,
   .col-orden {
     overflow-y: visible;
+    height: 100%;
   }
 
   .col-orden {
     border-left: none;
-    border-top: 1px solid var(--c-border);
+    border-top: none;
   }
 
   .mesas-grid {
@@ -824,5 +900,60 @@ $topbar-height: 60px;
   .cat-chip,
   .qty-btn {
     transition: none;
+  }
+}
+
+/* ── Pagos Cards Container (Pivoted / Stacked Layout for Mobile POS) ── */
+.pagos-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.pago-card-item {
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  .pago-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--c-border);
+
+    .pago-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--c-text);
+    }
+  }
+
+  .pago-card-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0.75rem;
+
+    .pago-field {
+      grid-column: span 12;
+
+      @media (min-width: 768px) {
+        &.md\:col-6 {
+          grid-column: span 6;
+        }
+      }
+
+      label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--c-text-muted);
+      }
+    }
   }
 }
