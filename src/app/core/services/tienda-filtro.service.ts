@@ -21,12 +21,16 @@ export class TiendaFiltroService {
   /** Nombre del departamento seleccionado */
   readonly deptoNombre = signal<string | null>(null);
 
+  /** IDs de marcas seleccionadas para filtrar (una o varias) */
+  readonly marcaIds = signal<number[]>([]);
+
   /** Establece el filtro exclusivo por departamento (Caso 1: todo el depto) */
   setFiltroDepto(depId: number | null, depNombre: string | null) {
     this.deptoId.set(depId);
     this.deptoNombre.set(depNombre ?? null);
     this.categoriaIds.set([]);
     this.categoriaNombres.set([]);
+    this.marcaIds.set([]);
   }
 
   /** Establece los filtros activos con departamento y categorías específicas (Caso 2) */
@@ -35,6 +39,13 @@ export class TiendaFiltroService {
     this.deptoId.set(depId);
     this.categoriaNombres.set(catNombres ?? []);
     this.deptoNombre.set(depNombre ?? null);
+    // Cambiar de categoría reinicia la selección de marcas
+    this.marcaIds.set([]);
+  }
+
+  /** Actualiza solo el filtro de marcas (una o varias) sin tocar depto/categoría */
+  setFiltroMarcas(marcaIds: number[]) {
+    this.marcaIds.set(marcaIds ?? []);
   }
 
   /** Limpia los filtros activos y muestra todos los productos (Caso 3.1) */
@@ -43,5 +54,6 @@ export class TiendaFiltroService {
     this.deptoId.set(null);
     this.categoriaNombres.set([]);
     this.deptoNombre.set(null);
+    this.marcaIds.set([]);
   }
 }

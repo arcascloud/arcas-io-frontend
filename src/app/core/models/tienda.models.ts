@@ -8,6 +8,7 @@ export interface ProductoTienda {
   existencia: number;
   categoria?: string;
   categoriaId: number;
+  marcaId?: number;
   deptoId?: number;
   categoriaDeptoId?: number;
   tipo_giro?: string;

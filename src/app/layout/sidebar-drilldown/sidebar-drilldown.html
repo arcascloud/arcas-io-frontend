@@ -18,7 +18,7 @@
         <div class="p-3 text-center text-muted text-sm">Cargando departamentos...</div>
       }
     </div>
-  } @else {
+  } @else if (!categoriaActiva()) {
     <!-- VISTA 2: Encabezado del Departamento + Categorías Apiladas con Back-History -->
     <div class="drilldown-header with-back">
       <p-button
@@ -45,6 +45,67 @@
         </button>
       } @empty {
         <div class="p-3 text-center text-muted text-sm">No hay categorías en este departamento</div>
+      }
+    </div>
+  } @else {
+    <!-- VISTA 3: Filtro de Marcas (checkbox dinámico) tras seleccionar categoría -->
+    <div class="drilldown-header with-back">
+      <p-button
+        icon="pi pi-chevron-left"
+        [rounded]="true"
+        [text]="true"
+        size="large"
+        severity="secondary"
+        (onClick)="volver()"
+        pTooltip="Volver a categorías"
+        tooltipPosition="right" />
+      <span class="drilldown-title truncate" [title]="categoriaActiva()?.descripcion">
+        {{ categoriaActiva()?.descripcion }}
+      </span>
+    </div>
+
+    <div class="marcas-filtro">
+      <div class="marcas-filtro-header">
+        <i class="fa-solid fa-filter"></i>
+        <span>Filtrar por marca</span>
+        @if (marcasSeleccionadas().length > 0) {
+          <button
+            type="button"
+            class="marcas-limpiar"
+            (click)="onMarcasChange([])"
+            pTooltip="Limpiar marcas"
+            tooltipPosition="bottom">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        }
+      </div>
+
+      @if (marcasDisponibles().length === 0) {
+        <div class="p-3 text-center text-muted text-sm">
+          @if (loading()) {
+            Cargando marcas...
+          } @else {
+            No hay marcas para esta categoría
+          }
+        </div>
+      } @else {
+        <!-- Patrón PrimeNG Checkbox dynamic: https://v21.primeng.org/checkbox#dynamic -->
+        <div class="marcas-checkbox-list">
+          @for (marca of marcasDisponibles(); track trackByMarca($index, marca)) {
+            <div class="marca-check-item">
+              <p-checkbox
+                inputId="marca_{{ marca.marcaId }}"
+                name="marcas-sidebar"
+                [value]="marca.marcaId"
+                [ngModel]="marcasSeleccionadas()"
+                (ngModelChange)="onMarcasChange($event)"
+              />
+              <label class="marca-check-label" for="marca_{{ marca.marcaId }}">
+                {{ marca.descripcion }}
+              </label>
+            </div>
+          }
+        </div>
       }
     </div>
   }

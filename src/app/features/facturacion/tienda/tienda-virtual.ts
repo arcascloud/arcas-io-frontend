@@ -184,6 +184,7 @@ export class TiendaVirtual implements OnInit {
     let lista = this.productos();
     const catIds = this.filtroService.categoriaIds();
     const depId = this.filtroService.deptoId();
+    const marcaIds = this.filtroService.marcaIds();
     const busq = this.busqueda().toLowerCase();
     const orden = this.ordenarPor();
     const soloOfertas = this.soloOfertas();
@@ -194,6 +195,10 @@ export class TiendaVirtual implements OnInit {
     }
     if (depId) {
       lista = lista.filter(p => Number(p.deptoId) === Number(depId) || Number(p.categoriaDeptoId) === Number(depId));
+    }
+    if (marcaIds && marcaIds.length > 0) {
+      const ids = marcaIds.map(Number);
+      lista = lista.filter(p => p.marcaId != null && ids.includes(Number(p.marcaId)));
     }
     if (busq) lista = lista.filter(p =>
       p.descripcion?.toLowerCase().includes(busq) ||
