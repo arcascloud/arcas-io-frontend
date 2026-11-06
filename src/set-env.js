@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 try {
   require('dotenv').config({ path: path.join(__dirname, '.env'), override: true });
-} catch (_) {}
+} catch (_) { }
 
 const projectRoot = path.resolve(__dirname, '..');
 const targetPath = path.join(projectRoot, 'src/environments/environment.ts');

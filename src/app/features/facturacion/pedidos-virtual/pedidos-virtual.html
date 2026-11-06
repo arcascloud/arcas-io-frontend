@@ -2,9 +2,7 @@
 <div class="tienda-layout" [class.con-carrito]="totalItems() > 0 && !isMobile()">
   @if (pedidoOpen()) {
   <div class="cart-overlay" (click)="pedidoOpen.set(false)"></div>
-  }
-
-  @if (totalItems() > 0) {
+  } @if (totalItems() > 0) {
   <aside class="cart-sidebar" [class.open]="pedidoOpen()">
     <div class="cart-header">
       <div class="cart-header-left">
@@ -30,7 +28,9 @@
           }
         </div>
         <div class="cart-item-details">
-          <span class="cart-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
+          <span class="cart-item-name"
+            >{{ item.descripcion || 'Producto #' + item.productoId }}</span
+          >
           <span class="cart-item-price">{{ formatearPrecio(item.precioventa) }}</span>
           <div class="cart-item-qty">
             <button class="qty-btn" (click)="decrementar(item)" [disabled]="cargandoPedido()">
@@ -44,7 +44,12 @@
         </div>
         <div class="cart-item-right">
           <span class="cart-item-subtotal">{{ formatearPrecio(item.subtotal) }}</span>
-          <button class="cart-item-remove" (click)="eliminarDelPedido(item)" pTooltip="Eliminar" tooltipPosition="left">
+          <button
+            class="cart-item-remove"
+            (click)="eliminarDelPedido(item)"
+            pTooltip="Eliminar"
+            tooltipPosition="left"
+          >
             <i class="pi pi-times"></i>
           </button>
         </div>
@@ -68,10 +73,22 @@
         <strong>{{ formatearPrecio(totalPedido()) }}</strong>
       </div>
       <div class="cart-actions">
-        <p-button label="Guardar pedido" icon="pi pi-save" severity="secondary" [fluid]="true"
-          [disabled]="cargandoPedido()" (click)="abrirGuardarPedido()" />
-        <p-button label="Facturar pedido" icon="pi pi-check" severity="success" [fluid]="true"
-          [disabled]="cargandoPedido()" (click)="abrirCheckout(); pedidoOpen.set(false)" />
+        <p-button
+          label="Guardar pedido"
+          icon="pi pi-save"
+          severity="secondary"
+          [fluid]="true"
+          [disabled]="cargandoPedido()"
+          (click)="abrirGuardarPedido()"
+        />
+        <p-button
+          label="Facturar pedido"
+          icon="pi pi-check"
+          severity="success"
+          [fluid]="true"
+          [disabled]="cargandoPedido()"
+          (click)="abrirCheckout(); pedidoOpen.set(false)"
+        />
       </div>
     </div>
   </aside>
@@ -80,34 +97,80 @@
   <main class="tienda-main">
     <div class="tienda-toolbar">
       <div class="toolbar-left">
-         <p-button icon="pi pi-arrow-left" label="Volver" [size]="'small'" [rounded]="true" variant="text"
-           severity="secondary" pTooltip="Volver al listado" tooltipPosition="left" (onClick)="volver()" />
+        <p-button
+          icon="pi pi-arrow-left"
+          label="Volver"
+          [size]="'small'"
+          [rounded]="true"
+          variant="text"
+          severity="secondary"
+          pTooltip="Volver al listado"
+          tooltipPosition="left"
+          (onClick)="volver()"
+        />
         <h2 class="toolbar-title"><i class="pi pi-shopping-cart"></i> Pedidos</h2>
-        <span class="toolbar-count">{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's'
-          : '' }}</span>
+        <span class="toolbar-count"
+          >{{ productosFiltrados().length }} producto{{ productosFiltrados().length !== 1 ? 's' : ''
+          }}</span
+        >
       </div>
       <div class="toolbar-right">
-        <div class="search-box">
-          <i class="pi pi-search search-icon"></i>
-          <input pInputText [(ngModel)]="busqueda" placeholder="Buscar..." class="search-input" />
-        </div>
-        <p-select size="small" [(ngModel)]="categoriaFiltro" [options]="categorias()" optionLabel="label"
-          optionValue="value" placeholder="Categoría" styleClass="cat-select" />
-        <p-select size="small" [(ngModel)]="ordenarPor" [options]="opcionesOrden" optionLabel="label"
-          optionValue="value" styleClass="sort-select" />
-        <div class="view-toggles desktop-only">
-          <button class="view-btn" [class.active]="layout() === 'grid'" (click)="layout.set('grid')"
-            pTooltip="Cuadrícula" tooltipPosition="left">
+      <span class="ordenado-por">Ordenado por:</span>
+        <p-select
+          size="small"
+          [(ngModel)]="ordenarPor"
+          [options]="opcionesOrden"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="sort-select"
+        />
+        <div class="view-toggles">
+          <button
+            class="view-btn"
+            [class.active]="layout() === 'grid'"
+            (click)="layout.set('grid')"
+            pTooltip="Cuadrícula"
+            tooltipPosition="left"
+          >
             <i class="pi pi-th-large"></i>
           </button>
-          <button class="view-btn" [class.active]="layout() === 'list'" (click)="layout.set('list')" pTooltip="Lista" tooltipPosition="left">
+          <button
+            class="view-btn"
+            [class.active]="layout() === 'list'"
+            (click)="layout.set('list')"
+            pTooltip="Lista"
+            tooltipPosition="left"
+          >
             <i class="pi pi-list"></i>
           </button>
         </div>
-        <p-button [size]="'small'" label="Ofertas" [rounded]="true" [raised]="true" variant="text" severity="success"
-          [class.active]="soloOfertas()" (click)="soloOfertas.set(!soloOfertas())" pTooltip="Solo ofertas" tooltipPosition="left">
+        <p-button
+          [size]="'small'"
+          label="Ofertas"
+          [rounded]="true"
+          [raised]="true"
+          variant="text"
+          severity="success"
+          [class.active]="soloOfertas()"
+          (click)="soloOfertas.set(!soloOfertas())"
+          pTooltip="Solo ofertas"
+          tooltipPosition="left"
+        >
         </p-button>
-
+        <p-button
+          [size]="'small'"
+          label="Limpiar filtros"
+          icon="pi pi-filter-slash"
+          [rounded]="true"
+          variant="text"
+          [raised]="true"
+          severity="success"
+          (click)="resetFiltros()"
+          pTooltip="Limpiar todos los filtros"
+          tooltipPosition="left"
+          styleClass="botton-bg-contrast-solid"
+        >
+        </p-button>
       </div>
     </div>
 
@@ -116,36 +179,40 @@
       <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: var(--c-primary)"></i>
       <p>Cargando productos...</p>
     </div>
-    }
-
-    @if (!cargando() && layout() === 'grid') {
+    } @if (!cargando() && layout() === 'grid') {
     <div class="productos-grid">
       @for (producto of productosFiltrados(); track trackByProductoId($index, producto)) {
       <div class="producto-card">
         <div class="card-imagen">
           @if (producto.imagen) {
-          <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
+          <img
+            [src]="resolverImagen(producto.imagen)"
+            [alt]="producto.descripcion"
+            loading="lazy"
+          />
           } @else {
           <div class="sin-imagen">
             <i class="pi pi-images"></i>
           </div>
+          } @if (esOferta(producto)) {
+          <p-tag
+            [value]="'Oferta: -' + getPorcentajeDescuento(producto) + '%'"
+            severity="success"
+            styleClass="tag-stock"
+          />
           }
-
-          @if (esOferta(producto)) {
-          <p-tag [value]="'Oferta: -' + getPorcentajeDescuento(producto) + '%'" severity="success"
-            styleClass="tag-stock" />
-          }
-
         </div>
         <div class="card-body">
           <div class="card-categoria">{{ producto.categoria || 'Sin categoría' }}</div>
           <h3 class="card-titulo">{{ producto.codbarra }}</h3>
           @if (producto.descripcion) {
           <p class="card-desc">{{ producto.descripcion }}</p>
-          }
-          @if (producto.existencia > 0) {
-          <p-tag [value]="'Existencia: '+ producto.existencia " [severity]="getSeverity(producto.existencia)"
-            style="padding:0;" />
+          } @if (producto.existencia > 0) {
+          <p-tag
+            [value]="'Existencia: '+ producto.existencia "
+            [severity]="getSeverity(producto.existencia)"
+            style="padding: 0"
+          />
           } @else {
           <p-tag value="Sin stock" severity="danger" />
           }
@@ -160,10 +227,26 @@
             <span class="card-precio">Precio {{ formatearPrecio(producto.precioventa) }}</span>
             }
             <div class="card-acciones">
-              <p-button icon="pi pi-images" [rounded]="true" [raised]="true" variant="text" severity="secondary"
-                (click)="abrirGaleria(producto)" pTooltip="Ver galería" tooltipPosition="left" />
-              <p-button icon="pi pi-cart-plus" [rounded]="true" [raised]="true" variant="text"
-                [disabled]="producto.existencia <= 0" (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" tooltipPosition="left" />
+              <p-button
+                icon="pi pi-images"
+                [rounded]="true"
+                [raised]="true"
+                variant="text"
+                severity="secondary"
+                (click)="abrirGaleria(producto)"
+                pTooltip="Ver galería"
+                tooltipPosition="left"
+              />
+              <p-button
+                icon="pi pi-cart-plus"
+                [rounded]="true"
+                [raised]="true"
+                variant="text"
+                [disabled]="producto.existencia <= 0"
+                (click)="agregarAlPedido(producto)"
+                pTooltip="Agregar al pedido"
+                tooltipPosition="left"
+              />
             </div>
           </div>
         </div>
@@ -175,15 +258,17 @@
       </div>
       }
     </div>
-    }
-
-    @if (!cargando() && layout() === 'list') {
+    } @if (!cargando() && layout() === 'list') {
     <div class="productos-list">
       @for (producto of productosFiltrados(); track trackByProductoId($index, producto)) {
       <div class="producto-list-row">
         <div class="list-imagen">
           @if (producto.imagen) {
-          <img [src]="resolverImagen(producto.imagen)" [alt]="producto.descripcion" loading="lazy" />
+          <img
+            [src]="resolverImagen(producto.imagen)"
+            [alt]="producto.descripcion"
+            loading="lazy"
+          />
           } @else {
           <div class="sin-imagen-sm"><i class="pi pi-images"></i></div>
           }
@@ -196,8 +281,10 @@
           }
         </div>
         <div class="list-stock">
-          <p-tag [value]="producto.existencia > 0 ? producto.existencia + ' disp.' : 'Sin stock'"
-            [severity]="getSeverity(producto.existencia)" />
+          <p-tag
+            [value]="producto.existencia > 0 ? producto.existencia + ' disp.' : 'Sin stock'"
+            [severity]="getSeverity(producto.existencia)"
+          />
         </div>
         <div class="list-precio">
           @if (esOferta(producto)) {
@@ -205,15 +292,26 @@
             <span class="precio-original">{{ formatearPrecio(producto.precioventa) }}</span>
             {{ formatearPrecio(getPrecioOferta(producto)!) }}
           </span>
-          } @else {
-          {{ formatearPrecio(producto.precioventa) }}
-          }
+          } @else { {{ formatearPrecio(producto.precioventa) }} }
         </div>
         <div class="list-accion">
-          <p-button icon="pi pi-images" [rounded]="true" variant="text" severity="secondary"
-            (click)="abrirGaleria(producto)" pTooltip="Ver galería" tooltipPosition="left" />
-          <p-button icon="pi pi-cart-plus" [rounded]="true" [disabled]="producto.existencia <= 0"
-            (click)="agregarAlPedido(producto)" pTooltip="Agregar al pedido" tooltipPosition="left" />
+          <p-button
+            icon="pi pi-images"
+            [rounded]="true"
+            variant="text"
+            severity="secondary"
+            (click)="abrirGaleria(producto)"
+            pTooltip="Ver galería"
+            tooltipPosition="left"
+          />
+          <p-button
+            icon="pi pi-cart-plus"
+            [rounded]="true"
+            [disabled]="producto.existencia <= 0"
+            (click)="agregarAlPedido(producto)"
+            pTooltip="Agregar al pedido"
+            tooltipPosition="left"
+          />
         </div>
       </div>
       } @empty {
@@ -247,85 +345,126 @@
       <i class="pi pi-images"></i>
       <span class="galeria-titulo">{{ galeriaTitulo() }}</span>
       @if (galeriaImagenes().length > 0) {
-        <span class="galeria-count">{{ galeriaIndice() + 1 }} / {{ galeriaImagenes().length }}</span>
+      <span class="galeria-count">{{ galeriaIndice() + 1 }} / {{ galeriaImagenes().length }}</span>
       }
     </div>
   </ng-template>
 
   @if (galeriaCargando() && galeriaImagenes().length === 0) {
-    <div class="galeria-loading">
-      <i class="pi pi-spin pi-spinner"></i>
-      <span>Cargando imágenes...</span>
-    </div>
+  <div class="galeria-loading">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Cargando imágenes...</span>
+  </div>
   } @else if (galeriaImagenes().length === 0) {
-    <div class="galeria-vacia">
-      <i class="pi pi-image"></i>
-      <span>Este producto no tiene imágenes disponibles</span>
-    </div>
+  <div class="galeria-vacia">
+    <i class="pi pi-image"></i>
+    <span>Este producto no tiene imágenes disponibles</span>
+  </div>
   } @else {
-    <p-galleria
-      [value]="galeriaImagenes()"
-      [activeIndex]="galeriaIndice()"
-      (activeIndexChange)="galeriaIndice.set($event)"
-      [numVisible]="5"
-      [responsiveOptions]="galeriaResponsiveOptions"
-      [circular]="true"
-      [showItemNavigators]="galeriaImagenes().length > 1"
-      [showThumbnailNavigators]="galeriaImagenes().length > 1"
-      [showThumbnails]="galeriaImagenes().length > 1"
-      [showIndicators]="false"
-      class="tienda-galleria"
-    >
-      <!-- Workaround bug PrimeNG 21.2.13: el item slot no pasa type="item",
+  <p-galleria
+    [value]="galeriaImagenes()"
+    [activeIndex]="galeriaIndice()"
+    (activeIndexChange)="galeriaIndice.set($event)"
+    [numVisible]="5"
+    [responsiveOptions]="galeriaResponsiveOptions"
+    [circular]="true"
+    [showItemNavigators]="galeriaImagenes().length > 1"
+    [showThumbnailNavigators]="galeriaImagenes().length > 1"
+    [showThumbnails]="galeriaImagenes().length > 1"
+    [showIndicators]="false"
+    class="tienda-galleria"
+  >
+    <!-- Workaround bug PrimeNG 21.2.13: el item slot no pasa type="item",
            el setter de GalleriaItemSlot nunca actualiza context.$implicit y
            let-item queda congelado con la primera imagen. Se renderiza desde
            nuestros signals (galeriaIndice/galeriaImagenes) que sí navegan. -->
-      <ng-template pTemplate="item">
-        <img [src]="galeriaImagenes()[galeriaIndice()]" [alt]="galeriaTitulo()" class="galeria-item-img" />
-      </ng-template>
-      <ng-template pTemplate="thumbnail" let-item>
-        <img [src]="item" [alt]="galeriaTitulo()" />
-      </ng-template>
-    </p-galleria>
+    <ng-template pTemplate="item">
+      <img
+        [src]="galeriaImagenes()[galeriaIndice()]"
+        [alt]="galeriaTitulo()"
+        class="galeria-item-img"
+      />
+    </ng-template>
+    <ng-template pTemplate="thumbnail" let-item>
+      <img [src]="item" [alt]="galeriaTitulo()" />
+    </ng-template>
+  </p-galleria>
   }
 
   <ng-template pTemplate="footer">
-    <p-button label="Cerrar" icon="pi pi-times" severity="secondary" text [size]="'small'" [rounded]="true" (onClick)="dialogGaleria.set(false)" />
+    <p-button
+      label="Cerrar"
+      icon="pi pi-times"
+      severity="secondary"
+      text
+      [size]="'small'"
+      [rounded]="true"
+      (onClick)="dialogGaleria.set(false)"
+    />
   </ng-template>
 </p-dialog>
 
-<p-dialog header="Facturar Pedido" [(visible)]="dialogCheckout" [modal]="true"
+<p-dialog
+  header="Facturar Pedido"
+  [(visible)]="dialogCheckout"
+  [modal]="true"
   [style]="{ width: isMobile() ? '100vw' : '70vw', marginTop: '0', maxHeight: isMobile() ? '100dvh' : '100vh' }"
-  [styleClass]="'checkout-dialog' + (isMobile() ? ' checkout-mobile' : '')" [closable]="!procesando()">
+  [styleClass]="'checkout-dialog' + (isMobile() ? ' checkout-mobile' : '')"
+  [closable]="!procesando()"
+>
   <div class="checkout-layout">
     <div class="checkout-form">
       <div class="checkout-fields">
         <h3 class="section-title"><i class="pi pi-user"></i> Información del Cliente</h3>
         <div class="campo p-3 bg-surface-ground border-round mb-2">
           <div class="text-sm text-color-secondary">Cliente autenticado:</div>
-          <div class="font-bold text-lg text-primary">{{ auth.currentUser()?.nombre || 'Cliente Tienda' }}</div>
-          <div class="text-xs text-color-secondary mt-1"><i class="pi pi-check-circle text-green-500"></i> Nombre y teléfono obtenidos automáticamente de su perfil (tusuariosinfo)</div>
+          <div class="font-bold text-lg text-primary">
+            {{ auth.currentUser()?.nombre || 'Cliente Tienda' }}
+          </div>
+          <div class="text-xs text-color-secondary mt-1">
+            <i class="pi pi-check-circle text-green-500"></i> Nombre y teléfono obtenidos
+            automáticamente de su perfil (tusuariosinfo)
+          </div>
         </div>
 
         <h3 class="section-title"><i class="pi pi-wallet"></i> Forma de Pago</h3>
         <div class="campo">
           <label>Forma de pago *</label>
-          <p-select size="small" [(ngModel)]="checkout.formapagoId" [options]="formaspago()"
-            placeholder="Seleccionar forma de pago" optionLabel="label" optionValue="value" styleClass="w-full"
-            (onChange)="onFormaPagoChange()" />
+          <p-select
+            size="small"
+            [(ngModel)]="checkout.formapagoId"
+            [options]="formaspago()"
+            placeholder="Seleccionar forma de pago"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+            (onChange)="onFormaPagoChange()"
+          />
         </div>
 
         @if (esTarjeta()) {
         <h3 class="section-title"><i class="pi pi-credit-card"></i> Tarjeta de Crédito</h3>
         <div class="campo">
           <label>Tipo de tarjeta *</label>
-          <p-select size="small" [(ngModel)]="checkout.tarjetacreditoId" [options]="tarjetasCredito()"
-            placeholder="Seleccionar tipo" optionLabel="label" optionValue="value" styleClass="w-full" />
+          <p-select
+            size="small"
+            [(ngModel)]="checkout.tarjetacreditoId"
+            [options]="tarjetasCredito()"
+            placeholder="Seleccionar tipo"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full"
+          />
         </div>
         <div class="campo campo-numero-tarjeta">
           <label>Número de tarjeta *</label>
-          <p-inputmask mask="9999 9999 9999 9999" [(ngModel)]="checkout.nrotarjeta" placeholder="0000 0000 0000 0000"
-            (onBlur)="validarTarjetaBlur()" [styleClass]="'w-full' + (tarjetaError() ? ' ng-dirty ng-invalid' : '')" />
+          <p-inputmask
+            mask="9999 9999 9999 9999"
+            [(ngModel)]="checkout.nrotarjeta"
+            placeholder="0000 0000 0000 0000"
+            (onBlur)="validarTarjetaBlur()"
+            [styleClass]="'w-full' + (tarjetaError() ? ' ng-dirty ng-invalid' : '')"
+          />
           @if (tarjetaError()) {
           <p-message severity="error" variant="simple" size="small">{{ tarjetaError() }}</p-message>
           }
@@ -333,22 +472,35 @@
         <div class="campo-row">
           <div class="campo">
             <label>Vencimiento *</label>
-            <p-inputmask mask="99/99" [(ngModel)]="checkout.fechaexpiracion" placeholder="MM/YY" slotChar="mm/yy"
-              styleClass="w-full" />
+            <p-inputmask
+              mask="99/99"
+              [(ngModel)]="checkout.fechaexpiracion"
+              placeholder="MM/YY"
+              slotChar="mm/yy"
+              styleClass="w-full"
+            />
           </div>
           <div class="campo">
             <label>CVV *</label>
-            <p-inputmask mask="999" [(ngModel)]="checkout.cvv" placeholder="000" styleClass="w-full" />
+            <p-inputmask
+              mask="999"
+              [(ngModel)]="checkout.cvv"
+              placeholder="000"
+              styleClass="w-full"
+            />
           </div>
         </div>
-        }
-
-        @if (esTransferencia()) {
+        } @if (esTransferencia()) {
         <h3 class="section-title"><i class="pi pi-arrow-right-arrow-left"></i> Transferencia</h3>
         <div class="campo">
           <label>Número de autorización *</label>
-          <input pInputText [pSize]="'small'" [(ngModel)]="checkout.nroautorizacion"
-            placeholder="Autorización de la transferencia" class="w-full" />
+          <input
+            pInputText
+            [pSize]="'small'"
+            [(ngModel)]="checkout.nroautorizacion"
+            placeholder="Autorización de la transferencia"
+            class="w-full"
+          />
         </div>
         }
       </div>
@@ -367,8 +519,12 @@
             }
           </div>
           <div class="summary-item-info">
-            <span class="summary-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
-            <span class="summary-item-qty">Cant: {{ item.cantidad }} × {{ formatearPrecio(item.precioventa) }}</span>
+            <span class="summary-item-name"
+              >{{ item.descripcion || 'Producto #' + item.productoId }}</span
+            >
+            <span class="summary-item-qty"
+              >Cant: {{ item.cantidad }} × {{ formatearPrecio(item.precioventa) }}</span
+            >
           </div>
           <span class="summary-item-total">{{ formatearPrecio(item.subtotal) }}</span>
         </div>
@@ -392,32 +548,71 @@
         </div>
       </div>
 
-      <p-button label="Confirmar Factura" icon="pi pi-check" severity="success" [fluid]="true" [loading]="procesando()"
-        [disabled]="procesando() || !formularioPagoValido()" (click)="procesarPago()" />
+      <p-button
+        label="Confirmar Factura"
+        icon="pi pi-check"
+        severity="success"
+        [fluid]="true"
+        [loading]="procesando()"
+        [disabled]="procesando() || !formularioPagoValido()"
+        (click)="procesarPago()"
+      />
     </div>
   </div>
 
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" [text]="true" icon="pi pi-arrow-left" [disabled]="procesando()"
-      (click)="dialogCheckout.set(false)" />
+    <p-button
+      label="Cancelar"
+      [text]="true"
+      icon="pi pi-arrow-left"
+      [disabled]="procesando()"
+      (click)="dialogCheckout.set(false)"
+    />
   </ng-template>
 </p-dialog>
 
-<p-dialog header="Guardar pedido" [(visible)]="dialogGuardarPedido" [modal]="true" [draggable]="false"
-  [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
-  [style]="{ width: isMobile() ? '95vw' : '30rem' }">
+<p-dialog
+  header="Guardar pedido"
+  [(visible)]="dialogGuardarPedido"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: isMobile() ? '95vw' : '30rem' }"
+>
   <div class="guardar-fields">
     <div class="campo p-3 bg-surface-ground border-round mb-2">
       <div class="text-sm text-color-secondary">Cliente autenticado:</div>
-      <div class="font-bold text-lg text-primary">{{ auth.currentUser()?.nombre || 'Cliente Tienda' }}</div>
-      <div class="text-xs text-color-secondary mt-1"><i class="pi pi-check-circle text-green-500"></i> Nombre y teléfono obtenidos automáticamente de su perfil (tusuariosinfo)</div>
+      <div class="font-bold text-lg text-primary">
+        {{ auth.currentUser()?.nombre || 'Cliente Tienda' }}
+      </div>
+      <div class="text-xs text-color-secondary mt-1">
+        <i class="pi pi-check-circle text-green-500"></i> Nombre y teléfono obtenidos
+        automáticamente de su perfil (tusuariosinfo)
+      </div>
     </div>
   </div>
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" [size]="'small'" rounded variant="text" severity="secondary"
-      [disabled]="guardandoPedido()" (onClick)="dialogGuardarPedido.set(false)" />
-    <p-button label="Guardar" icon="pi pi-check" [size]="'small'" variant="text" [raised]="true" [rounded]="true"
-      severity="success" [loading]="guardandoPedido()" (onClick)="guardarPedido()" />
+    <p-button
+      label="Cancelar"
+      [size]="'small'"
+      rounded
+      variant="text"
+      severity="secondary"
+      [disabled]="guardandoPedido()"
+      (onClick)="dialogGuardarPedido.set(false)"
+    />
+    <p-button
+      label="Guardar"
+      icon="pi pi-check"
+      [size]="'small'"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      severity="success"
+      [loading]="guardandoPedido()"
+      (onClick)="guardarPedido()"
+    />
   </ng-template>
 </p-dialog>
 
@@ -432,70 +627,74 @@
   [style]="{ width: '60vw' }"
 >
   @if (resumenVentaData(); as data) {
-    <div class="flex flex-column gap-3 p-2">
-      <div class="flex align-items-center justify-content-between bg-emerald-50 p-3 border-round">
-        <div>
-          <h3 class="m-0 text-emerald-800 font-bold">¡Pedido facturado con éxito!</h3>
-          <p class="m-0 text-sm text-650">Factura #{{ data.factura?.nrofactura }}</p>
-        </div>
-        <i class="pi pi-check-circle text-emerald-600 text-3xl"></i>
+  <div class="flex flex-column gap-3 p-2">
+    <div class="flex align-items-center justify-content-between bg-emerald-50 p-3 border-round">
+      <div>
+        <h3 class="m-0 text-emerald-800 font-bold">¡Pedido facturado con éxito!</h3>
+        <p class="m-0 text-sm text-650">Factura #{{ data.factura?.nrofactura }}</p>
       </div>
+      <i class="pi pi-check-circle text-emerald-600 text-3xl"></i>
+    </div>
 
-      <div class="grid grid-nogutter gap-2 text-sm">
-        <div class="col-12 md:col-6 p-2 surface-card border-round">
-          <span class="text-color-secondary block mb-1">Cliente</span>
-          <strong>{{ data.factura?.nombrecliente || 'CONSUMIDOR FINAL' }}</strong>
-          <span class="block text-xs text-color-secondary mt-1">RTN: {{ data.factura?.rtn_cliente || 'N/A' }}</span>
-        </div>
-        <div class="col-12 md:col-6 p-2 surface-card border-round">
-          <span class="text-color-secondary block mb-1">Fecha y Condición</span>
-          <strong>{{ data.factura?.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</strong>
-          <span class="block text-xs text-color-secondary mt-1">Condición: Contado</span>
-        </div>
+    <div class="grid grid-nogutter gap-2 text-sm">
+      <div class="col-12 md:col-6 p-2 surface-card border-round">
+        <span class="text-color-secondary block mb-1">Cliente</span>
+        <strong>{{ data.factura?.nombrecliente || 'CONSUMIDOR FINAL' }}</strong>
+        <span class="block text-xs text-color-secondary mt-1"
+          >RTN: {{ data.factura?.rtn_cliente || 'N/A' }}</span
+        >
       </div>
-
-      <!-- Tabla de ítems -->
-      <p-table [value]="data.detalles || []" size="small" [tableStyle]="{ 'min-width': '100%' }">
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Producto</th>
-            <th class="text-right">Cant</th>
-            <th class="text-right">Precio</th>
-            <th class="text-right">Total</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-item>
-          <tr>
-            <td>{{ item.descripcion || item.codbarra }}</td>
-            <td class="text-right">{{ item.cantidad }}</td>
-            <td class="text-right">{{ item.precioventa | currency:'HNL':'symbol':'2.2-2' }}</td>
-            <td class="text-right">{{ item.subTotal | currency:'HNL':'symbol':'2.2-2' }}</td>
-          </tr>
-        </ng-template>
-      </p-table>
-
-      <!-- Totales -->
-      <div class="flex flex-column align-items-end gap-1 p-3 surface-card border-round text-sm">
-        <div class="flex justify-content-between w-12 md:w-6">
-          <span>Subtotal:</span>
-          <strong>{{ data.factura?.subTotal | currency:'HNL':'symbol':'2.2-2' }}</strong>
-        </div>
-        <div class="flex justify-content-between w-12 md:w-6">
-          <span>ISV / Impuesto:</span>
-          <strong>{{ data.factura?.impuesto | currency:'HNL':'symbol':'2.2-2' }}</strong>
-        </div>
-        @if (data.factura?.descuento > 0) {
-          <div class="flex justify-content-between w-12 md:w-6">
-            <span>Descuento:</span>
-            <strong>- {{ data.factura?.descuento | currency:'HNL':'symbol':'2.2-2' }}</strong>
-          </div>
-        }
-        <div class="flex justify-content-between w-12 md:w-6 border-top-1 surface-border pt-2 text-base font-bold text-primary">
-          <span>Total:</span>
-          <span>{{ data.factura?.total | currency:'HNL':'symbol':'2.2-2' }}</span>
-        </div>
+      <div class="col-12 md:col-6 p-2 surface-card border-round">
+        <span class="text-color-secondary block mb-1">Fecha y Condición</span>
+        <strong>{{ data.factura?.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</strong>
+        <span class="block text-xs text-color-secondary mt-1">Condición: Contado</span>
       </div>
     </div>
+
+    <!-- Tabla de ítems -->
+    <p-table [value]="data.detalles || []" size="small" [tableStyle]="{ 'min-width': '100%' }">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Producto</th>
+          <th class="text-right">Cant</th>
+          <th class="text-right">Precio</th>
+          <th class="text-right">Total</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td>{{ item.descripcion || item.codbarra }}</td>
+          <td class="text-right">{{ item.cantidad }}</td>
+          <td class="text-right">{{ item.precioventa | currency:'HNL':'symbol':'2.2-2' }}</td>
+          <td class="text-right">{{ item.subTotal | currency:'HNL':'symbol':'2.2-2' }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <!-- Totales -->
+    <div class="flex flex-column align-items-end gap-1 p-3 surface-card border-round text-sm">
+      <div class="flex justify-content-between w-12 md:w-6">
+        <span>Subtotal:</span>
+        <strong>{{ data.factura?.subTotal | currency:'HNL':'symbol':'2.2-2' }}</strong>
+      </div>
+      <div class="flex justify-content-between w-12 md:w-6">
+        <span>ISV / Impuesto:</span>
+        <strong>{{ data.factura?.impuesto | currency:'HNL':'symbol':'2.2-2' }}</strong>
+      </div>
+      @if (data.factura?.descuento > 0) {
+      <div class="flex justify-content-between w-12 md:w-6">
+        <span>Descuento:</span>
+        <strong>- {{ data.factura?.descuento | currency:'HNL':'symbol':'2.2-2' }}</strong>
+      </div>
+      }
+      <div
+        class="flex justify-content-between w-12 md:w-6 border-top-1 surface-border pt-2 text-base font-bold text-primary"
+      >
+        <span>Total:</span>
+        <span>{{ data.factura?.total | currency:'HNL':'symbol':'2.2-2' }}</span>
+      </div>
+    </div>
+  </div>
   }
 
   <ng-template pTemplate="footer">

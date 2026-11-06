@@ -1,0 +1,915 @@
+/* You can add global styles to this file, and also import other style files */
+@layer primeng {}
+@font-face {
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-semibold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'mukta';
+  src: url('/assets/fonts/mukta/mukta-extrabold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
+
+/* figtree — fuente variable (pesos 300–900, romana + itálica) */
+@font-face {
+  font-family: 'figtree';
+  src: url('/assets/fonts/figtree/figtree-variablefont_wght.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'figtree';
+  src: url('/assets/fonts/figtree/figtree-italic-variablefont_wght.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'AstroSpace';
+    src: url('/assets/fonts/AstroSpace/AstroSpace.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+
+@font-face {
+  font-family: 'angora';
+  src: url('/assets/fonts/angora/angora-1g3bb.otf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'audiowide';
+  src: url('/assets/fonts/audiowide/audiowide-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
+
+@font-face {
+  font-family: 'hurricane';
+  src: url('/assets/fonts/hurricane/hurricane-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
+
+@font-face {
+  font-family: 'rye';
+  src: url('/assets/fonts/rye/rye-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: regular;
+}
+
+:root {
+  --font-family: 'figtree', 'mukta', sans-serif;
+  --color-font-sidebar: #dbe7f0;
+  --color-texto-label: rgba(255, 255, 255, 0.4);
+  --color-texto-input: rgba(255, 255, 255, 0.808);
+  --master-background: #213341;
+  --datatable-row-hover-background: #285856e7;
+    --datatable-row-striped-background: #1f2f3a;
+  --texto-secundario: #2c4d6f;
+  --select-row: #93b7d3;
+  --for-border-color-alls: #39495b;
+  --color1: #243347;
+    --color2: #1E293B;
+
+  /* ===== Design tokens ===== */
+  --c-bg-white: white;
+   --c-bg: white;
+  --c-bg-white:  #1e2e3b;
+  --c-bg-black: black;
+  --c-bg-muted: #1e2e3b00;
+  --c-bg-login: #030713;
+  --c-bg-login-inputtext: #030713;
+  --c-surface: #1e2e3b;
+  --c-surface-muted: #2d3d50b4;
+  --c-card-background: #08131c;
+  --c-card-color-text: var(--color-texto-label);
+  --c-border: #1e2e3b;
+  --c-border-strong: #2c4d6f;
+  --c-text: var(--color-texto-label);
+  --c-text-secondary: var(--texto-secundario);
+  --c-text-muted: #8aa9c9;
+  --c-text-faint: #5f86ab;
+  --c-disabled-color: #1f2f3a;
+  --c-primary: #3d8bff;
+  --c-primary-strong: #0070f2;
+  --c-success: #2fd48a;
+  --c-warning: #f5a623;
+  --c-danger: #d84b4b;
+  --c-peligro: #c41919;
+  --c-info: #38bdf8;
+  --c-uva: #604ec7ef;
+  --c-amarillo: #faf06af8;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 28px -8px rgba(0, 0, 0, 0.55);
+  --shadow-focus: 0 0 0 3px rgba(61, 139, 255, 0.35);
+
+  --tr-fast: 150ms ease;
+  --tr-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --tr-smooth: 300ms cubic-bezier(0.32, 0.72, 0, 1);
+
+  --p-button-padding-x: 0.75rem;
+  --p-button-padding-y: 0.5rem;
+  --p-button-font-size: 0.875rem;
+  --p-inputtext-padding-x: 0.75rem;
+  --p-inputtext-padding-y: 0.5rem;
+  --p-inputtext-font-size: 0.875rem;
+  --p-select-padding-x: 0.75rem;
+  --p-select-padding-y: 0.5rem;
+  --p-select-font-size: 0.875rem;
+  --p-textarea-padding-x: 0.75rem;
+  --p-textarea-padding-y: 0.5rem;
+  --p-textarea-font-size: 0.875rem;
+  --p-datepicker-padding-x: 0.75rem;
+  --p-datepicker-padding-y: 0.5rem;
+  --p-datepicker-font-size: 0.875rem;
+  --p-inputicon-font-size: 0.875rem;
+  --p-paginator-font-size: 0.875rem;
+
+  --p-form-field-background: #213341;
+  --p-form-field-border-color: #39495b;
+
+
+  --p-navigation-item-color: #7f8790;
+  --p-navigation-item-icon-color: #558dc6;
+
+  --p-panelmenu-item-focus-color: #558dc6;
+  --p-navigation-submenu-icon-color: #558dc6;
+
+
+  --p-card-title-font-size: 1.05rem;
+  --p-card-background: var(--p-form-field-background);
+
+  --p-inputtext-color: var(--color-texto-input);
+  --p-inputtext-background: #213341;
+  --p-inputtext-border-color: #39495b;
+  --p-inputtext-disabled-color: var(--c-text-muted);
+  --p-inputtext-disabled-background: var(--c-bg);
+  --p-inputtext-disabled-border-color: #2a3a4a;
+  --p-inputtext-invalid-border-color: var(--c-danger);
+
+  --p-togglebutton-color: var(--color-texto-input);
+  --p-togglebutton-background: var(--c-bg);
+
+
+  // para los botones selecionados del toggle button
+  --p-togglebutton-checked-color: var(--c-success);
+  --p-togglebutton-content-checked-background: var(--p-inputtext-background);
+
+
+  --p-togglebutton-background: var(--c-bg);
+  --p-togglebutton-checked-background: var(--c-bg);
+
+  --p-togglebutton-hover-color: var(--c-amarillo);
+  --p-togglebutton-border-color: var(--c-bg);
+  --p-togglebutton-checked-border-color: var(--c-bg);
+
+
+  --p-select-color: var(--color-texto-input);
+  --p-select-background: var(--p-form-field-background);
+  --p-select-disabled-background: var(--c-bg);
+  --p-select-disabled-color: var(--c-text-muted);
+
+  --p-inputnumber-disabled-background: var(--c-bg);
+  --p-datepicker-disabled-background: var(--c-bg);
+
+  --p-toolbar-border-color: var(--for-border-color-alls);
+
+  --p-datatable-body-cell-border-color: #25374a;
+  --p-datatable-header-cell-border-color: #25374a;
+  --p-datatable-header-cell-color: var(--color-texto-input);
+  --p-datatable-body-cell-sm-padding: 0.20rem 0.08rem;
+    /* Reduce o aumenta el padding vertical y horizontal de las celdas */
+    --p-datatable-body-cell-padding: 0.20rem 0.08rem;
+    /* Valor más compacto que el predeterminado */
+
+    /* Cambiar el color de fondo para las filas impares/pares alternadas */
+      --p-datatable-row-striped-background: var(--datatable-row-striped-background);
+
+      /* Color de fila seleccionada */
+      --p-datatable-row-selected-background: var(--c-text-muted);
+      --p-datatable-row-selected-color: var(--color-texto-label);
+      --p-datatable-row-hover-background: var(--datatable-row-hover-background);
+
+
+  --p-tag-secondary-background: var(--c-bg-muted);
+  --p-tag-success-background: var(--c-bg-muted);
+  --p-tag-info-background: var(--c-bg-muted);
+  --p-tag-warn-background: var(--c-bg-muted);
+  --p-tag-danger-background: var(--c-bg-muted);
+
+  --p-tag-rounded-border-radius: 5px 5px 5px 5px;
+
+  --surface-border: var(--for-border-color-alls);
+
+--p-button-contrast-background: var(--c-bg-black);
+  --p-button-contrast-border-color: var(--c-bg-black);
+  --p-button-contrast-color: var(--c-bg-white);
+  /* Tamaño pequeño (sm) */
+    --p-button-sm-font-size: 0.92rem !important;
+      --p-button-sm-padding-x: 0.7rem !important;
+      --p-button-sm-padding-y: 0.45rem !important;
+    --p-button-sm-icon-only-width: 1.75rem !important;
+
+    /* Bordes de los botones */
+    --p-button-border-radius: 4px !important;
+    --p-button-rounded-border-radius: 9999px !important;
+
+}
+
+
+.p-dataview {
+  --p-dataview-content-padding: 0.25rem;
+  /* Modifica el padding general del contenedor de contenido */
+}
+
+.p-datatable.p-datatable-sm .p-datatable-header {
+  padding: 0.72845rem 0.85rem;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-thead>tr>th {
+  padding: 0.28535rem 0.72845rem;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-tbody>tr>td {
+  padding: 0.28535rem 0.72845rem;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-tfoot>tr>td {
+  padding: 0.48535rem 0.85rem;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-footer {
+  padding: 0.48535rem 0.85rem;
+}
+
+.p-button.p-button-sm {
+  font-size: 0.875rem;
+  padding: 0.375375rem 0.875rem;
+}
+
+.p-button.p-button-sm .p-button-icon {
+  font-size: 0.875rem;
+}
+::ng-deep .p-dataview .p-dataview-content .dataview-item {
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+::ng-deep .p-dataview .p-dataview-content .dataview-item:hover {
+  background-color: var(--datatable-row-hover-background);
+  /* O usa un color fijo como #f8fafc */
+  color: var(--c-bg-white);
+  cursor: pointer;
+}
+
+.togglebutton-bg-azulnarino {
+  /* Estado Normal (Sin chequear) */
+  --p-togglebutton-background: var(--c-bg-black);
+  --p-togglebutton-border-color: var(--c-bg-black);
+
+  /* Estado Hover (Sin chequear) */
+  --p-togglebutton-hover-background: rgba(255, 255, 255, 0.08);
+  --p-togglebutton-hover-border-color: var(--c-bg-black);
+
+  /* Estado Chequeado */
+  --p-togglebutton-checked-background: rgba(255, 255, 255, 0.08);
+  --p-togglebutton-content-checked-background: rgba(255, 255, 255, 0.08);
+  --p-togglebutton-checked-border-color: var(--c-bg-black);
+}
+
+.togglebutton-bg-black {
+  /* Estado Normal (Sin chequear) */
+  --p-togglebutton-background: var(--c-bg-black);
+  --p-togglebutton-border-color: var(--c-bg-black);
+
+  /* Estado Hover (Sin chequear) */
+  --p-togglebutton-hover-background: var(--c-bg);
+  --p-togglebutton-hover-border-color: var(--c-bg);
+
+  /* Estado Chequeado */
+  --p-togglebutton-checked-background: var(--c-bg);
+  --p-togglebutton-content-checked-background: var(--c-bg);
+  --p-togglebutton-checked-border-color: var(--c-bg);
+}
+.botton-bg-transparente {
+  background: transparent;
+  color: var(--c-bg-white);
+
+  --p-button-contrast-background: transparent;
+  --p-button-contrast-border-color: var(--c-bg-black);
+  --p-button-contrast-color: var(--c-bg-white);
+}
+
+.inputtext-transparente {
+  background: transparent;
+  color: var(--c-bg-white);
+  border-color: var(--c-bg-white);
+  --p-inputtext-background: transparent;
+  --p-inputtext-border-color: var(--c-bg-white);
+  --p-inputtext-color: var(--c-bg-white);
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--c-text);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+label {
+  color: var(--c-text);
+  /* Color del texto */
+}
+
+thead th {
+  color: var(--c-text);
+}
+
+tr {
+  color: var(--c-text);
+}
+
+
+ul {
+  display: block;
+  list-style-type: none;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+  padding-inline-start: 12px;
+  unicode-bidi: isolate;
+}
+
+
+.p-inputtext {
+  color: var(--c-text);
+  /* Color del texto */
+}
+
+.p-select {
+  color: var(--c-text);
+  /* Color del texto */
+}
+
+.p-card {
+  --p-card-body-padding: 0.75rem;
+  /* O el valor que prefieras, ej: 10px, 0.5rem */
+}
+
+.tabla-card {
+  padding: 0.05rem;
+  overflow: hidden;
+  border-radius: 12px;
+
+}
+
+/* =====================================================
+   Animaciones de entrada
+   ===================================================== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseSoft {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page>* {
+    animation: fadeInUp var(--tr-smooth) both;
+  }
+
+  .page>*:nth-child(2) {
+    animation-delay: 0.04s;
+  }
+
+  .page>*:nth-child(3) {
+    animation-delay: 0.08s;
+  }
+
+  .page>*:nth-child(4) {
+    animation-delay: 0.12s;
+  }
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.p-skeleton {
+  background: linear-gradient(90deg, #eef2f7 25%, #e2e8f0 50%, #eef2f7 75%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 1.6s infinite !important;
+}
+
+/* =====================================================
+   Estilos compartidos de páginas
+   ===================================================== */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+
+  .page-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+}
+
+.w-full {
+  width: 100%;
+}
+
+.page-title {
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--c-text);
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.page-subtitle {
+  font-size: 0.9rem;
+  color: var(--c-text-muted);
+  margin: 0;
+}
+
+/* Tarjeta genérica */
+.card {
+  background: var(--c-bg);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--for-border-color-alls);
+
+}
+
+// =====================================================
+// Tablas responsive con scroll horizontal
+// =====================================================
+.p-datatable-wrapper {
+  overflow-x: auto;
+
+  table {
+    min-width: max-content;
+  }
+}
+
+@media (max-width: 640px) {
+  .p-datatable-wrapper {
+    margin: 0 -0.75rem;
+    padding: 0 0.75rem;
+  }
+
+  .p-datatable-table {
+    font-size: 0.8rem;
+  }
+
+  .p-datatable-tbody>tr>td {
+    padding: 0.5rem 0.4rem !important;
+    white-space: nowrap;
+  }
+
+  .p-datatable-thead>tr>th {
+    padding: 0.5rem 0.4rem !important;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .p-paginator {
+    font-size: 0.8rem;
+    padding: 0.5rem 0 !important;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+}
+
+// =====================================================
+// Mejoras táctiles / accesibilidad
+// =====================================================
+@media (pointer: coarse) {
+
+  .p-button,
+  .p-inputtext,
+  .p-select,
+  .p-datepicker {
+    min-height: 44px;
+  }
+}
+
+// =====================================================
+// Responsive: compartido
+// =====================================================
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+
+    >div:first-child {
+      width: 100%;
+    }
+
+    >div:last-child,
+    >p-button {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      button,
+      .p-button {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+  }
+
+  .card {
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+  }
+
+  .totales-grid {
+    @media (max-width: 640px) {
+      .nf-totales-row {
+        .nf-total-block {
+          flex: 1 1 45%;
+        }
+      }
+    }
+  }
+}
+
+/* Bloque de filtros */
+.filtros {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--c-text-secondary);
+    }
+
+    &.acciones {
+      flex-direction: row;
+      gap: 0.5rem;
+      align-items: center;
+    }
+  }
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .campo {
+      width: 100%;
+
+      input,
+      p-select,
+      p-button,
+      .p-select,
+      .p-inputtext {
+        width: 100%;
+      }
+
+      &.acciones {
+        flex-direction: column;
+
+        button,
+        .p-button {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+/* Tablas */
+.text-center {
+  text-align: center;
+}
+
+/* =====================================================
+   DataView cards (catálogos)
+   ===================================================== */
+.dv-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dv-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--tr-base),
+    border-color var(--tr-base),
+    transform var(--tr-base);
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: #bfdbfe;
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+
+  .dv-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+
+    .dv-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--c-text);
+    }
+  }
+
+  .dv-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+  }
+
+  .dv-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+
+    .dv-label {
+      color: var(--c-text-faint);
+      font-weight: 500;
+    }
+
+    .dv-value {
+      color: var(--c-text-secondary);
+      font-weight: 600;
+
+      &.dv-monto {
+        color: var(--c-success);
+        font-variant-numeric: tabular-nums;
+      }
+    }
+  }
+
+  .dv-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  @media (max-width: 640px) {
+    padding: 0.85rem 0.9rem;
+  }
+}
+
+.p-dataview-content {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.monto {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* =====================================================
+   Impresión de reportes
+   ===================================================== */
+@media print {
+
+  .layout-wrapper .sidebar,
+  .layout-wrapper .topbar,
+  .no-print,
+  .filtros,
+  .page-header button,
+  .p-paginator {
+    display: none !important;
+  }
+
+  .layout-main {
+    margin-left: 0 !important;
+  }
+
+  .layout-content {
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+/* Encabezado de reporte impreso */
+.print-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.3rem;
+  }
+
+  p {
+    margin: 0.2rem 0;
+    font-size: 0.85rem;
+    color: #475569;
+  }
+}
+
+/* Tarjetas de totales (reportes) */
+.totales-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+
+  .total-card {
+    background: var(--c-surface-muted);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+
+    .label {
+      font-size: 0.75rem;
+      color: var(--c-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--c-text);
+      margin-top: 0.2rem;
+    }
+  }
+}
+
+/* ── Pagos Cards Container (Pivoted / Stacked Layout for Mobile POS & Invoices) ── */
+.pagos-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.pago-card-item {
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  .pago-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--c-border);
+
+    .pago-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--c-text);
+    }
+  }
+
+  .pago-card-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0.75rem;
+
+    .pago-field {
+      grid-column: span 12;
+
+      @media (min-width: 768px) {
+        &.md\:col-6 {
+          grid-column: span 6;
+        }
+      }
+
+      label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--c-text-muted);
+      }
+    }
+  }
+}

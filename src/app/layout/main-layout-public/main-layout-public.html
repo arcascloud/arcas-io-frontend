@@ -1,6 +1,9 @@
-<div class="layout-wrapper">
-  <!-- Menú Drill-Down (Departamentos -> Categorías con botón Volver) en p-drawer a la izquierda -->
-  <p-drawer [(visible)]="menuVisible"
+<div class="layout-wrapper" [class.menu-visible]="menuVisible()">
+  <!-- Menú Drill-Down (Departamentos -> Categorías con botón Volver) en p-drawer a la izquierda.
+       Desktop: modal=false → sin máscara, el contenido se empuja (estilo sidebar del layout privado).
+       Móvil: modal=true → overlay con máscara para cerrar tocando fuera. -->
+  <p-drawer [visible]="menuVisible()" (visibleChange)="menuVisible.set($event)"
+     [modal]="esMobile()"
      position="left" styleClass="departamentos-drawer">
     <ng-template #header>
       <div class="flex items-center gap-2">
@@ -19,7 +22,7 @@
         <p-button
           id="btnShowDrawer"
           icon="pi pi-bars"
-          (onClick)="menuVisible = true"
+          (onClick)="menuVisible.set(!menuVisible())"
           severity="contrast"
           rounded="true"
           variant="text"

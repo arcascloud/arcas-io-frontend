@@ -99,6 +99,8 @@ export class TiendaVirtual implements OnInit {
   resetFiltros() {
     this.filtroService.limpiarFiltros();
     this.busqueda.set('');
+    this.soloOfertas.set(false);
+    this.ordenarPor.set('default');
   }
 
   onCategoriasChange(categoriaIds: any) {

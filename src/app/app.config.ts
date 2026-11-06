@@ -19,7 +19,55 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 
-const ArcasPreset = definePreset(Aura, {
+const themeblue = definePreset(Aura, {
+  semantic: {
+    primary: {
+      50: '#f3f8fc', // Lightest shade - like a whisper of blue
+      100: '#c6dcef', // Getting a bit more confident
+      200: '#98c1e3', // Now we're talking
+      300: '#6ba5d7', // Getting serious
+      400: '#3d8aca', // Business time
+      500: '#106ebe', // The main character - your primary color
+      600: '#0e5ea2', // Darker and moodier
+      700: '#0b4d85', // Even more dramatic
+      800: '#093d69', // Almost brooding
+      900: '#062c4c', // The darkest timeline
+    },
+    colorScheme: {
+      dark: {
+        surface: {
+          0: '#ffffff',
+          50: '#eef3f8',
+          100: '#d9e4ef',
+          200: '#b4c8de',
+          300: '#8aa9c9',
+          400: '#5f86ab',
+          500: '#3d6690',
+          600: '#2c4d6f',
+          700: '#213a56',
+          800: '#213546',
+          900: '#1e2e3b' /* p-menu bar*/,
+          950: '#28425c',
+        },
+        primary: {
+          color: '{primary.700}',
+          contrastColor: '{surface.800}',
+          hoverColor: '{primary.700}' /* color de input */,
+          activeColor: '{primary.700}',
+        },
+        highlight: {
+          background: 'color-mix(in srgb, {primary.200}, transparent 84%)',
+          focusBackground: 'color-mix(in srgb, {primary.400}, transparent 76%)',
+          color: 'rgba(255, 255, 255, 0.88)',
+          focusColor: 'rgba(255,255,255,.98)',
+        },
+      },
+    },
+  },
+});
+export default themeblue;
+
+const themedark = definePreset(Aura, {
   semantic: {
     primary: {
       50: '#eef4f9',
@@ -65,7 +113,6 @@ const ArcasPreset = definePreset(Aura, {
       },
     },
   },
-
 });
 
 export const appConfig: ApplicationConfig = {
@@ -101,7 +148,7 @@ export const appConfig: ApplicationConfig = {
         ],
       },
       theme: {
-        preset: ArcasPreset,
+        preset: themedark,
         options: {
           darkModeSelector: '.app-dark',
           cssLayer: {

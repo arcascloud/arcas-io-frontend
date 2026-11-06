@@ -107,7 +107,7 @@
             optionValue="value"
             styleClass="sort-select"
           />
-          <div class="view-toggles desktop-only">
+          <div class="view-toggles">
             <button
               class="view-btn"
               [class.active]="layout() === 'grid'"
@@ -136,6 +136,20 @@
             (click)="soloOfertas.set(!soloOfertas())"
             pTooltip="Solo ofertas"
             tooltipPosition="left"
+          >
+          </p-button>
+          <p-button
+            [size]="'small'"
+            label="Limpiar filtros"
+            icon="pi pi-filter-slash"
+            [rounded]="true"
+            variant="text"
+             [raised]="true"
+            severity="success"
+            (click)="resetFiltros()"
+            pTooltip="Limpiar todos los filtros"
+            tooltipPosition="left"
+            styleClass="botton-bg-contrast-solid"
           >
           </p-button>
         </div>

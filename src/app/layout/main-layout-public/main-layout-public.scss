@@ -3,7 +3,6 @@
 $sidebar-width: 320px;
 $sidebar-collapsed-width: 56px;
 $topbar-height: 75px;
-
 // CSS variables estilo Diamond
 :host {
   --d-sidebar-bg-color: rgba(11, 14, 23, 0.85);
@@ -128,7 +127,7 @@ $topbar-height: 75px;
 }
 
 .sidebar-title {
-    font-family: "AstroSpace", "audiowide";
+  font-family: "AstroSpace", "audiowide";
   font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
@@ -226,6 +225,7 @@ $topbar-height: 75px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  transition: margin-left 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 // ===== Topbar =====
@@ -544,8 +544,9 @@ $topbar-height: 75px;
 
   .p-drawer-header {
    font-family: 'astrospace';
+    height: 70px;
     font-weight: 300;
-    background: var(--c-bg);
+    background: rgba(11, 14, 23, 0.85);
     border-bottom: var(--d-menu-separator-border);
     color: var(--d-app-name-color);
     text-align: center;
@@ -563,6 +564,24 @@ $topbar-height: 75px;
   }
 }
 
+// ===== Empuje del contenido al abrir el drawer (desktop, estilo main-layout-private) =====
+// El drawer deja de ser modal (sin máscara) y el layout se reajusta para ver
+// los items de la tienda/pedidos junto al menú. En móvil sigue siendo overlay.
+$drawer-width: 380px;
+
+@media (min-width: 769px) {
+  .menu-visible .layout-main {
+    margin-left: $drawer-width;
+  }
+
+  .menu-visible .topbar {
+    left: $drawer-width;
+  }
+
+  .topbar {
+    transition: left 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
 .drawer-login {
   display: flex;
   flex-direction: column;

@@ -245,7 +245,7 @@
       --p-button-sm-padding-x: 0.7rem !important;
       --p-button-sm-padding-y: 0.45rem !important;
     --p-button-sm-icon-only-width: 1.75rem !important;
-  
+
     /* Bordes de los botones */
     --p-button-border-radius: 4px !important;
     --p-button-rounded-border-radius: 9999px !important;
@@ -326,6 +326,7 @@
   --p-togglebutton-content-checked-background: var(--c-bg);
   --p-togglebutton-checked-border-color: var(--c-bg);
 }
+
 .botton-bg-transparente {
   background: transparent;
   color: var(--c-bg-white);
@@ -335,6 +336,9 @@
   --p-button-contrast-color: var(--c-bg-white);
 }
 
+.botton-bg-contrast-solid {
+  color: var(--c-info);
+}
 .inputtext-transparente {
   background: transparent;
   color: var(--c-bg-white);

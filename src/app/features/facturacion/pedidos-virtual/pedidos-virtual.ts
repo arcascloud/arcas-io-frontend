@@ -28,9 +28,21 @@ import { NavegacionService } from '../../../core/services/navegacion.service';
   selector: 'app-pedidos-virtual',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, DataViewModule, ButtonModule, DialogModule,
-    InputNumberModule, InputTextModule, InputMaskModule, SelectModule, TagModule, ToastModule,
-    TooltipModule, MessageModule, GalleriaModule, TableModule,
+    CommonModule,
+    FormsModule,
+    DataViewModule,
+    ButtonModule,
+    DialogModule,
+    InputNumberModule,
+    InputTextModule,
+    InputMaskModule,
+    SelectModule,
+    TagModule,
+    ToastModule,
+    TooltipModule,
+    MessageModule,
+    GalleriaModule,
+    TableModule,
   ],
   providers: [],
   templateUrl: './pedidos-virtual.html',
@@ -114,7 +126,10 @@ export class PedidosVirtual implements OnInit {
       if (!p.categoriaId) continue;
       const prev = map.get(p.categoriaId);
       if (!prev) {
-        map.set(p.categoriaId, { descripcion: p.categoria || '', giro: (p as any).tipo_giro || '' });
+        map.set(p.categoriaId, {
+          descripcion: p.categoria || '',
+          giro: (p as any).tipo_giro || '',
+        });
       } else {
         prev.descripcion = p.categoria || prev.descripcion;
         prev.giro = (p as any).tipo_giro || prev.giro;
@@ -149,31 +164,48 @@ export class PedidosVirtual implements OnInit {
     const orden = this.ordenarPor();
     const soloOfertas = this.soloOfertas();
 
-    if (soloOfertas) lista = lista.filter(p => this.esOferta(p));
-    if (cat) lista = lista.filter(p => p.categoria === cat);
-    if (busq) lista = lista.filter(p =>
-      p.descripcion?.toLowerCase().includes(busq) ||
-      p.codbarra?.toLowerCase().includes(busq)
-    );
+    if (soloOfertas) lista = lista.filter((p) => this.esOferta(p));
+    if (cat) lista = lista.filter((p) => p.categoria === cat);
+    if (busq)
+      lista = lista.filter(
+        (p) =>
+          p.descripcion?.toLowerCase().includes(busq) || p.codbarra?.toLowerCase().includes(busq),
+      );
 
     const copia = [...lista];
     switch (orden) {
-      case 'precio-asc': copia.sort((a, b) => Number(a.precioventa) - Number(b.precioventa)); break;
-      case 'precio-desc': copia.sort((a, b) => Number(b.precioventa) - Number(a.precioventa)); break;
-      case 'nombre-asc': copia.sort((a, b) => (a.descripcion || '').localeCompare(b.descripcion || '')); break;
-      case 'nombre-desc': copia.sort((a, b) => (b.descripcion || '').localeCompare(a.descripcion || '')); break;
+      case 'precio-asc':
+        copia.sort((a, b) => Number(a.precioventa) - Number(b.precioventa));
+        break;
+      case 'precio-desc':
+        copia.sort((a, b) => Number(b.precioventa) - Number(a.precioventa));
+        break;
+      case 'nombre-asc':
+        copia.sort((a, b) => (a.descripcion || '').localeCompare(b.descripcion || ''));
+        break;
+      case 'nombre-desc':
+        copia.sort((a, b) => (b.descripcion || '').localeCompare(a.descripcion || ''));
+        break;
     }
     return copia;
   });
 
   totalItems = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.cantidad), 0));
   /** Σ subtotales brutos de las líneas (sin ISV) */
-  subtotalPedido = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.subtotal), 0));
+  subtotalPedido = computed(() =>
+    this.pedidoItems().reduce((sum, i) => sum + Number(i.subtotal), 0),
+  );
   /** Σ ISV de las líneas */
-  isvPedido = computed(() => this.pedidoItems().reduce((sum, i) => sum + Number(i.impuesto ?? 0), 0));
+  isvPedido = computed(() =>
+    this.pedidoItems().reduce((sum, i) => sum + Number(i.impuesto ?? 0), 0),
+  );
   /** Total = Σ(subtotal + impuesto − descuento) — misma fórmula que checkoutPedido en backend */
-  totalPedido = computed(() => this.pedidoItems().reduce((sum, i) =>
-    sum + Number(i.subtotal) + Number(i.impuesto ?? 0) - Number(i.descuento ?? 0), 0));
+  totalPedido = computed(() =>
+    this.pedidoItems().reduce(
+      (sum, i) => sum + Number(i.subtotal) + Number(i.impuesto ?? 0) - Number(i.descuento ?? 0),
+      0,
+    ),
+  );
 
   /**
    * Valida el formulario de pago — DEBE ser método y NO computed(): `checkout` es un objeto
@@ -185,11 +217,15 @@ export class PedidosVirtual implements OnInit {
     if (!this.checkout.nombrecliente) return false;
     if (this.esTarjeta()) {
       const num = this.checkout.nrotarjeta?.replace(/\s/g, '') || '';
-      return num.length >= 13
-        && this.validarLuhn(num)
-        && !!this.checkout.fechaexpiracion && /^\d{2}\/\d{2}$/.test(this.checkout.fechaexpiracion)
-        && !!this.checkout.cvv && this.checkout.cvv.length >= 3
-        && !!this.checkout.tarjetacreditoId;
+      return (
+        num.length >= 13 &&
+        this.validarLuhn(num) &&
+        !!this.checkout.fechaexpiracion &&
+        /^\d{2}\/\d{2}$/.test(this.checkout.fechaexpiracion) &&
+        !!this.checkout.cvv &&
+        this.checkout.cvv.length >= 3 &&
+        !!this.checkout.tarjetacreditoId
+      );
     }
     if (this.esTransferencia()) {
       return !!this.checkout.nroautorizacion && this.checkout.nroautorizacion.trim().length > 0;
@@ -197,7 +233,13 @@ export class PedidosVirtual implements OnInit {
     return true;
   }
 
-  checkout: CheckoutPedido & { nrotarjeta?: string; tarjetacreditoId?: number; fechaexpiracion?: string; cvv?: string; nroautorizacion?: string } = {
+  checkout: CheckoutPedido & {
+    nrotarjeta?: string;
+    tarjetacreditoId?: number;
+    fechaexpiracion?: string;
+    cvv?: string;
+    nroautorizacion?: string;
+  } = {
     pospedmaeId: 0,
     nombrecliente: '',
     nrotelefono: '',
@@ -224,6 +266,13 @@ export class PedidosVirtual implements OnInit {
     }
   }
 
+  resetFiltros() {
+    this.busqueda.set('');
+    this.categoriaFiltro.set(null);
+    this.soloOfertas.set(false);
+    this.ordenarPor.set('default');
+  }
+
   /** Vuelve al listado de pedidos (con fallback si no hay historial) */
   volver() {
     this.navegacion.volver(['/facturacion/pedidos']);
@@ -231,13 +280,18 @@ export class PedidosVirtual implements OnInit {
 
   cargarPedidoExistente(pedidoId: number) {
     this.cargando.set(true);
-    this.pedidosService.getPedido(pedidoId)
+    this.pedidosService
+      .getPedido(pedidoId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (pedido) => {
           this.pedidoId.set(pedido.pospedmaeId);
-          this.pedidoDatosCliente.set({ nombre: pedido.nombrecliente || '', tel: pedido.nrotelefono || '' });
-          this.pedidosService.getPedidoItems(pedido.pospedmaeId)
+          this.pedidoDatosCliente.set({
+            nombre: pedido.nombrecliente || '',
+            tel: pedido.nrotelefono || '',
+          });
+          this.pedidosService
+            .getPedidoItems(pedido.pospedmaeId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
               next: (items) => {
@@ -246,20 +300,29 @@ export class PedidosVirtual implements OnInit {
               },
               error: () => {
                 this.cargando.set(false);
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los items del pedido' });
+                this.messageService.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: 'No se pudieron cargar los items del pedido',
+                });
               },
             });
         },
         error: () => {
           this.cargando.set(false);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Pedido no encontrado' });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Pedido no encontrado',
+          });
         },
       });
   }
 
   cargarProductos() {
     this.cargando.set(true);
-    this.pedidosService.getProductos(true)
+    this.pedidosService
+      .getProductos(true)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
@@ -268,7 +331,11 @@ export class PedidosVirtual implements OnInit {
           this.cdr.markForCheck();
         },
         error: () => {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los productos' });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudieron cargar los productos',
+          });
           this.cargando.set(false);
           this.cdr.markForCheck();
         },
@@ -277,12 +344,13 @@ export class PedidosVirtual implements OnInit {
 
   /** Carga productos en oferta/promoción desde un solo endpoint */
   cargarOfertas() {
-    this.api.get<any>('/facturacion/combos-ofertas')
+    this.api
+      .get<any>('/facturacion/combos-ofertas')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
           const ofertas = res?.value ?? res ?? [];
-          for (const o of (Array.isArray(ofertas) ? ofertas : [])) {
+          for (const o of Array.isArray(ofertas) ? ofertas : []) {
             const pid = Number(o.productoId);
             this.mapaOfertas.set(pid, Number(o.precioConDescuento));
             this.mapaDescuento.set(pid, Number(o.porcentaje));
@@ -308,25 +376,31 @@ export class PedidosVirtual implements OnInit {
   }
 
   cargarFormasPago() {
-    this.api.get<{ formapagoId: number; descripcion: string }[]>('/parametros/formas-pago')
+    this.api
+      .get<{ formapagoId: number; descripcion: string }[]>('/parametros/formas-pago')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
-          const permitidas = data.filter(f =>
-            this.formasPagoPermitidas.some(p => f.descripcion.toLowerCase().includes(p))
+          const permitidas = data.filter((f) =>
+            this.formasPagoPermitidas.some((p) => f.descripcion.toLowerCase().includes(p)),
           );
-          this.formaspago.set(permitidas.map(f => ({ label: f.descripcion, value: f.formapagoId })));
+          this.formaspago.set(
+            permitidas.map((f) => ({ label: f.descripcion, value: f.formapagoId })),
+          );
         },
         error: () => {},
       });
   }
 
   cargarTarjetasCredito() {
-    this.api.get<{ tarjetacreditoId: number; descripcion: string }[]>('/parametros/tarjetas-credito')
+    this.api
+      .get<{ tarjetacreditoId: number; descripcion: string }[]>('/parametros/tarjetas-credito')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
-          this.tarjetasCredito.set(data.map(t => ({ label: t.descripcion, value: t.tarjetacreditoId })));
+          this.tarjetasCredito.set(
+            data.map((t) => ({ label: t.descripcion, value: t.tarjetacreditoId })),
+          );
         },
         error: () => {},
       });
@@ -334,7 +408,8 @@ export class PedidosVirtual implements OnInit {
 
   /** Catálogo de impuestos (módulo Facturación): ISV 15%, 18%, etc. */
   private cargarImpuestosISV() {
-    this.api.get<any[]>('/parametros/impuestos')
+    this.api
+      .get<any[]>('/parametros/impuestos')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (items) => {
@@ -347,7 +422,8 @@ export class PedidosVirtual implements OnInit {
 
   /** Param-fac (módulo 3): impuesto configurado para facturación */
   private cargarParamFacISV() {
-    this.api.get<any>('/parametros/parametros/objeto?moduloId=3')
+    this.api
+      .get<any>('/parametros/parametros/objeto?moduloId=3')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (p) => {
@@ -361,8 +437,11 @@ export class PedidosVirtual implements OnInit {
   /** Resuelve la tasa: por impuestoId del param-fac, o fallback al primer impuesto activo del módulo 3 (igual que nueva-factura) */
   private aplicarTasa() {
     if (!this.impuestos.length) return;
-    const porId = this.impuestos.find(i => i.impuestoId === this.impuestoId && i.sn_activo === 'S');
-    const porModulo = porId || this.impuestos.find(i => Number(i.moduloId) === 3 && i.sn_activo === 'S');
+    const porId = this.impuestos.find(
+      (i) => i.impuestoId === this.impuestoId && i.sn_activo === 'S',
+    );
+    const porModulo =
+      porId || this.impuestos.find((i) => Number(i.moduloId) === 3 && i.sn_activo === 'S');
     if (porModulo && Number(porModulo.porcentaje) > 0) {
       this.tasaImpuestoPct = Number(porModulo.porcentaje);
       this.tasaImpuesto = this.tasaImpuestoPct / 100;
@@ -377,7 +456,11 @@ export class PedidosVirtual implements OnInit {
 
   async agregarAlPedido(producto: ProductoTienda) {
     if (producto.existencia <= 0) {
-      this.messageService.add({ severity: 'warn', summary: 'Sin stock', detail: 'Producto sin existencia' });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Sin stock',
+        detail: 'Producto sin existencia',
+      });
       return;
     }
 
@@ -385,10 +468,14 @@ export class PedidosVirtual implements OnInit {
       await this.crearPedido();
     }
 
-    const existing = this.pedidoItems().find(i => i.productoId === Number(producto.produtoId));
+    const existing = this.pedidoItems().find((i) => i.productoId === Number(producto.produtoId));
     const nuevaCant = existing ? existing.cantidad + 1 : 1;
     if (nuevaCant > producto.existencia) {
-      this.messageService.add({ severity: 'warn', summary: 'Stock insuficiente', detail: `Solo quedan ${producto.existencia} unidades` });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Stock insuficiente',
+        detail: `Solo quedan ${producto.existencia} unidades`,
+      });
       return;
     }
 
@@ -410,29 +497,44 @@ export class PedidosVirtual implements OnInit {
     };
 
     if (existing) {
-      this.pedidosService.eliminarItem(existing.pospeddetId)
+      this.pedidosService
+        .eliminarItem(existing.pospeddetId)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(() => {
-          this.pedidosService.agregarItem(payload)
+          this.pedidosService
+            .agregarItem(payload)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
               next: () => {
                 this.recargarItems();
-                this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: `${producto.descripcion} — ${nuevaCant} unidades en el pedido` });
+                this.messageService.add({
+                  severity: 'success',
+                  summary: 'Actualizado',
+                  detail: `${producto.descripcion} — ${nuevaCant} unidades en el pedido`,
+                });
               },
               error: () => this.cargandoPedido.set(false),
             });
         });
     } else {
-      this.pedidosService.agregarItem(payload)
+      this.pedidosService
+        .agregarItem(payload)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: () => {
             this.recargarItems();
-            this.messageService.add({ severity: 'success', summary: 'Agregado', detail: `${producto.descripcion} agregado al pedido` });
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Agregado',
+              detail: `${producto.descripcion} agregado al pedido`,
+            });
           },
           error: () => {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo agregar al pedido' });
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo agregar al pedido',
+            });
             this.cargandoPedido.set(false);
           },
         });
@@ -441,7 +543,8 @@ export class PedidosVirtual implements OnInit {
 
   async crearPedido() {
     return new Promise<void>((resolve) => {
-      this.pedidosService.crearPedido('Cliente Pedido', '')
+      this.pedidosService
+        .crearPedido('Cliente Pedido', '')
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (pedido) => {
@@ -449,7 +552,11 @@ export class PedidosVirtual implements OnInit {
             resolve();
           },
           error: () => {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el pedido' });
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo crear el pedido',
+            });
             resolve();
           },
         });
@@ -458,7 +565,8 @@ export class PedidosVirtual implements OnInit {
 
   recargarItems() {
     if (!this.pedidoId()) return;
-    this.pedidosService.getPedidoItems(this.pedidoId()!)
+    this.pedidosService
+      .getPedidoItems(this.pedidoId()!)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (items) => {
@@ -470,31 +578,43 @@ export class PedidosVirtual implements OnInit {
   }
 
   incrementar(item: PedidoItem) {
-    const prod = this.productos().find(p => p.produtoId === Number(item.productoId));
+    const prod = this.productos().find((p) => p.produtoId === Number(item.productoId));
     if (prod && Number(item.cantidad) >= prod.existencia) {
-      this.messageService.add({ severity: 'warn', summary: 'Stock insuficiente', detail: `Solo quedan ${prod.existencia} unidades` });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Stock insuficiente',
+        detail: `Solo quedan ${prod.existencia} unidades`,
+      });
       return;
     }
     const precio = Number(item.precioventa);
     const nuevaCant = Number(item.cantidad) + 1;
     const subtotal = precio * nuevaCant;
-    this.pedidosService.eliminarItem(item.pospeddetId)
+    this.pedidosService
+      .eliminarItem(item.pospeddetId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        this.pedidosService.agregarItem({
-          pospedmaeId: this.pedidoId()!,
-          productoId: item.productoId,
-          codbarra: item.codbarra,
-          cantidad: nuevaCant,
-          precioventa: precio,
-          subtotal,
-          descuento: 0,
-          impuesto: this.calcularImpuesto(subtotal),
-          nrofila: item.nrofila,
-        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-          this.recargarItems();
-          this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: `${item.descripcion || item.codbarra} — ${nuevaCant} unidades en el pedido` });
-        });
+        this.pedidosService
+          .agregarItem({
+            pospedmaeId: this.pedidoId()!,
+            productoId: item.productoId,
+            codbarra: item.codbarra,
+            cantidad: nuevaCant,
+            precioventa: precio,
+            subtotal,
+            descuento: 0,
+            impuesto: this.calcularImpuesto(subtotal),
+            nrofila: item.nrofila,
+          })
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(() => {
+            this.recargarItems();
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Actualizado',
+              detail: `${item.descripcion || item.codbarra} — ${nuevaCant} unidades en el pedido`,
+            });
+          });
       });
   }
 
@@ -506,25 +626,30 @@ export class PedidosVirtual implements OnInit {
     const precio = Number(item.precioventa);
     const nuevaCant = Number(item.cantidad) - 1;
     const subtotal = precio * nuevaCant;
-    this.pedidosService.eliminarItem(item.pospeddetId)
+    this.pedidosService
+      .eliminarItem(item.pospeddetId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        this.pedidosService.agregarItem({
-          pospedmaeId: this.pedidoId()!,
-          productoId: item.productoId,
-          codbarra: item.codbarra,
-          cantidad: nuevaCant,
-          precioventa: precio,
-          subtotal,
-          descuento: 0,
-          impuesto: this.calcularImpuesto(subtotal),
-          nrofila: item.nrofila,
-        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.recargarItems());
+        this.pedidosService
+          .agregarItem({
+            pospedmaeId: this.pedidoId()!,
+            productoId: item.productoId,
+            codbarra: item.codbarra,
+            cantidad: nuevaCant,
+            precioventa: precio,
+            subtotal,
+            descuento: 0,
+            impuesto: this.calcularImpuesto(subtotal),
+            nrofila: item.nrofila,
+          })
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(() => this.recargarItems());
       });
   }
 
   eliminarDelPedido(item: PedidoItem) {
-    this.pedidosService.eliminarItem(item.pospeddetId)
+    this.pedidosService
+      .eliminarItem(item.pospeddetId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.recargarItems());
   }
@@ -532,7 +657,11 @@ export class PedidosVirtual implements OnInit {
   /** Abre el diálogo para guardar el pedido con datos del cliente (facturación a futuro) */
   abrirGuardarPedido() {
     if (!this.pedidoId() || this.pedidoItems().length === 0) {
-      this.messageService.add({ severity: 'warn', summary: 'Pedido vacío', detail: 'Agrega productos antes de guardar' });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Pedido vacío',
+        detail: 'Agrega productos antes de guardar',
+      });
       return;
     }
     const user = this.auth.currentUser();
@@ -549,15 +678,20 @@ export class PedidosVirtual implements OnInit {
   guardarPedido() {
     const nombre = this.guardarNombre().trim();
     if (!nombre) {
-      this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa el nombre del cliente' });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Campo requerido',
+        detail: 'Ingresa el nombre del cliente',
+      });
       return;
     }
     const id = this.pedidoId()!;
     this.guardandoPedido.set(true);
-    this.pedidosService.actualizarPedido(id, {
-      nombrecliente: nombre,
-      nrotelefono: this.guardarTelefono().trim() || 'N/A',
-    })
+    this.pedidosService
+      .actualizarPedido(id, {
+        nombrecliente: nombre,
+        nrotelefono: this.guardarTelefono().trim() || 'N/A',
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -572,14 +706,22 @@ export class PedidosVirtual implements OnInit {
         },
         error: () => {
           this.guardandoPedido.set(false);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el pedido' });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo guardar el pedido',
+          });
         },
       });
   }
 
   abrirCheckout() {
     if (this.pedidoItems().length === 0) {
-      this.messageService.add({ severity: 'warn', summary: 'Pedido vacío', detail: 'Agrega productos antes de facturar' });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Pedido vacío',
+        detail: 'Agrega productos antes de facturar',
+      });
       return;
     }
     const user = this.auth.currentUser();
@@ -590,7 +732,8 @@ export class PedidosVirtual implements OnInit {
       formapagoId: this.formaspago().length > 0 ? this.formaspago()[0].value : 0,
       efectivo_recibido: this.totalPedido(),
       nrotarjeta: '',
-      tarjetacreditoId: this.tarjetasCredito().length > 0 ? this.tarjetasCredito()[0].value : undefined,
+      tarjetacreditoId:
+        this.tarjetasCredito().length > 0 ? this.tarjetasCredito()[0].value : undefined,
       fechaexpiracion: '',
       cvv: '',
       nroautorizacion: '',
@@ -602,7 +745,7 @@ export class PedidosVirtual implements OnInit {
   }
 
   onFormaPagoChange() {
-    const fp = this.formaspago().find(f => f.value === this.checkout.formapagoId);
+    const fp = this.formaspago().find((f) => f.value === this.checkout.formapagoId);
     if (fp) {
       const desc = fp.label.toLowerCase();
       if (desc.includes('tarjeta')) {
@@ -625,50 +768,79 @@ export class PedidosVirtual implements OnInit {
 
   procesarPago() {
     if (!this.checkout.nombrecliente) {
-      this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa el nombre del cliente' });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Campo requerido',
+        detail: 'Ingresa el nombre del cliente',
+      });
       return;
     }
 
     if (this.esTarjeta()) {
       if (!this.checkout.nrotarjeta || this.checkout.nrotarjeta.replace(/\s/g, '').length < 13) {
-        this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa el número de tarjeta completo' });
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Campo requerido',
+          detail: 'Ingresa el número de tarjeta completo',
+        });
         return;
       }
       if (!this.validarLuhn(this.checkout.nrotarjeta)) {
-        this.messageService.add({ severity: 'warn', summary: 'Tarjeta inválida', detail: 'El número de tarjeta no es válido' });
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Tarjeta inválida',
+          detail: 'El número de tarjeta no es válido',
+        });
         return;
       }
       if (!this.checkout.fechaexpiracion || !/^\d{2}\/\d{2}$/.test(this.checkout.fechaexpiracion)) {
-        this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa la fecha de expiración (MM/YY)' });
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Campo requerido',
+          detail: 'Ingresa la fecha de expiración (MM/YY)',
+        });
         return;
       }
       if (!this.checkout.cvv || this.checkout.cvv.length < 3) {
-        this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa el CVV (mínimo 3 dígitos)' });
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Campo requerido',
+          detail: 'Ingresa el CVV (mínimo 3 dígitos)',
+        });
         return;
       }
       if (!this.checkout.tarjetacreditoId) {
-        this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Selecciona el tipo de tarjeta' });
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Campo requerido',
+          detail: 'Selecciona el tipo de tarjeta',
+        });
         return;
       }
     }
 
     if (this.esTransferencia() && !this.checkout.nroautorizacion) {
-      this.messageService.add({ severity: 'warn', summary: 'Campo requerido', detail: 'Ingresa el número de autorización de la transferencia' });
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Campo requerido',
+        detail: 'Ingresa el número de autorización de la transferencia',
+      });
       return;
     }
 
     this.procesando.set(true);
-    this.pedidosService.checkout({
-      pospedmaeId: this.checkout.pospedmaeId,
-      nombrecliente: this.checkout.nombrecliente,
-      nrotelefono: this.checkout.nrotelefono,
-      formapagoId: this.checkout.formapagoId,
-      efectivo_recibido: this.totalPedido(),
-      tarjetacreditoId: this.checkout.tarjetacreditoId,
-      nrotarjeta: this.checkout.nrotarjeta,
-      nroautorizacion: this.checkout.nroautorizacion,
-      tipopago: this.checkout.tipopago,
-    })
+    this.pedidosService
+      .checkout({
+        pospedmaeId: this.checkout.pospedmaeId,
+        nombrecliente: this.checkout.nombrecliente,
+        nrotelefono: this.checkout.nrotelefono,
+        formapagoId: this.checkout.formapagoId,
+        efectivo_recibido: this.totalPedido(),
+        tarjetacreditoId: this.checkout.tarjetacreditoId,
+        nrotarjeta: this.checkout.nrotarjeta,
+        nroautorizacion: this.checkout.nroautorizacion,
+        tipopago: this.checkout.tipopago,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (resp) => {
@@ -683,7 +855,8 @@ export class PedidosVirtual implements OnInit {
           this.procesando.set(false);
           this.cdr.markForCheck();
 
-          this.api.get<any>(`/facturacion/facturas/${resp.facturaId}/ticket`)
+          this.api
+            .get<any>(`/facturacion/facturas/${resp.facturaId}/ticket`)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
               next: (ticketData) => {
@@ -693,11 +866,15 @@ export class PedidosVirtual implements OnInit {
               },
               error: () => {
                 this.limpiarTodo();
-              }
+              },
             });
         },
         error: () => {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo procesar el pedido' });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo procesar el pedido',
+          });
           this.procesando.set(false);
         },
       });
@@ -707,7 +884,11 @@ export class PedidosVirtual implements OnInit {
     const data = this.resumenVentaData();
     if (data) {
       this.impresion.descargar(data).catch(() => {
-        this.messageService.add({ severity: 'warn', summary: 'PDF', detail: 'No se pudo generar el PDF' });
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'PDF',
+          detail: 'No se pudo generar el PDF',
+        });
       });
     }
   }
@@ -716,7 +897,11 @@ export class PedidosVirtual implements OnInit {
     const data = this.resumenVentaData();
     if (data) {
       this.impresion.imprimir(data).catch(() => {
-        this.messageService.add({ severity: 'warn', summary: 'Impresión', detail: 'No se pudo imprimir' });
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Impresión',
+          detail: 'No se pudo imprimir',
+        });
       });
     }
   }
@@ -743,7 +928,7 @@ export class PedidosVirtual implements OnInit {
 
   getItemImagen(item: PedidoItem): string {
     if (item.imagen) return this.resolverImagen(item.imagen);
-    const prod = this.productos().find(p => p.produtoId === Number(item.productoId));
+    const prod = this.productos().find((p) => p.produtoId === Number(item.productoId));
     return prod?.imagen ? this.resolverImagen(prod.imagen) : '';
   }
 
@@ -766,7 +951,9 @@ export class PedidosVirtual implements OnInit {
 
     this.galeriaCargando.set(true);
     this.api
-      .get<{ productoId: number; img: string; sn_activo?: string }[]>('/inventario/productos-img', { productoId: id })
+      .get<{ productoId: number; img: string; sn_activo?: string }[]>('/inventario/productos-img', {
+        productoId: id,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
@@ -782,7 +969,7 @@ export class PedidosVirtual implements OnInit {
           }
           // La imagen principal (la de la card) va primero
           const ordenadas = principal.length
-            ? [principal[0], ...imgs.filter(u => u !== principal[0])]
+            ? [principal[0], ...imgs.filter((u) => u !== principal[0])]
             : imgs;
           if (ordenadas.length) this.galeriaCache.set(id, ordenadas);
           this.galeriaImagenes.set(ordenadas);
@@ -790,7 +977,11 @@ export class PedidosVirtual implements OnInit {
         },
         error: () => {
           this.galeriaCargando.set(false);
-          this.messageService.add({ severity: 'error', summary: 'Galería', detail: 'No se pudieron cargar las imágenes' });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Galería',
+            detail: 'No se pudieron cargar las imágenes',
+          });
         },
       });
   }
@@ -819,7 +1010,7 @@ export class PedidosVirtual implements OnInit {
 
   getSeverity(stock: number): 'secondary' | 'warn' | 'danger' {
     if (stock > 26) return 'secondary';
-    if (stock > 5 && stock <=25) return 'warn';
+    if (stock > 5 && stock <= 25) return 'warn';
     return 'danger';
   }
 

@@ -78,7 +78,12 @@ export class MainLayoutPublic {
   };
 
   /** Drawer de Departamentos (reemplaza al sidebar) */
-  menuVisible: boolean = false;
+  readonly menuVisible = signal(false);
+
+  /** true si el viewport es móvil (≤768px) — decide si el drawer es modal (overlay) o empuja el contenido */
+  readonly esMobile = signal(
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false,
+  );
 
   // ==================== Buscador de productos en el topbar ====================
 
@@ -293,10 +298,37 @@ export class MainLayoutPublic {
   }
 
   constructor() {
+    // Actualizar esMobile al redimensionar (el drawer pasa de overlay a empuje).
+    // Si el drawer está abierto al cruzar el breakpoint, se cierra: PrimeNG solo
+    // crea/destruye la máscara en show()/hide() según `modal` vigente y cambiarlo
+    // con el drawer abierto dejaría una máscara huérfana tapando la pantalla.
+    if (typeof window !== 'undefined') {
+      const mq = window.matchMedia('(max-width: 768px)');
+      const onMqChange = (e: MediaQueryListEvent) => {
+        const aplicar = () => this.esMobile.set(e.matches);
+        if (this.menuVisible()) {
+          // Cerrar primero y diferir el cambio de `modal` hasta que PrimeNG
+          // termine la animación de cierre (onAfterLeave → hide()): si `modal`
+          // cambia a false con la máscara aún presente, hide() omite
+          // disableModality() y la máscara queda huérfana tapando la pantalla.
+          this.menuVisible.set(false);
+          window.setTimeout(aplicar, 500);
+        } else if (document.querySelector('.p-drawer-mask')) {
+          // El drawer se está cerrando aún (animación de salida en curso):
+          // esperar a que se limpie la máscara antes de cambiar `modal`.
+          window.setTimeout(aplicar, 500);
+        } else {
+          aplicar();
+        }
+      };
+      mq.addEventListener('change', onMqChange);
+      this.destroyRef.onDestroy(() => mq.removeEventListener('change', onMqChange));
+    }
+
     // Al navegar (ej. elegir categoría), cerrar el drawer en móvil
     this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
       if (event instanceof NavigationEnd && window.innerWidth <= 768) {
-        this.menuVisible = false;
+        this.menuVisible.set(false);
       }
     });
   }

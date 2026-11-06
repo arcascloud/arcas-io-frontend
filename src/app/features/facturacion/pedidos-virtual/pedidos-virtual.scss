@@ -12,6 +12,9 @@ $sidebar-width: 380px;
   }
 }
 
+        .ordenado-por {
+          flex-shrink: 0;
+        }
 /* Overlay para sidebar mobile */
 .cart-overlay {
   display: none;
@@ -936,8 +939,14 @@ $sidebar-width: 380px;
     padding-right: 0;
   }
 
-  /* Toolbar: apilado */
+  /* Toolbar en mobile (apilado):
+     Fila 1: toolbar-left (Volver, Pedidos, Conteo)
+     Fila 2: Ordenado por + select + cuadrícula/lista
+     Fila 3: Ofertas + Limpiar filtros (lado a lado) */
   .tienda-toolbar {
+    position: sticky;
+    top: 112px;
+    z-index: 10;
     flex-direction: column;
     align-items: stretch;
     gap: 0.6rem;
@@ -945,39 +954,52 @@ $sidebar-width: 380px;
 
     .toolbar-left {
       justify-content: space-between;
+      width: 100%;
     }
 
     .toolbar-right {
-      flex-direction: column;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
       gap: 0.5rem;
-    }
-  }
-
-  .search-box {
-    width: 100%;
-
-    .search-input {
       width: 100%;
-      height: 40px;
+      margin-left: 0;
 
-      &:focus {
+      .ordenado-por {
+        flex-shrink: 0;
+      }
+
+      ::ng-deep .sort-select {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+
+        .p-select {
+          width: 100% !important;
+          min-width: 0;
+        }
+      }
+
+      .view-toggles {
+        flex-shrink: 0;
+      }
+
+      p-button {
+        flex: 1 1 0;
+        display: block;
         width: 100%;
+
+        ::ng-deep .p-button {
+          width: 100% !important;
+          justify-content: center;
+        }
       }
     }
   }
 
-  ::ng-deep .sort-select,
-  ::ng-deep .cat-select {
-    width: 100%;
-
-    .p-select {
-      width: 100%;
-    }
-  }
-
-  /* Grid: 1 columna con card vertical grande idéntica al escritorio */
+  /* Grid: 2 columnas, misma card vertical del escritorio */
   .productos-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
     padding: 0.75rem;
   }
