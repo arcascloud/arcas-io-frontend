@@ -10,7 +10,10 @@ const targetPath = path.join(projectRoot, 'src/environments/environment.ts');
 const direct = (process.env.API_URL || '').trim();
 const provider = (process.env.API_PROVIDER || '').trim().toUpperCase();
 const fromProvider = provider ? (process.env[`${provider}_API_URL`] || '').trim() : '';
-const apiUrl = direct || fromProvider || 'http://localhost:3000/api';
+let apiUrl = direct || fromProvider || 'https://arcas-io-backend.onrender.com/api';
+if (apiUrl.includes('${')) {
+  apiUrl = 'https://arcas-io-backend.onrender.com/api';
+}
 
 const production = process.env.PRODUCTION === 'true' || process.env.NODE_ENV === 'production';
 const currencySymbol = process.env.CURRENCY_SYMBOL || 'L ';
