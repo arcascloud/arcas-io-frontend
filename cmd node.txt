@@ -1,0 +1,91 @@
+npm run build:prod
+dist/arcas-software/browser
+
+ng build --configuration production
+
+npx http-server dist/arcas-software/browser -p 8080 --spa
+
+npx http-server dist/atenciones -p 8080 --spa
+
+echo -n "tu-secreto-super-seguro" | npx wrangler secret put JWT_SECRET --name hn
+
+node --max-old-space-size=4096 ./node_modules/@nestjs/cli/bin/nest.js build
+
+https://dash.cloudflare.com/75ab67070e884b5858df1d302806983d/workers/services/view/hn/production/deployments
+https://dashboard.render.com/web/srv-dbjedi49v7es739s9ea0/env
+
+
+http://127.0.0.1:8080/dashboard
+
+https://hn.arcas-io.workers.dev/
+https://arcas-io.onrender.com/
+https://arcas-io.netlify.app/
+https://arcas-io.up.railway.app/ 
+
+
+npx http-server dist/arcas-software/browser -p 8080 --spa
+
+
+
+http://192.168.43.41:8080/login?returnUrl=%2Findex
+http://172.18.208.1:8080/login?returnUrl=%2Findex
+
+
+
+http://192.168.43.41
+http://172.18.208.1
+
+http {
+
+    include       mime.types;
+    default_type  application/octet-stream;
+    #----------------------------------------------------------------------------
+	# INCLUIMOS EL ARCHIVO DE CONFIGURACION DEL PROXY REVERSO Y LOAD-BALANCER
+	# NOTA: EL ARCHIVO PUEDE LLAMARSE CON USTED GUSTE EN MI CASO LO LLAME PROXY
+	#----------------------------------------------------------------------------
+	
+	#include proxy.conf;
+		
+	 server {
+        listen       80;
+        server_name localhost 192.168.43.41 172.18.208.1;
+
+       # Especifica la ruta completa a la carpeta 'browser'
+        root   "E:/desarrollo/proyectos angular/erp/Frontend/dist/arcas-software/browser";
+        index  index.html;
+
+        location / {
+        # Necesario en Angular para que el enrutamiento (SPA) funcione al recargar la página
+        try_files $uri $uri/ /index.html;
+         }
+
+        #-------------------------------------------------------------------------- 
+        #Establecer el mensaje de error 404 
+		#--------------------------------------------------------------------------
+		
+		error_page 404 /e404.html;
+		  location = /e404.html {
+		  root   html;
+		  allow all;
+		}
+
+        #--------------------------------------------------------------------------
+        #Establecer el mensaje de error 403
+		#--------------------------------------------------------------------------
+
+		error_page 403 /e403.html;
+		  location = /e403.html {
+		  root   html;
+		  allow all;
+		}
+		
+		#---------------------------------------------------------------------------
+        # redireccionado los error 500,502,503,504 a la pagina estatica /50x.html
+        #---------------------------------------------------------------------------
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+	}
+   }
+

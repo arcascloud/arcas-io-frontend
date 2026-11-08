@@ -17,6 +17,8 @@ import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { DatePickerModule } from 'primeng/datepicker';
 import { Message } from 'primeng/message';
+import { CheckboxModule } from 'primeng/checkbox';
+import { TerminosDialog } from './terminos-dialog';
 import { environment } from '../../../environments/environment';
 
 /** Opción genérica para selects/segmentados ({label, value}). */
@@ -75,6 +77,8 @@ interface RespuestaCiudades {
     SelectButtonModule,
     DatePickerModule,
     Message,
+    CheckboxModule,
+    TerminosDialog,
   ],
   templateUrl: './registro-dialog.html',
   styleUrl: './registro-dialog.scss',
@@ -88,8 +92,12 @@ export class RegistroDialog {
   readonly solicitarLogin = output<void>();
 
   visible = signal(false);
+  terminosVisible = signal(false);
   readonly dialogStyle = { width: '50%' };
   readonly dialogBreakpoints = { '960px': '88vw', '640px': '96vw' };
+
+  aceptaTerminos = false;
+  errTerminos = signal('');
 
   // ── Opciones (siempre en TypeScript, nunca arrays inline en HTML) ──
   readonly opcionesTipodoc: Opcion[] = [
@@ -210,6 +218,13 @@ export class RegistroDialog {
     this.errUsuario.set('');
     this.errPassword.set('');
     this.errConfirmar.set('');
+    this.aceptaTerminos = false;
+    this.errTerminos.set('');
+  }
+
+  abrirTerminos(event?: Event) {
+    event?.preventDefault();
+    this.terminosVisible.set(true);
   }
 
   /** Abre el diálogo: limpia el formulario y carga los catálogos la primera vez. */
@@ -460,6 +475,8 @@ export class RegistroDialog {
           : '',
     );
 
+    this.errTerminos.set(!this.aceptaTerminos ? 'Debe aceptar los Términos y Condiciones' : '');
+
     const errores = [
       this.errNombres(),
       this.errApellidos(),
@@ -477,6 +494,7 @@ export class RegistroDialog {
       this.errUsuario(),
       this.errPassword(),
       this.errConfirmar(),
+      this.errTerminos(),
     ];
     if (errores.some((e) => e)) return;
 
@@ -500,6 +518,7 @@ export class RegistroDialog {
         pais: paisNombre,
         departamento: this.deptoValue,
         ciudad: this.ciudadValue,
+        origen: 'REGISTRO_DIALOG',
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({

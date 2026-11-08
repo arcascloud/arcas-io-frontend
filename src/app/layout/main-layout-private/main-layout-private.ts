@@ -17,6 +17,7 @@ import { Popover, PopoverModule } from 'primeng/popover';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { AuthService } from '../../core/services/auth.service';
+import { EmpresaBrandService } from '../../core/services/empresa-brand.service';
 import { MenuConfigService } from '../../core/services/menu-config.service';
 import { QuickNavService } from '../../core/services/quick-nav.service';
 import { ApiService } from '../../core/services/api.service';
@@ -68,6 +69,8 @@ export class MainPrivateLayout {
   private api = inject(ApiService);
   /** Instancia del servicio de navegación rápida (botón del topbar) */
   readonly quickNav = inject(QuickNavService);
+  /** Nombre de la empresa (tempresas según environment.empresaId) */
+  readonly empresaNombre = inject(EmpresaBrandService).nombre;
 
   /** Menú de usuario del topbar (p-popover) */
   @ViewChild('popUsuario') popUsuario?: Popover;

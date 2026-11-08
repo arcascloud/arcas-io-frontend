@@ -17,7 +17,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { forkJoin, of } from 'rxjs';
 import { EmpresasService } from '../../../core/services/empresas.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Cai, Correlativo, EstadoCorrelativo } from '../../../core/models/empresa.models';
+import { Cai, Correlativo, EstadoCorrelativo, Empresa } from '../../../core/models/empresa.models';
 import { Sucursal } from '../../../core/models/sucursal.models';
 
 /**
@@ -56,7 +56,19 @@ export class CaiManager implements OnInit {
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
 
-  private empresaId: number | null = this.auth.currentUser()?.empresaId ?? null;
+  private _empresaId = signal<number | null>(this.auth.currentUser()?.empresaId ?? null);
+
+  /** Empresa de trabajo (la que se está gestionando) */
+  get empresaId(): number | null {
+    return this._empresaId();
+  }
+  set empresaId(v: number | null) {
+    this._empresaId.set(v);
+  }
+
+  // ===== EMPRESAS / SUCURSALES (formulario nuevo CAI) =====
+  empresas = signal<Empresa[]>([]);
+  sucursalesForm = signal<Sucursal[]>([]);
 
   // ===== LISTA =====
   cais = signal<Cai[]>([]);
@@ -70,6 +82,8 @@ export class CaiManager implements OnInit {
   savingCai = signal(false);
   /** Id del CAI que se está editando (null = creando) */
   private editandoId: number | null = null;
+  /** Empresa del CAI en edición (no se cambia) */
+  private empresaEditandoId: number | null = null;
 
   readonly SN_ACTIVO_OPTIONS = [
     { label: 'Activo', value: 'S' },
@@ -86,6 +100,8 @@ export class CaiManager implements OnInit {
   caiForm = this.fb.group({
     cai: ['', [Validators.required, Validators.minLength(35)]],
     sn_activo: ['N'],
+    empresaId: [null as number | null, Validators.required],
+    Idsucursal: [null as number | null, Validators.required],
   });
 
   // ===== CORRELATIVOS (rangos del CAI seleccionado) =====
@@ -105,6 +121,7 @@ export class CaiManager implements OnInit {
   });
 
   ngOnInit() {
+    this.loadEmpresas();
     if (this.empresaId != null) {
       this.loadCais();
       this.loadSucursales();
@@ -112,17 +129,35 @@ export class CaiManager implements OnInit {
     }
   }
 
+  loadEmpresas() {
+    this.service.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.empresas.set(data ?? []),
+      error: () => this.empresas.set([]),
+    });
+  }
+
   // ==================================================
   //  CAI — MAESTRO
   // ==================================================
 
-  loadCais() {
+  loadCais(seleccionarId?: number, sucursalPreseleccionada?: number) {
     this.cargando.set(true);
     this.service.getAllCai(this.empresaId!).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         const list = data ?? [];
         this.cais.set(list);
         this.cargando.set(false);
+        if (seleccionarId != null) {
+          const creado = list.find(c => c.caiId === seleccionarId);
+          if (creado) {
+            this.seleccionar(creado);
+            if (sucursalPreseleccionada != null) {
+              this.corrForm.patchValue({ Idsucursal: sucursalPreseleccionada });
+              this.cargarNroFacturaSiguiente();
+            }
+            return;
+          }
+        }
         if (list.length > 0 && !this.selected() && this.formMode() === 'none') {
           this.seleccionar(list[0]);
         } else if (list.length === 0) {
@@ -140,7 +175,7 @@ export class CaiManager implements OnInit {
   seleccionar(cai: Cai) {
     this.formMode.set('none');
     this.selected.set(cai);
-    this.caiForm.reset({ cai: cai.cai, sn_activo: cai.sn_activo });
+    this.caiForm.reset({ cai: cai.cai, sn_activo: cai.sn_activo, empresaId: cai.empresaId, Idsucursal: null });
     this.loadCorrelativos();
   }
 
@@ -148,22 +183,27 @@ export class CaiManager implements OnInit {
     this.selected.set(null);
     this.correlativos.set([]);
     this.editandoId = null;
+    this.empresaEditandoId = null;
     this.formMode.set('nuevo');
-    this.caiForm.reset({ cai: '', sn_activo: 'S' });
+    const empId = this.empresaId;
+    this.caiForm.reset({ cai: '', sn_activo: 'S', empresaId: empId, Idsucursal: null });
+    this.cargarSucursalesForm(empId);
   }
 
   editarCai(cai: Cai) {
     this.selected.set(null);
     this.correlativos.set([]);
     this.editandoId = cai.caiId;
+    this.empresaEditandoId = cai.empresaId;
     this.formMode.set('editar');
-    this.caiForm.reset({ cai: cai.cai, sn_activo: cai.sn_activo });
+    this.caiForm.reset({ cai: cai.cai, sn_activo: cai.sn_activo, empresaId: cai.empresaId, Idsucursal: null });
   }
 
   cancelarForm() {
     this.formMode.set('none');
     this.editandoId = null;
-    this.caiForm.reset({ cai: '', sn_activo: 'N' });
+    this.empresaEditandoId = null;
+    this.caiForm.reset({ cai: '', sn_activo: 'N', empresaId: this.empresaId, Idsucursal: null });
     // Volver al primer CAI si había datos
     const list = this.cais();
     if (list.length > 0) {
@@ -171,8 +211,32 @@ export class CaiManager implements OnInit {
     }
   }
 
+  /** Carga las sucursales para el select del formulario de nuevo CAI */
+  cargarSucursalesForm(empresaId: number | null) {
+    this.sucursalesForm.set([]);
+    if (empresaId == null) return;
+    this.service.getAllSucursales(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.sucursalesForm.set(data ?? []),
+      error: () => this.sucursalesForm.set([]),
+    });
+  }
+
+  /** Al cambiar la empresa en el formulario de nuevo CAI: recarga sucursales y limpia la sucursal */
+  onEmpresaCaiChange() {
+    const empId = this.caiForm.value.empresaId ?? null;
+    this.caiForm.patchValue({ Idsucursal: null });
+    this.cargarSucursalesForm(empId);
+  }
+
   guardarCai() {
-    if (this.caiForm.invalid || this.empresaId == null) {
+    const esEdicion = this.formMode() === 'editar';
+
+    if (esEdicion) {
+      if (this.caiForm.get('cai')?.invalid) {
+        this.caiForm.get('cai')?.markAsTouched();
+        return;
+      }
+    } else if (this.caiForm.invalid) {
       this.caiForm.markAllAsTouched();
       return;
     }
@@ -183,28 +247,46 @@ export class CaiManager implements OnInit {
       return;
     }
 
+    // Empresa: en edición no se cambia; en nuevo, la seleccionada en el formulario
+    const empresaDestino = esEdicion ? this.empresaEditandoId : this.caiForm.value.empresaId;
+    const sucursalDestino = esEdicion ? null : this.caiForm.value.Idsucursal;
+
+    if (empresaDestino == null) {
+      this.msgs.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione la empresa' });
+      return;
+    }
+
     this.savingCai.set(true);
     const dto: Partial<Cai> = {
       cai: codigo.toUpperCase(),
       sn_activo: this.caiForm.value.sn_activo || 'N',
-      empresaId: this.empresaId!,
+      empresaId: empresaDestino,
     };
 
-    const esEdicion = this.formMode() === 'editar';
     const obs = esEdicion && this.editandoId != null
       ? this.service.updateCai(this.editandoId, dto)
       : this.service.createCai(dto);
 
     obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'CAI guardado correctamente' });
         this.savingCai.set(false);
         this.formMode.set('none');
         this.editandoId = null;
-        this.caiForm.reset({ cai: '', sn_activo: 'N' });
+        this.empresaEditandoId = null;
+        this.caiForm.reset({ cai: '', sn_activo: 'N', empresaId: this.empresaId, Idsucursal: null });
         this.selected.set(null);
         this.correlativos.set([]);
-        this.loadCais();
+
+        if (!esEdicion) {
+          // Cambiar el contexto a la empresa del CAI creado
+          this.empresaId = empresaDestino;
+          this.loadSucursales();
+          this.loadEstadoCorrelativos();
+          this.loadCais(res?.caiId, sucursalDestino ?? undefined);
+        } else {
+          this.loadCais();
+        }
       },
       error: (err: any) => {
         this.savingCai.set(false);

@@ -1,0 +1,82 @@
+[31m[Nest] 21688  - [39m06/11/2026, 6:10:17 p. m. [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39mQueryFailedError: Field 'bodegaId' doesn't have a default value
+    at Query.onResult [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mtypeorm[24m\driver\mysql\MysqlQueryRunner.js:168:37[90m)[39m
+    at Query.execute [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\commands\command.js:36:14[90m)[39m
+    at PoolConnection.handlePacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:555:34[90m)[39m
+    at PacketParser.onPacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:104:12[90m)[39m
+    at PacketParser.executeStart [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\packet_parser.js:75:16[90m)[39m
+    at Socket.<anonymous> [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:112:25[90m)[39m
+[90m    at Socket.emit (node:events:509:28)[39m
+[90m    at addChunk (node:internal/streams/readable:563:12)[39m
+[90m    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)[39m
+[90m    at Readable.push (node:internal/streams/readable:394:5)[39m {
+  query: [32m'INSERT INTO `tsucursal`(`Idsucursal`, `descripcion`, `direccion`, `telefono1`, `telefono2`, `sn_activo`, `bodegaId`, `empresaId`, `usuarioCreated`, `usuarioUpdated`, `fechaUpdated`) VALUES (DEFAULT, ?, DEFAULT, DEFAULT, DEFAULT, ?, DEFAULT, ?, ?, DEFAULT, DEFAULT)'[39m,
+  parameters: [
+    [32m'Sucursal A'[39m,
+    [32m'S'[39m,
+    [33m3[39m,
+    [32m'admin'[39m
+  ],
+  driverError: Error: Field 'bodegaId' doesn't have a default value
+      at Packet.asError [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\packets\packet.js:833:17[90m)[39m
+      at Query.execute [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\commands\command.js:29:26[90m)[39m
+      at PoolConnection.handlePacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:555:34[90m)[39m
+      at PacketParser.onPacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:104:12[90m)[39m
+      at PacketParser.executeStart [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\packet_parser.js:75:16[90m)[39m
+      at Socket.<anonymous> [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:112:25[90m)[39m
+  [90m    at Socket.emit (node:events:509:28)[39m
+  [90m    at addChunk (node:internal/streams/readable:563:12)[39m
+  [90m    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)[39m
+  [90m    at Readable.push (node:internal/streams/readable:394:5)[39m {
+    code: [32m'ER_NO_DEFAULT_FOR_FIELD'[39m,
+    errno: [33m1364[39m,
+    sqlState: [32m'HY000'[39m,
+    sqlMessage: [32m"Field 'bodegaId' doesn't have a default value"[39m,
+    sql: [32m"INSERT INTO `tsucursal`(`Idsucursal`, `descripcion`, `direccion`, `telefono1`, `telefono2`, `sn_activo`, `bodegaId`, `empresaId`, `usuarioCreated`, `usuarioUpdated`, `fechaUpdated`) VALUES (DEFAULT, 'Sucursal A', DEFAULT, DEFAULT, DEFAULT, 'S', DEFAULT, 3, 'admin', DEFAULT, DEFAULT)"[39m
+  },
+  code: [32m'ER_NO_DEFAULT_FOR_FIELD'[39m,
+  errno: [33m1364[39m,
+  sqlState: [32m'HY000'[39m,
+  sqlMessage: [32m"Field 'bodegaId' doesn't have a default value"[39m,
+  sql: [32m"INSERT INTO `tsucursal`(`Idsucursal`, `descripcion`, `direccion`, `telefono1`, `telefono2`, `sn_activo`, `bodegaId`, `empresaId`, `usuarioCreated`, `usuarioUpdated`, `fechaUpdated`) VALUES (DEFAULT, 'Sucursal A', DEFAULT, DEFAULT, DEFAULT, 'S', DEFAULT, 3, 'admin', DEFAULT, DEFAULT)"[39m
+}
+[31m[Nest] 21688  - [39m06/11/2026, 6:10:46 p. m. [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39mQueryFailedError: Field 'bodegaId' doesn't have a default value
+    at Query.onResult [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mtypeorm[24m\driver\mysql\MysqlQueryRunner.js:168:37[90m)[39m
+    at Query.execute [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\commands\command.js:36:14[90m)[39m
+    at PoolConnection.handlePacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:555:34[90m)[39m
+    at PacketParser.onPacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:104:12[90m)[39m
+    at PacketParser.executeStart [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\packet_parser.js:75:16[90m)[39m
+    at Socket.<anonymous> [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:112:25[90m)[39m
+[90m    at Socket.emit (node:events:509:28)[39m
+[90m    at addChunk (node:internal/streams/readable:563:12)[39m
+[90m    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)[39m
+[90m    at Readable.push (node:internal/streams/readable:394:5)[39m {
+  query: [32m'INSERT INTO `tsucursal`(`Idsucursal`, `descripcion`, `direccion`, `telefono1`, `telefono2`, `sn_activo`, `bodegaId`, `empresaId`, `usuarioCreated`, `usuarioUpdated`, `fechaUpdated`) VALUES (DEFAULT, ?, DEFAULT, DEFAULT, DEFAULT, ?, DEFAULT, ?, ?, DEFAULT, DEFAULT)'[39m,
+  parameters: [
+    [32m'Sucursal A'[39m,
+    [32m'S'[39m,
+    [33m3[39m,
+    [32m'admin'[39m
+  ],
+  driverError: Error: Field 'bodegaId' doesn't have a default value
+      at Packet.asError [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\packets\packet.js:833:17[90m)[39m
+      at Query.execute [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\commands\command.js:29:26[90m)[39m
+      at PoolConnection.handlePacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:555:34[90m)[39m
+      at PacketParser.onPacket [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:104:12[90m)[39m
+      at PacketParser.executeStart [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\packet_parser.js:75:16[90m)[39m
+      at Socket.<anonymous> [90m(E:\desarrollo\proyectos angular\erp\Backend\[39mnode_modules\[4mmysql2[24m\lib\base\connection.js:112:25[90m)[39m
+  [90m    at Socket.emit (node:events:509:28)[39m
+  [90m    at addChunk (node:internal/streams/readable:563:12)[39m
+  [90m    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)[39m
+  [90m    at Readable.push (node:internal/streams/readable:394:5)[39m {
+    code: [32m'ER_NO_DEFAULT_FOR_FIELD'[39m,
+    errno: [33m1364[39m,
+    sqlState: [32m'HY000'[39m,
+    sqlMessage: [32m"Field 'bodegaId' doesn't have a default value"[39m,
+    sql: [32m"INSERT INTO `tsucursal`(`Idsucursal`, `descripcion`, `direccion`, `telefono1`, `telefono2`, `sn_activo`, `bodegaId`, `empresaId`, `usuarioCreated`, `usuarioUpdated`, `fechaUpdated`) VALUES (DEFAULT, 'Sucursal A', DEFAULT, DEFAULT, DEFAULT, 'S', DEFAULT, 3, 'admin', DEFAULT, DEFAULT)"[39m
+  },
+  code: [32m'ER_NO_DEFAULT_FOR_FIELD'[39m,
+  errno: [33m1364[39m,
+  sqlState: [32m'HY000'[39m,
+  sqlMessage: [32m"Field 'bodegaId' doesn't have a default value"[39m,
+  sql: [32m"INSERT INTO `tsucursal`(`Idsucursal`, `descripcion`, `direccion`, `telefono1`, `telefono2`, `sn_activo`, `bodegaId`, `empresaId`, `usuarioCreated`, `usuarioUpdated`, `fechaUpdated`) VALUES (DEFAULT, 'Sucursal A', DEFAULT, DEFAULT, DEFAULT, 'S', DEFAULT, 3, 'admin', DEFAULT, DEFAULT)"[39m
+}

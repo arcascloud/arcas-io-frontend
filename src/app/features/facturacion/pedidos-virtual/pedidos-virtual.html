@@ -76,6 +76,7 @@
         <p-button
           label="Guardar pedido"
           icon="pi pi-save"
+          rounded="true"
           severity="secondary"
           [fluid]="true"
           [disabled]="cargandoPedido()"
@@ -85,6 +86,7 @@
           label="Facturar pedido"
           icon="pi pi-check"
           severity="success"
+          rounded="true"
           [fluid]="true"
           [disabled]="cargandoPedido()"
           (click)="abrirCheckout(); pedidoOpen.set(false)"
@@ -552,6 +554,7 @@
         label="Confirmar Factura"
         icon="pi pi-check"
         severity="success"
+        rounded="true"
         [fluid]="true"
         [loading]="procesando()"
         [disabled]="procesando() || !formularioPagoValido()"
@@ -563,6 +566,7 @@
   <ng-template pTemplate="footer">
     <p-button
       label="Cancelar"
+      rounded="true"
       [text]="true"
       icon="pi pi-arrow-left"
       [disabled]="procesando()"
@@ -596,7 +600,7 @@
     <p-button
       label="Cancelar"
       [size]="'small'"
-      rounded
+      rounded="true"
       variant="text"
       severity="secondary"
       [disabled]="guardandoPedido()"

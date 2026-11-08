@@ -106,7 +106,7 @@ export class ManagerFechas implements OnInit {
         'Se desbloquearán todas las operaciones del sistema.',
       header: 'Actualizar Fecha del Sistema',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptButtonStyleClass: 'p-button-danger rounded',
       acceptLabel: 'Sí, actualizar',
       rejectLabel: 'Cancelar',
       accept: () => {

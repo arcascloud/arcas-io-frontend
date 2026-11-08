@@ -7,8 +7,8 @@
     <div class="sidebar-header">
       <div class="sidebar-logo">
 
-        <img src="assets/images/toyota.png" alt="WebStore" class="sidebar-logo-img" />
-        <span class="sidebar-title">TOYOTA</span>
+        <img src="assets/images/toyota.png" [alt]="empresaNombre()" class="sidebar-logo-img" />
+        <span class="sidebar-title">{{ empresaNombre() }}</span>
       </div>
       <button class="sidebar-pin" [class.visible]="!sidebarHidden()" [class.pinned]="pinned()" (click)="togglePin()"
         title="Fijar sidebar"></button>

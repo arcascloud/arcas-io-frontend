@@ -2,7 +2,7 @@
   <header class="page-header">
     <div>
       <h1 class="page-title">{{ titulo() }}</h1>
-      <p class="page-subtitle">Asignación de roles por usuario (tusuarios_rol)</p>
+      <p class="page-subtitle">Asignación múltiple de roles y permisos por usuario (tusuarios_rol)</p>
     </div>
     <p-button
       label="Volver"
@@ -12,14 +12,18 @@
       [size]="'small'"
       rounded
       (onClick)="volver()"
+      pTooltip="Volver al listado (Esc)"
     />
   </header>
 
   @if (cargando()) {
-    <div class="card">Cargando datos...</div>
+    <div class="card flex align-items-center justify-content-center p-5">
+      <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+      <span class="ml-2 font-medium">Cargando datos de asignación...</span>
+    </div>
   } @else {
     <form [formGroup]="form" (ngSubmit)="guardar()" class="card form-grid">
-      <div class="campo">
+      <div class="campo full-span">
         <label for="usuarioId">Usuario <span class="req">*</span></label>
         <p-select
           size="small"
@@ -30,38 +34,113 @@
           optionValue="usuarioId"
           [filter]="true"
           filterBy="nombre,usuario"
-          filterPlaceholder="Buscar usuario..."
-          placeholder="Seleccione usuario"
+          filterPlaceholder="Buscar usuario por nombre o login..."
+          placeholder="Seleccione un usuario"
           styleClass="w-full"
           [appendTo]="'body'"
           [disabled]="esEdicion()"
-        />
+        >
+          <ng-template let-user pTemplate="item">
+            <div class="flex align-items-center gap-2 py-1">
+              <i class="pi pi-user text-primary text-lg"></i>
+              <div>
+                <span class="font-bold text-900">{{ user.usuario }}</span>
+                <span class="text-600 ml-2">- {{ user.nombre }}</span>
+              </div>
+            </div>
+          </ng-template>
+          <ng-template let-user pTemplate="selectedItem">
+            @if (user) {
+              <div class="flex align-items-center gap-2">
+                <span class="font-bold text-900">{{ user.usuario }}</span>
+                <span class="text-600">- {{ user.nombre }}</span>
+              </div>
+            }
+          </ng-template>
+        </p-select>
         @if (invalid('usuarioId')) {
-          <small class="err">Debe seleccionar un usuario</small>
+          <small class="err">Debe seleccionar un usuario válido</small>
+        }
+        @if (!esEdicion()) {
+          <small class="hint">Busque y seleccione el usuario al cual desea otorgarle múltiples roles.</small>
         }
       </div>
 
-      <div class="campo">
-        <label for="rol">Rol <span class="req">*</span></label>
-        <p-select
-          size="small"
-          id="rol"
-          formControlName="rol"
-          [options]="tiposRol()"
-          optionLabel="rol"
-          optionValue="rol"
-          [filter]="true"
-          filterBy="rol"
-          filterPlaceholder="Buscar rol..."
-          placeholder="Seleccione rol"
-          styleClass="w-full"
-          [appendTo]="'body'"
-        />
-        @if (invalid('rol')) {
-          <small class="err">Debe seleccionar un rol</small>
-        }
-        <small class="hint">Roles disponibles definidos en el catálogo (ttipo_rol)</small>
-      </div>
+      <!-- Tarjeta resumen del usuario seleccionado -->
+      @if (selectedUser(); as u) {
+        <div class="campo full-span user-summary-card">
+          <div class="flex align-items-center gap-3">
+            <div class="avatar-badge">
+              <i class="pi pi-user text-xl text-primary"></i>
+            </div>
+            <div>
+              <div class="font-bold text-base text-900">{{ u.nombre }}</div>
+              <div class="text-sm text-600">Usuario (Login): <span class="font-semibold text-primary">{{ u.usuario }}</span></div>
+              @if (u.email) {
+                <div class="text-xs text-500">Correo: {{ u.email }}</div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (!esEdicion()) {
+        <div class="campo full-span">
+          <label>Roles del Sistema <span class="req">*</span></label>
+          <div class="checkbox-grid">
+            @for (tipo of tiposRol(); track tipo.id_rol) {
+              <div class="flex align-items-center gap-2 p-2 border-round surface-border border-1 checkbox-item">
+                <p-checkbox
+                  [value]="tipo.rol"
+                  formControlName="roles"
+                  [inputId]="'rol_' + tipo.id_rol"
+                />
+                <label [for]="'rol_' + tipo.id_rol" class="cursor-pointer flex align-items-center gap-2 select-none">
+                  <p-tag [value]="tipo.rol" [severity]="severidadRol(tipo.rol)" styleClass="tag-sm" />
+                </label>
+              </div>
+            }
+          </div>
+          @if (invalid('roles')) {
+            <small class="err">Debe seleccionar al menos un rol</small>
+          }
+          <small class="hint">Marque los roles que desea asignar simultáneamente al usuario (ttipo_rol).</small>
+        </div>
+      } @else {
+        <div class="campo full-span">
+          <label for="rol">Rol <span class="req">*</span></label>
+          <p-select
+            size="small"
+            id="rol"
+            formControlName="rol"
+            [options]="tiposRol()"
+            optionLabel="rol"
+            optionValue="rol"
+            [filter]="true"
+            filterBy="rol"
+            filterPlaceholder="Buscar rol..."
+            placeholder="Seleccione un rol"
+            styleClass="w-full"
+            [appendTo]="'body'"
+          >
+            <ng-template let-tipo pTemplate="item">
+              <div class="flex align-items-center gap-2 py-1">
+                <p-tag [value]="tipo.rol" [severity]="severidadRol(tipo.rol)" styleClass="tag-sm" />
+              </div>
+            </ng-template>
+            <ng-template let-tipo pTemplate="selectedItem">
+              @if (tipo) {
+                <div class="flex align-items-center gap-2">
+                  <p-tag [value]="tipo.rol" [severity]="severidadRol(tipo.rol)" styleClass="tag-sm" />
+                </div>
+              }
+            </ng-template>
+          </p-select>
+          @if (invalid('rol')) {
+            <small class="err">Debe seleccionar un rol</small>
+          }
+        </div>
+      }
 
       <div class="acciones-form">
         <p-button
@@ -71,11 +150,13 @@
           severity="secondary"
           [size]="'small'"
           rounded
+          variant="text"
           (onClick)="volver()"
+          pTooltip="Cancelar y volver (Esc)"
         />
         <p-button
           type="submit"
-          label="Guardar"
+          label="Guardar Asignación"
           icon="pi pi-check"
           rounded
           [size]="'small'"
@@ -83,6 +164,7 @@
           variant="text"
           [raised]="true"
           [loading]="guardando()"
+          pTooltip="Guardar cambios (Ctrl + Enter)"
         />
       </div>
     </form>

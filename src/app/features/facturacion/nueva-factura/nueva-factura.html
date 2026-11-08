@@ -291,6 +291,8 @@
                     >Cambio:
                     <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span
                   >
+                           <span class="alt9">Presione Alt+9 para ver ventana de atajos</span>
+ 
                   }
                 </div>
               </div>
@@ -582,23 +584,23 @@
               </div>
             </div>
 
-            <div class="field">
+            <div class="field nf-buttons-container">
               <p-button
                 type="button"
                 label="Salir"
-                variant="text"
+                variant="outlined"
                 severity="secondary"
                 icon="pi pi-sign-out"
                 [size]="'small'"
                 [rounded]="true"
                 (onClick)="salir()"
               />
-
+po
               <p-button
                 type="button"
                 label="Nueva"
                 icon="pi pi-file"
-                variant="text"
+                variant="outlined"
                 severity="success"
                 [size]="'small'"
                 [rounded]="true"
@@ -612,7 +614,7 @@
                 icon="pi pi-check-circle"
                 [size]="'small'"
                 [rounded]="true"
-                variant="text"
+                variant="outlined"
                 severity="success"
                 [loading]="guardando()"
                 (onClick)="facturar()"
@@ -622,7 +624,7 @@
               <p-button
                 type="button"
                 label="Pagar"
-                variant="text"
+                variant="outlined"
                 severity="info"
                 icon="pi pi-credit-card"
                 [size]="'small'"
@@ -634,9 +636,6 @@
               }
             </div>
           </div>
-        </div>
-        <div class="field">
-          <span class="alt9">Presione Alt+9 para ver ventana de atajos</span>
         </div>
       </div>
     </div>

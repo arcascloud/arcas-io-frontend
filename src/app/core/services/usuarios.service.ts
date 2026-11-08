@@ -11,10 +11,11 @@ export class UsuariosService {
 
   /**
    * Obtiene la lista de todos los usuarios registrados en el sistema.
+   * @param todos - Si es true, lista todos los usuarios globales del sistema sin filtrar por empresa.
    * @returns Observable con el arreglo de usuarios.
    */
-  getAll(): Observable<Usuario[]> {
-    return this.api.get<Usuario[]>(this.path);
+  getAll(todos = false): Observable<Usuario[]> {
+    return this.api.get<Usuario[]>(this.path, todos ? { todos: 'true' } : undefined);
   }
 
   /**

@@ -18,7 +18,9 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { PaginatorModule } from 'primeng/paginator';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { EmpresasService } from '../../../core/services/empresas.service';
+import { BodegasService } from '../../../core/services/bodegas.service';
 import { Empresa, EmpresaDet, EmpresaLogo, Impresora } from '../../../core/models/empresa.models';
+import { Bodega } from '../../../core/models/inventario.models';
 import { Sucursal } from '../../../core/models/sucursal.models';
 
 @Component({
@@ -38,6 +40,7 @@ import { Sucursal } from '../../../core/models/sucursal.models';
 export class EmpresasManager implements OnInit {
   private fb = inject(FormBuilder);
   private empresasService = inject(EmpresasService);
+  private bodegasService = inject(BodegasService);
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
@@ -50,6 +53,7 @@ export class EmpresasManager implements OnInit {
 
   // ===== Tabs =====
   activeTabValue = signal('0');
+  modoNuevo = signal(false);
 
   // ===== Empresa form =====
   saving = signal(false);
@@ -57,6 +61,7 @@ export class EmpresasManager implements OnInit {
     descripcion: ['', Validators.required],
     msjfactura: ['LA FACTURA ES BENEFICIO DE TODOS'],
     msjdevfactura: ['NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS'],
+    msjcotizacion: ['NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS'],
     sn_activo: ['S'],
   });
 
@@ -88,10 +93,16 @@ export class EmpresasManager implements OnInit {
 
   // ===== Sucursales =====
   sucursales = signal<Sucursal[]>([]);
+  bodegas = signal<Bodega[]>([]);
   savingSuc = signal(false);
   loadingSuc = signal(false);
+  loadingBodegas = signal(false);
   sucForm = this.fb.group({
     descripcion: ['', Validators.required],
+    direccion: [''],
+    telefono1: [''],
+    telefono2: [''],
+    bodegaId: [null as number | null],
     sn_activo: ['S'],
   });
   sucEditando = signal<Sucursal | null>(null);
@@ -170,15 +181,18 @@ export class EmpresasManager implements OnInit {
 
   seleccionar(emp: Empresa) {
     this.empresaSeleccionada.set(emp);
+    this.modoNuevo.set(false);
     this.activeTabValue.set('0');
     this.empresaForm.patchValue({
       descripcion: emp.descripcion,
       msjfactura: emp.msjfactura,
       msjdevfactura: emp.msjdevfactura,
+      msjcotizacion: emp.msjcotizacion,
       sn_activo: emp.sn_activo,
     });
     this.loadDet(emp.empresaId);
     this.loadSucursales(emp.empresaId);
+    this.loadBodegas(emp.empresaId);
     this.loadLogo(emp.empresaId);
     this.loadImpresoras(emp.empresaId);
   }
@@ -196,20 +210,34 @@ export class EmpresasManager implements OnInit {
 
   nueva() {
     this.empresaSeleccionada.set(null);
+    this.modoNuevo.set(true);
     this.activeTabValue.set('0');
     this.empresaForm.reset({
       descripcion: '',
       msjfactura: 'LA FACTURA ES BENEFICIO DE TODOS',
       msjdevfactura: 'NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS',
+      msjcotizacion: 'NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS',
       sn_activo: 'S',
     });
     this.empresaDet.set([]);
     this.sucursales.set([]);
+    this.bodegas.set([]);
     this.limpiarDatosEmpresa();
     this.logo.set(null);
     this.logoPreview.set(null);
     this.logoFile = null;
     this.impresoras.set([]);
+  }
+
+  cancelarNueva() {
+    this.modoNuevo.set(false);
+    this.empresaForm.reset({
+      descripcion: '',
+      msjfactura: 'LA FACTURA ES BENEFICIO DE TODOS',
+      msjdevfactura: 'NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS',
+      msjcotizacion: 'NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS',
+      sn_activo: 'S',
+    });
   }
 
   filtrar() {
@@ -251,10 +279,14 @@ export class EmpresasManager implements OnInit {
         this.msgs.add({ severity: 'success', summary: emp ? 'Actualizada' : 'Creada', detail: 'Empresa guardada correctamente' });
         this.saving.set(false);
         this.load();
-        if (!emp && res?.empresaId) {
-          this.empresasService.getOne(res.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((nueva) => {
-            this.seleccionar(nueva);
-          });
+        if (!emp) {
+          if (res?.empresaId) {
+            this.empresasService.getOne(res.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((nueva) => {
+              this.seleccionar(nueva);
+            });
+          } else {
+            this.modoNuevo.set(false);
+          }
         }
       },
       error: (err: any) => {
@@ -372,6 +404,20 @@ export class EmpresasManager implements OnInit {
     });
   }
 
+  loadBodegas(empresaId: number) {
+    this.loadingBodegas.set(true);
+    this.bodegasService.getAll(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.bodegas.set(data ?? []);
+        this.loadingBodegas.set(false);
+      },
+      error: () => {
+        this.bodegas.set([]);
+        this.loadingBodegas.set(false);
+      },
+    });
+  }
+
   guardarSucursal() {
     if (this.sucForm.invalid || !this.empresaSeleccionada()) return;
     this.savingSuc.set(true);
@@ -386,7 +432,7 @@ export class EmpresasManager implements OnInit {
       next: () => {
         this.msgs.add({ severity: 'success', summary: 'Guardada', detail: 'Sucursal guardada correctamente' });
         this.savingSuc.set(false);
-        this.sucForm.reset({ descripcion: '', sn_activo: 'S' });
+        this.resetSucForm();
         this.sucEditando.set(null);
         this.loadSucursales(this.empresaSeleccionada()!.empresaId);
       },
@@ -399,12 +445,30 @@ export class EmpresasManager implements OnInit {
 
   editarSuc(suc: Sucursal) {
     this.sucEditando.set(suc);
-    this.sucForm.patchValue({ descripcion: suc.descripcion, sn_activo: suc.sn_activo });
+    this.sucForm.patchValue({
+      descripcion: suc.descripcion,
+      direccion: suc.direccion ?? '',
+      telefono1: suc.telefono1 ?? '',
+      telefono2: suc.telefono2 ?? '',
+      bodegaId: suc.bodegaId ?? null,
+      sn_activo: suc.sn_activo,
+    });
   }
 
   cancelarSuc() {
     this.sucEditando.set(null);
-    this.sucForm.reset({ descripcion: '', sn_activo: 'S' });
+    this.resetSucForm();
+  }
+
+  private resetSucForm() {
+    this.sucForm.reset({
+      descripcion: '',
+      direccion: '',
+      telefono1: '',
+      telefono2: '',
+      bodegaId: this.bodegas().length === 1 ? this.bodegas()[0].bodegaId : null,
+      sn_activo: 'S',
+    });
   }
 
   // ==================================================

@@ -29,7 +29,7 @@
       <ng-template pTemplate="body" let-row>
         <tr (click)="seleccionar(row)" style="cursor:pointer">
           <td>{{ row.invtrasladomaeId }}</td>
-          <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ row.fecharegistro | date:'dd/MM/yyyy' }}</td>
           <td class="font-bold">{{ row.nroreferencia }}</td>
           <td>{{ nombreBodega(row.bodegaOrigenId) }}</td>
           <td>{{ nombreBodega(row.bodegaDestinoId) }}</td>

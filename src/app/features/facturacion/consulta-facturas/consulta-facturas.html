@@ -53,9 +53,9 @@
     >
       <ng-template #header>
         <tr>
-          <th style="width: 5rem"># Factura</th>
-          <th style="width: 6rem">Fecha</th>
-          <th style="width: 18rem">Cliente</th>
+          <th style="text-align: center; width: 5rem"># Factura</th>
+          <th style="text-align: center; width: 6rem">Fecha</th>
+          <th style="text-align: center; width: 18rem">Cliente</th>
           <th style="text-align: center; width: 6rem">Tipo</th>
           <th style="text-align: center; width: 7rem">Total</th>
           <th style="text-align: center; width: 5rem">Anulada</th>
@@ -69,12 +69,13 @@
           [class.row-anulada]="f.sn_anulada === 'S'"
           class="fila-click"
         >
-          <td>
-            <span class="nro-factura">{{ f.nrofactura }}</span>
+          <td class="row-class-right">
+            <span class="row-class-right">{{ f.nrofactura }}</span>
           </td>
-          <td>{{ fechaCorta(f.fecharegistro) }}</td>
-          <td>
-            <span class="cliente-nombre">{{ f.nombrecliente || 'Sin cliente' }}</span>
+          <td class="row-class-right">
+            <span class="row-class-right">{{ fechaCorta(f.fecharegistro) }}</span></td>
+          <td class="row-class-left">
+            <span class="row-class-left">{{ f.nombrecliente || 'Sin cliente' }}</span>
           </td>
           <td style="text-align: center;">
             <p-tag
@@ -83,7 +84,9 @@
               styleClass="tag-sm"
             />
           </td>
-          <td class="text-right total-cell">{{ moneda(f.total) | number:'1.2-2' }}</td>
+          <td class="text-right total-cell">
+            <span class="row-class-right">
+            {{ moneda(f.total) | number:'1.2-2' }}</span></td>
           <td style="text-align: center;">
             <p-tag
               [value]="f.sn_anulada === 'S' ? 'Si' : 'No'"

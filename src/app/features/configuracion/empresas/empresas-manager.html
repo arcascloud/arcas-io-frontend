@@ -7,7 +7,7 @@
     <!-- ========== COLUMNA IZQUIERDA: Detalle ========== -->
     <div class="left-column">
       <!-- Empty state -->
-      @if (!empresaSeleccionada()) {
+      @if (!empresaSeleccionada() && !modoNuevo()) {
       <div class="empty-state">
         <i class="pi pi-arrow-right empty-icon"></i>
         <h3>Pulse una empresa</h3>
@@ -54,7 +54,7 @@
       }
 
       <!-- Tabs detalle -->
-      @if (empresaSeleccionada()) {
+      @if (empresaSeleccionada() || modoNuevo()) {
       <div class="empresa-detail">
         <p-tabs [value]="activeTabValue()" (valueChange)="activeTabValue.set($event)">
           <p-tablist>
@@ -62,6 +62,7 @@
               <i class="pi pi-building"></i>
               <span>Empresa</span>
             </p-tab>
+            @if (!modoNuevo()) {
             <p-tab value="1">
               <i class="pi pi-id-card"></i>
               <span>Datos Específicos</span>
@@ -78,6 +79,7 @@
               <i class="pi pi-print"></i>
               <span>Impresoras</span>
             </p-tab>
+            }
           </p-tablist>
 
           <p-tabpanels>
@@ -85,7 +87,7 @@
             <p-tabpanel value="0">
               <div class="tab-content">
                 <div class="tab-header">
-                  <h4>Empresa</h4>
+                  <h4>{{ modoNuevo() ? 'Nueva empresa' : 'Empresa' }}</h4>
                   <span class="tab-subtitulo">Datos generales y mensajes al pie de documento</span>
                 </div>
 
@@ -117,15 +119,23 @@
                         <label for="msjdevfactura">Mensaje Devolución</label>
                         <textarea pTextarea id="msjdevfactura" formControlName="msjdevfactura" [rows]="3" pSize="small" placeholder="Mensaje de política de devolución"></textarea>
                       </div>
+                      <div class="p-field">
+                        <label for="msjcotizacion">Mensaje Cotización</label>
+                        <textarea pTextarea id="msjcotizacion" formControlName="msjcotizacion" [rows]="3" pSize="small" placeholder="Mensaje al pie de la cotización"></textarea>
+                      </div>
                     </div>
                   </div>
                   <div class="form-actions">
+                    @if (modoNuevo()) {
+                    <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (click)="cancelarNueva()" />
+                    }
                     <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" [size]="'small'" [loading]="saving()" (onClick)="guardarEmpresa()" />
                   </div>
                 </div>
               </div>
             </p-tabpanel>
 
+            @if (!modoNuevo()) {
             <!-- TAB 1: Datos Específicos -->
             <p-tabpanel value="1">
               <div class="tab-content">
@@ -224,6 +234,25 @@
                       <div class="p-field">
                         <label>Descripción <span class="req">*</span></label>
                         <input pInputText [pSize]="'small'" formControlName="descripcion" placeholder="Nombre sucursal" />
+                      </div>
+                      <div class="p-field">
+                        <label>Dirección</label>
+                        <textarea pTextarea [pSize]="'small'" formControlName="direccion" rows="2" placeholder="Dirección de la sucursal"></textarea>
+                      </div>
+                      <div class="p-field">
+                        <label>Teléfono 1</label>
+                        <input pInputText [pSize]="'small'" formControlName="telefono1" placeholder="Teléfono principal" />
+                      </div>
+                      <div class="p-field">
+                        <label>Teléfono 2</label>
+                        <input pInputText [pSize]="'small'" formControlName="telefono2" placeholder="Teléfono alterno" />
+                      </div>
+                      <div class="p-field">
+                        <label>Bodega por defecto</label>
+                        <p-select formControlName="bodegaId" [options]="bodegas()" optionLabel="descripcion" optionValue="bodegaId" size="small" styleClass="w-full" [appendTo]="'body'" [loading]="loadingBodegas()" placeholder="Automática (Bodega Central)" [showClear]="true" />
+                        @if (bodegas().length === 0) {
+                        <small class="text-muted">La empresa no tiene bodegas; se creará una Bodega Central automáticamente.</small>
+                        }
                       </div>
                       <div class="p-field">
                         <label>Estado</label>
@@ -426,6 +455,7 @@
                 </div>
               </div>
             </p-tabpanel>
+            }
           </p-tabpanels>
         </p-tabs>
       </div>
@@ -500,7 +530,11 @@
           </div>
           <div class="item-ficha-row">
             <span class="ficha-label">Mensaje factura:</span>
-            <span class="ficha-value">{{ emp.msjfactura || '—' }}</span>
+            <span class="ficha-value">{{ emp.msjfactura || '-' }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Mensaje cotización:</span>
+            <span class="ficha-value">{{ emp.msjcotizacion || '-' }}</span>
           </div>
           <div class="item-ficha-row">
             <span class="ficha-label">Creada:</span>

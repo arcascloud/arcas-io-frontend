@@ -7,8 +7,13 @@
      position="left" styleClass="departamentos-drawer">
     <ng-template #header>
       <div class="flex items-center gap-2">
+       <i class="fa-solid fa-layer-group"></i>
+       <span class="drilldown-title">Departamentos</span>
+
+      <!--
         <p-avatar  image="assets/images/toyota.png" shape="circle" />
-        <span class="sidebar-title">TOYOTA</span>
+        <span class="sidebar-title">{{ empresaNombre() }}</span>
+      -->
       </div>
     </ng-template>
     <app-sidebar-drilldown />
@@ -32,8 +37,8 @@
           pTooltip="Departamentos"
         ></p-button>
         <div class="topbar-brand">
-          <img src="assets/images/toyota.png" alt="TOYOTA" class="brand-logo" />
-          <span class="sidebar-title">TOYOTA</span>
+          <img src="assets/images/toyota.png" [alt]="empresaNombre()" class="brand-logo" />
+          <span class="sidebar-title">{{ empresaNombre() }}</span>
         </div>
       </div>
       <div class="topbar-center">
