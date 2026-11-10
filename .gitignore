@@ -29,6 +29,10 @@ yarn-error.log
 .history/*
 
 .opencode/*
+.kilo/*
+
+*.exe
+*.zip
 
 # Miscellaneous
 /.angular/cache
@@ -45,4 +49,4 @@ Thumbs.db
 node_modules
 
 /public/assets/img/*.exe
-/public/assets/img/*.zipp
+/public/assets/img/*.zip
