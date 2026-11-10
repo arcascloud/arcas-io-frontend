@@ -123,24 +123,6 @@
   flex-wrap: wrap;
 }
 
-.acciones-fila-secundarias {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  gap: 0.5rem;
-
-  p-button {
-    flex: 1;
-    display: flex;
-
-    ::ng-deep .p-button {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-}
-
 // Guardar a ancho completo: el host <p-button> es un elemento inline con
 // ancho auto — hay que forzarlo a block/100% y estirar el <button> interno
 .acciones-fila-guardar {
@@ -345,9 +327,9 @@
 
 .alt9 {
   display: block;
-  font-weight: 300;
+  font-weight: 400;
   margin-left: 5px;
-  font-size: 1.05rem;
+  font-size: 0.85rem;
   color: var(--c-warning);
 }
 

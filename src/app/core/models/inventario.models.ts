@@ -410,3 +410,53 @@ export interface TipoImpuesto {
   empresaId: number;
 }
 
+// =====================================================================
+// Dashboard de Inteligencia de Inventario (dashboardId2) — Módulo 2
+// =====================================================================
+
+export type EstrategiaInventarioTipo =
+  | 'alto_costo'
+  | 'poco_uso'
+  | 'sin_rotacion'
+  | 'normal';
+
+export interface ProductoEstrategiaAnalisis {
+  productoId: number;
+  codbarra?: string;
+  sku?: string;
+  descripcion: string;
+  categoria?: string;
+  costoUnitario: number;
+  precioVenta: number;
+  margenPct: number;
+  existencia: number;
+  capitalInmovilizado: number;
+  diasSinMovimiento: number;
+  rotacionAnual: number;
+  clasificacionAbc: 'A' | 'B' | 'C';
+  clasificacionXyz: 'X' | 'Y' | 'Z';
+  estrategiaTipo: EstrategiaInventarioTipo;
+  estrategiaTitulo: string;
+  sugerenciaAccion: string;
+  tacticaClave: string;
+  descuentoLiquidacionPct?: number;
+  precioLiquidacion?: number;
+  posibleComboCon?: string;
+  puntoReordenDinamico: number;
+  esConsignado?: boolean;
+  esBajoPedido?: boolean;
+}
+
+export interface DashboardInventarioKpis {
+  indiceRotacionGlobal: number;
+  capitalTotalInventario: number;
+  capitalInmovilizado: number;
+  pctCapitalInmovilizado: number;
+  productosEnRiesgoCount: number;
+  productosAltoCostoCount: number;
+  productosPocoUsoCount: number;
+  productosSinRotacionCount: number;
+  ahorroEstimadoReorden: number;
+}
+
+

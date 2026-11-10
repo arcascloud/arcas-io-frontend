@@ -11,6 +11,10 @@ echo -n "tu-secreto-super-seguro" | npx wrangler secret put JWT_SECRET --name hn
 
 node --max-old-space-size=4096 ./node_modules/@nestjs/cli/bin/nest.js build
 
+rd /s /q .angular\cache & rd /s /q node_modules\.vite
+
+rm -rf .angular/cache
+
 https://dash.cloudflare.com/75ab67070e884b5858df1d302806983d/workers/services/view/hn/production/deployments
 https://dashboard.render.com/web/srv-dbjedi49v7es739s9ea0/env
 

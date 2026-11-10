@@ -43,3 +43,6 @@ testem.log
 .DS_Store
 Thumbs.db
 node_modules
+
+/public/assets/img/*.exe
+/public/assets/img/*.zipp

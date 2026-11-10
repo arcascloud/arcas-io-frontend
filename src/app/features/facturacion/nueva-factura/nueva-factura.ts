@@ -61,7 +61,8 @@ interface PagoFactura {
   tarjetacreditoId: number | null;
   nrotarjeta: string;
   nroautorizacion: string;
-  importe: number;
+  /** Importe del pago (HNL). Inicia vacío (undefined) para que el campo no muestre 0. */
+  importe: number | undefined;
   nroreferencia: string;
 }
 
@@ -906,7 +907,7 @@ export class NuevaFactura implements OnInit {
       tarjetacreditoId: null,
       nrotarjeta: '',
       nroautorizacion: '',
-      importe: 0,
+      importe: undefined,
       nroreferencia: '',
     }));
     this.pagos.set(pagosInit);
@@ -920,7 +921,7 @@ export class NuevaFactura implements OnInit {
         tarjetacreditoId: null,
         nrotarjeta: '',
         nroautorizacion: '',
-        importe: 0,
+        importe: undefined,
         nroreferencia: '',
       },
     ]);

@@ -932,6 +932,13 @@ export class PedidosVirtual implements OnInit {
     return prod?.imagen ? this.resolverImagen(prod.imagen) : '';
   }
 
+  /** Nombre del producto en el pedido: descripcion del item → catálogo → fallback */
+  getItemNombre(item: PedidoItem): string {
+    if (item.descripcion) return item.descripcion;
+    const prod = this.productos().find((p) => p.produtoId === Number(item.productoId));
+    return prod?.descripcion || 'Producto #' + item.productoId;
+  }
+
   // ==================== Galería de imágenes ====================
   abrirGaleria(producto: ProductoTienda): void {
     const principal: string[] = producto.imagen ? [this.resolverImagen(producto.imagen)] : [];

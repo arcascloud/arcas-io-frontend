@@ -72,7 +72,8 @@ interface PagoPedido {
   tarjetacreditoId: number | null;
   nrotarjeta: string;
   nroautorizacion: string;
-  importe: number;
+  /** Importe del pago (HNL). Inicia vacío (undefined) para que el campo no muestre 0. */
+  importe: number | undefined;
   /** true si la forma de pago es efectivo (para importe_efectivo vs importe_otros) */
   esEfectivo: boolean;
 }
@@ -233,7 +234,7 @@ export class PedidoForm implements OnInit {
       tarjetacreditoId: null,
       nrotarjeta: '',
       nroautorizacion: '',
-      importe: 0,
+      importe: undefined,
       esEfectivo: this.esEfectivoLabel(fp.label),
     }));
     this.pagos.set(pagosInit);
@@ -247,7 +248,7 @@ export class PedidoForm implements OnInit {
         tarjetacreditoId: null,
         nrotarjeta: '',
         nroautorizacion: '',
-        importe: 0,
+        importe: undefined,
         esEfectivo: false,
       },
     ]);

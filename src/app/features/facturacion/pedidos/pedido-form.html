@@ -338,7 +338,47 @@
         </div>
       </div>
 
-      <div class="alt9">Presione Alt+9 para ver ventana de atajos</div>
+        <div>
+          <div class="invoice-side">
+            <div class="pago-block">
+              <div class="invoice-party-title">Resumen de Pago</div>
+              <div class="pago-resumen">
+                <div class="pago-resumen-inline">
+                  <span
+                    >Total de Factura:
+                    <span class="font-bold">{{ moneda(totales().total) }}</span></span
+                  >
+                  <span
+                    >Total de Pagos:
+                    <span
+                      class="font-bold"
+                      [class.text-ok]="totalPagos() >= totales().total"
+                      [class.text-warn]="totalPagos() < totales().total && totalPagos() > 0"
+                      >{{ moneda(totalPagos()) }}</span
+                    ></span
+                  >
+                  <span class="alt9">presione Alt+9 para ver ventana de atajos</span>
+
+
+                  @if (pendiente() > 0) {
+                  <span
+                    >Pendiente de pago:
+                    <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span></span
+                  >
+                  }
+
+                  @if (pagosConImporte().length === 0) {
+                  <span>, ingrese el importe de pago presionando el boton pagar</span>
+                  } @if (cambioTotal() > 0) {
+                  <span>Cambio:
+                    <span class="font-bold cambio-amount">{{ moneda(cambioTotal()) }}</span></span>
+                   }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
     </div>
 
     <!-- Columna 2: panel lateral -->
@@ -652,11 +692,11 @@
             <p-button
               type="button"
               label="Guardar"
-              variant="text"
               icon="pi pi-check"
               [size]="'small'"
               [rounded]="true"
               severity="warn"
+              variant="outlined"
               [loading]="guardando()"
               (onClick)="guardar()"
               [disabled]="soloLectura()"
@@ -664,12 +704,12 @@
             />
           </div>
           <!-- Fila 2: acciones secundarias -->
-          <div class="acciones-fila acciones-fila-secundarias">
+          <div class="acciones-fila">
             <p-button
               type="button"
               label="Salir"
-              variant="text"
-              severity="secondary"
+              variant="outlined"
+              severity="contrast"
               icon="pi pi-sign-out"
               [size]="'small'"
               [rounded]="true"
@@ -680,9 +720,9 @@
               type="button"
               label="Nueva"
               icon="pi pi-file"
-              variant="text"
               severity="success"
               [size]="'small'"
+              variant="outlined"
               [rounded]="true"
               (onClick)="nueva()"
               pTooltip="ESC Salir"
@@ -696,7 +736,7 @@
               icon="pi pi-check-circle"
               [size]="'small'"
               [rounded]="true"
-              variant="text"
+              variant="outlined"
               severity="success"
               [loading]="procesando()"
               (onClick)="facturar()"
@@ -709,8 +749,8 @@
               label="Pagar"
               icon="pi pi-credit-card"
               [size]="'small'"
+              variant="outlined"
               [rounded]="true"
-              variant="text"
               severity="info"
               [loading]="procesando()"
               (onClick)="facturar()"

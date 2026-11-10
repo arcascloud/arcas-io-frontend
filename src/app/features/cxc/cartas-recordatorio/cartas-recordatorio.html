@@ -1,12 +1,11 @@
-<div class="cartas-recordatorio">
-  <p-toolbar>
-    <ng-template #start>
-      <div class="toolbar-title">
-        <i class="pi pi-envelope"></i>
-        <span>Cartas de Recordatorio de Cobro</span>
-      </div>
-    </ng-template>
-    <ng-template #end>
+<section class="page cartas-recordatorio">
+  <!-- ENCABEZADO ESTÁNDAR DEL ERP -->
+  <header class="page-header">
+    <div class="page-header-text">
+      <h1 class="page-title">Cartas de Recordatorio de Cobro</h1>
+      <p class="page-subtitle">Emisión y gestión de avisos de vencimiento a clientes a 30, 60 y 90+ días</p>
+    </div>
+    <div class="page-header-actions">
       <p-button
         label="Actualizar"
         icon="pi pi-refresh"
@@ -14,11 +13,14 @@
         [loading]="cargando()"
         [rounded]="true"
         [size]="'small'"
-      ></p-button>
-    </ng-template>
-  </p-toolbar>
+        severity="success"
+        [raised]="true"
+      />
+    </div>
+  </header>
 
-  <div class="filtros-bar">
+  <!-- BARRA DE FILTROS Y ACCIONES -->
+  <div class="card filtros-bar">
     <div class="search-input-wrapper">
       <i class="pi pi-search"></i>
       <input
@@ -28,21 +30,24 @@
         (ngModelChange)="q.set($event)"
         placeholder="Buscar por nombre, Nro. cliente o DNI..."
         class="search-input"
+        [pSize]="'small'"
       />
       <p-button
         *ngIf="q()"
         icon="pi pi-times"
         (click)="limpiarFiltros()"
         severity="secondary"
+        variant="text"
         [rounded]="true"
         [size]="'small'"
         class="clear-btn"
-      ></p-button>
+      />
     </div>
 
     <div class="filtro-tipo">
       <label>Tipo de deuda:</label>
-      <p-select size="small"
+      <p-select
+        size="small"
         [options]="tipoOptions"
         [ngModel]="tipoFiltro()"
         (ngModelChange)="tipoFiltro.set($event)"
@@ -51,7 +56,7 @@
         styleClass="w-full"
         [appendTo]="'body'"
         placeholder="Seleccionar tipo"
-      ></p-select>
+      />
     </div>
 
     <div class="filtro-fecha">
@@ -62,35 +67,35 @@
         dateFormat="dd/mm/yy"
         [showIcon]="true"
         [inline]="false"
-      ></p-datepicker>
+        size="small"
+      />
+    </div>
+
+    <div class="acciones-grupo">
+      <p-button
+        label="Generar Cartas"
+        icon="pi pi-file-edit"
+        (click)="generarCartas()"
+        [rounded]="true"
+        [size]="'small'"
+      />
+      <p-button
+        label="Imprimir Todas"
+        icon="pi pi-print"
+        severity="secondary"
+        (click)="imprimirTodas()"
+        [disabled]="cartasGeneradas().length === 0"
+        [rounded]="true"
+        [size]="'small'"
+      />
+      <span class="cartas-count" *ngIf="cartasGeneradas().length > 0">
+        {{ cartasGeneradas().length }} cartas generadas
+      </span>
     </div>
   </div>
 
-  <!-- Acciones -->
-  <div class="acciones-bar">
-    <p-button
-      label="Generar Cartas"
-      icon="pi pi-file-edit"
-      (click)="generarCartas()"
-      [rounded]="true"
-      [size]="'small'"
-    ></p-button>
-    <p-button
-      label="Imprimir Todas"
-      icon="pi pi-print"
-      severity="secondary"
-      (click)="imprimirTodas()"
-      [disabled]="cartasGeneradas().length === 0"
-      [rounded]="true"
-      [size]="'small'"
-    ></p-button>
-    <span class="cartas-count" *ngIf="cartasGeneradas().length > 0">
-      {{ cartasGeneradas().length }} cartas generadas
-    </span>
-  </div>
-
-  <!-- Tabla de Clientes con Saldo -->
-  <div class="table-container">
+  <!-- TABLA DE CLIENTES CON SALDO -->
+  <div class="card tabla-card">
     <p-table
       [value]="filtered()"
       [loading]="cargando()"
@@ -99,24 +104,24 @@
       [rowsPerPageOptions]="[10, 15, 25, 50]"
       [showCurrentPageReport]="true"
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-      styleClass="p-datatable-striped"
+      styleClass="p-datatable-sm p-datatable-striped"
       size="small"
     >
       <ng-template #header>
         <tr>
           <th style="width: 80px">Nro.</th>
           <th>Cliente</th>
-          <th>DNI</th>
+          <th style="width: 140px">DNI</th>
           <th class="col-importe">Total</th>
           <th class="col-importe">1-30 Días</th>
           <th class="col-importe">31-60 Días</th>
           <th class="col-importe">90+ Días</th>
-          <th style="width: 120px">Acciones</th>
+          <th style="width: 130px; text-align: center">Acciones</th>
         </tr>
       </ng-template>
       <ng-template #body let-cliente>
         <tr>
-          <td>{{ cliente.nrocliente }}</td>
+          <td><code>{{ cliente.nrocliente }}</code></td>
           <td>
             <span class="cliente-nombre">{{ cliente.cliente }}</span>
           </td>
@@ -125,7 +130,7 @@
           <td class="col-importe" [class.text-danger]="cliente.vencido30 > 0">{{ moneda(cliente.vencido30) }}</td>
           <td class="col-importe" [class.text-danger]="cliente.vencido60 > 0">{{ moneda(cliente.vencido60) }}</td>
           <td class="col-importe" [class.text-danger]="cliente.vencido90 > 0">{{ moneda(cliente.vencido90) }}</td>
-          <td>
+          <td style="text-align: center">
             <div class="action-buttons">
               <p-button
                 *ngIf="cliente.vencido30 > 0"
@@ -135,8 +140,8 @@
                 tooltipPosition="top"
                 [rounded]="true"
                 size="small"
-                text
-              ></p-button>
+                variant="text"
+              />
               <p-button
                 *ngIf="cliente.vencido60 > 0"
                 icon="pi pi-calendar-plus"
@@ -145,8 +150,8 @@
                 tooltipPosition="top"
                 [rounded]="true"
                 size="small"
-                text
-              ></p-button>
+                variant="text"
+              />
               <p-button
                 *ngIf="cliente.vencido90 > 0"
                 icon="pi pi-exclamation-triangle"
@@ -155,8 +160,9 @@
                 tooltipPosition="top"
                 [rounded]="true"
                 size="small"
-                text
-              ></p-button>
+                variant="text"
+                severity="danger"
+              />
             </div>
           </td>
         </tr>
@@ -181,4 +187,4 @@
       </ng-template>
     </p-table>
   </div>
-</div>
+</section>

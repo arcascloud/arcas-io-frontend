@@ -73,7 +73,7 @@
 
           <!-- Fila 2: Fecha nacimiento | Estado civil | Sexo -->
           <div class="campo">
-            <label for="fechanacimiento">Fecha de nacimiento <span class="req">*</span></label>
+            <label for="fechanacimiento">Fecha de nacimiento</label>
             <p-datepicker
               size="small"
               id="fechanacimiento"
@@ -86,7 +86,7 @@
           </div>
 
           <div class="campo">
-            <label for="estadocivil">Estado civil <span class="req">*</span></label>
+            <label for="estadocivil">Estado civil</label>
             <p-select
               size="small"
               id="estadocivil"
@@ -97,15 +97,11 @@
               placeholder="Seleccione"
               styleClass="w-full"
               [appendTo]="'body'"
-              [ngClass]="{ 'ng-invalid': invalid('estadocivil') }"
             />
-            @if (invalid('estadocivil')) {
-              <small class="err">El estado civil es obligatorio</small>
-            }
           </div>
 
           <div class="campo">
-            <label for="sexo">Sexo <span class="req">*</span></label>
+            <label for="sexo">Sexo</label>
             <p-select
               size="small"
               id="sexo"
@@ -116,11 +112,7 @@
               placeholder="Seleccione"
               styleClass="w-full"
               [appendTo]="'body'"
-              [ngClass]="{ 'ng-invalid': invalid('sexo') }"
             />
-            @if (invalid('sexo')) {
-              <small class="err">El sexo es obligatorio</small>
-            }
           </div>
 
           <!-- Fila 3: Profesión | Puesto | Sueldo bruto -->
@@ -157,7 +149,7 @@
           </div>
 
           <div class="campo">
-            <label for="sueldobruto">Sueldo bruto<span class="req">*</span></label>
+            <label for="sueldobruto">Sueldo bruto</label>
             <p-inputNumber
               size="small"
               id="sueldobruto"
@@ -180,35 +172,13 @@
           </div>
 
           <div class="campo">
-            <label for="celular">Celular<span class="req">*</span></label>
-            <input
-              pInputText
-              [pSize]="'small'"
-              id="celular"
-              formControlName="celular"
-              maxlength="20"
-              placeholder="Celular"
-              [ngClass]="{ 'ng-invalid': invalid('celular') }"
-            />
-            @if (invalid('celular')) {
-              <small class="err">El celular es obligatorio</small>
-            }
+            <label for="celular">Celular</label>
+            <input pInputText [pSize]="'small'" id="celular" formControlName="celular" maxlength="20" placeholder="Celular" />
           </div>
 
           <div class="campo">
-            <label for="telefono">Teléfono<span class="req">*</span></label>
-            <input
-              pInputText
-              [pSize]="'small'"
-              id="telefono"
-              formControlName="telefono"
-              maxlength="20"
-              placeholder="Teléfono"
-              [ngClass]="{ 'ng-invalid': invalid('telefono') }"
-            />
-            @if (invalid('telefono')) {
-              <small class="err">El teléfono es obligatorio</small>
-            }
+            <label for="telefono">Teléfono</label>
+            <input pInputText [pSize]="'small'" id="telefono" formControlName="telefono" maxlength="20" placeholder="Teléfono" />
           </div>
 
           <!-- Fila 5: Email | Tipo empleado | Techo seguro -->
@@ -323,7 +293,7 @@
           </div>
 
           <div class="campo">
-            <label for="fecha_alta">Fecha de alta <span class="req">*</span></label>
+            <label for="fecha_alta">Fecha de alta</label>
             <p-datepicker
               size="small"
               id="fecha_alta"
@@ -401,7 +371,7 @@
               </div>
             }
             <div class="campo campo-estado">
-              <label for="sn_jornada">Jornada <span class="req">*</span></label>
+              <label for="sn_jornada">Jornada</label>
               <p-select
                 size="small"
                 id="sn_jornada"
@@ -412,11 +382,7 @@
                 placeholder="Seleccione jornada"
                 styleClass="w-full"
                 [appendTo]="'body'"
-                [ngClass]="{ 'ng-invalid': invalid('sn_jornada') }"
               />
-              @if (invalid('sn_jornada')) {
-                <small class="err">La jornada es obligatoria</small>
-              }
             </div>
             <div class="campo-estado-spacer"></div>
             <div class="acciones-form">

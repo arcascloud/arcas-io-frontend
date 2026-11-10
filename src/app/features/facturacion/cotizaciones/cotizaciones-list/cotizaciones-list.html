@@ -35,29 +35,25 @@
       styleClass="cotizaciones-table">
       <ng-template #header>
         <tr>
-          <th style="text-align: center; width:4rem"># Cotización</th>
-          <th style="text-align: center; width:6rem">Fecha</th>
-          <th style="text-align: center; width:16rem">Cliente</th>
-          <th style="text-align: center; width:8rem">Atendió</th>
-          <th style="text-align: center; width:6rem">Estado</th>
+          <th style="width:6rem"># Cotización</th>
+          <th style="width:6rem">Fecha</th>
+          <th>Cliente</th>
+          <th style="width:8rem">Atendió</th>
+          <th style="width:6rem">Estado</th>
           <th style="width:10rem" class="acciones-header">Acciones</th>
         </tr>
       </ng-template>
       <ng-template #body let-item>
         <tr (click)="editar(item.poscotmaeId)" class="fila-click" [class.row-anulada]="item.sn_estadocarrito === 'X'">
-          <td class="row-class-right">
-            <span class="row-class-right">{{ nroCotizacion(item.poscotmaeId) }}</span>
+          <td>
+            <span class="nro-factura">{{ nroCotizacion(item.poscotmaeId) }}</span>
           </td>
-          <td class="row-class-center">
-            <span class="row-class-center">
-            {{ fechaCorta(item.fecharegistro) }}</span></td>
-          <td class="row-class-left">
-            <span class="row-class-left">{{ item.Nombrecliente || 'Sin cliente' }}</span>
+          <td>{{ fechaCorta(item.fecharegistro) }}</td>
+          <td>
+            <span class="cliente-nombre">{{ item.Nombrecliente || 'Sin cliente' }}</span>
           </td>
-          <td class="row-class-center">
-            <span class="row-class-center">
-            {{ item.atendio || '-' }}</span></td>
-          <td class="row-class-center">
+          <td>{{ item.atendio || '-' }}</td>
+          <td>
             <p-tag [value]="estadoLabel(item)" [severity]="estadoSeverity(item)" styleClass="tag-sm" />
           </td>
           <td class="acciones-cell">

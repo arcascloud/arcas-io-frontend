@@ -228,21 +228,8 @@
       // En PrimeNG 21 NO existe .p-togglebutton-background (era de versiones
       // viejas): el background vive en la RAÍZ. Se pinta de negro solo lo NO
       // seleccionado; el estado checked conserva el color del tema para que
-      // se distinga cuál está activo.
-      .p-togglebutton {
-        &:not(.p-togglebutton-checked) {
-          border-color: var(--c-bg);
-          background: var(--c-bg);
+            // se distinga cuál está activo.
 
-          &:hover {
-            border-color: var(--c-bg);
-            color: var(--c-info);
-            background:  var(--c-bg);
-          }
-          
-        }
-
-      }
     }
   }
 

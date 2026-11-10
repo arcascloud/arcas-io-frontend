@@ -42,28 +42,6 @@
                 <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione estado" />
               </div>
             </div>
-            @if (formMode() === 'nuevo') {
-            <div class="form-col">
-              <h5 class="form-col-title">Empresa</h5>
-              <div class="p-field">
-                <label>Empresa <span class="req">*</span></label>
-                <p-select formControlName="empresaId" [options]="empresas()" optionLabel="descripcion" optionValue="empresaId" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione empresa" (onChange)="onEmpresaCaiChange()" />
-                @if (caiForm.get('empresaId')?.touched && caiForm.get('empresaId')?.invalid) {
-                <small class="err">Seleccione la empresa</small>
-                }
-              </div>
-            </div>
-            <div class="form-col">
-              <h5 class="form-col-title">Sucursal</h5>
-              <div class="p-field">
-                <label>Sucursal <span class="req">*</span></label>
-                <p-select formControlName="Idsucursal" [options]="sucursalesForm()" optionLabel="descripcion" optionValue="idsucursal" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione sucursal" />
-                @if (caiForm.get('Idsucursal')?.touched && caiForm.get('Idsucursal')?.invalid) {
-                <small class="err">Seleccione la sucursal</small>
-                }
-              </div>
-            </div>
-            }
           </div>
           <div class="form-actions">
             <p-button label="Cancelar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (onClick)="cancelarForm()" />

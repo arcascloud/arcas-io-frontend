@@ -31,6 +31,16 @@ export const FACTURACION_ROUTES: Routes = [
       import('./nueva-factura/nueva-factura').then((m) => m.NuevaFactura),
   },
   {
+    path: 'pos-rapido',
+    loadComponent: () =>
+      import('./pos-rapido/pos-rapido').then((m) => m.PosRapido),
+  },
+  {
+    path: 'pos-rapido/pagar',
+    loadComponent: () =>
+      import('./pos-pagar/pos-pagar').then((m) => m.PosPagar),
+  },
+  {
     path: 'tienda',
     loadComponent: () =>
       import('./tienda/tienda-virtual').then((m) => m.TiendaVirtual),

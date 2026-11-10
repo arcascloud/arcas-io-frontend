@@ -1,154 +1,260 @@
-.antiguedad-saldos {
-  padding: 1rem;
+// =====================================================================
+// Balance de Antigüedad de Saldos — /cxc/antiguedad-saldos
+// =====================================================================
 
-  .toolbar-title {
+:host {
+  display: block;
+  width: 100%;
+}
+
+.page.antiguedad-saldos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+
+  // ===== Encabezado =====
+  .page-header {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: var(--c-text);
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    .page-header-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .page-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--color-texto-input);
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .page-subtitle {
+      font-size: 0.85rem;
+      color: var(--c-text-muted);
+      margin: 0;
+    }
+
+    .page-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
   }
 
-  .search-bar {
-    margin: 1rem 0;
+  // ===== Filtro / Barra de Búsqueda =====
+  .filtros-card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border-strong);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
 
     .search-input-wrapper {
       position: relative;
       display: flex;
       align-items: center;
+      width: 100%;
 
       i.pi-search {
         position: absolute;
-        left: 0.75rem;
+        left: 0.85rem;
         color: var(--c-text-muted);
+        font-size: 0.95rem;
+        pointer-events: none;
       }
 
       .search-input {
         width: 100%;
-        padding-left: 2.25rem;
+        padding-left: 2.5rem;
+        background: var(--p-form-field-background);
+        border: 1px solid var(--for-border-color-alls);
+        border-radius: var(--radius-sm);
+        color: var(--color-texto-input);
       }
 
       .clear-btn {
         position: absolute;
-        right: 0.25rem;
+        right: 0.5rem;
       }
     }
   }
 
+  // ===== Tarjetas de Resumen de Cartera (KPIs) =====
   .resumen-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.85rem;
+    width: 100%;
+
+    @media (max-width: 1100px) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    @media (max-width: 680px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+
+      .resumen-card.total {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 400px) {
+      grid-template-columns: 1fr;
+
+      .resumen-card.total {
+        grid-column: auto;
+      }
+    }
 
     .resumen-card {
       background: var(--c-surface);
-      border: 1px solid var(--c-border);
-      border-radius: 8px;
-      padding: 1rem;
-      text-align: center;
+      border: 1px solid var(--c-border-strong);
+      border-radius: var(--radius-md);
+      padding: 0.95rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      position: relative;
+      overflow: hidden;
 
       .resumen-label {
-        font-size: 0.85rem;
+        font-size: 0.74rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
         color: var(--c-text-muted);
-        margin-bottom: 0.25rem;
       }
 
       .resumen-value {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--c-text);
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.01em;
       }
 
       .resumen-pct {
-        font-size: 0.8rem;
+        font-size: 0.76rem;
+        font-weight: 600;
         color: var(--c-text-muted);
-        margin-top: 0.25rem;
       }
 
       &.total {
         border-left: 4px solid var(--c-primary);
-        background: linear-gradient(135deg, var(--c-surface) 0%, color-mix(in srgb, var(--c-primary) 5%, var(--c-surface)) 100%);
+        background: linear-gradient(135deg, var(--c-surface) 0%, rgba(61, 139, 255, 0.08) 100%);
       }
 
       &.corriente {
-        border-left: 4px solid var(--c-success, #22c55e);
+        border-left: 4px solid var(--c-success);
+        background: linear-gradient(135deg, var(--c-surface) 0%, rgba(47, 212, 138, 0.08) 100%);
       }
 
       &.vencido30 {
-        border-left: 4px solid var(--c-info, #3b82f6);
+        border-left: 4px solid var(--c-info);
+        background: linear-gradient(135deg, var(--c-surface) 0%, rgba(44, 172, 213, 0.08) 100%);
       }
 
       &.vencido60 {
-        border-left: 4px solid var(--c-warning, #f59e0b);
+        border-left: 4px solid var(--c-warning);
+        background: linear-gradient(135deg, var(--c-surface) 0%, rgba(246, 143, 48, 0.08) 100%);
       }
 
       &.vencido90 {
-        border-left: 4px solid var(--c-danger, #ef4444);
+        border-left: 4px solid var(--c-danger);
+        background: linear-gradient(135deg, var(--c-surface) 0%, rgba(231, 123, 109, 0.1) 100%);
       }
     }
   }
 
-  .table-container {
+  // ===== Tabla =====
+  .tabla-card {
     background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: 8px;
-    padding: 1rem;
+    border: 1px solid var(--c-border-strong);
+    border-radius: var(--radius-md);
+    padding: 0.85rem;
+    overflow: hidden;
 
     .col-importe {
       text-align: right;
-      font-family: monospace;
+      font-variant-numeric: tabular-nums;
     }
 
     .fw-bold {
       font-weight: 700;
     }
 
-    .text-success {
-      color: var(--c-success, #22c55e);
-    }
-
-    .text-danger {
-      color: var(--c-danger, #ef4444);
-    }
-
     .cliente-nombre {
-      font-weight: 500;
+      font-weight: 600;
+      color: var(--color-texto-input);
     }
-  }
 
-  .empty-state {
-    text-align: center;
-    padding: 2rem;
-    color: var(--c-text-muted);
-
-    .empty-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
+    code {
+      padding: 0.15rem 0.4rem;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: var(--cyan-300);
     }
   }
 
   .table-summary {
     display: flex;
     justify-content: flex-end;
-    gap: 2rem;
-    padding: 0.75rem;
-    border-top: 1px solid var(--c-border);
-    font-size: 0.9rem;
+    gap: 2.5rem;
+    padding: 0.85rem 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--c-border-strong);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    font-size: 0.88rem;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
 
     .summary-row {
       display: flex;
-      gap: 0.5rem;
+      align-items: center;
+      gap: 0.6rem;
 
       .summary-label {
         color: var(--c-text-muted);
+        font-weight: 600;
       }
 
       .summary-value {
-        font-weight: 600;
+        font-size: 1rem;
+        color: #ffffff;
       }
     }
   }
+
+  .empty-state {
+    text-align: center;
+    padding: 2.5rem;
+    color: var(--c-text-muted);
+
+    .empty-icon {
+      font-size: 2.8rem;
+      margin-bottom: 0.8rem;
+      opacity: 0.4;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  }
 }
+
+// Colores de utilidad
+.text-success { color: var(--c-success) !important; }
+.text-info { color: var(--c-info) !important; }
+.text-warn { color: var(--c-warning) !important; }
+.text-danger { color: var(--c-danger) !important; }

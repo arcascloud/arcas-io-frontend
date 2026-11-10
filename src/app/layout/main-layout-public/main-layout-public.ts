@@ -24,7 +24,6 @@ import { OverlayBadgeModule } from 'primeng/overlaybadge';
 import { CarritoStateService } from '../../core/services/carrito-state.service';
 import { AvatarModule } from 'primeng/avatar';
 import { AuthService } from '../../core/services/auth.service';
-import { EmpresaBrandService } from '../../core/services/empresa-brand.service';
 
 @Component({
   selector: 'app-main-layout-public',
@@ -61,7 +60,6 @@ export class MainLayoutPublic {
   private api = inject(ApiService);
   readonly quickNav = inject(QuickNavService);
   readonly carritoState = inject(CarritoStateService);
-  readonly empresaNombre = inject(EmpresaBrandService).nombre;
 
   /** Menú de usuario del topbar (p-popover) */
   @ViewChild('popUsuario') popUsuario?: Popover;

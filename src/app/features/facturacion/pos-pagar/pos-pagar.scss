@@ -1,0 +1,651 @@
+// ═══════════════════════════════════════════════════════════
+// POS Pagar — pantalla 2: datos de factura (copia de nueva-factura) + formas de pago
+// ═══════════════════════════════════════════════════════════
+
+.pp-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-top: -10px;
+  gap: 0.75rem;
+  height: 100%;
+  min-height: 0;
+}
+
+.pp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--c-bg);
+ 
+  .pp-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+
+    i {
+      font-size: 1.5rem;
+      color: var(--c-primary, #3d8bff);
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--c-text-faint, #5f86ab);
+      margin-top: 0.15rem;
+    }
+  }
+
+}
+
+.pp-body {
+  display: grid;
+  position: sticky;       // Requerido para que z-index y sticky funcionen
+  top: 1rem;              // ¡Importante! 'sticky' necesita saber a qué distancia fijarse desde arriba
+  margin-top: -55px;
+  grid-template-columns: 30.333% 36.333% 33.333%;
+  gap: 0.75rem;
+  min-height: 0;
+  height: 90%; // Alto de body principal
+  overflow: hidden;
+      z-index: 55;
+
+}
+
+// El panel contiene a los pp-col, pp-panel-header
+.pp-panel {
+ display: flex;
+  flex-direction: column;
+  background: var(--c-bg);
+  overflow: hidden;       // Nota: esto puede cortar sombras o tooltips que salgan del panel
+  min-height: 0;
+ 
+}
+
+.grid{
+  gap: 0.05rem;
+}
+
+.pp-panel-header {
+  padding: 0.55rem 0.9rem;
+  background: var(--c-bg);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text-muted, #8aa9c9);
+  display: flex;
+  align-items: center;
+}
+
+.pp-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0rem;
+  max-height: 100%;
+  background: var(--c-bg);
+}
+
+.pp-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+   
+    max-height: 95%;
+}
+
+.pp-col-b {
+   max-height: 99%;
+  padding-bottom: 4.5rem;
+ 
+}
+
+// ── Columna A: resumen de artículos ──
+.pp-col-a {
+  max-height: 99%;
+  padding-bottom: 4.5rem;
+}
+
+.pp-badge-items {
+  margin-left: auto;
+  min-width: 1.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--c-primary, #3d8bff);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pp-panel-body--lista {
+  padding: 0.5rem;
+  gap: 0.5rem;
+}
+
+.pp-items-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.pp-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--c-surface-muted, #2d3d50b4);
+  border: 1px solid var(--c-border, #1e2e3b);
+  border-radius: var(--radius-md, 0.5rem);
+
+  .pp-item-img {
+    flex: 0 0 2.6rem;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.35rem;
+    overflow: hidden;
+    background: var(--c-surface-ground, #08131c);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-text-faint, #5f86ab);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    i {
+      font-size: 1.1rem;
+      opacity: 0.6;
+    }
+  }
+
+  .pp-item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+
+    .pp-item-desc {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--c-text, #fff);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pp-item-cod {
+      font-size: 0.7rem;
+      color: var(--c-text-faint, #5f86ab);
+    }
+
+    .pp-item-calc {
+      font-size: 0.75rem;
+      color: var(--c-text-muted, #8aa9c9);
+
+      .pp-item-desc-pct {
+        color: var(--c-warning, #f68f30);
+        font-weight: 600;
+      }
+    }
+  }
+
+  .pp-item-right {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    .pp-item-subtotal {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--c-text, #fff);
+      white-space: nowrap;
+    }
+  }
+
+  .pp-item-quitar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--c-text-faint, #5f86ab);
+    cursor: pointer;
+    transition: all var(--tr-fast);
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--c-error, #ef4444);
+    }
+  }
+}
+
+.pp-totales {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--c-border, #1e2e3b);
+
+  .pp-total-linea {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--c-text-muted, #8aa9c9);
+
+    .pp-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .pp-value {
+      font-weight: 600;
+      color: var(--c-text, #fff);
+
+      &.pp-desc {
+        color: var(--c-warning, #f68f30);
+      }
+    }
+
+    &.pp-total-linea--grand {
+      margin-top: 0.25rem;
+      padding-top: 0.35rem;
+      border-top: 1px solid var(--c-border, #1e2e3b);
+
+      .pp-label,
+      .pp-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--c-primary, #3d8bff);
+      }
+    }
+  }
+}
+
+.pp-col-c {
+   max-height: 92%;
+  padding-bottom: 4.5rem;
+}
+
+.pp-panel-body .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.pp-panel-body .campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.pp-panel-body .ml-campo {
+  margin-left: 0.9rem;
+  margin-top: -0.15rem;
+}
+
+
+.pp-panel-c-header {
+  padding: 0.55rem 0.9rem;
+  background: var(--c-bg);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text-muted, #8aa9c9);
+  display: flex;
+  align-items: center;
+}
+
+
+.pagos-cards-container {
+    display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 0.25rem;
+   background: var(--c-bg);
+
+}
+.pago-card-item {
+  background: var(--c-bg, #2d3d50b4);
+  border: 1px solid var(--blue-350, #1e2e3b);
+  border-radius: var(--radius-md, 0.75rem);
+  padding: 0.75rem;
+  transition: border-color var(--tr-fast), box-shadow var(--tr-fast);
+
+  &:hover {
+    border-color: var(--c-primary, #3d8bff);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .pago-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+
+    .pago-card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--c-text-muted, #8aa9c9);
+    }
+  }
+
+  .pago-card-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0.6rem;
+
+    .pago-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      grid-column: span 12 / span 12;   // móvil: una columna
+      min-width: 0;
+
+      label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--c-text-faint, #5f86ab);
+      }
+
+      &.pago-field--half {
+        @media (min-width: 769px) {
+          grid-column: span 6 / span 6;
+        }
+      }
+    }
+  }
+}
+
+.pp-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(var(--c-bg, #08131c), 0.8);
+  backdrop-filter: blur(2px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  border-radius: inherit;
+  font-size: 1rem;
+  color: var(--c-text-muted, #8aa9c9);
+
+  i {
+    font-size: 2rem;
+    color: var(--c-primary, #3d8bff);
+    margin-bottom: 0.4rem;
+  }
+}
+
+.pp-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid var(--c-border, #1e2e3b);
+  background: var(--c-bg, #08131c);
+  border-radius: var(--radius-md, 0.75rem) !important;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 -0.75rem;
+  width: calc(98%);
+}
+
+.pp-pago-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: auto;
+  padding-top: 0.4rem;
+  border-top: 1px dashed var(--c-border, #1e2e3b);
+  width: calc(99%);
+
+  .pp-resumen-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+     width: calc(90%);
+    color: var(--c-text-muted, #8aa9c9);
+
+    &.pp-resumen-line--pendiente {
+      color: var(--c-warning, #f68f30);
+      font-weight: 600;
+    }
+
+    &.pp-resumen-line--cambio {
+      color: var(--c-success, #2fd48a);
+      font-weight: 600;
+    }
+
+    .pp-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .pp-value {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--c-text, #fff);
+
+      &.pp-ok {
+        color: var(--c-success, #2fd48a);
+      }
+
+      &.pp-warn {
+        color: var(--c-warning, #f68f30);
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Móvil / tablet (≤ 1024px): UNA columna, flujo normal de página.
+// Hay que NEUTRALIZAR todo lo que el layout de escritorio usa para
+// repartir alturas (min-height: 0, flex: 1, height %, overflow hidden);
+// si queda alguno, en móvil las columnas colapsan a alto 0 y el
+// formulario se dibuja encima / debajo de otros bloques o no se ve.
+// ═══════════════════════════════════════════════════════════
+@media (max-width: 1024px) {
+  .pp-page {
+    height: auto;
+    min-height: 0;
+    margin-top: 0;
+    overflow: visible;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .pp-body {
+    position: static;
+    top: auto;
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+    z-index: auto;
+  }
+
+  .pp-col,
+  .pp-col-a,
+  .pp-col-b,
+  .pp-col-c {
+    flex: 0 0 auto;        // nunca se encoge ni se estira
+    width: 100%;
+    min-height: auto;
+    max-height: none;
+    padding-bottom: 0;
+  }
+
+  .pp-panel {
+    flex: 0 0 auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .pp-panel-body,
+  .pp-panel-body--lista {
+    flex: 0 0 auto;        // ← antes quedaba flex: 1 + min-height: 0
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  // Lista de artículos: alto propio con scroll interno para no empujar el formulario
+  .pp-items-lista {
+    flex: 0 0 auto;
+    min-height: auto;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .pagos-cards-container {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .pp-pago-resumen {
+    width: 100%;
+
+    .pp-resumen-line {
+      width: 100%;
+    }
+  }
+
+  // Botones de acción siempre a la vista, al fondo de la pantalla
+  .pp-footer-actions {
+    position: sticky;
+    bottom: 0;
+    margin: 0;
+    width: 100%;
+    justify-content: stretch;
+    padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0));
+    z-index: 20;
+
+    p-button {
+      flex: 1 1 0;
+    }
+
+    ::ng-deep .p-button {
+      width: 100%;
+    }
+  }
+
+  // El selector Contado/Crédito no debe desbordar el ancho de la pantalla
+  ::ng-deep .tipo-factura-select.p-selectbutton {
+    max-width: 100%;
+  }
+}
+
+// ── Filas del formulario "Datos de la Factura" (sin depender de PrimeFlex) ──
+.pp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+
+  .pp-row-label {
+    flex: 0 0 auto;
+    min-width: 6.5rem;
+  }
+
+  .pp-row-ctrl {
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+}
+
+.pp-panel-body .field,
+.pp-panel-body .campo {
+  min-width: 0;
+  margin-bottom: 0.5rem;
+
+  input,
+  .p-inputtext {
+    width: 100%;
+  }
+}
+
+.mt-nuevo-cliente {
+  margin-top: 1.1rem;
+}
+
+// ── Selectbutton Tipo Factura: UI mejorada ──
+::ng-deep .tipo-factura-select.p-selectbutton {
+  display: flex !important;
+  width: 100% !important;
+  border-radius: var(--radius-md, 0.75rem) !important;
+  overflow: hidden !important;
+  border: 1px solid var(--c-border, #1e2e3b) !important;
+  background: var(--c-surface-muted, #2d3d50b4) !important;
+
+  .p-button {
+    flex: 1 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-right: 1px solid var(--c-border, #1e2e3b) !important;
+    color: var(--c-text-muted, #8aa9c9) !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    padding: 0.5rem 0.75rem !important;
+    transition: all 0.15s ease !important;
+
+    &:last-child {
+      border-right: none !important;
+    }
+
+    &:hover:not(.p-highlight) {
+      background: var(--c-surface-ground, #08131c) !important;
+      color: var(--c-text, #fff) !important;
+    }
+
+    &.p-highlight {
+      background: var(--c-primary, #3d8bff) !important;
+      color: #fff !important;
+      box-shadow: 0 0 0 1px var(--c-primary, #3d8bff) inset !important;
+    }
+  }
+}
+
+.rest-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  color: var(--c-text-muted, #8aa9c9);
+
+  i {
+    font-size: 2rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}

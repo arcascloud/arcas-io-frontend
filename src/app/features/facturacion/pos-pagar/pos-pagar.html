@@ -1,0 +1,473 @@
+<section class="page pp-page">
+  <div class="pp-header">
+ 
+     <div class="pp-left">
+      <p-button
+        label="Volver"
+        icon="pi pi-chevron-left"
+        size="small"
+        variant="text"
+        severity="secondary"
+        [rounded]="true"
+        (onClick)="salir()"
+      />
+    </div>
+    
+  </div>
+
+  @if (guardando()) {
+  <div class="pp-loading-overlay">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Procesando venta…</span>
+  </div>
+  }
+
+  <div class="pp-body">
+    <!-- ═══════ COLUMNA A: Resumen de productos ═══════ -->
+    <div class="pp-col pp-col-a">
+      <div class="pp-panel">
+        <div class="mt-1 pp-panel-header">
+          Artículos de la venta
+          <span class="pp-badge-items">{{ state.cantidadItems() }}</span>
+        </div>
+        <div class="pp-panel-body pp-panel-body--lista">
+          <div class="pp-items-lista">
+            @for (linea of state.filas(); track linea.fila) {
+              <div class="pp-item">
+                <div class="pp-item-img">
+                  @if (linea.imagenUrl) {
+                    <img [src]="linea.imagenUrl" [alt]="linea.descripcion" loading="lazy" />
+                  } @else {
+                    <i class="pi pi-image"></i>
+                  }
+                </div>
+                <div class="pp-item-info">
+                  <span class="pp-item-desc">{{ linea.descripcion }}</span>
+                  <span class="pp-item-cod">{{ linea.codbarra }}</span>
+                  <span class="pp-item-calc">
+                    {{ linea.cantidad }} × {{ formatearMoneda(linea.precio) }}
+                    @if (linea.descuentoPct > 0) {
+                      <span class="pp-item-desc-pct"> (−{{ linea.descuentoPct }}%)</span>
+                    }
+                  </span>
+                </div>
+                <div class="pp-item-right">
+                  <span class="pp-item-subtotal monto">{{ formatearMoneda(linea.subTotal) }}</span>
+                  <button
+                    class="pp-item-quitar"
+                    pTooltip="Quitar artículo"
+                    (click)="quitarLinea(linea)"
+                  >
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              <div class="rest-vacio">
+                <i class="pi pi-shopping-cart"></i>
+                <p>Sin artículos en el carrito</p>
+              </div>
+            }
+          </div>
+
+          @if (state.filas().length > 0) {
+            <div class="pp-totales">
+              <div class="pp-total-linea">
+                <span class="pp-label">Subtotal venta</span>
+                <span class="pp-value monto">{{ formatearMoneda(state.totales().bruto) }}</span>
+              </div>
+              <div class="pp-total-linea">
+                <span class="pp-label">Impuesto ({{ tasaPct() }}%)</span>
+                <span class="pp-value monto">{{ formatearMoneda(state.totales().impuesto) }}</span>
+              </div>
+              <div class="pp-total-linea">
+                <span class="pp-label">Descuento</span>
+                <span class="pp-value monto pp-desc">{{ formatearMoneda(state.totales().descuento) }}</span>
+              </div>
+              <div class="pp-total-linea pp-total-linea--grand">
+                <span class="pp-label">Gran Total</span>
+                <span class="pp-value monto">{{ formatearMoneda(state.totales().total) }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ COLUMNA B: Datos de factura (copia de nueva-factura) ═══════ -->
+
+    <div class="pp-col pp-col-b" [formGroup]="form">
+      <div class="pp-panel">
+        <div class="mt-1 pp-panel-header">Datos de la Factura</div>
+        <div class="pp-panel-body">
+          <div class="pp-row">
+            <label class="pp-row-label" for="tipofactura">Tipo factura <span class="req">*</span></label>
+            <div class="pp-row-ctrl">
+              <p-selectbutton
+                name="btnselectTipoFactura"
+                size="small"
+                [options]="tipoOptions"
+                formControlName="tipofactura"
+                optionLabel="label"
+                optionValue="value"
+                (onChange)="onTipoFacturaChange()"
+                styleClass="w-full tipo-factura-select"
+              />
+            </div>
+          </div>
+
+          <div class="pp-row">
+            <p-button
+              label="Nuevo Cliente"
+              icon="pi pi-plus"
+              size="small"
+              severity="info"
+              variant="text"
+              [raised]="true"
+              [rounded]="true"
+              styleClass="w-full"
+              class="pp-row-ctrl"
+              (onClick)="abrirNuevoCliente()"
+            />
+          </div>
+
+          <div class="pp-row">
+            <label class="pp-row-label" for="snFacturaconNombreId">Factura con nombre</label>
+            <div class="pp-row-ctrl">
+              <p-selectbutton
+                size="small"
+                [options]="snNombreOptions"
+                formControlName="snNombreOptions"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-full"
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="campo">
+              <label for="clienteId">Cliente <span class="req">*</span></label>
+              <p-select
+                size="small"
+                formControlName="clienteId"
+                [options]="state.clientes()"
+                optionLabel="label"
+                optionValue="value"
+                filter
+                showClear
+                placeholder="Seleccionar cliente…"
+                styleClass="w-full"
+                [appendTo]="'body'"
+                [disabled]="esContado()"
+                (onChange)="onClienteChange()"
+              />
+              @if (form.get('clienteId')?.invalid && form.get('clienteId')?.touched) {
+              <small class="err">Seleccione el cliente</small>
+              }
+            </div>
+          </div>
+
+          @if (esContado() && form.get('snNombreOptions')?.value === 'S') {
+          <div class="field">
+            <div class="campo">
+              <label for="nombreClienteManual">Nombre del cliente<span class="req">*</span></label>
+              <input
+                pInputText
+                [pSize]="'small'"
+                [ngModel]="nombreClienteManual()"
+                (ngModelChange)="nombreClienteManual.set($event)"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Nombre del cliente"
+                class="w-full"
+              />
+            </div>
+          </div>
+          }
+
+          <div class="field">
+            <label for="rtnCliente">RTN del cliente</label>
+            <input
+              pInputText
+              [pSize]="'small'"
+              formControlName="rtn_cliente"
+              maxlength="20"
+              placeholder="RTN del cliente"
+              class="w-full"
+            />
+          </div>
+
+          <div class="field">
+            <div class="campo">
+              <label for="gestorId">Gestor de ventas</label>
+              <p-select
+                size="small"
+                formControlName="gestorId"
+                [options]="state.gestores()"
+                optionLabel="label"
+                optionValue="value"
+                filter
+                showClear
+                placeholder="Seleccionar gestor…"
+                styleClass="w-full"
+                [appendTo]="'body'"
+              />
+            </div>
+          </div>
+
+
+          <div class="pp-row">
+            <label class="pp-row-label">Exenta de ISV</label>
+            <div class="pp-row-ctrl">
+              <p-selectbutton
+                size="small"
+                [options]="snOptions"
+                formControlName="sn_excenta"
+                optionLabel="label"
+                optionValue="value"
+                (onChange)="recalcularExenta()"
+                styleClass="w-full"
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="campo">
+              <label for="tipoconstancia">Tipo Constancia</label>
+              <p-select
+                size="small"
+                formControlName="tipoconstancia"
+                [options]="tipoConstanciaOpciones"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar…"
+                styleClass="w-full"
+                [appendTo]="'body'"
+                [disabled]="form.get('sn_excenta')?.value !== 'S'"
+              />
+              @if (form.get('sn_excenta')?.value === 'S' && form.get('tipoconstancia')?.invalid &&
+              form.get('tipoconstancia')?.touched) {
+              <small class="err">Seleccione el tipo de constancia</small>
+              }
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="campo">
+              <label for="nroconstancia">Nro. Constancia</label>
+              <input
+                pInputText
+                [pSize]="'small'"
+                formControlName="nroconstancia"
+                placeholder="Constancia"
+                class="w-full"
+                [class.p-inputtext-disabled]="form.get('sn_excenta')?.value !== 'S'"
+              />
+              @if (form.get('sn_excenta')?.value === 'S' && form.get('nroconstancia')?.invalid &&
+              form.get('nroconstancia')?.touched) {
+              <small class="err">Ingrese el número de constancia</small>
+              }
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="campo">
+              <label for="importe_excento">Importe Excento</label>
+              <p-inputNumber
+                size="small"
+                mode="currency"
+                currency="HNL"
+                [locale]="'es-HN'"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                [useGrouping]="true"
+                styleClass="w-full"
+                [inputStyle]="{ width: '100%' }"
+                [readonly]="true"
+                [ngModel]="state.totales().importeExcento"
+                [ngModelOptions]="{ standalone: true }"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ COLUMNA C: Formas de pago ═══════ -->
+    <div class="pp-col pp-col-c">
+      <div class="pp-panel">
+        <div class="mt-1 pp-panel-header">Formas de Pago</div>
+        <div class="pp-panel-body">
+          <div class="pagos-header">
+            <p-button
+              label="Agregar pago"
+              icon="pi pi-plus"
+              size="small"
+              severity="success"
+              variant="text"
+              [raised]="true"
+              [rounded]="true"
+              (onClick)="agregarPago()"
+            />
+          </div>
+
+          <div class="pagos-cards-container">
+            @for (pago of state.pagos(); track $index; let idx = $index) {
+            <div class="pago-card-item">
+              <div class="pago-card-header">
+                <span class="pago-card-title">Pago #{{ idx + 1 }}</span>
+                <p-button
+                  icon="pi pi-times"
+                  [rounded]="true"
+                  severity="danger"
+                  variant="text"
+                  size="small"
+                  pTooltip="Quitar pago"
+                  (onClick)="quitarPago(idx)"
+                />
+              </div>
+
+              <div class="pago-card-grid">
+                <!-- 1. Forma de pago -->
+                <div class="pago-field">
+                  <label class="block text-sm font-semibold mb-1">Forma de Pago</label>
+                  <p-select
+                    size="small"
+                    [options]="state.formaspago()"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Seleccionar…"
+                    styleClass="w-full"
+                    [(ngModel)]="pago.formapagoId"
+                    [ngModelOptions]="{ standalone: true }"
+                    [appendTo]="'body'"
+                  />
+                </div>
+
+                <!-- 2. Si es tarjeta: tipo y número -->
+                @if (esTarjeta(pago)) {
+                <div class="pago-field pago-field--half">
+                  <label class="block text-sm font-semibold mb-1">Tipo de Tarjeta</label>
+                  <p-select
+                    size="small"
+                    [options]="state.tarjetas()"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Seleccionar tarjeta…"
+                    styleClass="w-full"
+                    showClear
+                    [(ngModel)]="pago.tarjetacreditoId"
+                    [ngModelOptions]="{ standalone: true }"
+                    [appendTo]="'body'"
+                  />
+                </div>
+                <div class="pago-field pago-field--half">
+                  <label class="block text-sm font-semibold mb-1">Nro. de Tarjeta</label>
+                  <input
+                    pInputText
+                    [pSize]="'small'"
+                    [(ngModel)]="pago.nrotarjeta"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="Ej: 4111222233334444"
+                    class="w-full"
+                  />
+                </div>
+                }
+
+                <!-- 3. Si es tarjeta o transferencia: autorización -->
+                @if (esTarjeta(pago) || esTransferencia(pago)) {
+                <div class="pago-field">
+                  <label class="block text-sm font-semibold mb-1">Nro. de Autorización</label>
+                  <input
+                    pInputText
+                    [pSize]="'small'"
+                    [(ngModel)]="pago.nroautorizacion"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="Número de autorización"
+                    class="w-full"
+                  />
+                </div>
+                }
+
+                <!-- 4. Importe -->
+                <div class="pago-field">
+                  <label class="block text-sm font-semibold mb-1">Importe (HNL)</label>
+                  <p-inputNumber
+                    [size]="'small'"
+                    [(ngModel)]="pago.importe"
+                    [ngModelOptions]="{ standalone: true }"
+                    [min]="0"
+                    mode="currency"
+                    currency="HNL"
+                    [locale]="'es-HN'"
+                    [minFractionDigits]="2"
+                    [maxFractionDigits]="2"
+                    [useGrouping]="true"
+                    [inputStyle]="{ width: '100%' }"
+                    styleClass="w-full"
+                  />
+                </div>
+              </div>
+            </div>
+            } @empty {
+            <div class="rest-vacio p-4">
+              <i class="pi pi-wallet"></i>
+              <p>Sin formas de pago. Presione "Agregar pago" para comenzar.</p>
+            </div>
+            }
+          </div>
+
+          <div class="pp-pago-resumen">
+            <div class="pp-resumen-line">
+              <span class="pp-label">Total Factura</span>
+              <span class="pp-value monto">{{ formatearMoneda(state.totales().total) }}</span>
+            </div>
+            <div class="pp-resumen-line">
+              <span class="pp-label">Total Pagos</span>
+              <span
+                class="pp-value monto"
+                [class.pp-ok]="totalPagos() >= state.totales().total"
+                [class.pp-warn]="totalPagos() < state.totales().total && totalPagos() > 0"
+              >
+                {{ formatearMoneda(totalPagos()) }}
+              </span>
+            </div>
+            @if (pendiente() > 0) {
+            <div class="pp-resumen-line pp-resumen-line--pendiente">
+              <span class="pp-label">Pendiente</span>
+              <span class="pp-value monto pp-warn">{{ formatearMoneda(pendiente()) }}</span>
+            </div>
+            } @if (cambioTotal() > 0) {
+            <div class="pp-resumen-line pp-resumen-line--cambio">
+              <span class="pp-label">Cambio</span>
+              <span class="pp-value monto pp-ok">{{ formatearMoneda(cambioTotal()) }}</span>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer de acciones -->
+      <div class="pp-footer-actions">
+        <p-button
+          label="Cancelar"
+          icon="pi pi-times"
+          size="small"
+          severity="secondary"
+          [rounded]="true"
+          (onClick)="salir()"
+        />
+        <p-button
+          label="Facturar"
+          icon="pi pi-check-circle"
+          size="small"
+          severity="info"
+          [raised]="true"
+          [rounded]="true"
+          [disabled]="!form.valid || state.filas().length === 0 || cobroValido() === false || guardando()"
+          (onClick)="facturar()"
+        />
+      </div>
+    </div>
+  </div>
+</section>

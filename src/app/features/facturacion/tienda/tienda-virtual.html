@@ -30,7 +30,7 @@
               }
             </div>
             <div class="cart-item-details">
-              <span class="cart-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
+              <span class="cart-item-name">{{ getItemNombre(item) }}</span>
               <span class="cart-item-price">{{ formatearPrecio(item.precio) }}</span>
               <div class="cart-item-qty">
                 <button class="qty-btn" (click)="decrementar(item)" [disabled]="cargandoCarrito()">
@@ -69,7 +69,6 @@
             label="Pagar ahora"
             icon="pi pi-check"
             severity="success"
-            rounded="true"
             [fluid]="true"
             [disabled]="cargandoCarrito() || !autenticado()"
             (click)="abrirCheckout(); carritoOpen.set(false)"
@@ -78,11 +77,8 @@
             label="Vaciar carrito"
             icon="pi pi-trash"
             severity="danger"
-            rounded="true"
             variant="text"
-            styleClass="botton-bg-danger-solid"
             [fluid]="true"
-
             [disabled]="cargandoCarrito() || carritoItems().length === 0"
             (click)="confirmarVaciarCarrito()"
           />
@@ -92,7 +88,6 @@
   }
 
   <main class="tienda-main">
-    <!-- Toolbar -->
     <div class="tienda-toolbar">
 
       <!-- Row 2: UNA sola fila — breadcrumb+conteo a la izquierda; Ordenado por + cboprecios + view-toggles + Ofertas alineados a la derecha -->
@@ -160,7 +155,7 @@
         </div>
       </div>
     </div>
-   <!-- Fin de toolbar -->
+
     @if (cargando()) {
       <div class="loading-container">
         <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: var(--c-primary)"></i>
@@ -193,7 +188,7 @@
                 <p class="card-desc">{{ producto.descripcion }}</p>
               }
               @if (producto.existencia > 0) {
-                <p-tag [value]="'existencia: ' + producto.existencia + ' unid.'"
+                <p-tag [value]="'Existencia: ' + producto.existencia "
                  [severity]="getSeverity(producto.existencia)" style="padding:0;" />
               } @else {
                 <p-tag value="Sin stock" severity="danger"  />
@@ -447,7 +442,7 @@ size="small"             [(ngModel)]="checkout.tarjetacreditoId"
               }
             </div>
             <div class="summary-item-info">
-              <span class="summary-item-name">{{ item.descripcion || 'Producto #' + item.productoId }}</span>
+              <span class="summary-item-name">{{ getItemNombre(item) }}</span>
               <span class="summary-item-qty">Cant: {{ item.cantidad }} × {{ formatearPrecio(item.precio) }}</span>
             </div>
             <span class="summary-item-total">{{ formatearPrecio(item.subTotal) }}</span>
@@ -470,7 +465,6 @@ size="small"             [(ngModel)]="checkout.tarjetacreditoId"
         label="Confirmar Pago"
         icon="pi pi-check"
         severity="success"
-        rounded="true"
         [fluid]="true"
         [loading]="procesando()"
         [disabled]="procesando() || !autenticado()"
@@ -480,11 +474,7 @@ size="small"             [(ngModel)]="checkout.tarjetacreditoId"
   </div>
 
   <ng-template pTemplate="footer">
-    <p-button label="Cancelar" [text]="true"
-    rounded="true"
-    severity="primary"
-    variant="text"
-    icon="pi pi-arrow-left" [disabled]="procesando()" (click)="dialogCheckout.set(false)" />
+    <p-button label="Cancelar" [text]="true" icon="pi pi-arrow-left" [disabled]="procesando()" (click)="dialogCheckout.set(false)" />
   </ng-template>
 </p-dialog>
 
@@ -505,12 +495,8 @@ size="small"             [(ngModel)]="checkout.tarjetacreditoId"
     <span>¿Está seguro de vaciar el carrito? Se eliminarán {{ carritoItems().length }} producto(s).</span>
   </div>
   <ng-template pTemplate="footer">
-    <p-button [size]="'small'" label="No" rounded="true" variant="text" severity="secondary" (onClick)="dialogVaciar.set(false)" />
-    <p-button [size]="'small'" label="Sí, vaciar"
-    rounded="true"
-    icon="pi pi-trash"
-    variant="text"
-    severity="danger" (onClick)="vaciarCarrito()" />
+    <p-button [size]="'small'" label="No" rounded variant="text" severity="secondary" (onClick)="dialogVaciar.set(false)" />
+    <p-button [size]="'small'" label="Sí, vaciar" icon="pi pi-trash" rounded variant="text" severity="danger" (onClick)="vaciarCarrito()" />
   </ng-template>
 </p-dialog>
 
@@ -524,7 +510,6 @@ size="small"             [(ngModel)]="checkout.tarjetacreditoId"
   [modal]="true"
   [draggable]="false"
   [resizable]="false"
-  scrollable="true"
   [breakpoints]="{ '960px': '85vw', '640px': '95vw' }"
   [style]="{ width: '60vw' }"
 >

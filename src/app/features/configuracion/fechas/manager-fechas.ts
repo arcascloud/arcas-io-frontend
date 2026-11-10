@@ -106,9 +106,14 @@ export class ManagerFechas implements OnInit {
         'Se desbloquearán todas las operaciones del sistema.',
       header: 'Actualizar Fecha del Sistema',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger rounded',
+<<<<<<< HEAD
+      acceptButtonStyleClass: 'p-button-success p-button-rounded',
+=======
+      acceptButtonStyleClass: 'p-button-danger',
+>>>>>>> parent of b4597c9 (20261107 Mejoras a la seguridad, comprobacion de registro de clientes en la tienda virtual)
       acceptLabel: 'Sí, actualizar',
       rejectLabel: 'Cancelar',
+      rejectButtonStyleClass: 'p-button-primary p-button-rounded',
       accept: () => {
         this.actualizandoFecha.set(true);
         this.fecService

@@ -1211,21 +1211,11 @@ export class CopdamaeManager implements OnInit {
   }
 
   getPeriodoTagSeverity(periodo: number): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' | undefined {
-    const mapa: Record<number, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> =
-      {
-        1: 'secondary',
-        2: 'secondary',
-        3: 'secondary',
-        4: 'secondary',
-        5: 'secondary',
-        6: 'secondary',
-        7: 'secondary',
-        8: 'secondary',
-        9: 'secondary',
-        10: 'secondary',
-        11: 'secondary',
-        12: 'secondary',
-      };
+    const mapa: Record<number, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
+      1: 'info', 2: 'info', 3: 'success', 4: 'success',
+      5: 'warn', 6: 'warn', 7: 'danger', 8: 'danger',
+      9: 'secondary', 10: 'secondary', 11: 'contrast', 12: 'contrast',
+    };
     return mapa[periodo] ?? 'info';
   }
 

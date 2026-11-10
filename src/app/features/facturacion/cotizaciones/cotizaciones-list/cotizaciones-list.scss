@@ -19,28 +19,6 @@
   padding-left: 2.5rem;
 }
 
-.row-class-right {
-  text-align: right;
-  font-weight: 400;
-  margin-right: 0.75rem;
-  font-size: 0.85rem;
-  color: var(--c-text);
-}
-
-.row-class-left {
-  text-align: left;
-  font-weight: 400;
-  margin-left: 0.75rem;
-  font-size: 0.85rem;
-  color: var(--c-text);
-}
-
-.row-class-center {
-  text-align: center;
-  font-weight: 400;
-  font-size: 0.85rem;
-  color: var(--c-text);
-}
 .filtros-acciones {
   display: flex;
   gap: 0.5rem;
@@ -59,8 +37,6 @@
 }
 
 .cotizaciones-table {
-  margin: 0 auto;
-    width: 80%;
   :host ::ng-deep .p-datatable-tbody > tr > td {
     padding: 0.6rem 0.75rem;
     vertical-align: middle;

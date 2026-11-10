@@ -17,7 +17,6 @@ import { Popover, PopoverModule } from 'primeng/popover';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { AuthService } from '../../core/services/auth.service';
-import { EmpresaBrandService } from '../../core/services/empresa-brand.service';
 import { MenuConfigService } from '../../core/services/menu-config.service';
 import { QuickNavService } from '../../core/services/quick-nav.service';
 import { ApiService } from '../../core/services/api.service';
@@ -69,8 +68,6 @@ export class MainPrivateLayout {
   private api = inject(ApiService);
   /** Instancia del servicio de navegación rápida (botón del topbar) */
   readonly quickNav = inject(QuickNavService);
-  /** Nombre de la empresa (tempresas según environment.empresaId) */
-  readonly empresaNombre = inject(EmpresaBrandService).nombre;
 
   /** Menú de usuario del topbar (p-popover) */
   @ViewChild('popUsuario') popUsuario?: Popover;
@@ -80,6 +77,10 @@ export class MainPrivateLayout {
   mobileSidebarOpen = signal(false);
   sidebarHidden = signal(false);
   pinned = signal(false);
+  /** true mientras la URL activa es /facturacion/pos-rapido* (auto-oculta sidebar) */
+  private enPosRapido = false;
+  /** Estado del sidebar antes de entrar al POS rápido (para restaurarlo al salir) */
+  private sidebarPrevPos = false;
 
   /** Tipo de persona que identifica el usuario en el topbar: 'C' = Cliente, 'E' = Empleado */
   readonly tipoPersonaOptions: Opcion[] = [
@@ -202,6 +203,25 @@ export class MainPrivateLayout {
         }
       }),
     );
+
+    // POS rápido: al entrar se oculta el sidebar del layout (gana espacio el
+    // POS); al salir se restaura el estado anterior. El botón del topbar
+    // sigue funcionando para abrirlo/cerrarlo mientras se está en el POS.
+    this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+      if (!(event instanceof NavigationEnd)) return;
+      const url = event.urlAfterRedirects;
+      const enPos = url.startsWith('/facturacion/pos-rapido');
+      if (enPos && !this.enPosRapido) {
+        this.enPosRapido = true;
+        this.sidebarPrevPos = this.sidebarHidden();
+        if (!this.pinned()) this.sidebarHidden.set(true);
+      } else if (!enPos && this.enPosRapido) {
+        this.enPosRapido = false;
+        this.sidebarHidden.set(this.sidebarPrevPos);
+      }
+      // En móvil el menú es overlay: siempre cerrado al navegar
+      if (window.innerWidth <= 768) this.mobileSidebarOpen.set(false);
+    });
   }
 
   readonly user = this.auth.currentUser;

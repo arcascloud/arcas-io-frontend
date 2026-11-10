@@ -11,14 +11,10 @@ export class BodegasService {
 
   /**
    * Obtiene todas las bodegas del backend
-   * @param empresaId - Empresa a consultar (por defecto la del usuario logueado)
    * @returns Observable con el listado completo de bodegas
    */
-  getAll(empresaId?: number): Observable<Bodega[]> {
-    return this.api.get<Bodega[]>(
-      this.path,
-      empresaId != null ? { empresaId } : undefined,
-    );
+  getAll(): Observable<Bodega[]> {
+    return this.api.get<Bodega[]>(this.path);
   }
 
   /**

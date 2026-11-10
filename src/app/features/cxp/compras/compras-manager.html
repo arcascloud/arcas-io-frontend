@@ -51,7 +51,7 @@
     <ng-template pTemplate="body" let-row>
       <tr (click)="seleccionar(row)" style="cursor: pointer">
         <td>{{ row.compraId }}</td>
-        <td>{{ row.fecharegistro | date:'dd/MM/yyyy' }}</td>
+        <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
         <td>{{ nombreProveedor(row.proveedorId) }}</td>
         <td>{{ nombreBodega(row.bodegaId) }}</td>
         <td>{{ row.nroreferencia || '-' }}</td>

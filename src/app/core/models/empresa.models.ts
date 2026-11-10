@@ -4,7 +4,6 @@ export interface Empresa {
   fechasistema?: string;
   msjfactura: string;
   msjdevfactura: string;
-  msjcotizacion: string;
   sn_activo: string;
   usuarioCreated: string;
   usuarioUpdated?: string;

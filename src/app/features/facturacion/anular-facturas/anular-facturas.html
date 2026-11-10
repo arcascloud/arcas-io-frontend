@@ -16,13 +16,8 @@
         </span>
       </div>
       <div class="filtros-acciones">
-        <p-button icon="pi pi-search"
-        [rounded]="true"
-        text
-        [size]="'small'" (onClick)="buscar()" />
-        <p-button label="Limpiar" icon="pi pi-times"
-        [rounded]="true"
-        severity="secondary" text [size]="'small'" (onClick)="limpiar()" />
+        <p-button label="Buscar" icon="pi pi-search" [size]="'small'" (onClick)="buscar()" />
+        <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text [size]="'small'" (onClick)="limpiar()" />
       </div>
     </div>
   </div>
@@ -34,33 +29,33 @@
       styleClass="facturas-table">
       <ng-template #header>
         <tr>
-          <th style="text-align: center; width:5rem"># Factura</th>
-          <th style="text-align: center; width:6rem">Fecha</th>
-          <th style="text-align: center; width:12rem">Cliente</th>
-          <th style="text-align: center; width:6rem">Tipo</th>
-          <th style="text-align: center; width:7rem">Total</th>
-          <th style="text-align: center; width:5rem">Anulada</th>
-          <th style="text-align: center; width:5rem">Contab.</th>
+          <th style="width:5rem"># Factura</th>
+          <th style="width:6rem">Fecha</th>
+          <th style="width:12rem">Cliente</th>
+          <th style="text-align: right; width:6rem">Tipo</th>
+          <th style="text-align: right; width:7rem">Total</th>
+          <th style="text-align: right; width:5rem">Anulada</th>
+          <th style="text-align: right; width:5rem">Contab.</th>
           <th style="width:8rem" class="acciones-header">Acciones</th>
         </tr>
       </ng-template>
       <ng-template #body let-f>
         <tr [class.row-anulada]="f.sn_anulada === 'S'" class="fila-click">
-          <td class="row-class-right">
-            <span class="row-class-right">{{ f.nrofactura }}</span>
+          <td>
+            <span class="nro-factura">{{ f.nrofactura }}</span>
           </td>
-          <td class="row-class-center">{{ fechaCorta(f.fecharegistro) }}</td>
-          <td class="row-class-left">
-            <span class="row-class-left">{{ f.nombrecliente || 'Sin cliente' }}</span>
+          <td>{{ fechaCorta(f.fecharegistro) }}</td>
+          <td>
+            <span class="cliente-nombre">{{ f.nombrecliente || 'Sin cliente' }}</span>
           </td>
-          <td class="row-class-center">
+          <td class="text-right total-cell">
             <p-tag [value]="getTipoLabel(f.tipofactura)" [severity]="getTipoSeverity(f.tipofactura)" styleClass="tag-sm" />
           </td>
-          <td class="row-class-right">{{ moneda(f.total) }}</td>
-          <td class="row-class-center">
+          <td class="text-right total-cell">{{ moneda(f.total) }}</td>
+          <td class="text-right total-cell">
             <p-tag [value]="f.sn_anulada === 'S' ? 'Si' : 'No'" [severity]="f.sn_anulada === 'S' ? 'danger' : 'success'" styleClass="tag-sm" />
           </td>
-          <td class="row-class-center">
+          <td class="text-right total-cell">
             <p-tag [value]="f.sn_contabilizada === 'S' ? 'Si' : 'No'" [severity]="f.sn_contabilizada === 'S' ? 'info' : 'secondary'" styleClass="tag-sm" />
           </td>
           <td class="acciones-cell">

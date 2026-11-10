@@ -497,17 +497,14 @@ export class UsuarioForm implements OnInit {
       email: raw.email,
       sn_activo: raw.sn_activo,
       Idsucursal: raw.Idsucursal,
-      tipo_usuario: 'ERP',
     };
     if (raw.password) {
       dto['password'] = raw.password;
     }
 
-    // ── Cambios en tusuarioinfo: sexo, fecha de nacimiento, empleado, sn_cliente='N' ──
+    // ── Cambios en tuinfosinfoinfo: sexo, fecha de nacimiento, empleado ──
     const hayInfo = this.infoEdicion() != null;
-    const cambios: Partial<UsuarioInfo> = {
-      sn_cliente: 'N',
-    };
+    const cambios: Partial<UsuarioInfo> = {};
     if (hayInfo) {
       const sexoNuevo = raw.sexo ?? '';
       if (sexoNuevo !== this.infoOriginal.sexo) {
@@ -522,7 +519,7 @@ export class UsuarioForm implements OnInit {
         cambios.empleadoId = empNuevo;
       }
     }
-    const infoCambiada = hayInfo;
+    const infoCambiada = hayInfo && Object.keys(cambios).length > 0;
 
     this.service.update(this.usuarioId, dto as any).subscribe({
       next: () => {
@@ -848,7 +845,6 @@ export class UsuarioForm implements OnInit {
       pais: paisNombre,
       departamento: this.deptoValue,
       ciudad: this.ciudadValue,
-      origen: 'USUARIO_FORM',
     };
     // Vínculo opcional con empleado (validado en backend: existe y su DNI coincide)
     if (this.empleadoId != null) {

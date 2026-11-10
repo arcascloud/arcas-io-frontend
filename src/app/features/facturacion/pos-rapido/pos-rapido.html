@@ -1,0 +1,308 @@
+<p-toast />
+
+<section class="page pos-page" [class.con-carrito]="state.filas().length > 0 && !isMobile()">
+  <!-- ═══════ HEADER: escáner fijo + descuento global ═══════ -->
+  <div class="pos-header" [class.con-carrito]="state.filas().length > 0 && !isMobile()">
+    <div class="pos-scan" [class.pos-scan--ok]="scanOk()">
+      <i class="pi pi-barcode"></i>
+      <input
+        #scanInput
+        type="text"
+        pInputText
+        [pSize]="'small'"
+        class="pos-scan-input"
+        placeholder="Escanee o escriba el código de barras…"
+        autocomplete="off"
+        [value]="consulta()"
+        (input)="onEscanear($event)"
+        (keydown.enter)="onEnterEscaner($event)"
+      />
+      @if (scanOk()) {
+        <span class="pos-scan-ok"><i class="pi pi-check-circle"></i> Agregado</span>
+      }
+      @if (hayFiltro()) {
+        <p-button
+          icon="pi pi-times"
+          [rounded]="true"
+          severity="secondary"
+          variant="text"
+          size="small"
+          pTooltip="Limpiar búsqueda (ESC)"
+          (onClick)="limpiarBusqueda()"
+        />
+      }
+    </div>
+
+    <div class="pos-descuento">
+      <label>Descuento</label>
+      <p-select
+        size="small"
+        [options]="state.descuentos()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Sin descuento"
+        styleClass="w-full"
+        [showClear]="true"
+        [appendTo]="'body'"
+        [ngModel]="state.descuentoGlobalId()"
+        (ngModelChange)="state.aplicarDescuentoGlobal($event)"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+
+    <div class="pos-header-actions">
+      <button
+        type="button"
+        class="pos-badge"
+        [class.pos-badge--active]="state.cantidadItems() > 0"
+        (click)="toggleDrawer()"
+        pTooltip="Carrito (ALT + 2)"
+      >
+        <i class="pi pi-shopping-cart"></i>
+        <span>{{ state.cantidadItems() }}</span>
+      </button>
+      <span class="pos-total-mini monto">{{ formatearMoneda(state.totales().total) }}</span>
+      <p-button
+        icon="pi pi-question-circle"
+        size="small"
+        variant="text"
+        severity="secondary"
+        [rounded]="true"
+        pTooltip="Atajos (ALT + 9)"
+        pTooltipOptions="{ position: 'left' }"
+        (onClick)="dialogAtajos.set(true)"
+      />
+    </div>
+  </div>
+
+  <!-- ═══════ AVISO flotante ═══════ -->
+  @if (aviso(); as a) {
+    <div [class]="'pos-aviso pos-aviso--' + a.tipo">
+      <i
+        class="pi"
+        [class]="
+          a.tipo === 'ok' ? 'pi-check-circle' : a.tipo === 'warn' ? 'pi-exclamation-triangle' : 'pi-info-circle'
+        "
+      ></i>
+      <span>{{ a.texto }}</span>
+    </div>
+  }
+
+  <!-- ═══════ CATÁLOGO DENSO ═══════ -->
+  <div class="pos-zona" [class.con-carrito]="state.filas().length > 0 && !isMobile()">
+    <div class="pos-catalogo">
+      @if (cargando()) {
+        <div class="pos-loading">
+          <i class="pi pi-spin pi-spinner"></i>
+          <p>Cargando catálogo…</p>
+        </div>
+      } @else {
+        <div class="productos-grid">
+          @for (producto of catalogoVisible(); track producto.productoId) {
+            <div
+              class="producto-card"
+              [class.producto-card--agotado]="producto.estado === 'AGOTADO'"
+              [class.producto-card--flash]="ultimoAgregado() === producto.productoId"
+              (click)="agregar(producto)"
+            >
+              <div class="card-imagen">
+                @if (producto.imagenUrl) {
+                  <img [src]="producto.imagenUrl" [alt]="producto.descripcion" loading="lazy" />
+                } @else {
+                  <div class="sin-imagen"><i class="pi pi-images"></i></div>
+                }
+                @if (producto.ofertaPct) {
+                  <p-tag
+                    [value]="'-' + producto.ofertaPct + '%'"
+                    severity="success"
+                    styleClass="tag-stock"
+                  />
+                }
+                @if (producto.estado === 'AGOTADO') {
+                  <p-tag value="Agotado" severity="danger" styleClass="tag-stock" />
+                } @else if (producto.estado === 'BAJO') {
+                  <p-tag value="Stock bajo" severity="warn" styleClass="tag-stock" />
+                }
+                @if (state.carritoPorProducto().get(producto.productoId); as qty) {
+                  <span class="card-en-carrito">{{ qty }}</span>
+                }
+              </div>
+              <div class="card-body">
+                <span class="card-codbarra">{{ producto.codbarra }}</span>
+                <p class="card-desc">{{ producto.descripcion }}</p>
+                <div class="card-footer">
+                  @if (producto.precioOriginal) {
+                    <span class="card-precio-oferta">
+                      <span class="precio-original">{{ formatearMoneda(producto.precioOriginal) }}</span>
+                      <span class="precio-oferta">{{ formatearMoneda(producto.precio) }}</span>
+                    </span>
+                  } @else {
+                    <span class="card-precio monto">{{ formatearMoneda(producto.precio) }}</span>
+                  }
+                  <span class="card-stock">{{ producto.existencia }} un.</span>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <div class="sin-productos">
+              <i class="pi pi-inbox"></i>
+              <p>No se encontraron productos</p>
+            </div>
+          }
+        </div>
+
+        @if (hayMas()) {
+          <div class="pos-ver-mas">
+            <p-button
+              label="Ver más productos"
+              icon="pi pi-chevron-down"
+              size="small"
+              variant="text"
+              severity="secondary"
+              [rounded]="true"
+              (onClick)="verMas()"
+            />
+          </div>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- ═══════ PIE FIJO: totales + resumen de pago + Pagar ═══════ -->
+  <div class="pos-footer" [class.con-carrito]="state.filas().length > 0 && !isMobile()">
+    <div class="pf-totales">
+      <div class="pf-item">
+        <span class="pf-label">Subtotal venta</span>
+        <span class="pf-value monto">{{ formatearMoneda(state.totales().bruto) }}</span>
+      </div>
+      <div class="pf-item">
+        <span class="pf-label">Impuesto ({{ tasaPct() }}%)</span>
+        <span class="pf-value monto">{{ formatearMoneda(state.totales().impuesto) }}</span>
+      </div>
+      <div class="pf-item">
+        <span class="pf-label">Descuento</span>
+        <span class="pf-value monto">{{ formatearMoneda(state.totales().descuento) }}</span>
+      </div>
+      <div class="pf-item pf-item--grand">
+        <span class="pf-label">Gran Total</span>
+        <span class="pf-value monto">{{ formatearMoneda(state.totales().total) }}</span>
+      </div>
+    </div>
+
+  </div>
+
+      <!-- ═══════ SIDEBAR: carrito de venta ═══════ -->
+      @if (drawerAbierto() && state.filas().length > 0) {
+        <div class="cart-overlay" (click)="drawerAbierto.set(false)"></div>
+        <aside class="cart-sidebar" [class.open]="drawerAbierto()">
+          <div class="cart-header">
+            <div class="cart-header-left">
+              <i class="pi pi-shopping-cart"></i>
+              <span>Carrito de venta</span>
+            </div>
+            <div class="cart-header-right">
+              <span class="cart-count">{{ state.cantidadItems() }} item{{ state.cantidadItems() > 1 ? 's' : '' }}</span>
+              <button class="cart-close-mobile" (click)="drawerAbierto.set(false)">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="cart-items">
+            @for (linea of state.filas(); track linea.fila) {
+              <div class="cart-item">
+                <div class="cart-item-img">
+                  @if (linea.imagenUrl) {
+                    <img [src]="linea.imagenUrl" [alt]="linea.descripcion" loading="lazy" />
+                  } @else {
+                    <div class="cart-item-placeholder"><i class="pi pi-image"></i></div>
+                  }
+                </div>
+                <div class="cart-item-details">
+                  <span class="cart-item-name">{{ linea.descripcion }}</span>
+                  <span class="cart-item-price">{{ formatearMoneda(linea.precio) }}</span>
+                  <div class="cart-item-qty">
+                    <button class="qty-btn" (click)="cambiarQuantity(linea, (linea.cantidad ?? 1) - 1)" [disabled]="(linea.cantidad ?? 1) <= 1">
+                      <i class="pi pi-minus"></i>
+                    </button>
+                    <span class="qty-value">{{ linea.cantidad }}</span>
+                    <button class="qty-btn" (click)="cambiarQuantity(linea, (linea.cantidad ?? 1) + 1)" [disabled]="(linea.cantidad ?? 1) >= linea.existencia">
+                      <i class="pi pi-plus"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="cart-item-right">
+                  <span class="cart-item-subtotal">{{ formatearMoneda(linea.subTotal) }}</span>
+                    <button class="cart-item-remove" (click)="eliminarLinea(linea)" pTooltip="Eliminar">
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="cart-summary">
+            <div class="summary-line">
+              <span>Subtotal</span>
+              <span>{{ formatearMoneda(state.totales().bruto) }}</span>
+            </div>
+            <div class="summary-line">
+              <span>Impuesto ({{ tasaPct() }}%)</span>
+              <span>{{ formatearMoneda(state.totales().impuesto) }}</span>
+            </div>
+            <div class="summary-line">
+              <span>Descuento</span>
+              <span>{{ formatearMoneda(state.totales().descuento) }}</span>
+            </div>
+            <div class="summary-line summary-total">
+              <span>Total</span>
+              <strong>{{ formatearMoneda(state.totales().total) }}</strong>
+            </div>
+            <div class="cart-actions">
+              <p-button
+                label="Pagar ahora"
+                icon="pi pi-check"
+                severity="success"
+                rounded="true"
+                [fluid]="true"
+                [disabled]="state.filas().length === 0"
+                (click)="irAPagar()"
+              />
+              <p-button
+                label="Vaciar carrito"
+                icon="pi pi-trash"
+                severity="danger"
+                rounded="true"
+                variant="text"
+                [fluid]="true"
+                (click)="vaciarCarrito()"
+              />
+            </div>
+          </div>
+        </aside>
+} @else {
+
+      }
+
+</section>
+
+  <!-- ═══════ VENTANA DE ATAJOS (ALT + 9) ═══════ -->
+  <p-dialog
+    [visible]="dialogAtajos()"
+    (visibleChange)="dialogAtajos.set($event)"
+    header="Atajos de teclado"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+    styleClass="w-full max-w-30rem atajos-dialog"
+  >
+    <div class="atajos-lista">
+      @for (atajo of atajos; track atajo.tecla) {
+        <div class="atajo-fila">
+          <kbd>{{ atajo.tecla }}</kbd>
+          <span>{{ atajo.accion }}</span>
+        </div>
+      }
+    </div>
+  </p-dialog>

@@ -122,13 +122,19 @@
   --c-primary: #3d8bff;
   --c-primary-strong: #0070f2;
   --c-success: #2fd48a;
+<<<<<<< HEAD
   --c-warning: var(--orange-500);
-    --c-danger: #e77b6d;
+  --c-danger: #e77b6d;
+=======
+  --c-warning: #f5a623;
+  --c-danger: #d84b4b;
+>>>>>>> parent of b4597c9 (20261107 Mejoras a la seguridad, comprobacion de registro de clientes en la tienda virtual)
   --c-peligro: #c41919;
-  --c-info: var(--cyan-500);
+  --c-info: #38bdf8;
   --c-uva: #604ec7ef;
   --c-amarillo: #faf06af8;
 
+<<<<<<< HEAD
   --red-200: #eea39a;
     --red-300: #e77b6d;
     --red-400: #df5240;
@@ -170,7 +176,57 @@
     --pink-500: #d8297d;
     --pink-600: #b8236a;
     --pink-700: #971d58;
+--bluegray-50: #f7f8f9;
+  --bluegray-100: #dae0e3;
+  --bluegray-200: #bdc7cd;
+  --bluegray-300: #a0aeb6;
+  --bluegray-400: #8295a0;
+  --bluegray-500: #657c8a;
+  --bluegray-600: #566975;
+  --bluegray-700: #475761;
+  --bluegray-800: #38444c;
+  --bluegray-900: #283237;
+
+  --indigo-50: #f4f6fd;
+  --indigo-100: #ccd3f5;
+  --indigo-200: #a4b0ed;
+  --indigo-300: #7c8de5;
+  --indigo-400: #546add;
+  --indigo-500: #2c47d5;
+  --indigo-600: #253cb5;
+  --indigo-700: #1f3295;
+  --indigo-800: #182775;
+  --indigo-900: #121c55;
+
+
+  --green-50: #f7fbf6;
+  --green-100: #d6ead1;
+  --green-200: #b6d9ad;
+  --green-300: #96c889;
+  --green-400: #76b765;
+  --green-500: #56a641;
+  --green-600: #498d37;
+  --green-700: #3c742e;
+  --green-800: #2f5b24;
+  --green-900: #22421a;
+
+  --blue-50: #f3f8fc;
+  --blue-100: #c6dcef;
+  --blue-200: #98c1e3;
+  --blue-300: #6ba5d7;
+  --blue-350: #072f524f;
+  --blue-400: #3d8aca;
+  --blue-500: #106ebe;
+  --blue-600: #0e5ea2;
+  --blue-700: #0b4d85;
+  --blue-800: #093d69;
+  --blue-900: #062c4c;
+
+
+  --radius-sm: 0.35rem;
+=======
   --radius-sm: 0.5rem;
+>>>>>>> parent of b4597c9 (20261107 Mejoras a la seguridad, comprobacion de registro de clientes en la tienda virtual)
   --radius-md: 0.75rem;
   --radius-lg: 1.25rem;
   --radius-full: 9999px;
@@ -184,6 +240,9 @@
   --tr-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --tr-smooth: 300ms cubic-bezier(0.32, 0.72, 0, 1);
 
+.p-error {
+    color: var(--c-danger);
+  }
   --p-button-padding-x: 0.75rem;
   --p-button-padding-y: 0.5rem;
   --p-button-font-size: 0.875rem;
@@ -224,21 +283,21 @@
   --p-inputtext-disabled-border-color: #2a3a4a;
   --p-inputtext-invalid-border-color: var(--c-danger);
 
-  --p-togglebutton-color: var(--color-texto-input);
-  --p-togglebutton-background: var(--c-bg);
-
 
   // para los botones selecionados del toggle button
-  --p-togglebutton-checked-color: var(--c-success);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-togglebutton-color: var(--c-text);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-togglebutton-checked-color: var(--green-200);
   --p-togglebutton-content-checked-background: var(--p-inputtext-background);
 
-
   --p-togglebutton-background: var(--c-bg);
-  --p-togglebutton-checked-background: var(--c-bg);
-
-  --p-togglebutton-hover-color: var(--c-amarillo);
-  --p-togglebutton-border-color: var(--c-bg);
-  --p-togglebutton-checked-border-color: var(--c-bg);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-togglebutton-hover-background: var(--green-600);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-togglebutton-checked-background: var(--c-bg);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-togglebutton-checked-border-color: var(--c-bg);
+                                                                
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-togglebutton-content-checked-background: var(--green-600);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-togglebutton-hover-color: var(--c-bg-white);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-togglebutton-border-color: var(--c-bg);
 
 
   --p-select-color: var(--color-texto-input);
@@ -278,6 +337,7 @@
 
   --surface-border: var(--for-border-color-alls);
 
+<<<<<<< HEAD
   // Botones primarios (primary buttons)
     --p-button-primary-background: var(--cyan-700);
     --p-button-primary-hover-background: var(--cyan-500);
@@ -291,7 +351,7 @@
     --p-button-primary-focus-ring-color: var(--cyan-700);
     --p-button-primary-focus-ring-shadow-color: var(--cyan-700);
 
-    //botones de advertencia (warning buttons)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                //botones de advertencia (danger buttons)
     --p-button-danger-background: var(--red-400);
     --p-button-danger-color: var(--red-700);
     --p-button-danger-border-color: var(--red-400);
@@ -299,11 +359,28 @@
     --p-button-danger-hover-background: var(--red-700);
     --p-button-danger-hover-border-color: var(--red-700);
 
-    // Botones de contraste (contrast buttons)
-    --p-button-contrast-background: var(--c-bg-black);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                //botones de advertencia (warning buttons)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-warn-background: var(--orange-600);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-warn-border-color: var(--orange-600);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-warn-active-border-color: var(--orange-200);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-warn-hover-background: var(--orange-700);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-warn-hover-color: var(--c-bg-white);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-warn-hover-background: var(--orange-700);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-warn-hover-border-color: var(--orange-700);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                // Botones de contraste (contrast buttons)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-contrast-background: var(--indigo-300);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-contrast-border-color: var(--indigo-300);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-contrast-hover-background: var(--indigo-400);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-contrast-hover-color: var(--indigo-200);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-contrast-hover-border-color: var(--indigo-300);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-button-contrast-color: var(--indigo-200);
+
+=======
+--p-button-contrast-background: var(--c-bg-black);
   --p-button-contrast-border-color: var(--c-bg-black);
   --p-button-contrast-color: var(--c-bg-white);
-
+>>>>>>> parent of b4597c9 (20261107 Mejoras a la seguridad, comprobacion de registro de clientes en la tienda virtual)
   /* Tamaño pequeño (sm) */
     --p-button-sm-font-size: 0.92rem !important;
       --p-button-sm-padding-x: 0.7rem !important;
@@ -391,10 +468,6 @@
   --p-togglebutton-checked-border-color: var(--c-bg);
 }
 
-.botton-bg-danger-solid {
-  color: var(--c-bg-white);
-  background: var(--pink-300);
-}
 .botton-bg-transparente {
   background: transparent;
   color: var(--c-bg-white);
@@ -407,7 +480,6 @@
 .botton-bg-contrast-solid {
   color: var(--c-info);
 }
-
 .inputtext-transparente {
   background: transparent;
   color: var(--c-bg-white);
@@ -982,6 +1054,43 @@ ul {
         font-weight: 600;
         color: var(--c-text-muted);
       }
+    }
+  }
+}
+
+// ── Selectbutton Tipo Factura: UI mejorada (global) ──
+::ng-deep .p-selectbutton.tipo-factura-select {
+  display: flex !important;
+  width: 100% !important;
+  border-radius: var(--radius-md, 0.75rem) !important;
+  overflow: hidden !important;
+  border: 1px solid var(--c-border, #1e2e3b) !important;
+  background: var(--c-surface-muted, #2d3d50b4) !important;
+
+  .p-button {
+    flex: 1 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-right: 1px solid var(--c-border, #1e2e3b) !important;
+    color: var(--c-text-muted, #8aa9c9) !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    padding: 0.5rem 0.75rem !important;
+    transition: all 0.15s ease !important;
+
+    &:last-child {
+      border-right: none !important;
+    }
+
+    &:hover:not(.p-highlight) {
+      background: var(--c-surface-ground, #08131c) !important;
+      color: var(--c-text, #fff) !important;
+    }
+
+    &.p-highlight {
+      background: var(--c-primary, #3d8bff) !important;
+      color: #fff !important;
+      box-shadow: 0 0 0 1px var(--c-primary, #3d8bff) inset !important;
     }
   }
 }

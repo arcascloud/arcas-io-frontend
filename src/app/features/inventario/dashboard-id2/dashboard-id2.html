@@ -1,0 +1,922 @@
+<section class="page dash2">
+  <!-- ENCABEZADO -->
+  <header class="dash-header">
+    <div class="dash-header__txt">
+      <div class="dash-badge">Módulo 2 · Inventario & Retail</div>
+      <h1 class="dash-title">Dashboard de Inteligencia de Inventario</h1>
+      <p class="dash-subtitle">
+        Optimización de capital de trabajo, rotación estratégica de repuestos y reglas operativas automatizadas
+      </p>
+    </div>
+
+    <div class="dash-header__actions">
+      <p-button
+        label="Actualizar Datos"
+        icon="pi pi-refresh"
+        [loading]="cargando()"
+        (onClick)="cargarDatos()"
+        size="small"
+        [rounded]="true"
+        severity="success"
+      />
+    </div>
+  </header>
+
+  <!-- NAVEGACIÓN POR PESTAÑAS ESTRATÉGICAS -->
+  <nav class="nav-tabs" aria-label="Estrategias de inventario">
+    <button
+      type="button"
+      class="nav-tab"
+      [class.active]="tabActivo() === 'kpis'"
+      (click)="cambiarTab('kpis')"
+    >
+      <i class="pi pi-chart-pie"></i>
+      <span>Panorama & KPIs</span>
+    </button>
+    <button
+      type="button"
+      class="nav-tab"
+      [class.active]="tabActivo() === 'caso1'"
+      (click)="cambiarTab('caso1')"
+    >
+      <i class="pi pi-bolt"></i>
+      <span>1. Alto Costo / Ganancia</span>
+      <span class="tab-chip tab-chip--info">{{ listaCaso1().length }}</span>
+    </button>
+    <button
+      type="button"
+      class="nav-tab"
+      [class.active]="tabActivo() === 'caso2'"
+      (click)="cambiarTab('caso2')"
+    >
+      <i class="pi pi-tags"></i>
+      <span>2. Poco Uso / Combos</span>
+      <span class="tab-chip tab-chip--warn">{{ listaCaso2().length }}</span>
+    </button>
+    <button
+      type="button"
+      class="nav-tab"
+      [class.active]="tabActivo() === 'caso3'"
+      (click)="cambiarTab('caso3')"
+    >
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>3. Sin Rotación / Liquidar</span>
+      <span class="tab-chip tab-chip--danger">{{ listaCaso3().length }}</span>
+    </button>
+    <button
+      type="button"
+      class="nav-tab"
+      [class.active]="tabActivo() === 'recomendador'"
+      (click)="cambiarTab('recomendador')"
+    >
+      <i class="pi pi-list-check"></i>
+      <span>Motor de Sugerencias</span>
+      <span class="tab-chip">{{ productos().length }}</span>
+    </button>
+  </nav>
+
+  <!-- TARJETAS DE KPIs SUPERIORES -->
+  @if (kpis(); as k) {
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Índice de Rotación Global</span>
+          <i class="pi pi-sync kpi-card__icon kpi-card__icon--primary"></i>
+        </div>
+        <div class="kpi-card__val">{{ k.indiceRotacionGlobal }}x <small>/ año</small></div>
+        <div class="kpi-card__sub">
+          <span class="status-indicator" [class.status-indicator--ok]="k.indiceRotacionGlobal >= 4.0">
+            {{ k.indiceRotacionGlobal >= 4.0 ? '● Rotación Saludable' : '▲ Requiere aceleración' }}
+          </span>
+          · Ventas / Inv. Promedio
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Capital Total en Stock</span>
+          <i class="pi pi-wallet kpi-card__icon kpi-card__icon--cyan"></i>
+        </div>
+        <div class="kpi-card__val">{{ fmt(k.capitalTotalInventario) }}</div>
+        <div class="kpi-card__sub">{{ productos().length }} líneas de productos evaluadas</div>
+      </div>
+
+      <div class="kpi-card kpi-card--alerta">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Capital Inmovilizado (≥60 días)</span>
+          <i class="pi pi-lock kpi-card__icon kpi-card__icon--warn"></i>
+        </div>
+        <div class="kpi-card__val val--alerta">{{ fmt(k.capitalInmovilizado) }}</div>
+        <div class="kpi-card__sub">
+          <b>{{ pct(k.pctCapitalInmovilizado) }}</b> del valor total inmovilizado
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Productos en Riesgo (>90d)</span>
+          <i class="pi pi-clock kpi-card__icon kpi-card__icon--danger"></i>
+        </div>
+        <div class="kpi-card__val val--danger">{{ k.productosSinRotacionCount }} SKUs</div>
+        <div class="kpi-card__sub">Candidatos a liquidación escalonada</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Líneas Caso 1 (Alto Costo)</span>
+          <i class="pi pi-shield kpi-card__icon kpi-card__icon--info"></i>
+        </div>
+        <div class="kpi-card__val">{{ k.productosAltoCostoCount }} piezas</div>
+        <div class="kpi-card__sub">Ahorro reorden stock 0/1: <b>{{ fmt(k.ahorroEstimadoReorden) }}</b></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Oportunidad Cross-Selling</span>
+          <i class="pi pi-shopping-bag kpi-card__icon kpi-card__icon--success"></i>
+        </div>
+        <div class="kpi-card__val val--success">{{ k.productosPocoUsoCount }} ítems</div>
+        <div class="kpi-card__sub">Combos y venta sugerida en caja POS</div>
+      </div>
+    </div>
+  }
+
+  <!-- ================================================================= -->
+  <!-- TAB 1: PANORAMA & KPIS -->
+  <!-- ================================================================= -->
+  @if (tabActivo() === 'kpis') {
+    <div class="dash-content">
+      <!-- Fila de Gráficos -->
+      <div class="grid-2-cols">
+        <!-- Gráfico 1: Antigüedad de Inventario -->
+        <article class="dash-card">
+          <header class="dash-card__header">
+            <div>
+              <h3>Días sin Movimiento (Aging de Inventario)</h3>
+              <p>Monitoreo del capital inmovilizado por bandas de antigüedad</p>
+            </div>
+            <span class="chip-alert">Alertas a 60, 90 y 180+ días</span>
+          </header>
+          <div class="dash-card__body">
+            <div class="chart-container">
+              <canvas id="chartAntiguedad"></canvas>
+            </div>
+          </div>
+        </article>
+
+        <!-- Gráfico 2: Matriz ABC de Valor -->
+        <article class="dash-card">
+          <header class="dash-card__header">
+            <div>
+              <h3>Matriz ABC · Composición de Capital</h3>
+              <p>Clasificación de Pareto según valor económico en bodega</p>
+            </div>
+            <span class="chip-info">Regla 80/20</span>
+          </header>
+          <div class="dash-card__body">
+            <div class="chart-container">
+              <canvas id="chartAbc"></canvas>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Fila Inferior: Gráfico de Estrategias y Principios del ERP -->
+      <div class="grid-2-cols">
+        <article class="dash-card">
+          <header class="dash-card__header">
+            <div>
+              <h3>Distribución de Capital por Estrategia</h3>
+              <p>Segmentación del inventario según el diagnóstico operativo</p>
+            </div>
+          </header>
+          <div class="dash-card__body">
+            <div class="chart-container">
+              <canvas id="chartEstrategias"></canvas>
+            </div>
+          </div>
+        </article>
+
+        <!-- Principios Automatizados en el Sistema -->
+        <article class="dash-card">
+          <header class="dash-card__header">
+            <div>
+              <h3>Automatización & Reportes del ERP</h3>
+              <p>Lógica de negocio implementada en el sistema de retail</p>
+            </div>
+          </header>
+          <div class="dash-card__body">
+            <div class="rules-list">
+              <div class="rule-item">
+                <div class="rule-icon"><i class="pi pi-calculator"></i></div>
+                <div class="rule-text">
+                  <b>Índice de Rotación:</b>
+                  <span>Calculado como <code>Ventas del Período / Inventario Promedio</code>. Refleja la velocidad con que el stock se convierte en efectivo.</span>
+                </div>
+              </div>
+
+              <div class="rule-item">
+                <div class="rule-icon rule-icon--warn"><i class="pi pi-hourglass"></i></div>
+                <div class="rule-text">
+                  <b>Días sin Movimiento (DSI):</b>
+                  <span>Alertas automáticas en semáforo: <b>60 días</b> (amarillo), <b>90 días</b> (naranja) y <b>180 días</b> (rojo crítico).</span>
+                </div>
+              </div>
+
+              <div class="rule-item">
+                <div class="rule-icon rule-icon--danger"><i class="pi pi-money-bill"></i></div>
+                <div class="rule-text">
+                  <b>Capital Inmovilizado:</b>
+                  <span>Monto exacto en Lempiras <code>Costo × Cantidad</code> para productos sin salida, evitando descalce de liquidez.</span>
+                </div>
+              </div>
+
+              <div class="rule-item">
+                <div class="rule-icon rule-icon--info"><i class="pi pi-sliders-h"></i></div>
+                <div class="rule-text">
+                  <b>Punto de Reorden Dinámico:</b>
+                  <span>Ajustado por producto: 0 o 1 para repuestos de alta gama, stock congelado para ítems C, y stock dinámico para rotación regular.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  }
+
+  <!-- ================================================================= -->
+  <!-- TAB 2: CASO 1 · ALTO COSTO Y ALTA GANANCIA UNITARIA -->
+  <!-- ================================================================= -->
+  @if (tabActivo() === 'caso1') {
+    <div class="dash-content">
+      <!-- Diagnóstico Central -->
+      <div class="strategy-banner strategy-banner--case1">
+        <div class="strategy-banner__icon">
+          <i class="pi pi-car"></i>
+        </div>
+        <div class="strategy-banner__info">
+          <h2>Caso 1 · Alto Costo y Alta Ganancia Unitaria <small>(ej. Cuerpo de Aceleración, Turbos, Inyectores)</small></h2>
+          <p class="banner-diagnosis">
+            <strong>Diagnóstico:</strong> El problema aquí es <u>capital inmovilizado</u>, no falta de demanda. Al tener un precio elevado, comprar piezas para tener en repisa congela efectivo crítico de la empresa.
+          </p>
+        </div>
+      </div>
+
+      <!-- Grid de 6 Tácticas Estratégicas -->
+      <div class="tactics-grid">
+        <div class="tactic-card">
+          <div class="tactic-card__num">01</div>
+          <h3>Venta Bajo Pedido (Drop-shipping interno)</h3>
+          <p>
+            Mantén el producto activo en el catálogo del ERP, pero con <b>stock en 0</b>. Se pide al proveedor únicamente cuando el cliente lo solicita, con entrega pactada de <b>24 a 72 horas</b>.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Stock en bodega: 0 unidades</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">02</div>
+          <h3>Stock Consignado</h3>
+          <p>
+            El proveedor deja la pieza en tu bodega física para entrega inmediata al cliente, pero la empresa <b>solo la paga cuando se factura en el POS</b>. El riesgo de obsolescencia se traslada al proveedor.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Pago diferido a la venta</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">03</div>
+          <h3>Servicio Instalado (Paquete de Valor)</h3>
+          <p>
+            Véndelo como paquete integral: <b>pieza + instalación en taller + calibración/limpieza + garantía extendida</b>. Así el cliente percibe valor tangible de servicio y no compara fríamente el precio de la pieza en internet.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Paquete pieza + taller</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">04</div>
+          <h3>Financiamiento Propio / Cuotas</h3>
+          <p>
+            Facilita el cierre ofreciendo financiamiento en cuotas o crédito propio en piezas caras. Se acopla de forma nativa con el <b>módulo de Préstamos y CXC</b> del ERP.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Integrado con CXC / Crédito</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">05</div>
+          <h3>Cotización Proactiva en Diagnóstico</h3>
+          <p>
+            Cuando un cliente trae un vehículo a diagnóstico de taller, el sistema sugiere automáticamente las piezas de alto valor probables y genera la cotización en el acto para aprobación del cliente.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Cotización inmediata</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">06</div>
+          <h3>Mínimo de Stock = 1 o 0</h3>
+          <p>
+            Define reglas de reposición específicas para estas piezas en el maestro de inventario. <b>Jamás aplicar las mismas reglas que para el aceite o filtros</b> de alta rotación.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Regla Min/Max = 0 o 1</div>
+        </div>
+      </div>
+
+      <!-- Simulador de Financiamiento en Cuotas Integrado -->
+      <article class="dash-card sim-card">
+        <header class="dash-card__header">
+          <div>
+            <h3>Simulador de Financiamiento en Cuotas (Piezas Caras)</h3>
+            <p>Calcula planes de pago a clientes para amortiguar el impacto del precio unitario</p>
+          </div>
+          <span class="chip-success"><i class="pi pi-calculator"></i> Motor de Cuota Nivelada</span>
+        </header>
+
+        <div class="dash-card__body">
+          <div class="sim-grid">
+            <!-- Controles del simulador -->
+            <div class="sim-controls">
+              <div class="form-group">
+                <label>Precio de la pieza (HNL)</label>
+                <p-inputNumber
+                  [ngModel]="simuladorCostoPieza()"
+                  (ngModelChange)="simuladorCostoPieza.set($event || 0)"
+                  mode="currency"
+                  currency="HNL"
+                  locale="es-HN"
+                  styleClass="w-full"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Plazo de Financiamiento</label>
+                <p-select
+                  [options]="opcionesPlazos"
+                  [ngModel]="plazoCuotas()"
+                  (ngModelChange)="plazoCuotas.set($event)"
+                  styleClass="w-full"
+                  [appendTo]="'body'"
+                />
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Prima requerida (%)</label>
+                  <p-inputNumber
+                    [ngModel]="primaPct()"
+                    (ngModelChange)="primaPct.set($event || 0)"
+                    suffix="%"
+                    [min]="0"
+                    [max]="80"
+                    styleClass="w-full"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Tasa mensual (%)</label>
+                  <p-inputNumber
+                    [ngModel]="tasaMensualPct()"
+                    (ngModelChange)="tasaMensualPct.set($event || 0)"
+                    suffix="%"
+                    [min]="0"
+                    [max]="10"
+                    styleClass="w-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Resultados del cálculo -->
+            @if (calculoFinanciamiento(); as sim) {
+              <div class="sim-results">
+                <div class="sim-pill">
+                  <span>Prima Inicial (Contado)</span>
+                  <strong>{{ fmt(sim.prima) }}</strong>
+                </div>
+                <div class="sim-pill sim-pill--highlight">
+                  <span>Cuota Mensual ({{ sim.plazo }} meses)</span>
+                  <strong class="highlight-txt">{{ fmt(sim.cuotaMensual) }} <small>/ mes</small></strong>
+                </div>
+                <div class="sim-pill">
+                  <span>Saldo a Financiar</span>
+                  <strong>{{ fmt(sim.saldoFinanciar) }}</strong>
+                </div>
+                <div class="sim-pill">
+                  <span>Interés Generado para la Empresa</span>
+                  <strong class="success-txt">+ {{ fmt(sim.interesesTotales) }}</strong>
+                </div>
+                <div class="sim-note">
+                  <i class="pi pi-info-circle"></i>
+                  La cuota mensual se cobra mediante débito en CXC o caja de sucursal, fidelizando la visita mensual del cliente.
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </article>
+
+      <!-- Tabla de piezas Caso 1 detectadas en la empresa -->
+      <article class="dash-card">
+        <header class="dash-card__header">
+          <div>
+            <h3>Piezas de Alto Costo en Catálogo Actual</h3>
+            <p>Productos con alto valor unitario para aplicar regla de bajo pedido o consignación</p>
+          </div>
+        </header>
+        <div class="dash-card__body">
+          <p-table [value]="listaCaso1()" styleClass="p-datatable-sm" [rows]="5" [paginator]="true">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Código / SKU</th>
+                <th>Descripción de la Pieza</th>
+                <th>Costo Unitario</th>
+                <th>Precio Venta</th>
+                <th>Margen %</th>
+                <th>Stock Actual</th>
+                <th>Capital Comprometido</th>
+                <th>Regla de Reposición Sugerida</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-p>
+              <tr>
+                <td><code>{{ p.sku || p.codbarra }}</code></td>
+                <td><b>{{ p.descripcion }}</b></td>
+                <td>{{ fmt(p.costoUnitario) }}</td>
+                <td>{{ fmt(p.precioVenta) }}</td>
+                <td><span class="badge-margen">{{ pct(p.margenPct) }}</span></td>
+                <td>
+                  <p-tag [severity]="p.existencia > 1 ? 'warn' : 'info'" [value]="p.existencia + ' un.'"></p-tag>
+                </td>
+                <td><b>{{ fmt(p.capitalInmovilizado) }}</b></td>
+                <td>
+                  <span class="action-hint">
+                    <i class="pi pi-arrow-circle-right"></i>
+                    {{ p.existencia > 1 ? 'Reducir a Stock = 1 (Venta bajo pedido)' : 'Catálogo activo con Stock = 0 / Consignado' }}
+                  </span>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </article>
+    </div>
+  }
+
+  <!-- ================================================================= -->
+  <!-- TAB 3: CASO 2 · POCO USO FRECUENTE, COSTO BAJO O MEDIO -->
+  <!-- ================================================================= -->
+  @if (tabActivo() === 'caso2') {
+    <div class="dash-content">
+      <!-- Diagnóstico Central -->
+      <div class="strategy-banner strategy-banner--case2">
+        <div class="strategy-banner__icon">
+          <i class="pi pi-bolt"></i>
+        </div>
+        <div class="strategy-banner__info">
+          <h2>Caso 2 · Poco Uso Frecuente, Costo Bajo o Medio <small>(ej. Cargador de Batería, Cables de Pasa-Corriente, Herramientas)</small></h2>
+          <p class="banner-diagnosis">
+            <strong>Diagnóstico:</strong> Aquí lo que falla es la <u>visibilidad y el momento de compra</u>. El cliente no acude a la tienda buscando un cargador hasta que se queda varado; si no se le sugiere en el momento oportuno, la pieza no rota.
+          </p>
+        </div>
+      </div>
+
+      <!-- Grid de 5 Tácticas Estratégicas -->
+      <div class="tactics-grid tactics-grid--5">
+        <div class="tactic-card">
+          <div class="tactic-card__num">01</div>
+          <h3>Combos y Ventas Cruzadas</h3>
+          <p>
+            Arma paquetes atractivos: <b>"Batería + Cargador Inteligente"</b> o el <b>"Kit de Emergencia Vial"</b> (cables pasa-corriente + cargador + linterna de trabajo).
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Bundling comercial</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">02</div>
+          <h3>Alquiler o Préstamo con Garantía</h3>
+          <p>
+            Para clientes de taller o mecánicos que solo necesitan el equipo una vez al año. Se deja un depósito en garantía y se cobra una tarifa diaria de uso.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Servicio de renta</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">03</div>
+          <h3>Campañas de Temporada</h3>
+          <p>
+            Promoverlo en <b>época de lluvias o antes de vacaciones</b> (Semana Santa / Fiestas), momentos del año donde las baterías fallan con mayor frecuencia por frío y humedad.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Picos estacionales</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">04</div>
+          <h3>Venta Sugerida en Caja (POS Prompt)</h3>
+          <p>
+            El sistema de facturación emite una alerta al cajero o vendedor en el momento exacto en que se digita una batería: <i>"¿Desea agregar el cargador con 15% de descuento?"</i>.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Alerta automática en POS</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">05</div>
+          <h3>Precio de Gancho (Loss Leader)</h3>
+          <p>
+            Margen reducido en el accesorio de gancho para atraer al cliente a la tienda física y venderle otros productos de consumo habitual (bornes, agua desmineralizada, repuestos).
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Tráfico a tienda</div>
+        </div>
+      </div>
+
+      <!-- Demostración del Combo de Retail Automotriz -->
+      <article class="dash-card">
+        <header class="dash-card__header">
+          <div>
+            <h3>Configurador de Combos & Cross-Selling en Caja</h3>
+            <p>Simulación del paquete estrella: <b>"Kit de Emergencia y Respaldo Eléctrico"</b></p>
+          </div>
+          <span class="chip-warn"><i class="pi pi-shopping-cart"></i> Descuento sugerido: 15%</span>
+        </header>
+
+        <div class="dash-card__body">
+          <div class="combo-builder">
+            <div class="combo-items">
+              <div class="combo-item">
+                <div class="combo-badge">Detonador Principal</div>
+                <h4>Batería AGM 12V 75Ah 800CCA</h4>
+                <div class="combo-price">Precio individual: <b>L 3,100.00</b></div>
+              </div>
+
+              <div class="combo-plus"><i class="pi pi-plus"></i></div>
+
+              <div class="combo-item combo-item--accent">
+                <div class="combo-badge combo-badge--sub">Producto Poco Uso (Caso 2)</div>
+                <h4>Cargador Inteligente de Batería 10A</h4>
+                <div class="combo-price">Precio individual: <b>L 1,350.00</b></div>
+              </div>
+
+              <div class="combo-plus"><i class="pi pi-plus"></i></div>
+
+              <div class="combo-item">
+                <div class="combo-badge combo-badge--sub">Accesorio de Seguridad</div>
+                <h4>Cables Pasa-Corriente 500A (3.5m)</h4>
+                <div class="combo-price">Precio individual: <b>L 650.00</b></div>
+              </div>
+            </div>
+
+            <div class="combo-summary">
+              <div class="summary-line">
+                <span>Suma de precios por separado:</span>
+                <span class="strike">L 5,100.00</span>
+              </div>
+              <div class="summary-line summary-line--discount">
+                <span>Descuento de combo (15%):</span>
+                <span>- L 765.00</span>
+              </div>
+              <div class="summary-line summary-line--total">
+                <span>Precio Paquete Combo:</span>
+                <strong>L 4,335.00</strong>
+              </div>
+              <div class="summary-benefit">
+                <i class="pi pi-sparkles"></i>
+                <b>Beneficio Retail:</b> El cliente ahorra <b>L 765.00</b> y el ERP liquida 2 piezas de baja rotación en una sola transacción garantizada.
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Tabla de ítems Caso 2 -->
+      <article class="dash-card">
+        <header class="dash-card__header">
+          <div>
+            <h3>Productos de Poco Uso Frecuente en Inventario</h3>
+            <p>Líneas con costo bajo/medio que requieren gatilladores de visibilidad y combos</p>
+          </div>
+        </header>
+        <div class="dash-card__body">
+          <p-table [value]="listaCaso2()" styleClass="p-datatable-sm" [rows]="5" [paginator]="true">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Categoría</th>
+                <th>Costo</th>
+                <th>Precio Venta</th>
+                <th>Stock</th>
+                <th>Días sin Mov.</th>
+                <th>Gatillador Sugerido en POS</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-p>
+              <tr>
+                <td><code>{{ p.sku || p.codbarra }}</code></td>
+                <td><b>{{ p.descripcion }}</b></td>
+                <td>{{ p.categoria }}</td>
+                <td>{{ fmt(p.costoUnitario) }}</td>
+                <td>{{ fmt(p.precioVenta) }}</td>
+                <td><p-tag severity="warn" [value]="p.existencia + ' un.'"></p-tag></td>
+                <td>{{ p.diasSinMovimiento }} días</td>
+                <td>
+                  <span class="action-hint action-hint--warn">
+                    <i class="pi pi-tags"></i>
+                    {{ p.tacticaClave }}
+                  </span>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </article>
+    </div>
+  }
+
+  <!-- ================================================================= -->
+  <!-- TAB 3: CASO 3 · PRODUCTO QUE SIMPLEMENTE NO ROTA -->
+  <!-- ================================================================= -->
+  @if (tabActivo() === 'caso3') {
+    <div class="dash-content">
+      <!-- Diagnóstico Central -->
+      <div class="strategy-banner strategy-banner--case3">
+        <div class="strategy-banner__icon">
+          <i class="pi pi-ban"></i>
+        </div>
+        <div class="strategy-banner__info">
+          <h2>Caso 3 · Producto que Simplemente No Rota <small>(Inventario Estancado / Obsoleto / DSI > 90 días)</small></h2>
+          <p class="banner-diagnosis">
+            <strong>Diagnóstico:</strong> El inventario ocioso destruye el margen de la empresa por <u>costo de oportunidad, mermas y espacio</u>. La meta es <b>recuperar el capital de trabajo de inmediato</b> mediante salidas escalonadas.
+          </p>
+        </div>
+      </div>
+
+      <!-- Grid de 5 Tácticas Estratégicas -->
+      <div class="tactics-grid tactics-grid--5">
+        <div class="tactic-card">
+          <div class="tactic-card__num">01</div>
+          <h3>Clasificación ABC/XYZ Trimestral</h3>
+          <p>
+            Categoría <b>A</b> (alto valor/rotación), <b>B</b> (medio) y <b>C</b> (baja rotación). Los productos C se someten a <b>revisión trimestral obligatoria</b> para congelar compras.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Auditoría trimestral C</div>
+        </div>
+
+        <div class="tactic-card tactic-card--alert">
+          <div class="tactic-card__num">02</div>
+          <h3>Liquidación Escalonada por Antigüedad</h3>
+          <p>
+            Regla de descuento progresivo:
+            <br>• <b>90 días:</b> -10% descuento
+            <br>• <b>180 días:</b> -20% descuento
+            <br>• <b>270+ días:</b> -30% o venta por lote cerrado
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> -10%, -20%, -30%</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">03</div>
+          <h3>Venta Mayorista a Talleres</h3>
+          <p>
+            Ofrece precio especial por volumen a talleres mecánicos pequeños que no tienen capital para stock propio pero necesitan las piezas para reparaciones puntuales.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Lotes B2B talleres</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">04</div>
+          <h3>Devolución o Canje con Proveedor</h3>
+          <p>
+            Retorno acordado con el proveedor o <b>canje directo por otros productos de alta rotación (Clase A)</b>, liberando saldo a favor en Cuentas por Pagar (CXP).
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Canje por productos A</div>
+        </div>
+
+        <div class="tactic-card">
+          <div class="tactic-card__num">05</div>
+          <h3>Canal en Línea / Marketplace</h3>
+          <p>
+            Publicación automática en la <b>Tienda Virtual del ERP</b>. Una pieza que no tiene rotación en una sucursal o ciudad puede tener demanda en otra región del país.
+          </p>
+          <div class="tactic-card__tag"><i class="pi pi-check"></i> Tienda Virtual activa</div>
+        </div>
+      </div>
+
+      <!-- Gráfico de Liquidación Escalonada -->
+      <div class="grid-2-cols">
+        <article class="dash-card">
+          <header class="dash-card__header">
+            <div>
+              <h3>Capital por Tramo de Liquidación Escalonada</h3>
+              <p>Monto en riesgo clasificado según los tramos de 90, 180 y 270+ días</p>
+            </div>
+          </header>
+          <div class="dash-card__body">
+            <div class="chart-container">
+              <canvas id="chartLiquidacionEscalonada"></canvas>
+            </div>
+          </div>
+        </article>
+
+        <article class="dash-card">
+          <header class="dash-card__header">
+            <div>
+              <h3>Resumen de Recuperación de Liquidez</h3>
+              <p>Impacto financiero de aplicar las políticas de remate</p>
+            </div>
+          </header>
+          <div class="dash-card__body">
+            <div class="recovery-box">
+              <div class="recovery-metric">
+                <span class="metric-label">Capital Total en Riesgo (DSI > 90 días)</span>
+                <span class="metric-val danger-txt">{{ fmt(kpis().capitalInmovilizado) }}</span>
+              </div>
+              <div class="recovery-metric">
+                <span class="metric-label">Productos Críticos (>180 días)</span>
+                <span class="metric-val">{{ listaCaso3().length }} líneas</span>
+              </div>
+              <div class="recovery-desc">
+                <p>
+                  <i class="pi pi-check-circle success-txt"></i>
+                  <b>Acción inmediata recomendada:</b> Exportar lista de productos con más de 270 días y emitir orden de paquete B2B con 30% de descuento para talleres de la zona antes del cierre de mes.
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Matriz de Liquidación Escalonada en Vivo -->
+      <article class="dash-card">
+        <header class="dash-card__header">
+          <div>
+            <h3>Matriz de Liquidación Escalonada en Vivo</h3>
+            <p>Cálculo en tiempo real de precios de remate y recuperación de capital</p>
+          </div>
+        </header>
+        <div class="dash-card__body">
+          <p-table [value]="listaCaso3()" styleClass="p-datatable-sm" [rows]="5" [paginator]="true">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Código / SKU</th>
+                <th>Descripción del Producto</th>
+                <th>Costo Unit.</th>
+                <th>Precio Actual</th>
+                <th>Stock</th>
+                <th>Días sin Venta</th>
+                <th>Escalón Sugerido</th>
+                <th>Precio Liquidación</th>
+                <th>Capital a Recuperar</th>
+                <th>Canal Recomendado</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-p>
+              <tr>
+                <td><code>{{ p.sku || p.codbarra }}</code></td>
+                <td><b>{{ p.descripcion }}</b></td>
+                <td>{{ fmt(p.costoUnitario) }}</td>
+                <td>{{ fmt(p.precioVenta) }}</td>
+                <td><p-tag severity="danger" [value]="p.existencia + ' un.'"></p-tag></td>
+                <td><span class="badge-dias">{{ p.diasSinMovimiento }} días</span></td>
+                <td>
+                  <span class="badge-descuento">
+                    -{{ p.descuentoLiquidacionPct }}%
+                  </span>
+                </td>
+                <td><b class="success-txt">{{ fmt(p.precioLiquidacion) }}</b></td>
+                <td><b>{{ fmt(p.capitalInmovilizado) }}</b></td>
+                <td>
+                  <span class="action-hint action-hint--danger">
+                    <i class="pi pi-arrow-right"></i>
+                    {{ p.diasSinMovimiento >= 270 ? 'Venta por lote a taller' : (p.diasSinMovimiento >= 180 ? 'Tienda Virtual / Web' : 'Canje con proveedor') }}
+                  </span>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </article>
+    </div>
+  }
+
+  <!-- ================================================================= -->
+  <!-- TAB 4: MOTOR DE SUGERENCIAS Y DIAGNÓSTICO INTEGRAL -->
+  <!-- ================================================================= -->
+  @if (tabActivo() === 'recomendador') {
+    <div class="dash-content">
+      <article class="dash-card">
+        <header class="dash-card__header">
+          <div>
+            <h3>Motor de Diagnóstico y Sugerencias de Inventario</h3>
+            <p>Auditoría integral de catálogo con clasificación automática de estrategias</p>
+          </div>
+        </header>
+
+        <div class="dash-card__body">
+          <!-- Filtros de la tabla -->
+          <div class="table-filters">
+            <div class="filter-item">
+              <label>Buscar producto</label>
+              <span class="p-input-icon-left w-full">
+                <i class="pi pi-search"></i>
+                <input
+                  pInputText
+                  type="text"
+                  [ngModel]="terminoBusqueda()"
+                  (ngModelChange)="terminoBusqueda.set($event)"
+                  placeholder="Código, SKU o descripción…"
+                  class="w-full"
+                />
+              </span>
+            </div>
+
+            <div class="filter-item">
+              <label>Estrategia</label>
+              <p-select
+                [options]="opcionesEstrategia"
+                [ngModel]="filtroEstrategia()"
+                (ngModelChange)="filtroEstrategia.set($event)"
+                styleClass="w-full"
+                [appendTo]="'body'"
+              />
+            </div>
+
+            <div class="filter-item">
+              <label>Categoría</label>
+              <p-select
+                [options]="opcionesCategorias()"
+                [ngModel]="filtroCategoria()"
+                (ngModelChange)="filtroCategoria.set($event)"
+                styleClass="w-full"
+                [appendTo]="'body'"
+              />
+            </div>
+          </div>
+
+          <!-- Tabla de Análisis Completo -->
+          <p-table
+            [value]="productosFiltrados()"
+            styleClass="p-datatable-sm p-datatable-striped"
+            [paginator]="true"
+            [rows]="10"
+            [rowsPerPageOptions]="[10, 20, 50]"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Código / SKU</th>
+                <th>Descripción</th>
+                <th>Categoría</th>
+                <th>Costo Unit.</th>
+                <th>Precio Venta</th>
+                <th>Existencia</th>
+                <th>Capital Inmovilizado</th>
+                <th>Días sin Venta</th>
+                <th>ABC / XYZ</th>
+                <th>Estrategia Asignada</th>
+                <th>Sugerencia Automática del ERP</th>
+                <th>Punto Reorden</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-p>
+              <tr>
+                <td><code>{{ p.sku || p.codbarra }}</code></td>
+                <td><b>{{ p.descripcion }}</b></td>
+                <td><small>{{ p.categoria }}</small></td>
+                <td>{{ fmt(p.costoUnitario) }}</td>
+                <td>{{ fmt(p.precioVenta) }}</td>
+                <td>
+                  <p-tag [severity]="p.existencia === 0 ? 'secondary' : (p.existencia > 20 ? 'warn' : 'info')" [value]="p.existencia + ' un.'"></p-tag>
+                </td>
+                <td><b>{{ fmt(p.capitalInmovilizado) }}</b></td>
+                <td>
+                  <span [class.text-danger]="p.diasSinMovimiento >= 90" [class.text-warn]="p.diasSinMovimiento >= 60 && p.diasSinMovimiento < 90">
+                    {{ p.diasSinMovimiento }} d
+                  </span>
+                </td>
+                <td>
+                  <span class="badge-matrix">{{ p.clasificacionAbc }}{{ p.clasificacionXyz }}</span>
+                </td>
+                <td>
+                  <p-tag [severity]="severityEstrategia(p.estrategiaTipo)" [value]="p.estrategiaTipo === 'alto_costo' ? '1. Alto Costo' : (p.estrategiaTipo === 'poco_uso' ? '2. Poco Uso' : (p.estrategiaTipo === 'sin_rotacion' ? '3. Sin Rotación' : 'Regular'))"></p-tag>
+                </td>
+                <td>
+                  <div class="sugerencia-box">
+                    <span class="sugerencia-txt">{{ p.sugerenciaAccion }}</span>
+                    <small class="sugerencia-sub">{{ p.tacticaClave }}</small>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-reorden">{{ p.puntoReordenDinamico }} un.</span>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="12" class="text-center py-4 text-muted">
+                  No se encontraron productos con los filtros seleccionados.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </article>
+    </div>
+  }
+</section>

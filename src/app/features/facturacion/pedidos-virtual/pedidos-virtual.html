@@ -29,7 +29,7 @@
         </div>
         <div class="cart-item-details">
           <span class="cart-item-name"
-            >{{ item.descripcion || 'Producto #' + item.productoId }}</span
+            >{{ getItemNombre(item) }}</span
           >
           <span class="cart-item-price">{{ formatearPrecio(item.precioventa) }}</span>
           <div class="cart-item-qty">
@@ -76,7 +76,6 @@
         <p-button
           label="Guardar pedido"
           icon="pi pi-save"
-          rounded="true"
           severity="secondary"
           [fluid]="true"
           [disabled]="cargandoPedido()"
@@ -86,7 +85,6 @@
           label="Facturar pedido"
           icon="pi pi-check"
           severity="success"
-          rounded="true"
           [fluid]="true"
           [disabled]="cargandoPedido()"
           (click)="abrirCheckout(); pedidoOpen.set(false)"
@@ -522,7 +520,7 @@
           </div>
           <div class="summary-item-info">
             <span class="summary-item-name"
-              >{{ item.descripcion || 'Producto #' + item.productoId }}</span
+              >{{ getItemNombre(item) }}</span
             >
             <span class="summary-item-qty"
               >Cant: {{ item.cantidad }} × {{ formatearPrecio(item.precioventa) }}</span
@@ -554,7 +552,6 @@
         label="Confirmar Factura"
         icon="pi pi-check"
         severity="success"
-        rounded="true"
         [fluid]="true"
         [loading]="procesando()"
         [disabled]="procesando() || !formularioPagoValido()"
@@ -566,7 +563,6 @@
   <ng-template pTemplate="footer">
     <p-button
       label="Cancelar"
-      rounded="true"
       [text]="true"
       icon="pi pi-arrow-left"
       [disabled]="procesando()"
@@ -600,7 +596,7 @@
     <p-button
       label="Cancelar"
       [size]="'small'"
-      rounded="true"
+      rounded
       variant="text"
       severity="secondary"
       [disabled]="guardandoPedido()"

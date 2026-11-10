@@ -101,19 +101,9 @@
   cursor: pointer;
 }
 
-.row-class-right {
-  text-align: right;
-  font-weight: 400;
-  margin-right: 0.75rem;
-  font-size: 0.85rem;
-  color: var(--c-text);
-}
-
-.row-class-left {
-  text-align: left;
-  font-weight: 400;
-  margin-left: 1.25rem;
-  font-size: 0.85rem;
+.nro-factura {
+  font-weight: 700;
+  font-size: 0.9rem;
   color: var(--c-text);
 }
 
@@ -123,9 +113,7 @@
 }
 
 .total-cell {
-  font-weight: 400;
-    font-size: 0.85rem;
-    margin-right: 0.75rem;
+  font-weight: 600;
   color: var(--c-text);
   white-space: nowrap;
 }

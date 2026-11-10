@@ -105,7 +105,7 @@
                     optionValue="value"
                     (onChange)="errTipodoc.set('')"
                     [disabled]="loading()"
-                    styleClass="togglebutton-bg-black"
+
                   />
                   @if (errTipodoc()) {
                     <span class="campo-error">
@@ -169,7 +169,6 @@
                     optionValue="value"
                     (onChange)="errSexo.set('')"
                     [disabled]="loading()"
-                    styleClass="togglebutton-bg-black"
                   />
                   @if (errSexo()) {
                     <span class="campo-error">
@@ -433,24 +432,6 @@
                 </div>
               </div>
 
-              <div class="check-row mb-3" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
-                <p-checkbox
-                  inputId="reg-terminos"
-                  name="reg-terminos"
-                  [binary]="true"
-                  [(ngModel)]="aceptaTerminos"
-                  (ngModelChange)="errTerminos.set('')"
-                />
-                <label for="reg-terminos" style="font-size: 0.9rem; color: var(--c-text);">
-                  He leído y acepto los <a href="javascript:void(0)" (click)="abrirTerminos($event)" style="color: var(--c-primary); text-decoration: underline; cursor: pointer;">Términos y Condiciones</a>
-                </label>
-              </div>
-              @if (errTerminos()) {
-                <span class="campo-error mb-2" style="display: block; margin-top: -0.5rem; margin-bottom: 0.5rem;">
-                  <i class="pi pi-exclamation-circle"></i> {{ errTerminos() }}
-                </span>
-              }
-
               <p-button
                 type="submit"
                 label="Crear cuenta"
@@ -473,5 +454,3 @@
     </div>
   </ng-template>
 </p-dialog>
-
-<app-terminos-dialog [(visible)]="terminosVisible" />
