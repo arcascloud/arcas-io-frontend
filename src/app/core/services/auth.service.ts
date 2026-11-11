@@ -35,6 +35,7 @@ export const ROLES_FECHAS = ['admin', 'supervisor', 'contador'];
 
 export interface LoginResponse {
   access_token?: string;
+  refresh_token?: string;
   usuario: AuthUser;
 }
 
@@ -77,20 +78,22 @@ export class AuthService {
       usuario,
       password,
     }).pipe(
-      tap((res) => {
-        localStorage.setItem('user', JSON.stringify(res.usuario));
-        this.user.set(res.usuario);
-      }),
+      tap((res) => this.guardarSesion(res)),
     );
   }
 
   loginRaw(body: Record<string, unknown>): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, body).pipe(
-      tap((res) => {
-        localStorage.setItem('user', JSON.stringify(res.usuario));
-        this.user.set(res.usuario);
-      }),
+      tap((res) => this.guardarSesion(res)),
     );
+  }
+
+  /** Guarda usuario + tokens (Bearer cross-site y refresh silencioso) */
+  private guardarSesion(res: LoginResponse): void {
+    localStorage.setItem('user', JSON.stringify(res.usuario));
+    if (res.access_token) localStorage.setItem('token', res.access_token);
+    if (res.refresh_token) localStorage.setItem('refresh_token', res.refresh_token);
+    this.user.set(res.usuario);
   }
 
   checkStatus(): Observable<boolean> {
