@@ -1,10 +1,11 @@
 <div class="drilldown-menu">
   @if (!deptoActivo()) {
-    <!-- VISTA 1: Lista de Departamentos -->
+    <!-- VISTA 1: Lista de Departamentos
     <div class="drilldown-header">
       <i class="fa-solid fa-layer-group"></i>
       <span class="drilldown-title">Departamentos</span>
     </div>
+    -->
     <div class="drilldown-list">
       @for (depto of deptos(); track depto.deptoId) {
         <button class="drilldown-item" (click)="seleccionarDepto(depto)">
