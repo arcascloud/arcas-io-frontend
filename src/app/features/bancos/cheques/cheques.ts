@@ -119,16 +119,14 @@ export class ChequesBancos implements OnInit {
     this.cargando.set(true);
     this.api.get<any[]>('/cxp/compras-pag').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
-        this.facturas.set((data || []).map((f: any) => {
-          const total = Number(f.total);
-          const saldo = f.saldo != null ? Number(f.saldo) : total;
-          return {
-            ...f,
-            total,
-            _selected: false,
-            _montoPago: saldo,
-          };
-        }));
+        this.facturas.set((data || []).map((f: any) => ({
+          ...f,
+          total: Number(f.total),
+          _selected: false,
+          // Inicia vacío (undefined) para que el campo no muestre 0;
+          // se completa con el saldo al marcar la factura (toggleFactura).
+          _montoPago: undefined,
+        })));
         this.cargando.set(false);
       },
       error: () => {
@@ -213,13 +211,16 @@ export class ChequesBancos implements OnInit {
   toggleFactura(factura: CompraPendientePago) {
     factura._selected = !factura._selected;
     if (factura._selected && !factura._montoPago) {
-      factura._montoPago = factura.saldo ?? factura.total;
+      factura._montoPago = Number(factura.saldo ?? factura.total);
     }
     this.facturas.update(facturas => [...facturas]);
   }
 
-  onMontoPagoChange(factura: CompraPendientePago, valor: number) {
-    if (valor > 0 && valor <= factura.total) {
+  onMontoPagoChange(factura: CompraPendientePago, valor: number | null) {
+    // Campo limpiado por el usuario → queda vacío (undefined), sin forzar 0.01
+    if (valor == null) {
+      factura._montoPago = undefined;
+    } else if (valor > 0 && valor <= factura.total) {
       factura._montoPago = valor;
     } else if (valor > factura.total) {
       factura._montoPago = factura.total;
@@ -234,7 +235,7 @@ export class ChequesBancos implements OnInit {
     this.facturas.update(facturas => facturas.map(f => ({
       ...f,
       _selected: checked,
-      _montoPago: checked ? (f.saldo ?? f.total) : f._montoPago,
+      _montoPago: checked ? Number(f.saldo ?? f.total) : f._montoPago,
     })));
   }
 

@@ -788,7 +788,8 @@ export class Caja implements OnInit {
         __local: true,
         nrofila: this.contadorFila,
         formapagoId: null,
-        importe: 0,
+        /** Inicia vacío (undefined) para que el campo no muestre 0. */
+        importe: undefined,
         tarjetacreditoId: null,
         nrotarjeta: '',
         nroautorizacion: '',

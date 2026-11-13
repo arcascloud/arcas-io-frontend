@@ -52,7 +52,8 @@ export class ChequesParticulares implements OnInit, OnDestroy {
       bcoctasId: [null, Validators.required],
       beneficiario: ['', Validators.required],
       concepto: ['', Validators.required],
-      importe: [0, [Validators.required, Validators.min(0.01)]],
+      // Inicia vacío (undefined) para que el campo no muestre 0
+      importe: [undefined as number | undefined, [Validators.required, Validators.min(0.01)]],
     });
     this.form.get('importe')!.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -162,7 +163,7 @@ export class ChequesParticulares implements OnInit, OnDestroy {
         this.chequeAImprimir.set(res.cheque);
         this.mostrarImpresion.set(true);
         this.msgs.add({ severity: 'success', summary: 'Éxito', detail: res.mensaje });
-        this.form.reset({ bcoctasId: null, beneficiario: '', concepto: '', importe: 0 });
+        this.form.reset({ bcoctasId: null, beneficiario: '', concepto: '', importe: undefined });
         this.movimientos.set([]);
         this.importeActual.set(0);
       },

@@ -85,7 +85,8 @@ export class CxpMovimientosManager implements OnInit {
     proveedorId: null,
     tipomov: 'D',
     concepto: '',
-    importe: 0,
+    /** Inicia vacío (undefined) para que el campo no muestre 0. */
+    importe: undefined,
     nroreferencia: '',
     fecharegistro: new Date().toISOString(),
     carteracontableId: null,
@@ -368,7 +369,7 @@ export class CxpMovimientosManager implements OnInit {
       proveedorId: this.selectedProveedor()?.proveedorId ?? null,
       tipomov: 'D',
       concepto: '',
-      importe: 0,
+      importe: undefined,
       nroreferencia: '',
       fecharegistro: new Date().toISOString(),
       carteracontableId: null,
@@ -477,7 +478,7 @@ export class CxpMovimientosManager implements OnInit {
     this.movimientoModel.set({
       ...this.movimientoModel(),
       nroreferencia: nroReferencia,
-      importe: 0,
+      importe: undefined,
     });
   }
 }

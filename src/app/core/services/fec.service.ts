@@ -125,10 +125,13 @@ export class FecService {
    * @param empresaId Empresa a corregir. Si se omite, la del usuario.
    */
   actualizarFechaSistema(fecha: string, empresaId?: number): Observable<EstadoFechaSistema> {
+    // `sinContexto`: el backend rechaza con 400 (forbidNonWhitelisted) cualquier
+    // campo extra en el body — este DTO solo acepta `fechasistema`. La empresa se
+    // pasa por query param y la lee el controller.
     return this.api.putBase<EstadoFechaSistema>(
       `${this.path}-sistema`,
       { fechasistema: fecha },
-      undefined,
+      { sinContexto: true },
       empresaId != null ? { empresaId } : undefined,
     );
   }

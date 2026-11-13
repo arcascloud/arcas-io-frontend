@@ -106,7 +106,7 @@ export class MovimientosManager implements OnInit {
     tipomov: 'D',
     sn_doc_manual: 'S',
     concepto: '',
-    importe: 0,
+    importe: undefined,
     nroreferencia: '',
     fecharegistro: new Date().toISOString(),
     carteracontableId: null,
@@ -150,9 +150,12 @@ export class MovimientosManager implements OnInit {
    */
   debitoReferencias = computed(() => {
     const movs = this.movimientosData();
-    const mapa = new Map<string, { nroreferencia: string; saldo: number; documentoId: number | null }>();
+    const mapa = new Map<
+      string,
+      { nroreferencia: string; saldo: number; documentoId: number | null }
+    >();
     // Tipos de documento que admiten ND/NC (options ya vienen filtrados)
-    const docsPermitidos = new Set(this.documentosOptions().map(o => Number(o.value)));
+    const docsPermitidos = new Set(this.documentosOptions().map((o) => Number(o.value)));
 
     // 1ra pasada: acumular debitos vigentes
     for (const m of movs) {
@@ -185,7 +188,7 @@ export class MovimientosManager implements OnInit {
       }
     }
 
-    return Array.from(mapa.values()).filter(d => d.saldo > 0);
+    return Array.from(mapa.values()).filter((d) => d.saldo > 0);
   });
 
   // Documentos pendientes de pago del cliente (para débito) - ELIMINADO: se usa debitoReferencias para ambos
@@ -203,25 +206,32 @@ export class MovimientosManager implements OnInit {
     if (movIdParam) {
       const movId = Number(movIdParam);
       if (!isNaN(movId) && movId > 0) {
-        this.service.getMovimiento(movId).pipe(
-          takeUntilDestroyed(this.destroyRef),
-          timeout(10000),
-          catchError(() => {
-            this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el movimiento de origen' });
-            this.loadClientes();
-            return of(null);
-          }),
-        ).subscribe({
-          next: (mov) => {
-            const clienteId = mov ? Number(mov['clienteId']) : 0;
-            if (clienteId > 0) {
-              this.vieneDeHistorico = true;
-              this.autoSelectCliente(clienteId, mov);
-            } else {
+        this.service
+          .getMovimiento(movId)
+          .pipe(
+            takeUntilDestroyed(this.destroyRef),
+            timeout(10000),
+            catchError(() => {
+              this.msgs.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudo cargar el movimiento de origen',
+              });
               this.loadClientes();
-            }
-          },
-        });
+              return of(null);
+            }),
+          )
+          .subscribe({
+            next: (mov) => {
+              const clienteId = mov ? Number(mov['clienteId']) : 0;
+              if (clienteId > 0) {
+                this.vieneDeHistorico = true;
+                this.autoSelectCliente(clienteId, mov);
+              } else {
+                this.loadClientes();
+              }
+            },
+          });
         return;
       }
     }
@@ -265,39 +275,46 @@ export class MovimientosManager implements OnInit {
    */
   private autoSelectCliente(clienteId: number, movimiento?: any) {
     this.cargando.set(true);
-    this.service.getCliente(clienteId).pipe(
-      takeUntilDestroyed(this.destroyRef),
-      timeout(10000),
-      catchError(() => {
-        this.cargando.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el cliente' });
-        return of(null);
-      })
-    ).subscribe({
-      next: (cliente) => {
-        this.cargando.set(false);
-        if (cliente) {
-          if (this.vieneDeHistorico) {
-            // Solo este cliente en la lista (columna derecha)
-            this.data.set([cliente]);
-            this.totalClientes.set(1);
-          } else {
-            // Agregar el cliente a la lista si no está
-            const lista = this.data();
-            const existe = lista.find(c => c.clienteId === cliente.clienteId);
-            if (!existe) {
-              this.data.set([cliente, ...lista]);
+    this.service
+      .getCliente(clienteId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        timeout(10000),
+        catchError(() => {
+          this.cargando.set(false);
+          this.msgs.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo cargar el cliente',
+          });
+          return of(null);
+        }),
+      )
+      .subscribe({
+        next: (cliente) => {
+          this.cargando.set(false);
+          if (cliente) {
+            if (this.vieneDeHistorico) {
+              // Solo este cliente en la lista (columna derecha)
+              this.data.set([cliente]);
+              this.totalClientes.set(1);
+            } else {
+              // Agregar el cliente a la lista si no está
+              const lista = this.data();
+              const existe = lista.find((c) => c.clienteId === cliente.clienteId);
+              if (!existe) {
+                this.data.set([cliente, ...lista]);
+              }
+            }
+            this.seleccionarCliente(cliente);
+
+            // Prellenar formulario de movimiento si viene desde historico
+            if (movimiento) {
+              this.precargarMovimiento(movimiento);
             }
           }
-          this.seleccionarCliente(cliente);
-
-          // Prellenar formulario de movimiento si viene desde historico
-          if (movimiento) {
-            this.precargarMovimiento(movimiento);
-          }
-        }
-      },
-    });
+        },
+      });
   }
 
   /**
@@ -320,18 +337,21 @@ export class MovimientosManager implements OnInit {
   // ===== CLIENTES =====
   loadClientes() {
     this.cargando.set(true);
-    this.service.getClientes(this.page(), this.limit(), this.q(), 4).pipe(
-      takeUntilDestroyed(this.destroyRef),
-      timeout(10000),
-      catchError(() => of({ data: [], total: 0 }))
-    ).subscribe({
-      next: (res) => {
-        this.data.set(res.data);
-        this.totalClientes.set(res.total);
-        this.cargando.set(false);
-      },
-      error: () => this.cargando.set(false),
-    });
+    this.service
+      .getClientes(this.page(), this.limit(), this.q(), 4)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        timeout(10000),
+        catchError(() => of({ data: [], total: 0 })),
+      )
+      .subscribe({
+        next: (res) => {
+          this.data.set(res.data);
+          this.totalClientes.set(res.total);
+          this.cargando.set(false);
+        },
+        error: () => this.cargando.set(false),
+      });
   }
 
   onPageChange(event: any) {
@@ -378,63 +398,85 @@ export class MovimientosManager implements OnInit {
   // ===== DOCUMENTOS FISCALES =====
   loadDocumentos() {
     const user = this.auth.currentUser();
-    this.catalogService.getAll<any>('/parametros/tcotipodocumentofiscal').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        const filtered = (res || []).filter((r: any) => {
-          const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
-          const mismaEmpresa = user?.empresaId ? Number(r.empresaId) === Number(user.empresaId) : true;
-          // Solo tipos de documento sobre los que se puede aplicar ND/NC
-          const aplicaNdNc = this.DOCS_APLICABLES_ND_NC.includes(String(r.abreviatura || '').toUpperCase());
-          return activo && mismaEmpresa && aplicaNdNc;
-        });
-        const opts = filtered.map((r: any) => ({
-          label: r.descripcion || r.nombre || r.descripcioncorta || String(r.tipodocumentofiscalId || r.documentoId || r.id),
-          value: r.tipodocumentofiscalId ?? r.documentoId ?? r.id,
-        }));
-        this.documentosOptions.set(opts);
-      },
-      error: () => this.documentosOptions.set([]),
-    });
+    this.catalogService
+      .getAll<any>('/parametros/tcotipodocumentofiscal')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const filtered = (res || []).filter((r: any) => {
+            const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
+            const mismaEmpresa = user?.empresaId
+              ? Number(r.empresaId) === Number(user.empresaId)
+              : true;
+            // Solo tipos de documento sobre los que se puede aplicar ND/NC
+            const aplicaNdNc = this.DOCS_APLICABLES_ND_NC.includes(
+              String(r.abreviatura || '').toUpperCase(),
+            );
+            return activo && mismaEmpresa && aplicaNdNc;
+          });
+          const opts = filtered.map((r: any) => ({
+            label:
+              r.descripcion ||
+              r.nombre ||
+              r.descripcioncorta ||
+              String(r.tipodocumentofiscalId || r.documentoId || r.id),
+            value: r.tipodocumentofiscalId ?? r.documentoId ?? r.id,
+          }));
+          this.documentosOptions.set(opts);
+        },
+        error: () => this.documentosOptions.set([]),
+      });
   }
 
   // ===== CARTERAS CONTABLES =====
   loadCarteras() {
     const user = this.auth.currentUser();
-    this.catalogService.getAll<any>('/contabilidad/carteras').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        const filtered = (res || []).filter((r: any) => {
-          const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
-          const mismaEmpresa = user?.empresaId ? Number(r.empresaId) === Number(user.empresaId) : true;
-          // CxC = módulo 4: solo carteras contables de Cuentas por Cobrar
-          const mismoModulo = Number(r.moduloId) === 4;
-          return activo && mismaEmpresa && mismoModulo;
-        });
-        const opts = filtered.map((r: any) => ({
-          label: r.descripcion || String(r.tcocarteraId || r.id),
-          value: r.tcocarteraId ?? r.id,
-        }));
-        this.carterasOptions.set(opts);
-      },
-      error: () => this.carterasOptions.set([]),
-    });
+    this.catalogService
+      .getAll<any>('/contabilidad/carteras')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const filtered = (res || []).filter((r: any) => {
+            const activo = r.sn_activo === 'S' || r.activo === true || r.sn_activo === true;
+            const mismaEmpresa = user?.empresaId
+              ? Number(r.empresaId) === Number(user.empresaId)
+              : true;
+            // CxC = módulo 4: solo carteras contables de Cuentas por Cobrar
+            const mismoModulo = Number(r.moduloId) === 4;
+            return activo && mismaEmpresa && mismoModulo;
+          });
+          const opts = filtered.map((r: any) => ({
+            label: r.descripcion || String(r.tcocarteraId || r.id),
+            value: r.tcocarteraId ?? r.id,
+          }));
+          this.carterasOptions.set(opts);
+        },
+        error: () => this.carterasOptions.set([]),
+      });
   }
 
   // ===== MOVIMIENTOS =====
   private loadMovimientos(clienteId: number) {
     this.movimientosLoading.set(true);
-    this.service.getMovimientosByCliente(clienteId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (res) => {
-        // Lista: solo movimientos VIGENTES (excluir anulados)
-        const vigentes = (res || []).filter((m) => m?.sn_doc_anulado !== 'S');
-        this.movimientosData.set(vigentes);
-        this.movimientosLoading.set(false);
-      },
-      error: () => this.movimientosLoading.set(false),
-    });
+    this.service
+      .getMovimientosByCliente(clienteId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          // Lista: solo movimientos VIGENTES (excluir anulados)
+          const vigentes = (res || []).filter((m) => m?.sn_doc_anulado !== 'S');
+          this.movimientosData.set(vigentes);
+          this.movimientosLoading.set(false);
+        },
+        error: () => this.movimientosLoading.set(false),
+      });
   }
 
   onMovimientoFechaChange(d: Date | null) {
-    this.movimientoModel.set({ ...this.movimientoModel(), fecharegistro: d ? d.toISOString() : null });
+    this.movimientoModel.set({
+      ...this.movimientoModel(),
+      fecharegistro: d ? d.toISOString() : null,
+    });
   }
 
   /**
@@ -456,7 +498,7 @@ export class MovimientosManager implements OnInit {
   }
 
   onRefSelect(nroReferencia: string) {
-    const refSel = this.debitoReferencias().find(r => r.nroreferencia === nroReferencia);
+    const refSel = this.debitoReferencias().find((r) => r.nroreferencia === nroReferencia);
     this.movimientoModel.set({
       ...this.movimientoModel(),
       nroreferencia: nroReferencia,
@@ -491,7 +533,11 @@ export class MovimientosManager implements OnInit {
   guardarMovimiento() {
     const cliente = this.selectedCliente();
     if (!cliente) {
-      this.msgs.add({ severity: 'warn', summary: 'Seleccione', detail: 'Seleccione un cliente antes de crear un movimiento' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Seleccione',
+        detail: 'Seleccione un cliente antes de crear un movimiento',
+      });
       return;
     }
 
@@ -508,10 +554,14 @@ export class MovimientosManager implements OnInit {
         const d = new Date(payload.fecharegistro);
         if (!isNaN(d.getTime())) payload.fecharegistro = d.toISOString();
       }
-    } catch (e) { }
+    } catch (e) {}
 
     if (!payload.concepto || !payload.clienteId) {
-      this.msgs.add({ severity: 'warn', summary: 'Datos incompletos', detail: 'Complete concepto y cliente' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Datos incompletos',
+        detail: 'Complete concepto y cliente',
+      });
       return;
     }
 
@@ -522,13 +572,18 @@ export class MovimientosManager implements OnInit {
       this.msgs.add({
         severity: 'warn',
         summary: 'Documento Fiscal requerido',
-        detail: 'Seleccione el tipo de documento fiscal de la referencia (Factura, Prestamo, Ticket, etc.)',
+        detail:
+          'Seleccione el tipo de documento fiscal de la referencia (Factura, Prestamo, Ticket, etc.)',
       });
       return;
     }
 
     if (typeof payload.importe !== 'number' || payload.importe <= 0) {
-      this.msgs.add({ severity: 'warn', summary: 'Importe invalido', detail: 'El importe debe ser mayor que 0' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Importe invalido',
+        detail: 'El importe debe ser mayor que 0',
+      });
       return;
     }
 
@@ -557,9 +612,13 @@ export class MovimientosManager implements OnInit {
     if (!esManual && payload.tipomov === 'C') {
       // AUTOMATICO + credito: la referencia sale del select de debitos
       // existentes y el importe no puede exceder su saldo pendiente
-      const refSel = this.debitoReferencias().find(r => r.nroreferencia === ref);
+      const refSel = this.debitoReferencias().find((r) => r.nroreferencia === ref);
       if (!refSel) {
-        this.msgs.add({ severity: 'warn', summary: 'Referencia invalida', detail: `La referencia "${ref}" no corresponde a ningun debito existente` });
+        this.msgs.add({
+          severity: 'warn',
+          summary: 'Referencia invalida',
+          detail: `La referencia "${ref}" no corresponde a ningun debito existente`,
+        });
         return;
       }
       if (payload.importe > refSel.saldo) {
@@ -596,27 +655,39 @@ export class MovimientosManager implements OnInit {
     }
 
     this.movimientoSaving.set(true);
-    this.service.createMovimiento(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.movimientoSaving.set(false);
-        this.cancelarMovimiento();
-        // Recargar desde servidor: trae nromovimiento, banderas y saldos reales
-        this.loadMovimientos(cliente.clienteId);
-        this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Movimiento registrado correctamente' });
-      },
-      error: (err) => {
-        console.error('[MovimientosManager] Error guardando movimiento', err);
-        let detail = 'No se pudo guardar el movimiento';
-        if (err?.error?.message) detail = err.error.message;
-        else if (err?.message) detail = err?.error?.message ?? err.message;
-        this.movimientoSaving.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail });
-      },
-    });
+    this.service
+      .createMovimiento(payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.movimientoSaving.set(false);
+          this.cancelarMovimiento();
+          // Recargar desde servidor: trae nromovimiento, banderas y saldos reales
+          this.loadMovimientos(cliente.clienteId);
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Guardado',
+            detail: 'Movimiento registrado correctamente',
+          });
+        },
+        error: (err) => {
+          console.error('[MovimientosManager] Error guardando movimiento', err);
+          let detail = 'No se pudo guardar el movimiento';
+          if (err?.error?.message) detail = err.error.message;
+          else if (err?.message) detail = err?.error?.message ?? err.message;
+          this.movimientoSaving.set(false);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail });
+        },
+      });
   }
 
   getTipoMovLabel(tipo: string): string {
-    const tipos: Record<string, string> = { 'C': 'Credito', 'A': 'Abono', 'D': 'Debito', 'I': 'Interés/Mora' };
+    const tipos: Record<string, string> = {
+      C: 'Credito',
+      A: 'Abono',
+      D: 'Debito',
+      I: 'Interés/Mora',
+    };
     return tipos[tipo] || tipo;
   }
 
@@ -651,14 +722,14 @@ export class MovimientosManager implements OnInit {
   /** Total de débitos (cargos) vigentes del cliente. */
   totalDebitos(): number {
     return this.movimientosData()
-      .filter(m => m.tipomov === 'D' && m.sn_doc_anulado !== 'S')
+      .filter((m) => m.tipomov === 'D' && m.sn_doc_anulado !== 'S')
       .reduce((s, m) => s + (Number(m.importe) || 0), 0);
   }
 
   /** Total de créditos (abonos) vigentes del cliente. */
   totalCreditos(): number {
     return this.movimientosData()
-      .filter(m => (m.tipomov === 'C' || m.tipomov === 'I') && m.sn_doc_anulado !== 'S')
+      .filter((m) => (m.tipomov === 'C' || m.tipomov === 'I') && m.sn_doc_anulado !== 'S')
       .reduce((s, m) => s + (Number(m.importe) || 0), 0);
   }
 
@@ -679,8 +750,10 @@ export class MovimientosManager implements OnInit {
    */
   bloqueoAnulacion(m: CxcMovimiento): string | null {
     if (m.sn_doc_anulado === 'S') return 'Movimiento ya anulado';
-    if (m.sn_doc_manual !== 'S') return 'Movimiento automatico: se anula desde su documento origen (factura, caja o prestamo)';
-    if (m.partidaId != null) return 'Movimiento con partida contable: requiere reversa de la partida';
+    if (m.sn_doc_manual !== 'S')
+      return 'Movimiento automatico: se anula desde su documento origen (factura, caja o prestamo)';
+    if (m.partidaId != null)
+      return 'Movimiento con partida contable: requiere reversa de la partida';
     return null;
   }
 
@@ -705,18 +778,25 @@ export class MovimientosManager implements OnInit {
 
   private ejecutarAnulacion(m: CxcMovimiento) {
     this.movimientosLoading.set(true);
-    this.service.anularMovimiento(m.clienteMovId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.loadMovimientos(m.clienteId);
-        this.msgs.add({ severity: 'success', summary: 'Movimiento anulado', detail: `Movimiento #${m.nromovimiento} anulado correctamente` });
-      },
-      error: (err) => {
-        this.movimientosLoading.set(false);
-        let detail = 'No se pudo anular el movimiento';
-        if (err?.error?.message) detail = err.error.message;
-        else if (err?.message) detail = err.message;
-        this.msgs.add({ severity: 'error', summary: 'Error', detail });
-      },
-    });
+    this.service
+      .anularMovimiento(m.clienteMovId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.loadMovimientos(m.clienteId);
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Movimiento anulado',
+            detail: `Movimiento #${m.nromovimiento} anulado correctamente`,
+          });
+        },
+        error: (err) => {
+          this.movimientosLoading.set(false);
+          let detail = 'No se pudo anular el movimiento';
+          if (err?.error?.message) detail = err.error.message;
+          else if (err?.message) detail = err.message;
+          this.msgs.add({ severity: 'error', summary: 'Error', detail });
+        },
+      });
   }
 }

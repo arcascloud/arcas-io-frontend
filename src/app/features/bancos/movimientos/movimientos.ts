@@ -77,7 +77,8 @@ export class MovimientosBancos implements OnInit {
       tipomov: ['DEPOSITO', Validators.required],
       dc_debitocredito: ['D', Validators.required],
       nroreferencia: [''],
-      importe: [0, [Validators.required, Validators.min(0.01)]],
+      // Inicia vacío (undefined) para que el campo no muestre 0
+      importe: [undefined as number | undefined, [Validators.required, Validators.min(0.01)]],
       concepto: [''],
       factordecambio: [1],
     });
@@ -192,7 +193,7 @@ export class MovimientosBancos implements OnInit {
       tipomov: 'DEPOSITO',
       dc_debitocredito: 'D',
       nroreferencia: '',
-      importe: 0,
+      importe: undefined,
       concepto: '',
       factordecambio: 1,
     });

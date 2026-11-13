@@ -117,6 +117,10 @@
                         <label for="msjdevfactura">Mensaje Devolución</label>
                         <textarea pTextarea id="msjdevfactura" formControlName="msjdevfactura" [rows]="3" pSize="small" placeholder="Mensaje de política de devolución"></textarea>
                       </div>
+                      <div class="p-field">
+                        <label for="msjcotizacion">Mensaje Cotización</label>
+                        <textarea pTextarea id="msjcotizacion" formControlName="msjcotizacion" [rows]="3" pSize="small" placeholder="Mensaje al pie de la cotización"></textarea>
+                      </div>
                     </div>
                   </div>
                   <div class="form-actions">
@@ -501,6 +505,10 @@
           <div class="item-ficha-row">
             <span class="ficha-label">Mensaje factura:</span>
             <span class="ficha-value">{{ emp.msjfactura || '—' }}</span>
+          </div>
+          <div class="item-ficha-row">
+            <span class="ficha-label">Mensaje cotización:</span>
+            <span class="ficha-value">{{ emp.msjcotizacion || '—' }}</span>
           </div>
           <div class="item-ficha-row">
             <span class="ficha-label">Creada:</span>

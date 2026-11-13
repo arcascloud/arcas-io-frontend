@@ -59,6 +59,7 @@ export interface CompraPendientePago {
   codproveedor: string;
   proveedorNombre: string;
   _selected?: boolean;
+  /** Monto a pagar (HNL). Inicia vacío (undefined) para que el campo no muestre 0. */
   _montoPago?: number;
 }
 

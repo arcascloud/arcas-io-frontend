@@ -57,6 +57,7 @@ export class EmpresasManager implements OnInit {
     descripcion: ['', Validators.required],
     msjfactura: ['LA FACTURA ES BENEFICIO DE TODOS'],
     msjdevfactura: ['NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS'],
+    msjcotizacion: ['NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS'],
     sn_activo: ['S'],
   });
 
@@ -175,6 +176,7 @@ export class EmpresasManager implements OnInit {
       descripcion: emp.descripcion,
       msjfactura: emp.msjfactura,
       msjdevfactura: emp.msjdevfactura,
+      msjcotizacion: emp.msjcotizacion,
       sn_activo: emp.sn_activo,
     });
     this.loadDet(emp.empresaId);
@@ -201,6 +203,7 @@ export class EmpresasManager implements OnInit {
       descripcion: '',
       msjfactura: 'LA FACTURA ES BENEFICIO DE TODOS',
       msjdevfactura: 'NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS',
+      msjcotizacion: 'NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS',
       sn_activo: 'S',
     });
     this.empresaDet.set([]);
