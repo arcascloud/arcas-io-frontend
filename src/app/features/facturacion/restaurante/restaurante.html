@@ -113,28 +113,95 @@
 >
   <ng-template #headless>
     <div class="rest-drawer-body">
-      <!-- Columna 2 · Mesas primero, Pedidos después -->
-      <section class="col-mesas" aria-label="Mesas y pedidos">
+      <!-- Columna 2 · Mesas + Kioskos primero, Pedidos después -->
+      <section class="col-mesas" aria-label="Puestos (mesas y kioskos) y pedidos">
         <header class="col-cabecera">
-          <h2 class="col-titulo">Mesas</h2>
+          <h2 class="col-titulo">Puestos</h2>
           @if (estrecha()) {
             <p-button icon="pi pi-times" [rounded]="true" [text]="true" severity="secondary" aria-label="Cerrar panel" (onClick)="drawerVisible.set(false)" />
           }
         </header>
 
-        <div class="mesas-grid">
-          @for (m of mesas(); track m.nro) {
-            <p-button
-              [label]="'' + m.nro"
-              [rounded]="true"
-              [styleClass]="claseMesa(m)"
-              [pTooltip]="tituloMesa(m)"
-              tooltipPosition="top"
-              [attr.aria-label]="tituloMesa(m)"
-              (onClick)="clickMesa(m)"
+        <!-- Caja de trabajo: elegir caja + reasignar la orden activa -->
+        <div class="caja-fila">
+          <div class="caja-campo">
+            <label for="caja-trabajo">Caja</label>
+            <p-select
+              inputId="caja-trabajo"
+              [options]="opcionesCaja"
+              [ngModel]="cajaId()"
+              (ngModelChange)="cajaId.set($event)"
+              placeholder="Caja"
+              styleClass="w-full"
+              [size]="'small'"
+              [disabled]="ocupado()"
             />
-          }
+          </div>
+          <p-button
+            label="Reasignar caja"
+            icon="pi pi-refresh"
+            severity="primary"
+            [size]="'small'"
+            [rounded]="true"
+            [disabled]="ocupado() || ordenActiva() == null || ordenEnCajaActual()"
+            [pTooltip]="
+              ordenActiva() == null
+                ? 'Abra una orden para reasignar su caja'
+                : ordenEnCajaActual()
+                  ? 'La orden ya está en ' + nombreCaja(cajaId())
+                  : 'Mover la orden activa a ' + nombreCaja(cajaId())
+            "
+            (onClick)="reasignarCaja()"
+          />
         </div>
+
+        <!-- Puestos en tabs: Mesas | Kioskos -->
+        <p-tabs [value]="puestoTab()" (valueChange)="puestoTab.set($event)" styleClass="puestos-tabs">
+          <p-tablist>
+            <p-tab value="mesas">
+              <i class="pi pi-table"></i>
+              <span>Mesas</span>
+            </p-tab>
+            <p-tab value="kioskos">
+              <i class="pi pi-desktop"></i>
+              <span>Kioskos</span>
+            </p-tab>
+          </p-tablist>
+
+          <p-tabpanels>
+            <p-tabpanel value="mesas">
+              <div class="mesas-grid">
+                @for (m of mesas(); track m.nro) {
+                  <p-button
+                    [label]="'' + m.nro"
+                    [rounded]="true"
+                    [styleClass]="claseMesa(m)"
+                    [pTooltip]="tituloMesa(m)"
+                    tooltipPosition="top"
+                    [attr.aria-label]="tituloMesa(m)"
+                    (onClick)="clickMesa(m)"
+                  />
+                }
+              </div>
+            </p-tabpanel>
+
+            <p-tabpanel value="kioskos">
+              <div class="mesas-grid">
+                @for (k of kioskos(); track k.nro) {
+                  <p-button
+                    [label]="numeroPuesto(k.nro)"
+                    [rounded]="true"
+                    [styleClass]="claseMesa(k)"
+                    [pTooltip]="tituloMesa(k)"
+                    tooltipPosition="top"
+                    [attr.aria-label]="tituloMesa(k)"
+                    (onClick)="clickMesa(k)"
+                  />
+                }
+              </div>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
         <p class="mesas-leyenda">
           <span class="punto libre"></span> Libre
           <span class="punto seleccionada"></span> Seleccionada
@@ -170,7 +237,7 @@
             [size]="'small'"
             [rounded]="true"
             [disabled]="ocupado() || mesaSeleccionada() == null"
-            pTooltip="Elija una mesa libre primero"
+            pTooltip="Elija una mesa o kiosko libre primero"
             tooltipPosition="left"
             (onClick)="nuevaOrden()"
           />
@@ -178,7 +245,7 @@
 
         @if (mesaSeleccionada() != null) {
           <p class="aviso-mesa" role="status">
-            Mesa {{ mesaSeleccionada() }} seleccionada — pulse "Nueva orden".
+            {{ etiquetaPuestoDe(mesaSeleccionada()) }} seleccionada — pulse "Nueva orden".
           </p>
         }
 
@@ -204,11 +271,27 @@
       <section class="col-orden" aria-label="Orden actual">
         @if (ordenActiva(); as o) {
           <header class="col-cabecera">
-            <h2 class="col-titulo">Orden #{{ o.pospedmaeId }}</h2>
+            <h2 class="col-titulo">
+              Orden #{{ o.pospedmaeId }}
+              <span class="orden-chip-estado" [class.cobrada]="o.sn_facturado === 'S'">{{ estadoGeneral(o) }}</span>
+            </h2>
             <span class="orden-mesa" [class.sin-mesa]="(o.nromesa ?? 0) < 1">
               {{ etiquetaMesa(o) }}
             </span>
           </header>
+
+          <p-button
+            [label]="'Enviar a cocina (' + lineasPorEnviar().length + ')'"
+            icon="pi pi-send"
+            severity="warn"
+            [size]="'small'"
+            [rounded]="true"
+            styleClass="w-full"
+            [disabled]="ocupado() || lineasPorEnviar().length === 0"
+            pTooltip="Envía los productos nuevos al tablero de cocina con una ronda nueva"
+            tooltipPosition="bottom"
+            (onClick)="enviarACocina()"
+          />
 
           <div class="orden-items">
             @for (item of items(); track item.pospeddetId) {
@@ -248,8 +331,21 @@
                     offLabel="Pendiente en cocina"
                     size="small"
                     [fluid]="true"
-                    [disabled]="ocupado()"
+                    [disabled]="ocupado() || item.estado_cocina !== 'LISTO'"
+                    [pTooltip]="
+                      item.estado_cocina === 'LISTO'
+                        ? 'Entregar producto a la mesa'
+                        : 'La cocina habilita la entrega al dejarlo en LISTO'
+                    "
+                    tooltipPosition="bottom"
                   />
+                  <span
+                    class="item-leyenda"
+                    [class.lista]="item.estado_cocina === 'LISTO' && item.sn_entregado !== 'S'"
+                    [class.ok]="item.sn_entregado === 'S'"
+                  >
+                    {{ item.leyenda || 'En preparación' }}
+                  </span>
                 </div>
               </div>
             } @empty {
@@ -298,11 +394,11 @@
   [(visible)]="dialogPago"
   [modal]="true"
   [closable]="!ocupado()"
-  [style]="{ width: '80vw', height: '85vh' }"
+  [style]="{ width: '58vw', height: '85vh' }"
   [contentStyle]="{ overflow: 'auto' }"
   [draggable]="false"
   [resizable]="false"
-  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [breakpoints]="{ '960px': '75vw', '640px': '95vw' }"
 >
   <div class="pago-dialog-body">
       @if (ordenActiva(); as o) {
@@ -324,27 +420,26 @@
       />
     </div>
 
-    <p-table
-      [value]="pagos()"
-      size="small"
-      [scrollable]="true"
-      scrollHeight="flex"
-      [tableStyle]="{ 'min-width': '100%' }"
-      styleClass="pago-tabla"
-    >
-      <ng-template #header>
-        <tr>
-          <th class="th-label width-fp">Forma de Pago</th>
-          <th class="th-label width-tarjeta">Tarjeta</th>
-          <th class="th-label width-nrotarjeta">Nro. Tarjeta</th>
-          <th class="th-label width-autoriza">Autorización</th>
-          <th class="th-label width-importe">Importe</th>
-          <th class="th-label width-quitar"></th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-pago let-idx="rowIndex">
-        <tr>
-          <td>
+    <div class="pagos-cards-container">
+      @for (pago of pagos(); track $index; let idx = $index) {
+      <div class="pago-card-item">
+        <div class="pago-card-header">
+          <span class="pago-card-title">Pago #{{ idx + 1 }}</span>
+          <p-button
+            icon="pi pi-times"
+            [rounded]="true"
+            severity="danger"
+            variant="text"
+            size="small"
+            pTooltip="Quitar pago"
+            (onClick)="quitarPago(idx)"
+          />
+        </div>
+
+        <div class="pago-card-grid">
+          <!-- 1. Forma de pago -->
+          <div class="pago-field">
+            <label class="block text-sm font-semibold mb-1">Forma de Pago</label>
             <p-select
               size="small"
               [options]="formasPago()"
@@ -357,48 +452,56 @@
               [appendTo]="'body'"
               (onChange)="onFormaPagoChange(pago)"
             />
-          </td>
-          <td>
-            @if (esTarjeta(pago)) {
+          </div>
+
+          <!-- 2. Si es tarjeta: tipo y número -->
+          @if (esTarjeta(pago)) {
+          <div class="pago-field pago-field--half">
+            <label class="block text-sm font-semibold mb-1">Tipo de Tarjeta</label>
             <p-select
               size="small"
               [options]="tarjetasCredito()"
               optionLabel="label"
               optionValue="value"
-              placeholder="Seleccionar..."
+              placeholder="Seleccionar tarjeta…"
               styleClass="w-full"
               showClear
               [(ngModel)]="pago.tarjetacreditoId"
               [ngModelOptions]="{ standalone: true }"
               [appendTo]="'body'"
             />
-            }
-          </td>
-          <td>
-            @if (esTarjeta(pago)) {
+          </div>
+          <div class="pago-field pago-field--half">
+            <label class="block text-sm font-semibold mb-1">Nro. de Tarjeta</label>
             <input
               pInputText
               [pSize]="'small'"
               [(ngModel)]="pago.nrotarjeta"
               [ngModelOptions]="{ standalone: true }"
-              placeholder="Nro. tarjeta"
+              placeholder="Ej: 4111222233334444"
               class="w-full"
             />
-            }
-          </td>
-          <td>
-            @if (esTarjeta(pago) || esTransferencia(pago)) {
+          </div>
+          }
+
+          <!-- 3. Si es tarjeta o transferencia: autorización -->
+          @if (esTarjeta(pago) || esTransferencia(pago)) {
+          <div class="pago-field">
+            <label class="block text-sm font-semibold mb-1">Nro. de Autorización</label>
             <input
               pInputText
               [pSize]="'small'"
               [(ngModel)]="pago.nroautorizacion"
               [ngModelOptions]="{ standalone: true }"
-              placeholder="Autorización"
+              placeholder="Número de autorización"
               class="w-full"
             />
-            }
-          </td>
-          <td>
+          </div>
+          }
+
+          <!-- 4. Importe -->
+          <div class="pago-field">
+            <label class="block text-sm font-semibold mb-1">Importe (HNL)</label>
             <p-inputnumber
               [size]="'small'"
               [(ngModel)]="pago.importe"
@@ -413,26 +516,44 @@
               [inputStyle]="{ 'width': '100%' }"
               styleClass="w-full"
             />
-          </td>
-          <td class="text-center">
-            <p-button
-              icon="pi pi-times"
-              [rounded]="true"
-              severity="danger"
-              [size]="'small'"
-              (onClick)="quitarPago(idx)"
-            />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="6" class="text-center p-3">
-            Sin formas de pago. Presione "Agregar pago" para comenzar.
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
+          </div>
+        </div>
+      </div>
+      } @empty {
+      <div class="rest-vacio p-4">
+        <i class="pi pi-wallet"></i>
+        <p>Sin formas de pago. Presione "Agregar pago" para comenzar.</p>
+      </div>
+      }
+    </div>
+
+    <div class="pp-pago-resumen">
+      <div class="pp-resumen-line">
+        <span class="pp-label">Total Orden</span>
+        <span class="pp-value monto">{{ moneda(totalOrden()) }}</span>
+      </div>
+      <div class="pp-resumen-line">
+        <span class="pp-label">Total Pagos</span>
+        <span
+          class="pp-value monto"
+          [class.pp-ok]="totalPagos() >= totalOrden()"
+          [class.pp-warn]="totalPagos() < totalOrden() && totalPagos() > 0"
+        >
+          {{ moneda(totalPagos()) }}
+        </span>
+      </div>
+      @if (pendiente() > 0) {
+      <div class="pp-resumen-line pp-resumen-line--pendiente">
+        <span class="pp-label">Pendiente</span>
+        <span class="pp-value monto pp-warn">{{ moneda(pendiente()) }}</span>
+      </div>
+      } @if (cambioTotal() > 0) {
+      <div class="pp-resumen-line pp-resumen-line--cambio">
+        <span class="pp-label">Cambio</span>
+        <span class="pp-value monto pp-ok">{{ moneda(cambioTotal()) }}</span>
+      </div>
+      }
+    </div>
   </div>
 
   <ng-template pTemplate="footer">

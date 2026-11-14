@@ -196,6 +196,7 @@
     color: var(--c-bg-white);
     font-family: 'hurricane', cursive;
     font-size: clamp(1.5rem, 3.6vw, 3rem); // hasta 48px; se reduce en pantallas angostas para no cortarse
+    font-weight: 400; //
     letter-spacing: 0.10em;
   }
 }

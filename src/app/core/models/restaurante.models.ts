@@ -1,5 +1,9 @@
 /** Cantidad de mesas del salón (luego se puede mover a un parámetro de empresa). */
-export const NUM_MESAS = 15;
+export const NUM_MESAS = 20;
+
+// Tipo-only (se erase en build): mesero.models importa OrdenItem desde aquí,
+// evitamos un ciclo en runtime.
+import type { EstadoCocina } from './mesero.models';
 
 /** Nombre provisional de una orden que todavía no tiene mesa. */
 export const NOMBRE_ORDEN_PENDIENTE = 'Orden de restaurante';
@@ -18,6 +22,19 @@ export interface OrdenRestaurante {
   subTotal: number;
   impuesto: number;
   total: number;
+  /**
+   * Mesero que tomó la orden: ttipogestores.gestorId (columna ya existente en
+   * pospedmae). La pantalla de escritorio no lo lee; lo usa restaurante-mesero
+   * para mostrar quién atiende la mesa.
+   */
+  gestorId?: number | null;
+  /** Caja que cobra la orden (pospedmae.cajaId, ya existente). */
+  cajaId?: number | null;
+  /**
+   * Columna nueva (fase 0 del plan de restaurante): estado del pedido.
+   * Sin el DDL llega NULL y el consumidor usa sn_entregado como respaldo.
+   */
+  estado?: string | null;
 }
 
 /** Línea de la orden (pospeddet). */
@@ -34,6 +51,18 @@ export interface OrdenItem {
   nrofila: number;
   /** 'S' = entregado a la mesa; 'N' = pendiente (en cocina) */
   sn_entregado: 'S' | 'N';
+  /**
+   * Estado en cocina (pospeddet.estado_cocina). Llega en
+   * GET /facturacion/pedidos-det/pedido/:id — SIN esto el mesero no puede
+   * evaluar la leyenda ni habilitar el toggle.
+   */
+  estado_cocina?: EstadoCocina;
+  /** Ronda de cocina a la que pertenece la línea (orden oficial del mesero: ronda_uuid ASC). */
+  ronda_uuid?: string | null;
+  /** Leyenda oficial del backend (mismo CASE): 'Entregado' | 'Entregar a mesa' | 'En preparación'. */
+  leyenda?: string | null;
+  /** Descripción resuelta desde productos (JOIN por codbarra), cuando la trae el backend. */
+  descripcion?: string | null;
 }
 
 export interface MesaVista {

@@ -1,0 +1,390 @@
+<p-toast position="top-center" [breakpoints]="{ '767px': { width: '100%', left: '0', right: '0' } }" />
+
+<div class="ms-raiz">
+  @if (vista() === 'puestos') {
+    <!-- ═════════ 1 · Puestos: elegir mesa o kiosko ═════════ -->
+    <section class="ms-vista" aria-label="Mesas y kioskos">
+      <header class="ms-cab">
+        <button type="button" class="ms-icono" aria-label="Salir de toma de pedidos" (click)="salir()">
+          <i class="pi pi-arrow-left"></i>
+        </button>
+        <h1 class="ms-titulo">Salón</h1>
+        @if (listasTotal() > 0) {
+          <button type="button" class="ms-alerta" (click)="irAListas()">
+            <i class="pi pi-bell"></i>
+            {{ listasTotal() }} {{ listasTotal() === 1 ? 'pedido listo' : 'pedidos listos' }}
+          </button>
+        }
+      </header>
+
+      @if (sinConexion()) {
+        <p class="ms-aviso" role="status">Sin conexión. Reintentando…</p>
+      }
+
+      <div class="ms-segmento" role="tablist" aria-label="Tipo de puesto">
+        <button type="button" role="tab" [attr.aria-selected]="tipoVista() === 'M'" [class.activo]="tipoVista() === 'M'" (click)="tipoVista.set('M')">Mesas</button>
+        <button type="button" role="tab" [attr.aria-selected]="tipoVista() === 'K'" [class.activo]="tipoVista() === 'K'" (click)="tipoVista.set('K')">Kioskos</button>
+      </div>
+
+      <div class="ms-filtros" role="group" aria-label="Filtrar">
+        <button type="button" [class.activo]="filtro() === 'todos'" (click)="filtro.set('todos')">Todas <span>{{ conteos().todos }}</span></button>
+        <button type="button" [class.activo]="filtro() === 'libres'" (click)="filtro.set('libres')">Libres <span>{{ conteos().libres }}</span></button>
+        <button type="button" [class.activo]="filtro() === 'ocupadas'" (click)="filtro.set('ocupadas')">Ocupadas <span>{{ conteos().ocupadas }}</span></button>
+        <button type="button" [class.activo]="filtro() === 'listas'" (click)="filtro.set('listas')">Por servir <span>{{ conteos().listas }}</span></button>
+      </div>
+
+      @if (cargandoOrdenes()) {
+        <div class="ms-estado"><i class="pi pi-spin pi-spinner"></i><p>Cargando salón…</p></div>
+      } @else {
+        <div class="ms-puestos">
+          @for (pv of puestosVisibles(); track pv.puesto.nromesa) {
+            <button
+              type="button"
+              class="puesto"
+              [class]="'est-' + pv.estado"
+              [attr.aria-label]="ariaPuesto(pv)"
+              (click)="abrirPuesto(pv)"
+            >
+              <span class="puesto-num">{{ pv.puesto.numero }}</span>
+              <span class="puesto-est">{{ textoEstado(pv) }}</span>
+            </button>
+          } @empty {
+            <div class="ms-estado ms-vacio">
+              <i class="pi pi-inbox"></i>
+              <p>Ningún puesto con este filtro.</p>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  } @else {
+    <!-- ═════════ 2 · Menú: elegir productos ═════════ -->
+    <section class="ms-vista" aria-label="Productos">
+      <header class="ms-barra">
+        <button type="button" class="ms-icono" aria-label="Volver a mesas y kioskos" (click)="volverAPuestos()">
+          <i class="pi pi-arrow-left"></i>
+        </button>
+        <div class="ms-barra-txt">
+          <h1>{{ puestoActivo()?.etiqueta }}</h1>
+          @if (ordenActiva(); as o) {
+            <span>Orden #{{ o.pospedmaeId }} · {{ o.nombrecliente || 'Sin nombre' }} · hace {{ minutos(o) }} min</span>
+          } @else {
+            <span>Pedido nuevo</span>
+          }
+        </div>
+        <button type="button" class="ms-icono" [class.activo]="buscando()" aria-label="Buscar producto" (click)="alternarBusqueda()">
+          <i class="pi pi-search"></i>
+        </button>
+      </header>
+
+      @if (buscando()) {
+        <div class="ms-busqueda">
+          <input type="search" placeholder="Nombre o código del producto" autocomplete="off" [value]="busqueda()" (input)="alBuscar($event)" />
+        </div>
+      }
+
+      <nav class="ms-cats" aria-label="Categorías">
+        <button type="button" [class.activo]="categoriaActiva() === null" (click)="categoriaActiva.set(null)">Todo</button>
+        @for (c of categorias(); track c) {
+          <button type="button" [class.activo]="categoriaActiva() === c" (click)="categoriaActiva.set(c)">{{ c }}</button>
+        }
+      </nav>
+
+      @if (cargandoProductos()) {
+        <div class="ms-estado"><i class="pi pi-spin pi-spinner"></i><p>Cargando productos…</p></div>
+      } @else {
+        <ul class="ms-prods">
+          @for (p of productosFiltrados(); track p.produtoId) {
+            @let cant = cantidadEnBorrador().get(p.produtoId) ?? 0;
+            @let agotado = p.existencia <= 0;
+            <li class="prod" [class.en-pedido]="cant > 0" [class.agotado]="agotado">
+              <button type="button" class="prod-main" [disabled]="agotado" [attr.aria-label]="'Agregar ' + p.descripcion" (click)="sumar(p)">
+                <span class="prod-foto">
+                  @if (p.imagen) {
+                    <img [src]="resolverImagen(p.imagen)" [alt]="''" loading="lazy" decoding="async" />
+                  } @else {
+                    <i class="pi pi-image"></i>
+                  }
+                </span>
+                <span class="prod-txt">
+                  <span class="prod-nombre">{{ p.descripcion }}</span>
+                  <span class="prod-precio">{{ agotado ? 'Agotado' : formatearPrecio(p.precioventa) }}</span>
+                </span>
+              </button>
+              @if (!agotado) {
+                @if (cant === 0) {
+                  <button type="button" class="qty-mas" [attr.aria-label]="'Agregar ' + p.descripcion" (click)="sumar(p)">
+                    <i class="pi pi-plus"></i>
+                  </button>
+                } @else {
+                  <div class="qty" role="group" [attr.aria-label]="'Cantidad de ' + p.descripcion">
+                    <button type="button" aria-label="Quitar uno" (click)="restar(p.produtoId)"><i class="pi pi-minus"></i></button>
+                    <span aria-live="polite">{{ cant }}</span>
+                    <button type="button" aria-label="Agregar uno" (click)="sumar(p)"><i class="pi pi-plus"></i></button>
+                  </div>
+                }
+              }
+            </li>
+          } @empty {
+            <li class="ms-estado ms-vacio">
+              <i class="pi pi-inbox"></i>
+              <p>No hay productos en esta categoría.</p>
+            </li>
+          }
+        </ul>
+      }
+
+      <footer class="ms-pie">
+        <button type="button" class="ms-ver" [disabled]="totalLineas() === 0" (click)="sheetPedido.set(true)">
+          @if (totalLineas() === 0) {
+            <span class="ms-ver-vacio">Toque un producto para agregarlo</span>
+          } @else {
+            <span class="ms-ver-cant">{{ totalLineas() }}</span>
+            <span class="ms-ver-txt">Revisar y enviar</span>
+            <strong>{{ formatearPrecio(totalBorrador()) }}</strong>
+          }
+        </button>
+      </footer>
+    </section>
+  }
+</div>
+
+<!-- ═════════ Hoja: revisar el pedido y enviarlo a caja ═════════ -->
+<p-drawer
+  [(visible)]="sheetPedido"
+  position="right"
+  [modal]="true"
+  [dismissible]="!enviando()"
+  [showCloseIcon]="false"
+  [style]="{ width: 'min(25rem, 100%)' }"
+  styleClass="ms-hoja-raiz"
+>
+  <ng-template #headless>
+    <div class="ms-hoja">
+      <header class="ms-hoja-cab">
+        <div>
+          <h2>{{ puestoActivo()?.etiqueta }}</h2>
+          <span>{{ totalLineas() }} {{ totalLineas() === 1 ? 'producto' : 'productos' }} por enviar</span>
+        </div>
+        <button type="button" class="ms-icono" aria-label="Cerrar" [disabled]="enviando()" (click)="sheetPedido.set(false)">
+          <i class="pi pi-times"></i>
+        </button>
+      </header>
+
+      <ul class="ms-hoja-lista">
+        @for (l of borrador(); track l.productoId) {
+          <li class="linea">
+            <div class="linea-txt">
+              <span class="linea-nombre">{{ l.descripcion }}</span>
+              <span class="linea-precio">{{ formatearPrecio(l.precio * l.cantidad) }}</span>
+            </div>
+            <div class="qty" role="group" [attr.aria-label]="'Cantidad de ' + l.descripcion">
+              <button type="button" aria-label="Quitar uno" [disabled]="enviando()" (click)="restar(l.productoId)"><i class="pi pi-minus"></i></button>
+              <span>{{ l.cantidad }}</span>
+              <button type="button" aria-label="Agregar uno" [disabled]="enviando() || l.cantidad >= l.existencia" (click)="sumarLinea(l)"><i class="pi pi-plus"></i></button>
+            </div>
+            <button type="button" class="linea-quitar" [attr.aria-label]="'Quitar ' + l.descripcion" [disabled]="enviando()" (click)="quitar(l.productoId)">
+              <i class="pi pi-trash"></i>
+            </button>
+          </li>
+        }
+      </ul>
+
+      <div class="ms-hoja-pie">
+        @if (ordenActiva(); as o) {
+          <!-- Cuenta abierta: cliente y mesero ya guardados — se conservan tal cual -->
+          <div class="ms-cuenta">
+            <span><i class="pi pi-user"></i>{{ o.nombrecliente || 'Sin nombre' }}</span>
+            <span><i class="pi pi-id-card"></i>{{ meseroDe(o) || 'Sin mesero' }}</span>
+          </div>
+        } @else {
+          <!-- Cuenta nueva: la orden SIEMPRE nace con cliente y mesero -->
+          <div class="ms-campos">
+            <label class="ms-campo">
+              <span>Cliente</span>
+              <input
+                type="text"
+                maxlength="80"
+                autocomplete="name"
+                placeholder="Nombre de quien pide"
+                [value]="nombreCliente()"
+                (input)="alEscribirCliente($event)"
+                [disabled]="enviando()"
+              />
+            </label>
+            <label class="ms-campo">
+              <span>Mesero</span>
+              <p-select
+                [options]="gestores()"
+                [value]="gestorId()"
+                (valueChange)="gestorId.set($event)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar mesero..."
+                styleClass="w-full"
+                [appendTo]="'body'"
+                [filter]="true"
+                [disabled]="enviando()"
+              />
+            </label>
+          </div>
+        }
+
+        <div class="ms-cajas" role="radiogroup" aria-label="Caja de cobro">
+          @for (c of cajas; track c.id) {
+            <button type="button" role="radio" [attr.aria-checked]="cajaId() === c.id" [class.activo]="cajaId() === c.id" [disabled]="enviando()" (click)="elegirCaja(c.id)">
+              {{ c.nombre }}
+            </button>
+          }
+        </div>
+        <div class="ms-subtotal">
+          <span>Esta ronda</span>
+          <strong>{{ formatearPrecio(totalBorrador()) }}</strong>
+        </div>
+        <button type="button" class="ms-enviar" [disabled]="enviando() || totalLineas() === 0" (click)="enviar()">
+          @if (enviando()) {
+            <i class="pi pi-spin pi-spinner"></i> Enviando…
+          } @else {
+            <i class="pi pi-send"></i> Enviar a {{ cajaNombre() }}
+          }
+        </button>
+      </div>
+    </div>
+  </ng-template>
+</p-drawer>
+
+<!-- ═════════ Hoja: descartar pedido sin enviar ═════════ -->
+<p-drawer
+  [(visible)]="sheetDescartar"
+  position="right"
+  [modal]="true"
+  [showCloseIcon]="false"
+  [style]="{ width: 'min(25rem, 100%)' }"
+  styleClass="ms-hoja-raiz"
+>
+  <ng-template #headless>
+    <div class="ms-hoja">
+      <header class="ms-hoja-cab">
+        <div>
+          <h2>¿Salir sin enviar?</h2>
+          <span>El pedido de {{ puestoActivo()?.etiqueta }} aún no se envió y se perdería.</span>
+        </div>
+      </header>
+      <div class="ms-hoja-pie">
+        <button type="button" class="ms-enviar" (click)="sheetDescartar.set(false)">Seguir pidiendo</button>
+        <button type="button" class="ms-secundario ms-peligro" (click)="descartarYVolver()">Descartar pedido</button>
+      </div>
+    </div>
+  </ng-template>
+</p-drawer>
+
+<!-- ═════════ Hoja: detalle de un puesto con orden (columna "Orden" del escritorio) ═════════ -->
+<p-drawer
+  [(visible)]="sheetDetalle"
+  position="right"
+  [modal]="true"
+  [showCloseIcon]="false"
+  [style]="{ width: 'min(25rem, 100%)' }"
+  styleClass="ms-hoja-raiz"
+  (onHide)="detalleClave.set(null)"
+>
+  <ng-template #headless>
+    <div class="ms-hoja">
+      @if (detalle(); as d) {
+        <section class="col-orden" aria-label="Cuenta">
+          @if (d.orden; as o) {
+            <header class="col-cabecera">
+              <div class="col-cabecera-txt">
+                <h2 class="col-titulo">
+                  Orden #{{ o.pospedmaeId }}
+                  <span class="orden-chip-estado" [class.cobrada]="o.sn_facturado === 'S'">{{ estadoGeneral(o) }}</span>
+                </h2>
+                <span class="orden-subtitulo">{{ o.nombrecliente || 'Sin nombre' }} · Mesero: {{ meseroDe(o) || 'Sin mesero' }}</span>
+              </div>
+              <div class="col-cabecera-acc">
+                <span class="orden-mesa" [class.sin-mesa]="(o.nromesa ?? 0) < 1">{{ etiquetaMesa(o) }}</span>
+                <button type="button" class="ms-icono" aria-label="Cerrar" (click)="sheetDetalle.set(false)">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+            </header>
+
+            @if (cargandoDetalle()) {
+              <div class="ms-estado"><i class="pi pi-spin pi-spinner"></i><p>Cargando pedido…</p></div>
+            } @else {
+              <div class="orden-items">
+                @for (item of itemsDetalle(); track item.pospeddetId) {
+                  @let info = infoItem(item);
+                  <div class="orden-item" [class.entregado]="item.sn_entregado === 'S'">
+                    <div class="orden-item-img">
+                      @if (info.imagen) {
+                        <img [src]="info.imagen" [alt]="info.nombre" loading="lazy" />
+                      } @else {
+                        <i class="pi pi-image"></i>
+                      }
+                    </div>
+                    <div class="orden-item-datos">
+                      <span class="orden-item-nombre">{{ info.nombre }}</span>
+                      <span class="orden-item-precio">{{ formatearPrecio(item.precioventa) }}</span>
+                      <div class="orden-item-cant">
+                        <button type="button" class="qty-btn" aria-label="Quitar uno" [disabled]="ocupando()" (click)="restarItem(item)">
+                          <i class="pi pi-minus"></i>
+                        </button>
+                        <span class="qty-valor">{{ item.cantidad }}</span>
+                        <button type="button" class="qty-btn" aria-label="Agregar uno" [disabled]="ocupando()" (click)="sumarItem(item)">
+                          <i class="pi pi-plus"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="orden-item-lado">
+                      <span class="orden-item-total">{{ formatearPrecio(totalLinea(item)) }}</span>
+                      <button type="button" class="item-quitar" aria-label="Quitar de la orden" [disabled]="ocupando()" (click)="quitarDeOrden(item)">
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                    <div
+                      class="orden-item-estado"
+                      [class.listo]="item.sn_entregado !== 'S' && item.estado_cocina === 'LISTO'"
+                    >
+                      <p-togglebutton
+                        [ngModel]="item.sn_entregado === 'S'"
+                        (ngModelChange)="toggleEntregado(item, $event)"
+                        onLabel="Entregado"
+                        [offLabel]="etiquetaToggle(item)"
+                        size="small"
+                        [fluid]="true"
+                        [disabled]="ocupando() || !toggleHabilitado(item)"
+                      />
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="ms-estado ms-vacio">
+                    <i class="pi pi-shopping-cart"></i>
+                    <p>Pulse "Agregar producto" para cargar la cuenta.</p>
+                  </div>
+                }
+              </div>
+            }
+
+            <footer class="orden-pie">
+              <div class="linea"><span>Subtotal</span><span>{{ formatearPrecio(o.subTotal) }}</span></div>
+              <div class="linea"><span>ISV</span><span>{{ formatearPrecio(o.impuesto) }}</span></div>
+              <div class="linea total"><span>Total</span><strong>{{ formatearPrecio(o.total) }}</strong></div>
+
+              @if (!itemsDetalle().length) {
+                <p-button label="Cancelar orden" icon="pi pi-trash" severity="danger" [text]="true" [fluid]="true" [disabled]="ocupando()" (onClick)="cancelarOrdenVacia()" />
+              } @else {
+                <p-button label="Agregar producto" icon="pi pi-plus" severity="success" [fluid]="true" [disabled]="ocupando()" (onClick)="agregarDesdeDetalle()" />
+              }
+            </footer>
+          } @else {
+            <div class="ms-estado ms-vacio">
+              <i class="pi pi-receipt"></i>
+              <p>Este puesto quedó libre (la cuenta se cobró o se cerró).</p>
+            </div>
+          }
+        </section>
+      }
+    </div>
+  </ng-template>
+</p-drawer>

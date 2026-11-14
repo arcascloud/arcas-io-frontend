@@ -1,0 +1,151 @@
+<div class="cocina-page">
+  <!-- ═══════════ Cabecera ═══════════ -->
+  <header class="page-header">
+    <div class="ph-izq">
+      <h2><i class="pi pi-fire"></i> Cocina</h2>
+      @if (actualizadoEn(); as ts) {
+        <span class="actualizado"><i class="pi pi-refresh"></i> Actualizado {{ hora(ts) }}</span>
+      }
+    </div>
+    <div class="ph-der">
+      <p-button
+        [size]="'small'"
+        [rounded]="true"
+        variant="text"
+        [severity]="sonidoActivo() ? 'success' : 'secondary'"
+        [icon]="sonidoActivo() ? 'pi pi-volume-up' : 'pi pi-volume-off'"
+        [label]="sonidoActivo() ? 'Sonido activo' : 'Sonido apagado'"
+        pTooltip="Aviso sonoro cuando entra un ticket nuevo"
+        (onClick)="toggleSonido()"
+      />
+      <p-button
+        [size]="'small'"
+        [rounded]="true"
+        variant="text"
+        severity="secondary"
+        icon="pi pi-refresh"
+        pTooltip="Actualizar ahora"
+        (onClick)="refrescar()"
+      />
+    </div>
+  </header>
+
+  @if (error(); as err) {
+    <div class="banner-error">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ err }}</span>
+      <p-button [size]="'small'" [rounded]="true" variant="text" severity="danger" label="Reintentar" (onClick)="refrescar()" />
+    </div>
+  }
+
+  @if (cargando() && !actualizadoEn()) {
+    <div class="vacio-general"><i class="pi pi-spin pi-spinner"></i> Cargando tablero…</div>
+  }
+
+  <!-- ═══════════ Tres columnas ═══════════ -->
+  <div class="columnas">
+    <!-- Nuevos -->
+    <section class="columna">
+      <div class="col-header col-header--nuevos">
+        <span class="titulo"><i class="pi pi-inbox"></i> Nuevos</span>
+        <span class="badge">{{ nuevos().length }}</span>
+      </div>
+      <div class="col-body">
+        @for (t of nuevos(); track t.key) {
+          <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
+        } @empty {
+          <div class="vacio">Sin tickets nuevos</div>
+        }
+      </div>
+    </section>
+
+    <!-- Preparando -->
+    <section class="columna">
+      <div class="col-header col-header--prep">
+        <span class="titulo"><i class="pi pi-hourglass"></i> Preparando</span>
+        <span class="badge">{{ enPreparacion().length }}</span>
+      </div>
+      <div class="col-body">
+        @for (t of enPreparacion(); track t.key) {
+          <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
+        } @empty {
+          <div class="vacio">Sin tickets en preparación</div>
+        }
+      </div>
+    </section>
+
+    <!-- Listos -->
+    <section class="columna">
+      <div class="col-header col-header--listos">
+        <span class="titulo"><i class="pi pi-check-circle"></i> Listos</span>
+        <span class="badge">{{ listos().length }}</span>
+      </div>
+      <div class="col-body">
+        @for (t of listos(); track t.key) {
+          <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
+        } @empty {
+          <div class="vacio">Sin tickets listos</div>
+        }
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ═══════════ Tarjeta (plantilla reutilizada por las 3 columnas) ═══════════ -->
+<ng-template #tarjetaTpl let-t>
+  <article class="tarjeta">
+    <div class="t-head">
+      <span class="t-puesto">{{ etiquetaPuesto(t.pedido.nromesa) }}</span>
+      <span class="t-espera" [class]="'nivel-' + nivelEspera(t)">
+        @if (t.enviadoAt) {
+          <span class="hora">{{ horaEnvio(t) }}</span>
+        }
+        <span class="min">{{ minutosEspera(t) }} min</span>
+      </span>
+    </div>
+
+    <div class="t-meta">
+      <span class="t-cliente"><i class="pi pi-user"></i> {{ t.pedido.nombrecliente || 'Sin cliente' }}</span>
+      <span class="t-mesero"><i class="pi pi-id-card"></i> {{ nombreMesero(t) }}</span>
+      <span class="t-ronda" pTooltip="Ticket de la ronda actual">
+        #{{ t.pospedmaeId }}
+        @if (t.lineas.length > 1) {
+          <span class="t-nlineas">{{ cantidadLineas(t) }} líneas</span>
+        }
+      </span>
+    </div>
+
+    <ul class="t-lineas">
+      @for (l of t.lineas; track l.pospeddetId) {
+        <li [class.linea-prep]="l.estado_cocina === 'EN_PREPARACION'" [class.linea-lista]="l.estado_cocina === 'LISTO'">
+          <span class="l-cant">{{ l.cantidad }}×</span>
+          <span class="l-desc">{{ l.descripcion || l.codbarra }}</span>
+          @if (siguienteEstadoCocina(l.estado_cocina); as sig) {
+            <button
+              type="button"
+              class="btn-linea"
+              [disabled]="ocupado()"
+              [title]="sig === 'EN_PREPARACION' ? 'Preparar' : 'Marcar listo'"
+              (click)="avanzarLinea(l)"
+            >
+              {{ sig === 'EN_PREPARACION' ? 'Preparar' : 'Listo' }}
+            </button>
+          } @else {
+            <i class="pi pi-check-circle l-ok"></i>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (puedeAvanzar(t)) {
+      <button type="button" class="btn-tarjeta" [disabled]="ocupado()" (click)="avanzarTarjeta(t)">
+        <i class="pi" [class.pi-play]="t.estado === 'PENDIENTE'" [class.pi-check]="t.estado === 'EN_PREPARACION'"></i>
+        {{ etiquetaBoton(t) }}
+      </button>
+    } @else {
+      <div class="esperando">
+        <i class="pi pi-check-circle"></i> Listo — esperando al mesero
+      </div>
+    }
+  </article>
+</ng-template>

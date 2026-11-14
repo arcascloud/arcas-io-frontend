@@ -120,5 +120,20 @@ export const FACTURACION_ROUTES: Routes = [
     loadComponent: () =>
       import('./restaurante/restaurante').then((m) => m.Restaurante),
   },
+  {
+    path: 'restaurante-mesero',
+    loadComponent: () =>
+      import('./restaurante-mesero/restaurante-mesero').then((m) => m.RestauranteMesero),
+  },
+  {
+    path: 'restaurante-caja',
+    loadComponent: () =>
+      import('./restaurante-caja/restaurante-caja').then((m) => m.RestauranteCaja),
+  },
+  {
+    path: 'restaurante-cocina',
+    loadComponent: () =>
+      import('./restaurante-cocina/restaurante-cocina').then((m) => m.RestauranteCocina),
+  },
   { path: '**', redirectTo: 'consultas' },
 ];

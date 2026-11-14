@@ -8,6 +8,7 @@ import {
   OrdenRestaurante,
   PagoOrden,
 } from '../models/restaurante.models';
+import { EstadoCocina, LineaCocina, nuevoRondaId } from '../models/mesero.models';
 
 /**
  * Órdenes del restaurante sobre los endpoints de PEDIDOS que ya existen
@@ -159,7 +160,18 @@ export class RestauranteService {
   getItems(ordenId: number): Observable<OrdenItem[]> {
     return this.api
       .get<OrdenItem[]>(`/facturacion/pedidos-det/pedido/${ordenId}`)
-      .pipe(map((lista) => (lista ?? []).map((d) => this.normalizarItem(d)).sort((a, b) => a.nrofila - b.nrofila)));
+      .pipe(
+        map((lista) =>
+          (lista ?? [])
+            .map((d) => this.normalizarItem(d))
+            // Orden oficial del mesero: ronda_uuid ASC (NULL primero, como MySQL)
+            // y desempate por nrofila dentro de la misma ronda.
+            .sort(
+              (a, b) =>
+                String(a.ronda_uuid ?? '').localeCompare(String(b.ronda_uuid ?? '')) || a.nrofila - b.nrofila,
+            ),
+        ),
+      );
   }
 
   /**
@@ -170,6 +182,52 @@ export class RestauranteService {
     return this.api
       .put<OrdenItem>('/facturacion/pedidos-det', item.pospeddetId, { sn_entregado: entregado ? 'S' : 'N' })
       .pipe(map((d) => this.normalizarItem(d)));
+  }
+
+  /**
+   * Envía productos de la orden a cocina (escritorio): cada línea pasa a
+   * PENDIENTE con la ronda nueva y enviado_at lo estampa el servidor.
+   * Solo envía líneas que aún no tienen estado de cocina (evita reenviar
+   * líneas que ya pasaron por la cocina y tienen LISTO/EN_PREPARACION).
+   * La entrega la hace después el mesero (toggle habilitado en LISTO).
+   */
+  enviarLineasACocina(lineas: OrdenItem[], rondaId: string): Observable<OrdenItem[]> {
+    if (!lineas.length) return of([]);
+    // Filtrar solo líneas sin estado de cocina previo (evita reenviar líneas
+    // que ya pasaron por la cocina y tienen LISTO/EN_PREPARACION)
+    const candidatas = lineas.filter((l) => l.estado_cocina !== 'LISTO' && l.estado_cocina !== 'EN_PREPARACION');
+    return forkJoin(
+      candidatas.map((l) =>
+        this.api
+          .put<OrdenItem>('/facturacion/pedidos-det', l.pospeddetId, {
+            estado_cocina: 'PENDIENTE',
+            ronda_uuid: rondaId,
+          })
+          .pipe(map((d) => this.normalizarItem(d))),
+      ),
+    );
+  }
+
+  /**
+   * Líneas pendientes de cocina del día (PENDIENTE/EN_PREPARACION/LISTO) con la
+   * descripción del producto ya resuelta en el servidor — tablero cocina (fase 3).
+   * Las líneas anteriores a la integración no aparecen (nacen ENTREGADO).
+   */
+  getLineasCocina(): Observable<LineaCocina[]> {
+    return this.api
+      .get<any[]>('/facturacion/pedidos-det/abiertos')
+      .pipe(map((lista) => (lista ?? []).map((d) => this.normalizarCocina(d))));
+  }
+
+  /**
+   * Avance de un toque en cocina (PENDIENTE → EN_PREPARACION → LISTO).
+   * El servidor valida la transición (rechaza saltos), estampa listo_at y
+   * recalcula el estado de la cabecera; los totales no se mueven.
+   */
+  setEstadoCocina(item: Pick<LineaCocina, 'pospeddetId'>, nuevoEstado: EstadoCocina): Observable<LineaCocina> {
+    return this.api
+      .put<any>('/facturacion/pedidos-det', item.pospeddetId, { estado_cocina: nuevoEstado })
+      .pipe(map((d) => this.normalizarCocina(d)));
   }
 
   agregarItem(
@@ -191,6 +249,11 @@ export class RestauranteService {
           p_descuento: 0,
           impuesto,
           nrofila,
+          // La línea nace en la ronda actual del mesero: PENDIENTE en cocina,
+          // sn_entregado='N' (la entrega la marca el mesero al dejarla en LISTO).
+          estado_cocina: 'PENDIENTE',
+          sn_entregado: 'N',
+          ronda_uuid: nuevoRondaId(),
         });
       }),
       map((d) => this.normalizarItem(d)),
@@ -269,6 +332,12 @@ export class RestauranteService {
       subTotal: Number(o.subTotal) || 0,
       impuesto: Number(o.impuesto) || 0,
       total: Number(o.total) || 0,
+      // El backend devuelve la fila completa; estos campos NO los lee la pantalla
+      // de escritorio, pero sí restaurante-mesero (mesero = ttipogestores.gestorId,
+      // caja = pospedmae.cajaId, estado = columna nueva de la fase 0).
+      gestorId: o.gestorId == null ? null : Number(o.gestorId),
+      cajaId: o.cajaId == null ? null : Number(o.cajaId),
+      estado: o.estado ?? null,
     };
   }
 
@@ -284,6 +353,24 @@ export class RestauranteService {
       subtotal: Number(d.subtotal) || 0,
       nrofila: Number(d.nrofila) || 0,
       sn_entregado: d.sn_entregado === 'S' ? 'S' : 'N',
+      // Consulta oficial del mesero (CASE de leyenda + orden por ronda):
+      // sin estado_cocina el toggle del mesero queda siempre deshabilitado.
+      estado_cocina: (d.estado_cocina as EstadoCocina) ?? undefined,
+      ronda_uuid: d.ronda_uuid ?? null,
+      leyenda: d.leyenda ?? null,
+      descripcion: d.descripcion ?? null,
+    };
+  }
+
+  /** Línea de cocina: la normalización común + campos de la ronda (aditivo). */
+  private normalizarCocina(d: any): LineaCocina {
+    return {
+      ...this.normalizarItem(d),
+      estado_cocina: (d.estado_cocina as EstadoCocina) ?? 'ENTREGADO',
+      descripcion: d.descripcion ?? null,
+      ronda_uuid: d.ronda_uuid ?? null,
+      enviado_at: d.enviado_at ?? null,
+      listo_at: d.listo_at ?? null,
     };
   }
 }

@@ -1,0 +1,577 @@
+<div class="caja-page">
+  <!-- ═══════════ Cabecera ═══════════ -->
+  <header class="page-header">
+    <div class="ph-izq">
+      <h2><i class="pi pi-wallet"></i> Caja</h2>
+      <div class="campo-caja">
+        <label for="selCaja">Caja</label>
+        <p-select
+          inputId="selCaja"
+          [options]="opcionesCaja"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="cajaSel()"
+          (ngModelChange)="setCaja($event)"
+          placeholder="Seleccionar caja"
+          styleClass="w-14rem"
+          [appendTo]="'body'"
+          [size]="'small'"
+          pTooltip="La caja central ve todas las cuentas; las demás solo las suyas"
+        />
+      </div>
+      <span class="resumen">
+        {{ ordenesVista().length }} cuenta(s) · {{ servidasCount() }} servida(s)
+      </span>
+      @if (actualizadoEn(); as ts) {
+        <span class="actualizado"><i class="pi pi-refresh"></i> {{ hora(ts) }}</span>
+      }
+    </div>
+    <div class="ph-der">
+      <p-button
+        [size]="'small'"
+        [rounded]="true"
+        raised
+        severity="warn"
+        label="Venta libre"
+        icon="pi pi-shop"
+        pTooltip="Abrir una cuenta sin mesa y cobrarla en esta caja"
+        [disabled]="ocupado()"
+        (onClick)="ventaLibre()"
+      />
+      <p-button
+        [size]="'small'"
+        [rounded]="true"
+        variant="text"
+        severity="secondary"
+        icon="pi pi-refresh"
+        pTooltip="Actualizar ahora"
+        (onClick)="cargar()"
+      />
+    </div>
+  </header>
+
+  @if (cargando() && !actualizadoEn()) {
+    <div class="vacio-general"><i class="pi pi-spin pi-spinner"></i> Cargando cuentas…</div>
+  }
+
+  <!-- ═══════════ Bandeja de cuentas abiertas ═══════════ -->
+  <div class="tarjeta-tabla">
+    <p-table
+      [value]="ordenesVista()"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      size="small"
+      styleClass="p-table-striped"
+      [tableStyle]="{ 'min-width': '60rem' }"
+    >
+      <ng-template #header>
+        <tr>
+          <th class="th-w-id">#</th>
+          <th>Puesto</th>
+          <th>Cliente</th>
+          <th>Mesero</th>
+          <th>Caja</th>
+          <th class="th-w-hora">Apertura</th>
+          <th>Estado</th>
+          <th class="th-w-total">Total</th>
+          <th class="th-acciones">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-o>
+        <tr [class.fila-servida]="o.sn_entregado === 'S'">
+          <td class="font-bold">{{ o.pospedmaeId }}</td>
+          <td>
+            <strong>{{ etiquetaPuesto(o.nromesa) }}</strong>
+          </td>
+          <td>{{ o.nombrecliente || '—' }}</td>
+          <td>{{ nombreMesero(o) }}</td>
+          <td>{{ nombreCaja(o.cajaId) }}</td>
+          <td>{{ horaApertura(o) }}</td>
+          <td>
+            <p-tag [value]="tagEstado(o).label" [severity]="tagEstado(o).severity" />
+          </td>
+          <td class="text-right font-bold">{{ moneda(o.total) }}</td>
+          <td class="text-center acciones">
+            <p-button
+              [size]="'small'"
+              [rounded]="true"
+              variant="text"
+              severity="secondary"
+              icon="pi pi-eye"
+              pTooltip="Ver detalle"
+              (onClick)="abrirDetalle(o)"
+            />
+            <p-button
+              [size]="'small'"
+              [rounded]="true"
+              variant="text"
+              severity="success"
+              icon="pi pi-cash"
+              pTooltip="Cobrar"
+              [disabled]="ocupado()"
+              (onClick)="cobrar(o)"
+            />
+            <p-button
+              [size]="'small'"
+              [rounded]="true"
+              variant="text"
+              severity="danger"
+              icon="pi pi-trash"
+              pTooltip="Anular cuenta (con motivo)"
+              [disabled]="ocupado()"
+              (onClick)="abrirAnulacion('pedido', o)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="text-center p-3">
+            Sin cuentas abiertas en esta caja.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- ═══════════ Detalle de la cuenta ═══════════ -->
+<p-dialog
+  [header]="tituloCuenta(ordenSel())"
+  [(visible)]="dialogDetalle"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!ocupado()"
+  [style]="{ width: '85vw' }"
+  [contentStyle]="{ overflow: 'auto' }"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+>
+  @if (ordenSel(); as o) {
+    <div class="info-grid">
+      <div class="info-campo">
+        <span class="info-label">Cliente</span>
+        <span class="info-valor">{{ o.nombrecliente || '—' }}</span>
+      </div>
+      <div class="info-campo">
+        <span class="info-label">Mesero</span>
+        <span class="info-valor">{{ nombreMesero(o) }}</span>
+      </div>
+      <div class="info-campo">
+        <span class="info-label">Caja</span>
+        <span class="info-valor">{{ nombreCaja(o.cajaId) }}</span>
+      </div>
+      <div class="info-campo">
+        <span class="info-label">Estado</span>
+        <span class="info-valor"><p-tag [value]="tagEstado(o).label" [severity]="tagEstado(o).severity" /></span>
+      </div>
+
+      @if (esCentral()) {
+        <div class="info-campo info-reasignar">
+          <span class="info-label">Mover a otra caja</span>
+          <div class="reasignar-fila">
+            <p-select
+              [options]="opcionesCaja"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="cajaNueva()"
+              (ngModelChange)="cajaNueva.set($event)"
+              placeholder="Caja destino"
+              styleClass="w-12rem"
+              [appendTo]="'body'"
+              [size]="'small'"
+            />
+            <p-button
+              [size]="'small'"
+              [rounded]="true"
+              variant="text"
+              severity="warn"
+              label="Reasignar"
+              icon="pi pi-arrow-right-arrow-left"
+              [disabled]="ocupado() || cajaNueva() === o.cajaId || cajaNueva() == null"
+              (onClick)="reasignar()"
+            />
+          </div>
+        </div>
+      }
+    </div>
+
+    <p-table [value]="items()" size="small" [tableStyle]="{ 'min-width': '40rem' }">
+      <ng-template #header>
+        <tr>
+          <th class="th-w-cant">Cant.</th>
+          <th>Descripción</th>
+          <th class="th-w-sub">Subtotal</th>
+          <th class="th-acciones">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr>
+          <td class="font-bold">{{ item.cantidad }}</td>
+          <td>
+            {{ descripcionItem(item) }}
+            @if (item.codbarra) {
+              <span class="cod-barra">{{ item.codbarra }}</span>
+            }
+          </td>
+          <td class="text-right">{{ moneda(totalLinea(item)) }}</td>
+          <td class="text-center acciones">
+            @if (esVentaLibre(o)) {
+              <p-button
+                [size]="'small'"
+                [rounded]="true"
+                variant="text"
+                severity="secondary"
+                icon="pi pi-minus"
+                pTooltip="Restar uno"
+                [disabled]="ocupado()"
+                (onClick)="decrementar(item)"
+              />
+              <p-button
+                [size]="'small'"
+                [rounded]="true"
+                variant="text"
+                severity="secondary"
+                icon="pi pi-plus"
+                pTooltip="Sumar uno"
+                [disabled]="ocupado()"
+                (onClick)="incrementar(item)"
+              />
+            }
+            <p-button
+              [size]="'small'"
+              [rounded]="true"
+              variant="text"
+              severity="danger"
+              icon="pi pi-trash"
+              pTooltip="Anular línea (con motivo)"
+              [disabled]="ocupado()"
+              (onClick)="abrirAnulacion('linea', o, item)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center p-3">Sin productos en la cuenta.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+
+  <ng-template pTemplate="footer">
+    <div class="pie-detalle">
+      <div class="pie-total">
+        <span>Total:</span>
+        <span class="font-bold">{{ moneda(totalCuenta()) }}</span>
+      </div>
+      <div class="pie-acciones">
+        @if (ordenSel(); as o) {
+          @if (esVentaLibre(o)) {
+            <p-button
+              [size]="'small'"
+              [rounded]="true"
+              variant="text"
+              severity="success"
+              label="Producto"
+              icon="pi pi-plus"
+              [disabled]="ocupado()"
+              (onClick)="showHelperProductos()"
+            />
+          }
+        }
+        <p-button
+          [size]="'small'"
+          [rounded]="true"
+          variant="text"
+          severity="danger"
+          label="Anular cuenta"
+          icon="pi pi-trash"
+          [disabled]="ocupado()"
+          (onClick)="anularCuentaSel()"
+        />
+        <p-button
+          [size]="'small'"
+          [rounded]="true"
+          variant="text"
+          severity="secondary"
+          label="Cerrar"
+          [disabled]="ocupado()"
+          (onClick)="dialogDetalle.set(false)"
+        />
+        <p-button
+          [size]="'small'"
+          [rounded]="true"
+          raised
+          severity="success"
+          label="Cobrar"
+          icon="pi pi-cash"
+          [disabled]="ocupado()"
+          (onClick)="cobrarSeleccionada()"
+        />
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- ═══════════ Cobro (diálogo de pagos, mismo flujo que el escritorio) ═══════════ -->
+<p-dialog
+  header="Cobrar cuenta"
+  [(visible)]="dialogPago"
+  [modal]="true"
+  [closable]="!ocupado()"
+  [style]="{ width: '80vw', height: '85vh' }"
+  [contentStyle]="{ overflow: 'auto' }"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+>
+  <div class="pago-dialog-body">
+    @if (ordenSel(); as o) {
+      <div class="pago-resumen">
+        <span>{{ tituloCuenta(o) }}</span>
+      </div>
+    }
+
+    <div class="pago-add-row">
+      <p-button
+        [size]="'small'"
+        label="Agregar pago"
+        icon="pi pi-plus"
+        severity="success"
+        variant="text"
+        [raised]="true"
+        [rounded]="true"
+        (onClick)="agregarPago()"
+      />
+    </div>
+
+    <p-table
+      [value]="pagos()"
+      size="small"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '100%' }"
+      styleClass="pago-tabla"
+    >
+      <ng-template #header>
+        <tr>
+          <th class="th-label width-fp">Forma de Pago</th>
+          <th class="th-label width-tarjeta">Tarjeta</th>
+          <th class="th-label width-nrotarjeta">Nro. Tarjeta</th>
+          <th class="th-label width-autoriza">Autorización</th>
+          <th class="th-label width-importe">Importe</th>
+          <th class="th-label width-quitar"></th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-pago let-idx="rowIndex">
+        <tr>
+          <td>
+            <p-select
+              [size]="'small'"
+              [options]="formasPago()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Seleccionar..."
+              styleClass="w-full"
+              [(ngModel)]="pago.formapagoId"
+              [ngModelOptions]="{ standalone: true }"
+              [appendTo]="'body'"
+              (onChange)="onFormaPagoChange(pago)"
+            />
+          </td>
+          <td>
+            @if (esTarjeta(pago)) {
+              <p-select
+                [size]="'small'"
+                [options]="tarjetasCredito()"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar..."
+                styleClass="w-full"
+                showClear
+                [(ngModel)]="pago.tarjetacreditoId"
+                [ngModelOptions]="{ standalone: true }"
+                [appendTo]="'body'"
+              />
+            }
+          </td>
+          <td>
+            @if (esTarjeta(pago)) {
+              <input
+                pInputText
+                [pSize]="'small'"
+                [(ngModel)]="pago.nrotarjeta"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Nro. tarjeta"
+                class="w-full"
+              />
+            }
+          </td>
+          <td>
+            @if (esTarjeta(pago) || esTransferencia(pago)) {
+              <input
+                pInputText
+                [pSize]="'small'"
+                [(ngModel)]="pago.nroautorizacion"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Autorización"
+                class="w-full"
+              />
+            }
+          </td>
+          <td>
+            <p-inputnumber
+              [size]="'small'"
+              [(ngModel)]="pago.importe"
+              [ngModelOptions]="{ standalone: true }"
+              [min]="0"
+              mode="currency"
+              currency="HNL"
+              [locale]="'es-HN'"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [useGrouping]="true"
+              [inputStyle]="{ 'width': '100%' }"
+              styleClass="w-full"
+            />
+          </td>
+          <td class="text-center">
+            <p-button
+              icon="pi pi-times"
+              [rounded]="true"
+              severity="danger"
+              [size]="'small'"
+              (onClick)="quitarPago(idx)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-3">
+            Sin formas de pago. Presione "Agregar pago" para comenzar.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="pie-pago">
+      <div class="pie-pago-resumen">
+        <div class="pie-campo">
+          <span>Total cuenta:</span>
+          <span class="font-bold">{{ moneda(totalCuenta()) }}</span>
+        </div>
+        <div class="pie-campo">
+          <span>Total pagos:</span>
+          <span
+            class="font-bold"
+            [class.text-ok]="totalPagos() >= totalCuenta()"
+            [class.text-warn]="totalPagos() < totalCuenta() && totalPagos() > 0"
+            >{{ moneda(totalPagos()) }}</span
+          >
+        </div>
+        @if (pendiente() > 0) {
+          <div class="pie-campo">
+            <span>Pendiente:</span>
+            <span class="font-bold text-warn">{{ moneda(pendiente()) }}</span>
+          </div>
+        }
+        @if (cambioTotal() > 0) {
+          <div class="pie-campo">
+            <span>Cambio:</span>
+            <span class="font-bold text-cambio">{{ moneda(cambioTotal()) }}</span>
+          </div>
+        }
+      </div>
+      <div class="pie-pago-acciones">
+        <p-button
+          [size]="'small'"
+          label="Cancelar"
+          icon="pi pi-times"
+          variant="text"
+          severity="secondary"
+          [rounded]="true"
+          [disabled]="ocupado()"
+          (onClick)="dialogPago.set(false)"
+        />
+        <p-button
+          [size]="'small'"
+          label="Facturar"
+          icon="pi pi-shopping-cart"
+          [loading]="ocupado()"
+          [rounded]="true"
+          raised
+          severity="success"
+          [disabled]="!formularioPagoValido()"
+          (onClick)="confirmarPago()"
+        />
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- ═══════════ Anulación con motivo ═══════════ -->
+<p-dialog
+  [header]="anul()?.tipo === 'pedido' ? 'Anular cuenta' : 'Anular línea'"
+  [(visible)]="dialogAnul"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  styleClass="w-full max-w-30rem"
+>
+  @if (anul(); as a) {
+    <div class="anul-body">
+      <div class="anul-objetivo">
+        @if (a.tipo === 'pedido') {
+          <span><strong>{{ tituloCuenta(a.orden) }}</strong></span>
+          <span>{{ a.orden.nombrecliente || 'Sin cliente' }} · {{ moneda(a.orden.total) }}</span>
+        } @else {
+          <span><strong>{{ a.item.cantidad }}× {{ descripcionItem(a.item) }}</strong></span>
+          <span>Se quitará de {{ tituloCuenta(a.orden) }}</span>
+        }
+      </div>
+      <div class="campo-motivo">
+        <label for="motivoAnul">Motivo (obligatorio)</label>
+        <textarea
+          pTextarea
+          id="motivoAnul"
+          rows="3"
+          class="w-full"
+          [ngModel]="motivo()"
+          (ngModelChange)="motivo.set($event)"
+          placeholder="Ej. Cliente se arrepintió, error de captura…"
+        ></textarea>
+      </div>
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <div class="anul-acciones">
+      <p-button
+        [size]="'small'"
+        label="Cancelar"
+        rounded
+        variant="text"
+        severity="secondary"
+        (onClick)="dialogAnul.set(false)"
+      />
+      <p-button
+        [size]="'small'"
+        [label]="anul()?.tipo === 'pedido' ? 'Anular cuenta' : 'Anular línea'"
+        icon="pi pi-trash"
+        rounded
+        variant="text"
+        severity="danger"
+        [disabled]="!motivo().trim() || ocupado()"
+        (onClick)="confirmarAnulacion()"
+      />
+    </div>
+  </ng-template>
+</p-dialog>

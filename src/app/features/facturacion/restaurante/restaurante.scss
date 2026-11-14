@@ -281,6 +281,26 @@ $topbar-height: 60px;
   color: var(--c-text);
 }
 
+// Estado GENERAL de la cuenta: "En curso" hasta que el cliente pague.
+.orden-chip-estado {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  vertical-align: middle;
+  border: 1px solid var(--c-warning);
+  background: color-mix(in srgb, var(--c-warning) 16%, var(--c-surface));
+  color: var(--c-text);
+
+  &.cobrada {
+    border-color: var(--c-border);
+    background: var(--c-surface-ground);
+    color: var(--c-text-muted);
+  }
+}
+
 .col-subtitulo {
   display: flex;
   align-items: center;
@@ -311,6 +331,45 @@ $topbar-height: 60px;
   background: color-mix(in srgb, var(--c-primary) 10%, transparent);
   font-size: 0.85rem;
   color: var(--c-text);
+}
+
+/* ── Caja de trabajo bajo "Puestos": select + botón reasignar ── */
+.caja-fila {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.5rem;
+
+  .caja-campo {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+
+    label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--c-text-muted);
+    }
+
+    .p-select {
+      width: 100%; // PrimeNG 21 no aplica width:100% (lección conocida)
+    }
+  }
+}
+
+/* ── Puestos en tabs (Mesas | Kioskos) dentro de la columna ── */
+.puestos-tabs {
+  ::ng-deep .p-tablist {
+    margin-bottom: 0.25rem;
+  }
+
+  ::ng-deep .p-tabpanel {
+    padding: 0.5rem 0 0;
+  }
 }
 
 /* ── Mesas: botones redondos ── */
@@ -584,6 +643,26 @@ $topbar-height: 60px;
   .orden-item-estado {
     width: 100%;
     margin-top: 0.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: stretch;
+  }
+
+  // Leyenda de cocina por ítem (mismo texto que cocina/mesero)
+  .item-leyenda {
+    font-size: 0.68rem;
+    text-align: center;
+    color: var(--c-text-muted);
+
+    &.lista {
+      color: var(--c-warning);
+      font-weight: 700;
+    }
+
+    &.ok {
+      color: var(--c-success);
+    }
   }
 }
 
@@ -913,6 +992,41 @@ $topbar-height: 60px;
   padding: 0.25rem;
 }
 
+/* ── Column C: Formas de Pago estilo POS (cards) ── */
+.pp-pago-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: auto;
+  padding-top: 0.4rem;
+  border-top: 1px dashed var(--c-border);
+  width: calc(99%);
+
+  .pp-resumen-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    width: calc(90%);
+
+    .pp-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--c-text-muted, #8aa9c9);
+    }
+
+    .pp-value {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--c-text, #fff);
+
+      &.pp-ok { color: var(--c-success, #10b981); }
+      &.pp-warn { color: var(--c-warning, #f59e0b); }
+    }
+  }
+}
+
 .pago-card-item {
   background: var(--c-surface-ground);
   border: 1px solid var(--c-border);
@@ -922,8 +1036,8 @@ $topbar-height: 60px;
 
   .pago-card-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 0.75rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--c-border);
@@ -941,11 +1055,14 @@ $topbar-height: 60px;
     gap: 0.75rem;
 
     .pago-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
       grid-column: span 12;
 
       @media (min-width: 768px) {
-        &.md\:col-6 {
-          grid-column: span 6;
+        &.pago-field--half {
+          grid-column: span 6 / span 6;
         }
       }
 

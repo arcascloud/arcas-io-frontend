@@ -2,7 +2,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal, ChangeDetector
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of, switchMap } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -10,8 +10,8 @@ import { DrawerModule } from 'primeng/drawer';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TabsModule } from 'primeng/tabs';
 import { ToastModule } from 'primeng/toast';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { TooltipModule } from 'primeng/tooltip';
@@ -22,6 +22,7 @@ import { FacturaImpresionService } from '../../../core/services/factura-impresio
 import { ApiService } from '../../../core/services/api.service';
 import { FORMAPAGO_TODOPAGO } from '../../../core/services/todopago.service';
 import { ConfigISV, MesaVista, NUM_MESAS, OrdenItem, OrdenRestaurante, PagoOrden } from '../../../core/models/restaurante.models';
+import { CAJAS_RESTAURANTE, KIOSKO_BASE, NUM_KIOSKOS, etiquetaPuesto, nuevoRondaId } from '../../../core/models/mesero.models';
 
 /** Productos sin existencia no se pueden agregar. Ponlo en false si los platos preparados no llevan kardex. */
 const VALIDAR_EXISTENCIA = true;
@@ -37,8 +38,8 @@ const VALIDAR_EXISTENCIA = true;
   standalone: true,
   imports: [
     CommonModule, FormsModule, ButtonModule, DialogModule, DrawerModule,
-    InputNumberModule, InputTextModule, SelectModule, TableModule,
-    TagModule, ToastModule, ToggleButtonModule, TooltipModule,
+    InputNumberModule, InputTextModule, SelectModule,
+    TagModule, TabsModule, ToastModule, ToggleButtonModule, TooltipModule,
   ],
   templateUrl: './restaurante.html',
   styleUrl: './restaurante.scss',
@@ -53,6 +54,10 @@ export class Restaurante implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   readonly mesasNumeros = Array.from({ length: NUM_MESAS }, (_, i) => i + 1);
+  /** Kioskos a la derecha de las mesas: nromesa 101..120 (KIOSKO_BASE + número). */
+  readonly kioskosNumeros = Array.from({ length: NUM_KIOSKOS }, (_, i) => KIOSKO_BASE + i + 1);
+  /** Tab activa de puestos: PrimeNG v21 p-tabs trabaja con value string (no activeIndex). */
+  puestoTab = signal<string>('mesas');
 
   // ── Productos (columna 1) ──
   productos = signal<ProductoTienda[]>([]);
@@ -97,16 +102,32 @@ export class Restaurante implements OnInit {
   ocupado = signal(false);
   ahora = signal(Date.now());
 
+  // ── Caja de trabajo (select bajo "Puestos") ──
+  /** Opciones del select de caja: CAJAS_RESTAURANTE (misma fuente que Caja/Mesero). */
+  readonly opcionesCaja = CAJAS_RESTAURANTE.map((c) => ({ label: c.nombre, value: c.id }));
+  /** Caja elegida: nace en ella cada orden nueva y es el destino de "Reasignar caja". */
+  cajaId = signal<number>(CAJAS_RESTAURANTE[0].id);
+
   ordenActiva = computed(() => this.ordenes().find((o) => o.pospedmaeId === this.ordenActivaId()) ?? null);
 
-  mesas = computed<MesaVista[]>(() => {
-    const porMesa = new Map(
-      this.ordenes()
-        .filter((o) => (o.nromesa ?? 0) >= 1)
-        .map((o) => [o.nromesa as number, o]),
-    );
-    return this.mesasNumeros.map((nro) => ({ nro, orden: porMesa.get(nro) ?? null }));
+  /** Órdenes por nromesa: mesas 1..N y kioskos 101..N comparten el mismo mapa. */
+  private porPuesto = computed(() => {
+    const map = new Map<number, OrdenRestaurante>();
+    for (const o of this.ordenes()) {
+      const nro = o.nromesa ?? 0;
+      if (nro >= 1) map.set(nro, o);
+    }
+    return map;
   });
+
+  mesas = computed<MesaVista[]>(() =>
+    this.mesasNumeros.map((nro) => ({ nro, orden: this.porPuesto().get(nro) ?? null })),
+  );
+
+  /** Kioskos (columna derecha de Mesas): mismos estados libre/ocupada/seleccionada. */
+  kioskos = computed<MesaVista[]>(() =>
+    this.kioskosNumeros.map((nro) => ({ nro, orden: this.porPuesto().get(nro) ?? null })),
+  );
 
   /** Órdenes abiertas de hoy, mesa más baja primero. */
   pedidos = computed(() => [...this.ordenes()].sort((a, b) => (a.nromesa ?? 0) - (b.nromesa ?? 0)));
@@ -117,6 +138,18 @@ export class Restaurante implements OnInit {
     const m = new Map<number, number>();
     for (const i of this.items()) m.set(i.productoId, (m.get(i.productoId) ?? 0) + i.cantidad);
     return m;
+  });
+  /** Líneas listas para ir a cocina: sin entregar, sin ronda y sin estado de cocina previo. */
+  lineasPorEnviar = computed(() => {
+    const o = this.ordenActiva();
+    if (!o || o.sn_facturado === 'S') return [];
+    return this.items().filter(
+      (i) =>
+        i.sn_entregado !== 'S' &&
+        i.ronda_uuid == null &&
+        i.estado_cocina !== 'LISTO' &&
+        i.estado_cocina !== 'EN_PREPARACION',
+    );
   });
 
   // ── Drawer / responsive ──
@@ -219,24 +252,40 @@ export class Restaurante implements OnInit {
     if (nromesa == null) {
       this.msg.add({
         severity: 'info',
-        summary: 'Elija una mesa',
-        detail: 'Primero seleccione una mesa libre y luego pulse "Nueva orden".',
+        summary: 'Elija un puesto',
+        detail: 'Primero seleccione una mesa o kiosko libre y luego pulse "Nueva orden".',
       });
       return;
     }
     this.ocupado.set(true);
-    this.srv.crearOrden(nromesa).subscribe({
-      next: (o) => {
-        this.ordenes.update((l) => [...l, o]);
-        this.ordenActivaId.set(o.pospedmaeId);
-        this.mesaSeleccionada.set(null);
-        this.items.set([]);
-        this.ocupado.set(false);
-        this.mobileTab.set('orden');
-        this.msg.add({ severity: 'success', summary: `Mesa ${nromesa}`, detail: `Orden #${o.pospedmaeId} abierta.` });
-      },
-      error: (e) => this.fallo(e, 'No se pudo crear la orden'),
-    });
+    this.srv
+      .crearOrden(nromesa)
+      .pipe(
+        // La orden nace en la caja elegida (si el backend ya la puso ahí, no hay PUT).
+        switchMap((o) =>
+          Number(o.cajaId ?? 0) === this.cajaId()
+            ? of(o)
+            : this.api
+                .put<OrdenRestaurante>('/facturacion/pedidos', o.pospedmaeId, { cajaId: this.cajaId() })
+                .pipe(switchMap(() => this.srv.getOrden(o.pospedmaeId))),
+        ),
+      )
+      .subscribe({
+        next: (o) => {
+          this.ordenes.update((l) => [...l, o]);
+          this.ordenActivaId.set(o.pospedmaeId);
+          this.mesaSeleccionada.set(null);
+          this.items.set([]);
+          this.ocupado.set(false);
+          this.mobileTab.set('orden');
+          this.msg.add({
+            severity: 'success',
+            summary: etiquetaPuesto(nromesa),
+            detail: `Orden #${o.pospedmaeId} abierta en ${this.nombreCaja(this.cajaId())}.`,
+          });
+        },
+        error: (e) => this.fallo(e, 'No se pudo crear la orden'),
+      });
   }
 
   /**
@@ -259,27 +308,57 @@ export class Restaurante implements OnInit {
     }
 
     this.ocupado.set(true);
-    this.srv.crearOrden(0).subscribe({
-      next: (o) => {
-        this.ordenes.update((l) => [...l, o]);
-        this.ordenActivaId.set(o.pospedmaeId);
-        this.mesaSeleccionada.set(null);
-        this.items.set([]);
-        this.ocupado.set(false);
-        this.mobileTab.set('orden');
-        this.msg.add({
-          severity: 'success',
-          summary: 'Venta libre',
-          detail: `Pedido #${o.pospedmaeId} abierto sin mesa.`,
-        });
-      },
-      error: (e) => this.fallo(e, 'No se pudo abrir la venta libre'),
-    });
+    this.srv
+      .crearOrden(0)
+      .pipe(
+        // Nace en la caja elegida (mismo patrón de restaurante-caja: POST → PUT inmediato si difiere).
+        switchMap((o) =>
+          Number(o.cajaId ?? 0) === this.cajaId()
+            ? of(o)
+            : this.api
+                .put<OrdenRestaurante>('/facturacion/pedidos', o.pospedmaeId, { cajaId: this.cajaId() })
+                .pipe(switchMap(() => this.srv.getOrden(o.pospedmaeId))),
+        ),
+      )
+      .subscribe({
+        next: (o) => {
+          this.ordenes.update((l) => [...l, o]);
+          this.ordenActivaId.set(o.pospedmaeId);
+          this.mesaSeleccionada.set(null);
+          this.items.set([]);
+          this.ocupado.set(false);
+          this.mobileTab.set('orden');
+          this.msg.add({
+            severity: 'success',
+            summary: 'Venta libre',
+            detail: `Pedido #${o.pospedmaeId} abierto sin mesa en ${this.nombreCaja(this.cajaId())}.`,
+          });
+        },
+        error: (e) => this.fallo(e, 'No se pudo abrir la venta libre'),
+      });
   }
 
-  /** Etiqueta de cabecera/lista: 'Mesa 3' para mesas, 'Venta libre' sin mesa. */
+  /** Etiqueta de cabecera/lista: 'Mesa 3' / 'Kiosko 2' / 'Venta libre' sin mesa. */
   etiquetaMesa(o: OrdenRestaurante): string {
-    return (o.nromesa ?? 0) >= 1 ? `Mesa ${o.nromesa}` : 'Venta libre';
+    return etiquetaPuesto(o.nromesa);
+  }
+
+  /** Para el template: etiqueta de un nromesa (mesa, kiosko o venta libre). */
+  etiquetaPuestoDe(nro: number | null | undefined): string {
+    return etiquetaPuesto(nro);
+  }
+
+  /** Número visible del botón: los kioskos guardan nromesa 101+ pero se muestran como 1..N. */
+  numeroPuesto(nro: number): string {
+    return nro > KIOSKO_BASE ? String(nro - KIOSKO_BASE) : String(nro);
+  }
+
+  /**
+   * Estado GENERAL de la cuenta: permanece "En curso" mientras el cliente no
+   * pague; la cocina y la entrega son estados del ÍTEM, no de la cuenta.
+   */
+  estadoGeneral(o: OrdenRestaurante): string {
+    return o.sn_facturado === 'S' ? 'Cobrada' : 'En curso';
   }
 
   /** Mesa con orden → abrir su orden. Mesa libre → seleccionarla (para "Nueva orden"). */
@@ -302,6 +381,51 @@ export class Restaurante implements OnInit {
       next: (lista) => this.items.set(lista),
       error: () => this.error('No se pudo cargar la orden'),
     });
+  }
+
+  /** Nombre legible de una caja para toasts y avisos. */
+  nombreCaja(id: number | null | undefined): string {
+    return CAJAS_RESTAURANTE.find((c) => c.id === Number(id ?? 0))?.nombre ?? `Caja ${id}`;
+  }
+
+  /** true si la orden activa ya está en la caja elegida (para el botón Reasignar). */
+  ordenEnCajaActual(): boolean {
+    const o = this.ordenActiva();
+    return o != null && Number(o.cajaId ?? 0) === this.cajaId();
+  }
+
+  /**
+   * Reasigna la orden ACTIVA a la caja elegida en el select
+   * (PUT /facturacion/pedidos/:id {cajaId} + refetch, mismo flujo de restaurante-caja).
+   */
+  reasignarCaja(): void {
+    const o = this.ordenActiva();
+    const nueva = this.cajaId();
+    if (!o) {
+      this.msg.add({
+        severity: 'info',
+        summary: 'Sin orden activa',
+        detail: 'Abra o seleccione una orden para reasignar su caja.',
+      });
+      return;
+    }
+    if (Number(o.cajaId ?? 0) === nueva || this.ocupado()) return;
+    this.ocupado.set(true);
+    this.api
+      .put<OrdenRestaurante>('/facturacion/pedidos', o.pospedmaeId, { cajaId: nueva })
+      .pipe(switchMap(() => this.srv.getOrden(o.pospedmaeId)))
+      .subscribe({
+        next: (act) => {
+          this.reemplazarOrden(act);
+          this.ocupado.set(false);
+          this.msg.add({
+            severity: 'success',
+            summary: 'Caja reasignada',
+            detail: `Orden #${act.pospedmaeId} → ${this.nombreCaja(nueva)}.`,
+          });
+        },
+        error: (e) => this.fallo(e, 'No se pudo reasignar la caja'),
+      });
   }
 
   cancelarOrden() {
@@ -384,9 +508,49 @@ export class Restaurante implements OnInit {
   /**
    * Entrega por ítem (toggle del mesero): el backend guarda el estado de la línea
    * y sincroniza la cabecera — la orden queda 'entregada' sola con el último ítem.
+   * Misma regla que el mesero: solo la cocina habilita la entrega (LISTO).
    */
   toggleEntregado(item: OrdenItem, entregado: boolean) {
+    if (item.estado_cocina !== 'LISTO') {
+      this.msg.add({
+        severity: 'info',
+        summary: 'En cocina',
+        detail: 'La cocina habilita la entrega cuando deja el producto en LISTO.',
+      });
+      return;
+    }
     this.mutarItem(this.srv.setItemEntregado(item, entregado));
+  }
+
+  /**
+   * Envía a cocina las líneas nuevas de la orden (sin ronda aún): todas quedan
+   * PENDIENTE con una ronda nueva y la cocina las ve al instante (polling 15 s).
+   * La entrega la hace después el mesero en su pantalla.
+   */
+  enviarACocina() {
+    if (this.ocupado()) return;
+    const candidatas = this.lineasPorEnviar();
+    if (!candidatas.length) {
+      this.msg.add({
+        severity: 'info',
+        summary: 'Sin productos',
+        detail: 'No hay productos pendientes de enviar a cocina.',
+      });
+      return;
+    }
+    this.ocupado.set(true);
+    const rondaId = nuevoRondaId();
+    this.srv.enviarLineasACocina(candidatas, rondaId).subscribe({
+      next: (enviadas) => {
+        this.refrescarActiva();
+        this.msg.add({
+          severity: 'success',
+          summary: 'Enviado a cocina',
+          detail: `${enviadas.length} producto(s) en la ronda lista para cocina.`,
+        });
+      },
+      error: (e) => this.fallo(e, 'No se pudo enviar a cocina'),
+    });
   }
 
   private mutarItem(peticion: ReturnType<RestauranteService['quitarItem']>) {
@@ -676,8 +840,9 @@ export class Restaurante implements OnInit {
   }
 
   tituloMesa(m: MesaVista): string {
-    if (m.orden) return `Mesa ${m.nro} · Orden #${m.orden.pospedmaeId}`;
-    return this.mesaSeleccionada() === m.nro ? `Mesa ${m.nro} seleccionada` : `Mesa ${m.nro} libre`;
+    const etiqueta = etiquetaPuesto(m.nro);
+    if (m.orden) return `${etiqueta} · Orden #${m.orden.pospedmaeId}`;
+    return this.mesaSeleccionada() === m.nro ? `${etiqueta} seleccionada` : `${etiqueta} libre`;
   }
 
   /** Total de la línea: si el precio ya incluye ISV, el bruto es el total; si no, se suma el ISV. */
