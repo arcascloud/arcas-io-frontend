@@ -325,6 +325,7 @@ export class RestauranteService {
     return {
       pospedmaeId: Number(o.pospedmaeId),
       fecharegistro: o.fecharegistro,
+      enviado_at: o.enviado_at ?? null,
       nombrecliente: o.nombrecliente ?? '',
       nromesa: o.nromesa == null ? null : Number(o.nromesa),
       sn_entregado: o.sn_entregado === 'S' ? 'S' : 'N',

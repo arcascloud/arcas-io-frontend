@@ -97,6 +97,7 @@ export class ProductoForm implements OnInit {
   // Impuestos
 
   impuestos = signal<TipoImpuesto[]>([]);
+  preciosVta = signal<{ label: string; value: number; porcentaje: number }[]>([]);
 
   // ── Atributos dinámicos (productosdet) ──────────────────────────
   atributos = signal<ProductoDet[]>([]);
@@ -129,8 +130,14 @@ export class ProductoForm implements OnInit {
 
   /** Opciones del indicador si o no */
   readonly snValidarOptions = [
-    { label: 'Si', value: 'N' },
-    { label: 'No', value: 'S' },
+    { label: 'Si', value: 'S' },
+    { label: 'No', value: 'N' },
+  ];
+
+  /** Solicitado bajo demanda: 'S' = se vende sin exigir existencia */
+  readonly snBajoDemandaOptions = [
+    { label: 'No (exige existencia)', value: 'N' },
+    { label: 'Sí (bajo demanda)', value: 'S' },
   ];
 
   readonly TIPO_LABELS = TIPO_LABELS;
@@ -145,7 +152,7 @@ export class ProductoForm implements OnInit {
       descripcion: ['', Validators.required],
       descripcion_corta: [''],
       cstounit: [0],
-      cstoprom: [0],
+      preciovtaId: [null as number | null],
       precioventa: [0],
       puntoretorno: [0],
       categoriaId: [null as number | null, Validators.required],
@@ -171,6 +178,15 @@ export class ProductoForm implements OnInit {
       sn_valida_lote: ['N' as 'S' | 'N'],
       // Solicitable a cocina → default 'N'
       sn_enviar_a_cocina: ['N' as 'S' | 'N'],
+      // Solicitado bajo demanda: se vende sin exigir existencia → default 'N'
+      sn_solicitado_bajo_demanda: ['N' as 'S' | 'N'],
+    });
+
+    this.form.get('preciovtaId')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.recalcularPrecioVenta();
+    });
+    this.form.get('cstounit')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.recalcularPrecioVenta();
     });
 
     this.atributoForm = this.fb.group({
@@ -184,6 +200,7 @@ export class ProductoForm implements OnInit {
     this.cargarMarcas();
     this.cargarPasillos();
     this.cargarImpuestos();
+    this.cargarPreciosVta();
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -199,7 +216,6 @@ export class ProductoForm implements OnInit {
             descripcion: p.descripcion,
             descripcion_corta: p.descripcion_corta,
             cstounit: Number(p.cstounit),
-            cstoprom: Number(p.cstoprom),
             precioventa: Number(p.precioventa),
             puntoretorno: Number(p.puntoretorno),
             categoriaId: p.categoriaId,
@@ -209,6 +225,7 @@ export class ProductoForm implements OnInit {
             sn_droga: p.sn_droga === 'S' ? 'S' : 'N',
             sn_valida_lote: (p as any).sn_valida_lote === 'S' ? 'S' : 'N',
             sn_enviar_a_cocina: (p as any).sn_enviar_a_cocina === 'S' ? 'S' : 'N',
+            sn_solicitado_bajo_demanda: p.sn_solicitado_bajo_demanda === 'S' ? 'S' : 'N',
             // 20261015 ARFM clasificación: los productos antiguos traen 0 →
             // se dejan en null para que el select quede vacío y el usuario
             // asigne el valor real (los 3 campos son obligatorios).
@@ -260,6 +277,31 @@ export class ProductoForm implements OnInit {
           detail: 'No se pudieron cargar los impuestos',
         }),
     });
+  }
+
+  private cargarPreciosVta() {
+    this.catalogoSvc.getAll<any>('/parametros/precios-vta').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const raw = (res || []).filter((r: any) => r.sn_activo !== 'N');
+        this.preciosVta.set(raw.map((r: any) => ({
+          label: `${r.descripcion} (${r.porcentaje ?? 0}%)`,
+          value: r.preciovtaId,
+          porcentaje: Number(r.porcentaje) || 0,
+        })));
+      },
+    });
+  }
+
+  private recalcularPrecioVenta() {
+    const preciovtaId = this.form.get('preciovtaId')?.value;
+    const costo = Number(this.form.get('cstounit')?.value) || 0;
+    if (!preciovtaId || costo <= 0) return;
+    const item = this.preciosVta().find((p) => p.value === preciovtaId);
+    if (item) {
+      const pct = item.porcentaje; // e.g. 40
+      const precioventa = costo * (1 + pct / 100);
+      this.form.patchValue({ precioventa: Math.round(precioventa * 100) / 100 }, { emitEvent: false });
+    }
   }
 
   // 20261015 ARFM Cargar departamentos (tinvdeptos vía /inventario/deptos)
@@ -608,7 +650,6 @@ export class ProductoForm implements OnInit {
           descripcion_corta: raw.descripcion_corta,
           codigo_sku: raw.codigo_sku,
           cstounit: raw.cstounit,
-          cstoprom: raw.cstoprom,
           precioventa: raw.precioventa,
           puntoretorno: raw.puntoretorno,
           deptoId: raw.deptoId,
@@ -618,6 +659,9 @@ export class ProductoForm implements OnInit {
           impuestoId: raw.impuestoId,
           sn_controlado: raw.sn_controlado || 'N',
           sn_droga: raw.sn_droga || 'N',
+          sn_valida_lote: raw.sn_valida_lote || 'N',
+          sn_enviar_a_cocina: raw.sn_enviar_a_cocina || 'N',
+          sn_solicitado_bajo_demanda: raw.sn_solicitado_bajo_demanda || 'N',
           sn_activo: raw.sn_activo || 'S',
         }
       : {
@@ -626,7 +670,6 @@ export class ProductoForm implements OnInit {
           descripcion_corta: raw.descripcion_corta,
           codigo_sku: raw.codigo_sku,
           cstounit: raw.cstounit,
-          cstoprom: raw.cstoprom,
           precioventa: raw.precioventa,
           puntoretorno: raw.puntoretorno,
           deptoId: raw.deptoId,
@@ -636,6 +679,9 @@ export class ProductoForm implements OnInit {
           impuestoId: raw.impuestoId,
           sn_controlado: raw.sn_controlado || 'N',
           sn_droga: raw.sn_droga || 'N',
+          sn_valida_lote: raw.sn_valida_lote || 'N',
+          sn_enviar_a_cocina: raw.sn_enviar_a_cocina || 'N',
+          sn_solicitado_bajo_demanda: raw.sn_solicitado_bajo_demanda || 'N',
           empresaId: this.auth.currentUser()?.empresaId,
           sn_activo: 'S',
         };

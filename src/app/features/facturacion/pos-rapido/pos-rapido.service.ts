@@ -17,6 +17,7 @@ interface ProductoApi {
   precioventa?: number | string;
   stockMinimo?: number | string;
   sn_activo?: string;
+  sn_solicitado_bajo_demanda?: string;
 }
 
 /** Fila de /inventario/existencias */
@@ -193,6 +194,8 @@ export class PosRapidoService {
       const oferta = ofertaPorProducto.get(productoId);
       const precioLista = aNumero(p.precioventa);
       const precioOferta = oferta && oferta.precio > 0 ? oferta.precio : null;
+      const bajoDemanda = p.sn_solicitado_bajo_demanda === 'S';
+      const estado = estadoStock(existencia, stockMinimo);
 
       catalogo.push({
         productoId,
@@ -204,7 +207,9 @@ export class PosRapidoService {
         imagenUrl: imagenPorProducto.get(productoId) ?? null,
         existencia,
         stockMinimo,
-        estado: estadoStock(existencia, stockMinimo),
+        // Bajo demanda sin existencia: no se marca "Agotado" (sigue siendo vendible)
+        estado: estado === 'AGOTADO' && bajoDemanda ? 'BAJO' : estado,
+        sn_solicitado_bajo_demanda: bajoDemanda ? 'S' : 'N',
       });
     }
 

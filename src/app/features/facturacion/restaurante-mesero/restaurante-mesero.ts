@@ -9,10 +9,11 @@ import { DrawerModule } from 'primeng/drawer';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { ToggleButtonModule } from 'primeng/togglebutton';
+import { TooltipModule } from 'primeng/tooltip';
 import { ApiService } from '../../../core/services/api.service';
-import { AuthService } from '../../../core/services/auth.service';
 import { TiendaService } from '../../../core/services/tienda.service';
 import { ProductoTienda } from '../../../core/models/tienda.models';
+import { esBajoDemanda } from '../../../core/utils/stock';
 import { RestauranteService } from '../../../core/services/restaurante.service';
 import { ConfigISV } from '../../../core/models/restaurante.models';
 import { MeseroService } from '../../../core/services/mesero.service';
@@ -54,7 +55,15 @@ const REFRESCO_MS = 15_000;
 @Component({
   selector: 'app-restaurante-mesero',
   standalone: true,
-  imports: [FormsModule, ButtonModule, DrawerModule, SelectModule, ToastModule, ToggleButtonModule],
+  imports: [
+    FormsModule,
+    ButtonModule,
+    DrawerModule,
+    SelectModule,
+    ToastModule,
+    ToggleButtonModule,
+    TooltipModule,
+  ],
   templateUrl: './restaurante-mesero.html',
   styleUrl: './restaurante-mesero.scss',
 })
@@ -63,12 +72,14 @@ export class RestauranteMesero implements OnInit {
   private mesero = inject(MeseroService);
   private tienda = inject(TiendaService);
   private api = inject(ApiService);
-  private auth = inject(AuthService);
   private msg = inject(MessageService);
   private location = inject(Location);
   private destroyRef = inject(DestroyRef);
 
   readonly cajas = CAJAS_RESTAURANTE;
+
+  /** Producto solicitado bajo demanda: no exige existencia para agregarlo al pedido */
+  readonly esBajoDemanda = esBajoDemanda;
   private readonly mesas = Array.from({ length: NUM_MESAS }, (_, i) => crearPuesto('M', i + 1));
   private readonly kioskos = Array.from({ length: NUM_KIOSKOS }, (_, i) => crearPuesto('K', i + 1));
 
@@ -81,8 +92,8 @@ export class RestauranteMesero implements OnInit {
   cargandoOrdenes = signal(true);
   sinConexion = signal(false);
   ahora = signal(Date.now());
-  private primeraCarga = true;
 
+  private primeraCarga = true;
   private porNromesa = computed(() => {
     const m = new Map<number, OrdenMesero>();
     for (const o of this.ordenes()) {
@@ -94,7 +105,9 @@ export class RestauranteMesero implements OnInit {
 
   private todasMesas = computed(() => this.mesas.map((p) => this.vistaDe(p)));
   private todosKioskos = computed(() => this.kioskos.map((p) => this.vistaDe(p)));
-  private puestosDelTipo = computed(() => (this.tipoVista() === 'M' ? this.todasMesas() : this.todosKioskos()));
+  private puestosDelTipo = computed(() =>
+    this.tipoVista() === 'M' ? this.todasMesas() : this.todosKioskos(),
+  );
 
   puestosVisibles = computed(() => {
     const f = this.filtro();
@@ -142,7 +155,7 @@ export class RestauranteMesero implements OnInit {
   }
 
   minutos(o: OrdenMesero): number {
-    const t = Date.parse(o.fecharegistro);
+    const t = Date.parse(String(o.enviado_at ?? o.fecharegistro));
     return Number.isNaN(t) ? 0 : Math.max(0, Math.floor((this.ahora() - t) / 60000));
   }
 
@@ -199,10 +212,20 @@ export class RestauranteMesero implements OnInit {
   /** Nombre del cliente para una cuenta NUEVA (pospedmae.nombrecliente). */
   nombreCliente = signal('');
 
+  /** Mesero válido: `gestorId` distinto de null Y mayor que 0 (0 o null = sin mesero). */
+  hayMesero = computed(() => {
+    const g = this.gestorId();
+    return g != null && Number(g) > 0;
+  });
+
   categorias = computed(() =>
-    Array.from(new Set(this.productos().map((p) => p.categoria).filter((c): c is string => !!c))).sort((a, b) =>
-      a.localeCompare(b, 'es'),
-    ),
+    Array.from(
+      new Set(
+        this.productos()
+          .map((p) => p.categoria)
+          .filter((c): c is string => !!c),
+      ),
+    ).sort((a, b) => a.localeCompare(b, 'es')),
   );
 
   productosFiltrados = computed(() => {
@@ -211,15 +234,26 @@ export class RestauranteMesero implements OnInit {
     const lista = this.productos();
     if (q) {
       return lista.filter(
-        (p) => (p.descripcion || '').toLowerCase().includes(q) || (p.codbarra || '').toLowerCase().includes(q),
+        (p) =>
+          (p.descripcion || '').toLowerCase().includes(q) ||
+          (p.codbarra || '').toLowerCase().includes(q),
       );
     }
     return cat ? lista.filter((p) => p.categoria === cat) : lista;
   });
 
-  private productoPorId = computed(() => new Map(this.productos().map((p) => [Number(p.produtoId), p])));
+  private productoPorId = computed(
+    () => new Map(this.productos().map((p) => [Number(p.produtoId), p])),
+  );
 
-  cantidadEnBorrador = computed(() => new Map(this.borrador().map((l) => [l.productoId, l.cantidad])));
+  /** Para templates: true si el producto está marcado como bajo demanda (no exige existencia). */
+  productoBajoDemanda(productoId: number): boolean {
+    return this.esBajoDemanda(this.productoPorId().get(productoId));
+  }
+
+  cantidadEnBorrador = computed(
+    () => new Map(this.borrador().map((l) => [l.productoId, l.cantidad])),
+  );
   totalLineas = computed(() => this.borrador().reduce((s, l) => s + l.cantidad, 0));
   totalBorrador = computed(() => this.borrador().reduce((s, l) => s + l.precio * l.cantidad, 0));
 
@@ -244,10 +278,36 @@ export class RestauranteMesero implements OnInit {
     this.vista.set('menu');
   }
 
+  /** Mesero obligatorio: se debe elegir antes de abrir una mesa o kiosko. */
+  elegirMesero(id: number | null) {
+    this.gestorId.set(id);
+  }
+
+  /** Aviso compartido: no se puede tomar ni enviar un pedido sin mesero válido. */
+  private avisarSinMesero() {
+    this.msg.add({
+      severity: 'warn',
+      summary: 'Selecciona el mesero',
+      detail: this.gestores().length
+        ? 'Elige el mesero antes de tomar un pedido.'
+        : 'No hay gestores (meseros) configurados.',
+    });
+  }
+
   abrirPuesto(pv: PuestoVista) {
     if (pv.estado === 'libre' || !pv.orden) {
+      if (!this.hayMesero()) {
+        this.avisarSinMesero();
+        return;
+      }
       this.iniciarMenu(pv.puesto);
     } else {
+      if (pv.orden.gestorId != null && Number(pv.orden.gestorId) > 0) {
+        this.gestorId.set(Number(pv.orden.gestorId));
+      } else if (!this.hayMesero()) {
+        this.avisarSinMesero();
+        return;
+      }
       this.abrirDetalle(pv);
     }
   }
@@ -275,12 +335,17 @@ export class RestauranteMesero implements OnInit {
     const id = Number(p.produtoId);
     const actual = this.cantidadEnBorrador().get(id) ?? 0;
     const max = Number(p.existencia);
-    if (MESERO_VALIDAR_EXISTENCIA && actual + 1 > max) {
-      this.msg.add({ severity: 'warn', summary: 'Sin existencia', detail: `${p.descripcion}: solo hay ${max}.` });
+    if (MESERO_VALIDAR_EXISTENCIA && actual + 1 > max && !this.esBajoDemanda(p)) {
+      this.msg.add({
+        severity: 'warn',
+        summary: 'Sin existencia',
+        detail: `${p.descripcion}: solo hay ${max}.`,
+      });
       return;
     }
     this.borrador.update((lineas) => {
-      if (actual > 0) return lineas.map((l) => (l.productoId === id ? { ...l, cantidad: l.cantidad + 1 } : l));
+      if (actual > 0)
+        return lineas.map((l) => (l.productoId === id ? { ...l, cantidad: l.cantidad + 1 } : l));
       return [
         ...lineas,
         {
@@ -298,7 +363,8 @@ export class RestauranteMesero implements OnInit {
 
   /** "+" desde la hoja de revisión: la línea ya trae su existencia. */
   sumarLinea(l: LineaBorrador) {
-    if (MESERO_VALIDAR_EXISTENCIA && l.cantidad + 1 > l.existencia) return;
+    const p = this.productoPorId().get(l.productoId);
+    if (MESERO_VALIDAR_EXISTENCIA && l.cantidad + 1 > l.existencia && !this.esBajoDemanda(p)) return;
     this.borrador.update((lineas) =>
       lineas.map((x) => (x.productoId === l.productoId ? { ...x, cantidad: x.cantidad + 1 } : x)),
     );
@@ -362,6 +428,12 @@ export class RestauranteMesero implements OnInit {
     const lineas = this.borrador();
     if (!puesto || lineas.length === 0 || this.enviando()) return;
 
+    // Sin mesero válido (null o 0) no se envía NINGÚN pedido, ni cuenta nueva ni ronda extra.
+    if (!this.hayMesero()) {
+      this.avisarSinMesero();
+      return;
+    }
+
     const orden = this.ordenActiva();
     const cliente = (orden?.nombrecliente ?? this.nombreCliente()).trim();
     const gestor = orden?.gestorId ?? this.gestorId();
@@ -372,8 +444,8 @@ export class RestauranteMesero implements OnInit {
         this.error('Escriba el nombre del cliente.');
         return;
       }
-      if (gestor == null) {
-        this.error(this.gestores().length ? 'Seleccione el mesero.' : 'No hay gestores (meseros) configurados.');
+      if (gestor == null || Number(gestor) <= 0) {
+        this.avisarSinMesero();
         return;
       }
     }
@@ -408,7 +480,9 @@ export class RestauranteMesero implements OnInit {
         error: (e) => {
           // El borrador se conserva: el mesero reintenta sin volver a tomar el pedido.
           this.enviando.set(false);
-          this.error(this.mensajeDe(e, 'No se pudo enviar el pedido. Revise la conexión y reintente.'));
+          this.error(
+            this.mensajeDe(e, 'No se pudo enviar el pedido. Revise la conexión y reintente.'),
+          );
         },
       });
   }
@@ -424,7 +498,9 @@ export class RestauranteMesero implements OnInit {
   detalle = computed(() => {
     const k = this.detalleClave();
     if (k == null) return null;
-    return [...this.todasMesas(), ...this.todosKioskos()].find((p) => p.puesto.nromesa === k) ?? null;
+    return (
+      [...this.todasMesas(), ...this.todosKioskos()].find((p) => p.puesto.nromesa === k) ?? null
+    );
   });
 
   private abrirDetalle(pv: PuestoVista) {
@@ -481,14 +557,22 @@ export class RestauranteMesero implements OnInit {
   }
 
   agregarDesdeDetalle() {
+    const orden = this.detalle()?.orden;
+    if (orden?.gestorId != null && Number(orden.gestorId) > 0) {
+      this.gestorId.set(Number(orden.gestorId));
+    }
+    if (!this.hayMesero()) {
+      this.avisarSinMesero();
+      return;
+    }
     const d = this.detalle();
     this.sheetDetalle.set(false);
     if (d) this.iniciarMenu(d.puesto);
   }
 
-  /** Etiqueta de cabecera: 'Mesa 3' para mesas, 'Venta libre' sin mesa (misma que el escritorio). */
+  /** Etiqueta de cabecera: 'Mesa N', 'Kiosko N' o 'Venta libre' (misma que el escritorio). */
   etiquetaMesa(o: OrdenMesero): string {
-    return (o.nromesa ?? 0) >= 1 ? `Mesa ${o.nromesa}` : 'Venta libre';
+    return etiquetaPuesto(o.nromesa);
   }
 
   /** Total de la línea: si el precio ya incluye ISV, el bruto es el total; si no, se suma el ISV. */
@@ -523,10 +607,19 @@ export class RestauranteMesero implements OnInit {
     };
   }
 
+  /** Una vez entregada (sn_entregado='S'), la línea ya no se puede modificar ni eliminar. */
+  lineaModificable(item: ItemMesero): boolean {
+    return item.sn_entregado !== 'S';
+  }
+
   sumarItem(item: ItemMesero) {
     const p = this.productoPorId().get(item.productoId);
-    if (MESERO_VALIDAR_EXISTENCIA && p && item.cantidad + 1 > Number(p.existencia)) {
-      this.msg.add({ severity: 'warn', summary: 'Sin existencia', detail: `Solo hay ${p.existencia}.` });
+    if (MESERO_VALIDAR_EXISTENCIA && p && item.cantidad + 1 > Number(p.existencia) && !this.esBajoDemanda(p)) {
+      this.msg.add({
+        severity: 'warn',
+        summary: 'Sin existencia',
+        detail: `Solo hay ${p.existencia}.`,
+      });
       return;
     }
     this.mutarItem(this.srv.cambiarCantidad(item, item.cantidad + 1));
@@ -564,7 +657,9 @@ export class RestauranteMesero implements OnInit {
 
   private mutarFallo(e: any) {
     this.ocupando.set(false);
-    this.error(typeof e?.error?.message === 'string' ? e.error.message : 'No se pudo actualizar la cuenta');
+    this.error(
+      typeof e?.error?.message === 'string' ? e.error.message : 'No se pudo actualizar la cuenta',
+    );
   }
 
   /** Cancela la cuenta vacía — mismo criterio que el escritorio (solo sin líneas). */
@@ -579,7 +674,11 @@ export class RestauranteMesero implements OnInit {
         this.detalleClave.set(null);
         this.itemsDetalle.set([]);
         this.cargarOrdenes(true);
-        this.msg.add({ severity: 'success', summary: 'Orden cancelada', detail: `Orden #${o.pospedmaeId} cancelada.` });
+        this.msg.add({
+          severity: 'success',
+          summary: 'Orden cancelada',
+          detail: `Orden #${o.pospedmaeId} cancelada.`,
+        });
       },
       error: (e) => this.mutarFallo(e),
     });
@@ -590,7 +689,10 @@ export class RestauranteMesero implements OnInit {
     this.cargarProductos();
     this.cargarGestores();
     this.cargarOrdenes();
-    this.srv.cargarISV().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((cfg) => this.isv.set(cfg));
+    this.srv
+      .cargarISV()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((cfg) => this.isv.set(cfg));
 
     // Sin tiempo real todavía: se refresca cada 15 s y al volver a la app (pausado con la pantalla oculta).
     if (typeof document === 'undefined') return;
@@ -616,22 +718,21 @@ export class RestauranteMesero implements OnInit {
 
   /**
    * Meseros = gestores de ventas (ttipogestores módulo 3, activos) — mismo criterio
-   * que Nueva Factura y Pedido. Si el usuario logueado tiene gestor asignado,
-   * queda preseleccionado (un toque menos por pedido).
+   * que Nueva Factura y Pedido. NO se preselecciona ninguno: el mesero debe elegirse
+   * explícitamente antes de poder tomar un pedido (gestorId 0/null = sin mesero).
    */
   private cargarGestores() {
-    const usuarioId = this.auth.currentUser()?.usuarioId;
     this.api
       .get<any[]>('/parametros/gestores')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (items) => {
-          const ventas = (items ?? []).filter((g) => Number(g.moduloId) === 3 && g.sn_activo !== 'N' && !!g.nombre);
-          this.gestores.set(ventas.map((g) => ({ label: String(g.nombre), value: Number(g.gestorId) })));
-          if (usuarioId != null) {
-            const propio = ventas.find((g) => Number(g.usuarioId) === usuarioId);
-            if (propio) this.gestorId.set(Number(propio.gestorId));
-          }
+          const ventas = (items ?? []).filter(
+            (g) => Number(g.moduloId) === 3 && g.sn_activo !== 'N' && !!g.nombre,
+          );
+          this.gestores.set(
+            ventas.map((g) => ({ label: String(g.nombre), value: Number(g.gestorId) })),
+          );
         },
         error: () => this.gestores.set([]),
       });
@@ -676,7 +777,11 @@ export class RestauranteMesero implements OnInit {
   /** Aviso cuando cocina deja lista una orden mientras el mesero está en otra pantalla. */
   private avisarNuevasListas(nuevas: OrdenMesero[]) {
     if (!this.primeraCarga) {
-      const antes = new Set(this.ordenes().filter((o) => this.estadoDe(o) === 'lista').map((o) => o.pospedmaeId));
+      const antes = new Set(
+        this.ordenes()
+          .filter((o) => this.estadoDe(o) === 'lista')
+          .map((o) => o.pospedmaeId),
+      );
       for (const o of nuevas) {
         if (this.estadoDe(o) === 'lista' && !antes.has(o.pospedmaeId)) {
           this.msg.add({

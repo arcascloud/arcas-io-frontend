@@ -24,6 +24,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { NavegacionService } from '../../../../core/services/navegacion.service';
 import { Producto } from '../../../../core/models/inventario.models';
 import { ProductosHelperList } from '../../../helpers/productos';
+import { esBajoDemanda } from '../../../../core/utils/stock';
 import { FooterHelper } from '../../../helpers/footer';
 
 interface FilaDet {
@@ -99,6 +100,9 @@ export class CotizacionesForm implements OnInit {
   emailValido = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.emailDestino().trim()));
   productosArray: Producto[] = [];
   productosFiltrados = signal<Producto[]>([]);
+
+  /** Producto solicitado bajo demanda: no exige existencia para agregarlo a la cotización */
+  readonly esBajoDemanda = esBajoDemanda;
 
   /** Zoom de imagen en hover (mismo patrón que nueva-factura) */
   zoomVisible = signal(false);
@@ -346,9 +350,13 @@ export class CotizacionesForm implements OnInit {
         const existencia = Number(this.existenciasMap.get(pid) ?? 0);
         const stockMin = Number((producto as any).stockMinimo ?? 0);
         r.estado = !tieneRegistro
-          ? 'SIN_STOCK'
+          ? this.esBajoDemanda(producto)
+            ? 'BAJO_DEMANDA'
+            : 'SIN_STOCK'
           : existencia <= 0
-            ? 'AGOTADO'
+            ? this.esBajoDemanda(producto)
+              ? 'BAJO_DEMANDA'
+              : 'AGOTADO'
             : stockMin > 0 && existencia <= stockMin
               ? 'BAJO'
               : 'ALTA';
@@ -383,13 +391,22 @@ export class CotizacionesForm implements OnInit {
     const productoId = Number(p.produtoId) || null;
     const tieneRegistro = this.existenciasMap.has(productoId ?? -1);
     const existencia = Number(this.existenciasMap.get(productoId ?? -1) ?? 0);
+    const bajoDemanda = this.esBajoDemanda(p);
 
-    if (tieneRegistro && existencia <= 0) {
+    if (tieneRegistro && existencia <= 0 && !bajoDemanda) {
       this.msgs.add({ severity: 'warn', summary: 'Sin existencia', detail: p.descripcion + ' no tiene existencia disponible' });
       return;
     }
 
-    const estado = !tieneRegistro ? 'SIN_STOCK' : existencia <= 0 ? 'AGOTADO' : 'ALTA';
+    const estado = !tieneRegistro
+      ? bajoDemanda
+        ? 'BAJO_DEMANDA'
+        : 'SIN_STOCK'
+      : existencia <= 0
+        ? bajoDemanda
+          ? 'BAJO_DEMANDA'
+          : 'AGOTADO'
+        : 'ALTA';
     this.agregarFila(p, estado);
   }
 
@@ -408,7 +425,15 @@ export class CotizacionesForm implements OnInit {
         const productoId = Number(data.produtoId) || null;
         const existencia = Number(this.existenciasMap.get(productoId ?? -1) ?? 0);
         const stockMin = Number(data.stockMinimo ?? 0);
-        const estado = existencia <= 0 ? 'AGOTADO' : existencia <= stockMin ? 'BAJO' : 'ALTA';
+        const bajoDemanda = this.esBajoDemanda(data);
+        const estado =
+          existencia <= 0
+            ? bajoDemanda
+              ? 'BAJO_DEMANDA'
+              : 'AGOTADO'
+            : existencia <= stockMin
+              ? 'BAJO'
+              : 'ALTA';
 
         if (estado === 'AGOTADO') {
           this.msgs.add({ severity: 'warn', summary: 'Sin existencia', detail: data.descripcion + ' no tiene existencia disponible' });
@@ -477,6 +502,7 @@ export class CotizacionesForm implements OnInit {
       case 'ALTA': return 'success';
       case 'BAJO': return 'warn';
       case 'AGOTADO': return 'danger';
+      case 'BAJO_DEMANDA': return 'warn';
       case 'SIN_STOCK': return 'info';
       default: return 'secondary';
     }

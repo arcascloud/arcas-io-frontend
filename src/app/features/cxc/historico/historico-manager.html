@@ -140,7 +140,7 @@
         <div class="p-col-12 p-md-4">
           <div class="p-field">
             <label>Tipo de Movimiento</label>
-            <p-select [value]="selectedRow.tipomov" [options]="tipoMovOptions" disabled styleClass="w-full"></p-select>
+            <p-select [ngModel]="selectedRow.tipomov" [options]="tipoMovOptions" disabled styleClass="w-full"></p-select>
           </div>
         </div>
         <div class="p-col-12 p-md-4">
@@ -160,7 +160,7 @@
         <div class="p-col-12 p-md-4">
           <div class="p-field">
             <label>Documento Anulado</label>
-            <p-select [value]="selectedRow.sn_doc_anulado"
+            <p-select [ngModel]="selectedRow.sn_doc_anulado"
               [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]" disabled
               styleClass="w-full"></p-select>
           </div>
@@ -168,7 +168,7 @@
         <div class="p-col-12 p-md-4">
           <div class="p-field">
             <label>Contabilizado</label>
-            <p-select [value]="selectedRow.sn_cotabilizada"
+            <p-select [ngModel]="selectedRow.sn_cotabilizada"
               [options]="[{label: 'Sí', value: 'S'}, {label: 'No', value: 'N'}]" disabled
               styleClass="w-full"></p-select>
           </div>

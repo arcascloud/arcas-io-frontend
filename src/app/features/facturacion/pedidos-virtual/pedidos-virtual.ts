@@ -23,6 +23,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 import { NavegacionService } from '../../../core/services/navegacion.service';
+import { esBajoDemanda } from '../../../core/utils/stock';
 
 @Component({
   selector: 'app-pedidos-virtual',
@@ -454,8 +455,12 @@ export class PedidosVirtual implements OnInit {
     return Math.round(bruto * this.tasaImpuesto * 100) / 100;
   }
 
+  /** Producto solicitado bajo demanda: no exige existencia para agregarlo/venderlo */
+  readonly esBajoDemanda = esBajoDemanda;
+
   async agregarAlPedido(producto: ProductoTienda) {
-    if (producto.existencia <= 0) {
+    // Bajo demanda: se puede vender aunque la existencia sea 0
+    if (producto.existencia <= 0 && !this.esBajoDemanda(producto)) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Sin stock',
@@ -470,7 +475,7 @@ export class PedidosVirtual implements OnInit {
 
     const existing = this.pedidoItems().find((i) => i.productoId === Number(producto.produtoId));
     const nuevaCant = existing ? existing.cantidad + 1 : 1;
-    if (nuevaCant > producto.existencia) {
+    if (nuevaCant > producto.existencia && !this.esBajoDemanda(producto)) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Stock insuficiente',
@@ -579,7 +584,7 @@ export class PedidosVirtual implements OnInit {
 
   incrementar(item: PedidoItem) {
     const prod = this.productos().find((p) => p.produtoId === Number(item.productoId));
-    if (prod && Number(item.cantidad) >= prod.existencia) {
+    if (prod && Number(item.cantidad) >= prod.existencia && !this.esBajoDemanda(prod)) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Stock insuficiente',

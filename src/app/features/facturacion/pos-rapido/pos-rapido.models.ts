@@ -30,6 +30,8 @@ export interface TarjetaProducto {
   existencia: number;
   stockMinimo: number;
   estado: EstadoStock;
+  /** 'S' = solicitado bajo demanda: no exige existencia para vender */
+  sn_solicitado_bajo_demanda?: 'S' | 'N';
 }
 
 /** Línea del carrito / ticket */
@@ -54,6 +56,8 @@ export interface LineaPos {
   subTotal: number;
   existencia: number;
   estado: EstadoStock;
+  /** 'S' = solicitado bajo demanda: no exige existencia para vender */
+  sn_solicitado_bajo_demanda?: 'S' | 'N';
 }
 
 /** Totales del ticket */

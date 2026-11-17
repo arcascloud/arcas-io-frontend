@@ -23,6 +23,7 @@ import { FORMAPAGO_TODOPAGO } from '../../../core/services/todopago.service';
 import { ConfigISV, OrdenItem, OrdenRestaurante, PagoOrden } from '../../../core/models/restaurante.models';
 import { ProductoTienda } from '../../../core/models/tienda.models';
 import { CAJAS_RESTAURANTE, OrdenMesero, etiquetaPuesto } from '../../../core/models/mesero.models';
+import { esBajoDemanda } from '../../../core/utils/stock';
 import { ProductosHelperList } from '../../helpers/productos';
 import { FooterHelper } from '../../helpers/footer';
 
@@ -86,6 +87,9 @@ export class RestauranteCaja implements OnInit {
 
   /** Para el template (prohibido new Date() en la plantilla). */
   readonly etiquetaPuesto = etiquetaPuesto;
+
+  /** Producto solicitado bajo demanda: no exige existencia para agregarlo */
+  readonly esBajoDemanda = esBajoDemanda;
   readonly opcionesCaja = CAJAS_RESTAURANTE.map((c) => ({ label: c.nombre, value: c.id }));
 
   // ── Bandeja ──
@@ -344,7 +348,7 @@ export class RestauranteCaja implements OnInit {
     if (!orden || !this.esVentaLibre(orden) || this.ocupado()) return;
     const p = this.porProducto().get(item.productoId);
     const nueva = item.cantidad + 1;
-    if (VALIDAR_EXISTENCIA && p && nueva > Number(p.existencia)) {
+    if (VALIDAR_EXISTENCIA && p && nueva > Number(p.existencia) && !this.esBajoDemanda(p)) {
       this.msg.add({ severity: 'warn', summary: 'Sin existencia', detail: `${this.descripcionItem(item)}: solo hay ${p.existencia}.` });
       return;
     }
@@ -383,7 +387,8 @@ export class RestauranteCaja implements OnInit {
     const existente = this.items().find((i) => i.productoId === productoId);
     const nuevaCantidad = (existente?.cantidad ?? 0) + 1;
     const existencia = Number(p.existencia ?? cat?.existencia);
-    if (VALIDAR_EXISTENCIA && !Number.isNaN(existencia) && existencia >= 0 && nuevaCantidad > existencia) {
+    const bajoDemanda = this.esBajoDemanda(p) || this.esBajoDemanda(cat);
+    if (VALIDAR_EXISTENCIA && !Number.isNaN(existencia) && existencia >= 0 && nuevaCantidad > existencia && !bajoDemanda) {
       this.msg.add({ severity: 'warn', summary: 'Sin existencia', detail: `${p.descripcion}: solo hay ${existencia}.` });
       return;
     }

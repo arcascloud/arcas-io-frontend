@@ -33,6 +33,8 @@ export interface Producto {
   sn_controlado?: 'S' | 'N';
   /** Producto regulado como droga o psicotrópico */
   sn_droga?: 'S' | 'N';
+  /** Solicitado bajo demanda: se vende/vende sin exigir existencia */
+  sn_solicitado_bajo_demanda?: 'S' | 'N';
   empresaId: number;
   usuarioCreated: string;
   usuarioUpdated?: string;

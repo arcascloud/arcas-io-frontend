@@ -35,6 +35,7 @@ import { DividerModule } from 'primeng/divider';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { PopoverModule, Popover } from 'primeng/popover';
+import { esBajoDemanda } from '../../../core/utils/stock';
 
 interface Opcion {
   label: string;
@@ -784,12 +785,16 @@ export class NuevaFactura implements OnInit {
     }
   }
 
+  /** Producto solicitado bajo demanda: no exige existencia para agregarlo a la factura */
+  readonly esBajoDemanda = esBajoDemanda;
+
   private agregarProductoDirecto(p: Producto) {
     const productoId = Number(p.produtoId) || null;
     const tieneRegistro = this.existenciasMap.has(productoId ?? -1);
     const existencia = Number(this.existenciasMap.get(productoId ?? -1) ?? 0);
+    const bajoDemanda = this.esBajoDemanda(p);
 
-    if (tieneRegistro && existencia <= 0) {
+    if (tieneRegistro && existencia <= 0 && !bajoDemanda) {
       this.msgs.add({
         severity: 'warn',
         summary: 'Sin existencia',
@@ -798,7 +803,15 @@ export class NuevaFactura implements OnInit {
       return;
     }
 
-    const estado = !tieneRegistro ? 'SIN_STOCK' : existencia <= 0 ? 'AGOTADO' : 'ALTA';
+    const estado = !tieneRegistro
+      ? bajoDemanda
+        ? 'BAJO_DEMANDA'
+        : 'SIN_STOCK'
+      : existencia <= 0
+        ? bajoDemanda
+          ? 'BAJO_DEMANDA'
+          : 'AGOTADO'
+        : 'ALTA';
     // Descuento: promo tiene prioridad, EXCEPTO tercera edad que se acumula
     const oferta = this.getOferta(productoId);
     const descuentoGlobal = this.descuentoGlobalId();
@@ -849,7 +862,9 @@ export class NuevaFactura implements OnInit {
     const productoId = Number(p.produtoId) || null;
     const existencia = Number(p.existencia ?? this.existenciasMap.get(productoId ?? -1) ?? 0);
     const stockMin = Number(p.stockMinimo ?? 0);
-    const estado = existencia <= 0 ? 'AGOTADO' : existencia <= stockMin ? 'BAJO' : 'ALTA';
+    const bajoDemanda = this.esBajoDemanda(p);
+    const estado =
+      existencia <= 0 ? (bajoDemanda ? 'BAJO_DEMANDA' : 'AGOTADO') : existencia <= stockMin ? 'BAJO' : 'ALTA';
 
     if (estado === 'AGOTADO') {
       this.msgs.add({
@@ -1096,6 +1111,8 @@ export class NuevaFactura implements OnInit {
         return 'warn';
       case 'AGOTADO':
         return 'danger';
+      case 'BAJO_DEMANDA':
+        return 'warn';
       case 'SIN_STOCK':
         return 'info';
       default:

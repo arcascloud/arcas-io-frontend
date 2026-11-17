@@ -222,7 +222,9 @@ export class ComprasManager implements OnInit {
   cargarPreciosVta() {
     this.catalogService.getAll<any>('/parametros/precios-vta').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
-        const raw = res || [];
+        // El endpoint ahora devuelve activos e inactivos (para el catálogo);
+        // en Compras solo se ofrecen los activos.
+        const raw = (res || []).filter((r: any) => r.sn_activo !== 'N');
         this.preciosVtaRaw.set(raw);
         this.preciosVta.set(raw.map((r: any) => ({
           label: r.descripcion,

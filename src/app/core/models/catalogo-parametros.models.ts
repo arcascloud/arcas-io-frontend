@@ -409,7 +409,7 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
   },
   precios: {
     ruta: '/facturacion/precios',
-    titulo: 'Precios de Venta',
+    titulo: 'Precios de Vta (Fact.)',
     tituloSingular: 'Precio de Venta',
     subtitulo: 'Tipos de precio de venta',
     idKey: 'preciovtaId',
@@ -417,6 +417,18 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     campos: [
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
       { key: 'porcentaje', label: 'Porcentaje', tipo: 'numero' },
+    ],
+  },
+  'precios-vta': {
+    ruta: '/parametros/precios-vta',
+    titulo: 'Precios de Venta',
+    tituloSingular: 'Precio de Venta',
+    subtitulo: 'Tipos de precio de venta (% sobre costo)',
+    idKey: 'preciovtaId',
+    icono: 'dollar',
+    campos: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+      { key: 'porcentaje', label: 'Porcentaje (%)', tipo: 'numero' },
     ],
   },
   descuentos: {
@@ -1637,6 +1649,19 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
     subtitulo: 'Departamentos de inventario',
     idKey: 'deptoId',
     icono: 'pi-folder',
+    filtros: [
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto' },
+      {
+        key: 'tipo_giro',
+        label: 'Tipo Giro',
+        tipo: 'select',
+        opciones: [
+          { label: 'Comercio', value: 'C' },
+          { label: 'Farmacias', value: 'F' },
+          { label: 'Restaurante', value: 'R' },
+        ],
+      },
+    ],
     campos: [
       { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
       { key: 'zorden', label: 'Orden', tipo: 'numero', requerido: true },

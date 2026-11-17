@@ -235,6 +235,7 @@ export class PosRapido implements OnInit {
 
     const existencia = Number(p?.existencia) || 0;
     const stockMinimo = Number(p?.stockMinimo) || 0;
+    const bajoDemanda = p?.sn_solicitado_bajo_demanda === 'S';
     return {
       productoId,
       codbarra: String(p?.codbarra ?? ''),
@@ -245,7 +246,8 @@ export class PosRapido implements OnInit {
       imagenUrl: null,
       existencia,
       stockMinimo,
-      estado: existencia <= 0 ? 'AGOTADO' : existencia <= stockMinimo ? 'BAJO' : 'ALTA',
+      estado: existencia <= 0 ? (bajoDemanda ? 'BAJO' : 'AGOTADO') : existencia <= stockMinimo ? 'BAJO' : 'ALTA',
+      sn_solicitado_bajo_demanda: bajoDemanda ? 'S' : 'N',
     };
   }
 

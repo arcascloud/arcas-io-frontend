@@ -23,6 +23,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { FORMAPAGO_TODOPAGO } from '../../../core/services/todopago.service';
 import { ConfigISV, MesaVista, NUM_MESAS, OrdenItem, OrdenRestaurante, PagoOrden } from '../../../core/models/restaurante.models';
 import { CAJAS_RESTAURANTE, KIOSKO_BASE, NUM_KIOSKOS, etiquetaPuesto, nuevoRondaId } from '../../../core/models/mesero.models';
+import { esBajoDemanda } from '../../../core/utils/stock';
 
 /** Productos sin existencia no se pueden agregar. Ponlo en false si los platos preparados no llevan kardex. */
 const VALIDAR_EXISTENCIA = true;
@@ -54,6 +55,9 @@ export class Restaurante implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   readonly mesasNumeros = Array.from({ length: NUM_MESAS }, (_, i) => i + 1);
+
+  /** Producto solicitado bajo demanda: no exige existencia para agregarlo a la orden */
+  readonly esBajoDemanda = esBajoDemanda;
   /** Kioskos a la derecha de las mesas: nromesa 101..120 (KIOSKO_BASE + número). */
   readonly kioskosNumeros = Array.from({ length: NUM_KIOSKOS }, (_, i) => KIOSKO_BASE + i + 1);
   /** Tab activa de puestos: PrimeNG v21 p-tabs trabaja con value string (no activeIndex). */
@@ -131,6 +135,9 @@ export class Restaurante implements OnInit {
 
   /** Órdenes abiertas de hoy, mesa más baja primero. */
   pedidos = computed(() => [...this.ordenes()].sort((a, b) => (a.nromesa ?? 0) - (b.nromesa ?? 0)));
+
+  /** Solo ventas libres (sin mesa: nromesa < 1). */
+  pedidosVentaLibre = computed(() => this.pedidos().filter((o) => (o.nromesa ?? 0) < 1));
 
   // ── Detalle de la orden (columna 3) ──
   items = signal<OrdenItem[]>([]);
@@ -444,6 +451,12 @@ export class Restaurante implements OnInit {
     });
   }
 
+  /** Cancelar una orden vacía (sin ítems). Solo disponible cuando la orden está vacía. */
+  cancelarOrdenVacia() {
+    if (this.items().length > 0) return;
+    this.cancelarOrden();
+  }
+
   volverDrawer() {
     if (this.estrecha() && this.mobileTab() === 'orden') {
       this.mobileTab.set('mesas');
@@ -467,8 +480,9 @@ export class Restaurante implements OnInit {
     if (this.ocupado()) return;
 
     const existente = this.items().find((i) => i.productoId === Number(p.produtoId));
+    const esNuevo = !existente;
     const nuevaCantidad = (existente?.cantidad ?? 0) + 1;
-    if (VALIDAR_EXISTENCIA && nuevaCantidad > Number(p.existencia)) {
+    if (VALIDAR_EXISTENCIA && nuevaCantidad > Number(p.existencia) && !this.esBajoDemanda(p)) {
       this.msg.add({ severity: 'warn', summary: 'Sin existencia', detail: `${p.descripcion}: solo hay ${p.existencia}.` });
       return;
     }
@@ -482,14 +496,17 @@ export class Restaurante implements OnInit {
           Math.max(0, ...this.items().map((i) => i.nrofila)) + 1,
         );
     peticion.subscribe({
-      next: () => this.refrescarActiva(),
+      next: () => {
+        this.refrescarActiva();
+        if (esNuevo) this.enviarACocina();
+      },
       error: (e) => this.fallo(e, 'No se pudo agregar el producto'),
     });
   }
 
   incrementar(item: OrdenItem) {
     const p = this.productoPorId().get(item.productoId);
-    if (VALIDAR_EXISTENCIA && p && item.cantidad + 1 > Number(p.existencia)) {
+    if (VALIDAR_EXISTENCIA && p && item.cantidad + 1 > Number(p.existencia) && !this.esBajoDemanda(p)) {
       this.msg.add({ severity: 'warn', summary: 'Sin existencia', detail: `Solo hay ${p.existencia}.` });
       return;
     }
@@ -511,6 +528,7 @@ export class Restaurante implements OnInit {
    * Misma regla que el mesero: solo la cocina habilita la entrega (LISTO).
    */
   toggleEntregado(item: OrdenItem, entregado: boolean) {
+    if (item.sn_entregado === 'S') return;
     if (item.estado_cocina !== 'LISTO') {
       this.msg.add({
         severity: 'info',

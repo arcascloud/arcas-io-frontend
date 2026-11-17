@@ -50,6 +50,7 @@
       <tr>
         <th style="width: 12rem">Cod.</th>
         <th>Descripción</th>
+        <th style="width: 9rem" class="text-center">Bajo demanda</th>
         <th style="width: 7rem" class="text-center">Estado</th>
         <th style="width: 4rem" class="text-center"></th>
       </tr>
@@ -59,6 +60,13 @@
       <tr (click)="editar(p.produtoId)" style="cursor: pointer">
         <td class="font-bold">{{ p.codbarra || '-' }}</td>
         <td>{{ p.descripcion }}</td>
+        <td class="text-center">
+          @if (p.sn_solicitado_bajo_demanda === 'S') {
+            <p-tag value="Bajo demanda" severity="warn" />
+          } @else {
+            <span>—</span>
+          }
+        </td>
         <td class="text-center">
           <p-tag [value]="activoLbl(p.sn_activo)" [severity]="activoSev(p.sn_activo)" />
         </td>
@@ -76,7 +84,7 @@
 
     <ng-template pTemplate="empty">
       <tr>
-        <td colspan="4" class="text-center p-4">No hay productos que coincidan con los filtros.</td>
+        <td colspan="5" class="text-center p-4">No hay productos que coincidan con los filtros.</td>
       </tr>
     </ng-template>
   </p-table>

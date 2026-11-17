@@ -67,9 +67,9 @@ button {
 
 .ms-titulo {
   flex: 1;
-  margin: 0;
+  margin-left: 30px;
   font-size: 1.3rem;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .ms-barra-txt {
@@ -130,10 +130,31 @@ button {
   text-align: center;
 }
 
+.ms-mesero {
+  display: block;
+  margin-left: 10px;
+  padding: 0.5rem 0.5rem 0;
+
+  ::ng-deep .p-select {
+    width: 100%;
+  }
+}
+
+.ms-aviso--mesero {
+  margin: 0.35rem 1rem 0.75rem;
+  padding: 0.4rem 0.75rem;
+  background: color-mix(in srgb, var(--c-warning) 12%, var(--c-surface));
+  border-bottom: 1px dashed var(--c-warning);
+  border-radius: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+}
 /* ═════════ Puestos ═════════ */
 .ms-segmento {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 48% 48%;
+    width: 100%;
   margin: 0.75rem 1rem 0.5rem;
   padding: 0.2rem;
   border: 1px solid var(--c-border);
@@ -141,6 +162,7 @@ button {
   background: var(--c-surface);
 
   button {
+    width: 100% !important;
     min-height: $tap;
     border: 0;
     border-radius: 999px;
@@ -225,10 +247,23 @@ button {
   cursor: pointer;
   transition: transform 0.08s;
 
-  &:active {
+  &:active:not(:disabled) {
     transform: scale(0.96);
   }
 
+                                &:disabled {
+                                  cursor: not-allowed;
+                                  opacity: 0.5;
+                                  pointer-events: none;
+                                }
+
+                                // Sin mesero elegido: atenuado pero SIGUE pulsable (pointer-events activo) para que
+                                // el toque dispare abrirPuesto() y muestre el aviso "Selecciona el mesero".
+                                &.sin-mesero {
+                                  border-style: dashed;
+                                  border: 2px solid var(--bluegray-500);
+                                  border-radius: 1rem;
+                                }
   .puesto-num {
     font-size: 2rem;
     font-weight: 800;
@@ -236,13 +271,12 @@ button {
   }
   .puesto-est {
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   // Libre: borde punteado, igual que la pantalla de escritorio
   &.est-libre {
     border-style: dashed;
-
     .puesto-est,
     .puesto-num {
       color: var(--c-text-muted);
@@ -250,8 +284,14 @@ button {
   }
 
   &.est-enCocina {
-    border-color: var(--c-warning);
-    background: color-mix(in srgb, var(--c-warning) 16%, var(--c-surface));
+    border-color: var(--orange-500);
+      background: var(--c-bg);
+      animation: ms-latido-2 1.8s ease-out infinite;
+
+      .puesto-num,
+      .puesto-est {
+        color: var(--orange-500);
+      }
   }
 
   &.est-servida {
@@ -262,12 +302,43 @@ button {
   // Lista para servir: lo único con relleno sólido y el único movimiento que no pide un toque
   &.est-lista {
     border-color: var(--c-success);
-    background: var(--c-success);
+    background: color-mix(in srgb, var(--c-success) 14%, var(--c-surface));
     color: #fff;
     animation: ms-latido 1.8s ease-out infinite;
+.puesto-num,
+  .puesto-est {
+    color: var(--c-bg-white);
   }
 }
+}
 
+.btntoggleClass {
+
+  color: #f1f5f9;
+  --p-togglebutton-border-radius: 16px;
+
+  /* Bordes */
+  --p-togglebutton-border-radius: 16px;
+
+  --p-togglebutton-disabled-background: var(--orange-400);
+
+
+  /* Estado Normal (Sin chequear) */
+  --p-togglebutton-background: var(--c-bg);
+  --p-togglebutton-border-color: var(--green-700);
+
+  /* Estado Hover (Sin chequear) */
+  --p-togglebutton-hover-background: var(--pink-600);
+  --p-togglebutton-hover-border-color: var(--c-bg-black);
+
+
+  /* Estado Chequeado */
+  --p-togglebutton-checked-background: var(--c-bg);
+  --p-togglebutton-content-checked-background: var(--c-bg);
+  --p-togglebutton-checked-border-color: var(--bluegray-700);
+
+
+}
 @keyframes ms-latido {
   0% {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-success) 55%, transparent);
@@ -278,6 +349,16 @@ button {
   }
 }
 
+@keyframes ms-latido-2 {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--orange-400) 55%, transparent);
+  }
+
+  70%,
+  100% {
+    box-shadow: 0 0 0 0.7rem transparent;
+  }
+}
 /* ═════════ Estados vacíos / carga ═════════ */
 .ms-estado {
   grid-column: 1 / -1;
@@ -306,7 +387,7 @@ button {
     width: 100%;
     min-height: $tap;
     padding: 0 1rem;
-    border: 1px solid var(--c-border);
+    border: 1px solid var(--c-border-strong);
     border-radius: 999px;
     background: var(--c-surface);
     color: var(--c-text);
@@ -327,6 +408,7 @@ button {
 .ms-prods {
   flex: 1;
   min-height: 0;
+  max-height: 72%;
   margin: 0;
   padding: 0;
   overflow-y: auto;
@@ -427,7 +509,7 @@ button {
   display: inline-flex;
   align-items: center;
   margin-right: 0.75rem;
-  border: 2px solid var(--c-primary);
+  border: 2px solid var(--c-bg);
   border-radius: 999px;
 
   button {
@@ -489,7 +571,7 @@ button {
   &:disabled {
     background: var(--c-surface-ground);
     color: var(--c-text-muted);
-    border: 1px dashed var(--c-border);
+    border: 1px solid var(--bluegray-500);
     padding-inline: 1rem;
     justify-content: center;
   }
@@ -754,9 +836,9 @@ button {
 
     &.listo {
       ::ng-deep .p-togglebutton {
-        border-color: var(--c-success);
-        background: color-mix(in srgb, var(--c-success) 14%, var(--c-surface));
-        color: var(--c-text);
+        border-color: var(--c-bg);
+          background: var(--c-bg);
+          color: var(--teal-300);
       }
     }
   }

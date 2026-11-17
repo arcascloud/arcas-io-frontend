@@ -26,6 +26,7 @@ import { CategoriasService } from '../../../core/services/categorias.service';
 import { ProductoTienda, CarritoItem, CheckoutPago } from '../../../core/models/tienda.models';
 import { Categoria } from '../../../core/models/inventario.models';
 import { AuthService } from '../../../core/services/auth.service';
+import { esBajoDemanda } from '../../../core/utils/stock';
 import { CarritoStateService } from '../../../core/services/carrito-state.service';
 import { ApiService } from '../../../core/services/api.service';
 import { UsuariosService } from '../../../core/services/usuarios.service';
@@ -317,8 +318,12 @@ export class TiendaVirtual implements OnInit {
     return this.mapaOfertas.has(Number(producto.produtoId));
   }
 
+  /** Producto solicitado bajo demanda: no exige existencia para agregarlo/venderlo */
+  readonly esBajoDemanda = esBajoDemanda;
+
   async agregarAlCarrito(producto: ProductoTienda) {
-    if (producto.existencia <= 0) {
+    // Bajo demanda: se puede vender aunque la existencia sea 0
+    if (producto.existencia <= 0 && !this.esBajoDemanda(producto)) {
       this.messageService.add({ severity: 'warn', summary: 'Sin stock', detail: 'Producto sin existencia' });
       return;
     }
@@ -329,7 +334,7 @@ export class TiendaVirtual implements OnInit {
 
     const existing = this.carritoItems().find(i => i.productoId === String(producto.produtoId));
     const nuevaCant = existing ? existing.cantidad + 1 : 1;
-    if (nuevaCant > producto.existencia) {
+    if (nuevaCant > producto.existencia && !this.esBajoDemanda(producto)) {
       this.messageService.add({ severity: 'warn', summary: 'Stock insuficiente', detail: `Solo quedan ${producto.existencia} unidades` });
       return;
     }
@@ -406,7 +411,7 @@ export class TiendaVirtual implements OnInit {
 
   incrementar(item: CarritoItem) {
     const prod = this.productos().find(p => p.produtoId === Number(item.productoId));
-    if (prod && Number(item.cantidad) >= prod.existencia) {
+    if (prod && Number(item.cantidad) >= prod.existencia && !this.esBajoDemanda(prod)) {
       this.messageService.add({ severity: 'warn', summary: 'Stock insuficiente', detail: `Solo quedan ${prod.existencia} unidades` });
       return;
     }

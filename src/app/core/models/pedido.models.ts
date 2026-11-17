@@ -8,6 +8,8 @@ export interface ProductoTienda {
   existencia: number;
   categoria?: string;
   categoriaId: number;
+  /** Solicitado bajo demanda: se permite agregar/vender aunque la existencia sea 0 */
+  sn_solicitado_bajo_demanda?: 'S' | 'N';
 }
 
 export interface Pedido {

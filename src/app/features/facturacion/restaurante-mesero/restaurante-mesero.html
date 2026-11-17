@@ -5,15 +5,24 @@
     <!-- ═════════ 1 · Puestos: elegir mesa o kiosko ═════════ -->
     <section class="ms-vista" aria-label="Mesas y kioskos">
       <header class="ms-cab">
-        <button type="button" class="ms-icono" aria-label="Salir de toma de pedidos" (click)="salir()">
+        <p-button type="button" rounded
+        label="volver"
+        severity="primary"
+        variant="outlined"
+        class="ml-5 ms-icono" aria-label="Salir de toma de pedidos" (click)="salir()">
           <i class="pi pi-arrow-left"></i>
-        </button>
-        <h1 class="ms-titulo">Salón</h1>
+        </p-button>
+        <h1 class="ms-titulo">Local</h1>
         @if (listasTotal() > 0) {
-          <button type="button" class="ms-alerta" (click)="irAListas()">
+          <p-button type="button" rounded
+            variant="outlined"
+            severity="success"
+            pTooltip="Haga click en servir y busque la etiqueta Entregar a (Mesa o  Kiosko)"
+            tooltipPosition="left"
+             (click)="irAListas()">
             <i class="pi pi-bell"></i>
             {{ listasTotal() }} {{ listasTotal() === 1 ? 'pedido listo' : 'pedidos listos' }}
-          </button>
+          </p-button>
         }
       </header>
 
@@ -21,33 +30,76 @@
         <p class="ms-aviso" role="status">Sin conexión. Reintentando…</p>
       }
 
+      <div class="ms-mesero">
+        <label class="ms-campo">
+          <span>Mesero <em>*</em></span>
+          <p-select
+            size="small"
+            [options]="gestores()"
+            [ngModel]="gestorId()"
+            (ngModelChange)="elegirMesero($event)"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar mesero…"
+            styleClass="w-full"
+            [appendTo]="'body'"
+            [filter]="true"
+            [invalid]="hayMesero() === false"
+          />
+        </label>
+      </div>
+
+      <!--
+      @if (hayMesero() === false) {
+        <p class="ms-aviso ms-aviso--mesero" role="status">
+          Selecciona el mesero para habilitar mesas y kioskos.
+        </p>
+      }
+        -->
+
       <div class="ms-segmento" role="tablist" aria-label="Tipo de puesto">
-        <button type="button" role="tab" [attr.aria-selected]="tipoVista() === 'M'" [class.activo]="tipoVista() === 'M'" (click)="tipoVista.set('M')">Mesas</button>
-        <button type="button" role="tab" [attr.aria-selected]="tipoVista() === 'K'" [class.activo]="tipoVista() === 'K'" (click)="tipoVista.set('K')">Kioskos</button>
+        <p-button type="button"
+         rounded
+          severity="info"
+        variant="outlined"
+                   styleClass="w-full"
+                    role="tab" [attr.aria-selected]="tipoVista() === 'M'"
+                     [class.activo]="tipoVista() === 'M'"
+                     (click)="tipoVista.set('M')">Mesas</p-button>
+        <p-button type="button"
+        rounded
+        severity="info"
+        variant="outlined"
+                     role="tab" styleClass="ml-2 w-full"
+                     [attr.aria-selected]="tipoVista() === 'K'" [class.activo]="tipoVista() === 'K'"
+                     (click)="tipoVista.set('K')">Kioskos</p-button>
       </div>
 
       <div class="ms-filtros" role="group" aria-label="Filtrar">
-        <button type="button" [class.activo]="filtro() === 'todos'" (click)="filtro.set('todos')">Todas <span>{{ conteos().todos }}</span></button>
-        <button type="button" [class.activo]="filtro() === 'libres'" (click)="filtro.set('libres')">Libres <span>{{ conteos().libres }}</span></button>
-        <button type="button" [class.activo]="filtro() === 'ocupadas'" (click)="filtro.set('ocupadas')">Ocupadas <span>{{ conteos().ocupadas }}</span></button>
-        <button type="button" [class.activo]="filtro() === 'listas'" (click)="filtro.set('listas')">Por servir <span>{{ conteos().listas }}</span></button>
+        <p-button type="button" rounded severity="secondary" [class.activo]="filtro() === 'todos'" (click)="filtro.set('todos')">Todas <span>{{ conteos().todos }}</span></p-button>
+        <p-button type="button" rounded severity="secondary" [class.activo]="filtro() === 'libres'" (click)="filtro.set('libres')">Libres <span>{{ conteos().libres }}</span></p-button>
+        <p-button type="button" rounded severity="secondary" [class.activo]="filtro() === 'ocupadas'" (click)="filtro.set('ocupadas')">Ocupadas <span>{{ conteos().ocupadas }}</span></p-button>
+        <p-button type="button" rounded severity="secondary" [class.activo]="filtro() === 'listas'" (click)="filtro.set('listas')">Por servir <span>{{ conteos().listas }}</span></p-button>
       </div>
 
       @if (cargandoOrdenes()) {
-        <div class="ms-estado"><i class="pi pi-spin pi-spinner"></i><p>Cargando salón…</p></div>
+        <div class="ms-estado"><i class="pi pi-spin pi-spinner"></i><p>Cargando ubicaciones…</p></div>
       } @else {
         <div class="ms-puestos">
           @for (pv of puestosVisibles(); track pv.puesto.nromesa) {
-            <button
+            <p-button
+               size="small"
+               rounded="true"
+               variant="text"
               type="button"
               class="puesto"
-              [class]="'est-' + pv.estado"
+              [class]="'est-' + pv.estado + (!hayMesero() && (pv.estado === 'libre' || !pv.orden) ? ' sin-mesero' : '')"
               [attr.aria-label]="ariaPuesto(pv)"
               (click)="abrirPuesto(pv)"
             >
               <span class="puesto-num">{{ pv.puesto.numero }}</span>
               <span class="puesto-est">{{ textoEstado(pv) }}</span>
-            </button>
+            </p-button>
           } @empty {
             <div class="ms-estado ms-vacio">
               <i class="pi pi-inbox"></i>
@@ -61,9 +113,13 @@
     <!-- ═════════ 2 · Menú: elegir productos ═════════ -->
     <section class="ms-vista" aria-label="Productos">
       <header class="ms-barra">
-        <button type="button" class="ms-icono" aria-label="Volver a mesas y kioskos" (click)="volverAPuestos()">
+        <p-button type="button" class="ms-icono"
+              severity="secondary"
+          [rounded]="true"
+          aria-label="Volver a mesas y kioskos" (click)="volverAPuestos()">
+
           <i class="pi pi-arrow-left"></i>
-        </button>
+        </p-button>
         <div class="ms-barra-txt">
           <h1>{{ puestoActivo()?.etiqueta }}</h1>
           @if (ordenActiva(); as o) {
@@ -72,21 +128,38 @@
             <span>Pedido nuevo</span>
           }
         </div>
-        <button type="button" class="ms-icono" [class.activo]="buscando()" aria-label="Buscar producto" (click)="alternarBusqueda()">
+        <p-button type="button"
+              class="ms-icono" [class.activo]="buscando()"
+              [pTooltip]="'Presione buscar para habilitar busqueda'"
+              tooltipPosition="left"
+           severity="secondary"
+          [rounded]="true"
+              aria-label="Buscar producto" (click)="alternarBusqueda()">
           <i class="pi pi-search"></i>
-        </button>
+        </p-button>
       </header>
 
       @if (buscando()) {
         <div class="ms-busqueda">
-          <input type="search" placeholder="Nombre o código del producto" autocomplete="off" [value]="busqueda()" (input)="alBuscar($event)" />
+          <input pInputText type="search"
+          pSize="small"
+          placeholder="Nombre o código del producto" autocomplete="off"
+          [value]="busqueda()" (input)="alBuscar($event)" />
         </div>
       }
 
       <nav class="ms-cats" aria-label="Categorías">
-        <button type="button" [class.activo]="categoriaActiva() === null" (click)="categoriaActiva.set(null)">Todo</button>
+        <p-button type="button"
+        size="small"
+         [rounded]="true"
+        [class.activo]="categoriaActiva() === null"
+        (click)="categoriaActiva.set(null)">Todo</p-button>
         @for (c of categorias(); track c) {
-          <button type="button" [class.activo]="categoriaActiva() === c" (click)="categoriaActiva.set(c)">{{ c }}</button>
+          <p-button type="button"
+          size="small"
+           [rounded]="true"
+          [class.activo]="categoriaActiva() === c"
+          (click)="categoriaActiva.set(c)">{{ c }}</p-button>
         }
       </nav>
 
@@ -96,9 +169,14 @@
         <ul class="ms-prods">
           @for (p of productosFiltrados(); track p.produtoId) {
             @let cant = cantidadEnBorrador().get(p.produtoId) ?? 0;
-            @let agotado = p.existencia <= 0;
+            @let agotado = p.existencia <= 0 && !esBajoDemanda(p);
             <li class="prod" [class.en-pedido]="cant > 0" [class.agotado]="agotado">
-              <button type="button" class="prod-main" [disabled]="agotado" [attr.aria-label]="'Agregar ' + p.descripcion" (click)="sumar(p)">
+              <p-button
+              variant="text"
+              severity="secondary"
+              size="small"
+              type="button" class="prod-main"
+              [disabled]="agotado" [attr.aria-label]="'Agregar ' + p.descripcion" (click)="sumar(p)">
                 <span class="prod-foto">
                   @if (p.imagen) {
                     <img [src]="resolverImagen(p.imagen)" [alt]="''" loading="lazy" decoding="async" />
@@ -110,17 +188,31 @@
                   <span class="prod-nombre">{{ p.descripcion }}</span>
                   <span class="prod-precio">{{ agotado ? 'Agotado' : formatearPrecio(p.precioventa) }}</span>
                 </span>
-              </button>
+              </p-button>
               @if (!agotado) {
                 @if (cant === 0) {
-                  <button type="button" class="qty-mas" [attr.aria-label]="'Agregar ' + p.descripcion" (click)="sumar(p)">
+                  <p-button
+                    size="small"
+                    rounded="true"
+                    type="button"
+                    styleClass="mr-5"
+                    [attr.aria-label]="'Agregar ' + p.descripcion" (click)="sumar(p)">
                     <i class="pi pi-plus"></i>
-                  </button>
+                  </p-button>
                 } @else {
                   <div class="qty" role="group" [attr.aria-label]="'Cantidad de ' + p.descripcion">
-                    <button type="button" aria-label="Quitar uno" (click)="restar(p.produtoId)"><i class="pi pi-minus"></i></button>
+                    <p-button
+                    size="small"
+                    rounded="true"
+                    type="button"
+                    styleClass="mr-2"
+                    aria-label="Quitar uno" (click)="restar(p.produtoId)"><i class="pi pi-minus"></i></p-button>
                     <span aria-live="polite">{{ cant }}</span>
-                    <button type="button" aria-label="Agregar uno" (click)="sumar(p)"><i class="pi pi-plus"></i></button>
+                    <p-button
+                    rounded="true"
+                    size="small"
+                    styleClass="ml-2 mr-3"
+                    type="button" aria-label="Agregar uno" (click)="sumar(p)"><i class="pi pi-plus"></i></p-button>
                   </div>
                 }
               }
@@ -135,7 +227,11 @@
       }
 
       <footer class="ms-pie">
-        <button type="button" class="ms-ver" [disabled]="totalLineas() === 0" (click)="sheetPedido.set(true)">
+        <p-button
+        size="small"
+        rounded="true"
+        styleClass="w-full"
+        type="button" [disabled]="totalLineas() === 0" (click)="sheetPedido.set(true)">
           @if (totalLineas() === 0) {
             <span class="ms-ver-vacio">Toque un producto para agregarlo</span>
           } @else {
@@ -143,7 +239,7 @@
             <span class="ms-ver-txt">Revisar y enviar</span>
             <strong>{{ formatearPrecio(totalBorrador()) }}</strong>
           }
-        </button>
+        </p-button>
       </footer>
     </section>
   }
@@ -181,7 +277,7 @@
             <div class="qty" role="group" [attr.aria-label]="'Cantidad de ' + l.descripcion">
               <button type="button" aria-label="Quitar uno" [disabled]="enviando()" (click)="restar(l.productoId)"><i class="pi pi-minus"></i></button>
               <span>{{ l.cantidad }}</span>
-              <button type="button" aria-label="Agregar uno" [disabled]="enviando() || l.cantidad >= l.existencia" (click)="sumarLinea(l)"><i class="pi pi-plus"></i></button>
+              <button type="button" aria-label="Agregar uno" [disabled]="enviando() || (l.cantidad >= l.existencia && !productoBajoDemanda(l.productoId))" (click)="sumarLinea(l)"><i class="pi pi-plus"></i></button>
             </div>
             <button type="button" class="linea-quitar" [attr.aria-label]="'Quitar ' + l.descripcion" [disabled]="enviando()" (click)="quitar(l.productoId)">
               <i class="pi pi-trash"></i>
@@ -212,42 +308,38 @@
                 [disabled]="enviando()"
               />
             </label>
-            <label class="ms-campo">
-              <span>Mesero</span>
-              <p-select
-                [options]="gestores()"
-                [value]="gestorId()"
-                (valueChange)="gestorId.set($event)"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Seleccionar mesero..."
-                styleClass="w-full"
-                [appendTo]="'body'"
-                [filter]="true"
-                [disabled]="enviando()"
-              />
-            </label>
           </div>
         }
 
         <div class="ms-cajas" role="radiogroup" aria-label="Caja de cobro">
           @for (c of cajas; track c.id) {
-            <button type="button" role="radio" [attr.aria-checked]="cajaId() === c.id" [class.activo]="cajaId() === c.id" [disabled]="enviando()" (click)="elegirCaja(c.id)">
+            <p-button type="button"
+             size="small"
+             rounded="true"
+             variant="outlined"
+             severity="secondary"
+             role="radio" [attr.aria-checked]="cajaId() === c.id" [class.activo]="cajaId() === c.id" [disabled]="enviando()" (click)="elegirCaja(c.id)">
               {{ c.nombre }}
-            </button>
+            </p-button>
           }
         </div>
         <div class="ms-subtotal">
           <span>Esta ronda</span>
           <strong>{{ formatearPrecio(totalBorrador()) }}</strong>
         </div>
-        <button type="button" class="ms-enviar" [disabled]="enviando() || totalLineas() === 0" (click)="enviar()">
+        <p-button type="button"
+        size="small"
+        rounded="true"
+        variant="outlined"
+         severity="success"
+         styleClass="w-full"
+          [disabled]="enviando() || totalLineas() === 0" (click)="enviar()">
           @if (enviando()) {
             <i class="pi pi-spin pi-spinner"></i> Enviando…
           } @else {
             <i class="pi pi-send"></i> Enviar a {{ cajaNombre() }}
           }
-        </button>
+        </p-button>
       </div>
     </div>
   </ng-template>
@@ -271,8 +363,14 @@
         </div>
       </header>
       <div class="ms-hoja-pie">
-        <button type="button" class="ms-enviar" (click)="sheetDescartar.set(false)">Seguir pidiendo</button>
-        <button type="button" class="ms-secundario ms-peligro" (click)="descartarYVolver()">Descartar pedido</button>
+        <p-button type="button" size="small" severity = "success"
+         rounded="true"
+        styleClass="w-full"
+        (click)="sheetDescartar.set(false)">Seguir pidiendo</p-button>
+        <p-button type="button"
+        rounded="true"
+        styleClass="w-full ms-secundario ms-peligro"
+        (click)="descartarYVolver()">Descartar pedido</p-button>
       </div>
     </div>
   </ng-template>
@@ -327,18 +425,18 @@
                       <span class="orden-item-nombre">{{ info.nombre }}</span>
                       <span class="orden-item-precio">{{ formatearPrecio(item.precioventa) }}</span>
                       <div class="orden-item-cant">
-                        <button type="button" class="qty-btn" aria-label="Quitar uno" [disabled]="ocupando()" (click)="restarItem(item)">
+                        <button type="button" class="qty-btn" aria-label="Quitar uno" [disabled]="ocupando() || !lineaModificable(item)" (click)="restarItem(item)">
                           <i class="pi pi-minus"></i>
                         </button>
                         <span class="qty-valor">{{ item.cantidad }}</span>
-                        <button type="button" class="qty-btn" aria-label="Agregar uno" [disabled]="ocupando()" (click)="sumarItem(item)">
+                        <button type="button" class="qty-btn" aria-label="Agregar uno" [disabled]="ocupando() || !lineaModificable(item)" (click)="sumarItem(item)">
                           <i class="pi pi-plus"></i>
                         </button>
                       </div>
                     </div>
                     <div class="orden-item-lado">
                       <span class="orden-item-total">{{ formatearPrecio(totalLinea(item)) }}</span>
-                      <button type="button" class="item-quitar" aria-label="Quitar de la orden" [disabled]="ocupando()" (click)="quitarDeOrden(item)">
+                      <button type="button" class="item-quitar" aria-label="Quitar de la orden" [disabled]="ocupando() || !lineaModificable(item)" (click)="quitarDeOrden(item)">
                         <i class="pi pi-times"></i>
                       </button>
                     </div>
@@ -346,15 +444,16 @@
                       class="orden-item-estado"
                       [class.listo]="item.sn_entregado !== 'S' && item.estado_cocina === 'LISTO'"
                     >
-                      <p-togglebutton
-                        [ngModel]="item.sn_entregado === 'S'"
-                        (ngModelChange)="toggleEntregado(item, $event)"
-                        onLabel="Entregado"
-                        [offLabel]="etiquetaToggle(item)"
-                        size="small"
-                        [fluid]="true"
-                        [disabled]="ocupando() || !toggleHabilitado(item)"
-                      />
+                    <p-togglebutton
+                          [ngModel]="item.sn_entregado === 'S'"
+                          (ngModelChange)="toggleEntregado(item, $event)"
+                          onLabel="Entregado"
+                          [offLabel]="etiquetaToggle(item)"
+                          styleClass="btntoggleClass"
+                          size="small"
+                          [fluid]="true"
+                          [disabled]="ocupando() || !toggleHabilitado(item) || !lineaModificable(item)"
+                        />
                     </div>
                   </div>
                 } @empty {
@@ -372,9 +471,14 @@
               <div class="linea total"><span>Total</span><strong>{{ formatearPrecio(o.total) }}</strong></div>
 
               @if (!itemsDetalle().length) {
-                <p-button label="Cancelar orden" icon="pi pi-trash" severity="danger" [text]="true" [fluid]="true" [disabled]="ocupando()" (onClick)="cancelarOrdenVacia()" />
+                <p-button rounded label="Cancelar orden" icon="pi pi-trash"
+                variant="outlined"
+                 severity="danger" [text]="true" [fluid]="true" [disabled]="ocupando()" (onClick)="cancelarOrdenVacia()" />
               } @else {
-                <p-button label="Agregar producto" icon="pi pi-plus" severity="success" [fluid]="true" [disabled]="ocupando()" (onClick)="agregarDesdeDetalle()" />
+                <p-button rounded label="Agregar producto"
+                variant="outlined"
+                severity="success"
+                icon="pi pi-plus"  [fluid]="true" [disabled]="ocupando()" (onClick)="agregarDesdeDetalle()" />
               }
             </footer>
           } @else {

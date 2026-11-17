@@ -263,13 +263,15 @@ export class PosRapidoState {
   // ═══════════════════════════════════════════════════════════════════
 
   agregarProducto(producto: TarjetaProducto): ResultadoAgregar {
-    if (producto.estado === 'AGOTADO' || producto.existencia <= 0) return 'agotado';
+    // Bajo demanda: no exige existencia para entrar al carrito
+    const bajoDemanda = producto.sn_solicitado_bajo_demanda === 'S';
+    if ((producto.estado === 'AGOTADO' || producto.existencia <= 0) && !bajoDemanda) return 'agotado';
 
     const existentes = this.filas().filter((f) => f.productoId === producto.productoId);
     const cantidadActual = existentes.reduce((s, f) => s + f.cantidad, 0);
 
     if (existentes.length > 0) {
-      if (cantidadActual + 1 > producto.existencia) return 'max-existencia';
+      if (cantidadActual + 1 > producto.existencia && !bajoDemanda) return 'max-existencia';
       this.filas.update((filas) =>
         filas.map((f) => {
           if (f.productoId !== producto.productoId || f !== existentes[0]) return f;
@@ -277,7 +279,7 @@ export class PosRapidoState {
         }),
       );
     } else {
-      if (1 > producto.existencia) return 'sin-existencia';
+      if (1 > producto.existencia && !bajoDemanda) return 'sin-existencia';
       this.contadorFila++;
       const nueva: LineaPos = {
         fila: this.contadorFila,
@@ -294,6 +296,7 @@ export class PosRapidoState {
         subTotal: 0,
         existencia: producto.existencia,
         estado: producto.estado,
+        sn_solicitado_bajo_demanda: producto.sn_solicitado_bajo_demanda,
       };
       this.filas.update((f) => [...f, this.recalcularLinea(nueva)]);
     }
@@ -306,7 +309,7 @@ export class PosRapidoState {
       this.eliminarLinea(fila);
       return 'ok';
     }
-    if (cant > fila.existencia) {
+    if (cant > fila.existencia && fila.sn_solicitado_bajo_demanda !== 'S') {
       this.filas.update((filas) =>
         filas.map((f) =>
           f.fila === fila.fila

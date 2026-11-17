@@ -12,6 +12,8 @@ export interface ProductoTienda {
   deptoId?: number;
   categoriaDeptoId?: number;
   tipo_giro?: string;
+  /** Solicitado bajo demanda: se permite agregar/vender aunque la existencia sea 0 */
+  sn_solicitado_bajo_demanda?: 'S' | 'N';
 }
 
 export interface Carrito {

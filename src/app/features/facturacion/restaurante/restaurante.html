@@ -61,7 +61,7 @@
           <button
             type="button"
             class="prod-card"
-            [disabled]="p.existencia <= 0"
+            [disabled]="p.existencia <= 0 && !esBajoDemanda(p)"
             [attr.aria-label]="'Agregar ' + p.descripcion + ' a la orden'"
             (click)="agregarProducto(p)"
           >
@@ -82,6 +82,8 @@
                 <span class="prod-precio">{{ formatearPrecio(p.precioventa) }}</span>
                 @if (p.existencia > 0) {
                   <p-tag [value]="'Existencia: ' + p.existencia" severity="info" />
+                } @else if (esBajoDemanda(p)) {
+                  <p-tag value="Bajo demanda" severity="warn" />
                 } @else {
                   <p-tag value="Sin stock" severity="danger" />
                 }
@@ -116,7 +118,7 @@
       <!-- Columna 2 · Mesas + Kioskos primero, Pedidos después -->
       <section class="col-mesas" aria-label="Puestos (mesas y kioskos) y pedidos">
         <header class="col-cabecera">
-          <h2 class="col-titulo">Puestos</h2>
+          <h3 class="col-titulo">Puestos</h3>
           @if (estrecha()) {
             <p-button icon="pi pi-times" [rounded]="true" [text]="true" severity="secondary" aria-label="Cerrar panel" (onClick)="drawerVisible.set(false)" />
           }
@@ -228,11 +230,12 @@
         <div class="pedidos-cabecera">
           <h3 class="col-subtitulo">
             Pedidos
-            <span class="conteo">{{ pedidos().length }}</span>
+            <span class="conteo">{{ pedidosVentaLibre().length }}</span>
           </h3>
           <p-button
             label="Nueva orden"
             icon="pi pi-plus"
+            variant="outlined"
             severity="success"
             [size]="'small'"
             [rounded]="true"
@@ -249,18 +252,24 @@
           </p>
         }
 
-        @if (pedidos().length === 0) {
-          <p class="vacio-texto">Sin pedidos. Seleccione una mesa libre y pulse "Nueva orden", o pulse "Venta libre".</p>
+        @if (pedidosVentaLibre().length === 0) {
+          <p class="vacio-texto">Sin pedidos de venta libre. Pulse "Venta libre" para abrir una.</p>
         } @else {
           <ul class="pendientes">
-            @for (o of pedidos(); track o.pospedmaeId) {
+            @for (o of pedidosVentaLibre(); track o.pospedmaeId) {
               <li class="pendiente" [class.seleccionada]="o.pospedmaeId === ordenActivaId()">
-                <button type="button" class="pendiente-info" (click)="seleccionarOrden(o.pospedmaeId)">
-                  <strong>{{ etiquetaMesa(o) }}</strong>
-                  <span>
+                <p-button type="button"
+                  size="small"
+                  rounded
+                  severity="primary"
+                  variant="outlined"
+                  class="pendiente-info"
+                   (click)="seleccionarOrden(o.pospedmaeId)">
+                  <strong class="pendiente-info">{{ etiquetaMesa(o) }}</strong>
+                  <span class="pendiente-info">
                     Orden #{{ o.pospedmaeId }} · hace {{ minutos(o) }} min@if (o.sn_entregado === 'S') { · entregado }
                   </span>
-                </button>
+                </p-button>
               </li>
             }
           </ul>
@@ -280,19 +289,6 @@
             </span>
           </header>
 
-          <p-button
-            [label]="'Enviar a cocina (' + lineasPorEnviar().length + ')'"
-            icon="pi pi-send"
-            severity="warn"
-            [size]="'small'"
-            [rounded]="true"
-            styleClass="w-full"
-            [disabled]="ocupado() || lineasPorEnviar().length === 0"
-            pTooltip="Envía los productos nuevos al tablero de cocina con una ronda nueva"
-            tooltipPosition="bottom"
-            (onClick)="enviarACocina()"
-          />
-
           <div class="orden-items">
             @for (item of items(); track item.pospeddetId) {
               @let info = infoItem(item);
@@ -308,34 +304,36 @@
                   <span class="orden-item-nombre">{{ info.nombre }}</span>
                   <span class="orden-item-precio">{{ formatearPrecio(item.precioventa) }}</span>
                   <div class="orden-item-cant">
-                    <button type="button" class="qty-btn" aria-label="Quitar uno" [disabled]="ocupado()" (click)="decrementar(item)">
+                    <button type="button" class="qty-btn" aria-label="Quitar uno" [disabled]="ocupado() || item.sn_entregado === 'S'" (click)="decrementar(item)">
                       <i class="pi pi-minus"></i>
                     </button>
                     <span class="qty-valor">{{ item.cantidad }}</span>
-                    <button type="button" class="qty-btn" aria-label="Agregar uno" [disabled]="ocupado()" (click)="incrementar(item)">
+                    <button type="button" class="qty-btn" aria-label="Agregar uno" [disabled]="ocupado() || item.sn_entregado === 'S'" (click)="incrementar(item)">
                       <i class="pi pi-plus"></i>
                     </button>
                   </div>
                 </div>
                 <div class="orden-item-lado">
                   <span class="orden-item-total">{{ formatearPrecio(totalLinea(item)) }}</span>
-                  <button type="button" class="item-quitar" aria-label="Quitar de la orden" [disabled]="ocupado()" (click)="quitar(item)">
+                  <button type="button" class="item-quitar" aria-label="Quitar de la orden" [disabled]="ocupado() || item.sn_entregado === 'S'" (click)="quitar(item)">
                     <i class="pi pi-times"></i>
                   </button>
                 </div>
-                <div class="orden-item-estado">
+                <div class="orden-item-estado" [class.listo]="item.sn_entregado === 'S'">
                   <p-togglebutton
                     [ngModel]="item.sn_entregado === 'S'"
                     (ngModelChange)="toggleEntregado(item, $event)"
                     onLabel="Entregado"
-                    offLabel="Pendiente en cocina"
+                    offLabel="Servir al cliente"
                     size="small"
                     [fluid]="true"
-                    [disabled]="ocupado() || item.estado_cocina !== 'LISTO'"
+                    [disabled]="ocupado() || item.estado_cocina !== 'LISTO' || item.sn_entregado === 'S'"
                     [pTooltip]="
-                      item.estado_cocina === 'LISTO'
-                        ? 'Entregar producto a la mesa'
-                        : 'La cocina habilita la entrega al dejarlo en LISTO'
+                      item.sn_entregado === 'S'
+                        ? 'Producto ya entregado'
+                        : item.estado_cocina === 'LISTO'
+                          ? 'Entrega el producto a la mesa'
+                          : 'En preparación'
                     "
                     tooltipPosition="bottom"
                   />
@@ -362,9 +360,14 @@
             <div class="linea total"><span>Total</span><strong>{{ formatearPrecio(o.total) }}</strong></div>
 
             @if (!items().length) {
-              <p-button label="Cancelar orden" icon="pi pi-trash" severity="danger" [text]="true" [fluid]="true" [disabled]="ocupado()" (onClick)="cancelarOrdenVacia()" />
+              <p-button label="Cancelar orden" icon="pi pi-trash"
+              severity="danger" [text]="true" [fluid]="true"
+              [disabled]="ocupado()" (onClick)="cancelarOrdenVacia()" />
             } @else {
-              <p-button label="Pagar ahora" icon="pi pi-check" severity="success" [fluid]="true" [disabled]="ocupado()" (onClick)="abrirPago()" />
+              <p-button label="Pagar ahora"
+              variant="outlined"
+              rounded
+              icon="pi pi-check" severity="success" [fluid]="true" [disabled]="ocupado()" (onClick)="abrirPago()" />
             }
           </footer>
         } @else {

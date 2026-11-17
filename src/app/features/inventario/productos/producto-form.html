@@ -107,18 +107,15 @@
                   </div>
 
                   <div class="campo">
-                    <label for="cstoprom">Costo promedio</label>
-                    <p-inputnumber
-                      [size]="'small'"
-                      id="cstoprom"
-                      formControlName="cstoprom"
-                      mode="currency"
-                      currency="HNL"
-                      [locale]="'es-HN'"
-                      [minFractionDigits]="2"
-                      [maxFractionDigits]="2"
-                      [useGrouping]="true"
-                      [inputStyle]="{ 'width': '100%' }"
+                    <label for="preciovtaId">Tipo Precio Venta</label>
+                    <p-select
+                      [options]="preciosVta()"
+                      formControlName="preciovtaId"
+                      placeholder="Seleccionar tipo precio..."
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                      [filter]="true"
+                      filterBy="label"
                     />
                   </div>
 
@@ -325,22 +322,38 @@
             <p-accordion-header>Atributo de restaurante</p-accordion-header>
             <p-accordion-content>
               <div class="p-fluid">
-                <div class="campo">
-                  <label for="sn_enviar_a_cocina">Enviar a Cocina</label>
-                  <p-select
-                    size="small"
-                    id="sn_enviar_a_cocina"
-                    formControlName="sn_enviar_a_cocina"
-                    [options]="snValidarOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Enviar a cocina"
-                    styleClass="w-full"
-                    [appendTo]="'body'"
-                  />
-                </div>
+                <div class="form-grid-2">
+                  <div class="campo">
+                    <label for="sn_enviar_a_cocina">Enviar a Cocina</label>
+                    <p-select
+                      size="small"
+                      id="sn_enviar_a_cocina"
+                      formControlName="sn_enviar_a_cocina"
+                      [options]="snValidarOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Enviar a cocina"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    />
+                  </div>
 
-                <div class="p-fluid"></div>
+                  <div class="campo">
+                    <label for="sn_solicitado_bajo_demanda">Solicitado bajo demanda</label>
+                    <p-select
+                      size="small"
+                      id="sn_solicitado_bajo_demanda"
+                      formControlName="sn_solicitado_bajo_demanda"
+                      [options]="snBajoDemandaOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Bajo demanda"
+                      styleClass="w-full"
+                      [appendTo]="'body'"
+                    />
+                    <small class="hint">Se permite vender sin existencia disponible.</small>
+                  </div>
+                </div>
               </div>
             </p-accordion-content>
           </p-accordion-panel>

@@ -213,6 +213,8 @@
             [severity]="getSeverity(producto.existencia)"
             style="padding: 0"
           />
+          } @else if (esBajoDemanda(producto)) {
+          <p-tag value="Bajo demanda" severity="warn" />
           } @else {
           <p-tag value="Sin stock" severity="danger" />
           }
@@ -242,7 +244,7 @@
                 [rounded]="true"
                 [raised]="true"
                 variant="text"
-                [disabled]="producto.existencia <= 0"
+                [disabled]="producto.existencia <= 0 && !esBajoDemanda(producto)"
                 (click)="agregarAlPedido(producto)"
                 pTooltip="Agregar al pedido"
                 tooltipPosition="left"
@@ -281,10 +283,14 @@
           }
         </div>
         <div class="list-stock">
+          @if (producto.existencia <= 0 && esBajoDemanda(producto)) {
+          <p-tag value="Bajo demanda" severity="warn" />
+          } @else {
           <p-tag
             [value]="producto.existencia > 0 ? producto.existencia + ' disp.' : 'Sin stock'"
             [severity]="getSeverity(producto.existencia)"
           />
+          }
         </div>
         <div class="list-precio">
           @if (esOferta(producto)) {
@@ -307,7 +313,7 @@
           <p-button
             icon="pi pi-cart-plus"
             [rounded]="true"
-            [disabled]="producto.existencia <= 0"
+            [disabled]="producto.existencia <= 0 && !esBajoDemanda(producto)"
             (click)="agregarAlPedido(producto)"
             pTooltip="Agregar al pedido"
             tooltipPosition="left"

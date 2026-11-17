@@ -12,6 +12,8 @@ export const NOMBRE_ORDEN_PENDIENTE = 'Orden de restaurante';
 export interface OrdenRestaurante {
   pospedmaeId: number;
   fecharegistro: string;
+  /** Hora en que la orden/ronda fue enviada a cocina (reloj operativo). Se usa para el tiempo transcurrido del cliente. */
+  enviado_at?: string | Date | null;
   nombrecliente: string;
   /** null = orden creada pero todavía sin mesa */
   nromesa: number | null;

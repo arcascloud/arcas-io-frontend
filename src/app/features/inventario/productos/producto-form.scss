@@ -71,6 +71,12 @@
     font-size: 0.75rem;
   }
 
+  .hint {
+    color: var(--c-text-muted);
+    font-size: 0.72rem;
+    font-weight: 400;
+  }
+
   ::ng-deep {
     .p-select {
       width: 100%;

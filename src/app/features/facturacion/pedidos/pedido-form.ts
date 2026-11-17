@@ -23,6 +23,7 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NavegacionService } from '../../../core/services/navegacion.service';
+import { esBajoDemanda } from '../../../core/utils/stock';
 import { ProductosHelperList } from '../../helpers/productos';
 import { FooterHelper } from '../../helpers/footer';
 import { TodoPagoService, TodoPagoLink, FORMAPAGO_TODOPAGO } from '../../../core/services/todopago.service';
@@ -469,7 +470,10 @@ export class PedidoForm implements OnInit {
       codbarra: d.codbarra ?? '',
       descripcion: prod?.descripcion || `Producto #${productoId}`,
       imagenUrl: this.imagenesMap.get(productoId) ?? null,
-      estado: this.calcularEstado(existencia),
+      estado:
+        this.esBajoDemanda(prod) && existencia <= 0
+          ? 'BAJO_DEMANDA'
+          : this.calcularEstado(existencia),
       cantidad,
       precioventa: precio,
       descuento: descPct,
@@ -680,12 +684,21 @@ export class PedidoForm implements OnInit {
     });
   }
 
+  /** Producto solicitado bajo demanda: no exige existencia para agregarlo al pedido */
+  readonly esBajoDemanda = esBajoDemanda;
+
   /** Agrega un producto como línea del pedido (o suma 1 si ya existe) */
   private agregarProducto(p: any) {
     const productoId = Number(p.produtoId ?? p.productoId) || null;
     const existencia = Number(p.existencia ?? this.existenciasMap.get(productoId ?? -1) ?? 0);
     const tieneRegistro = this.existenciasMap.has(productoId ?? -1);
-    const estado = !tieneRegistro ? 'SIN_STOCK' : this.calcularEstado(existencia);
+    const bajoDemanda = this.esBajoDemanda(p);
+    const estado =
+      existencia <= 0 && bajoDemanda
+        ? 'BAJO_DEMANDA'
+        : !tieneRegistro
+          ? 'SIN_STOCK'
+          : this.calcularEstado(existencia);
 
     if (estado === 'AGOTADO') {
       this.msgs.add({
@@ -699,7 +712,7 @@ export class PedidoForm implements OnInit {
     const existente = this.filas().find((f) => f.productoId === productoId);
     if (existente) {
       const nuevaCant = existente.cantidad + 1;
-      if (tieneRegistro && nuevaCant > existencia) {
+      if (tieneRegistro && nuevaCant > existencia && !bajoDemanda) {
         this.msgs.add({
           severity: 'warn',
           summary: 'Stock insuficiente',
@@ -1535,6 +1548,8 @@ export class PedidoForm implements OnInit {
         return 'warn';
       case 'AGOTADO':
         return 'danger';
+      case 'BAJO_DEMANDA':
+        return 'warn';
       case 'SIN_STOCK':
         return 'info';
       default:
