@@ -1,0 +1,29 @@
+<p-dialog
+  [(visible)]="visible"
+  header="Términos y Condiciones de Uso"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '960px': '85vw', '640px': '95vw' }"
+  styleClass="terminos-dialog-modal"
+>
+  <div class="terminos-content">
+    @for (sec of secciones; track sec.titulo) {
+      <div class="terminos-seccion">
+        <h3>{{ sec.titulo }}</h3>
+        <p>{{ sec.contenido }}</p>
+      </div>
+    }
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cerrar"
+      icon="pi pi-check"
+      severity="success"
+      [rounded]="true"
+      variant="text"
+      (onClick)="cerrar()"
+    />
+  </ng-template>
+</p-dialog>
