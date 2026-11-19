@@ -1,0 +1,176 @@
+// Estilos sencillos y profesionales, sin barras de colores verdes o azules, font-weight <= 600
+.reporte-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: inherit;
+  color: #fff;
+
+  .reporte-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+
+    .reporte-title {
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0 0 0.25rem 0;
+        color: var(--blue-100);
+      }
+      .subtitle {
+        font-size: 0.875rem;
+        color: var(--bluegray-200);
+        margin: 0;
+        font-weight: 400;
+      }
+    }
+
+    .reporte-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+  }
+
+  .reporte-filtros {
+    background: var(--c-bg);
+    padding: 1.25rem;
+
+    .filtros-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) auto;
+      gap: 1rem;
+      align-items: flex-end;
+
+      .filtro-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+
+        label {
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: var(--bluegray-200);
+        }
+      }
+
+      .filtro-actions {
+        display: flex;
+        align-items: flex-end;
+      }
+    }
+  }
+
+  .reporte-tabla-container {
+    background: var(--c-bg);
+    padding: 1.25rem;
+
+    .tabla-resumen-info {
+      font-size: 0.875rem;
+      color: var(--bluegray-200);
+      padding-bottom: 0.75rem;
+    }
+
+    .grupo-seccion {
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+
+      .grupo-header {
+        background: var(--c-bg);
+        border-bottom: 1px dashed var(--for-border-color-alls);
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+        color: var(--bluegray-200);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        font-weight: 500;
+
+        strong {
+          font-weight: 600;
+          color: var(--bluegray-200);
+        }
+      }
+
+      .reporte-tabla {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+
+        th, td {
+          padding: 0.5rem 0.75rem;
+          text-align: left;
+        }
+
+        th {
+          background: var(--c-bg);
+          font-weight: 600;
+          color: var(--bluegray-200);
+        }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+
+        .badge-activa {
+          font-size: 0.75rem;
+          padding: 0.1rem 0.5rem;
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          color: #334155;
+          border-radius: 4px;
+        }
+
+        .badge-anulada {
+          font-size: 0.75rem;
+          padding: 0.1rem 0.5rem;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #991b1b;
+          border-radius: 4px;
+        }
+
+        .fila-subtotal {
+          background: var(--c-bg);
+          font-weight: 600;
+          td {
+            color: var(--bluegray-200);
+          }
+        }
+      }
+    }
+
+    .gran-total-card {
+      background: var(--c-bg);
+      padding: 1rem;
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .gran-total-titulo {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--blue-200);
+      }
+
+      .gran-total-valores {
+        display: flex;
+        gap: 2rem;
+        font-size: 0.9rem;
+        color: var(--blue-200);
+
+        strong {
+          font-weight: 600;
+          color: var(--blue-200);
+        }
+        .text-lg {
+          font-size: 1.05rem;
+        }
+      }
+    }
+  }
+}

@@ -45,6 +45,7 @@ export class EmpresasManager implements OnInit {
   // ===== Listado =====
   empresas = signal<Empresa[]>([]);
   empresaSeleccionada = signal<Empresa | null>(null);
+  creando = signal(false);
   cargando = signal(false);
   q = signal('');
 
@@ -170,6 +171,7 @@ export class EmpresasManager implements OnInit {
   }
 
   seleccionar(emp: Empresa) {
+    this.creando.set(false);
     this.empresaSeleccionada.set(emp);
     this.activeTabValue.set('0');
     this.empresaForm.patchValue({
@@ -197,7 +199,15 @@ export class EmpresasManager implements OnInit {
   }
 
   nueva() {
-    this.empresaSeleccionada.set(null);
+    this.empresaSeleccionada.set({
+      empresaId: 0,
+      descripcion: '',
+      msjfactura: 'LA FACTURA ES BENEFICIO DE TODOS',
+      msjdevfactura: 'NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS',
+      msjcotizacion: 'NO SE ACEPTAN DEVOLUCIONES O CAMBIOS DESPUES DE 15 DIAS',
+      sn_activo: 'S',
+    } as Empresa);
+    this.creando.set(true);
     this.activeTabValue.set('0');
     this.empresaForm.reset({
       descripcion: '',
@@ -213,6 +223,11 @@ export class EmpresasManager implements OnInit {
     this.logoPreview.set(null);
     this.logoFile = null;
     this.impresoras.set([]);
+  }
+
+  cancelarCreacion() {
+    this.creando.set(false);
+    this.empresaSeleccionada.set(null);
   }
 
   filtrar() {
@@ -255,6 +270,7 @@ export class EmpresasManager implements OnInit {
         this.saving.set(false);
         this.load();
         if (!emp && res?.empresaId) {
+          this.creando.set(false);
           this.empresasService.getOne(res.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((nueva) => {
             this.seleccionar(nueva);
           });

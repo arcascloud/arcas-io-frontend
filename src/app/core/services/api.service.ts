@@ -136,11 +136,12 @@ export class ApiService {
    * @param id - Identificador del registro a actualizar
    * @param body - Datos actualizados del registro
    * @param opts - Opciones de escritura
+   * @param params - Query params adicionales (ej: empresaId explícito; sobrescribe el auto-inyectado)
    * @returns Observable con la respuesta tipada
    */
-  put<T>(path: string, id: number | string, body: unknown, opts?: ApiWriteOpts): Observable<T> {
+  put<T>(path: string, id: number | string, body: unknown, opts?: ApiWriteOpts, params?: Record<string, string | number>): Observable<T> {
     return this.http.put<T>(`${environment.apiUrl}${path}/${id}`, this.withContexto(path, body, opts), {
-      params: this.withEmpresa(),
+      params: this.withEmpresa(params),
     });
   }
 
@@ -162,11 +163,12 @@ export class ApiService {
    * Elimina un registro por su ID
    * @param path - Ruta relativa del endpoint
    * @param id - Identificador del registro a eliminar
+   * @param params - Query params adicionales (ej: empresaId explícito; sobrescribe el auto-inyectado)
    * @returns Observable con la respuesta tipada
    */
-  delete<T>(path: string, id: number | string): Observable<T> {
+  delete<T>(path: string, id: number | string, params?: Record<string, string | number>): Observable<T> {
     return this.http.delete<T>(`${environment.apiUrl}${path}/${id}`, {
-      params: this.withEmpresa(),
+      params: this.withEmpresa(params),
     });
   }
 }

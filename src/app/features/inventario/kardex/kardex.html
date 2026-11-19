@@ -50,11 +50,9 @@
         <th>Tipo</th>
         <th>Referencia</th>
         <th class="text-right">Cantidad</th>
-        <th class="text-right">Saldo Anterior</th>
-        <th class="text-right">Saldo Actual</th>
+        <th class="text-right">Existencia Anterior</th>
+        <th class="text-right">Existencia Actual</th>
         <th class="text-right">Costo Unit.</th>
-        <th class="text-right">Subtotal</th>
-        <th class="text-right">Costo Total</th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-k>
@@ -69,8 +67,6 @@
         <td class="text-right">{{ k.existencia_anterior }}</td>
         <td class="text-right">{{ k.exisencia_actual }}</td>
         <td class="text-right">{{ moneda(k.costoUnitario) }}</td>
-        <td class="text-right">{{ moneda(k.subTotal) }}</td>
-        <td class="text-right">{{ moneda(k.costoTotal) }}</td>
       </tr>
     </ng-template>
     <ng-template pTemplate="emptymessage">

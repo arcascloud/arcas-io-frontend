@@ -57,6 +57,11 @@ export const CXP_ROUTES: Routes = [
     data: { nombre: 'proveedor-info' },
     loadComponent: () => import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
   },
+  {
+    path: 'reportes/cxp-movimientos',
+    loadComponent: () =>
+      import('../reportes/cxp/cxp-movimientos/cxp-movimientos').then((m) => m.CxpMovimientosReport),
+  },
 
   { path: '**', redirectTo: 'proveedores' },
 ];

@@ -269,6 +269,32 @@
   font-weight: 600;
 }
 
+// ===== Checkbox de Términos y Condiciones =====
+.terminos-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.terminos-label {
+  font-size: 0.9rem;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.terminos-link {
+  color: var(--c-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.terminos-error {
+  display: block;
+  margin-top: -0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 // ===== Pista bajo el campo Usuario (sugerencia) =====
 .campo-hint {
   display: inline-flex;

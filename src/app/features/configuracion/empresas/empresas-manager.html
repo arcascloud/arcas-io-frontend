@@ -7,7 +7,7 @@
     <!-- ========== COLUMNA IZQUIERDA: Detalle ========== -->
     <div class="left-column">
       <!-- Empty state -->
-      @if (!empresaSeleccionada()) {
+      @if (!empresaSeleccionada() && !creando()) {
       <div class="empty-state">
         <i class="pi pi-arrow-right empty-icon"></i>
         <h3>Pulse una empresa</h3>
@@ -62,19 +62,19 @@
               <i class="pi pi-building"></i>
               <span>Empresa</span>
             </p-tab>
-            <p-tab value="1">
+            <p-tab value="1" [disabled]="creando()">
               <i class="pi pi-id-card"></i>
               <span>Datos Específicos</span>
             </p-tab>
-            <p-tab value="2">
+            <p-tab value="2" [disabled]="creando()">
               <i class="pi pi-map-marker"></i>
               <span>Sucursales</span>
             </p-tab>
-            <p-tab value="4">
+            <p-tab value="4" [disabled]="creando()">
               <i class="pi pi-image"></i>
               <span>Logo</span>
             </p-tab>
-            <p-tab value="5">
+            <p-tab value="5" [disabled]="creando()">
               <i class="pi pi-print"></i>
               <span>Impresoras</span>
             </p-tab>
@@ -84,6 +84,13 @@
             <!-- TAB 0: Empresa - Formulario 2 columnas -->
             <p-tabpanel value="0">
               <div class="tab-content">
+                @if (creando()) {
+                <div class="card mb-3 p-3 flex justify-content-between align-items-center bg-primary-subtle border-round">
+                  <span class="font-medium text-sm"><i class="pi pi-info-circle mr-2"></i>Registrando nueva empresa. Complete los datos generales y haga clic en Guardar.</span>
+                  <p-button label="Cancelar" icon="pi pi-times" severity="secondary" variant="text" [rounded]="true" [size]="'small'" (click)="cancelarCreacion()" />
+                </div>
+                }
+
                 <div class="tab-header">
                   <h4>Empresa</h4>
                   <span class="tab-subtitulo">Datos generales y mensajes al pie de documento</span>
@@ -132,6 +139,9 @@
 
             <!-- TAB 1: Datos Específicos -->
             <p-tabpanel value="1">
+              @if (creando()) {
+              <div class="card p-5 text-center text-muted">Debe guardar la información general de la empresa primero para gestionar los datos específicos.</div>
+              } @else {
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Datos Específicos</h4>
@@ -167,7 +177,6 @@
                     <div class="detalle-header">
                       <span>DETALLE</span>
                     </div>
-                    <!-- test-hmr -->
 
                     <p-table
                       [value]="empresaDet()"
@@ -207,10 +216,14 @@
                   </div>
                 </div>
               </div>
+              }
             </p-tabpanel>
 
             <!-- TAB 2: Sucursales -->
             <p-tabpanel value="2">
+              @if (creando()) {
+              <div class="card p-5 text-center text-muted">Debe guardar la información general de la empresa primero para gestionar las sucursales.</div>
+              } @else {
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Sucursales</h4>
@@ -289,10 +302,14 @@
                   </div>
                 </div>
               </div>
+              }
             </p-tabpanel>
 
             <!-- TAB 4: Logo -->
             <p-tabpanel value="4">
+              @if (creando()) {
+              <div class="card p-5 text-center text-muted">Debe guardar la información general de la empresa primero para gestionar el logo.</div>
+              } @else {
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Logo</h4>
@@ -326,10 +343,14 @@
                   </div>
                 </div>
               </div>
+              }
             </p-tabpanel>
 
             <!-- TAB 5: Impresoras -->
             <p-tabpanel value="5">
+              @if (creando()) {
+              <div class="card p-5 text-center text-muted">Debe guardar la información general de la empresa primero para gestionar las impresoras.</div>
+              } @else {
               <div class="tab-content">
                 <div class="tab-header">
                   <h4>Impresoras</h4>
@@ -372,9 +393,9 @@
 
                     <div class="form-actions info-form-actions">
                       @if (impEditando()) {
-                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (onClick)="cancelarImp()" />
+                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (click)="cancelarImp()" />
                       } @else {
-                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (onClick)="cancelarImp()" />
+                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (click)="cancelarImp()" />
                       }
                       <p-button [label]="impEditando() ? 'Actualizar' : 'Guardar'" icon="pi pi-check" variant="text" severity="success" [rounded]="true" [size]="'small'" [loading]="savingImp()" (onClick)="guardarImpresora()" />
                     </div>
@@ -429,6 +450,7 @@
                   </div>
                 </div>
               </div>
+              }
             </p-tabpanel>
           </p-tabpanels>
         </p-tabs>
@@ -455,6 +477,7 @@
             icon="pi pi-times"
             (click)="limpiarFiltros()"
             severity="secondary"
+            variant="text"
             [rounded]="true"
             [size]="'small'"
             class="clear-btn"
@@ -499,7 +522,7 @@
             <p-tag [value]="getEstadoLabel(emp.sn_activo)" [severity]="getEstadoSeverity(emp.sn_activo)" styleClass="tag-ficha" />
           </div>
           <div class="item-ficha-row">
-            <span class="ficha-label">Nombre:</span>
+            <span class="ficha-label">Logo</span>
             <span class="ficha-value">{{ emp.descripcion }}</span>
           </div>
           <div class="item-ficha-row">
@@ -524,15 +547,14 @@
         </div>
         }
       </div>
-
-      <p-paginator
-        [first]="(page() - 1) * limit()"
-        [rows]="limit()"
-        [totalRecords]="totalEmpresas()"
-        [rowsPerPageOptions]="[5, 10, 15]"
-        (onPageChange)="onPageChange($event)"
-        styleClass="paginator-compact"
-      ></p-paginator>
+      <div class="paginator-container">
+        <p-paginator
+          [rows]="limit()"
+          [totalRecords]="totalEmpresas()"
+          [rowsPerPageOptions]="[5, 10, 20]"
+          (onPageChange)="onPageChange($event)"
+        />
+      </div>
       }
     </div>
 

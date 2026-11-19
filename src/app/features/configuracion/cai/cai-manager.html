@@ -179,14 +179,30 @@
     <!-- ============ COLUMNA DERECHA: LISTA DE CAIs ============ -->
     <div class="right-column">
       <div class="search-bar">
-        <div class="search-input-wrapper">
-          <i class="pi pi-search"></i>
-          <input pInputText [pSize]="'small'" [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Buscar CAI..." />
-          @if (q()) {
-          <button class="search-clear" (click)="limpiarFiltros()">×</button>
-          }
+        <div class="empresa-selector">
+          <label for="empresaSel">Empresa</label>
+          <p-select
+            inputId="empresaSel"
+            [options]="empresas()"
+            optionLabel="descripcion"
+            optionValue="empresaId"
+            placeholder="Seleccione una empresa"
+            styleClass="w-full"
+            [appendTo]="'body'"
+            [ngModel]="empresaSel()"
+            (ngModelChange)="onEmpresaChange($event)"
+          />
         </div>
-        <p-button label="Nuevo" icon="pi pi-plus" severity="success" [rounded]="true" [size]="'small'" (onClick)="nuevo()" />
+        <div class="search-row">
+          <div class="search-input-wrapper">
+            <i class="pi pi-search"></i>
+            <input pInputText [pSize]="'small'" [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Buscar CAI..." />
+            @if (q()) {
+            <button class="search-clear" (click)="limpiarFiltros()">×</button>
+            }
+          </div>
+          <p-button label="Nuevo" icon="pi pi-plus" severity="success" [rounded]="true" [size]="'small'" (onClick)="nuevo()" />
+        </div>
       </div>
 
       @if (cargando()) {

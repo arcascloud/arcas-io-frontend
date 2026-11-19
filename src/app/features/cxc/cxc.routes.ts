@@ -93,6 +93,11 @@ export const CXC_ROUTES: Routes = [
     loadComponent: () =>
       import('../parametros/catalogo-generico/catalogo-form').then((m) => m.CatalogoForm),
   },
+  {
+    path: 'reportes/cxc-movimientos',
+    loadComponent: () =>
+      import('../reportes/cxc/cxc-movimientos/cxc-movimientos').then((m) => m.CxcMovimientosReport),
+  },
 
   { path: '**', redirectTo: 'caja' },
 ];

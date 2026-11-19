@@ -56,12 +56,12 @@ export class EmpresasService {
     return this.api.post<Cai>(`${this.path}/cais`, dto);
   }
 
-  updateCai(id: number, dto: Partial<Cai>): Observable<Cai> {
-    return this.api.put<Cai>(`${this.path}/cais`, id, dto);
+  updateCai(id: number, dto: Partial<Cai>, empresaId?: number): Observable<Cai> {
+    return this.api.put<Cai>(`${this.path}/cais`, id, dto, undefined, empresaId != null ? { empresaId } : undefined);
   }
 
-  removeCai(id: number): Observable<any> {
-    return this.api.delete<any>(`${this.path}/cais`, id);
+  removeCai(id: number, empresaId?: number): Observable<any> {
+    return this.api.delete<any>(`${this.path}/cais`, id, empresaId != null ? { empresaId } : undefined);
   }
 
   // ===== Correlativos (CAI) =====
@@ -74,12 +74,12 @@ export class EmpresasService {
     return this.api.post<Correlativo>(`${this.path}/correlativos`, dto);
   }
 
-  updateCorr(id: number, dto: Partial<Correlativo>): Observable<Correlativo> {
-    return this.api.put<Correlativo>(`${this.path}/correlativos`, id, dto);
+  updateCorr(id: number, dto: Partial<Correlativo>, empresaId?: number): Observable<Correlativo> {
+    return this.api.put<Correlativo>(`${this.path}/correlativos`, id, dto, undefined, empresaId != null ? { empresaId } : undefined);
   }
 
   removeCorr(id: number, empresaId: number): Observable<any> {
-    return this.api.delete<any>(`${this.path}/correlativos`, id);
+    return this.api.delete<any>(`${this.path}/correlativos`, id, { empresaId });
   }
 
   getNextNroFactura(empresaId: number, idsucursal: number): Observable<{ nrofactura: number }> {

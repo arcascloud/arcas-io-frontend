@@ -1,0 +1,94 @@
+<div class="reporte-container">
+  <div class="reporte-header">
+    <div class="reporte-title">
+      <h1>Reporte de Facturas Anuladas por Rango de Fechas</h1>
+      <p class="subtitle">Agrupado por Fecha y Tipo de Factura (Solo anuladas)</p>
+    </div>
+    <div class="reporte-actions">
+      <p-button size="small" label="PDF" icon="pi pi-file-pdf" severity="secondary" variant="text" [rounded]="true" (onClick)="exportarPdf()" [disabled]="grupos().length === 0" />
+      <p-button size="small" label="Excel" icon="pi pi-file-excel" severity="secondary" variant="text" [rounded]="true" (onClick)="exportarExcel()" [disabled]="grupos().length === 0" />
+      <p-button size="small" label="Word" icon="pi pi-file-word" severity="secondary" variant="text" [rounded]="true" (onClick)="exportarWord()" [disabled]="grupos().length === 0" />
+    </div>
+  </div>
+
+  <div class="reporte-filtros card mb-4">
+    <div class="filtros-grid">
+      <div class="filtro-item">
+        <label>Fecha Desde</label>
+        <p-datepicker size="small" [(ngModel)]="fechaDesde" dateFormat="dd/mm/yy" [showIcon]="true" [appendTo]="'body'" styleClass="w-full" />
+      </div>
+      <div class="filtro-item">
+        <label>Fecha Hasta</label>
+        <p-datepicker size="small" [(ngModel)]="fechaHasta" dateFormat="dd/mm/yy" [showIcon]="true" [appendTo]="'body'" styleClass="w-full" />
+      </div>
+      <div class="filtro-actions">
+        <p-button size="small" label="Generar Reporte" icon="pi pi-search" severity="secondary" [raised]="true" [rounded]="true" (onClick)="generarReporte()" [loading]="cargando()" />
+      </div>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="text-center p-5 text-muted">Generando reporte...</div>
+  } @else if (grupos().length === 0) {
+    <div class="text-center p-5 text-muted card">No hay facturas anuladas registradas en el rango de fechas seleccionado.</div>
+  } @else {
+    <div class="reporte-tabla-container card">
+      <div class="tabla-resumen-info mb-3">
+        <span>Total de facturas anuladas: <strong>{{ totalesGenerales().cantidad }}</strong></span>
+      </div>
+
+      @for (g of grupos(); track g.fecharegistro + g.tipofactura) {
+        <div class="grupo-seccion mb-4">
+          <div class="grupo-header">
+            <span>Fecha: <strong>{{ g.fecharegistro }}</strong></span>
+            <span>Tipo: <strong>{{ getTipoLabel(g.tipofactura) }}</strong></span>
+            <span>Estado: <strong class="text-danger">Anulada</strong></span>
+            <span>Cantidad: <strong>{{ g.facturas.length }}</strong></span>
+          </div>
+
+          <table class="reporte-tabla">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Nro. Factura</th>
+                <th style="width: 18%;" class="text-right">Subtotal</th>
+                <th style="width: 18%;" class="text-right">Impuesto</th>
+                <th style="width: 18%;" class="text-right">Descuento</th>
+                <th style="width: 21%;" class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of g.facturas; track f.facturaId) {
+                <tr>
+                  <td>{{ f.nrofactura }}</td>
+                  <td class="text-right">{{ moneda(f.subTotal ?? f.subtotal) }}</td>
+                  <td class="text-right">{{ moneda(f.impuesto) }}</td>
+                  <td class="text-right">{{ moneda(f.descuento) }}</td>
+                  <td class="text-right font-medium">{{ moneda(f.total) }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr class="fila-subtotal">
+                <td class="text-right">Subtotal Grupo:</td>
+                <td class="text-right">{{ moneda(g.subtotal) }}</td>
+                <td class="text-right">{{ moneda(g.impuesto) }}</td>
+                <td class="text-right">{{ moneda(g.descuento) }}</td>
+                <td class="text-right font-semibold">{{ moneda(g.total) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+
+      <div class="gran-total-card">
+        <div class="gran-total-titulo">GRAN TOTAL ANULADAS</div>
+        <div class="gran-total-valores">
+          <div>Subtotal: <strong>{{ moneda(totalesGenerales().subtotal) }}</strong></div>
+          <div>Impuesto: <strong>{{ moneda(totalesGenerales().impuesto) }}</strong></div>
+          <div>Descuento: <strong>{{ moneda(totalesGenerales().descuento) }}</strong></div>
+          <div>Total: <strong class="text-lg">{{ moneda(totalesGenerales().total) }}</strong></div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -17,7 +17,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { forkJoin, of } from 'rxjs';
 import { EmpresasService } from '../../../core/services/empresas.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Cai, Correlativo, EstadoCorrelativo } from '../../../core/models/empresa.models';
+import { Cai, Correlativo, EstadoCorrelativo, Empresa } from '../../../core/models/empresa.models';
 import { Sucursal } from '../../../core/models/sucursal.models';
 
 /**
@@ -56,7 +56,18 @@ export class CaiManager implements OnInit {
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
 
-  private empresaId: number | null = this.auth.currentUser()?.empresaId ?? null;
+  /** Catálogo de empresas para el selector del encabezado */
+  empresas = signal<Empresa[]>([]);
+  /** Empresa sobre la que se trabaja (por defecto, la del usuario en sesión) */
+  empresaSel = signal<number | null>(this.auth.currentUser()?.empresaId ?? null);
+
+  /**
+   * Compatibilidad: todas las cargas/guardados siguen usando `this.empresaId`,
+   * que ahora refleja la empresa seleccionada en el selector.
+   */
+  private get empresaId(): number | null {
+    return this.empresaSel();
+  }
 
   // ===== LISTA =====
   cais = signal<Cai[]>([]);
@@ -105,11 +116,36 @@ export class CaiManager implements OnInit {
   });
 
   ngOnInit() {
+    this.loadEmpresas();
     if (this.empresaId != null) {
       this.loadCais();
       this.loadSucursales();
       this.loadEstadoCorrelativos();
     }
+  }
+
+  /** Catálogo de empresas para el selector del encabezado */
+  loadEmpresas() {
+    this.service.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.empresas.set(data ?? []),
+      error: () => this.msgs.add({ severity: 'warn', summary: 'Aviso', detail: 'No se pudo cargar el catálogo de empresas' }),
+    });
+  }
+
+  /** Cambia la empresa sobre la que se crean/editan CAIs y recarga todo */
+  onEmpresaChange(id: number) {
+    this.empresaSel.set(id);
+    // Limpiar contexto de la empresa anterior
+    this.selected.set(null);
+    this.correlativos.set([]);
+    this.estadoCorrelativos.set([]);
+    this.formMode.set('none');
+    this.editandoId = null;
+    this.caiForm.reset({ cai: '', sn_activo: 'N' });
+    // Cargar datos de la nueva empresa
+    this.loadCais();
+    this.loadSucursales();
+    this.loadEstadoCorrelativos();
   }
 
   // ==================================================
@@ -192,7 +228,7 @@ export class CaiManager implements OnInit {
 
     const esEdicion = this.formMode() === 'editar';
     const obs = esEdicion && this.editandoId != null
-      ? this.service.updateCai(this.editandoId, dto)
+      ? this.service.updateCai(this.editandoId, dto, this.empresaId!)
       : this.service.createCai(dto);
 
     obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -239,7 +275,7 @@ export class CaiManager implements OnInit {
   }
 
   private procesarEliminacionCai(cai: Cai) {
-    this.service.removeCai(cai.caiId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.service.removeCai(cai.caiId, this.empresaId!).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.msgs.add({ severity: 'success', summary: 'Eliminado', detail: 'CAI eliminado' });
         this.selected.set(null);
@@ -299,7 +335,7 @@ export class CaiManager implements OnInit {
 
     const editando = this.corrEditando();
     const obs = editando
-      ? this.service.updateCorr(editando.caiAutorizadoId, dto)
+      ? this.service.updateCorr(editando.caiAutorizadoId, dto, this.empresaId!)
       : this.service.createCorr(dto);
 
     obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({

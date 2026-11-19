@@ -28,6 +28,10 @@ const sharedChildren: Routes = [
     loadChildren: () =>
       import('./features/facturacion/facturacion.routes').then((m) => m.FACTURACION_ROUTES),
   },
+  {
+    path: 'reportes',
+    loadChildren: () => import('./features/reportes/reportes.routes').then((m) => m.REPORTES_ROUTES),
+  },
   // Atajos raíz → módulo de facturación
   { path: 'tienda', redirectTo: 'facturacion/tienda', pathMatch: 'full' },
   { path: 'pedidos', redirectTo: 'facturacion/pedidos-virtual', pathMatch: 'full' },

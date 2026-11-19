@@ -432,6 +432,25 @@
                 </div>
               </div>
 
+              <div class="terminos-row mb-3">
+                <p-checkbox
+                  inputId="reg-terminos"
+                  name="reg-terminos"
+                  [binary]="true"
+                  [(ngModel)]="aceptaTerminos"
+                  (ngModelChange)="errTerminos.set('')"
+                />
+                <label for="reg-terminos" class="terminos-label">
+                  He leído y acepto los
+                  <a class="terminos-link" (click)="abrirTerminos($event)">Términos y Condiciones</a>
+                </label>
+              </div>
+              @if (errTerminos()) {
+                <span class="campo-error terminos-error">
+                  <i class="pi pi-exclamation-circle"></i> {{ errTerminos() }}
+                </span>
+              }
+
               <p-button
                 type="submit"
                 label="Crear cuenta"
@@ -454,3 +473,5 @@
     </div>
   </ng-template>
 </p-dialog>
+
+<app-terminos-dialog [(visible)]="terminosVisible" />

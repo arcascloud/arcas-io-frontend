@@ -135,5 +135,30 @@ export const FACTURACION_ROUTES: Routes = [
     loadComponent: () =>
       import('./restaurante-cocina/restaurante-cocina').then((m) => m.RestauranteCocina),
   },
+  {
+    path: 'reportes/facturas-rango',
+    loadComponent: () =>
+      import('../reportes/facturacion/facturas-rango/facturas-rango').then((m) => m.FacturasRangoReport),
+  },
+  {
+    path: 'reportes/facturas-gestor',
+    loadComponent: () =>
+      import('../reportes/facturacion/facturas-gestor/facturas-gestor').then((m) => m.FacturasGestorReport),
+  },
+  {
+    path: 'reportes/facturas-anuladas',
+    loadComponent: () =>
+      import('../reportes/facturacion/facturas-anuladas/facturas-anuladas').then((m) => m.FacturasAnuladasReport),
+  },
+  {
+    path: 'reportes/facturas-por-tipo',
+    loadComponent: () =>
+      import('../reportes/facturacion/facturas-por-tipo/facturas-por-tipo').then((m) => m.FacturasPorTipoReport),
+  },
+  {
+    path: 'reportes/facturas-por-forma-pago',
+    loadComponent: () =>
+      import('../reportes/facturacion/facturas-por-forma-pago/facturas-por-forma-pago').then((m) => m.FacturasPorFormaPagoReport),
+  },
   { path: '**', redirectTo: 'consultas' },
 ];

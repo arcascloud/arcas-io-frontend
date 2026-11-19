@@ -29,7 +29,9 @@ interface ProductoCatalogo {
   descripcion_corta?: string;
   codbarra?: string;
   precioventa: number;
-  cstounit: number;
+  /** El endpoint /inventario/tienda/productos llama a esto `preciocosto` */
+  preciocosto?: number;
+  cstounit?: number;
   imagen: string | null;
   existencia: number;
   categoria?: string;
@@ -184,12 +186,44 @@ export class CombosForm implements OnInit {
         const items = Array.isArray(res) ? res : [];
         this.productos.set(items);
         this.cargandoProductos.set(false);
+        // El catálogo es pesado (~8s) y llega DESPUÉS de los detalles del combo:
+        // al llegar, completamos imagen/descripción/costo de los items ya cargados.
+        this.enriquecerDesdeCatalogo();
       },
       error: (err) => {
         console.error('Error cargando productos', err);
         this.cargandoProductos.set(false);
       },
     });
+  }
+
+  /** Costo unitario: el catálogo de tienda lo expone como `preciocosto` */
+  private costoDe(prod?: ProductoCatalogo | null): number {
+    if (!prod) return 0;
+    const costo = Number(prod.preciocosto ?? prod.cstounit);
+    return Number.isFinite(costo) ? costo : 0;
+  }
+
+  /**
+   * Rellena desde el catálogo los campos que cargarDets() no pudo resolver
+   * porque el catálogo aún no había llegado (condición de carrera).
+   * No toca cantidad/precio/descuento (edición del usuario).
+   */
+  private enriquecerDesdeCatalogo() {
+    if (this.comboItems().length === 0 || this.productos().length === 0) return;
+    this.comboItems.update(items =>
+      items.map(it => {
+        const prod = this.productos().find(p => p.produtoId === Number(it.productoId));
+        if (!prod) return it;
+        return {
+          ...it,
+          codbarra: it.codbarra || prod.codbarra || '',
+          descripcion: prod.descripcion || it.descripcion,
+          imagen: it.imagen ?? prod.imagen ?? null,
+          cstounit: this.costoDe(prod) || it.cstounit || 0,
+        };
+      })
+    );
   }
 
   private cargarDescuentos() {
@@ -233,7 +267,7 @@ export class CombosForm implements OnInit {
             imagen: prod?.imagen ?? null,
             cantidad: d.cantidad ?? 1,
             precioventa: d.precioventa ?? 0,
-            cstounit: Number(prod?.cstounit) || 0,
+            cstounit: this.costoDe(prod),
             descuentoId: d.descuentoId ?? null,
           };
         });
@@ -267,7 +301,7 @@ export class CombosForm implements OnInit {
         imagen: producto.imagen,
         cantidad: 1,
         precioventa: precioConDescuento,
-        cstounit: Number(producto.cstounit) || 0,
+        cstounit: this.costoDe(producto),
         descuentoId,
       }]);
     }
@@ -350,6 +384,12 @@ export class CombosForm implements OnInit {
 
     if (this.comboItems().length === 0) {
       this.msgs.add({ severity: 'warn', summary: 'Sin productos', detail: 'Agrega al menos un producto al combo' });
+      return;
+    }
+
+    // Sin el catálogo no hay costo → la validación de mínimo pasaría en silencio.
+    if (this.cargandoProductos()) {
+      this.msgs.add({ severity: 'warn', summary: 'Cargando', detail: 'Espera a que termine de cargar el catálogo de productos' });
       return;
     }
 

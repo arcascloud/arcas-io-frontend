@@ -8,5 +8,6 @@
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "antigravity.enableInlineDiff": false
+  "antigravity.enableInlineDiff": false,
+  "angular.enable-strict-mode-prompt": false
 }
