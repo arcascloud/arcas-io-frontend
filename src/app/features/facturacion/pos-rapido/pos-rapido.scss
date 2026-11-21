@@ -28,7 +28,7 @@
   gap: 0.75rem;
   flex-wrap: wrap;
   padding: 0.5rem 0.75rem;
-  background: var(--c-card-background, #08131c);
+  background: var(--c-card-background, --blue-350);
   border: 1px solid var(--c-border, #1e2e3b);
   border-radius: var(--radius-sm, 0.45rem);
 
@@ -53,13 +53,13 @@
   flex: 1 1 320px;
   min-width: 240px;
   padding: 0.35rem 0.6rem;
-  background: var(--c-surface-muted, #2d3d50b4);
-  border: 1px solid var(--c-border-strong, #2c4d6f);
+  background: var(--c-bg, #2d3d50b4);
+    border: 1px solid var(--c-card-background, #2c4d6f);
   border-radius: var(--radius-full, 9999px);
   transition: border-color var(--tr-fast), box-shadow var(--tr-fast);
 
   > i {
-    color: var(--c-primary, #3d8bff);
+    color: var(--cyan-400, #3d8bff);
     font-size: 1.1rem;
   }
 
@@ -509,6 +509,25 @@
   margin-left: auto;
 }
 
+// ── Botón Vaciar carrito (severity danger + variant text) ────────────
+::ng-deep .pos-footer .p-button.severity-danger {
+  background: var(--c-error, #ef4444) !important;
+  color: #fff !important;
+  border-color: var(--c-error, #ef4444) !important;
+}
+
+::ng-deep .cart-actions .p-button.p-button-danger {
+  background: var(--c-error, #ef4444) !important;
+  color: #fff !important;
+  border-color: var(--c-error, #ef4444) !important;
+}
+
+
+/* Opcional: Estado hover y active */
+:host ::ng-deep .cart-actions .p-button.p-button-danger:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
 // ── Drawer del carrito (cart-sidebar estilo tienda-virtual) ──
 .drawer-body {
   height: 100%;

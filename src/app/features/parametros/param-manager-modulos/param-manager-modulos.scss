@@ -87,19 +87,18 @@
 // ── Tabla: fila seleccionada ──────────────────────────
 ::ng-deep .p-datatable .p-datatable-tbody > tr {
   cursor: pointer;
-  transition: background 0.15s;
 
-  &:hover {
-    background: var(--c-surface-ground);
+  > td {
+    transition: background-color 0.15s ease;
   }
 
-  &.row-selected {
+  &:hover > td {
+    background: var(--c-surface-ground) !important;
+  }
+
+  &.row-selected > td {
     background: var(--c-primary) !important;
     color: #fff !important;
-
-    td {
-      color: #fff !important;
-    }
 
     .p-tag {
       background: rgba(255, 255, 255, 0.2) !important;

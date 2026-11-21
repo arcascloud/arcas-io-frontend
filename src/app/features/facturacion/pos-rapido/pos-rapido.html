@@ -4,7 +4,7 @@
   <!-- ═══════ HEADER: escáner fijo + descuento global ═══════ -->
   <div class="pos-header" [class.con-carrito]="state.filas().length > 0 && !isMobile()">
     <div class="pos-scan" [class.pos-scan--ok]="scanOk()">
-      <i class="fa-solid fa-barcode"></i>
+      <i class="pi pi-barcode"></i>
       <input
         #scanInput
         type="text"
@@ -69,7 +69,7 @@
         severity="secondary"
         [rounded]="true"
         pTooltip="Atajos (ALT + 9)"
-        pTooltipOptions="{ position: 'left' }"
+        tooltipPosition="left"
         (onClick)="dialogAtajos.set(true)"
       />
     </div>

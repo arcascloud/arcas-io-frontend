@@ -244,6 +244,18 @@ $topbar-height: 60px;
   background: var(--c-surface);
 }
 
+::ng-deep .orden-pie .p-button.p-button-danger {
+  background: var(--c-error, #ef4444) !important;
+  color: #fff !important;
+  border-color: var(--c-error, #ef4444) !important;
+}
+
+
+/* Opcional: Estado hover y active */
+:host ::ng-deep .orden-pie .p-button.p-button-danger:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
 @media (min-width: 992px) {
   :host ::ng-deep .rest-drawer {
     top: 60px !important;
