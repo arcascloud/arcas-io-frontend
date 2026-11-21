@@ -10,13 +10,14 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DatePickerModule } from 'primeng/datepicker';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 
 @Component({
   selector: 'app-anular-facturas',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule, DialogModule, ConfirmDialogModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule, DialogModule, ConfirmDialogModule, DatePickerModule],
   templateUrl: './anular-facturas.html',
   styleUrl: './anular-facturas.scss',
   providers: [ConfirmationService],
@@ -32,6 +33,8 @@ export class AnularFacturas implements OnInit {
   filtered = signal<any[]>([]);
   cargando = signal(false);
   q = signal('');
+  fechaDesde = signal<Date | null>(null);
+  fechaHasta = signal<Date | null>(null);
   anulando = signal(false);
 
   ngOnInit() {
@@ -56,21 +59,42 @@ export class AnularFacturas implements OnInit {
 
   filtrar() {
     const texto = this.q().toLowerCase().trim();
-    if (!texto) {
-      this.filtered.set(this.facturas());
-      return;
-    }
+    const desde = this.fechaDesde();
+    const hasta = this.fechaHasta();
+
+    const desdeTs = desde ? new Date(desde.getFullYear(), desde.getMonth(), desde.getDate()).getTime() : null;
+    const hastaTs = hasta ? new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate(), 23, 59, 59, 999).getTime() : null;
+
     this.filtered.set(
       this.facturas().filter((f) => {
-        const nro = String(f.nrofactura ?? '');
-        const cliente = (f.nombrecliente ?? '').toLowerCase();
-        return nro.includes(texto) || cliente.includes(texto);
+        // Filtro por texto (nombre cliente o nro factura)
+        if (texto) {
+          const nro = String(f.nrofactura ?? '').toLowerCase();
+          const cliente = (f.nombrecliente ?? '').toLowerCase();
+          if (!nro.includes(texto) && !cliente.includes(texto)) return false;
+        }
+
+        // Filtro por rango de fechas
+        if (desdeTs !== null || hastaTs !== null) {
+          const fechaFac = f.fecharegistro ? new Date(f.fecharegistro).getTime() : null;
+          if (fechaFac === null) return false;
+          if (desdeTs !== null && fechaFac < desdeTs) return false;
+          if (hastaTs !== null && fechaFac > hastaTs) return false;
+        }
+
+        return true;
       }),
     );
   }
 
   buscar() { this.filtrar(); }
-  limpiar() { this.q.set(''); this.filtrar(); }
+
+  limpiar() {
+    this.q.set('');
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.filtrar();
+  }
 
   ver(id: number) {
     this.router.navigate(['/facturacion/consultas', id]);

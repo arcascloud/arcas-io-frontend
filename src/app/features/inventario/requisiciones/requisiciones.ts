@@ -8,11 +8,11 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
+import { DatePickerModule } from 'primeng/datepicker';
+import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { DatePickerModule } from 'primeng/datepicker';
-import { TextareaModule } from 'primeng/textarea';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { RequisicionInventarioService } from '../../../core/services/requisicion-inventario.service';
@@ -29,8 +29,7 @@ import { FooterHelper } from '../../helpers/footer';
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
     TableModule, ButtonModule, InputTextModule, InputNumberModule,
-    SelectModule, TagModule, ToastModule, ConfirmDialogModule, TooltipModule,
-    DatePickerModule, TextareaModule,
+    SelectModule, TagModule, DatePickerModule, ToastModule, ConfirmDialogModule, TooltipModule,
   ],
   templateUrl: './requisiciones.html',
   styleUrl: './requisiciones.scss',
@@ -59,6 +58,12 @@ export class Requisiciones implements OnInit {
   guardando = signal(false);
 
   codBusqueda = signal('');
+
+  // ── Filtros de búsqueda ──
+  fechaDesde = signal<string | null>(null);
+  fechaHasta = signal<string | null>(null);
+  busqueda = signal('');
+  filtered = signal<any[]>([]);
 
   prioridades = signal<{ label: string; value: string }[]>([
     { label: 'Baja', value: 'B' },
@@ -92,9 +97,48 @@ export class Requisiciones implements OnInit {
   cargarRequisiciones() {
     this.cargando.set(true);
     this.service.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (data) => { this.requisiciones.set(data || []); this.cargando.set(false); },
+      next: (data) => { this.requisiciones.set(data || []); this.filtrar(); this.cargando.set(false); },
       error: () => { this.cargando.set(false); this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las requisiciones' }); },
     });
+  }
+
+  // ── Filtros de búsqueda ──
+  filtrar() {
+    const desde = this.fechaDesde();
+    const hasta = this.fechaHasta();
+    const q = this.busqueda().trim().toLowerCase();
+
+    const res = (this.requisiciones() || []).filter((r) => {
+      if (desde || hasta) {
+        const fecha = this.fechaDia(r.fecharegistro);
+        if (desde && (!fecha || fecha < desde)) return false;
+        if (hasta && (!fecha || fecha > hasta)) return false;
+      }
+      if (q) {
+        const campos = [r.concepto, r.nroreferencia, r.invreqmaeid, r.bodegaOrigenId, r.bodegaDestinoId].join(' ').toLowerCase();
+        if (!campos.includes(q)) return false;
+      }
+      return true;
+    });
+    this.filtered.set(res);
+  }
+
+  buscar() {
+    this.filtrar();
+  }
+
+  limpiarFiltros() {
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.busqueda.set('');
+    this.filtrar();
+  }
+
+  private fechaDia(valor: string | Date | null | undefined): string | null {
+    if (!valor) return null;
+    const s = typeof valor === 'string' ? valor : new Date(valor).toISOString();
+    const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
   }
 
   cargarBodegas() {
@@ -139,6 +183,10 @@ export class Requisiciones implements OnInit {
     this.formMae.reset({ bodegaOrigenId: null, bodegaDestinoId: null, concepto: '', prioridad: 'M', fechaEntrega: null, observaciones: '' });
     this.formDet.reset({ codbarra: '', productoId: null, descripcion: '', cantidadSolicitada: 1 });
     this.codBusqueda.set('');
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.busqueda.set('');
+    this.filtered.set([]);
     this.detalles.set([]);
     this.seleccionado.set({ invreqmaeid: 0, sn_procesado: 'N', sn_anulado: 'N', sn_estado: 'P', concepto: '' });
   }

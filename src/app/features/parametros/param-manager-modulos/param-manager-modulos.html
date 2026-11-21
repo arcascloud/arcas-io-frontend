@@ -129,14 +129,18 @@
           <p-tag [value]="estadoLabel(param.sn_activo)" [severity]="estadoSeverity(param.sn_activo)" styleClass="tag-sm" />
         </td>
         <td class="text-center">
-          <p-button
-            icon="pi pi-trash"
-            [size]="'small'"
-            variant="text"
-            [rounded]="true"
-            severity="danger"
-            (onClick)="eliminar(param); $event.stopPropagation()"
-          />
+          @if (esAdmin()) {
+            <p-button
+              icon="pi pi-trash"
+              [size]="'small'"
+              variant="text"
+              [rounded]="true"
+              severity="danger"
+              (onClick)="eliminar(param, $event); $event.stopPropagation()"
+              pTooltip="Eliminar parámetro"
+              tooltipPosition="top"
+            />
+          }
         </td>
       </tr>
     </ng-template>
@@ -154,6 +158,12 @@
     </ng-template>
   </p-table>
 </section>
+
+<!-- ── Dialog de confirmación de eliminación ─────────── -->
+<p-confirmDialog
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  [style]="{ width: '420px' }"
+/>
 
 <!-- ── Drawer: Nuevo / Editar Parámetro ──────────────── -->
 <p-drawer

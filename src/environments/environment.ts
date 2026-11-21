@@ -3,5 +3,5 @@ export const environment = {
   apiUrl: 'http://localhost:3000/api',
   currencySymbol: 'L ',
   VALIDAR_SESSION: 'N',
-  empresaId: 2,
+  empresaId: 1,
 };

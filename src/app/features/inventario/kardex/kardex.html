@@ -6,29 +6,31 @@
     </div>
   </header>
 
-  <div class="filtros card">
-    <div class="campo">
-      <label>Buscar</label>
-      <input
-        pInputText
-        type="text"
-        placeholder="Código de barras, referencia..."
-        [ngModel]="q()"
-        (ngModelChange)="q.set($event)"
-        (keyup.enter)="buscar()"
-      />
-    </div>
-    <div class="campo acciones">
-      <p-button label="Buscar" icon="pi pi-search" [size]="'small'" rounded (onClick)="buscar()" />
-      <p-button
-        label="Limpiar"
-        icon="pi pi-times"
-        severity="secondary"
-        text
-        [size]="'small'"
-        rounded
-        (onClick)="limpiarFiltros()"
-      />
+  <div class="card filtros-card">
+    <div class="filtros-row">
+      <div class="campo">
+        <label class="campo-label">Desde</label>
+        <p-datepicker size="small" appendTo="body" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)"
+          dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" [readonlyInput]="true" />
+      </div>
+      <div class="campo">
+        <label class="campo-label">Hasta</label>
+        <p-datepicker size="small" appendTo="body" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)"
+          dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" [readonlyInput]="true" />
+      </div>
+      <div class="campo campo-busqueda">
+        <label class="campo-label">Busqueda por Cód. Barra, Referencia</label>
+        <span class="p-input-icon-left">
+          <input pInputText type="text" [pSize]="'small'"
+            [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
+            (keyup.enter)="buscar()" placeholder="Cód. barra, referencia..." class="busqueda-input" />
+        </span>
+      </div>
+      <div class="filtros-acciones">
+        <p-button label="Buscar" icon="pi pi-search" [size]="'small'" [rounded]="true" (onClick)="buscar()" />
+        <p-button label="Limpiar" icon="pi pi-times" [size]="'small'" variant="text" [rounded]="true" severity="secondary"
+          (onClick)="limpiarFiltros()" />
+      </div>
     </div>
   </div>
 
@@ -39,6 +41,7 @@
     [paginator]="true"
     [rows]="20"
     size="small"
+    selectionMode="single"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
@@ -57,7 +60,7 @@
     </ng-template>
     <ng-template pTemplate="body" let-k>
       <tr>
-        <td>{{ k.fecharegistro ? (k.fecharegistro | date: 'dd/MM/yyyy HH:mm') : '-' }}</td>
+        <td>{{ k.fecharegistro ? (k.fecharegistro | date: 'dd/MM/yyyy') : '-' }}</td>
         <td>{{ k.codbarra }}</td>
         <td>
           <p-tag [value]="k.tipomov === 'E' ? 'Entrada' : 'Salida'" [severity]="k.tipomov === 'E' ? 'success' : 'danger'" styleClass="tag-sm" />

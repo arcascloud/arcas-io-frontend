@@ -11,15 +11,45 @@
 
   <div class="card filtros-card">
     <div class="filtros-row">
+      <div class="campo">
+        <label class="campo-label">Fecha desde</label>
+        <p-datepicker
+          size="small"
+          [ngModel]="fechaDesde()"
+          (ngModelChange)="fechaDesde.set($event)"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          [appendTo]="'body'"
+          placeholder="Desde"
+          styleClass="w-full"
+          [readonlyInput]="true"
+        />
+      </div>
+      <div class="campo">
+        <label class="campo-label">Fecha hasta</label>
+        <p-datepicker
+          size="small"
+          [ngModel]="fechaHasta()"
+          (ngModelChange)="fechaHasta.set($event)"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          [appendTo]="'body'"
+          placeholder="Hasta"
+          styleClass="w-full"
+          [readonlyInput]="true"
+        />
+      </div>
       <div class="campo campo-busqueda">
+        <label class="campo-label">Buscar</label>
         <span class="p-input-icon-left">
           <input pInputText type="text" [pSize]="'small'"
-            placeholder="Buscar por # cotización, nombre del cliente o atendió..."
-            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()" pTooltip="Presione enter para consultar" class="busqueda-input" />
+            placeholder="Nombre del cliente o # cotización..."
+            [ngModel]="q()" (ngModelChange)="q.set($event)" (keyup.enter)="buscar()"
+            class="busqueda-input" />
         </span>
       </div>
       <div class="filtros-acciones">
-        <i class="pi pi-search"></i>
+        <p-button label="Buscar" icon="pi pi-search" severity="primary" [size]="'small'" [rounded]="true" (onClick)="buscar()" />
         <p-button label="Limpiar" icon="pi pi-times" severity="secondary" text [size]="'small'" [rounded]="true" (onClick)="limpiar()" />
       </div>
     </div>
@@ -28,6 +58,7 @@
   <div class="card tabla-card">
     <p-table [value]="filtered()" [loading]="cargando()"
     showGridlines
+    selectionMode="single"
     [tableStyle]="{ 'min-width': '40rem' }"
      [paginator]="true" [rows]="20"
       [rowsPerPageOptions]="[10, 20, 50]" [showCurrentPageReport]="true"
@@ -35,26 +66,26 @@
       styleClass="cotizaciones-table">
       <ng-template #header>
         <tr>
-          <th style="width:6rem"># Cotización</th>
-          <th style="width:6rem">Fecha</th>
-          <th>Cliente</th>
+          <th style="text-align: center; width:2rem"># Cotización</th>
+          <th style="text-align: center; width:5rem">Fecha</th>
+          <th style="text-align: center; width:14rem">Cliente</th>
           <th style="width:8rem">Atendió</th>
-          <th style="width:6rem">Estado</th>
-          <th style="width:10rem" class="acciones-header">Acciones</th>
+          <th style="text-align: center; width:10rem">Acciones</th>
         </tr>
       </ng-template>
       <ng-template #body let-item>
-        <tr (click)="editar(item.poscotmaeId)" class="fila-click" [class.row-anulada]="item.sn_estadocarrito === 'X'">
+        <tr (click)="editar(item.poscotmaeId)" class="fila-click" [class.row-anulada]="item.sn_estadocarrito === 'X'"
+          pTooltip="Haga click para ver el detalle de la cotización" tooltipPosition="top">
           <td>
-            <span class="nro-factura">{{ nroCotizacion(item.poscotmaeId) }}</span>
+            <span class="ml-3 nro-factura">{{ nroCotizacion(item.poscotmaeId) }}</span>
           </td>
-          <td>{{ fechaCorta(item.fecharegistro) }}</td>
+          <td style="text-align:center">
+            <span class="cliente-nombre">{{ fechaCorta(item.fecharegistro) }}</span></td>
           <td>
-            <span class="cliente-nombre">{{ item.Nombrecliente || 'Sin cliente' }}</span>
+            <span class="ml-3 cliente-nombre">{{ item.Nombrecliente || 'Sin cliente' }}</span>
           </td>
-          <td>{{ item.atendio || '-' }}</td>
           <td>
-            <p-tag [value]="estadoLabel(item)" [severity]="estadoSeverity(item)" styleClass="tag-sm" />
+            <span class="ml-3 cliente-nombre">{{ item.atendio || '-' }}</span>
           </td>
           <td class="acciones-cell">
             <div class="acciones-row">

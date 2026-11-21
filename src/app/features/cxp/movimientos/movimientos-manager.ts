@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { timeout, catchError, of } from 'rxjs';
+import { TabsModule } from 'primeng/tabs';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -17,6 +18,9 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { PaginatorModule } from 'primeng/paginator';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { TableModule } from 'primeng/table';
 import { CxpService } from '../../../core/services/cxp.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CatalogoParametrosService } from '../../../core/services/catalogo-parametros.service';
@@ -28,6 +32,7 @@ import { Proveedor } from '../../../core/models/inventario.models';
   imports: [
     CommonModule,
     FormsModule,
+    TabsModule,
     ToolbarModule,
     ButtonModule,
     InputTextModule,
@@ -40,6 +45,9 @@ import { Proveedor } from '../../../core/models/inventario.models';
     SelectModule,
     DatePickerModule,
     PaginatorModule,
+    IconFieldModule,
+    InputIconModule,
+    TableModule,
   ],
   templateUrl: './movimientos-manager.html',
   styleUrl: './movimientos-manager.scss',
@@ -56,6 +64,16 @@ export class CxpMovimientosManager implements OnInit {
 
   /** Partida contable de origen (viaja en la URL al abrir desde copdamae) */
   partidaId = signal<number | null>(null);
+
+  /**
+   * Active tab value for p-tabs (controlled tabs pattern).
+   * Tab '0' = Movimiento (formulario de captura)
+   * Tab '1' = Saldos y Historial (tabla + saldos)
+   */
+  activeTabValue = signal<string>('0');
+
+  /** Flag para saber si la ruta viene de historico (con proveedor preseleccionado) */
+  private vieneDeHistorico = false;
 
   // ===== PROVEEDORES =====
   data = signal<Proveedor[]>([]);
@@ -109,8 +127,6 @@ export class CxpMovimientosManager implements OnInit {
     { label: 'Debito', value: 'D' },
     { label: 'Credito', value: 'C' },
   ];
-
-  vieneDeHistorico = false;
 
   // Referencias de debitos existentes con saldo
   debitoReferencias = computed(() => {
@@ -234,6 +250,8 @@ export class CxpMovimientosManager implements OnInit {
   seleccionarProveedor(proveedor: Proveedor) {
     this.selectedProveedor.set(proveedor);
     this.loadMovimientos(proveedor.proveedorId);
+    // Cambiar al tab de historial/saldos para mostrar movimientos inmediatamente
+    this.activeTabValue.set('1');
   }
 
   /**
@@ -301,9 +319,10 @@ export class CxpMovimientosManager implements OnInit {
     return full || p.razonsocial || p.nroproveedor || 'Sin nombre';
   }
 
-  moneda(val: number): string {
-    if (val == null || isNaN(val)) return '0.00';
-    const partes = val.toFixed(2).split('.');
+  moneda(val: any): string {
+    const num = Number(val);
+    if (val == null || val === '' || isNaN(num)) return '0.00';
+    const partes = num.toFixed(2).split('.');
     partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     return partes.join('.');
   }
@@ -480,5 +499,46 @@ export class CxpMovimientosManager implements OnInit {
       nroreferencia: nroReferencia,
       importe: undefined,
     });
+  }
+
+  /** Formatea fecha sin usar new Date() en el template. */
+  fechaCorta(valor: string | null | undefined): string {
+    if (!valor) return '—';
+    const d = new Date(valor);
+    if (isNaN(d.getTime())) return '—';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}/${d.getFullYear()}`;
+  }
+
+  /** Total de débitos vigentes del proveedor. */
+  totalDebitos(): number {
+    return this.movimientosData()
+      .filter((m) => m.tipomov === 'D' && m.sn_doc_anulado !== 'S')
+      .reduce((s, m) => s + (Number(m.importe) || 0), 0);
+  }
+
+  /** Total de créditos vigentes del proveedor. */
+  totalCreditos(): number {
+    return this.movimientosData()
+      .filter((m) => (m.tipomov === 'C' || m.tipomov === 'I') && m.sn_doc_anulado !== 'S')
+      .reduce((s, m) => s + (Number(m.importe) || 0), 0);
+  }
+
+  /** Saldo actual del proveedor = débitos − (créditos + intereses). */
+  saldoProveedor(): number {
+    const d = this.totalDebitos();
+    const c = this.totalCreditos();
+    return d - c;
+  }
+
+  /** Etiqueta del origen del movimiento: Manual o Automático. */
+  getOrigenLabel(m: any): string {
+    return m.sn_doc_manual === 'S' ? 'Manual' : 'Automático';
+  }
+
+  /** Severity del origen del movimiento. */
+  getOrigenSeverity(m: any): 'success' | 'secondary' {
+    return m.sn_doc_manual === 'S' ? 'success' : 'secondary';
   }
 }

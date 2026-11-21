@@ -5,6 +5,7 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
+import { DatePickerModule } from 'primeng/datepicker';
 import { MessageService } from 'primeng/api';
 import { KardexService } from '../../../core/services/kardex.service';
 import { Kardex as KardexMov } from '../../../core/models/inventario.models';
@@ -12,7 +13,7 @@ import { Kardex as KardexMov } from '../../../core/models/inventario.models';
 @Component({
   selector: 'app-kardex',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, DatePickerModule],
   templateUrl: './kardex.html',
   styleUrl: './kardex.scss',
 })
@@ -24,7 +25,10 @@ export class Kardex implements OnInit {
   filtered = signal<KardexMov[]>([]);
   cargando = signal(false);
 
-  q = signal('');
+  // ── Filtros de búsqueda ──
+  fechaDesde = signal<string | null>(null);
+  fechaHasta = signal<string | null>(null);
+  busqueda = signal('');
 
   ngOnInit() {
     this.load();
@@ -50,15 +54,22 @@ export class Kardex implements OnInit {
   }
 
   filtrar() {
-    const q = this.q().toLowerCase();
+    const desde = this.fechaDesde();
+    const hasta = this.fechaHasta();
+    const q = this.busqueda().trim().toLowerCase();
+
     this.filtered.set(
       this.data().filter((k) => {
-        if (!q) return true;
-        return (
-          k.codbarra?.toLowerCase().includes(q) ||
-          k.nroreferencia?.toLowerCase().includes(q) ||
-          String(k.productoId).includes(q)
-        );
+        if (desde || hasta) {
+          const fecha = this.fechaDia(k.fecharegistro);
+          if (desde && (!fecha || fecha < desde)) return false;
+          if (hasta && (!fecha || fecha > hasta)) return false;
+        }
+        if (q) {
+          const campos = [k.codbarra, k.nroreferencia, k.productoId].join(' ').toLowerCase();
+          if (!campos.includes(q)) return false;
+        }
+        return true;
       }),
     );
   }
@@ -68,8 +79,17 @@ export class Kardex implements OnInit {
   }
 
   limpiarFiltros() {
-    this.q.set('');
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.busqueda.set('');
     this.filtrar();
+  }
+
+  private fechaDia(valor: string | Date | null | undefined): string | null {
+    if (!valor) return null;
+    const s = typeof valor === 'string' ? valor : new Date(valor).toISOString();
+    const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
   }
 
   moneda(n: number | undefined): string {

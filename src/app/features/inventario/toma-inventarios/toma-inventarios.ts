@@ -27,6 +27,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { Bodega, Producto } from '../../../core/models/inventario.models';
 import { ProductosHelperList } from '../../helpers/productos';
 import { FooterHelper } from '../../helpers/footer';
+import { DatePickerModule } from 'primeng/datepicker';
 
 @Component({
   selector: 'app-toma-inventarios',
@@ -37,7 +38,7 @@ import { FooterHelper } from '../../helpers/footer';
     TableModule, ButtonModule, InputTextModule, InputNumberModule,
     DialogModule, TagModule, ToastModule, ConfirmDialogModule,
     SelectModule, CheckboxModule, ScrollPanelModule, CardModule,
-    ToolbarModule, TooltipModule, AutoCompleteModule, FileUploadModule,
+    ToolbarModule, TooltipModule, AutoCompleteModule, FileUploadModule, DatePickerModule,
   ],
   templateUrl: './toma-inventarios.html',
   styleUrl: './toma-inventarios.scss',
@@ -64,6 +65,12 @@ export class TomaInventarios implements OnInit {
   cargando = signal(false);
   cargandoDet = signal(false);
   itemsSeleccionados = signal<any[]>([]);
+
+  // ── Filtros de búsqueda ──
+  fechaDesde = signal<string | null>(null);
+  fechaHasta = signal<string | null>(null);
+  busqueda = signal('');
+  filtered = signal<any[]>([]);
 
   formMae = this.fb.group({
     bodegaId: [null as number | null, Validators.required],
@@ -101,6 +108,7 @@ export class TomaInventarios implements OnInit {
     this.service.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data: any) => {
         this.maestros.set(data?.value || data || []);
+        this.filtrar();
         this.cargando.set(false);
       },
       error: () => {
@@ -108,6 +116,45 @@ export class TomaInventarios implements OnInit {
         this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las tomas de inventario' });
       },
     });
+  }
+
+  filtrar() {
+    const desde = this.fechaDesde();
+    const hasta = this.fechaHasta();
+    const q = this.busqueda().trim().toLowerCase();
+
+    const res = (this.maestros() || []).filter((t) => {
+      if (desde || hasta) {
+        const fecha = this.fechaDia(t.fecharegistro);
+        if (desde && (!fecha || fecha < desde)) return false;
+        if (hasta && (!fecha || fecha > hasta)) return false;
+      }
+      if (q) {
+        const bodega = this.bodegas().find(b => b.bodegaId === t.bodegaId)?.descripcion || '';
+        const campos = [bodega, t.concepto, t.invfisId != null ? String(t.invfisId) : ''].join(' ').toLowerCase();
+        if (!campos.includes(q)) return false;
+      }
+      return true;
+    });
+    this.filtered.set(res);
+  }
+
+  buscar() {
+    this.filtrar();
+  }
+
+  limpiarFiltros() {
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.busqueda.set('');
+    this.filtrar();
+  }
+
+  private fechaDia(valor: string | Date | null | undefined): string | null {
+    if (!valor) return null;
+    const s = typeof valor === 'string' ? valor : new Date(valor).toISOString();
+    const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
   }
 
   seleccionar(row: any) {
@@ -141,6 +188,10 @@ export class TomaInventarios implements OnInit {
 
   nuevoMae() {
     this.formMae.reset({ bodegaId: null, concepto: '' });
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.busqueda.set('');
+    this.filtered.set([]);
     this.seleccionado.set({
       invfisId: 0,
       empresaId: this.auth.currentUser()?.empresaId || 0,

@@ -8,13 +8,48 @@
       <h3 class="page-title">Toma de Inventarios</h3>
       <p class="page-subtitle">Conteo fisico de existencias por bodega</p>
     </div>
-    <p-button label="Nueva Toma" raised="true" rounded="true" variant="text" severity="success" icon="pi pi-plus"
-      [size]="'small'" (onClick)="nuevoMae()" />
-  </header>
+<p-button label="Nueva Toma" raised="true" rounded="true" variant="text" severity="success" icon="pi pi-plus"
+        [size]="'small'" (onClick)="nuevoMae()" />
+    </header>
 
-  <p-table id="grid1" [value]="maestros()" [loading]="cargando()" dataKey="invfisId" [paginator]="true" [rows]="10"
-    [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-    [rowsPerPageOptions]="[10, 25, 50]" styleClass="p-datatable-sm">
+    <div class="card filtros-card">
+      <div class="filtros-row">
+        <div class="campo">
+          <label class="campo-label">Desde</label>
+          <p-datepicker size="small" appendTo="body" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)"
+            dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" [readonlyInput]="true" />
+        </div>
+        <div class="campo">
+          <label class="campo-label">Hasta</label>
+          <p-datepicker size="small" appendTo="body" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)"
+            dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" [readonlyInput]="true" />
+        </div>
+        <div class="campo campo-busqueda">
+          <label class="campo-label">Busqueda por Bodega, Concepto</label>
+          <span class="p-input-icon-left">
+            <input pInputText type="text" [pSize]="'small'"
+              [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
+              (keyup.enter)="buscar()" placeholder="Bodega, concepto..." class="busqueda-input" />
+          </span>
+        </div>
+        <div class="filtros-acciones">
+          <p-button label="Buscar" icon="pi pi-search" [size]="'small'" [rounded]="true" (onClick)="buscar()" />
+          <p-button label="Limpiar" icon="pi pi-times" [size]="'small'" variant="text" [rounded]="true" severity="secondary"
+            (onClick)="limpiarFiltros()" />
+        </div>
+      </div>
+    </div>
+
+    <p-table [value]="filtered()"
+   [loading]="cargando()"
+   dataKey="invfisId"
+   [paginator]="true"
+   [rows]="10"
+   size="small"
+   selectionMode="single"
+    [showCurrentPageReport]="true"
+     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+    [rowsPerPageOptions]="[10, 25, 50]" >
     <ng-template pTemplate="header">
       <tr>
         <th style="width:4rem">#</th>
@@ -30,7 +65,7 @@
     <ng-template pTemplate="body" let-row>
       <tr (click)="seleccionar(row)" style="cursor:pointer">
         <td>{{ row.invfisId }}</td>
-        <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>{{ row.fecharegistro | date:'dd/MM/yyyy' }}</td>
         <td>{{ nombreBodega(row.bodegaId) }}</td>
         <td>{{ row.concepto }}</td>
         <td>
@@ -149,7 +184,7 @@
     </div>
 
     <div class="detail-scroll">
-      <p-table id="grid2" [value]="detalles()" [loading]="cargandoDet()" dataKey="nvfisdetId" [paginator]="true"
+      <p-table id="grid2" [value]="detalles()" [loading]="cargandoDet()" dataKey="nvfisdetId" [paginator]="true" selectionMode="single"
         [rows]="15" [scrollable]="true" scrollHeight="400px" size="small" [rowHover]="true">
         <ng-template pTemplate="caption">
           <div class="text-center w-full">
@@ -238,7 +273,7 @@
     @if (itemsImport().length > 0) {
     <div class="card" style="padding:0.5rem; background:var(--c-surface-ground)">
       <b>{{ itemsImport().length }} items</b> listos para importar.
-      <p-table [value]="itemsImport()" [paginator]="true" [rows]="5" size="small" styleClass="mt-2">
+      <p-table [value]="itemsImport()" [paginator]="true" [rows]="5" size="small" styleClass="mt-2" selectionMode="single">
         <ng-template pTemplate="header">
           <tr>
             @for (col of objectKeys(itemsImport()[0]); track col) {

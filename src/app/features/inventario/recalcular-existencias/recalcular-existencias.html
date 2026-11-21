@@ -1,0 +1,99 @@
+<p-toast />
+
+<div class="card">
+  <div class="recalcular-header">
+    <div>
+      <h2 class="recalcular-titulo">
+        <i class="pi pi-refresh"></i>
+        Recalcular Existencias
+      </h2>
+      <p class="recalcular-subtitulo">
+        Reconstruye los saldos de <strong>invexistencias</strong> a partir del historial de <strong>invkardex</strong>.
+        Útil cuando se modifica la bandera de "bajo demanda" de un producto o se detectan desfases de stock.
+      </p>
+    </div>
+  </div>
+
+  <div class="recalcular-form">
+    <div class="campo">
+      <label class="campo-label" for="empresaRecalc">Empresa</label>
+      <p-select
+        inputId="empresaRecalc"
+        [options]="empresas()"
+        [ngModel]="selectedEmpresaId()"
+        (ngModelChange)="selectedEmpresaId.set($event)"
+        optionLabel="descripcion"
+        optionValue="empresaId"
+        placeholder="Seleccionar empresa..."
+        styleClass="w-full"
+        size="small"
+        [appendTo]="'body'"
+        [filter]="true"
+        filterBy="descripcion"
+      />
+    </div>
+
+    <div class="campo">
+      <label class="campo-label" for="stockInicial">Stock inicial (opcional)</label>
+      <p-inputNumber
+        inputId="stockInicial"
+        size="small"
+        [ngModel]="stockInicial()"
+        (ngModelChange)="stockInicial.set($event)"
+        [min]="0"
+        [minFractionDigits]="0"
+        [maxFractionDigits]="0"
+        [useGrouping]="true"
+        styleClass="w-full"
+        [inputStyle]="{ 'width': '100%' }"
+        placeholder="0"
+      />
+      <small class="campo-hint">
+        Se aplica como saldo base antes del primer movimiento de kardex de cada producto.
+      </small>
+    </div>
+  </div>
+
+  <div class="recalcular-acciones">
+    <p-button
+      size="small"
+      label="Cancelar"
+      icon="pi pi-times"
+      rounded
+      variant="text"
+      severity="secondary"
+      (onClick)="limpiar()"
+    />
+    <p-button
+      size="small"
+      label="Procesar"
+      icon="pi pi-check-circle"
+      severity="success"
+      variant="text"
+      [raised]="true"
+      [rounded]="true"
+      [loading]="cargando()"
+      [disabled]="!selectedEmpresaId() || cargando()"
+      (onClick)="procesar()"
+    />
+  </div>
+
+  @if (resultado(); as r) {
+    <div class="recalcular-resultado">
+      <h3 class="recalcular-resultado-titulo">
+        <i class="pi pi-check-circle"></i>
+        Recalculo completado
+      </h3>
+      <div class="recalcular-stats">
+        <div class="stat">
+          <span class="stat-valor">{{ r.productos }}</span>
+          <span class="stat-label">Productos</span>
+        </div>
+        <div class="stat">
+          <span class="stat-valor">{{ r.registros }}</span>
+          <span class="stat-label">Registros de kardex</span>
+        </div>
+      </div>
+    </div>
+  }
+</div>

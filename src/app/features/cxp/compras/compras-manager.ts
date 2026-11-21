@@ -28,6 +28,7 @@ import { FacturaData } from '../../../core/utils/invoice-parser';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { CardModule } from 'primeng/card';
+import { DatePickerModule } from 'primeng/datepicker';
 
 @Component({
   selector: 'app-compras-manager',
@@ -52,6 +53,7 @@ import { CardModule } from 'primeng/card';
     CheckboxModule,
     ScrollPanelModule,
     CardModule,
+    DatePickerModule,
   ],
   templateUrl: './compras-manager.html',
   styleUrl: './compras-manager.scss',
@@ -77,7 +79,7 @@ export class ComprasManager implements OnInit {
   documentosFiscales = signal<{ label: string; value: number }[]>([]);
   monedas = signal<{ label: string; value: number }[]>([]);
 
-  seleccionado = signal<CompraMae | null>(null);
+seleccionado = signal<CompraMae | null>(null);
   cargando = signal(false);
   cargandoDet = signal(false);
   itemsSeleccionados = signal<CompraDet[]>([]);
@@ -86,8 +88,14 @@ export class ComprasManager implements OnInit {
   dialogProducto = signal(false);
   dialogOcr = signal(false);
   esEdicion = signal(false);
- 
+  
   totalFactura = signal(0);
+
+  // ── Filtros de búsqueda ──
+  fechaDesde = signal<string | null>(null);
+  fechaHasta = signal<string | null>(null);
+  busqueda = signal('');
+  filtered = signal<CompraMae[]>([]);
 
 
   formMae = this.fb.group({
@@ -148,6 +156,7 @@ export class ComprasManager implements OnInit {
     this.service.getCompras().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.compras.set(data || []);
+        this.filtrar();
         this.cargando.set(false);
       },
       error: () => {
@@ -155,6 +164,50 @@ export class ComprasManager implements OnInit {
         this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las compras' });
       },
     });
+  }
+
+  filtrar() {
+    const desde = this.fechaDesde();
+    const hasta = this.fechaHasta();
+    const q = this.busqueda().trim().toLowerCase();
+
+    const res = (this.compras() || []).filter((c) => {
+      if (desde || hasta) {
+        const fecha = this.fechaDia(c.fecharegistro);
+        if (desde && (!fecha || fecha < desde)) return false;
+        if (hasta && (!fecha || fecha > hasta)) return false;
+      }
+      if (q) {
+        const prov = this.proveedores().find(p => p.proveedorId === c.proveedorId);
+        const campos = [
+          c.nroreferencia,
+          prov ? `${prov.nombres} ${prov.apellidos}` : '',
+          prov ? (prov.razonsocial || '') : '',
+          c.compraId != null ? String(c.compraId) : '',
+        ].join(' ').toLowerCase();
+        if (!campos.includes(q)) return false;
+      }
+      return true;
+    });
+    this.filtered.set(res);
+  }
+
+  buscar() {
+    this.filtrar();
+  }
+
+  limpiarFiltros() {
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.busqueda.set('');
+    this.filtrar();
+  }
+
+  private fechaDia(valor: string | Date | null | undefined): string | null {
+    if (!valor) return null;
+    const s = typeof valor === 'string' ? valor : new Date(valor).toISOString();
+    const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
   }
 
   cargarProveedores() {
@@ -300,7 +353,7 @@ export class ComprasManager implements OnInit {
     this.detalles.set([]);
   }
 
-  nuevoMae() {
+nuevoMae() {
     this.esEdicion.set(false);
     this.formMae.reset({
       TipoCompra: 'FCO',
@@ -315,6 +368,12 @@ export class ComprasManager implements OnInit {
     });
     this.totalFactura.set(0);
     
+    // Reset filtros
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.busqueda.set('');
+    this.filtered.set([]);
+     
     // Crear objeto dummy para disparar la vista de detalle
     this.seleccionado.set({
       compraId: 0,

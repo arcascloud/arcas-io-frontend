@@ -16,6 +16,45 @@ code {
   margin-bottom: 0.5rem;
 }
 
+.filtros-card {
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.filtros-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.campo-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+}
+
+.campo-busqueda {
+  flex: 1;
+  min-width: 200px;
+}
+
+.busqueda-input {
+  width: 100%;
+}
+
+.filtros-acciones {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding-bottom: 0;
+}
+
 .page-fill {
   height: calc(100vh - 76px);
   max-height: calc(100vh - 76px);
@@ -102,12 +141,8 @@ code {
   }
 }
 
-::ng-deep .p-datatable-tbody > tr {
-  cursor: default;
-
-  &:hover {
-    background: var(--c-surface-ground);
-  }
+:host ::ng-deep .p-datatable-tbody > tr {
+  cursor: pointer;
 
   &.row-seleccionado {
     background: color-mix(in srgb, var(--select-row) 10%, transparent);
@@ -120,4 +155,19 @@ code {
 
 ::ng-deep .p-datatable {
   --p-datatable-body-cell-border-color: #25374a;
+}
+
+@media (max-width: 768px) {
+  .filtros-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .campo-busqueda {
+    min-width: 100%;
+  }
+
+  .filtros-acciones {
+    justify-content: flex-end;
+  }
 }

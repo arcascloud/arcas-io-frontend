@@ -64,7 +64,7 @@ size="small"         [options]="estadoOptions"
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-u>
-      <tr (click)="editar(u.usuario)">
+      <tr [style.cursor]="'pointer'" (click)="editar(u.usuario)">
         <td class="font-bold">{{ u.usuario }}</td>
         <td>{{ u.nombre || '-' }}</td>
         <td>{{ u.email || '-' }}</td>

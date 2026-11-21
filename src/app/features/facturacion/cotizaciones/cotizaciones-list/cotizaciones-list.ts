@@ -10,6 +10,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
+import { DatePickerModule } from 'primeng/datepicker';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApiService } from '../../../../core/services/api.service';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -17,7 +18,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 @Component({
   selector: 'app-cotizaciones-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule, ConfirmDialogModule, DialogModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule, ConfirmDialogModule, DialogModule, DatePickerModule],
   providers: [ConfirmationService],
   templateUrl: './cotizaciones-list.html',
   styleUrl: './cotizaciones-list.scss',
@@ -34,6 +35,8 @@ export class CotizacionesList implements OnInit {
   filtered = signal<any[]>([]);
   cargando = signal(false);
   q = signal('');
+  fechaDesde = signal<Date | null>(null);
+  fechaHasta = signal<Date | null>(null);
 
   dialogCorreo = signal(false);
   emailDestino = signal('');
@@ -62,22 +65,42 @@ export class CotizacionesList implements OnInit {
 
   filtrar() {
     const texto = this.q().toLowerCase().trim();
-    if (!texto) {
-      this.filtered.set(this.data());
-      return;
-    }
+    const desde = this.fechaDesde();
+    const hasta = this.fechaHasta();
+
+    const desdeTs = desde ? new Date(desde.getFullYear(), desde.getMonth(), desde.getDate()).getTime() : null;
+    const hastaTs = hasta ? new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate(), 23, 59, 59, 999).getTime() : null;
+
     this.filtered.set(
       this.data().filter((i) => {
-        const nro = String(i.poscotmaeId ?? '');
-        const cliente = (i.Nombrecliente ?? '').toLowerCase();
-        const atendio = (i.atendio ?? '').toLowerCase();
-        return nro.includes(texto) || cliente.includes(texto) || atendio.includes(texto);
+        // Filtro por texto (nombre cliente o nro cotización)
+        if (texto) {
+          const nro = String(i.poscotmaeId ?? '').toLowerCase();
+          const cliente = (i.Nombrecliente ?? '').toLowerCase();
+          if (!nro.includes(texto) && !cliente.includes(texto)) return false;
+        }
+
+        // Filtro por rango de fechas
+        if (desdeTs !== null || hastaTs !== null) {
+          const fechaCot = i.fecharegistro ? new Date(i.fecharegistro).getTime() : null;
+          if (fechaCot === null) return false;
+          if (desdeTs !== null && fechaCot < desdeTs) return false;
+          if (hastaTs !== null && fechaCot > hastaTs) return false;
+        }
+
+        return true;
       }),
     );
   }
 
   buscar() { this.filtrar(); }
-  limpiar() { this.q.set(''); this.filtrar(); }
+
+  limpiar() {
+    this.q.set('');
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.filtrar();
+  }
 
   nuevo() {
     this.router.navigate(['/facturacion/cotizaciones/editar', 'nuevo']);

@@ -25,10 +25,6 @@
   font-size: 0.9rem;
 }
 
-::ng-deep .p-datatable-tbody > tr {
-  cursor: default;
-
-  &:hover {
-    background: var(--c-surface-ground);
-  }
+:host ::ng-deep .p-datatable-tbody > tr {
+  cursor: pointer;
 }

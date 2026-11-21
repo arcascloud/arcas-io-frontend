@@ -4,7 +4,7 @@
   <!-- ═══════ HEADER: escáner fijo + descuento global ═══════ -->
   <div class="pos-header" [class.con-carrito]="state.filas().length > 0 && !isMobile()">
     <div class="pos-scan" [class.pos-scan--ok]="scanOk()">
-      <i class="pi pi-barcode"></i>
+      <i class="fa-solid fa-barcode"></i>
       <input
         #scanInput
         type="text"

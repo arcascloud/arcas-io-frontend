@@ -53,6 +53,7 @@ export class CatalogoList implements OnInit {
   filtered = signal<any[]>([]);
   cargando = signal(false);
   busqueda = signal('');
+  selected = signal<any>(null);
 
   ngOnInit() {
     this.route.paramMap.subscribe(() => {

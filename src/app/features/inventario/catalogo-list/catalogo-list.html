@@ -45,6 +45,10 @@
     [rows]="20"
     [rowsPerPageOptions]="[10, 20, 50]"
     [showCurrentPageReport]="true"
+    selectionMode="single"
+    [dataKey]="config().idKey"
+    [selection]="selected()"
+    (onRowSelect)="selected.set($event.data)"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
     size="small"
     [tableStyle]="{ 'table-layout': 'fixed' }">
@@ -62,7 +66,10 @@
     </ng-template>
 
     <ng-template pTemplate="body" let-item>
-      <tr>
+      <tr
+        [style.cursor]="'pointer'"
+        (click)="editar(item[config().idKey])"
+      >
         @for (col of config().campos; track col.key) {
           <td>{{ item[col.key] || '-' }}</td>
         }
@@ -78,7 +85,7 @@
             variant="text"
             [rounded]="true"
             severity="secondary"
-            (onClick)="editar(item[config().idKey])" />
+            (click)="$event.stopPropagation(); editar(item[config().idKey])" />
         </td>
       </tr>
     </ng-template>

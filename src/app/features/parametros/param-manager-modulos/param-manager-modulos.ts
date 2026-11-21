@@ -12,9 +12,11 @@ import { TagModule } from 'primeng/tag';
 import { FieldsetModule } from 'primeng/fieldset';
 import { DrawerModule } from 'primeng/drawer';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { EmpresasService } from '../../../core/services/empresas.service';
 import { ParametroUnificadoService } from '../../../core/services/parametro-unificado.service';
+import { AuthService } from '../../../core/services/auth.service';
 import {
   TipoParametro,
   GrupoTipoParametro,
@@ -40,7 +42,9 @@ import { Empresa } from '../../../core/models/empresa.models';
     FieldsetModule,
     DrawerModule,
     TooltipModule,
+    ConfirmDialogModule,
   ],
+  providers: [ConfirmationService],
   templateUrl: './param-manager-modulos.html',
   styleUrl: './param-manager-modulos.scss',
 })
@@ -50,6 +54,16 @@ export class ParamManagerModulos implements OnInit {
   private parametroService = inject(ParametroUnificadoService);
   private msgs = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+  private auth = inject(AuthService);
+  private confirm = inject(ConfirmationService);
+
+  /** Solo el rol admin puede eliminar parámetros */
+  readonly esAdmin = computed(() => {
+    const u = this.auth.currentUser();
+    if (!u) return false;
+    const roles = u.roles ?? (u.rol ? [u.rol] : []);
+    return roles.includes('admin');
+  });
 
   // Opciones readonly
   readonly tipoOptions = [
@@ -307,7 +321,31 @@ export class ParamManagerModulos implements OnInit {
       });
   }
 
-  eliminar(param: TipoParametro) {
+  eliminar(param: TipoParametro, event?: Event) {
+    event?.stopPropagation();
+
+    // Solo admin puede eliminar
+    if (!this.esAdmin()) {
+      this.msgs.add({ severity: 'warn', summary: 'No permitido', detail: 'Solo el rol admin puede eliminar parámetros' });
+      return;
+    }
+
+    this.confirm.confirm({
+      target: event?.target as EventTarget,
+      message: `¿Eliminar el parámetro <b>${param.field}</b>?`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí',
+      rejectLabel: 'No',
+      acceptButtonProps: { severity: 'danger', variant: 'text', size: 'small', rounded: true },
+      rejectButtonProps: { severity: 'secondary', variant: 'text', size: 'small', rounded: true },
+      accept: () => {
+        this.ejecutarEliminacion(param);
+      },
+    });
+  }
+
+  private ejecutarEliminacion(param: TipoParametro) {
     this.parametroService.remove(param.ttipoparametrosId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({

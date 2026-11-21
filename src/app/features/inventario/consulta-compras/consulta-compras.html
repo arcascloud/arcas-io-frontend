@@ -11,7 +11,78 @@
     <p-button label="Nueva Compra" icon="pi pi-plus" [size]="'small'" rounded (onClick)="nuevoMae()" />
   </header>
 
-  <p-table [value]="compras()" [loading]="cargando()" dataKey="compraId" [paginator]="true" [rows]="10"
+  <div class="filtros card">
+    <div class="campo">
+      <label>Fecha desde</label>
+      <p-datepicker
+        size="small"
+        [showIcon]="true"
+        [appendTo]="'body'"
+        styleClass="w-full"
+        dateFormat="dd/mm/yy"
+        [ngModel]="fechaDesde()"
+        (ngModelChange)="fechaDesde.set($event)"
+      />
+    </div>
+    <div class="campo">
+      <label>Fecha hasta</label>
+      <p-datepicker
+        size="small"
+        [showIcon]="true"
+        [appendTo]="'body'"
+        styleClass="w-full"
+        dateFormat="dd/mm/yy"
+        [ngModel]="fechaHasta()"
+        (ngModelChange)="fechaHasta.set($event)"
+      />
+    </div>
+<div class="campo">
+      <label>Proveedor</label>
+      <p-select
+        [size]="'small'"
+        [options]="proveedores()"
+        optionLabel="nombres"
+        optionValue="proveedorId"
+        placeholder="Busque un proveedor..."
+        [filter]="true"
+        [filterBy]="'nombres,apellidos,razonsocial'"
+        styleClass="w-full"
+        [showClear]="true"
+        [appendTo]="'body'"
+        [ngModel]="proveedorBusqueda()"
+        (ngModelChange)="proveedorBusqueda.set($event)"
+      >
+        <ng-template let-prov pTemplate="item">
+          <span>{{ prov.nombres }} {{ prov.apellidos }}</span>
+        </ng-template>
+      </p-select>
+    </div>
+    <div class="campo">
+      <label>Nro. Factura</label>
+      <input pInputText
+        pSize="small"
+        placeholder="Nro. de referencia del proveedor..."
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        class="w-full"
+      />
+    </div>
+    <div class="campo acciones">
+      <p-button label="Buscar"
+      [rounded]="'true'" icon="pi pi-search" [size]="'small'" (onClick)="buscar()" />
+      <p-button
+        label="Limpiar"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        [rounded]="'true'"
+        [size]="'small'"
+        (onClick)="limpiarFiltros()"
+      />
+    </div>
+  </div>
+
+  <p-table [value]="compras()" [loading]="cargando()" dataKey="compraId" [paginator]="true" [rows]="10" selectionMode="single"
     [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
     [rowsPerPageOptions]="[10, 25, 50]" size="small">
     <ng-template pTemplate="header">
@@ -31,7 +102,7 @@
     <ng-template pTemplate="body" let-row>
       <tr (click)="seleccionar(row)" style="cursor:pointer">
         <td>{{ row.compraId }}</td>
-        <td>{{ row.fecharegistro | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>{{ row.fecharegistro | date:'dd/MM/yyyy' }}</td>
         <td>{{ nombreProveedor(row.proveedorId) }}</td>
         <td>{{ nombreBodega(row.bodegaId) }}</td>
         <td>{{ row.nroreferencia || '-' }}</td>

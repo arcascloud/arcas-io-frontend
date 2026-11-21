@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TabsModule } from 'primeng/tabs';
 import { timeout, catchError, of } from 'rxjs';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
@@ -47,6 +48,7 @@ import { CxcCliente, CxcMovimiento } from '../../../core/models/cxc.models';
     IconFieldModule,
     InputIconModule,
     TableModule,
+    TabsModule,
   ],
   templateUrl: './movimientos-manager.html',
   styleUrl: './movimientos-manager.scss',
@@ -84,6 +86,12 @@ export class MovimientosManager implements OnInit {
 
   /** Flag para saber si la ruta viene de historico (con cliente preseleccionado) */
   private vieneDeHistorico = false;
+
+  /** Active tab value for p-tabs (controlled tabs pattern) */
+  activeTabValue = signal<string>('0');
+
+  /** Tab 0 = Movimientos (captura + historial) */
+  /** Tab 1 = Saldos y Resumen (solo lectura) */
 
   // Effect: recargar SOLO cuando el usuario cambia el filtro de búsqueda (q)
   // NO se dispara en la carga inicial (controlado por ngOnInit)
@@ -369,6 +377,8 @@ export class MovimientosManager implements OnInit {
   seleccionarCliente(cliente: CxcCliente) {
     this.selectedCliente.set(cliente);
     this.loadMovimientos(cliente.clienteId);
+    // Cambiar al tab de historial/saldos para mostrar movimientos inmediatamente
+    this.activeTabValue.set('1');
   }
 
   getClienteNombre(c: CxcCliente): string {

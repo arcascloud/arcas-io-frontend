@@ -409,6 +409,13 @@ export const INVENTARIO_ROUTES: Routes = [
   // Kardex (read-only)
   { path: 'kardex', loadComponent: () => import('./kardex/kardex').then((m) => m.Kardex) },
 
+  // Recalcular existencias (herramienta de mantenimiento)
+  {
+    path: 'recalcular-existencias',
+    loadComponent: () =>
+      import('./recalcular-existencias/recalcular-existencias').then((m) => m.RecalcularExistencias),
+  },
+
   // Requisiciones
   {
     path: 'requisiciones',

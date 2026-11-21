@@ -13,6 +13,7 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToolbarModule } from 'primeng/toolbar';
 import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { CxpService } from '../../../core/services/cxp.service';
@@ -29,7 +30,7 @@ import { CompraMae, CompraDet, Proveedor, Producto, Bodega } from '../../../core
     CommonModule, FormsModule, ReactiveFormsModule,
     TableModule, ButtonModule, InputTextModule, InputNumberModule,
     DialogModule, TagModule, ToastModule, ConfirmDialogModule,
-    ToolbarModule, SelectModule, TooltipModule,
+    ToolbarModule, SelectModule, DatePickerModule, TooltipModule,
   ],
   templateUrl: './consulta-compras.html',
   styleUrl: './consulta-compras.scss',
@@ -58,6 +59,12 @@ export class ConsultaCompras implements OnInit {
   seleccionado = signal<CompraMae | null>(null);
   cargando = signal(false);
   cargandoDet = signal(false);
+
+  fechaDesde = signal<Date | null>(null);
+  fechaHasta = signal<Date | null>(null);
+  q = signal('');
+  comprasTodas = signal<CompraMae[]>([]);
+  proveedorBusqueda = signal<number | null>(null);
 
   dialogMae = signal(false);
   dialogDet = signal(false);
@@ -97,7 +104,9 @@ export class ConsultaCompras implements OnInit {
     this.cargando.set(true);
     this.service.getCompras().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
-        this.compras.set(data || []);
+        const lista = data || [];
+        this.comprasTodas.set(lista);
+        this.compras.set(lista);
         this.cargando.set(false);
       },
       error: () => {
@@ -105,6 +114,46 @@ export class ConsultaCompras implements OnInit {
         this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las compras' });
       },
     });
+  }
+
+  buscar() {
+    const desde = this.fechaDesde();
+    const hasta = this.fechaHasta();
+    const texto = this.q().trim().toLowerCase();
+    const provId = this.proveedorBusqueda();
+    let lista = this.comprasTodas();
+    if (desde) {
+      const d0 = this.diaFecha(desde);
+      lista = lista.filter(c => this.diaFecha(c.fecharegistro) >= d0);
+    }
+    if (hasta) {
+      const d1 = this.diaFecha(hasta);
+      lista = lista.filter(c => this.diaFecha(c.fecharegistro) <= d1);
+    }
+    if (provId != null) {
+      lista = lista.filter(c => c.proveedorId === provId);
+    }
+    if (texto) {
+      lista = lista.filter(c => {
+        const prov = this.nombreProveedor(c.proveedorId).toLowerCase();
+        const ref = (c.nroreferencia || '').toLowerCase();
+        return prov.includes(texto) || ref.includes(texto);
+      });
+    }
+    this.compras.set(lista);
+  }
+
+  limpiarFiltros() {
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.q.set('');
+    this.proveedorBusqueda.set(null);
+    this.compras.set(this.comprasTodas());
+  }
+
+  private diaFecha(valor: any): Date {
+    const d = valor ? new Date(valor) : new Date(0);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
 
   cargarProveedores() {

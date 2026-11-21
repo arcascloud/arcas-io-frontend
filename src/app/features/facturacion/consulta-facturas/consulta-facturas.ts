@@ -9,6 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
+import { DatePickerModule } from 'primeng/datepicker';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -18,7 +19,7 @@ import { TodoPagoService, TodoPagoTransaccion } from '../../../core/services/tod
 @Component({
   selector: 'app-consulta-facturas',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule, DialogModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, TagModule, TooltipModule, DialogModule, DatePickerModule],
   templateUrl: './consulta-facturas.html',
   styleUrl: './consulta-facturas.scss',
 })
@@ -35,6 +36,8 @@ export class ConsultaFacturas implements OnInit {
   filtered = signal<any[]>([]);
   cargando = signal(false);
   q = signal('');
+  fechaDesde = signal<Date | null>(null);
+  fechaHasta = signal<Date | null>(null);
   usuarioFiltro = signal<string | null>(null);
 
   dialogCorreo = signal(false);
@@ -83,21 +86,43 @@ export class ConsultaFacturas implements OnInit {
 
   filtrar() {
     const texto = this.q().toLowerCase().trim();
-    if (!texto) {
-      this.filtered.set(this.facturas());
-      return;
-    }
+    const desde = this.fechaDesde();
+    const hasta = this.fechaHasta();
+
+    // Normalizar fechas a inicio/fin del día para comparación correcta
+    const desdeTs = desde ? new Date(desde.getFullYear(), desde.getMonth(), desde.getDate()).getTime() : null;
+    const hastaTs = hasta ? new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate(), 23, 59, 59, 999).getTime() : null;
+
     this.filtered.set(
       this.facturas().filter((f) => {
-        const nro = String(f.nrofactura ?? '');
-        const cliente = (f.nombrecliente ?? '').toLowerCase();
-        return nro.includes(texto) || cliente.includes(texto);
+        // Filtro por texto (nombre cliente o nrofactura)
+        if (texto) {
+          const nro = String(f.nrofactura ?? '').toLowerCase();
+          const cliente = (f.nombrecliente ?? '').toLowerCase();
+          if (!nro.includes(texto) && !cliente.includes(texto)) return false;
+        }
+
+        // Filtro por rango de fechas
+        if (desdeTs !== null || hastaTs !== null) {
+          const fechaFac = f.fecharegistro ? new Date(f.fecharegistro).getTime() : null;
+          if (fechaFac === null) return false;
+          if (desdeTs !== null && fechaFac < desdeTs) return false;
+          if (hastaTs !== null && fechaFac > hastaTs) return false;
+        }
+
+        return true;
       }),
     );
   }
 
   buscar() { this.filtrar(); }
-  limpiar() { this.q.set(''); this.filtrar(); }
+
+  limpiar() {
+    this.q.set('');
+    this.fechaDesde.set(null);
+    this.fechaHasta.set(null);
+    this.filtrar();
+  }
 
   ver(id: number) {
     this.router.navigate(['/facturacion/consultas', id]);
