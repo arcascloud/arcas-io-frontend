@@ -72,10 +72,6 @@
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 0.35rem;
-
-  .accion-izq {
-    margin-right: auto;
-  }
 }
 
 /* ===== Card "Item" ===== */
@@ -99,20 +95,58 @@
   color: var(--c-text-muted);
 }
 
+.vigencia-label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+}
+
 /* ===== Responsive ===== */
 
 @media (max-width: 640px) {
   .acciones-form {
     flex-wrap: wrap;
-
-    .accion-izq {
-      margin-right: 0;
-      margin-bottom: 0.25rem;
-    }
   }
 }
 
 /* Los p-select anidados en el body (tooltips/overlays) mantienen ancho total */
 ::ng-deep .p-select {
   width: 100%;
+}
+
+/* ===== Layout 2 columnas (izquierda 65% / derecha 35%) ===== */
+
+.rango-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin: -0.5rem;
+}
+
+.rango-col-izq,
+.rango-col-der {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0.5rem;
+}
+
+.rango-col-izq {
+  flex: 0 0 60%;
+  width: 60%;
+  max-width: 60%;
+}
+
+.rango-col-der {
+  flex: 0 0 40%;
+  width: 40%;
+  max-width: 40%;
+}
+
+@media (max-width: 1024px) {
+  .rango-col-izq,
+  .rango-col-der {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: 100%;
+  }
 }

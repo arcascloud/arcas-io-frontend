@@ -9,8 +9,6 @@ import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
-import { ToolbarModule } from 'primeng/toolbar';
-import { forkJoin } from 'rxjs';
 import { CxcService } from '../../../core/services/cxc.service';
 
 export interface ClienteSaldo {
@@ -39,7 +37,7 @@ export interface CartaRecordatorio {
 @Component({
   selector: 'app-cartas-recordatorio',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, SelectModule, DatePickerModule, TooltipModule, ToolbarModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, SelectModule, DatePickerModule, TooltipModule],
   templateUrl: './cartas-recordatorio.html',
   styleUrl: './cartas-recordatorio.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

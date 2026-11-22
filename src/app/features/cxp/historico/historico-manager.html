@@ -4,6 +4,14 @@
       <h1 class="page-title">Historico de Movimientos</h1>
       <p class="page-subtitle">Consulta de movimientos de cuentas por pagar por proveedor</p>
     </div>
+    <div class="historico-acciones">
+      <p-button size="small" label="PDF" icon="pi pi-file-pdf" severity="secondary" variant="text" [rounded]="true"
+        (onClick)="exportarPdf()" [disabled]="filtered().length === 0" />
+      <p-button size="small" label="Excel" icon="pi pi-file-excel" severity="secondary" variant="text" [rounded]="true"
+        (onClick)="exportarExcel()" [disabled]="filtered().length === 0" />
+      <p-button size="small" label="Word" icon="pi pi-file-word" severity="secondary" variant="text" [rounded]="true"
+        (onClick)="exportarWord()" [disabled]="filtered().length === 0" />
+    </div>
   </header>
 
   <!-- FILTROS -->

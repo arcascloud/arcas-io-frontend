@@ -21,6 +21,7 @@
 
       <!-- Tabla bancos -->
       <p-table [value]="bancos()" [loading]="cargando()" [paginator]="true" [rows]="10"
+        selectionMode="single"
         [rowsPerPageOptions]="[10, 25, 50]" [showCurrentPageReport]="true"
         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
         size="small" dataKey="bancoId"
@@ -242,6 +243,7 @@
         <!-- Lista de cuentas -->
         @if (cuentas().length > 0) {
           <p-table id="gridCuentasBancarias" [value]="cuentas()" [loading]="cargandoCuentas()" size="small"
+            selectionMode="single"
             [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10]"
             [showCurrentPageReport]="true"
             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}">

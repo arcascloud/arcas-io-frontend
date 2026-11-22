@@ -8,7 +8,7 @@
       <h3 class="page-title">Toma de Inventarios</h3>
       <p class="page-subtitle">Conteo fisico de existencias por bodega</p>
     </div>
-<p-button label="Nueva Toma" raised="true" rounded="true" variant="text" severity="success" icon="pi pi-plus"
+<p-button label="Nueva Toma" raised="true" rounded="true"  icon="pi pi-plus"
         [size]="'small'" (onClick)="nuevoMae()" />
     </header>
 
@@ -78,7 +78,10 @@
         </td>
         <td>{{ row.usuarioCreated }}</td>
         <td>
-          <p-button icon="pi pi-trash" severity="danger" text [size]="'small'"
+          <p-button icon="pi pi-trash"
+                  [size]="'small'"
+                  severity="danger"
+                  [rounded]="'true'"
             (onClick)="$event.stopPropagation(); eliminarMae(row)" [disabled]="row.sn_anulado === 'S'" />
         </td>
       </tr>

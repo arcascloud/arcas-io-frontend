@@ -120,7 +120,9 @@
             [severity]="row.sn_anulada === 'S' ? 'danger' : 'success'" [style]="{'font-size':'0.75rem'}" />
         </td>
         <td>
-          <p-button icon="pi pi-trash" severity="danger" text [size]="'small'" rounded
+          <p-button icon="pi pi-trash" [size]="'small'"
+                  severity="danger"
+                  [rounded]="'true'"
             (onClick)="$event.stopPropagation(); anularCompra(row)" [disabled]="row.sn_anulada === 'S'" />
         </td>
       </tr>

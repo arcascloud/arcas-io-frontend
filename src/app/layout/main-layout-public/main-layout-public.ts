@@ -24,6 +24,8 @@ import { OverlayBadgeModule } from 'primeng/overlaybadge';
 import { CarritoStateService } from '../../core/services/carrito-state.service';
 import { AvatarModule } from 'primeng/avatar';
 import { AuthService } from '../../core/services/auth.service';
+import { EmpresaBrandService } from '../../core/services/empresa-brand.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-main-layout-public',
@@ -60,6 +62,11 @@ export class MainLayoutPublic {
   private api = inject(ApiService);
   readonly quickNav = inject(QuickNavService);
   readonly carritoState = inject(CarritoStateService);
+
+  /** Branding de la empresa configurada en `.env` (EMPRESA_ID -> environment.empresaId). */
+  private readonly empresaBrand = inject(EmpresaBrandService);
+  readonly empresaNombre = this.empresaBrand.nombre;
+  readonly empresaLogo = this.empresaBrand.logo;
 
   /** Menú de usuario del topbar (p-popover) */
   @ViewChild('popUsuario') popUsuario?: Popover;
@@ -298,6 +305,11 @@ export class MainLayoutPublic {
   }
 
   constructor() {
+    // La tienda pública siempre muestra la empresa configurada en .env.
+    this.empresaBrand.fijarEmpresaId(environment.empresaId);
+    // Al salir, restaura el comportamiento basado en el usuario logueado.
+    this.destroyRef.onDestroy(() => this.empresaBrand.fijarEmpresaId(null));
+
     // Actualizar esMobile al redimensionar (el drawer pasa de overlay a empuje).
     // Si el drawer está abierto al cruzar el breakpoint, se cierra: PrimeNG solo
     // crea/destruye la máscara en show()/hide() según `modal` vigente y cambiarlo

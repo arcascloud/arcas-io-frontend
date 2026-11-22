@@ -10,10 +10,7 @@
     </div>
     <p-button
       label="Nueva Compra"
-      raised="true"
       rounded="true"
-      variant="text"
-      severity="success"
       icon="pi pi-plus"
       [size]="'small'"
       (onClick)="nuevoMae()"
@@ -121,9 +118,9 @@
         <td>
           <p-button
             icon="pi pi-trash"
-            severity="danger"
-            text
-            [size]="'small'"
+                  [size]="'small'"
+                  severity="danger"
+                  [rounded]="'true'"
             (onClick)="$event.stopPropagation(); anularCompra(row)"
             [disabled]="row.sn_anulada === 'S'"
           />

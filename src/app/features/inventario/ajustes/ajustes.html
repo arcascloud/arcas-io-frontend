@@ -72,7 +72,9 @@
           </td>
           <td>{{ row.usuarioCreated }}</td>
           <td>
-            <p-button icon="pi pi-trash" severity="danger" text [size]="'small'" rounded
+            <p-button icon="pi pi-trash"                   [size]="'small'"
+                  severity="danger"
+                  [rounded]="'true'"
               (onClick)="$event.stopPropagation(); seleccionar(row)" [disabled]="row.sn_anulado === 'S'" />
           </td>
         </tr>

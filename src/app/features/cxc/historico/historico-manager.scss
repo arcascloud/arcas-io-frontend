@@ -1,3 +1,9 @@
+// ===== IMPRESIÓN (mismo patrón que reportes/cxc/movimientos) =====
+.historico-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
 // ===== FILTROS =====
 // Nota: reglas planas a propósito — con encapsulation emulated, un selector
 // anidado bajo .historico-manager nunca matchea el host (no lleva _ngcontent propio).

@@ -33,8 +33,8 @@
           pTooltip="Departamentos"
         ></p-button>
         <div class="topbar-brand">
-          <img src="assets/images/toyota.png" alt="TOYOTA" class="brand-logo" />
-          <span class="sidebar-title">TOYOTA</span>
+          <img [src]="empresaLogo()" [alt]="empresaNombre()" class="brand-logo" />
+          <span class="sidebar-title">{{ empresaNombre() }}</span>
         </div>
       </div>
       <div class="topbar-center">

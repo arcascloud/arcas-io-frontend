@@ -1,3 +1,9 @@
+// ===== IMPRESIÓN (mismo patrón que reportes/cxp-movimientos) =====
+.historico-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
 // ===== FILTROS =====
 .filtros {
   display: flex;

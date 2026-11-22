@@ -20,6 +20,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { MenuConfigService } from '../../core/services/menu-config.service';
 import { QuickNavService } from '../../core/services/quick-nav.service';
 import { ApiService } from '../../core/services/api.service';
+import { EmpresaBrandService } from '../../core/services/empresa-brand.service';
 import { Drawer, DrawerModule } from 'primeng/drawer';
 import { QuickNav } from '../quick-nav/quick-nav';
 import { LoginDialog } from '../login-dialog/login-dialog';
@@ -68,6 +69,11 @@ export class MainPrivateLayout {
   private api = inject(ApiService);
   /** Instancia del servicio de navegación rápida (botón del topbar) */
   readonly quickNav = inject(QuickNavService);
+
+  /** Branding de la empresa según el empresaId del usuario logueado */
+  private readonly empresaBrand = inject(EmpresaBrandService);
+  readonly empresaNombre = this.empresaBrand.nombre;
+  readonly empresaLogo = this.empresaBrand.logo;
 
   /** Menú de usuario del topbar (p-popover) */
   @ViewChild('popUsuario') popUsuario?: Popover;

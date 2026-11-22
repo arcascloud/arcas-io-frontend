@@ -348,12 +348,12 @@
   --p-button-primary-focus-ring-color: var(--cyan-700);
 
   /*Botones de errores */
-  --p-button-danger-background: var(--red-400);
-  --p-button-danger-color: var(--red-700);
-  --p-button-danger-border-color: var(--red-400);
+                --p-button-danger-background: var(--c-error, #ef4444) !important;
+                --p-button-danger-color: var(--c-bg-white);
+                --p-button-danger-border-color: var(--c-error, #ef4444) !important;
   --p-button-danger-hover-color: var(--c-bg-white);
-  --p-button-danger-hover-background: var(--red-700);
-  --p-button-danger-hover-border-color: var(--red-700);
+                --p-button-danger-hover-background: #dc2626 !important;
+                --p-button-danger-hover-border-color: #dc2626 !important;
 
   /* Tamaño pequeño (sm) */
   --p-button-sm-padding-y: 0.45rem !important;
@@ -370,6 +370,10 @@
   /* Modifica el padding general del contenedor de contenido */
 }
 
+/* Para modificar las filas que ya son seleccionables */
+.p-datatable-selectable-row:hover {
+  cursor: pointer;
+}
 .p-datatable.p-datatable-sm .p-datatable-header {
   padding: 0.72845rem 0.85rem;
 }

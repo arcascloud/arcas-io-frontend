@@ -15,6 +15,7 @@ import { TagModule } from 'primeng/tag';
 import { MessageService } from 'primeng/api';
 import { CxcService } from '../../../core/services/cxc.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ReportesPrintService, TablaPrint, ColumnaPrint } from '../../../core/services/reportes-print.service';
 import { CxcHistorico, CxcCliente } from '../../../core/models/cxc.models';
 
 @Component({
@@ -42,6 +43,7 @@ export class HistoricoManager implements OnInit {
   private auth = inject(AuthService);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
+  private print = inject(ReportesPrintService);
 
   // ===== FILTROS =====
   /** Nombre exacto del cliente (razón social) — el backend filtra por LIKE */
@@ -174,5 +176,97 @@ export class HistoricoManager implements OnInit {
       queryParams: { clienteId: item.clienteId },
       state: { movimiento: item },
     });
+  }
+
+  // ===== IMPRESIÓN (mismo patrón que reportes/cxc/movimientos) =====
+
+  private metaStr(): string {
+    const cliente = this.cliente() ? `Cliente: ${this.cliente()}` : 'Todos los clientes';
+    const fd = this.fechaDesde();
+    const fh = this.fechaHasta();
+    const desde = fd ? this.getFecha(fd) : '';
+    const hasta = fh ? this.getFecha(fh) : '';
+    const rango = desde || hasta ? `Del: ${desde || 'Inicio'} al ${hasta || 'Fin'}` : 'Todos los períodos';
+    return `${rango} | ${cliente}`;
+  }
+
+  private buildTablaPrint(): TablaPrint {
+    const columnas: ColumnaPrint[] = [
+      { titulo: 'Fecha', alinear: 'center', pdf: 14, word: 900, excel: 10 },
+      { titulo: 'Nro. Cliente', alinear: 'center', pdf: 15, word: 1000, excel: 11 },
+      { titulo: 'Cliente', alinear: 'left', pdf: 50, word: 2400, excel: 30 },
+      { titulo: 'Módulo', alinear: 'left', pdf: 18, word: 1100, excel: 14 },
+      { titulo: 'Ref.', alinear: 'left', pdf: 16, word: 1000, excel: 11 },
+      { titulo: 'Tipo', alinear: 'center', pdf: 15, word: 900, excel: 10 },
+      { titulo: 'Concepto', alinear: 'left', excel: 40 },
+      { titulo: 'Anulado', alinear: 'center', pdf: 14, word: 800, excel: 9 },
+      { titulo: 'Contab.', alinear: 'center', pdf: 14, word: 800, excel: 9 },
+      { titulo: 'Importe', alinear: 'right', pdf: 22, word: 1400, excel: 13 },
+    ];
+
+    const items = this.filtered();
+    const filas: (string | number | null)[][] = items.map((item) => [
+      this.getFecha(item.fecharegistro),
+      item.nrocliente || '',
+      item.cliente || '',
+      item.modulo || '',
+      item.nroreferencia || '',
+      this.getTipoMovLabel(item.tipomov),
+      item.concepto || '',
+      item.sn_doc_anulado === 'S' ? 'Sí' : 'No',
+      item.sn_cotabilizada === 'S' ? 'Sí' : 'No',
+      Number(item.importe ?? 0),
+    ]);
+
+    const total = items.reduce((s, i) => s + (Number(i.importe) || 0), 0);
+
+    return {
+      columnas,
+      filas,
+      filaTotales: ['', '', '', '', '', '', `TOTAL (${items.length} movimientos)`, '', '', total],
+      alineacionesTotales: [
+        undefined, undefined, undefined, undefined, undefined,
+        undefined, 'right', undefined, undefined, undefined,
+      ],
+    };
+  }
+
+  async exportarPdf() {
+    const enc = await this.print.encabezado('HISTÓRICO DE MOVIMIENTOS DE CUENTAS POR COBRAR (CxC)', this.metaStr());
+    const tab = this.buildTablaPrint();
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
+    const altoEnc = this.print.pdfEncabezado(doc, enc);
+    this.print.pdfTabla(doc, tab, altoEnc, altoEnc);
+    this.print.pdfPaginar(doc, enc, altoEnc);
+    doc.save(`cxc-historico-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
+  async exportarExcel() {
+    const enc = await this.print.encabezado('HISTÓRICO DE MOVIMIENTOS DE CUENTAS POR COBRAR (CxC)', this.metaStr());
+    const tab = this.buildTablaPrint();
+    const wb = this.print.nuevoLibro();
+    const ws = wb.addWorksheet('Histórico CxC');
+    const filaTab = this.print.excelEncabezado(wb, ws, enc, tab);
+    this.print.excelTabla(ws, tab, filaTab, 'landscape');
+    await this.print.descargarExcel(wb, `cxc-historico-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  async exportarWord() {
+    const enc = await this.print.encabezado('HISTÓRICO DE MOVIMIENTOS DE CUENTAS POR COBRAR (CxC)', this.metaStr());
+    const tab = this.buildTablaPrint();
+    const children = [
+      ...this.print.wordEncabezado(enc, 'landscape'),
+      this.print.wordTabla(tab, 'landscape'),
+    ];
+    const doc = this.print.wordDocumento(enc, 'landscape', children);
+    const { Packer } = await import('docx');
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cxc-historico-${new Date().toISOString().slice(0, 10)}.docx`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

@@ -95,3 +95,20 @@
   z-index: 9999;
   pointer-events: none;
 }
+
+:host ::ng-deep .p-button .p-button-icon {
+  font-size: 1rem;
+  color: var(--cyan-300);
+}
+
+:host ::ng-deep .p-button.btn-circulo {
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--cyan-600);
+  border-color: var(--cyan-600);
+}
