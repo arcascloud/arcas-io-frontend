@@ -102,6 +102,9 @@ export class PosRapido implements OnInit {
   hayMas = computed(() => this.catalogoFiltrado().length > this.limite());
   hayFiltro = computed(() => this.consulta().trim().length > 0);
   tasaPct = computed(() => Math.round(this.state.parametros().tasa * 100));
+  conCarrito = computed(
+    () => this.drawerAbierto() && this.state.filas().length > 0 && !this.isMobile(),
+  );
 
   /** Catálogo de atajos (ALT + 9) */
   readonly atajos = [
@@ -256,7 +259,6 @@ export class PosRapido implements OnInit {
   // ═══════════════════════════════════════════════════════════════════
 
   agregar(producto: TarjetaProducto): void {
-    const vacioAntes = this.state.filas().length === 0;
     const resultado = this.state.agregarProducto(producto);
 
     switch (resultado) {
@@ -277,8 +279,7 @@ export class PosRapido implements OnInit {
         return;
     }
 
-    // Primer ítem de la venta → el drawer del carrito se abre solo
-    if (vacioAntes) this.drawerAbierto.set(true);
+    this.drawerAbierto.set(true);
 
     this.ultimoAgregado.set(producto.productoId);
     if (this.flashTimer) clearTimeout(this.flashTimer);
@@ -296,7 +297,7 @@ export class PosRapido implements OnInit {
     if (res === 'max-existencia') {
       this.notificar(`Solo hay ${linea.existencia} de ${linea.descripcion}`, 'warn');
     }
-    if (this.state.filas().length === 0) this.drawerAbierto.set(false);
+    this.drawerAbierto.set(this.state.filas().length > 0);
   }
 
   cambiarQuantity(linea: any, cantidad: number): void {

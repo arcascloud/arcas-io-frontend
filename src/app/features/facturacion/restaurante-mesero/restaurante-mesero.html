@@ -312,7 +312,7 @@
         }
 
         <div class="ms-cajas" role="radiogroup" aria-label="Caja de cobro">
-          @for (c of cajas; track c.id) {
+          @for (c of cajas(); track c.id) {
             <p-button type="button"
              size="small"
              rounded="true"

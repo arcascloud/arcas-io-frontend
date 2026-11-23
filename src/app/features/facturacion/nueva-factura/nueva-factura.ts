@@ -67,6 +67,9 @@ interface PagoFactura {
   nroreferencia: string;
 }
 
+/** ttipoformapago.formapagoId del catálogo base: Efectivo */
+const FORMAPAGO_EFECTIVO = 1;
+
 @Component({
   selector: 'app-nueva-factura',
   standalone: true,
@@ -1277,6 +1280,17 @@ export class NuevaFactura implements OnInit {
     const conLink = pagosTP.length > 0;
     this.facturarConLink = conLink;
 
+    const pagosEfectivo = !esCredito
+      ? this.pagosConImporte().filter((p) => Number(p.formapagoId) === FORMAPAGO_EFECTIVO)
+      : [];
+    const efectivoRecibido = pagosEfectivo.reduce(
+      (s, p) => s + (Number(p.importe) || 0),
+      0,
+    );
+    const importeCambio = esCredito || conLink
+      ? 0
+      : Math.max(0, Math.round((efectivoRecibido - t.total) * 100) / 100);
+
     const clienteArr = this.clientesArray.find((c) => c.clienteId === raw.clienteId);
     const nombreCliente =
       raw.tipofactura === 'E' && raw.snNombreOptions === 'S'
@@ -1297,13 +1311,8 @@ export class NuevaFactura implements OnInit {
       impuesto: t.impuesto,
       descuento: t.descuento,
       total: t.total,
-      // Con link TodoPago el pago efectivo es lo no-TP (el link aún no se confirma)
-      efectivo_recibido: esCredito
-        ? 0
-        : conLink
-          ? this.totalPagos() - pagosTP.reduce((s, p) => s + (Number(p.importe) || 0), 0)
-          : this.totalPagos(),
-      importe_cambio: esCredito || conLink ? 0 : Math.round(this.cambioTotal() * 100) / 100,
+      efectivo_recibido: Math.round(efectivoRecibido * 100) / 100,
+      importe_cambio: importeCambio,
       diascredito: raw.diascredito ?? 0,
       fechavencimiento: raw.fechavencimiento ? new Date(raw.fechavencimiento).toISOString() : null,
       bodegaId: raw.bodegaId,
@@ -1397,20 +1406,29 @@ export class NuevaFactura implements OnInit {
     // se inserta recién cuando el link se confirma (callback/confirmar)
     const pagosList = this.pagosConImporte().filter((p) => p.formapagoId !== FORMAPAGO_TODOPAGO);
     if (pagosList.length > 0) {
-      const pagoOps = pagosList.map((p) =>
-        this.service.createDet<any>('/facturacion/fac-caja', {
+      const totalEfectivo = pagosList
+        .filter((p) => Number(p.formapagoId) === FORMAPAGO_EFECTIVO)
+        .reduce((s, p) => s + (Number(p.importe) || 0), 0);
+      const cambioEfectivo = Math.max(
+        0,
+        Math.round((totalEfectivo - this.totales().total) * 100) / 100,
+      );
+      const pagoOps = pagosList.map((p) => {
+        const importe = Number(p.importe) || 0;
+        const esEfectivo = Number(p.formapagoId) === FORMAPAGO_EFECTIVO;
+        return this.service.createDet<any>('/facturacion/fac-caja', {
           facturaId: fac.facturaId,
           formapagoId: p.formapagoId,
           tarjetacreditoId: p.tarjetacreditoId || null,
           nrotarjeta: p.nrotarjeta || null,
           nroautorizacion: p.nroautorizacion || null,
-          importe_otros: Number(p.importe) || 0,
-          importe_efectivo: 0,
-          importe_cambio: 0,
+          importe_otros: esEfectivo ? 0 : importe,
+          importe_efectivo: esEfectivo ? importe : 0,
+          importe_cambio: esEfectivo ? cambioEfectivo : 0,
           factordecambio: raw.factordecambio ?? 0,
           cajaId: raw.cajaId,
-        }),
-      );
+        });
+      });
       forkJoin(pagoOps)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({

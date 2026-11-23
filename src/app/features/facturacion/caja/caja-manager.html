@@ -1,0 +1,231 @@
+<p-toast />
+
+<div class="card p-fluid">
+  <div class="flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-xl font-bold m-0"><i class="pi pi-wallet mr-2"></i> Gestión de Turnos y Caja POS</h2>
+      <p class="text-secondary text-sm m-0">Apertura, movimientos, arqueos (Corte X) y cierre definitivo (Corte Z)</p>
+    </div>
+    <div class="flex gap-2">
+      <p-button size="small" label="Actualizar" icon="pi pi-refresh" severity="secondary" variant="text" (onClick)="cargarSesionActiva()" />
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="text-center p-5">
+      <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+      <p class="mt-2 text-secondary">Verificando estado de la caja...</p>
+    </div>
+  } @else {
+    @if (!sesionActiva()) {
+      <!-- NO ACTIVE SESSION -->
+      <div class="surface-card p-5 border-round shadow-2 text-center max-w-30rem mx-auto my-5">
+        <i class="pi pi-lock-open text-primary text-5xl mb-3"></i>
+        <h3 class="text-lg font-bold mb-2">La caja se encuentra cerrada</h3>
+        <p class="text-secondary text-sm mb-4">Debe realizar la apertura de turno ingresando el fondo inicial en efectivo.</p>
+
+        <div class="field text-left mb-3">
+          <label class="font-bold block mb-2">Caja asignada</label>
+          <p-tag
+            [severity]="cajaId() ? 'info' : 'danger'"
+            [value]="nombreCaja()"
+            [icon]="cajaId() ? 'pi pi-box' : 'pi pi-exclamation-triangle'"
+          />
+        </div>
+
+        <div class="field text-left mb-4">
+          <label class="font-bold block mb-2">Fondo Inicial / Monto Apertura (HNL)</label>
+          <p-inputNumber [(ngModel)]="montoApertura" mode="currency" currency="HNL" locale="es-HN" [minFractionDigits]="2" styleClass="w-full" [inputStyle]="{width: '100%'}" [min]="0" />
+        </div>
+
+        <p-button size="small" label="Abrir Turno de Caja" icon="pi pi-check" severity="success" [raised]="true" [rounded]="true" styleClass="w-full" [loading]="saving()" [disabled]="!cajaId()" (onClick)="abrirSesion()" />
+      </div>
+    } @else {
+      <!-- ACTIVE SESSION DASHBOARD -->
+      <div class="grid mb-4">
+        <div class="col-12 md:col-3">
+          <div class="card bg-blue-500 border-left-3 border-blue-700 p-3 mb-0">
+            <span class="text-teal-50  text-sm font-medium">Fondo Inicial</span>
+            <div class="text-2xl font-bold text-blue-900 mt-1">L {{ totalesCalculados().fondo_inicial | number:'1.2-2' }}</div>
+          </div>
+        </div>
+        <div class="col-12 md:col-3">
+          <div class="card bg-green-500 border-left-3 border-green-700 p-3 mb-0">
+            <span class="text-teal-50 text-sm font-medium">Entradas Efectivo (+)</span>
+            <div class="text-2xl font-bold text-green-900 mt-1">L {{ totalesCalculados().entradas_efectivo | number:'1.2-2' }}</div>
+          </div>
+        </div>
+        <div class="col-12 md:col-3">
+          <div class="card bg-orange-400 border-left-3 border-orange-500 p-3 mb-0">
+            <span class="text-teal-50 text-sm font-medium">Salidas Efectivo (-)</span>
+            <div class="text-2xl font-bold text-orange-900 mt-1">L {{ totalesCalculados().salidas_efectivo | number:'1.2-2' }}</div>
+          </div>
+        </div>
+        <div class="col-12 md:col-3">
+          <div class="card bg-teal-500 border-left-1 border-teal-700 p-3 mb-0">
+            <span class="text-teal-50 text-sm font-medium">Efectivo Esperado (Sistema)</span>
+            <div class="text-2xl font-bold text-teal-900 mt-1">L {{ totalesCalculados().efectivo_esperado | number:'1.2-2' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACCIONES DE CAJA -->
+      <div class="flex flex-wrap gap-2 mb-4 justify-content-between align-items-center surface-ground p-3 border-round">
+        <div class="flex align-items-center gap-2">
+          <p-tag severity="success" value="SESIÓN ABIERTA" icon="pi pi-check-circle" />
+          <span class="text-sm text-secondary">Caja #{{ sesionActiva()?.cajaId }} | Usuario ID: {{ sesionActiva()?.usuarioId }} | Apertura: {{ sesionActiva()?.fecha_apertura | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div class="flex gap-2">
+          <p-button size="small" label="Registrar Movimiento" icon="pi pi-plus-circle" severity="info" variant="outlined" [rounded]="true" (onClick)="displayMovimiento.set(true)" />
+          <p-button size="small" label="Generar Corte X" icon="pi pi-file" severity="warn" variant="outlined" [rounded]="true" (onClick)="displayCorteX.set(true)" />
+          <p-button size="small" label="Cerrar Caja (Corte Z)" icon="pi pi-lock" severity="danger" [raised]="true" [rounded]="true" (onClick)="displayCierre.set(true)" />
+        </div>
+      </div>
+
+      <!-- TABLA DE MOVIMIENTOS -->
+      <h3 class="text-lg font-bold mb-2"><i class="pi pi-list mr-2"></i> Movimientos de la Sesión</h3>
+      <p-table [value]="sesionActiva()?.movimientos || []" [paginator]="true" [rows]="10" size="small" styleClass="mb-5">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Método Pago</th>
+            <th>Signo</th>
+            <th>Monto</th>
+            <th>Motivo</th>
+            <th>Autorizado Por</th>
+            <th>Usuario</th>
+            <th>Fecha</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-m>
+          <tr>
+            <td>{{ m.id }}</td>
+            <td><p-tag [value]="m.tipo" [severity]="m.tipo === 'APERTURA' ? 'success' : (m.signo > 0 ? 'info' : 'warn')" /></td>
+            <td>{{ m.metodo_pago }}</td>
+            <td><span [class]="m.signo > 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'">{{ m.signo > 0 ? '+' : (m.signo < 0 ? '-' : '0') }}</span></td>
+            <td class="font-bold">L {{ m.monto | number:'1.2-2' }}</td>
+            <td>{{ m.motivo || '-' }}</td>
+            <td>{{ m.autorizado_por || '-' }}</td>
+            <td>{{ m.usuarioCreated }}</td>
+            <td>{{ m.fechaCreated | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <!-- HISTORIAL DE CORTES -->
+      <h3 class="text-lg font-bold mb-2"><i class="pi pi-history mr-2"></i> Cortes Generados (X / Z)</h3>
+      <p-table [value]="sesionActiva()?.cortes || []" [paginator]="true" [rows]="5" size="small">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>ID</th>
+            <th>Tipo Corte</th>
+            <th>Correlativo</th>
+            <th>Fondo Inicial</th>
+            <th>Entradas</th>
+            <th>Salidas</th>
+            <th>Sistema</th>
+            <th>Contado</th>
+            <th>Diferencia</th>
+            <th>Fecha</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-c>
+          <tr>
+            <td>{{ c.id }}</td>
+            <td><p-tag [value]="c.tipo_corte" [severity]="c.tipo_corte === 'CORTE_Z' ? 'danger' : 'warn'" /></td>
+            <td>#{{ c.numero_correlativo }}</td>
+            <td>L {{ c.fondo_inicial | number:'1.2-2' }}</td>
+            <td class="text-green-600">L {{ c.total_entradas_efectivo | number:'1.2-2' }}</td>
+            <td class="text-orange-600">L {{ c.total_salidas_efectivo | number:'1.2-2' }}</td>
+            <td class="font-bold">L {{ c.saldo_efectivo_sistema | number:'1.2-2' }}</td>
+            <td>{{ c.efectivo_contado != null ? ('L ' + (c.efectivo_contado | number:'1.2-2')) : '-' }}</td>
+            <td>
+              @if (c.diferencia != null) {
+                <span [class]="c.diferencia === 0 ? 'text-green-600 font-bold' : (c.diferencia > 0 ? 'text-blue-600 font-bold' : 'text-red-600 font-bold')">
+                  L {{ c.diferencia | number:'1.2-2' }}
+                </span>
+              } @else {
+                -
+              }
+            </td>
+            <td>{{ c.fecha_corte | date:'dd/MM/yyyy HH:mm' }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  }
+</div>
+
+<!-- DIALOG: REGISTRAR MOVIMIENTO -->
+<p-dialog [(visible)]="displayMovimiento" header="Registrar Movimiento de Caja" [modal]="true" [draggable]="false" [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" styleClass="w-full max-w-30rem">
+  <div class="flex flex-column gap-3 pt-2">
+    <div class="field">
+      <label class="font-bold block mb-1">Tipo de Movimiento</label>
+      <p-select [options]="tiposMovimientoOpts" [(ngModel)]="nuevoMov().tipo" optionLabel="label" optionValue="value" styleClass="w-full" [appendTo]="'body'" />
+    </div>
+    <div class="field">
+      <label class="font-bold block mb-1">Método de Pago</label>
+      <p-select [options]="metodosPagoOpts" [(ngModel)]="nuevoMov().metodo_pago" optionLabel="label" optionValue="value" styleClass="w-full" [appendTo]="'body'" />
+    </div>
+    <div class="field">
+      <label class="font-bold block mb-1">Monto (HNL)</label>
+      <p-inputNumber [(ngModel)]="nuevoMov().monto" mode="currency" currency="HNL" locale="es-HN" [minFractionDigits]="2" styleClass="w-full" [inputStyle]="{width: '100%'}" [min]="0.01" />
+    </div>
+    <div class="field">
+      <label class="font-bold block mb-1">Motivo / Descripción</label>
+      <input type="text" pInputText [(ngModel)]="nuevoMov().motivo" class="w-full" placeholder="Ej. Pago de proveedor menor, fondo extra..." />
+    </div>
+    <div class="field">
+      <label class="font-bold block mb-1">Autorizado Por (Opcional)</label>
+      <input type="text" pInputText [(ngModel)]="nuevoMov().autorizado_por" class="w-full" placeholder="Nombre de supervisor..." />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" (onClick)="displayMovimiento.set(false)" />
+    <p-button size="small" label="Guardar Movimiento" icon="pi pi-check" variant="text" [raised]="true" [rounded]="true" severity="success" [loading]="saving()" (onClick)="registrarMovimiento()" />
+  </ng-template>
+</p-dialog>
+
+<!-- DIALOG: CORTE X -->
+<p-dialog [(visible)]="displayCorteX" header="Generar Corte X (Arqueo Parcial)" [modal]="true" [draggable]="false" [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" styleClass="w-full max-w-30rem">
+  <div class="flex flex-column gap-3 pt-2">
+    <div class="surface-ground p-3 border-round text-sm mb-2">
+      <div class="flex justify-content-between mb-1"><span>Efectivo en Sistema:</span> <strong class="text-primary">L {{ totalesCalculados().efectivo_esperado | number:'1.2-2' }}</strong></div>
+    </div>
+    <div class="field">
+      <label class="font-bold block mb-1">Efectivo Contado (Físico Opcional)</label>
+      <p-inputNumber [(ngModel)]="corteXForm().efectivo_contado" mode="currency" currency="HNL" locale="es-HN" [minFractionDigits]="2" styleClass="w-full" [inputStyle]="{width: '100%'}" placeholder="Dejar en blanco si es arqueo ciego" />
+    </div>
+    <div class="field">
+      <label class="font-bold block mb-1">Observaciones</label>
+      <input type="text" pInputText [(ngModel)]="corteXForm().observaciones" class="w-full" placeholder="Comentarios del arqueo..." />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" (onClick)="displayCorteX.set(false)" />
+    <p-button size="small" label="Generar Corte X" icon="pi pi-print" variant="text" [raised]="true" [rounded]="true" severity="warn" [loading]="saving()" (onClick)="generarCorteX()" />
+  </ng-template>
+</p-dialog>
+
+<!-- DIALOG: CIERRE CAJA / CORTE Z -->
+<p-dialog [(visible)]="displayCierre" header="Cierre de Caja Definitivo (Corte Z)" [modal]="true" [draggable]="false" [resizable]="false" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" styleClass="w-full max-w-30rem">
+  <div class="flex flex-column gap-3 pt-2">
+    <div class="surface-ground p-3 border-round text-sm">
+      <div class="flex justify-content-between mb-1"><span>Efectivo Sistema:</span> <strong class="text-teal-100">L {{ totalesCalculados().efectivo_esperado | number:'1.2-2' }}</strong></div>
+      <div class="flex justify-content-between"><span>Otros Medios:</span> <strong class="text-secondary">L {{ totalesCalculados().otros_medios | number:'1.2-2' }}</strong></div>
+    </div>
+    <div class="field">
+      <label class="font-bold block mb-1">Efectivo Declarado (Contado)</label>
+      <p-inputNumber [(ngModel)]="cierreForm().monto_declarado" mode="currency" currency="HNL" locale="es-HN" [minFractionDigits]="2" styleClass="w-full" [inputStyle]="{width: '100%'}" />
+    </div>
+    <div class="field">
+      <label class="font-bold block mb-1">Observación de Cierre</label>
+      <input type="text" pInputText [(ngModel)]="cierreForm().observacion" class="w-full" placeholder="Motivo de diferencia o notas..." />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button size="small" label="Cancelar" rounded variant="text" severity="secondary" (onClick)="displayCierre.set(false)" />
+    <p-button size="small" label="Confirmar Cierre (Corte Z)" icon="pi pi-lock" variant="text" [raised]="true" [rounded]="true" severity="danger" [loading]="saving()" (onClick)="cerrarSesionZ()" />
+  </ng-template>
+</p-dialog>

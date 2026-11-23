@@ -19,7 +19,14 @@ export { NUM_MESAS };
 /** Productos sin existencia no se pueden pedir. false si los platos preparados no llevan kardex. */
 export const MESERO_VALIDAR_EXISTENCIA = true;
 
-/** Cajas a las que el mesero puede enviar. La primera es la central y es la predeterminada. */
+/**
+ * Cajas de RESPALDO (fallback) del flujo mesero → caja → cocina.
+ *
+ * Desde 11/2026 el catálogo real es DINÁMICO: sale de la tabla `cxccajeros`
+ * (un registro activo = una caja) vía `CajasService` → GET /cxc/cajeros.
+ * Esta constante solo se usa mientras la API responde o si falla, para que la
+ * pantalla nunca quede sin opciones. La primera entrada es la caja central.
+ */
 export interface CajaDestino {
   id: number;
   nombre: string;

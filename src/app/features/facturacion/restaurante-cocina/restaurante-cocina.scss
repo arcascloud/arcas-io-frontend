@@ -4,14 +4,16 @@
 
 :host {
   display: block;
+  background: var(--c-bg-black);
 }
 
 .cocina-page {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  height: calc(100vh - 8rem);
+  height: calc(100vh - 7rem);
   min-height: 480px;
+  background: var(--c-bg-black);
 }
 
 /* ── Cabecera ── */
@@ -63,7 +65,7 @@
   gap: 0.75rem;
   padding: 0.6rem 1rem;
   border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--c-error) 12%, var(--c-surface));
+  background: color-mix(in srgb, var(--c-error) 12%, var(--c-bg-black));
   border: 1px solid var(--c-error);
   color: var(--c-error);
   font-size: 0.9rem;
@@ -85,13 +87,14 @@
   gap: 1rem;
   flex: 1;
   min-height: 0;
+  background: var(--c-bg-black);
 }
 
 .columna {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--c-surface);
+  background: var(--c-bg-black);
   border: 1px solid var(--c-border);
   border-radius: 0.75rem;
   overflow: hidden;
@@ -127,7 +130,7 @@
 }
 
 .col-header--nuevos {
-  background: color-mix(in srgb, var(--c-warning) 18%, var(--c-surface));
+  background: color-mix(in srgb, var(--c-warning) 18%, var(--c-bg-black));
   color: var(--c-text);
 
   .badge {
@@ -136,7 +139,7 @@
 }
 
 .col-header--prep {
-  background: color-mix(in srgb, var(--c-primary) 16%, var(--c-surface));
+  background: color-mix(in srgb, var(--c-primary) 16%, var(--c-bg-black));
   color: var(--c-text);
 
   .badge {
@@ -145,7 +148,7 @@
 }
 
 .col-header--listos {
-  background: color-mix(in srgb, var(--c-success) 18%, var(--c-surface));
+  background: color-mix(in srgb, var(--c-success) 18%, var(--c-bg-black));
   color: var(--c-text);
 
   .badge {
@@ -161,6 +164,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  background: var(--c-bg-black);
 }
 
 .vacio {
@@ -172,7 +176,7 @@
 
 /* ── Tarjeta de ticket ── */
 .tarjeta {
-  background: var(--c-surface);
+  background: var(--c-bg-black);
   border: 2px solid var(--c-border);
   border-radius: 0.75rem;
   padding: 0.75rem;
@@ -203,7 +207,7 @@
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 700;
-  background: var(--c-surface-ground);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--c-text-muted);
 
   .min {
@@ -211,12 +215,12 @@
   }
 
   &.nivel-ambar {
-    background: color-mix(in srgb, var(--c-warning) 25%, var(--c-surface));
+    background: color-mix(in srgb, var(--c-warning) 25%, var(--c-bg-black));
     color: var(--c-warning);
   }
 
   &.nivel-rojo {
-    background: color-mix(in srgb, var(--c-error) 22%, var(--c-surface));
+    background: color-mix(in srgb, var(--c-error) 22%, var(--c-bg-black));
     color: var(--c-error);
     animation: pulso-rojo 1.4s ease-in-out infinite;
   }
@@ -258,7 +262,7 @@
     margin-left: 0.4rem;
     padding: 0.05rem 0.4rem;
     border-radius: 999px;
-    background: var(--c-surface-ground);
+    background: rgba(255, 255, 255, 0.06);
     color: var(--c-text-muted);
     font-size: 0.72rem;
     font-weight: 600;
@@ -282,15 +286,15 @@
     gap: 0.5rem;
     padding: 0.3rem 0.4rem;
     border-radius: 0.4rem;
-    background: var(--c-surface-ground);
+    background: rgba(255, 255, 255, 0.06);
     font-size: 0.9rem;
 
     &.linea-prep {
-      background: color-mix(in srgb, var(--c-primary) 12%, var(--c-surface));
+      background: color-mix(in srgb, var(--c-primary) 12%, var(--c-bg-black));
     }
 
     &.linea-lista {
-      background: color-mix(in srgb, var(--c-success) 14%, var(--c-surface));
+      background: color-mix(in srgb, var(--c-success) 14%, var(--c-bg-black));
       opacity: 0.85;
     }
   }
@@ -374,7 +378,7 @@
   gap: 0.4rem;
   min-height: 3rem;
   border-radius: 0.6rem;
-  background: color-mix(in srgb, var(--c-success) 14%, var(--c-surface));
+  background: color-mix(in srgb, var(--c-success) 14%, var(--c-bg-black));
   color: var(--c-success);
   font-weight: 700;
   font-size: 0.9rem;

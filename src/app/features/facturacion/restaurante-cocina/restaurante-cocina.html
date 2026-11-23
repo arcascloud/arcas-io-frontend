@@ -16,6 +16,7 @@
         [icon]="sonidoActivo() ? 'pi pi-volume-up' : 'pi pi-volume-off'"
         [label]="sonidoActivo() ? 'Sonido activo' : 'Sonido apagado'"
         pTooltip="Aviso sonoro cuando entra un ticket nuevo"
+        tooltipPosition="left"
         (onClick)="toggleSonido()"
       />
       <p-button
@@ -25,6 +26,7 @@
         severity="secondary"
         icon="pi pi-refresh"
         pTooltip="Actualizar ahora"
+        tooltipPosition="left"
         (onClick)="refrescar()"
       />
     </div>

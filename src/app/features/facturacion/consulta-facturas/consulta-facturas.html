@@ -104,6 +104,8 @@
           (click)="ver(f.facturaId)"
           [class.row-anulada]="f.sn_anulada === 'S'"
           class="fila-click"
+          pTooltip="Presione para ver la factura"
+          tooltipPosition="top"
         >
           <td style="text-align: center;">
             <span class="mr-2 nro-factura">{{ f.nrofactura }}</span>

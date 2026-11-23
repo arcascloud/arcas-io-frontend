@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { forkJoin, Observable } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -23,6 +23,8 @@ const REFRESCO_MS = 15_000;
 const UMBRAL_AMBAR_MIN = 10;
 const UMBRAL_ROJO_MIN = 20;
 const CLAVE_SONIDO = 'rest-cocina-sonido';
+/** Clase global que pinta el body de negro mientras el tablero está montado. */
+const CLASE_BODY_NEGRO = 'cocina-body-negro';
 
 /**
  * Tablero de cocina (fase 3): tres columnas Nuevos · Preparando · Listos.
@@ -49,6 +51,7 @@ export class RestauranteCocina implements OnInit {
   private api = inject(ApiService);
   private msg = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+  private doc = inject(DOCUMENT);
 
   /** Para el template (prohibido llamar new Date() en la plantilla). */
   readonly etiquetaPuesto = etiquetaPuesto;
@@ -100,6 +103,8 @@ export class RestauranteCocina implements OnInit {
   listos = computed(() => this.tarjetas().filter((t) => t.estado === 'LISTO'));
 
   ngOnInit(): void {
+    // Fondo negro del body/contenedor mientras el tablero está montado
+    this.doc.body.classList.add(CLASE_BODY_NEGRO);
     this.sonidoActivo.set(localStorage.getItem(CLAVE_SONIDO) === 'S');
     this.cargarGestores();
     this.cargar();
@@ -108,7 +113,10 @@ export class RestauranteCocina implements OnInit {
       this.cargar();
       this.ahora.set(Date.now());
     }, REFRESCO_MS);
-    this.destroyRef.onDestroy(() => clearInterval(timer));
+    this.destroyRef.onDestroy(() => {
+      clearInterval(timer);
+      this.doc.body.classList.remove(CLASE_BODY_NEGRO);
+    });
   }
 
   // ───────────────────────── Carga ─────────────────────────

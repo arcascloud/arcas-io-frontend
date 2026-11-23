@@ -315,7 +315,7 @@ seleccionado = signal<CompraMae | null>(null);
         const subtotal = dets.reduce((sum, d) => sum + Number(d.subtotal || 0), 0);
         const desc = Number(this.formMae.value.descuento || 0);
         const imp = Number(this.formMae.value.impuesto || 0);
-        const total = Math.max(0, subtotal - desc + imp);
+        const total = subtotal;
         this.formMae.patchValue({ total }, { emitEvent: false });
         this.seleccionado.update(s => s ? { ...s, subtotal, descuento: desc, impuesto: imp, total } : s);
         this.cargandoDet.set(false);
@@ -331,7 +331,7 @@ seleccionado = signal<CompraMae | null>(null);
     const sub = this.detalles().reduce((sum, d) => sum + Number(d.subtotal || 0), 0);
     const desc = Number(this.formMae.value.descuento || 0);
     const imp = Number(this.formMae.value.impuesto || 0);
-    const total = Math.max(0, sub - desc + imp);
+    const total = sub;
     this.formMae.patchValue({ total }, { emitEvent: false });
     const mae = this.seleccionado();
     if (mae && mae.compraId !== 0) {
@@ -648,9 +648,7 @@ nuevoMae() {
 
     const sumaDetalles = this.detalles().reduce((sum, d) => sum + Number(d.subtotal || 0), 0);
     const headerTotal = Number(this.formMae.value.total || 0);
-    const desc = Number(this.formMae.value.descuento || 0);
-    const imp = Number(this.formMae.value.impuesto || 0);
-    const esperadoTotal = Math.max(0, sumaDetalles - desc + imp);
+    const esperadoTotal = sumaDetalles;
 
     if (Math.abs(headerTotal - esperadoTotal) > 0.01) {
       this.msgs.add({

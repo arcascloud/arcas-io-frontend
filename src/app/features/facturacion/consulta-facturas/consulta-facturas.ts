@@ -93,26 +93,27 @@ export class ConsultaFacturas implements OnInit {
     const desdeTs = desde ? new Date(desde.getFullYear(), desde.getMonth(), desde.getDate()).getTime() : null;
     const hastaTs = hasta ? new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate(), 23, 59, 59, 999).getTime() : null;
 
-    this.filtered.set(
-      this.facturas().filter((f) => {
-        // Filtro por texto (nombre cliente o nrofactura)
-        if (texto) {
-          const nro = String(f.nrofactura ?? '').toLowerCase();
-          const cliente = (f.nombrecliente ?? '').toLowerCase();
-          if (!nro.includes(texto) && !cliente.includes(texto)) return false;
-        }
+    const resultado = this.facturas().filter((f) => {
+      // Filtro por texto (nombre cliente o nrofactura)
+      if (texto) {
+        const nro = String(f.nrofactura ?? '').toLowerCase();
+        const cliente = (f.nombrecliente ?? '').toLowerCase();
+        if (!nro.includes(texto) && !cliente.includes(texto)) return false;
+      }
 
-        // Filtro por rango de fechas
-        if (desdeTs !== null || hastaTs !== null) {
-          const fechaFac = f.fecharegistro ? new Date(f.fecharegistro).getTime() : null;
-          if (fechaFac === null) return false;
-          if (desdeTs !== null && fechaFac < desdeTs) return false;
-          if (hastaTs !== null && fechaFac > hastaTs) return false;
-        }
+      // Filtro por rango de fechas
+      if (desdeTs !== null || hastaTs !== null) {
+        const fechaFac = f.fecharegistro ? new Date(f.fecharegistro).getTime() : null;
+        if (fechaFac === null) return false;
+        if (desdeTs !== null && fechaFac < desdeTs) return false;
+        if (hastaTs !== null && fechaFac > hastaTs) return false;
+      }
 
-        return true;
-      }),
-    );
+      return true;
+    });
+
+    resultado.sort((a, b) => (Number(b.nrofactura) || 0) - (Number(a.nrofactura) || 0));
+    this.filtered.set(resultado);
   }
 
   buscar() { this.filtrar(); }

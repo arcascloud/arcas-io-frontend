@@ -288,15 +288,21 @@ export class RestauranteService {
   facturar(orden: OrdenRestaurante, pagos: PagoOrden[]): Observable<FacturaResultado> {
     const conImporte = pagos.filter((p) => (Number(p.importe) || 0) > 0);
     const primero = conImporte[0];
-    const totalPagado = conImporte.reduce((s, p) => s + (Number(p.importe) || 0), 0);
     const esTarjetaPrimero = !primero.esEfectivo && !!(primero.nrotarjeta || '').trim();
     const tipopago = primero.esEfectivo ? 'E' : esTarjetaPrimero ? 'T' : 'TR';
+    const pagosEfectivo = conImporte.filter((p) => p.esEfectivo);
+    const efectivoRecibido = pagosEfectivo.reduce((s, p) => s + (Number(p.importe) || 0), 0);
+    const importeCambio = Math.max(
+      0,
+      Math.round((efectivoRecibido - (Number(orden.total) || 0)) * 100) / 100,
+    );
 
     return this.api.post<FacturaResultado>('/facturacion/pedidos/checkout', {
       pospedmaeId: orden.pospedmaeId,
       nombrecliente: orden.nombrecliente || `Mesa ${orden.nromesa ?? ''}`.trim(),
       formapagoId: primero.formapagoId ?? undefined,
-      efectivo_recibido: totalPagado,
+      efectivo_recibido: Math.round(efectivoRecibido * 100) / 100,
+      importe_cambio: importeCambio,
       tarjetacreditoId: esTarjetaPrimero ? (primero.tarjetacreditoId ?? undefined) : undefined,
       nrotarjeta: esTarjetaPrimero ? primero.nrotarjeta : undefined,
       nroautorizacion: primero.nroautorizacion || undefined,

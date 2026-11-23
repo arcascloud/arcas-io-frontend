@@ -73,8 +73,18 @@ export function calcularLinea(
   };
 }
 
-/** Totales del ticket a partir de las líneas ya calculadas */
-export function calcularTotales(filas: LineaPos[]): TotalesPos {
+/**
+ * Totales del ticket a partir de las líneas ya calculadas.
+ *
+ * Cuando `precioIncluyeImpuesto` es true, el precio de venta YA trae el ISV:
+ * el `bruto` mostrado debe ser la base neta (sin impuesto) para que la
+ * identidad `Subtotal - Descuento + Impuesto = Gran Total` sea válida.
+ * Ejemplo: 21.00 / 1.15 = 18.26 + 2.74 = 21.00.
+ */
+export function calcularTotales(filas: LineaPos[], params?: ParametrosImpuesto): TotalesPos {
+  const incluido = params?.precioIncluyeImpuesto === true;
+  const factor = incluido && params && params.tasa > 0 ? 1 + params.tasa : 1;
+
   let bruto = 0;
   let descuento = 0;
   let impuesto = 0;
@@ -84,19 +94,25 @@ export function calcularTotales(filas: LineaPos[]): TotalesPos {
 
   for (const fila of filas) {
     const brutoFila = redondear(fila.cantidad * fila.precio);
-    bruto += brutoFila;
-    descuento += redondear(brutoFila * (fila.descuentoPct / 100));
+    const descuentoFila = redondear(brutoFila * (fila.descuentoPct / 100));
+    if (!incluido) bruto += brutoFila;
+    descuento += incluido ? redondear(descuentoFila / factor) : descuentoFila;
     impuesto += fila.impuesto;
     importeExcento += fila.impuestoExcento ?? 0;
     total += fila.subTotal;
     items += fila.cantidad;
   }
 
+  const totalR = redondear(total);
+  const impuestoR = redondear(impuesto);
+  const descuentoR = redondear(descuento);
+
   return {
-    bruto: redondear(bruto),
-    descuento: redondear(descuento),
-    impuesto: redondear(impuesto),
-    total: redondear(total),
+    // Forzar la identidad evita diferencias de 0.01 por redondeo por línea.
+    bruto: incluido ? redondear(totalR - impuestoR + descuentoR) : redondear(bruto),
+    descuento: descuentoR,
+    impuesto: impuestoR,
+    total: totalR,
     items,
     importeExcento: redondear(importeExcento),
   };

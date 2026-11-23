@@ -94,7 +94,7 @@ export class PosRapidoState {
   });
 
   // ── Derivados ──
-  totales = computed(() => calcularTotales(this.filas()));
+  totales = computed(() => calcularTotales(this.filas(), this.parametros()));
   cantidadItems = computed(() => this.totales().items);
 
   carritoPorProducto = computed(() => {
@@ -139,8 +139,14 @@ export class PosRapidoState {
     this.contextoCargado = true;
 
     this.posService.cargarParametrosImpuesto().subscribe({
-      next: (params) => this.parametros.set(params),
-      error: () => this.parametros.set({ tasa: TASA_ISV_DEFECTO, precioIncluyeImpuesto: false }),
+      next: (params) => {
+        this.parametros.set(params);
+        this.recalcularTodasLasLineas();
+      },
+      error: () => {
+        this.parametros.set({ tasa: TASA_ISV_DEFECTO, precioIncluyeImpuesto: false });
+        this.recalcularTodasLasLineas();
+      },
     });
 
     this.posService.cargarFormasPago().subscribe({
@@ -335,6 +341,12 @@ export class PosRapidoState {
     this.contadorFila = 0;
     this.descuentoGlobalId.set(null);
     return true;
+  }
+
+  /** Recalcula el carrito cuando llega la configuración de ISV (puede cambiar el criterio) */
+  private recalcularTodasLasLineas(): void {
+    if (this.filas().length === 0) return;
+    this.filas.update((filas) => filas.map((f) => this.recalcularLinea(f)));
   }
 
   private recalcularLinea(linea: LineaPos): LineaPos {

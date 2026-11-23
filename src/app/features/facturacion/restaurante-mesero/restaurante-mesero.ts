@@ -17,8 +17,10 @@ import { esBajoDemanda } from '../../../core/utils/stock';
 import { RestauranteService } from '../../../core/services/restaurante.service';
 import { ConfigISV } from '../../../core/models/restaurante.models';
 import { MeseroService } from '../../../core/services/mesero.service';
+import { CajasService } from '../../../core/services/cajas.service';
 import {
   CAJAS_RESTAURANTE,
+  CajaDestino,
   ItemMesero,
   LineaBorrador,
   MESERO_VALIDAR_EXISTENCIA,
@@ -72,11 +74,16 @@ export class RestauranteMesero implements OnInit {
   private mesero = inject(MeseroService);
   private tienda = inject(TiendaService);
   private api = inject(ApiService);
+  private cajasSrv = inject(CajasService);
   private msg = inject(MessageService);
   private location = inject(Location);
   private destroyRef = inject(DestroyRef);
 
-  readonly cajas = CAJAS_RESTAURANTE;
+  /**
+   * Cajas de la empresa: catálogo DINÁMICO desde `cxccajeros` (GET /cxc/cajeros).
+   * Arranca con la constante de respaldo y se reemplaza al llegar la API.
+   */
+  cajas = signal<CajaDestino[]>(CAJAS_RESTAURANTE);
 
   /** Producto solicitado bajo demanda: no exige existencia para agregarlo al pedido */
   readonly esBajoDemanda = esBajoDemanda;
@@ -262,7 +269,7 @@ export class RestauranteMesero implements OnInit {
     return p ? (this.porNromesa().get(p.nromesa) ?? null) : null;
   });
 
-  cajaNombre = computed(() => this.cajas.find((c) => c.id === this.cajaId())?.nombre ?? 'Caja');
+  cajaNombre = computed(() => this.cajas().find((c) => c.id === this.cajaId())?.nombre ?? 'Caja');
 
   iniciarMenu(puesto: Puesto) {
     this.puestoActivo.set(puesto);
@@ -687,6 +694,7 @@ export class RestauranteMesero implements OnInit {
   // ───────────────────────── Carga y refresco ─────────────────────────
   ngOnInit() {
     this.cargarProductos();
+    this.cargarCajas();
     this.cargarGestores();
     this.cargarOrdenes();
     this.srv
@@ -714,6 +722,26 @@ export class RestauranteMesero implements OnInit {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', alVolver);
     });
+  }
+
+  /**
+   * Cajas dinámicas: `cxccajeros` (un registro activo = una caja).
+   * Mantiene la caja recordada si sigue existiendo; si desapareció, cae en la
+   * primera de la lista.
+   */
+  private cargarCajas() {
+    this.cajasSrv
+      .getCajas()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (lista) => {
+          if (!lista.length) return;
+          this.cajas.set(lista.map((c) => ({ id: c.id, nombre: c.nombre })));
+          if (!lista.some((c) => c.id === this.cajaId())) {
+            this.cajaId.set(this.cajaRecordada());
+          }
+        },
+      });
   }
 
   /**
@@ -800,11 +828,11 @@ export class RestauranteMesero implements OnInit {
   private cajaRecordada(): number {
     try {
       const guardada = Number(localStorage.getItem(CLAVE_CAJA));
-      if (this.cajas.some((c) => c.id === guardada)) return guardada;
+      if (this.cajas().some((c) => c.id === guardada)) return guardada;
     } catch {
       /* almacenamiento no disponible: se usa la caja central */
     }
-    return CAJAS_RESTAURANTE[0].id;
+    return this.cajas()[0]?.id ?? CAJAS_RESTAURANTE[0].id;
   }
 
   private recordarCaja(id: number) {

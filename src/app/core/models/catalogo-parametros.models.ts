@@ -466,7 +466,14 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         requerido: true,
         principal: true,
       },
-      { key: 'codigo', label: 'Código', tipo: 'numero', requerido: true },
+      {
+        key: 'cajaId',
+        label: 'Caja',
+        tipo: 'select',
+        // Fuente: cxccajeros (cajaId = PK). Mismo catálogo que usa el restaurante.
+        cargaOpciones: { url: '/cxc/cajeros', labelCampo: 'usuario', valueCampo: 'cajaId' },
+        requerido: true,
+      },
       {
         key: 'forma',
         label: 'Formato de Impresión',

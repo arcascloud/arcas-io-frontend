@@ -184,3 +184,11 @@
 ::ng-deep .p-datatable {
   --p-datatable-body-cell-border-color: #25374a;
 }
+
+.campo-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.65rem;
+  color: var(--c-text-faint, #5f86ab);
+  font-style: italic;
+}

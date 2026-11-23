@@ -33,6 +33,7 @@
   border-radius: var(--radius-sm, 0.45rem);
 
   z-index: 10;
+  transition: width 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 
   &.con-carrito {
     width: calc(100% - 380px);
@@ -158,11 +159,22 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.9rem;
+  transition: width 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   border-radius: var(--radius-sm, 0.20rem);
   font-size: 0.9rem;
   font-weight: 600;
   animation: fadeInUp 0.2s ease;
   border: 1px solid transparent;
+
+  .pos-page.con-carrito & {
+    width: calc(100% - 380px);
+  }
+
+  @media (max-width: 768px) {
+    .pos-page.con-carrito & {
+      width: 100%;
+    }
+  }
 
   &--ok {
     background: color-mix(in srgb, var(--c-success, #2fd48a) 18%, transparent);
@@ -190,6 +202,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 
   &.con-carrito {
     width: calc(100% - 380px);
@@ -419,6 +432,7 @@
   background: var(--c-card-background, #08131c);
   border: 1px solid var(--c-border, #1e2e3b);
   border-radius: var(--radius-sm, 0.45rem);
+  transition: width 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 
   flex: 0 0 auto;
 

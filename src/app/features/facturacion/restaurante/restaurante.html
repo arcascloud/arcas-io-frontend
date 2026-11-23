@@ -130,7 +130,7 @@
             <label for="caja-trabajo">Caja</label>
             <p-select
               inputId="caja-trabajo"
-              [options]="opcionesCaja"
+              [options]="opcionesCaja()"
               [ngModel]="cajaId()"
               (ngModelChange)="cajaId.set($event)"
               placeholder="Caja"

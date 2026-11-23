@@ -7,7 +7,7 @@
         <label for="selCaja">Caja</label>
         <p-select
           inputId="selCaja"
-          [options]="opcionesCaja"
+          [options]="opcionesCaja()"
           optionLabel="label"
           optionValue="value"
           [ngModel]="cajaSel()"
@@ -174,7 +174,7 @@
           <span class="info-label">Mover a otra caja</span>
           <div class="reasignar-fila">
             <p-select
-              [options]="opcionesCaja"
+              [options]="opcionesCaja()"
               optionLabel="label"
               optionValue="value"
               [ngModel]="cajaNueva()"

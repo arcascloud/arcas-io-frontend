@@ -22,15 +22,14 @@ import { TiendaService } from '../../../core/services/tienda.service';
 import { FORMAPAGO_TODOPAGO } from '../../../core/services/todopago.service';
 import { ConfigISV, OrdenItem, OrdenRestaurante, PagoOrden } from '../../../core/models/restaurante.models';
 import { ProductoTienda } from '../../../core/models/tienda.models';
-import { CAJAS_RESTAURANTE, OrdenMesero, etiquetaPuesto } from '../../../core/models/mesero.models';
+import { CAJAS_RESTAURANTE, CajaDestino, OrdenMesero, etiquetaPuesto } from '../../../core/models/mesero.models';
+import { CajasService } from '../../../core/services/cajas.service';
 import { esBajoDemanda } from '../../../core/utils/stock';
 import { ProductosHelperList } from '../../helpers/productos';
 import { FooterHelper } from '../../helpers/footer';
 
 /** Caja recordada entre sesiones (se elige al entrar, sección 6 del plan). */
 const CLAVE_CAJA = 'rest-caja';
-/** La caja central ve TODAS las cuentas; Caja 2 y 3 solo las suyas. */
-const CAJA_CENTRAL = CAJAS_RESTAURANTE[0].id;
 /** Refresco de la bandeja: 15 s (pausado mientras hay un diálogo abierto). */
 const REFRESCO_MS = 15_000;
 /** Productos sin existencia no se pueden agregar (mismo criterio que el escritorio). */
@@ -46,7 +45,8 @@ type Anulacion =
  * ticket) y anulación con motivo. NO modifica la pantalla de escritorio.
  *
  * Reglas (sección 6 del PLAN-MEJORAS):
- *  - Caja central (1) ve todas las cuentas; Caja 2 y 3 solo las suyas (`cajaId`).
+ *  - Cajas dinámicas desde `cxccajeros` (GET /cxc/cajeros): la primera del
+ *    catálogo es la central y ve todas las cuentas; las demás solo las suyas.
  *  - Lista por antigüedad con estado; la cuenta servida se destaca.
  *  - Reasignar a otra caja: solo desde la central.
  *  - Anular línea o cuenta, siempre con motivo (la tabla no tiene columna de
@@ -79,6 +79,7 @@ type Anulacion =
 export class RestauranteCaja implements OnInit {
   private srv = inject(RestauranteService);
   private api = inject(ApiService);
+  private cajasSrv = inject(CajasService);
   private tienda = inject(TiendaService);
   private msg = inject(MessageService);
   private impresion = inject(FacturaImpresionService);
@@ -90,7 +91,15 @@ export class RestauranteCaja implements OnInit {
 
   /** Producto solicitado bajo demanda: no exige existencia para agregarlo */
   readonly esBajoDemanda = esBajoDemanda;
-  readonly opcionesCaja = CAJAS_RESTAURANTE.map((c) => ({ label: c.nombre, value: c.id }));
+  /**
+   * Cajas de la empresa: catálogo DINÁMICO desde `cxccajeros` (GET /cxc/cajeros).
+   * Arranca con la constante de respaldo y se reemplaza al llegar la API.
+   */
+  cajas = signal<CajaDestino[]>(CAJAS_RESTAURANTE);
+  /** Opciones del select de caja: se recalcula cuando llega el catálogo. */
+  opcionesCaja = computed(() => this.cajas().map((c) => ({ label: c.nombre, value: c.id })));
+  /** Caja central = la primera del catálogo; ve TODAS las cuentas. */
+  cajaCentralId = computed(() => this.cajas()[0]?.id ?? CAJAS_RESTAURANTE[0].id);
 
   // ── Bandeja ──
   ordenes = signal<OrdenMesero[]>([]);
@@ -127,7 +136,7 @@ export class RestauranteCaja implements OnInit {
   ordenesVista = computed<OrdenMesero[]>(() => {
     const sel = this.cajaSel();
     const lista =
-      sel === CAJA_CENTRAL
+      sel === this.cajaCentralId()
         ? [...this.ordenes()]
         : this.ordenes().filter((o) => (o.cajaId ?? null) === sel);
     return lista.sort((a, b) => {
@@ -141,6 +150,7 @@ export class RestauranteCaja implements OnInit {
   servidasCount = computed(() => this.ordenesVista().filter((o) => o.sn_entregado === 'S').length);
 
   ngOnInit(): void {
+    this.cargarCajas();
     this.srv.cargarISV().subscribe((cfg) => this.isv.set(cfg));
     this.cargar();
     this.cargarGestores();
@@ -175,6 +185,25 @@ export class RestauranteCaja implements OnInit {
         if (!this.actualizadoEn()) this.msg.add({ severity: 'error', summary: 'Caja', detail: 'No se pudieron cargar las cuentas' });
       },
     });
+  }
+
+  /**
+   * Cajas dinámicas: `cxccajeros` (un registro activo = una caja).
+   * Si la caja seleccionada ya no existe, cae en la central (la primera).
+   */
+  private cargarCajas(): void {
+    this.cajasSrv
+      .getCajas()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (lista) => {
+          if (!lista.length) return;
+          this.cajas.set(lista.map((c) => ({ id: c.id, nombre: c.nombre })));
+          if (!lista.some((c) => c.id === this.cajaSel())) {
+            this.setCaja(this.cajaCentralId());
+          }
+        },
+      });
   }
 
   private cargarGestores(): void {
@@ -218,12 +247,12 @@ export class RestauranteCaja implements OnInit {
   }
 
   esCentral(): boolean {
-    return this.cajaSel() === CAJA_CENTRAL;
+    return this.cajaSel() === this.cajaCentralId();
   }
 
   nombreCaja(id: number | null | undefined): string {
     if (id == null) return '—';
-    return CAJAS_RESTAURANTE.find((c) => c.id === id)?.nombre ?? `Caja ${id}`;
+    return this.cajas().find((c) => c.id === id)?.nombre ?? `Caja ${id}`;
   }
 
   nombreMesero(o: OrdenRestaurante): string {
@@ -758,9 +787,9 @@ export class RestauranteCaja implements OnInit {
   private cajaRecordada(): number {
     try {
       const v = Number(localStorage.getItem(CLAVE_CAJA));
-      return CAJAS_RESTAURANTE.some((c) => c.id === v) ? v : CAJA_CENTRAL;
+      return this.cajas().some((c) => c.id === v) ? v : this.cajaCentralId();
     } catch {
-      return CAJA_CENTRAL;
+      return this.cajaCentralId();
     }
   }
 

@@ -30,6 +30,9 @@ import { PosRapidoState } from '../pos-rapido/pos-rapido.state';
 import { moneda } from '../pos-rapido/pos-rapido.utils';
 import { ClienteForm } from '../../cxc/clientes/cliente-form';
 
+/** ttipoformapago.formapagoId del catálogo base: Efectivo */
+const FORMAPAGO_EFECTIVO = 1;
+
 /**
  * Pantalla 2 del POS rápido (`/facturacion/pos-rapido/pagar`).
  *
@@ -293,6 +296,14 @@ export class PosPagar implements OnInit {
       }
     }
 
+    const pagosEfectivo = !esCredito
+      ? this.pagosConImporte().filter((p) => Number(p.formapagoId) === FORMAPAGO_EFECTIVO)
+      : [];
+    const efectivoRecibido = pagosEfectivo.reduce((s, p) => s + (Number(p.importe) || 0), 0);
+    const importeCambio = esCredito
+      ? 0
+      : Math.max(0, this.state.redondear(efectivoRecibido - t.total));
+
     const clienteArr = this.state.clientesArray.find((c) => c.clienteId === raw.clienteId);
     const nombreCliente =
       raw.tipofactura === 'E' && raw.snNombreOptions === 'S'
@@ -313,8 +324,8 @@ export class PosPagar implements OnInit {
       impuesto: t.impuesto,
       descuento: t.descuento,
       total: t.total,
-      efectivo_recibido: esCredito ? 0 : this.totalPagos(),
-      importe_cambio: esCredito ? 0 : this.state.redondear(this.cambioTotal()),
+      efectivo_recibido: this.state.redondear(efectivoRecibido),
+      importe_cambio: importeCambio,
       diascredito: raw.diascredito ?? 0,
       fechavencimiento: raw.fechavencimiento ? new Date(raw.fechavencimiento).toISOString() : null,
       bodegaId: raw.bodegaId,
@@ -391,20 +402,29 @@ export class PosPagar implements OnInit {
   private guardarPagosYFinalizar(fac: any, raw: any) {
     const pagosList = this.pagosConImporte();
     if (pagosList.length > 0) {
-      const pagoOps = pagosList.map((p) =>
-        this.api.post<any>('/facturacion/fac-caja', {
+      const totalEfectivo = pagosList
+        .filter((p) => Number(p.formapagoId) === FORMAPAGO_EFECTIVO)
+        .reduce((s, p) => s + (Number(p.importe) || 0), 0);
+      const cambioEfectivo = Math.max(
+        0,
+        this.state.redondear(totalEfectivo - this.state.totales().total),
+      );
+      const pagoOps = pagosList.map((p) => {
+        const importe = Number(p.importe) || 0;
+        const esEfectivo = Number(p.formapagoId) === FORMAPAGO_EFECTIVO;
+        return this.api.post<any>('/facturacion/fac-caja', {
           facturaId: fac.facturaId,
           formapagoId: p.formapagoId,
           tarjetacreditoId: p.tarjetacreditoId || null,
           nrotarjeta: p.nrotarjeta || null,
           nroautorizacion: p.nroautorizacion || null,
-          importe_otros: Number(p.importe) || 0,
-          importe_efectivo: 0,
-          importe_cambio: 0,
+          importe_otros: esEfectivo ? 0 : importe,
+          importe_efectivo: esEfectivo ? importe : 0,
+          importe_cambio: esEfectivo ? cambioEfectivo : 0,
           factordecambio: raw.factordecambio ?? 0,
           cajaId: raw.cajaId,
-        }),
-      );
+        });
+      });
       forkJoin(pagoOps)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({

@@ -1,0 +1,422 @@
+<section class="page cu-page">
+  <div class="cu-layout">
+    <div class="cu-col-a">
+      <div class="cu-card cu-buscar">
+        <div class="cu-card-title">
+          <i class="pi pi-search"></i>
+          <span>Facturas por cobrar</span>
+        </div>
+        <div class="cu-buscar-fila">
+          <span class="cu-input-icon">
+            <i class="pi pi-user"></i>
+            <input
+              type="text"
+              pInputText
+              [pSize]="'small'"
+              class="w-full"
+              placeholder="Buscar por nombre del cliente o # de factura"
+              [value]="busqueda()"
+              (input)="busqueda.set($any($event.target).value)"
+            />
+          </span>
+          <p-button
+            size="small"
+            label="Limpiar"
+            icon="pi pi-times"
+            severity="secondary"
+            variant="text"
+            [rounded]="true"
+            [disabled]="!busqueda()"
+            (onClick)="busqueda.set('')"
+          />
+        </div>
+        <p class="cu-ayuda">Solo facturas no contabilizadas y pendientes de pago</p>
+      </div>
+
+      <div class="cu-card">
+        <p-table
+          [value]="facturasFiltradas()"
+          [loading]="cargando()"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+          size="small"
+          selectionMode="single"
+          styleClass="cu-table"
+        >
+          <ng-template #header>
+            <tr>
+              <th>Fecha</th>
+              <th># Factura</th>
+              <th>Cliente</th>
+              <th class="cu-th-accion">Acción</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-f>
+            <tr
+              class="cu-fila"
+              [class.cu-fila-activa]="facturaSel()?.facturaId === f.facturaId"
+              (click)="seleccionar(f)"
+            >
+              <td>{{ formatearFecha(f.fecharegistro) }}</td>
+              <td class="cu-nro">{{ f.nrofactura }}</td>
+              <td>{{ f.nombrecliente || 'Sin cliente' }}</td>
+              <td class="cu-th-accion">
+                <p-button
+                  size="small"
+                  label="Pagar"
+                  icon="pi pi-credit-card"
+                  severity="info"
+                  variant="text"
+                  [rounded]="true"
+                  (click)="$event.stopPropagation()"
+                  (onClick)="seleccionar(f); abrirPagos()"
+                />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="4" class="cu-vacio">
+                <i class="pi pi-inbox"></i>
+                <span>No hay facturas pendientes de pago</span>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <div class="cu-card">
+        <div class="cu-card-title">
+          <i class="pi pi-list"></i>
+          <span>Detalle de productos</span>
+          @if (facturaSel(); as f) {
+            <span class="cu-tag-factura">Factura #{{ f.nrofactura }}</span>
+          }
+        </div>
+        <p-table
+          [value]="detalles()"
+          [loading]="cargandoDetalle()"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+          size="small"
+          styleClass="cu-table"
+        >
+          <ng-template #header>
+            <tr>
+              <th>Cód. Barra</th>
+              <th>Descripción</th>
+              <th class="cu-num">Cantidad</th>
+              <th class="cu-num">Subtotal</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-d>
+            <tr>
+              <td class="cu-codigo">{{ d.codbarra }}</td>
+              <td>{{ d.descripcion }}</td>
+              <td class="cu-num">{{ d.cantidad }}</td>
+              <td class="cu-num">{{ formatearMoneda(d.subTotal) }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="4" class="cu-vacio">
+                <i class="pi pi-box"></i>
+                <span>Seleccione una factura para ver sus productos</span>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+        <div class="cu-pie">
+          <div class="cu-pie-item">
+            <span>Subtotal</span>
+            <strong>{{ formatearMoneda(totales().subTotal) }}</strong>
+          </div>
+          <div class="cu-pie-item">
+            <span>Descuento</span>
+            <strong class="cu-descuento">{{ formatearMoneda(totales().descuento) }}</strong>
+          </div>
+          <div class="cu-pie-item">
+            <span>Impuesto</span>
+            <strong>{{ formatearMoneda(totales().impuesto) }}</strong>
+          </div>
+          <div class="cu-pie-item cu-pie-total">
+            <span>Total</span>
+            <strong>{{ formatearMoneda(totales().total) }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cu-col-b">
+      <div class="cu-card cu-pago-panel">
+        <div class="cu-card-title">
+          <i class="pi pi-wallet"></i>
+          <span>Cobro de factura</span>
+        </div>
+
+        @if (!cajaAbierta()) {
+          <div class="cu-sin-caja">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>Sin sesión de caja abierta. Abra la caja en Facturación → Caja.</span>
+          </div>
+        }
+
+        @if (facturaSel(); as f) {
+          <div class="cu-factura-resumen">
+            <div>
+              <span>Factura</span>
+              <strong>#{{ f.nrofactura }}</strong>
+            </div>
+            <div>
+              <span>Cliente</span>
+              <strong>{{ f.nombrecliente || 'Sin cliente' }}</strong>
+            </div>
+            <div>
+              <span>Total a cobrar</span>
+              <strong class="cu-total">{{ formatearMoneda(f.total) }}</strong>
+            </div>
+          </div>
+        } @else {
+          <div class="cu-sin-seleccion">
+            <i class="pi pi-arrow-left"></i>
+            <span>Seleccione una factura de la lista para cobrarla</span>
+          </div>
+        }
+
+        <div class="cu-resumen-pago">
+          <div class="cu-resumen-linea">
+            <span>Total de Factura</span>
+            <strong>{{ formatearMoneda(totales().total) }}</strong>
+          </div>
+          <div class="cu-resumen-linea">
+            <span>Total de Pagos</span>
+            <strong [class.cu-ok]="totalPagos() >= totales().total && totalPagos() > 0">
+              {{ formatearMoneda(totalPagos()) }}
+            </strong>
+          </div>
+          @if (pendiente() > 0) {
+            <div class="cu-resumen-linea">
+              <span>Pendiente de pago</span>
+              <strong class="cu-warn">{{ formatearMoneda(pendiente()) }}</strong>
+            </div>
+          }
+          @if (cambioTotal() > 0) {
+            <div class="cu-resumen-linea">
+              <span>Cambio</span>
+              <strong class="cu-cambio">{{ formatearMoneda(cambioTotal()) }}</strong>
+            </div>
+          }
+        </div>
+
+        <div class="cu-acciones">
+          <p-button
+            size="small"
+            label="Pagar"
+            icon="pi pi-credit-card"
+            severity="success"
+            variant="text"
+            [raised]="true"
+            [rounded]="true"
+            [fluid]="true"
+            [disabled]="!facturaSel() || !cajaAbierta()"
+            [badge]="pagosConImporte().length > 0 ? pagosConImporte().length + '' : undefined"
+            pTooltip="Registrar formas de pago de la factura seleccionada"
+            (onClick)="abrirPagos()"
+          />
+          <p-button
+            size="small"
+            label="Limpiar"
+            icon="pi pi-times"
+            severity="secondary"
+            variant="text"
+            [rounded]="true"
+            [fluid]="true"
+            (onClick)="limpiar()"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<p-dialog
+    header="Formas de Pago"
+    [visible]="dialogPagos()"
+    (visibleChange)="dialogPagos.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '80vw', height: '85vh' }"
+    [contentStyle]="{ overflow: 'auto' }"
+    [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+  >
+    <div class="cu-dialog-body">
+      <div class="cu-dialog-add">
+        <p-button
+          size="small"
+          label="Agregar pago"
+          icon="pi pi-plus"
+          severity="success"
+          variant="text"
+          [raised]="true"
+          [rounded]="true"
+          (onClick)="agregarPago()"
+        />
+      </div>
+
+      @for (pago of pagos(); track $index; let idx = $index) {
+        <div class="cu-pago-card">
+          <div class="cu-pago-card-head">
+            <span>Pago #{{ idx + 1 }}</span>
+            <p-button
+              size="small"
+              icon="pi pi-times"
+              severity="danger"
+              variant="text"
+              [rounded]="true"
+              pTooltip="Quitar pago"
+              (onClick)="quitarPago(idx)"
+            />
+          </div>
+          <div class="cu-pago-grid">
+            <div class="cu-field">
+              <label>Forma de Pago</label>
+              <p-select
+                size="small"
+                [options]="formaspago()"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar..."
+                styleClass="w-full"
+                [appendTo]="'body'"
+                [showClear]="true"
+                [ngModel]="pago.formapagoId"
+                (ngModelChange)="actualizarPago(idx, 'formapagoId', $event)"
+                [ngModelOptions]="{ standalone: true }"
+              />
+            </div>
+            @if (esTarjeta(pago)) {
+              <div class="cu-field">
+                <label>Tipo de Tarjeta</label>
+                <p-select
+                  size="small"
+                  [options]="tarjetas()"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccionar tarjeta..."
+                  styleClass="w-full"
+                  [appendTo]="'body'"
+                  [showClear]="true"
+                  [ngModel]="pago.tarjetacreditoId"
+                  (ngModelChange)="actualizarPago(idx, 'tarjetacreditoId', $event)"
+                  [ngModelOptions]="{ standalone: true }"
+                />
+              </div>
+              <div class="cu-field">
+                <label>Nro. de Tarjeta</label>
+                <input
+                  type="text"
+                  pInputText
+                  [pSize]="'small'"
+                  class="w-full"
+                  placeholder="Ej: 4111222233334444"
+                  [ngModel]="pago.nrotarjeta"
+                  (ngModelChange)="actualizarPago(idx, 'nrotarjeta', $event)"
+                  [ngModelOptions]="{ standalone: true }"
+                />
+              </div>
+            }
+            @if (esTarjeta(pago) || esTransferencia(pago)) {
+              <div class="cu-field">
+                <label>Nro. de Autorización</label>
+                <input
+                  type="text"
+                  pInputText
+                  [pSize]="'small'"
+                  class="w-full"
+                  placeholder="Número de autorización"
+                  [ngModel]="pago.nroautorizacion"
+                  (ngModelChange)="actualizarPago(idx, 'nroautorizacion', $event)"
+                  [ngModelOptions]="{ standalone: true }"
+                />
+              </div>
+            }
+            <div class="cu-field">
+              <label>Importe (HNL)</label>
+              <p-inputNumber
+                size="small"
+                [ngModel]="pago.importe"
+                (ngModelChange)="actualizarPago(idx, 'importe', $event)"
+                [ngModelOptions]="{ standalone: true }"
+                [min]="0"
+                mode="currency"
+                currency="HNL"
+                [locale]="'es-HN'"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                [useGrouping]="true"
+                [inputStyle]="{ 'width': '100%' }"
+                styleClass="w-full"
+              />
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="cu-vacio-dialog">
+          <i class="pi pi-wallet"></i>
+          <span>Sin formas de pago. Presione "Agregar pago" para comenzar.</span>
+        </div>
+      }
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="cu-dialog-totales">
+        <div>
+          <span>Total Factura</span>
+          <strong>{{ formatearMoneda(totales().total) }}</strong>
+        </div>
+        <div>
+          <span>Total Pagos</span>
+          <strong>{{ formatearMoneda(totalPagos()) }}</strong>
+        </div>
+        <div>
+          <span>Pendiente</span>
+          <strong [class.cu-warn]="pendiente() > 0">{{ formatearMoneda(pendiente()) }}</strong>
+        </div>
+        <div>
+          <span>Cambio</span>
+          <strong class="cu-cambio">{{ formatearMoneda(cambioTotal()) }}</strong>
+        </div>
+      </div>
+      <div class="cu-dialog-acciones">
+        <p-button
+          size="small"
+          label="Cancelar"
+          icon="pi pi-times"
+          severity="secondary"
+          variant="text"
+          [rounded]="true"
+          (onClick)="dialogPagos.set(false)"
+        />
+        <p-button
+          size="small"
+          label="Cobrar"
+          icon="pi pi-check"
+          severity="success"
+          variant="text"
+          [raised]="true"
+          [rounded]="true"
+          [loading]="guardando()"
+          [disabled]="!facturaSel() || !cajaAbierta()"
+          (onClick)="confirmarPago()"
+        />
+      </div>
+    </ng-template>
+</p-dialog>

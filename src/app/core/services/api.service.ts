@@ -33,6 +33,10 @@ export class ApiService {
     '/cxp/carteras-cta',
     '/facturacion/facturas',
     '/facturacion/facturas-det',
+    '/facturacion/fac-caja',
+    '/facturacion/pedidos',
+    '/facturacion/pedidos-det',
+    '/facturacion/pedidos/checkout',
     '/planilla/empleados',
   ];
 
@@ -82,8 +86,9 @@ export class ApiService {
       }
     }
     if (!opts?.sinContexto && ApiService.CON_SUCURSAL.includes(path)) {
-      if (user?.idsucursal != null && out['Idsucursal'] === undefined) {
-        out['Idsucursal'] = user.idsucursal;
+      const idsucursal = Number(user?.idsucursal) || 1;
+      if (out['Idsucursal'] === undefined || !Number(out['Idsucursal'])) {
+        out['Idsucursal'] = idsucursal;
       }
     }
     if (!opts?.sinContexto && out['usuarioCreated'] === undefined && user?.usuario) {
@@ -126,8 +131,15 @@ export class ApiService {
    * @param opts - Opciones de escritura (ej: sinContexto para omitir inyección de empresaId)
    * @returns Observable con la respuesta tipada
    */
-  post<T>(path: string, body: unknown, opts?: ApiWriteOpts): Observable<T> {
-    return this.http.post<T>(`${environment.apiUrl}${path}`, this.withContexto(path, body, opts));
+  post<T>(
+    path: string,
+    body: unknown,
+    opts?: ApiWriteOpts,
+    params?: Record<string, string | number>,
+  ): Observable<T> {
+    return this.http.post<T>(`${environment.apiUrl}${path}`, this.withContexto(path, body, opts), {
+      params: params ? this.withEmpresa(params) : undefined,
+    });
   }
 
   /**

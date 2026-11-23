@@ -124,6 +124,8 @@
           [class.fila-expandida]="expandida(item)"
           [style.cursor]="esClickeable(item) ? 'pointer' : 'default'"
           (click)="onFilaClick(item)"
+          [pTooltip]="config()?.ruta === '/facturacion/descuentos' ? 'Presione para editar el descuento' : null"
+          tooltipPosition="top"
         >
           @if (config()?.detalle) {
           <td class="ec-chevron">

@@ -22,7 +22,8 @@ import { FacturaImpresionService } from '../../../core/services/factura-impresio
 import { ApiService } from '../../../core/services/api.service';
 import { FORMAPAGO_TODOPAGO } from '../../../core/services/todopago.service';
 import { ConfigISV, MesaVista, NUM_MESAS, OrdenItem, OrdenRestaurante, PagoOrden } from '../../../core/models/restaurante.models';
-import { CAJAS_RESTAURANTE, KIOSKO_BASE, NUM_KIOSKOS, etiquetaPuesto, nuevoRondaId } from '../../../core/models/mesero.models';
+import { CAJAS_RESTAURANTE, CajaDestino, KIOSKO_BASE, NUM_KIOSKOS, etiquetaPuesto, nuevoRondaId } from '../../../core/models/mesero.models';
+import { CajasService } from '../../../core/services/cajas.service';
 import { esBajoDemanda } from '../../../core/utils/stock';
 
 /** Productos sin existencia no se pueden agregar. Ponlo en false si los platos preparados no llevan kardex. */
@@ -49,6 +50,7 @@ export class Restaurante implements OnInit {
   private srv = inject(RestauranteService);
   private tienda = inject(TiendaService);
   private api = inject(ApiService);
+  private cajasSrv = inject(CajasService);
   private msg = inject(MessageService);
   private impresion = inject(FacturaImpresionService);
   private destroyRef = inject(DestroyRef);
@@ -107,8 +109,14 @@ export class Restaurante implements OnInit {
   ahora = signal(Date.now());
 
   // ── Caja de trabajo (select bajo "Puestos") ──
-  /** Opciones del select de caja: CAJAS_RESTAURANTE (misma fuente que Caja/Mesero). */
-  readonly opcionesCaja = CAJAS_RESTAURANTE.map((c) => ({ label: c.nombre, value: c.id }));
+  /**
+   * Cajas de la empresa: catálogo DINÁMICO desde `cxccajeros` (GET /cxc/cajeros).
+   * Arranca con la constante de respaldo y se reemplaza al llegar la API, así un
+   * cajero nuevo aparece sin tocar código.
+   */
+  cajas = signal<CajaDestino[]>(CAJAS_RESTAURANTE);
+  /** Opciones del select de caja: se recalcula cuando llega el catálogo. */
+  opcionesCaja = computed(() => this.cajas().map((c) => ({ label: c.nombre, value: c.id })));
   /** Caja elegida: nace en ella cada orden nueva y es el destino de "Reasignar caja". */
   cajaId = signal<number>(CAJAS_RESTAURANTE[0].id);
 
@@ -185,6 +193,7 @@ export class Restaurante implements OnInit {
 
   ngOnInit() {
     this.configurarResponsive();
+    this.cargarCajas();
     this.srv.cargarISV().subscribe((cfg) => { this.isv.set(cfg); this.cdr.markForCheck(); });
     this.cargarProductos();
     this.cargarOrdenes();
@@ -204,6 +213,27 @@ export class Restaurante implements OnInit {
   }
 
   // ───────────────────────── Carga ─────────────────────────
+
+  /**
+   * Cajas dinámicas: `cxccajeros` (un registro activo = una caja).
+   * Si la API no responde se conserva la constante de respaldo.
+   */
+  private cargarCajas() {
+    this.cajasSrv
+      .getCajas()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (lista) => {
+          if (!lista.length) return;
+          this.cajas.set(lista.map((c) => ({ id: c.id, nombre: c.nombre })));
+          // La caja elegida debe existir en el catálogo; si no, la del usuario o la primera.
+          if (!lista.some((c) => c.id === this.cajaId())) {
+            this.cajaId.set(this.cajasSrv.cajaPorDefecto(lista) ?? lista[0].id);
+          }
+          this.cdr.markForCheck();
+        },
+      });
+  }
 
   private cargarProductos() {
     this.tienda.getProductos(true).subscribe({
@@ -392,7 +422,7 @@ export class Restaurante implements OnInit {
 
   /** Nombre legible de una caja para toasts y avisos. */
   nombreCaja(id: number | null | undefined): string {
-    return CAJAS_RESTAURANTE.find((c) => c.id === Number(id ?? 0))?.nombre ?? `Caja ${id}`;
+    return this.cajas().find((c) => c.id === Number(id ?? 0))?.nombre ?? `Caja ${id}`;
   }
 
   /** true si la orden activa ya está en la caja elegida (para el botón Reasignar). */

@@ -1124,8 +1124,8 @@ export class PedidoForm implements OnInit {
           pospedmaeId: id,
           nombrecliente: this.nombreCliente().trim(),
           nrotelefono: this.telefono().trim() || 'N/A',
+          importe_cambio: 0,
         },
-        { sinContexto: true },
       )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -1270,6 +1270,12 @@ export class PedidoForm implements OnInit {
     //    tras el checkout se genera el link (el TP no entra a posfaccaja) ──
     this.facturarConLink = pagos.some((p) => p.formapagoId === FORMAPAGO_TODOPAGO);
 
+    const pagosEfectivo = pagos.filter((p) => this.esEfectivoFila(p));
+    const efectivoRecibido = pagosEfectivo.reduce((s, p) => s + (Number(p.importe) || 0), 0);
+    const importeCambio = this.facturarConLink
+      ? 0
+      : Math.max(0, Math.round((efectivoRecibido - t.total) * 100) / 100);
+
     this.procesando.set(true);
     this.api
       .post<any>(
@@ -1279,7 +1285,8 @@ export class PedidoForm implements OnInit {
           nombrecliente: this.nombreCliente().trim(),
           nrotelefono: this.telefono().trim() || 'N/A',
           formapagoId: primero.formapagoId,
-          efectivo_recibido: totalPagado,
+          efectivo_recibido: Math.round(efectivoRecibido * 100) / 100,
+          importe_cambio: importeCambio,
           tarjetacreditoId: this.esTarjeta(primero)
             ? (primero.tarjetacreditoId ?? undefined)
             : undefined,
@@ -1295,7 +1302,6 @@ export class PedidoForm implements OnInit {
             esEfectivo: this.esEfectivoFila(p),
           })),
         },
-        { sinContexto: true },
       )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({

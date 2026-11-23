@@ -50,7 +50,7 @@ export interface FacturaImpresionData {
   empresa: any;
   correlativo?: any | null;
   impuestos?: FacturaImpuestos | null;
-  /** Cajero que emitió la factura (tusuarios) y código de TPV (tusuarios_caja.codigo) */
+  /** Cajero que emitió la factura (tusuarios) y terminal/TPV (tusuarios_caja.id) */
   cajero?: { usuario?: string; nombre?: string; apellidos?: string } | null;
   tpv?: number | string | null;
   /** Sucursal de la factura (tsucursal) */
@@ -339,7 +339,7 @@ export class FacturaImpresionService {
       );
     }
 
-    // ----- Cajero / TPV (tusuarios nombre+apellidos + tusuarios_caja.codigo) -----
+    // ----- Cajero / TPV (tusuarios nombre+apellidos + tusuarios_caja.id = terminal) -----
     const nombreCajero = [data?.cajero?.nombre, data?.cajero?.apellidos].filter(Boolean).join(' ').trim();
     const tpvTxt = data?.tpv != null && data?.tpv !== '' ? String(data.tpv) : '';
     if (nombreCajero || tpvTxt) {
@@ -415,11 +415,14 @@ export class FacturaImpresionService {
       content.push(this.sepTicket(anchoUtil));
     }
 
-    // ----- Efectivo y cambio (siempre visibles) -----
+    // ----- Efectivo / tarjeta y cambio -----
+    const resumenPago = this.resumenPagoTicket(pagos, f);
     content.push(
-      this.filaTicket('PAGO EN EFECTIVO:', this.formatNum(efectivo)),
+      this.filaTicket(resumenPago.etiqueta, this.formatNum(resumenPago.monto)),
       this.sepTicket(anchoUtil),
-      this.filaTicket('Cambio:', this.formatNum(cambio)),
+      ...(resumenPago.hayEfectivo
+        ? [this.filaTicket('Cambio:', this.formatNum(resumenPago.cambio))]
+        : []),
       { text: 'Total en Letras:', fontSize: 7, margin: [0, 5, 0, 1] },
       { text: letras, bold: true, fontSize: 7.5, margin: [0, 0, 0, 2] },
     );
@@ -554,6 +557,7 @@ export class FacturaImpresionService {
     const efectivo = Number(f?.efectivo_recibido) || efectivoPagos;
     const cambio = Number(f?.importe_cambio) || 0;
     const letras = this.totalEnLetras(total);
+    const resumenPago = this.resumenPagoTicket(pagos, f);
 
     const detRows = dets.map((d: any, i: number) => [
       '' + (i + 1),
@@ -652,7 +656,8 @@ export class FacturaImpresionService {
             (Number(p.importe_otros) > 0 ? Number(p.importe_otros).toFixed(2) : Number(p.importe_efectivo ?? 0).toFixed(2)),
           fontSize: 9,
         })),
-        { text: 'Pago en efectivo: L ' + efectivo.toFixed(2) + '    Cambio: L ' + cambio.toFixed(2), fontSize: 9 },
+        { text: resumenPago.etiqueta + ' L ' + resumenPago.monto.toFixed(2) +
+          (resumenPago.hayEfectivo ? '    Cambio: L ' + resumenPago.cambio.toFixed(2) : ''), fontSize: 9 },
         { text: '\n' },
         { text: [
           { text: 'Total en Letras: ', bold: true },
@@ -1163,6 +1168,35 @@ export class FacturaImpresionService {
     });
 
     return pdfMake;
+  }
+
+  private resumenPagoTicket(
+    pagos: any[],
+    factura: any,
+  ): { etiqueta: string; monto: number; cambio: number; hayEfectivo: boolean } {
+    const efectivoPagos = pagos.reduce(
+      (s: number, p: any) => s + (Number(p.importe_efectivo) || 0),
+      0,
+    );
+    const hayEfectivo = efectivoPagos > 0;
+    const otrosPagos = pagos.filter((p: any) => Number(p.importe_otros) > 0);
+    const esTarjeta = otrosPagos.some((p: any) =>
+      this.etiquetaFormaPago(p.formapagoId).toLowerCase().includes('tarjeta'),
+    );
+    const etiqueta = hayEfectivo
+      ? 'PAGO EN EFECTIVO:'
+      : esTarjeta
+        ? 'CON TARJETA:'
+        : 'PAGO CON TRANSFERENCIA:';
+    const monto = hayEfectivo
+      ? Number(factura?.efectivo_recibido) || efectivoPagos
+      : otrosPagos.reduce((s: number, p: any) => s + (Number(p.importe_otros) || 0), 0);
+    return {
+      etiqueta,
+      monto,
+      cambio: Number(factura?.importe_cambio) || 0,
+      hayEfectivo,
+    };
   }
 
   /** Etiqueta de la forma de pago (usa el catálogo precargado en buildPdf) */

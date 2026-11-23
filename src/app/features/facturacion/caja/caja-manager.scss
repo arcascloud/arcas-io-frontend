@@ -1,0 +1,20 @@
+:host {
+  display: block;
+}
+
+.card {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border, var(--c-bg));
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.surface-ground {
+  background-color: var(--c-bg, --c-bg);
+}
+
+.surface-card {
+  background-color: var(--c-bg);
+}

@@ -97,6 +97,6 @@ export class PedidosVirtualService {
   }
 
   checkout(p: any): Observable<CheckoutPedidoResponse> {
-    return this.api.post<CheckoutPedidoResponse>('/facturacion/pedidos/checkout', p);
+    return this.api.post<CheckoutPedidoResponse>('/facturacion/pedidos/checkout', { ...p, esVirtual: true });
   }
 }
