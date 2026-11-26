@@ -13,6 +13,11 @@
   flex-direction: column;
   gap: 0.35rem;
 
+  // Campo que ocupa las 2 columnas del grid (ej: Empresa en la fila 1)
+  &.ancho-completo {
+    grid-column: 1 / -1;
+  }
+
   label {
     font-weight: 500;
     font-size: 0.85rem;

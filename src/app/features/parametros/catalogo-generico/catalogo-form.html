@@ -28,7 +28,7 @@
       <div class="form-grid">
         @for (c of campos; track c.key) {
           @if (!c.ocultoForm) {
-            <div class="campo">
+            <div class="campo" [class.ancho-completo]="c.anchoCompleto">
               <label [for]="c.key">{{ c.label }} @if (c.requerido) {<span class="req">*</span>}</label>
 
               @if (c.tipo === 'texto') {

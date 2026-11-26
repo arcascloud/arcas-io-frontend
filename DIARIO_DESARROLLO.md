@@ -1677,3 +1677,184 @@ Al abrir un movimiento desde `/cxc/historico` (boton Ver), no habia forma de reg
 ### Pendiente
 - Bug `sn_doc_anulado` vs `sn_anulado` (facturacion) y validacion de activacion de tarjeta de credito: sin tocar.
 - Typo de columna `exisencia_actual` (renombrar = ALTER TABLE, requiere aprobacion explicita).
+
+---
+
+## Bitácora – 25/11/2026
+
+### CRUD de Sucursales (`/configuracion/parametros/sucursales`) — catálogo genérico multi-empresa + bodega automática
+
+**Petición**: mantenimiento/CRUD de sucursales en `http://localhost:4200/configuracion/parametros/sucursales`, con formulario: fila 1 `p-select` Empresa (`empresaId`), `descripcion*` | `telefono1*`, `direccion*` | `telefono2` | `sn_activo`, y la regla **por cada sucursal nueva crear automáticamente una bodega** (`tsucursal.bodegaId`).
+
+#### Decisiones de diseño
+- **Sin ruta nueva**: la ruta ya existía via `parametros/:nombre` → solo se agregó la clave `sucursales` a `CATALOGOS_PARAMETROS` (lista + create + update del catálogo genérico; **no hay delete** en ningún catálogo → se mantiene consistente).
+- **Catálogo multi-empresa** (`multiEmpresa: true`): la lista trae TODAS las empresas (hoy 5: 4 de ARCAS-IO + 1 de MITSUBISHI) para que el select de Empresa no esconda registros creados en otra empresa. GET/PUT van **sin** `empresaId` en la query (el registro se localiza solo por id); el comportamiento histórico `?empresaId=X` sigue funcionando.
+- **Bodega automática**: en `create()`, UNA transacción (`dataSource.transaction`) → crea `tinvbodegas` con `descripcion` = misma descripción de la sucursal (trazabilidad), `sn_activo`/`empresaId`/`usuarioCreated` del DTO → luego crea la sucursal con `bodegaId` asignado. Si falla la sucursal, ROLLBACK de la bodega.
+- **Layout**: `empresaId` en fila 1 con el nuevo flag `anchoCompleto` (`grid-column: 1/-1`); `bodegaId` solo como columna de lista (`ocultoForm: true`), no en el formulario.
+- **Prefill**: en `catalogo-form.buildForm()`, registro nuevo → `empresaId` = `auth.currentUser()?.empresaId`.
+
+#### Frontend
+- `core/models/catalogo-parametros.models.ts`: flag `anchoCompleto?: boolean` en `CampoCatalogo`; flag `multiEmpresa?: boolean` en `CatalogoConfig`; nueva entrada `sucursales` en `CATALOGOS_PARAMETROS` (campos: empresaId select `/companies` anchoCompleto, descripcion*, telefono1*, direccion*, telefono2, bodegaId ocultoForm).
+- `features/parametros/catalogo-generico/catalogo-form.html` + `.scss`: `[class.ancho-completo]="c.anchoCompleto"` en `.campo` → `.campo.ancho-completo { grid-column: 1 / -1 }`.
+- `catalogo-form.ts`: prefill de `empresaId` desde la sesión; `{ sinEmpresa: true }` en `getOne` (edición) y `update` (guardado) cuando `config.multiEmpresa`.
+- `catalogo-generico.ts`: `{ sinEmpresa: true }` en `load()` (lista).
+- `core/services/api.service.ts`: `ApiWriteOpts.sinEmpresa?: boolean` + nuevo privado `withEmpresaQuery(params?, sinEmpresa?)`; `get`/`getOne`/`put` lo usan; `withContexto` omite inyección de `empresaId` en el body si `opts.sinEmpresa`.
+- `core/services/catalogo-parametros.service.ts`: `getAll`/`getOne`/`update` aceptan y pasan `opts` (firmas retrocompatibles; ~21 archivos importan el servicio).
+
+#### Backend (`Backend/src/modules/sucursales/`)
+- `dto/sucursal.dto.ts`: `sn_activo?: string` (`@IsEnum(['S','N']) @IsOptional()`) en `CreateSucursalDto` — con `whitelist:true` se descartaba y "Inactivo" se guardaba como 'S'.
+- `sucursales.module.ts`: `TypeOrmModule.forFeature([Tsucursal, TinvBodega])`.
+- `sucursales.service.ts`:
+  - `findAll(empresaId?)` / `findOne(id, empresaId?)` con `FindOptionsWhere` construido condicionalmente (opcional = multi-empresa).
+  - `create()` transaccional con bodega automática (arriba).
+  - `update(id, empresaFiltro, dto, currentUser, empresaFecha)` — filtro opcional; fecha desde JWT.
+- `sucursales.controller.ts`: helper `parseEmpresaId(empresaId?: string)` (parseo manual, **sin `ParseIntPipe`** — rompe cuando el query param no viene); `update` pasa `user.empresaId` como `empresaFecha`.
+- `entities/sucursal.entity.ts`: `bodegaId` cambiado de `nullable: true` a **`nullable: false`** (la BD es `int NOT NULL` sin default — `create()` siempre lo asigna antes del INSERT).
+
+#### 🐛 Bug encontrado: PUT nulificaba los campos no enviados
+- **Síntoma**: `PUT /sucursales/:id` con `{telefono2:'2222'}` devolvía `descripcion:null, direccion:null, telefono1:null, bodegaId:null` (la BD quedaba CORRECTA — verificada con GET posterior y SQL directo — pero la respuesta salía rota).
+- **Causa raíz** (aislada con 3 harnesses en Temp: TypeORM puro → OK; ValidationPipe solo → **reproducido**): el `ValidationPipe({whitelist:true, transform:true})` (class-transformer `plainToInstance`) crea **TODAS** las propiedades declaradas del DTO como own-keys con valor `undefined` aunque no vengan en el payload. `Object.assign(entity, dto)` copiaba esos `undefined` encima de la entidad cargada; `save()` los omite del UPDATE (BD intacta) pero devuelve nulls en la respuesta.
+- **Fix** (`sucursales.service.ts`): filtrar `undefined` antes del assign —
+  ```ts
+  const cambios: Partial<Tsucursal> = {};
+  for (const [clave, valor] of Object.entries(dto)) {
+    if (valor !== undefined) (cambios as any)[clave] = valor;
+  }
+  Object.assign(entity, cambios, { usuarioUpdated, fechaUpdated });
+  ```
+- **⚠️ Hallazgo transversal**: este patrón `Object.assign(entity, dto)` probablemente existe en **otros services del ERP** (mismo efecto cosmético en sus PUT). Solo se corrigió sucursales por ahora.
+
+#### Mantenimiento de entorno (mismo día)
+- **Backend sin devDependencies**: `@nestjs/cli` y `typescript` no estaban en `node_modules` (`npm run build` fallaba con MODULE_NOT_FOUND) → restaurados con `npm install` (188 paquetes).
+- **Guard FECHA_SISTEMA (409)**: `tempresas.fechasistema` = 24/11 vs servidor 25/11 bloqueaba toda escritura → actualizada a **25/11/2026** vía `PUT /api/parametros/fechas-sistema` (mismo desbloqueo rutinario aprobado el 04/11/2026). Estado: `{"fechaSistema":"2026-11-25","coincide":true}`.
+- **Reinicio backend**: `taskkill` + `Start-Process node dist/main.js` con logs (`backend-out.log`/`backend-error.log`) — el shell del tool reporta `ChildProcess.kill` al lanzarlo, pero el proceso SÍ queda vivo (verificar siempre con `Get-NetTCPConnection :3000` + `GET /auth/me`).
+
+#### Verificación E2E — **23/23 OK** (`test-sucursales-e2e.js`)
+- Baseline: sucursales(all)=5, emp1=4, bodegas(emp1)=5.
+- Lista sin `empresaId` trae 2 empresas [1,3] ✓ · crece 5→6 al crear ✓ · `?empresaId=1` también la ve ✓.
+- POST → 201, `bodegaId=10` auto-asignado, `sn_activo='N'` respetado (DTO fix) ✓.
+- Bodega creada: misma descripción, `sn_activo` heredado, `empresaId`, `usuarioCreated='admin'` ✓.
+- GET/PUT **sin** `empresaId` (multi-empresa) ✓ · PUT **con** `?empresaId=1` (histórico) ✓ · **PUT ya no nulifica campos** ✓.
+- POST sin `descripcion` → 400 ✓.
+- Limpieza vía `mysql2` (no hay endpoint DELETE): bodega+sucursal eliminadas, baseline 5/4/5 restaurado ✓.
+- Builds: `nest build` ✓ + `npm run build` (producción) ✓ · Frontend dev sirviendo en `:4200`.
+
+#### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `Frontend/src/app/core/models/catalogo-parametros.models.ts` | `anchoCompleto`, `multiEmpresa`, config `sucursales` |
+| `Frontend/src/app/core/services/api.service.ts` | `sinEmpresa` en opts + `withEmpresaQuery` (get/getOne/put) |
+| `Frontend/src/app/core/services/catalogo-parametros.service.ts` | pass-through de `opts` en getAll/getOne/update |
+| `Frontend/src/app/features/parametros/catalogo-generico/catalogo-form.ts` | prefill empresaId, opts sinEmpresa en getOne/update |
+| `Frontend/src/app/features/parametros/catalogo-generico/catalogo-form.html` | `[class.ancho-completo]` |
+| `Frontend/src/app/features/parametros/catalogo-generico/catalogo-form.scss` | `.campo.ancho-completo { grid-column: 1/-1 }` |
+| `Frontend/src/app/features/parametros/catalogo-generico/catalogo-generico.ts` | opts sinEmpresa en `load()` |
+| `Backend/src/modules/sucursales/dto/sucursal.dto.ts` | `sn_activo` en Create |
+| `Backend/src/modules/sucursales/sucursales.module.ts` | forFeature + `TinvBodega` |
+| `Backend/src/modules/sucursales/sucursales.service.ts` | empresaId opcional, create transaccional + bodega, fix undefined en update |
+| `Backend/src/modules/sucursales/sucursales.controller.ts` | parse manual de empresaId opcional |
+| `Backend/src/modules/sucursales/entities/sucursal.entity.ts` | `bodegaId` → `nullable: false` |
+
+### Pendiente
+- Evaluación del patrón `Object.assign(entity, dto)` en otros services (PUTs que pueden devolver nulls en campos no enviados).
+- `sn_doc_anulado` vs `sn_anulado` (facturación) y validación de tarjeta de crédito: sin tocar.
+- Typo de columna `exisencia_actual` (renombrar = ALTER TABLE, requiere aprobación explícita).
+
+---
+
+## Bitácora – 25/11/2026 (tarde)
+
+### Completado
+
+#### Requisito de tipo de cambio USD del día (validación transversal)
+
+**Regla aprobada**: las escrituras en endpoints que afectan las tablas
+`bcosmovimientos, copdadet, copdamae, cxccajadet, cxcmovimientos, invkardex,
+invtrasmae, posfaccaja, posfacmae, posfacmaeanul, pospedmae` exigen que exista
+en `ttipofactordecambios` un registro de cambio en **DÓLARES** (`tipomoneda='D'`)
+con `DATE(fecharegistro) = CURDATE()` (día del servidor) **para la empresa del
+usuario**. Sin él → `409` con `code: 'TIPO_CAMBIO_FALTA'`.
+
+- **Orden sin callejón sin salida**: `fecharegistro` lo estampa el backend con
+  la Fecha del Sistema → primero alinear Fecha del Sistema, después registrar
+  el cambio del día (el botón de la página lleva a Contabilidad › Factor de Cambio).
+
+**Backend**
+- `shared/fecha-sistema.service.ts`:
+  - `EstadoFechaSistema` + campo `tipoCambioDolarHoy`
+  - `tieneCambioDolarHoy(empresaId)` (helper privado, falla seguro en `false`)
+  - `exigirTipoCambioDolar(empresaId)` → `ConflictException` 409 `TIPO_CAMBIO_FALTA`
+  - `getEstado()` incluye `tipoCambioDolarHoy` (afecta a `GET/PUT /parametros/fechas-sistema`)
+- `common/guards/jwt-auth.guard.ts`:
+  - `RUTAS_REQUIEREN_TIPO_CAMBIO` (24 regex anclados a la ruta relativa sin `/api`;
+    IDs dinámicos `[^/]+`; excluye `enviar-correo`)
+  - llamada a `exigirTipoCambioDolar()` **después** de `exigirFechaVigente()`
+    (con fecha desalineada el 409 `FECHA_SISTEMA` tiene prioridad) y solo para
+    `POST/PUT/PATCH/DELETE`
+- `common/filters/all-exceptions.filter.ts`: **fix** — el filtro descartaba el
+  campo `code` del payload de los `HttpException` (el frontend ya leía
+  `error.error.code === 'FECHA_SISTEMA'` en vano). Ahora se preserva `code`
+  cuando existe (aditivo).
+
+**Frontend**
+- `core/models/fec.models.ts`: `tipoCambioDolarHoy?: boolean`
+- `core/interceptors/error.interceptor.ts`: toast específico
+  `Tipo de cambio USD pendiente` para `code === 'TIPO_CAMBIO_FALTA'`
+- `features/configuracion/fechas/manager-fechas.*`: nueva tarjeta
+  **"Tipo de cambio USD del día"** (tag Registrado/Falta registrar, borde
+  verde/rojo, botón "Registrar cambio de hoy" → `/contabilidad/factordecambio`,
+  aviso para roles sin permiso de escritura); panel `height: auto/min-height`
+
+**Endpoints mapeados** (escrituras que exigen el USD del día):
+`/bancos/movimientos|cheques/emitir*`, `/contabilidad/copdamae|copdadet|
+cierrectable/(realizar|revertir)|partida-inicial|integracion/(factura|cxc|cxp|
+bancos)|posfacmov/contabilizar-cxc|trasaviblidad`, `/cxp/compras/:id/(procesar|
+anular|contabilizar)`, `/cxc/prestamos/:id/contabilizar`,
+`/planilla/planillas/:id/contabilizar`, `/cxc/caja-mae|caja-det|movimientos`,
+`/inventario/kardex|ajustes*|toma-inventario|traslados*`,
+`/facturacion/facturas*|fac-caja|pedidos*|tienda/checkout`, `/todopago/confirmar`.
+
+**Verificación E2E (6/6)**: sin USD → 409 `TIPO_CAMBIO_FALTA` ✓ · estado
+`false` ✓ · registro USD empresa 1 (id=4, D, 24.50/25.00, fecha 25/11) ✓ ·
+estado `true` ✓ · con USD → pasa el guard (400 de DTO, body mínimo) ✓ ·
+GET mapeado 200 ✓. Builds `nest build` ✓ + `npm run build` ✓.
+
+### Nota
+- **Excepción confirmada por el usuario (25/11/2026)**: los usuarios con rango
+  vigente en `tfecmae`/`tfecdet` (`esExceptado()`) quedan **exceptuados también**
+  del chequeo de tipo de cambio (además del de fecha). E2E: con rango vigente
+  (tfecmaId=11, fecdetId=19, 25/11–30/11) y sin USD del día, el POST mapeado
+  pasó el guard → 400 de DTO (no 409); sin rango, el mismo POST → 409
+  `TIPO_CAMBIO_FALTA`. Datos de prueba eliminados y USD restaurado a `D` al
+  terminar (estado final: `tipoCambioDolarHoy: true`).
+- Con fecha desalineada, el chequeo de fecha (`FECHA_SISTEMA`) tiene prioridad
+  sobre el de tipo de cambio, incluso para usuarios exceptuados.
+- `ttipoparametros`: sin INSERT (regla intacta) · sin DDL nuevo.
+
+#### Auditoría de `factordecambio` en las 11 tablas (25/11/2026)
+- **Valor esperado** (SQL del usuario, empresa 1): `25.0000` =
+  `precioventa` del mayor `factordecambioId` con `tipomoneda='D'`
+  (id=4, 25/11, compra 24.50 / venta 25.00).
+- **ANTES: ninguna de las 11 tablas registraba 25.0000**. Valores reales:
+  `posfaccaja` 1.00/26.59 · `posfacmae` 0/1/26.5923 · `pospedmae` 0 ·
+  `copdadet` 0/1 · `copdamae` 0/1 · `cxccajadet` 0/1 ·
+  `cxcmovimientos` 0/1/26.5923 · `invkardex` 1.00/26.59 · `invtrasmae` 0 ·
+  `bcosmovimientos` 1.00 · `posfacmaeanul` 1/26.5923.
+- **Solución**: nuevo `FechaSistemaService.getFactorCambioDolar(empresaId)`
+  (mismo SQL del usuario, parametrizado por empresa; fallback `1` si no hay
+  cambio D). Aplicado en TODOS los puntos de creación de esas 11 tablas:
+  `facturacion.service.ts`, `cxc.service.ts`, `bancos.service.ts`,
+  `kardex.service.ts`, `traslado-inventario.service.ts`,
+  `contabilidad-logica.service.ts`, `contabilidad.service.ts` y
+  `todopago.service.ts`. El valor que envíe el payload (ej. 999) se sobrescribe.
+- `invtrasladomae.entity.ts`: se declaró `factordecambio` (la columna ya
+  existía en BD → **sin DDL nuevo**).
+- **Efecto colateral (informativo)**: `invkardex.costoUSD`/`subTotalUSD` ahora
+  se derivan con 25 (antes con 1 o 26.59); las partidas contables nuevas
+  heredan 25 en `copdamae`/`copdadet`.
+- **E2E**: `copdadet` creado con 999 → **25.0000** en BD (id 779, limpio) ✓;
+  `cxccajadet` creado con 999 → **25.0000** en BD (mae 25 / det 23, limpio) ✓.
+  Sin backfill: el histórico queda intacto (solo escrituras nuevas).
+- `nest build` ✓ · backend reiniciado en `:3000` · `backend-error.log` vacío.
+

@@ -10,6 +10,12 @@ import { AuthService } from './auth.service';
 export interface ApiWriteOpts {
   /** Si es true, no se inyecta empresaId ni Idsucursal en el body */
   sinContexto?: boolean;
+  /**
+   * Si es true, NO se inyecta empresaId en la QUERY (GET/PUT).
+   * Catálogos multi-empresa: la lista/edición no se filtran por la
+   * empresa de la sesión (ej: sucursales de todas las empresas).
+   */
+  sinEmpresa?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -65,6 +71,26 @@ export class ApiService {
   }
 
   /**
+   * Query params con empresaId (inyección automática) u opcionales.
+   * Con `sinEmpresa` solo se propagan los params explícitos (catálogo multi-empresa).
+   */
+  private withEmpresaQuery(
+    params?: Record<string, string | number>,
+    sinEmpresa?: boolean,
+  ): HttpParams {
+    if (sinEmpresa) {
+      let p = new HttpParams();
+      if (params) {
+        for (const [key, value] of Object.entries(params)) {
+          p = p.set(key, String(value));
+        }
+      }
+      return p;
+    }
+    return this.withEmpresa(params);
+  }
+
+  /**
    * Inyecta empresaId e Idsucursal del usuario en el cuerpo de altas/modificaciones.
    * @param path - Ruta del endpoint para verificar si requiere contexto
    * @param body - Cuerpo de la petición
@@ -78,7 +104,7 @@ export class ApiService {
     const out: Record<string, any> = { ...(body as Record<string, any>) };
     const user = this.auth.currentUser();
 
-    if (!opts?.sinContexto && !ApiService.SIN_EMPRESA.includes(path)) {
+    if (!opts?.sinContexto && !opts?.sinEmpresa && !ApiService.SIN_EMPRESA.includes(path)) {
       // Sesión activa → empresaId del usuario; sin sesión → environment.empresaId
       const empresaId = user?.empresaId ?? environment.empresaId;
       if (empresaId != null && out['empresaId'] === undefined) {
@@ -101,12 +127,14 @@ export class ApiService {
    * Realiza una petición GET al backend
    * @param path - Ruta relativa del endpoint (ej: '/cxc/clientes')
    * @param params - Parámetros de query adicionales
+   * @param opts - `sinEmpresa` omite la inyección de empresaId en la query
    * @returns Observable con la respuesta tipada
    */
-  get<T>(path: string, params?: Record<string, string | number>): Observable<T> {
-    console.log('[ApiService] GET', path, 'params:', this.withEmpresa(params).toString());
+  get<T>(path: string, params?: Record<string, string | number>, opts?: ApiWriteOpts): Observable<T> {
+    const query = this.withEmpresaQuery(params, opts?.sinEmpresa);
+    console.log('[ApiService] GET', path, 'params:', query.toString());
     return this.http.get<T>(`${environment.apiUrl}${path}`, {
-      params: this.withEmpresa(params),
+      params: query,
     }).pipe(
       tap(res => console.log('[ApiService] GET response', path, res)),
     );
@@ -116,11 +144,12 @@ export class ApiService {
    * Obtiene un registro por su ID
    * @param path - Ruta relativa del endpoint
    * @param id - Identificador del registro
+   * @param opts - `sinEmpresa` omite la inyección de empresaId en la query
    * @returns Observable con el registro tipado
    */
-  getOne<T>(path: string, id: number | string): Observable<T> {
+  getOne<T>(path: string, id: number | string, opts?: ApiWriteOpts): Observable<T> {
     return this.http.get<T>(`${environment.apiUrl}${path}/${id}`, {
-      params: this.withEmpresa(),
+      params: this.withEmpresaQuery(undefined, opts?.sinEmpresa),
     });
   }
 
@@ -153,7 +182,7 @@ export class ApiService {
    */
   put<T>(path: string, id: number | string, body: unknown, opts?: ApiWriteOpts, params?: Record<string, string | number>): Observable<T> {
     return this.http.put<T>(`${environment.apiUrl}${path}/${id}`, this.withContexto(path, body, opts), {
-      params: this.withEmpresa(params),
+      params: this.withEmpresaQuery(params, opts?.sinEmpresa),
     });
   }
 

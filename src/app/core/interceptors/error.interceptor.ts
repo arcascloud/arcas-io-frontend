@@ -101,6 +101,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         // el backend bloqueó la operación. Mensaje propio (el genérico de 409
         // no explica cómo desbloquearse).
         msgs.add({ severity: 'error', summary: 'Fecha del Sistema desactualizada', detail });
+      } else if (error.error?.code === 'TIPO_CAMBIO_FALTA') {
+        // Falta el registro de cambio en dólares del día en
+        // ttipofactordecambios → el backend bloqueó escrituras en tablas
+        // con tipo de cambio (409).
+        msgs.add({ severity: 'error', summary: 'Tipo de cambio USD pendiente', detail });
       } else if (error.status === 404) {
         msgs.add({ severity: 'warn', summary: 'No encontrado', detail });
       } else if (error.status === 409) {

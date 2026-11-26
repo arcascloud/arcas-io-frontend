@@ -90,18 +90,10 @@ export class EmpresasService {
     return this.api.get<EstadoCorrelativo[]>(`${this.path}/correlativos/estado`, { empresaId });
   }
 
-  // ===== Sucursales =====
+  // ===== Sucursales (solo lectura: el CRUD vive en /configuracion/parametros/sucursales) =====
 
   getAllSucursales(empresaId: number): Observable<Sucursal[]> {
     return this.api.get<Sucursal[]>(`${this.path}/sucursales`, { empresaId });
-  }
-
-  createSucursal(dto: Partial<Sucursal>): Observable<Sucursal> {
-    return this.api.post<Sucursal>(`${this.path}/sucursales`, dto);
-  }
-
-  updateSucursal(id: number, dto: Partial<Sucursal>): Observable<Sucursal> {
-    return this.api.put<Sucursal>(`${this.path}/sucursales`, id, dto);
   }
 
   // ===== Logo =====

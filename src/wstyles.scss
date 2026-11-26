@@ -1,110 +1,113 @@
 /* You can add global styles to this file, and also import other style files */
-@layer primeng {}
+@layer primeng {
+}
+
 @font-face {
-  font-family: 'mukta';
-  src: url('/assets/fonts/mukta/mukta-regular.ttf') format('truetype');
+  font-family: "mukta";
+  src: url("/assets/fonts/mukta/mukta-regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'mukta';
-  src: url('/assets/fonts/mukta/mukta-medium.ttf') format('truetype');
+  font-family: "mukta";
+  src: url("/assets/fonts/mukta/mukta-medium.ttf") format("truetype");
   font-weight: 500;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'mukta';
-  src: url('/assets/fonts/mukta/mukta-semibold.ttf') format('truetype');
+  font-family: "mukta";
+  src: url("/assets/fonts/mukta/mukta-semibold.ttf") format("truetype");
   font-weight: 600;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'mukta';
-  src: url('/assets/fonts/mukta/mukta-bold.ttf') format('truetype');
+  font-family: "mukta";
+  src: url("/assets/fonts/mukta/mukta-bold.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'mukta';
-  src: url('/assets/fonts/mukta/mukta-extrabold.ttf') format('truetype');
+  font-family: "mukta";
+  src: url("/assets/fonts/mukta/mukta-extrabold.ttf") format("truetype");
   font-weight: 800;
   font-style: normal;
 }
 
 /* figtree — fuente variable (pesos 300–900, romana + itálica) */
 @font-face {
-  font-family: 'figtree';
-  src: url('/assets/fonts/figtree/figtree-variablefont_wght.ttf') format('truetype');
+  font-family: "figtree";
+  src: url("/assets/fonts/figtree/figtree-variablefont_wght.ttf")
+    format("truetype");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'figtree';
-  src: url('/assets/fonts/figtree/figtree-italic-variablefont_wght.ttf') format('truetype');
+  font-family: "figtree";
+  src: url("/assets/fonts/figtree/figtree-italic-variablefont_wght.ttf")
+    format("truetype");
   font-weight: 300 900;
   font-style: italic;
   font-display: swap;
 }
-@font-face {
-  font-family: 'AstroSpace';
-    src: url('/assets/fonts/AstroSpace/AstroSpace.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-}
-
 
 @font-face {
-  font-family: 'angora';
-  src: url('/assets/fonts/angora/angora-1g3bb.otf') format('truetype');
+  font-family: "AstroSpace";
+  src: url("/assets/fonts/AstroSpace/AstroSpace.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'audiowide';
-  src: url('/assets/fonts/audiowide/audiowide-regular.ttf') format('truetype');
+  font-family: "angora";
+  src: url("/assets/fonts/angora/angora-1g3bb.otf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "audiowide";
+  src: url("/assets/fonts/audiowide/audiowide-regular.ttf") format("truetype");
   font-weight: 400;
   font-style: regular;
 }
 
 @font-face {
-  font-family: 'hurricane';
-  src: url('/assets/fonts/hurricane/hurricane-regular.ttf') format('truetype');
+  font-family: "hurricane";
+  src: url("/assets/fonts/hurricane/hurricane-regular.ttf") format("truetype");
   font-weight: 400;
   font-style: regular;
 }
 
 @font-face {
-  font-family: 'rye';
-  src: url('/assets/fonts/rye/rye-regular.ttf') format('truetype');
+  font-family: "rye";
+  src: url("/assets/fonts/rye/rye-regular.ttf") format("truetype");
   font-weight: 400;
   font-style: regular;
 }
 
 :root {
-  --font-family: 'figtree', 'mukta', sans-serif;
+  --font-family: "figtree", "mukta", sans-serif;
   --color-font-sidebar: #dbe7f0;
   --color-texto-label: rgba(255, 255, 255, 0.4);
   --color-texto-input: rgba(255, 255, 255, 0.808);
   --master-background: #213341;
   --datatable-row-hover-background: #285856e7;
-    --datatable-row-striped-background: #1f2f3a;
+  --datatable-row-striped-background: #1f2f3a;
   --texto-secundario: #2c4d6f;
   --select-row: #93b7d3;
   --for-border-color-alls: #39495b;
   --color1: #243347;
-    --color2: #1E293B;
+  --color2: #1e293b;
 
   /* ===== Design tokens ===== */
+  --c-bg: #1e2e3b;
   --c-bg-white: white;
-   --c-bg: white;
-  --c-bg-white:  #1e2e3b;
   --c-bg-black: black;
   --c-bg-muted: #1e2e3b00;
   --c-bg-login: #030713;
@@ -123,14 +126,101 @@
   --c-primary: #3d8bff;
   --c-primary-strong: #0070f2;
   --c-success: #2fd48a;
+  --c-warning: var(--orange-500);
+  --c-danger: #e77b6d;
   --c-warning: #f5a623;
-  --c-danger: #d84b4b;
   --c-peligro: #c41919;
   --c-info: #38bdf8;
   --c-uva: #604ec7ef;
   --c-amarillo: #faf06af8;
 
-  --radius-sm: 0.5rem;
+  --red-200: #eea39a;
+  --red-300: #e77b6d;
+  --red-400: #df5240;
+  --red-500: #d82a13;
+  --red-600: #b82410;
+  --red-700: #971d0d;
+  --red-800: #77170a;
+  --red-900: #561108;
+
+  --orange-300: #f9ba7f;
+  --orange-400: #f8a457;
+  --orange-500: #f68f30;
+  --orange-600: #d17a29;
+  --orange-700: #ac6422;
+  --orange-800: #874f1a;
+  --orange-900: #623913;
+
+  --teal-300: #89c8bd;
+  --teal-400: #65b7a8;
+  --teal-500: #41a694;
+  --teal-600: #378d7e;
+  --teal-700: #2e7468;
+  --teal-800: #245b51;
+  --teal-900: #1a423b;
+
+  --cyan-300: #7ccce5;
+  --cyan-400: #54bcdd;
+  --cyan-500: #2cacd5;
+  --cyan-600: #2592b5;
+  --cyan-700: #1f7895;
+  --cyan-800: #185f75;
+  --cyan-900: #124555;
+
+  --pink-100: #f6cce0;
+  --pink-200: #eea3c7;
+  --pink-300: #e77aae;
+  --pink-400: #df5296;
+  --pink-500: #d8297d;
+  --pink-600: #b8236a;
+  --pink-700: #971d58;
+
+  --bluegray-50: #f7f8f9;
+  --bluegray-100: #dae0e3;
+  --bluegray-200: #bdc7cd;
+  --bluegray-300: #a0aeb6;
+  --bluegray-400: #8295a0;
+  --bluegray-500: #657c8a;
+  --bluegray-600: #566975;
+  --bluegray-700: #475761;
+  --bluegray-800: #38444c;
+  --bluegray-900: #283237;
+
+  --indigo-50: #f4f6fd;
+  --indigo-100: #ccd3f5;
+  --indigo-200: #a4b0ed;
+  --indigo-300: #7c8de5;
+  --indigo-400: #546add;
+  --indigo-500: #2c47d5;
+  --indigo-600: #253cb5;
+  --indigo-700: #1f3295;
+  --indigo-800: #182775;
+  --indigo-900: #121c55;
+
+  --green-50: #f7fbf6;
+  --green-100: #d6ead1;
+  --green-200: #b6d9ad;
+  --green-300: #96c889;
+  --green-400: #76b765;
+  --green-500: #56a641;
+  --green-600: #498d37;
+  --green-700: #3c742e;
+  --green-800: #2f5b24;
+  --green-900: #22421a;
+
+  --blue-50: #f3f8fc;
+  --blue-100: #c6dcef;
+  --blue-200: #98c1e3;
+  --blue-300: #6ba5d7;
+  --blue-350: #072f524f;
+  --blue-400: #3d8aca;
+  --blue-500: #106ebe;
+  --blue-600: #0e5ea2;
+  --blue-700: #0b4d85;
+  --blue-800: #093d69;
+  --blue-900: #062c4c;
+
+  --radius-sm: 0.35rem;
   --radius-md: 0.75rem;
   --radius-lg: 1.25rem;
   --radius-full: 9999px;
@@ -143,6 +233,18 @@
   --tr-fast: 150ms ease;
   --tr-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --tr-smooth: 300ms cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Solo se aplica si el usuario ya escribió algo y es inválido */
+  input.ng-dirty.ng-invalid {
+    border-color: var(--red-300);
+  }
+
+  .p-error {
+    color: var(--red-600);
+  }
+
+  --p-tabs-tab-active-color: var(--green-400);
+  --p-tabs-tab-active-border-color: var(--green-400);
 
   --p-button-padding-x: 0.75rem;
   --p-button-padding-y: 0.5rem;
@@ -165,13 +267,11 @@
   --p-form-field-background: #213341;
   --p-form-field-border-color: #39495b;
 
-
   --p-navigation-item-color: #7f8790;
   --p-navigation-item-icon-color: #558dc6;
 
   --p-panelmenu-item-focus-color: #558dc6;
   --p-navigation-submenu-icon-color: #558dc6;
-
 
   --p-card-title-font-size: 1.05rem;
   --p-card-background: var(--p-form-field-background);
@@ -184,25 +284,6 @@
   --p-inputtext-disabled-border-color: #2a3a4a;
   --p-inputtext-invalid-border-color: var(--c-danger);
 
-  --p-togglebutton-color: var(--color-texto-input);
-  --p-togglebutton-background: var(--c-bg);
-
-
-  // para los botones selecionados del toggle button
-  --p-togglebutton-checked-color: var(--c-success);
-  --p-togglebutton-content-checked-background: var(--p-inputtext-background);
-
-
-  --p-togglebutton-background: var(--c-bg);
-  --p-togglebutton-checked-background: var(--c-bg);
-
-  --p-togglebutton-hover-color: var(--c-amarillo);
-  --p-togglebutton-border-color: var(--c-bg);
-  --p-togglebutton-checked-border-color: var(--c-bg);
-
-
-  --p-select-color: var(--color-texto-input);
-  --p-select-background: var(--p-form-field-background);
   --p-select-disabled-background: var(--c-bg);
   --p-select-disabled-color: var(--c-text-muted);
 
@@ -214,19 +295,21 @@
   --p-datatable-body-cell-border-color: #25374a;
   --p-datatable-header-cell-border-color: #25374a;
   --p-datatable-header-cell-color: var(--color-texto-input);
-  --p-datatable-body-cell-sm-padding: 0.20rem 0.08rem;
-    /* Reduce o aumenta el padding vertical y horizontal de las celdas */
-    --p-datatable-body-cell-padding: 0.20rem 0.08rem;
-    /* Valor más compacto que el predeterminado */
+  --p-datatable-body-cell-sm-padding: 0.2rem 0.08rem;
+  /* Reduce o aumenta el padding vertical y horizontal de las celdas */
+  --p-datatable-body-cell-padding: 0.2rem 0.08rem;
+  /* Valor más compacto que el predeterminado */
 
-    /* Cambiar el color de fondo para las filas impares/pares alternadas */
-      --p-datatable-row-striped-background: var(--datatable-row-striped-background);
+  /* Cambiar el color de fondo para las filas impares/pares alternadas */
+  --p-datatable-row-striped-background: var(--datatable-row-striped-background);
 
-      /* Color de fila seleccionada */
-      --p-datatable-row-selected-background: var(--c-text-muted);
-      --p-datatable-row-selected-color: var(--color-texto-label);
-      --p-datatable-row-hover-background: var(--datatable-row-hover-background);
+  /* Color de fila seleccionada */
+  --p-datatable-row-selected-background: var(--cyan-600);
+  --p-datatable-row-selected-color: var(--color-texto-label);
 
+  // hover para el iluminado de una fila en las tablas
+  --p-datatable-row-hover-background: var(--cyan-900);
+  --p-datatable-row-hover-color: var(--blue-50);
 
   --p-tag-secondary-background: var(--c-bg-muted);
   --p-tag-success-background: var(--c-bg-muted);
@@ -238,40 +321,72 @@
 
   --surface-border: var(--for-border-color-alls);
 
---p-button-contrast-background: var(--c-bg-black);
-  --p-button-contrast-border-color: var(--c-bg-black);
-  --p-button-contrast-color: var(--c-bg-white);
+  /* Estado Normal (Sin chequear) */
+  --p-togglebutton-background: var(--c-bg);
+  --p-togglebutton-border-color: var(--c-bg);
+
+  /* Estado Hover (Sin chequear) */
+  --p-togglebutton-hover-background: var(--cyan-700);
+  --p-togglebutton-hover-border-color: var(--c-bg);
+
+  /* Estado Chequeado */
+  --p-togglebutton-checked-background: var(--c-bg);
+  --p-togglebutton-content-checked-background: var(--cyan-700);
+  --p-togglebutton-checked-border-color: var(--c-bg);
+  // Botones primarios (primary buttons)
+
+  --p-button-primary-background: var(--cyan-700);
+  --p-button-primary-hover-background: var(--cyan-500);
+  --p-button-primary-active-background: var(--cyan-700);
+  --p-button-primary-border-color: var(--cyan-700);
+
+  --p-button-primary-hover-border-color: var(--cyan-700);
+  --p-button-primary-active-border-color: var(--cyan-700);
+  --p-button-primary-color: var(--c-bg-white);
+  --p-button-primary-hover-color: var(--c-bg-white);
+  --p-button-primary-active-color: var(--c-bg-white);
+  --p-button-primary-focus-ring-color: var(--cyan-700);
+
+  /*Botones de errores */
+                --p-button-danger-background: var(--c-error, #ef4444) !important;
+                --p-button-danger-color: var(--c-bg-white);
+                --p-button-danger-border-color: var(--c-error, #ef4444) !important;
+  --p-button-danger-hover-color: var(--c-bg-white);
+                --p-button-danger-hover-background: #dc2626 !important;
+                --p-button-danger-hover-border-color: #dc2626 !important;
+
   /* Tamaño pequeño (sm) */
-    --p-button-sm-font-size: 0.92rem !important;
-      --p-button-sm-padding-x: 0.7rem !important;
-      --p-button-sm-padding-y: 0.45rem !important;
-    --p-button-sm-icon-only-width: 1.75rem !important;
+  --p-button-sm-padding-y: 0.45rem !important;
+  --p-button-sm-font-size: 0.92rem !important;
+  --p-button-sm-icon-only-width: 1.75rem !important;
 
-    /* Bordes de los botones */
-    --p-button-border-radius: 4px !important;
-    --p-button-rounded-border-radius: 9999px !important;
-
+  /* Bordes de los botones */
+  --p-button-border-radius: 4px !important;
+  --p-button-rounded-border-radius: 9999px !important;
 }
-
 
 .p-dataview {
   --p-dataview-content-padding: 0.25rem;
   /* Modifica el padding general del contenedor de contenido */
 }
 
+/* Para modificar las filas que ya son seleccionables */
+.p-datatable-selectable-row:hover {
+  cursor: pointer;
+}
 .p-datatable.p-datatable-sm .p-datatable-header {
   padding: 0.72845rem 0.85rem;
 }
 
-.p-datatable.p-datatable-sm .p-datatable-thead>tr>th {
+.p-datatable.p-datatable-sm .p-datatable-thead > tr > th {
   padding: 0.28535rem 0.72845rem;
 }
 
-.p-datatable.p-datatable-sm .p-datatable-tbody>tr>td {
+.p-datatable.p-datatable-sm .p-datatable-tbody > tr > td {
   padding: 0.28535rem 0.72845rem;
 }
 
-.p-datatable.p-datatable-sm .p-datatable-tfoot>tr>td {
+.p-datatable.p-datatable-sm .p-datatable-tfoot > tr > td {
   padding: 0.48535rem 0.85rem;
 }
 
@@ -287,8 +402,11 @@
 .p-button.p-button-sm .p-button-icon {
   font-size: 0.875rem;
 }
+
 ::ng-deep .p-dataview .p-dataview-content .dataview-item {
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 ::ng-deep .p-dataview .p-dataview-content .dataview-item:hover {
@@ -327,6 +445,7 @@
   --p-togglebutton-content-checked-background: var(--c-bg);
   --p-togglebutton-checked-border-color: var(--c-bg);
 }
+
 .botton-bg-transparente {
   background: transparent;
   color: var(--c-bg-white);
@@ -334,6 +453,10 @@
   --p-button-contrast-background: transparent;
   --p-button-contrast-border-color: var(--c-bg-black);
   --p-button-contrast-color: var(--c-bg-white);
+}
+
+.botton-bg-contrast-solid {
+  color: var(--c-info);
 }
 
 .inputtext-transparente {
@@ -352,6 +475,16 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Restaurante · Cocina: fondo negro forzado del body y del contenedor principal.
+   La clase la agrega/retira el componente al montarse/desmontarse. */
+body.cocina-body-negro {
+  background: var(--c-bg-black);
+}
+
+body.cocina-body-negro .layout-content {
+  background: var(--c-bg-black);
+}
+
 label {
   color: var(--c-text);
   /* Color del texto */
@@ -365,7 +498,6 @@ tr {
   color: var(--c-text);
 }
 
-
 ul {
   display: block;
   list-style-type: none;
@@ -374,7 +506,6 @@ ul {
   padding-inline-start: 12px;
   unicode-bidi: isolate;
 }
-
 
 .p-inputtext {
   color: var(--c-text);
@@ -395,12 +526,11 @@ ul {
   padding: 0.05rem;
   overflow: hidden;
   border-radius: 12px;
-
 }
 
 /* =====================================================
-   Animaciones de entrada
-   ===================================================== */
+Animaciones de entrada
+===================================================== */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -424,7 +554,6 @@ ul {
 }
 
 @keyframes pulseSoft {
-
   0%,
   100% {
     opacity: 1;
@@ -436,19 +565,19 @@ ul {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .page>* {
+  .page > * {
     animation: fadeInUp var(--tr-smooth) both;
   }
 
-  .page>*:nth-child(2) {
+  .page > *:nth-child(2) {
     animation-delay: 0.04s;
   }
 
-  .page>*:nth-child(3) {
+  .page > *:nth-child(3) {
     animation-delay: 0.08s;
   }
 
-  .page>*:nth-child(4) {
+  .page > *:nth-child(4) {
     animation-delay: 0.12s;
   }
 }
@@ -465,14 +594,19 @@ ul {
 }
 
 .p-skeleton {
-  background: linear-gradient(90deg, #eef2f7 25%, #e2e8f0 50%, #eef2f7 75%) !important;
+  background: linear-gradient(
+    90deg,
+    #eef2f7 25%,
+    #e2e8f0 50%,
+    #eef2f7 75%
+  ) !important;
   background-size: 200% 100% !important;
   animation: shimmer 1.6s infinite !important;
 }
 
 /* =====================================================
-   Estilos compartidos de páginas
-   ===================================================== */
+Estilos compartidos de páginas
+===================================================== */
 
 .page {
   display: flex;
@@ -518,12 +652,12 @@ ul {
   background: var(--c-bg);
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--for-border-color-alls);
-
 }
 
-// =====================================================
-// Tablas responsive con scroll horizontal
-// =====================================================
+/* =====================================================
+Tablas responsive con scroll horizontal
+===================================================== */
+
 .p-datatable-wrapper {
   overflow-x: auto;
 
@@ -542,12 +676,12 @@ ul {
     font-size: 0.8rem;
   }
 
-  .p-datatable-tbody>tr>td {
+  .p-datatable-tbody > tr > td {
     padding: 0.5rem 0.4rem !important;
     white-space: nowrap;
   }
 
-  .p-datatable-thead>tr>th {
+  .p-datatable-thead > tr > th {
     padding: 0.5rem 0.4rem !important;
     font-size: 0.75rem;
     white-space: nowrap;
@@ -565,7 +699,6 @@ ul {
 // Mejoras táctiles / accesibilidad
 // =====================================================
 @media (pointer: coarse) {
-
   .p-button,
   .p-inputtext,
   .p-select,
@@ -582,12 +715,12 @@ ul {
     flex-direction: column;
     align-items: stretch;
 
-    >div:first-child {
+    > div:first-child {
       width: 100%;
     }
 
-    >div:last-child,
-    >p-button {
+    > div:last-child,
+    > p-button {
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
@@ -674,8 +807,8 @@ ul {
 }
 
 /* =====================================================
-   DataView cards (catálogos)
-   ===================================================== */
+DataView cards (catálogos)
+===================================================== */
 .dv-cards {
   display: flex;
   flex-direction: column;
@@ -774,10 +907,9 @@ ul {
 }
 
 /* =====================================================
-   Impresión de reportes
-   ===================================================== */
+Impresión de reportes
+===================================================== */
 @media print {
-
   .layout-wrapper .sidebar,
   .layout-wrapper .topbar,
   .no-print,
@@ -912,4 +1044,50 @@ ul {
       }
     }
   }
+}
+
+// ── Selectbutton Tipo Factura: UI mejorada (global) ──
+::ng-deep .p-selectbutton.tipo-factura-select {
+  display: flex !important;
+  width: 100% !important;
+  border-radius: var(--radius-md, 0.75rem) !important;
+  overflow: hidden !important;
+  border: 1px solid var(--c-border, #1e2e3b) !important;
+  background: var(--c-surface-muted, #2d3d50b4) !important;
+
+  .p-button {
+    flex: 1 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-right: 1px solid var(--c-border, #1e2e3b) !important;
+    color: var(--c-text-muted, #8aa9c9) !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    padding: 0.5rem 0.75rem !important;
+    transition: all 0.15s ease !important;
+
+    &:last-child {
+      border-right: none !important;
+    }
+
+    &:hover:not(.p-highlight) {
+      background: var(--c-surface-ground, #08131c) !important;
+      color: var(--c-text, #fff) !important;
+    }
+
+    &.p-highlight {
+      background: var(--c-primary, #3d8bff) !important;
+      color: #fff !important;
+      box-shadow: 0 0 0 1px var(--c-primary, #3d8bff) inset !important;
+    }
+  }
+}
+
+// ── Hover global para filas de tablas p-table ──────────
+::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
+  background-color: var(
+    --p-datatable-row-hover-background,
+    var(--datatable-row-hover-background, rgba(59, 130, 246, 0.12))
+  ) !important;
+  color: var(--blue-50);
 }

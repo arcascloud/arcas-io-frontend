@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -27,6 +28,7 @@ export class ManagerFechas implements OnInit {
   private fecService = inject(FecService);
   private auth = inject(AuthService);
   private empresasSvc = inject(EmpresasService);
+  private router = inject(Router);
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
@@ -49,6 +51,13 @@ export class ManagerFechas implements OnInit {
     const e = this.estadoFecha();
     return !!e && !e.coincide;
   });
+
+  /**
+   * ¿Existe el registro de cambio en DÓLARES del día del servidor en
+   * `ttipofactordecambios`? Requisito de las escrituras en tablas con
+   * tipo de cambio (409 `TIPO_CAMBIO_FALTA` cuando falta).
+   */
+  tipoCambioOk = computed(() => this.estadoFecha()?.tipoCambioDolarHoy === true);
 
   ngOnInit(): void {
     // Preselecciona la empresa del usuario y carga su estado + catálogo.
@@ -136,6 +145,11 @@ export class ManagerFechas implements OnInit {
           });
       },
     });
+  }
+
+  /** Navega al catálogo de Factor de Cambio (Contabilidad) para registrar el cambio del día. */
+  irAFactorCambio(): void {
+    this.router.navigate(['/contabilidad/factordecambio']);
   }
 
   /** `dd/mm/aaaa` a partir de un string `YYYY-MM-DD` (sin `new Date()`). */

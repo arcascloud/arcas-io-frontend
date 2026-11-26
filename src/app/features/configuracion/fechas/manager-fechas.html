@@ -92,6 +92,60 @@
         />
       </div>
     </div>
+
+    <!-- Tipo de cambio USD del día (requisito de escritura) -->
+    <div class="card fecha-sistema tipo-cambio" [class.desalineada]="!tipoCambioOk()">
+      <div class="fs-cabecera">
+        <div class="fs-titulo">
+          <i class="pi pi-dollar"></i>
+          <div>
+            <strong>Tipo de cambio USD del día</strong>
+            <span>
+              Requisito: debe existir un registro en <code>ttipofactordecambios</code>
+              (dólares) con la fecha del servidor. Sin él, las escrituras en
+              tablas con tipo de cambio responden 409 (salvo usuarios con
+              rango vigente).
+            </span>
+          </div>
+        </div>
+
+        @if (cargandoFecha()) {
+          <p-tag value="Verificando..." severity="secondary" />
+        } @else if (tipoCambioOk()) {
+          <p-tag value="Registrado" severity="success" />
+        } @else {
+          <p-tag value="Falta registrar" severity="danger" />
+        }
+      </div>
+
+      <div class="fs-accion">
+        @if (!tipoCambioOk() && puedeEscribir()) {
+          <p-button
+            label="Registrar cambio de hoy"
+            icon="pi pi-plus"
+            severity="danger"
+            [size]="'small'"
+            rounded
+            (onClick)="irAFactorCambio()"
+          />
+        } @else if (!tipoCambioOk() && !puedeEscribir()) {
+          <small class="fs-aviso">
+            Un <code>admin</code>, <code>supervisor</code> o <code>contador</code> debe
+            registrar el cambio en dólares del día en Contabilidad › Factor de Cambio.
+          </small>
+        }
+        <p-button
+          label="Verificar"
+          icon="pi pi-sync"
+          severity="secondary"
+          variant="text"
+          [size]="'small'"
+          rounded
+          [loading]="cargandoFecha()"
+          (onClick)="cargarEstadoFecha()"
+        />
+      </div>
+    </div>
   </div>
 </section>
 

@@ -74,4 +74,11 @@ export interface EstadoFechaSistema {
   /** `YYYY-MM-DD` */
   fechaServidor: string;
   coincide: boolean;
+  /**
+   * ¿Existe en `ttipofactordecambios` un registro de cambio en DÓLARES
+   * (`tipomoneda='D'`) con `DATE(fecharegistro)` = fecha del servidor?
+   * Requisito para las escrituras en tablas con tipo de cambio (409
+   * `TIPO_CAMBIO_FALTA` cuando falta).
+   */
+  tipoCambioDolarHoy?: boolean;
 }

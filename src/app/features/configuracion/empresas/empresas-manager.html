@@ -1,5 +1,5 @@
 <p-toast />
-<p-confirmdialog [breakpoints]="{ '960px': '75vw', '640px': '90vw' }" [style]="{ width: '420px' }" />
+<!-- El p-confirmdialog global vive en main-layout-private; duplicarlo aquí mostraba 2 diálogos -->
 
 <div class="empresas-manager">
   <div class="split-layout">
@@ -65,10 +65,6 @@
             <p-tab value="1" [disabled]="creando()">
               <i class="pi pi-id-card"></i>
               <span>Datos Específicos</span>
-            </p-tab>
-            <p-tab value="2" [disabled]="creando()">
-              <i class="pi pi-map-marker"></i>
-              <span>Sucursales</span>
             </p-tab>
             <p-tab value="4" [disabled]="creando()">
               <i class="pi pi-image"></i>
@@ -210,92 +206,6 @@
                       <ng-template pTemplate="emptymessage">
                         <tr>
                           <td colspan="4" class="text-center text-muted">No hay datos registrados</td>
-                        </tr>
-                      </ng-template>
-                    </p-table>
-                  </div>
-                </div>
-              </div>
-              }
-            </p-tabpanel>
-
-            <!-- TAB 2: Sucursales -->
-            <p-tabpanel value="2">
-              @if (creando()) {
-              <div class="card p-5 text-center text-muted">Debe guardar la información general de la empresa primero para gestionar las sucursales.</div>
-              } @else {
-              <div class="tab-content">
-                <div class="tab-header">
-                  <h4>Sucursales</h4>
-                  <span class="tab-subtitulo">Plazas habilitadas de la empresa</span>
-                </div>
-
-                <div class="info-adicional-grid">
-                  <!-- Formulario -->
-                  <div class="info-panel info-panel-form">
-                    <h5 class="form-col-title">
-                      {{ sucEditando() ? 'Editar sucursal' : 'Nueva sucursal' }}
-                    </h5>
-
-                    <div class="form-col" [formGroup]="sucForm">
-                      <div class="p-field">
-                        <label>Descripción <span class="req">*</span></label>
-                        <input pInputText [pSize]="'small'" formControlName="descripcion" placeholder="Nombre sucursal" />
-                      </div>
-                      <div class="p-field">
-                        <label>Estado</label>
-                        <p-select formControlName="sn_activo" [options]="SN_ACTIVO_OPTIONS" optionLabel="label" optionValue="value" size="small" styleClass="w-full" [appendTo]="'body'" placeholder="Seleccione estado" />
-                      </div>
-                    </div>
-
-                    <div class="form-actions info-form-actions">
-                      @if (sucEditando()) {
-                      <p-button label="Cancelar edición" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (click)="cancelarSuc()" />
-                      } @else {
-                      <p-button label="Limpiar" icon="pi pi-times" variant="text" severity="secondary" [rounded]="true" [size]="'small'" (click)="cancelarSuc()" />
-                      }
-                      <p-button label="Guardar" icon="pi pi-check" variant="text" severity="success" [rounded]="true" [size]="'small'" [loading]="savingSuc()" (click)="guardarSucursal()" />
-                    </div>
-                  </div>
-
-                  <!-- Listado -->
-                  <div class="info-panel info-panel-list">
-                    <div class="info-list-header">
-                      <h5 class="form-col-title">Sucursales registradas</h5>
-                      <span class="info-list-total">{{ sucursales().length }} registro(s)</span>
-                    </div>
-
-                    <p-table
-                      [value]="sucursales()"
-                      [loading]="loadingSuc()"
-                      showGridlines
-                      styleClass="tabla-card"
-                      [tableStyle]="{ 'min-width': '15rem' }"
-                      size="small"
-                    >
-                      <ng-template pTemplate="header">
-                        <tr>
-                          <th class="col-tipo">ID</th>
-                          <th>Descripción</th>
-                          <th class="col-estado">Estado</th>
-                          <th class="col-acciones"></th>
-                        </tr>
-                      </ng-template>
-                      <ng-template pTemplate="body" let-suc>
-                        <tr>
-                          <td class="col-tipo">{{ suc.idsucursal }}</td>
-                          <td>{{ suc.descripcion }}</td>
-                          <td class="col-estado text-center">
-                            <p-tag [value]="getEstadoLabel(suc.sn_activo)" [severity]="getEstadoSeverity(suc.sn_activo)" styleClass="tag-sm" />
-                          </td>
-                          <td class="col-acciones">
-                            <p-button icon="pi pi-pencil" (click)="editarSuc(suc)" [rounded]="true" [size]="'small'" text severity="secondary" pTooltip="Editar" tooltipPosition="left" />
-                          </td>
-                        </tr>
-                      </ng-template>
-                      <ng-template pTemplate="emptymessage">
-                        <tr>
-                          <td colspan="4" class="text-center text-muted">No hay sucursales registradas</td>
                         </tr>
                       </ng-template>
                     </p-table>

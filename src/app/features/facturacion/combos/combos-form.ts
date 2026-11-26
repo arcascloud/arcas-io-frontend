@@ -29,8 +29,7 @@ interface ProductoCatalogo {
   descripcion_corta?: string;
   codbarra?: string;
   precioventa: number;
-  /** El endpoint /inventario/tienda/productos llama a esto `preciocosto` */
-  preciocosto?: number;
+  /** Costo unitario real (productos.cstounit) — base del límite inferior de combos/ofertas */
   cstounit?: number;
   imagen: string | null;
   existencia: number;
@@ -197,10 +196,14 @@ export class CombosForm implements OnInit {
     });
   }
 
-  /** Costo unitario: el catálogo de tienda lo expone como `preciocosto` */
+  /**
+   * Costo unitario REAL: productos.cstounit.
+   * NO usar precioventa ni preciocosto (promedio de invexistencias.costounitario):
+   * el límite inferior de combos/ofertas es cstounit * 1.03.
+   */
   private costoDe(prod?: ProductoCatalogo | null): number {
     if (!prod) return 0;
-    const costo = Number(prod.preciocosto ?? prod.cstounit);
+    const costo = Number(prod.cstounit ?? 0);
     return Number.isFinite(costo) ? costo : 0;
   }
 
@@ -333,12 +336,14 @@ export class CombosForm implements OnInit {
     this.comboItems.update(items => items.filter(i => i.productoId !== item.productoId));
   }
 
+  /** Límite inferior = cstounit * 1.03 (mismo redondeo que validarPrecioMinimoCombo en backend) */
   precioMinimo(item: ComboItem): number {
-    return Number(item.cstounit) * 1.03;
+    return Math.round(Number(item.cstounit) * 1.03 * 100) / 100;
   }
 
+  /** Misma tolerancia de 1 centavo que el backend para evitar rechazos por redondeo */
   precioValido(item: ComboItem): boolean {
-    return Number(item.precioventa) >= this.precioMinimo(item);
+    return Number(item.precioventa) >= this.precioMinimo(item) - 0.009;
   }
 
   onPrecioChange(item: ComboItem, nuevoPrecio: number) {
@@ -349,7 +354,7 @@ export class CombosForm implements OnInit {
         : i
       )
     );
-    if (nuevoPrecio < minimo) {
+    if (!this.precioValido({ ...item, precioventa: nuevoPrecio })) {
       this.msgs.add({
         severity: 'warn',
         summary: 'Precio bajo',

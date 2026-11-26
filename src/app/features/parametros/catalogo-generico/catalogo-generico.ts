@@ -211,7 +211,9 @@ export class CatalogoGenerico implements OnInit, OnDestroy {
 
   load() {
     this.cargando.set(true);
-    this.service.getAll<any>(this.config()!.ruta).subscribe({
+    // Catálogo multi-empresa: lista todas las empresas (sin empresaId en la query)
+    const opts = this.config()?.multiEmpresa ? { sinEmpresa: true } : undefined;
+    this.service.getAll<any>(this.config()!.ruta, opts).subscribe({
       next: (res) => {
         this.data.set(res);
         this.filtrar();

@@ -568,37 +568,58 @@ export class FacturaImpresionService {
       'L ' + Number(d.subTotal).toFixed(2),
     ]);
 
+    // ----- Encabezado a 2 columnas: empresa (izq.) / datos del documento (der.) -----
+    const estado = this.getEstadoLabel(f);
+    const estadoColor = estado === 'Anulada' ? '#ef4444' : estado === 'Pagada' ? '#000000' : '#f59e0b';
+
+    const filasEnc: any[][] = [
+      [
+        { text: emp.nombre || 'EMPRESA', bold: true, fontSize: 11 },
+        { text: [
+          { text: 'Factura: ', bold: true },
+          { text: '#' + (f?.nrofactura || ''), bold: true },
+          { text: '    ' + estado, bold: true, color: estadoColor },
+        ] },
+      ],
+      [
+        { text: emp.rtn ? 'RTN: ' + emp.rtn : '' },
+        { text: [{ text: 'Fecha: ', bold: true }, this.fechaCorta(f?.fecharegistro)] },
+      ],
+      [
+        { text: emp.direccion || '' },
+        { text: [{ text: 'Hora: ', bold: true }, this.horaCorta(f?.fecharegistro)] },
+      ],
+      [
+        { text: emp.telefono ? 'Telefonos: ' + emp.telefono : '' },
+        { text: [{ text: 'Tipo: ', bold: true }, f?.tipofactura === 'C' ? 'Credito' : 'Contado'] },
+      ],
+    ];
+    if (corr) {
+      filasEnc.push(
+        ['', { text: 'RANGO AUTORIZADO:', bold: true }],
+        ['', `del ${corr.rangoDesde} al ${corr.rangoHasta}`],
+        ['', { text: [{ text: 'CAI: ', bold: true }, corr.cai || '-'] }],
+      );
+    }
+    if (nombreCajero || tpvTxt) {
+      filasEnc.push([
+        '',
+        { text: [
+          { text: 'Cajero: ', bold: true },
+          nombreCajero + (tpvTxt ? '   TPV: #' + tpvTxt : ''),
+        ] },
+      ]);
+    }
+
     return {
       pageSize: 'LETTER',
       pageMargins: [40, 60, 40, 60],
       content: [
-        { text: emp.nombre || 'EMPRESA', style: 'header', alignment: 'center' },
-        { text: emp.rtn ? 'RTN: ' + emp.rtn : '', alignment: 'center', fontSize: 9 },
-        { text: emp.direccion || '', alignment: 'center', fontSize: 9 },
-        { text: emp.telefono ? 'Tel: ' + emp.telefono : '', alignment: 'center', fontSize: 9 },
-        { text: '\n' },
-        { columns: [
-          { text: '', width: '*' },
-          { text: [
-            { text: this.getEstadoLabel(f) + '\n', bold: true, fontSize: 12, color: '#10b981' },
-            { text: 'FACTURA ', bold: true, fontSize: 16 },
-            { text: '#' + (f?.nrofactura || ''), fontSize: 16 },
-            '\n',
-            { text: 'Fecha: ', bold: true }, this.fechaLarga(f?.fecharegistro) + '\n',
-            { text: 'Hora: ', bold: true }, this.horaCorta(f?.fecharegistro) + '\n',
-            { text: 'Tipo: ', bold: true }, (f?.tipofactura === 'C' ? 'Credito' : 'Contado'),
-            '\n',
-            ...(corr ? [
-              { text: 'RANGO AUTORIZADO: ', bold: true }, `del ${corr.rangoDesde} al ${corr.rangoHasta}`, '\n',
-              { text: 'CAI: ', bold: true }, corr.cai || '-',
-            ] : []),
-            ...(nombreCajero ? [
-              '\n', { text: 'Cajero: ', bold: true },
-              nombreCajero + (tpvTxt ? '   TPV: #' + tpvTxt : ''),
-            ] : []),
-          ], width: '*', alignment: 'right' },
-        ] },
-        { text: '\n' },
+        {
+          table: { widths: ['*', '*'], body: filasEnc },
+          layout: 'noBorders',
+          margin: [0, 0, 0, 4],
+        },
         { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#e2e8f0' }] },
         { text: '\n' },
         { columns: [
@@ -629,7 +650,13 @@ export class FacturaImpresionService {
               ...detRows,
             ],
           },
-          layout: 'lightHorizontalLines',
+          // Sin relleno en el header: solo línea negra arriba y abajo,
+          // líneas ligeras entre las filas del cuerpo.
+          layout: {
+            hLineWidth: (i: number) => (i === 0 || i === 1 ? 1 : 0.5),
+            hLineColor: (i: number) => (i === 0 || i === 1 ? '#000000' : '#e2e8f0'),
+            vLineWidth: () => 0,
+          },
         },
         { text: '\n' },
         {
@@ -643,7 +670,7 @@ export class FacturaImpresionService {
               '\n', { text: 'Importe Excento: ', bold: true }, 'L ' + imp.excento.toFixed(2),
               '\n', { text: 'Importe Gravado 15%: ', bold: true }, 'L ' + imp.gravado15.toFixed(2),
               '\n', { text: 'Importe Gravado 18%: ', bold: true }, 'L ' + imp.gravado18.toFixed(2),
-              '\n', { text: 'Total a pagar: ', bold: true, fontSize: 14 }, { text: 'L ' + total.toFixed(2), bold: true, fontSize: 14, color: '#10b981' },
+              '\n', { text: 'Total a pagar: ', bold: true, fontSize: 14 }, { text: 'L ' + total.toFixed(2), bold: true, fontSize: 14, color: '#000000' },
             ] },
           ],
         },
@@ -675,7 +702,7 @@ export class FacturaImpresionService {
       ],
       styles: {
         header: { fontSize: 18, bold: true },
-        tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#10b981' },
+        tableHeader: { bold: true, fontSize: 9, color: '#000000' },
       },
       defaultStyle: { fontSize: 10 },
     };
@@ -1224,6 +1251,21 @@ export class FacturaImpresionService {
     if (!fecha) return '-';
     const d = new Date(fecha);
     return d.toLocaleDateString('es-HN', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+
+  /**
+   * Fecha corta dd/mm/yyyy. Si viene como string ISO/fecha ('YYYY-MM-DD...'
+   * o 'YYYY-MM-DDTHH:mm:ss'), se extrae la parte de fecha tal cual para
+   * evitar el desfase de zona horaria al pasar por Date.
+   */
+  private fechaCorta(fecha: string | Date): string {
+    if (!fecha) return '-';
+    if (typeof fecha === 'string') {
+      const m = fecha.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    }
+    const d = new Date(fecha);
+    return d.toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   private horaCorta(fecha: string | Date): string {

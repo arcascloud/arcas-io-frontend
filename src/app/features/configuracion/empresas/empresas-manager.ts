@@ -13,7 +13,6 @@ import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-import { ConfirmDialog } from 'primeng/confirmdialog';
 import { SkeletonModule } from 'primeng/skeleton';
 import { PaginatorModule } from 'primeng/paginator';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -28,7 +27,7 @@ import { Sucursal } from '../../../core/models/sucursal.models';
     CommonModule, FormsModule, ReactiveFormsModule,
     ButtonModule, InputTextModule, TextareaModule, SelectModule,
     TagModule, TooltipModule, TabsModule, TableModule,
-    ToastModule, IconFieldModule, InputIconModule, ConfirmDialog,
+    ToastModule, IconFieldModule, InputIconModule,
     SkeletonModule, PaginatorModule,
   ],
   templateUrl: './empresas-manager.html',
@@ -88,15 +87,10 @@ export class EmpresasManager implements OnInit {
 
   detEditando = signal<EmpresaDet | null>(null);
 
-  // ===== Sucursales =====
+  // ===== Sucursales (solo lectura: catálogo dedicado vive en /configuracion/parametros/sucursales) =====
+  // Se cargan aquí únicamente para el select de Sucursal del tab Impresoras
+  // y para resolver el nombre en su listado.
   sucursales = signal<Sucursal[]>([]);
-  savingSuc = signal(false);
-  loadingSuc = signal(false);
-  sucForm = this.fb.group({
-    descripcion: ['', Validators.required],
-    sn_activo: ['S'],
-  });
-  sucEditando = signal<Sucursal | null>(null);
 
   // ===== Logo =====
   logo = signal<EmpresaLogo | null>(null);
@@ -374,56 +368,18 @@ export class EmpresasManager implements OnInit {
   }
 
   // ==================================================
-  //  SUCURSALES
+  //  SUCURSALES (solo lectura — para el select de impresoras)
   // ==================================================
 
   loadSucursales(empresaId: number) {
-    this.loadingSuc.set(true);
     this.empresasService.getAllSucursales(empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.sucursales.set(data ?? []);
-        this.loadingSuc.set(false);
       },
       error: () => {
         this.sucursales.set([]);
-        this.loadingSuc.set(false);
       },
     });
-  }
-
-  guardarSucursal() {
-    if (this.sucForm.invalid || !this.empresaSeleccionada()) return;
-    this.savingSuc.set(true);
-    const dto = { ...this.sucForm.value, empresaId: this.empresaSeleccionada()!.empresaId } as Partial<Sucursal>;
-    const editando = this.sucEditando();
-
-    const obs = editando
-      ? this.empresasService.updateSucursal(editando.idsucursal, dto)
-      : this.empresasService.createSucursal(dto);
-
-    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.msgs.add({ severity: 'success', summary: 'Guardada', detail: 'Sucursal guardada correctamente' });
-        this.savingSuc.set(false);
-        this.sucForm.reset({ descripcion: '', sn_activo: 'S' });
-        this.sucEditando.set(null);
-        this.loadSucursales(this.empresaSeleccionada()!.empresaId);
-      },
-      error: (err: any) => {
-        this.savingSuc.set(false);
-        this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar' });
-      },
-    });
-  }
-
-  editarSuc(suc: Sucursal) {
-    this.sucEditando.set(suc);
-    this.sucForm.patchValue({ descripcion: suc.descripcion, sn_activo: suc.sn_activo });
-  }
-
-  cancelarSuc() {
-    this.sucEditando.set(null);
-    this.sucForm.reset({ descripcion: '', sn_activo: 'S' });
   }
 
   // ==================================================

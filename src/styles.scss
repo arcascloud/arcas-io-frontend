@@ -1,3 +1,18 @@
+$bg-top: #141e27;
+$bg-mid: #0d161f;
+$bg-bottom: #09121b;
+
+@mixin sidebar-background {
+  background-color: $bg-mid;
+  background-image: linear-gradient(195deg, $bg-top 0%, $bg-mid 50%, $bg-bottom 100%);
+  background-size: 100% 100%;
+}
+
+// Para el sidebar
+.layout-sidebar,
+.sidebar {
+  @include sidebar-background;
+}
 /* You can add global styles to this file, and also import other style files */
 @layer primeng {
 }
@@ -269,7 +284,9 @@
 
   --p-navigation-item-color: #7f8790;
   --p-navigation-item-icon-color: #558dc6;
+ --p-panelmenu-panel-border-color:$bg-mid;
 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                --p-panelmenu-panel-background: $bg-mid;
   --p-panelmenu-item-focus-color: #558dc6;
   --p-navigation-submenu-icon-color: #558dc6;
 
@@ -365,6 +382,22 @@
   --p-button-rounded-border-radius: 9999px !important;
 }
 
+.p-panelmenu-panel {
+  border-style: none;
+}
+
+.p-panelmenu-item-content {
+  border: 1px solid transparent;
+}
+
+.p-panelmenu-item:last-child>.p-panelmenu-item-content {
+  border-color: $bg-mid;
+  border-bottom: none;
+}
+
+.p-panelmenu-item-content:hover .p-panelmenu-item-link {
+  background-color: #263a4b;
+}
 .p-dataview {
   --p-dataview-content-padding: 0.25rem;
   /* Modifica el padding general del contenedor de contenido */

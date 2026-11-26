@@ -37,6 +37,8 @@ export interface CampoCatalogo {
   soloLectura?: boolean;
   /** El valor de este campo no puede ser menor al del campo indicado (key). Ej: precioventa >= preciocompra */
   minCampo?: string;
+  /** El campo ocupa las 2 columnas del grid del formulario (ej: Empresa en la fila 1) */
+  anchoCompleto?: boolean;
   /** Cifras decimales para mostrar en formulario y lista (ej: 4 para tipo de cambio 26.9745) */
   decimales?: number;
   /** Texto de ayuda que se muestra debajo del campo en el formulario */
@@ -148,6 +150,13 @@ export interface CatalogoConfig {
   /** Filtros de selección adicionales (Año, Período, Descripción, etc.) */
   filtros?: CampoFiltroCatalogo[];
   incluyeEmpresaId?: boolean;
+  /**
+   * Catálogo multi-empresa: la lista/lectura/edición NO se filtran por la
+   * empresa de la sesión (GET/PUT van sin empresaId en la query) y el
+   * formulario expone el select de Empresa para asignarla.
+   * Ej: sucursales.
+   */
+  multiEmpresa?: boolean;
   sinEstado?: boolean;
   soloLectura?: boolean;
   /**
@@ -1683,6 +1692,42 @@ export const CATALOGOS_PARAMETROS: Record<string, CatalogoConfig> = {
         ],
         requerido: true,
       },
+    ],
+  },
+
+  // ─── Configuración ──────────────────────────────────────────
+  /**
+   * Sucursales (tsucursal) — catálogo multi-empresa: lista todas las empresas.
+   * Cada sucursal NUEVA crea automáticamente su bodega por defecto
+   * (tinvbodegas) y guarda su id en `bodegaId` (backend, en transacción).
+   */
+  sucursales: {
+    ruta: '/sucursales',
+    titulo: 'Sucursales',
+    tituloSingular: 'Sucursal',
+    subtitulo: 'Sucursales de todas las empresas',
+    idKey: 'idsucursal',
+    icono: 'pi-store',
+    multiEmpresa: true,
+    campos: [
+      // Fila 1: Empresa (ancho completo)
+      {
+        key: 'empresaId',
+        label: 'Empresa',
+        tipo: 'select',
+        requerido: true,
+        anchoCompleto: true,
+        cargaOpciones: { url: '/companies', labelCampo: 'descripcion', valueCampo: 'empresaId' },
+        pista: 'Empresa a la que pertenece la sucursal',
+      },
+      // Fila 2: Descripción | Teléfono 1
+      { key: 'descripcion', label: 'Descripción', tipo: 'texto', requerido: true, principal: true },
+      { key: 'telefono1', label: 'Teléfono 1', tipo: 'texto', requerido: true },
+      // Fila 3: Dirección | Teléfono 2  (+ Estado al final, automático)
+      { key: 'direccion', label: 'Dirección', tipo: 'texto', requerido: true },
+      { key: 'telefono2', label: 'Teléfono 2', tipo: 'texto' },
+      // Bodega creada automáticamente por sucursal (solo visible en la lista)
+      { key: 'bodegaId', label: 'Bodega', tipo: 'numero', ocultoForm: true },
     ],
   },
 };

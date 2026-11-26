@@ -116,7 +116,9 @@ export class CatalogoForm implements OnInit, OnChanges {
       this.esEdicion.set(true);
       this.itemId = Number(id);
       this.cargando.set(true);
-      this.service.getOne<any>(this.config.ruta, this.itemId).subscribe({
+      // Catálogo multi-empresa: leer sin filtrar por la empresa de la sesión
+      const opts = this.config.multiEmpresa ? { sinEmpresa: true } : undefined;
+      this.service.getOne<any>(this.config.ruta, this.itemId, opts).subscribe({
         next: (item) => {
           const patch: Record<string, any> = {};
           for (const c of this.campos) patch[c.key] = item?.[c.key];
@@ -248,6 +250,10 @@ export class CatalogoForm implements OnInit, OnChanges {
         // Período contable: siempre se crea ABIERTO (el cierre es de Cierre Contable)
         inicial = 'S';
       }
+      if (this.nuevoRegistro && c.key === 'empresaId') {
+        // Select de Empresa (catálogo multi-empresa): precarga la de la sesión
+        inicial = this.auth.currentUser()?.empresaId ?? '';
+      }
       group[c.key] = [inicial, c.requerido ? Validators.required : []];
     }
     if (!this.config.sinEstado) group['sn_activo'] = ['S'];
@@ -339,8 +345,11 @@ export class CatalogoForm implements OnInit, OnChanges {
     const body = { ...raw };
 
     this.guardando.set(true);
+    // Catálogo multi-empresa: el PUT va sin empresaId en la query (el registro
+    // puede pertenecer a otra empresa que la de la sesión)
+    const opts = this.config.multiEmpresa ? { sinEmpresa: true } : undefined;
     const op = this.esEdicion()
-      ? this.service.update<any>(this.config.ruta, this.itemId, body as any, sinContexto)
+      ? this.service.update<any>(this.config.ruta, this.itemId, body as any, sinContexto, opts)
       : this.service.create<any>(this.config.ruta, body as any, sinContexto);
 
     op.subscribe({

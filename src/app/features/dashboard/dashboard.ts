@@ -50,7 +50,7 @@ import { EmpresaBrandService } from '../../core/services/empresa-brand.service';
       inset: 0;
       background:
         linear-gradient(rgba(8, 19, 28, 0.72), rgba(8, 19, 28, 0.82)),
-        url('/assets/img/logo3.jfif') center center / cover no-repeat;
+        url('/assets/img/fondo1.jfif') center center / cover no-repeat;
       z-index: 0;
     }
 
@@ -123,7 +123,7 @@ import { EmpresaBrandService } from '../../core/services/empresa-brand.service';
       .dashboard-bg {
         background:
           linear-gradient(180deg, rgba(8, 19, 28, 0.55), rgba(8, 19, 28, 0.9)),
-          url('/assets/img/logo3.jfif') center top / 100% auto no-repeat;
+          url('/assets/img/fondo1.jfif') center top / 100% auto no-repeat;
         background-color: var(--c-bg-black, #08131c);
       }
 
