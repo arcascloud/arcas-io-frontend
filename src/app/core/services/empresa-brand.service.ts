@@ -5,8 +5,12 @@ import { ApiService } from './api.service';
 import { EmpresasService } from './empresas.service';
 import { Empresa } from '../models/empresa.models';
 
-/** Imagen de respaldo cuando la empresa no tiene logo en `tempresaslogo`. */
-const LOGO_FALLBACK = 'assets/images/logo1.png';
+/**
+ * Pixel transparente de 1x1. Se usa MIENTRAS llega el logo real (y cuando la
+ * empresa no tiene logo) para no mostrar un logo viejo de otro archivo que
+ * luego "salta" al cambiar. Ocupa el mismo espacio en el <img> y no parpadea.
+ */
+const LOGO_VACIO = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 /**
  * Branding de la empresa (nombre + logo) mostrado en los layouts.
@@ -23,7 +27,7 @@ export class EmpresaBrandService {
   private readonly _empresaIdForzado = signal<number | null>(null);
 
   private readonly _nombre = signal(this.leerCache(this.empresaIdActual()) ?? '');
-  private readonly _logo = signal(LOGO_FALLBACK);
+  private readonly _logo = signal(LOGO_VACIO);
 
   /** Nombre de la empresa actual (reactivo). */
   readonly nombre = this._nombre.asReadonly();
@@ -51,7 +55,7 @@ export class EmpresaBrandService {
     if (empresaId != null && empresaId !== efectivo) return;
     if (!efectivo) {
       this._nombre.set('');
-      this._logo.set(LOGO_FALLBACK);
+      this._logo.set(LOGO_VACIO);
       return;
     }
     this.cargar(efectivo);
@@ -62,7 +66,7 @@ export class EmpresaBrandService {
     const empresaId = this.empresaIdActual();
     if (!empresaId) {
       this._nombre.set('');
-      this._logo.set(LOGO_FALLBACK);
+      this._logo.set(LOGO_VACIO);
       return;
     }
     const cache = this.leerCache(empresaId);
@@ -94,13 +98,13 @@ export class EmpresaBrandService {
 
     this.empresas.getLogo(empresaId).subscribe({
       next: (logo) => this._logo.set(this.resolverLogo(logo?.img ?? null)),
-      error: () => this._logo.set(LOGO_FALLBACK),
+      error: () => this._logo.set(LOGO_VACIO),
     });
   }
 
   /** Normaliza el base64 de `tempresaslogo.img` a un data URL válido. */
   private resolverLogo(img: string | null): string {
-    if (!img) return LOGO_FALLBACK;
+    if (!img) return LOGO_VACIO;
     if (img.startsWith('data:')) return img;
     const mime = img.startsWith('/9j/')
       ? 'image/jpeg'

@@ -99,7 +99,12 @@ export class EmpresasService {
   // ===== Logo =====
 
   getLogo(empresaId: number): Observable<EmpresaLogo | null> {
-    return this.api.get<EmpresaLogo | null>(`${this.path}/logo`, { empresaId });
+    // `_` rompe cualquier caché HTTP del navegador/CDN: el logo siempre se
+    // obtiene fresco de `tempresaslogo` (el backend responde con ETag).
+    return this.api.get<EmpresaLogo | null>(`${this.path}/logo`, {
+      empresaId,
+      _: Date.now(),
+    });
   }
 
   createLogo(dto: Partial<EmpresaLogo>): Observable<EmpresaLogo> {
