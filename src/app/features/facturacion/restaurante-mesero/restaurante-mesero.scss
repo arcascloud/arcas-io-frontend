@@ -949,6 +949,10 @@ button {
   }
 }
 
+.ms-campo--ancho {
+  grid-column: 1 / -1;
+}
+
 .ms-campo {
   display: flex;
   flex-direction: column;

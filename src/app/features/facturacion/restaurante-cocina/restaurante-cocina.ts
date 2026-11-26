@@ -5,6 +5,8 @@ import { forkJoin, Observable } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
+import { CarouselModule } from 'primeng/carousel';
+import type { CarouselResponsiveOptions } from 'primeng/carousel';
 import { ApiService } from '../../../core/services/api.service';
 import { RestauranteService } from '../../../core/services/restaurante.service';
 import {
@@ -26,8 +28,15 @@ const CLAVE_SONIDO = 'rest-cocina-sonido';
 /** Clase global que pinta el body de negro mientras el tablero está montado. */
 const CLASE_BODY_NEGRO = 'cocina-body-negro';
 
+/** Tickets visibles por fila según el ancho de la pantalla (array readonly para el template). */
+const CAROUSEL_RESPONSIVE: readonly CarouselResponsiveOptions[] = [
+  { breakpoint: '1400px', numVisible: 2, numScroll: 1 },
+  { breakpoint: '768px', numVisible: 1, numScroll: 1 },
+];
+
 /**
- * Tablero de cocina (fase 3): tres columnas Nuevos · Preparando · Listos.
+ * Tablero de cocina (fase 3): tres COLUMNAS con carrusel circular vertical
+ * (PrimeNG Carousel) — col-1 Nuevos, col-2 Preparando, col-3 Listos.
  *
  * Cada tarjeta es un TICKET POR RONDA (pospedmaeId + ronda_uuid): lo que el
  * mesero envió junto avanza junto con un toque, pero también se puede avanzar
@@ -41,7 +50,7 @@ const CLASE_BODY_NEGRO = 'cocina-body-negro';
 @Component({
   selector: 'app-restaurante-cocina',
   standalone: true,
-  imports: [CommonModule, ButtonModule, TooltipModule],
+  imports: [CommonModule, ButtonModule, TooltipModule, CarouselModule],
   templateUrl: './restaurante-cocina.html',
   styleUrls: ['./restaurante-cocina.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,6 +65,7 @@ export class RestauranteCocina implements OnInit {
   /** Para el template (prohibido llamar new Date() en la plantilla). */
   readonly etiquetaPuesto = etiquetaPuesto;
   readonly siguienteEstadoCocina = siguienteEstadoCocina;
+  readonly carouselResponsive = CAROUSEL_RESPONSIVE;
 
   lineas = signal<LineaCocina[]>([]);
   pedidos = signal<OrdenMesero[]>([]);

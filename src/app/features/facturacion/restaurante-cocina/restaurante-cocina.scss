@@ -2,9 +2,10 @@
    Pantalla tablet/grande de la cocina: objetivos táctiles grandes,
    colores por estado y tiempo de espera (ámbar 10 min / rojo 20 min). */
 
+$background: #0D1117;
 :host {
   display: block;
-  background: var(--c-bg-black);
+  background: $background;
 }
 
 .cocina-page {
@@ -13,7 +14,7 @@
   gap: 1rem;
   height: calc(100vh - 7rem);
   min-height: 480px;
-  background: var(--c-bg-black);
+  background: $background;
 }
 
 /* ── Cabecera ── */
@@ -80,22 +81,22 @@
   color: var(--c-text-muted);
 }
 
-/* ── Columnas ── */
+/* ── Columnas: col-1 Nuevos · col-2 Preparando · col-3 Listos ── */
 .columnas {
   display: grid;
   grid-template-columns: repeat(3, minmax(280px, 1fr));
   gap: 1rem;
   flex: 1;
   min-height: 0;
-  background: var(--c-bg-black);
+  background: $background;
 }
 
 .columna {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--c-bg-black);
-  border: 1px solid var(--c-border);
+  background: $background;
+    border: 1px solid var(--c-disabled-color);
   border-radius: 0.75rem;
   overflow: hidden;
 }
@@ -104,9 +105,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
+  flex: 0 0 auto;
+    padding: 0.5rem 1rem;
   font-weight: 700;
-  border-bottom: 1px solid var(--c-border);
+  border-bottom: 1px solid var(--c-disabled-color);
 
   .titulo {
     display: flex;
@@ -130,8 +132,8 @@
 }
 
 .col-header--nuevos {
-  background: color-mix(in srgb, var(--c-warning) 18%, var(--c-bg-black));
-  color: var(--c-text);
+  background: var(--orange-500);
+    color: var(--c-bg-white);
 
   .badge {
     background: var(--c-warning);
@@ -139,8 +141,8 @@
 }
 
 .col-header--prep {
-  background: color-mix(in srgb, var(--c-primary) 16%, var(--c-bg-black));
-  color: var(--c-text);
+  background: var(--blue-500);
+    color: var(--c-bg-white);
 
   .badge {
     background: var(--c-primary);
@@ -148,8 +150,8 @@
 }
 
 .col-header--listos {
-  background: color-mix(in srgb, var(--c-success) 18%, var(--c-bg-black));
-  color: var(--c-text);
+  background: var(--green-500);
+    color: var(--c-bg-white);
 
   .badge {
     background: var(--c-success);
@@ -159,12 +161,52 @@
 .col-body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  padding: 0.75rem;
+  overflow: hidden;
+    padding: 0.5rem;
+    display: flex;
+    background: $background;
+  }
+
+  /* Carrusel circular VERTICAL: el viewport (alto calculado) deja sitio a las flechas. */
+  .col-body ::ng-deep .p-carousel {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .col-body ::ng-deep .p-carousel-content-container {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .col-body ::ng-deep .p-carousel-content {
+    height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  background: var(--c-bg-black);
+}
+
+.col-body ::ng-deep .p-carousel-item {
+  display: flex;
+}
+
+.col-body ::ng-deep .p-carousel-prev-button,
+.col-body ::ng-deep .p-carousel-next-button {
+  flex: 0 0 auto;
+  color: var(--c-text);
+}
+
+.carrusel-slot {
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem 0.4rem;
+  display: flex;
+
+  .tarjeta {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .vacio {
@@ -176,8 +218,8 @@
 
 /* ── Tarjeta de ticket ── */
 .tarjeta {
-  background: var(--c-bg-black);
-  border: 2px solid var(--c-border);
+  background: $background;
+    border: 2px solid var(--c-disabled-color);
   border-radius: 0.75rem;
   padding: 0.75rem;
   display: flex;
@@ -207,7 +249,7 @@
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.06);
+  background: $background;
   color: var(--c-text-muted);
 
   .min {
@@ -262,7 +304,7 @@
     margin-left: 0.4rem;
     padding: 0.05rem 0.4rem;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
+    background: $background;
     color: var(--c-text-muted);
     font-size: 0.72rem;
     font-weight: 600;
@@ -286,7 +328,7 @@
     gap: 0.5rem;
     padding: 0.3rem 0.4rem;
     border-radius: 0.4rem;
-    background: rgba(255, 255, 255, 0.06);
+    background: $background;
     font-size: 0.9rem;
 
     &.linea-prep {
@@ -294,21 +336,21 @@
     }
 
     &.linea-lista {
-      background: color-mix(in srgb, var(--c-success) 14%, var(--c-bg-black));
-      opacity: 0.85;
+      background: var(--green-600);
+        color: var(--c-bg-white);
     }
   }
 }
 
 .l-cant {
-  font-weight: 800;
-  color: var(--c-primary);
+  font-weight: 600;
+    color: var(--c-bg-white);
   min-width: 2rem;
 }
 
 .l-desc {
   flex: 1;
-  color: var(--c-text);
+  color: var(--c-bg-white);
 }
 
 .l-ok {

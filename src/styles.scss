@@ -511,11 +511,11 @@ body {
 /* Restaurante · Cocina: fondo negro forzado del body y del contenedor principal.
    La clase la agrega/retira el componente al montarse/desmontarse. */
 body.cocina-body-negro {
-  background: var(--c-bg-black);
+  background: #0D1117;
 }
 
 body.cocina-body-negro .layout-content {
-  background: var(--c-bg-black);
+  background: #0D1117;
 }
 
 label {

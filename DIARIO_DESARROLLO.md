@@ -1858,3 +1858,19 @@ GET mapeado 200 ✓. Builds `nest build` ✓ + `npm run build` ✓.
   Sin backfill: el histórico queda intacto (solo escrituras nuevas).
 - `nest build` ✓ · backend reiniciado en `:3000` · `backend-error.log` vacío.
 
+#### Cocina: columnas con Carrusel circular vertical (25/11/2026)
+- Ruta `/facturacion/restaurante-cocina`: se mantienen las **3 columnas** y se
+  cambió el listado interno por un `p-carousel` de PrimeNG 21 en
+  **`orientation='vertical'`** (decisión final del usuario: "dejalo vertical
+  el carrusel"). Orden: **col-1 Nuevos · col-2 Preparando · col-3 Listos**.
+- Cada columna usa `[circular]="true"`, `verticalViewPortHeight="calc(100% - 4rem)"`,
+  `[numVisible]="2"`, `[numScroll]="1"`, navegadores visibles, indicadores
+  ocultos y `responsiveOptions` en TypeScript (2 a 1400px, 1 a 768px).
+  El ítem del carrusel reutiliza la misma plantilla `tarjetaTpl` de ticket
+  (avance por línea / por tarjeta intacto).
+- Se importó `CarouselModule` (no el componente standalone) porque exporta
+  `SharedModule`, necesario para que `pTemplate="item"` sea reconocido.
+- Nota: hubo un intento intermedio de 3 filas horizontales; fue descartado
+  por el usuario en favor de las columnas con carrusel vertical.
+- Archivos: `restaurante-cocina.ts|html|scss`. `npm run build` ✓.
+

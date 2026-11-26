@@ -44,48 +44,96 @@
     <div class="vacio-general"><i class="pi pi-spin pi-spinner"></i> Cargando tablero…</div>
   }
 
-  <!-- ═══════════ Tres columnas ═══════════ -->
+  <!-- ════ Tres columnas: col-1 Nuevos · col-2 Preparando · col-3 Listos ════ -->
   <div class="columnas">
-    <!-- Nuevos -->
+    <!-- col-1: Nuevos -->
     <section class="columna">
       <div class="col-header col-header--nuevos">
         <span class="titulo"><i class="pi pi-inbox"></i> Nuevos</span>
         <span class="badge">{{ nuevos().length }}</span>
       </div>
       <div class="col-body">
-        @for (t of nuevos(); track t.key) {
-          <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
-        } @empty {
+        @if (nuevos().length) {
+          <p-carousel
+            [value]="nuevos()"
+            [circular]="true"
+            [orientation]="'vertical'"
+            verticalViewPortHeight="calc(100% - 4rem)"
+            [numVisible]="2"
+            [numScroll]="1"
+            [showIndicators]="false"
+            [showNavigators]="true"
+            [responsiveOptions]="carouselResponsive"
+          >
+            <ng-template let-t pTemplate="item">
+              <div class="carrusel-slot">
+                <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
+              </div>
+            </ng-template>
+          </p-carousel>
+        } @else {
           <div class="vacio">Sin tickets nuevos</div>
         }
       </div>
     </section>
 
-    <!-- Preparando -->
+    <!-- col-2: Preparando -->
     <section class="columna">
       <div class="col-header col-header--prep">
         <span class="titulo"><i class="pi pi-hourglass"></i> Preparando</span>
         <span class="badge">{{ enPreparacion().length }}</span>
       </div>
       <div class="col-body">
-        @for (t of enPreparacion(); track t.key) {
-          <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
-        } @empty {
+        @if (enPreparacion().length) {
+          <p-carousel
+            [value]="enPreparacion()"
+            [circular]="true"
+            [orientation]="'vertical'"
+            verticalViewPortHeight="calc(100% - 4rem)"
+            [numVisible]="2"
+            [numScroll]="1"
+            [showIndicators]="false"
+            [showNavigators]="true"
+            [responsiveOptions]="carouselResponsive"
+          >
+            <ng-template let-t pTemplate="item">
+              <div class="carrusel-slot">
+                <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
+              </div>
+            </ng-template>
+          </p-carousel>
+        } @else {
           <div class="vacio">Sin tickets en preparación</div>
         }
       </div>
     </section>
 
-    <!-- Listos -->
+    <!-- col-3: Listos -->
     <section class="columna">
       <div class="col-header col-header--listos">
         <span class="titulo"><i class="pi pi-check-circle"></i> Listos</span>
         <span class="badge">{{ listos().length }}</span>
       </div>
       <div class="col-body">
-        @for (t of listos(); track t.key) {
-          <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
-        } @empty {
+        @if (listos().length) {
+          <p-carousel
+            [value]="listos()"
+            [circular]="true"
+            [orientation]="'vertical'"
+            verticalViewPortHeight="calc(100% - 4rem)"
+            [numVisible]="2"
+            [numScroll]="1"
+            [showIndicators]="false"
+            [showNavigators]="true"
+            [responsiveOptions]="carouselResponsive"
+          >
+            <ng-template let-t pTemplate="item">
+              <div class="carrusel-slot">
+                <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
+              </div>
+            </ng-template>
+          </p-carousel>
+        } @else {
           <div class="vacio">Sin tickets listos</div>
         }
       </div>
@@ -123,15 +171,17 @@
           <span class="l-cant">{{ l.cantidad }}×</span>
           <span class="l-desc">{{ l.descripcion || l.codbarra }}</span>
           @if (siguienteEstadoCocina(l.estado_cocina); as sig) {
-            <button
+            <p-button
               type="button"
-              class="btn-linea"
+              size="small"
+              rounded
+              [severity]="sig === 'EN_PREPARACION' ? 'warn' : 'primary'"
               [disabled]="ocupado()"
               [title]="sig === 'EN_PREPARACION' ? 'Preparar' : 'Marcar listo'"
               (click)="avanzarLinea(l)"
             >
               {{ sig === 'EN_PREPARACION' ? 'Preparar' : 'Listo' }}
-            </button>
+            </p-button>
           } @else {
             <i class="pi pi-check-circle l-ok"></i>
           }
@@ -140,10 +190,12 @@
     </ul>
 
     @if (puedeAvanzar(t)) {
-      <button type="button" class="btn-tarjeta" [disabled]="ocupado()" (click)="avanzarTarjeta(t)">
+      <p-button type="button" size="small" rounded
+      styleClass="w-full" [severity]="t.estado === 'PENDIENTE' ? 'warn' : 'primary'"
+       [disabled]="ocupado()" (click)="avanzarTarjeta(t)">
         <i class="pi" [class.pi-play]="t.estado === 'PENDIENTE'" [class.pi-check]="t.estado === 'EN_PREPARACION'"></i>
         {{ etiquetaBoton(t) }}
-      </button>
+      </p-button>
     } @else {
       <div class="esperando">
         <i class="pi pi-check-circle"></i> Listo — esperando al mesero
