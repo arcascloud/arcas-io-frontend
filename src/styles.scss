@@ -283,8 +283,7 @@ $bg-bottom: #09121b;
   --p-form-field-border-color: #39495b;
 
   --p-navigation-item-color: #7f8790;
-  --p-navigation-item-icon-color: #558dc6;
- --p-panelmenu-panel-border-color:$bg-mid;
+    --p-navigation-item-icon-color: #558dc6;
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 --p-panelmenu-panel-background: $bg-mid;
   --p-panelmenu-item-focus-color: #558dc6;
@@ -365,12 +364,12 @@ $bg-bottom: #09121b;
   --p-button-primary-focus-ring-color: var(--cyan-700);
 
   /*Botones de errores */
-                --p-button-danger-background: var(--c-error, #ef4444) !important;
-                --p-button-danger-color: var(--c-bg-white);
-                --p-button-danger-border-color: var(--c-error, #ef4444) !important;
-  --p-button-danger-hover-color: var(--c-bg-white);
-                --p-button-danger-hover-background: #dc2626 !important;
-                --p-button-danger-hover-border-color: #dc2626 !important;
+--p-button-danger-background: var(--c-error, #ef4444) !important;
+--p-button-danger-color: var(--c-bg-white);
+--p-button-danger-border-color: var(--c-error, #ef4444) !important;
+--p-button-danger-hover-color: var(--c-bg-white);
+--p-button-danger-hover-background: #dc2626 !important;
+--p-button-danger-hover-border-color: #dc2626 !important;
 
   /* Tamaño pequeño (sm) */
   --p-button-sm-padding-y: 0.45rem !important;
@@ -382,22 +381,7 @@ $bg-bottom: #09121b;
   --p-button-rounded-border-radius: 9999px !important;
 }
 
-.p-panelmenu-panel {
-  border-style: none;
-}
 
-.p-panelmenu-item-content {
-  border: 1px solid transparent;
-}
-
-.p-panelmenu-item:last-child>.p-panelmenu-item-content {
-  border-color: $bg-mid;
-  border-bottom: none;
-}
-
-.p-panelmenu-item-content:hover .p-panelmenu-item-link {
-  background-color: #263a4b;
-}
 .p-dataview {
   --p-dataview-content-padding: 0.25rem;
   /* Modifica el padding general del contenedor de contenido */
