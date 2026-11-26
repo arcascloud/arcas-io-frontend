@@ -154,17 +154,28 @@ export class MenuConfigService {
     const byId = new Map<number, RawMnuItem>();
     for (const row of activos) byId.set(row.tusuariomnuitemsId, row);
 
-    // Mapa parentId → hijos (usando parentId, NO parent que es self-reference)
+    const orden = (a: RawMnuItem, b: RawMnuItem) =>
+      (a.zordenItem ?? 0) - (b.zordenItem ?? 0) ||
+      (a.zordenMod ?? 0) - (b.zordenMod ?? 0) ||
+      a.labelItem.localeCompare(b.labelItem);
+
+    // Mapa parentId → hijos (usando parentId, NO parent que es self-reference).
+    // Se considera raíz tanto la self-reference como el huérfano (padre que no
+    // existe entre las filas activas): en producción el clonado de menú puede
+    // dejar parentId apuntando al id de la plantilla, que no existe en el usuario.
     const childrenMap = new Map<number, RawMnuItem[]>();
+    const raices: RawMnuItem[] = [];
     for (const row of activos) {
-      // Si parentId === tusuariomnuitemsId, es raíz (self-reference)
-      if (row.parentId === row.tusuariomnuitemsId) continue;
+      if (row.parentId === row.tusuariomnuitemsId || !byId.has(row.parentId)) {
+        raices.push(row);
+        continue;
+      }
       if (!childrenMap.has(row.parentId)) childrenMap.set(row.parentId, []);
       childrenMap.get(row.parentId)!.push(row);
     }
 
     // Función recursiva para convertir una fila a MenuItemConfig
-    const toConfig = (row: RawMnuItem): MenuItemConfig => {
+    const toConfig = (row: RawMnuItem, visitados: Set<number>): MenuItemConfig => {
       // El DB guarda "pi pi-xxx", mapItem agrega "pi pi-" → strip para no duplicar
       const icon = row.iconItem?.replace(/^pi pi-/, '') ?? '';
       const config: MenuItemConfig = {
@@ -176,25 +187,17 @@ export class MenuConfigService {
       // Buscar hijos: parentId de los hijos = tusuariomnuitemsId de este item
       const kids = childrenMap.get(row.tusuariomnuitemsId);
       if (kids && kids.length > 0) {
-        kids.sort((a, b) => (a.zordenItem ?? 0) - (b.zordenItem ?? 0) || (a.zordenMod ?? 0) - (b.zordenMod ?? 0) || a.labelItem.localeCompare(b.labelItem));
-        config.children = kids.map(toConfig);
+        const siguientes = new Set(visitados).add(row.tusuariomnuitemsId);
+        const noCiclicos = kids.filter((kid) => !siguientes.has(kid.tusuariomnuitemsId));
+        noCiclicos.sort(orden);
+        if (noCiclicos.length > 0) config.children = noCiclicos.map((kid) => toConfig(kid, siguientes));
       }
 
       return config;
     };
 
-    // Raíz: item levelId=1 cuyo parentId = a su propio tusuariomnuitemsId
-    const roots: MenuItemConfig[] = [];
-    const root = activos.find((r) => r.levelId === 1 && r.parentId === r.tusuariomnuitemsId);
-    if (root) {
-      const kids = childrenMap.get(root.tusuariomnuitemsId);
-      if (kids) {
-        kids.sort((a, b) => (a.zordenItem ?? 0) - (b.zordenItem ?? 0) || (a.zordenMod ?? 0) - (b.zordenMod ?? 0) || a.labelItem.localeCompare(b.labelItem));
-        for (const kid of kids) roots.push(toConfig(kid));
-      }
-    }
-
-    return roots;
+    raices.sort(orden);
+    return raices.map((raiz) => toConfig(raiz, new Set<number>()));
   }
 
   /** Obtiene los elementos del menú */
