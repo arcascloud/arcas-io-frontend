@@ -55,9 +55,8 @@ export class LoginDialog {
   private router = inject(Router);
   private loadingState = inject(LoadingStateService);
 
-  /** Branding de la empresa (mismo signal que usan los layouts). */
+  /** Nombre de la empresa para el texto del dialog (el logo es un asset fijo). */
   private readonly empresaBrand = inject(EmpresaBrandService);
-  readonly empresaLogo = this.empresaBrand.logo;
   readonly empresaNombre = this.empresaBrand.nombre;
 
   /** Misma clave de persistencia que el drawer en main-layout (preferencia compartida) */
