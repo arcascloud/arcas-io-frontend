@@ -39,6 +39,24 @@ export class EmpresaBrandService {
     this._empresaIdForzado.set(empresaId);
   }
 
+  /**
+   * Recarga nombre y logo de la empresa efectiva.
+   * Llamar después de guardar/eliminar el logo en Configuración para que los
+   * layouts (público y privado) reflejen el cambio sin necesidad de F5.
+   * Si se indican `empresaId` y éste no es el efectivo, no se aplica el
+   * resultado (evita sobrescribir el brand con una empresa distinta).
+   */
+  recargar(empresaId?: number): void {
+    const efectivo = this.empresaIdActual();
+    if (empresaId != null && empresaId !== efectivo) return;
+    if (!efectivo) {
+      this._nombre.set('');
+      this._logo.set(LOGO_FALLBACK);
+      return;
+    }
+    this.cargar(efectivo);
+  }
+
   /** Reacciona a login/logout o cambio de empresa del usuario. */
   private readonly _sync = effect(() => {
     const empresaId = this.empresaIdActual();

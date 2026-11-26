@@ -17,6 +17,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { PaginatorModule } from 'primeng/paginator';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { EmpresasService } from '../../../core/services/empresas.service';
+import { EmpresaBrandService } from '../../../core/services/empresa-brand.service';
 import { Empresa, EmpresaDet, EmpresaLogo, Impresora } from '../../../core/models/empresa.models';
 import { Sucursal } from '../../../core/models/sucursal.models';
 
@@ -37,6 +38,8 @@ import { Sucursal } from '../../../core/models/sucursal.models';
 export class EmpresasManager implements OnInit {
   private fb = inject(FormBuilder);
   private empresasService = inject(EmpresasService);
+  /** Para reflejar de inmediato el logo en el brand de los layouts tras guardar/borrar. */
+  private empresaBrand = inject(EmpresaBrandService);
   private msgs = inject(MessageService);
   private confirm = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
@@ -263,6 +266,8 @@ export class EmpresasManager implements OnInit {
         this.msgs.add({ severity: 'success', summary: emp ? 'Actualizada' : 'Creada', detail: 'Empresa guardada correctamente' });
         this.saving.set(false);
         this.load();
+        // Si se editó la empresa activa, refleja el nombre en el brand del layout.
+        this.empresaBrand.recargar(emp?.empresaId ?? res?.empresaId);
         if (!emp && res?.empresaId) {
           this.creando.set(false);
           this.empresasService.getOne(res.empresaId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((nueva) => {
@@ -430,6 +435,8 @@ export class EmpresasManager implements OnInit {
         this.msgs.add({ severity: 'success', summary: 'Guardado', detail: 'Logo guardado correctamente' });
         this.savingLogo.set(false);
         if (!this.logo() && res) this.logo.set(res);
+        // Refresca el brand (topbar público/privado) sin exigir F5.
+        this.empresaBrand.recargar(dto.empresaId);
       },
       error: (err: any) => {
         this.savingLogo.set(false);
@@ -453,6 +460,8 @@ export class EmpresasManager implements OnInit {
             this.logo.set(null);
             this.logoPreview.set(null);
             this.logoFile = null;
+            // Sin logo → el brand debe volver al fallback inmediatamente.
+            this.empresaBrand.recargar(this.empresaSeleccionada()?.empresaId);
           },
           error: (err: any) => this.msgs.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar' }),
         });
