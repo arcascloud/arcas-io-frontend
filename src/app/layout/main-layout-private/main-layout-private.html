@@ -8,7 +8,9 @@
       <div class="sidebar-logo">
 
         <img [src]="empresaLogo()" [alt]="empresaNombre()" class="sidebar-logo-img" />
+       <!--
         <span class="sidebar-title">{{ empresaNombre() }}</span>
+      -->
       </div>
       <button class="sidebar-pin" [class.visible]="!sidebarHidden()" [class.pinned]="pinned()" (click)="togglePin()"
         title="Fijar sidebar"></button>

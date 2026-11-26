@@ -16,6 +16,7 @@ import { PasswordModule } from 'primeng/password';
 import { Message } from 'primeng/message';
 import { MessageService } from 'primeng/api';
 import { AuthService, RUTAS_CLIENTE } from '../../core/services/auth.service';
+import { EmpresaBrandService } from '../../core/services/empresa-brand.service';
 import { LoadingStateService } from '../../core/services/loading-state.service';
 import { Router } from '@angular/router';
 
@@ -53,6 +54,11 @@ export class LoginDialog {
   private destroyRef = inject(DestroyRef);
   private router = inject(Router);
   private loadingState = inject(LoadingStateService);
+
+  /** Branding de la empresa (mismo signal que usan los layouts). */
+  private readonly empresaBrand = inject(EmpresaBrandService);
+  readonly empresaLogo = this.empresaBrand.logo;
+  readonly empresaNombre = this.empresaBrand.nombre;
 
   /** Misma clave de persistencia que el drawer en main-layout (preferencia compartida) */
   private static readonly CLAVE_RECORDAR = 'drawer_login_preferencias';

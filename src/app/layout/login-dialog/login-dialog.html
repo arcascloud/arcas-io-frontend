@@ -40,11 +40,15 @@
 
         <div class="login-hl-main">
           <div class="login-logo">
-            <img src="assets/images/logo1.png" alt="Arcas Software" class="login-logo-img" />
+            <img
+              [src]="empresaLogo()"
+              [alt]="empresaNombre() || 'Empresa'"
+              class="login-logo-img"
+            />
           </div>
 
           <div class="login-header">
-            <h2 class="login-header">Arcas Software</h2>
+            <h2 class="login-header">{{ empresaNombre() || 'Arcas Software' }}</h2>
             <p class="text-muted">Sistema de Gestión Empresarial</p>
           </div>
 
