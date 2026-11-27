@@ -1,6 +1,6 @@
 <section class="page pp-page">
   <div class="pp-header">
- 
+
      <div class="pp-left">
       <p-button
         label="Volver"
@@ -12,7 +12,7 @@
         (onClick)="salir()"
       />
     </div>
-    
+
   </div>
 
   @if (guardando()) {
@@ -27,7 +27,7 @@
     <div class="pp-col pp-col-a">
       <div class="pp-panel">
         <div class="mt-1 pp-panel-header">
-          Artículos de la venta
+          Resumen de productos
           <span class="pp-badge-items">{{ state.cantidadItems() }}</span>
         </div>
         <div class="pp-panel-body pp-panel-body--lista">
@@ -85,7 +85,7 @@
                 <span class="pp-value monto pp-desc">{{ formatearMoneda(state.totales().descuento) }}</span>
               </div>
               <div class="pp-total-linea pp-total-linea--grand">
-                <span class="pp-label">Gran Total</span>
+                <span class="pp-label">Resumen gran total</span>
                 <span class="pp-value monto">{{ formatearMoneda(state.totales().total) }}</span>
               </div>
             </div>
@@ -294,7 +294,7 @@
     </div>
 
     <!-- ═══════ COLUMNA C: Formas de pago ═══════ -->
-    <div class="pp-col pp-col-c">
+    <div class="pp-col pp-col-a">
       <div class="pp-panel">
         <div class="mt-1 pp-panel-header">Formas de Pago</div>
         <div class="pp-panel-body">
@@ -320,7 +320,6 @@
                   icon="pi pi-times"
                   [rounded]="true"
                   severity="danger"
-                  variant="text"
                   size="small"
                   pTooltip="Quitar pago"
                   (onClick)="quitarPago(idx)"
@@ -465,6 +464,7 @@
           [raised]="true"
           [rounded]="true"
           [disabled]="!form.valid || state.filas().length === 0 || cobroValido() === false || guardando()"
+          [loading]="guardando()"
           (onClick)="facturar()"
         />
       </div>

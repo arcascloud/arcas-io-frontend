@@ -18,7 +18,7 @@
   justify-content: space-between;
   padding: 0.5rem 0.75rem;
   background: var(--c-bg);
- 
+
   .pp-left {
     display: flex;
     align-items: center;
@@ -44,7 +44,7 @@
   position: sticky;       // Requerido para que z-index y sticky funcionen
   top: 1rem;              // ¡Importante! 'sticky' necesita saber a qué distancia fijarse desde arriba
   margin-top: -55px;
-  grid-template-columns: 30.333% 36.333% 33.333%;
+  grid-template-columns: 30.333% 33.333% 33.333%;
   gap: 0.75rem;
   min-height: 0;
   height: 90%; // Alto de body principal
@@ -60,7 +60,7 @@
   background: var(--c-bg);
   overflow: hidden;       // Nota: esto puede cortar sombras o tooltips que salgan del panel
   min-height: 0;
- 
+
 }
 
 .grid{
@@ -93,18 +93,21 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-   
+
     max-height: 95%;
 }
 
 .pp-col-b {
-   max-height: 99%;
+  max-height: 99%;
   padding-bottom: 4.5rem;
- 
+  border: 1px solid #2c3e50;
+    border-radius: var(--radius-md, 0.75rem);
+    overflow: hidden;
 }
 
 // ── Columna A: resumen de artículos ──
 .pp-col-a {
+  order: 0;
   max-height: 99%;
   padding-bottom: 4.5rem;
 }
@@ -278,10 +281,24 @@
 }
 
 .pp-col-c {
-   max-height: 92%;
+  order: -1;
+  max-height: 92%;
   padding-bottom: 4.5rem;
+  border: 1px solid #2c3e50;
+    border-radius: var(--radius-md, 0.75rem);
+    overflow: clip;
 }
 
+.pp-body>.pp-col:nth-child(1),
+.pp-body>.pp-col:nth-child(3) {
+  border: 1px solid #2c3e50;
+  border-radius: var(--radius-md, 0.75rem);
+  overflow: clip;
+}
+
+.pp-body>.pp-col>.pp-panel {
+  flex: 1;
+}
 .pp-panel-body .field {
   display: flex;
   flex-direction: column;
@@ -315,15 +332,20 @@
     display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  max-height: 85vh;
+  max-height: 77vh;
   overflow-y: auto;
   padding: 0.25rem;
    background: var(--c-bg);
 
 }
+
+:host {
+  // Prueba de diseño: color del borde del card de forma de pago en estado inactivo
+  --pp-card-border-inactivo: #2c3e50;
+}
 .pago-card-item {
   background: var(--c-bg, #2d3d50b4);
-  border: 1px solid var(--blue-350, #1e2e3b);
+  border: 1px solid var(--pp-card-border-inactivo);
   border-radius: var(--radius-md, 0.75rem);
   padding: 0.75rem;
   transition: border-color var(--tr-fast), box-shadow var(--tr-fast);
@@ -337,10 +359,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0;
 
     .pago-card-title {
       font-size: 0.95rem;
+      line-height: 1;
       font-weight: 600;
       color: var(--c-text-muted, #8aa9c9);
     }

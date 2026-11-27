@@ -22,7 +22,6 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { forkJoin } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { FacturaImpresionService } from '../../../core/services/factura-impresion.service';
 import { PosRapidoService } from '../pos-rapido/pos-rapido.service';
@@ -340,12 +339,60 @@ export class PosPagar implements OnInit {
       sn_contabilizada: 'N',
     };
 
+    // Detalles y pagos viajan en la MISMA petición: el backend los inserta en
+    // una sola transacción (todo o nada), garantizando atomicidad del documento.
+    const detalles = filas.map((r, i) => {
+      const pDescuento = r.descuentoPct ?? 0;
+      const cant = r.cantidad ?? 0;
+      const precio = r.precio ?? 0;
+      const descuentoMonto = this.state.redondear(cant * precio * (pDescuento / 100));
+      return {
+        bodegaId: raw.bodegaId,
+        nrofila: i + 1,
+        productoId: r.productoId,
+        codbarra: r.codbarra || '',
+        cantidad: cant,
+        precioventa: precio,
+        impuesto: r.impuesto ?? 0,
+        subTotal: r.subTotal,
+        descuento: descuentoMonto,
+        p_descuento: pDescuento,
+        sn_anulada: 'N',
+      };
+    });
+
+    const pagosList = esCredito ? [] : this.pagosConImporte();
+    const totalEfectivo = pagosList
+      .filter((p) => Number(p.formapagoId) === FORMAPAGO_EFECTIVO)
+      .reduce((s, p) => s + (Number(p.importe) || 0), 0);
+    const cambioEfectivo = Math.max(
+      0,
+      this.state.redondear(totalEfectivo - t.total),
+    );
+    const pagos = pagosList.map((p) => {
+      const importe = Number(p.importe) || 0;
+      const esEfectivo = Number(p.formapagoId) === FORMAPAGO_EFECTIVO;
+      return {
+        formapagoId: p.formapagoId,
+        tarjetacreditoId: p.tarjetacreditoId || null,
+        nrotarjeta: p.nrotarjeta || null,
+        nroautorizacion: p.nroautorizacion || null,
+        importe_otros: esEfectivo ? 0 : importe,
+        importe_efectivo: esEfectivo ? importe : 0,
+        importe_cambio: esEfectivo ? cambioEfectivo : 0,
+        factordecambio: raw.factordecambio ?? 0,
+        cajaId: raw.cajaId,
+      };
+    });
+
     this.guardando.set(true);
     this.api
-      .post<any>('/facturacion/facturas', mae)
+      .post<any>('/facturacion/facturas/completa', { ...mae, detalles, pagos })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (fac) => {
+          this.guardando.set(false);
+
           if (fac.alerta) {
             this.msgs.add({
               severity: 'warn',
@@ -355,101 +402,20 @@ export class PosPagar implements OnInit {
             });
           }
 
-          const detOps = filas.map((r, i) => {
-            const pDescuento = r.descuentoPct ?? 0;
-            const cant = r.cantidad ?? 0;
-            const precio = r.precio ?? 0;
-            const descuentoMonto = this.state.redondear(cant * precio * (pDescuento / 100));
-            return this.api.post<any>('/facturacion/facturas-det', {
-              facturaId: fac.facturaId,
-              bodegaId: fac.bodegaId ?? raw.bodegaId,
-              nrofila: i + 1,
-              productoId: r.productoId,
-              codbarra: r.codbarra || '',
-              cantidad: cant,
-              precioventa: precio,
-              impuesto: r.impuesto ?? 0,
-              subTotal: r.subTotal,
-              descuento: descuentoMonto,
-              p_descuento: pDescuento,
-              sn_anulada: 'N',
+          const msg = esCredito
+            ? `Factura de crédito #${fac.nrofactura} creada`
+            : `Factura #${fac.nrofactura} creada con ${pagos.length} pago(s)`;
+
+          if (fac.kardexOk === false) {
+            this.msgs.add({
+              severity: 'warn',
+              summary: 'Advertencia',
+              detail: `${msg}, pero falló el kardex${fac.kardexError ? ': ' + fac.kardexError : ''}`,
             });
-          });
+          } else {
+            this.msgs.add({ severity: 'success', summary: 'Guardado', detail: msg });
+          }
 
-          forkJoin(detOps)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: () => {
-                if (esCredito) {
-                  this.procesarKardexYFinalizar(fac, `Factura de crédito #${fac.nrofactura} creada`);
-                } else {
-                  this.guardarPagosYFinalizar(fac, raw);
-                }
-              },
-              error: () => {
-                this.guardando.set(false);
-                this.msgs.add({ severity: 'error', summary: 'Error', detail: 'La factura se creó pero falló el detalle' });
-              },
-            });
-        },
-        error: () => {
-          this.guardando.set(false);
-          this.msgs.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la factura' });
-        },
-      });
-  }
-
-  private guardarPagosYFinalizar(fac: any, raw: any) {
-    const pagosList = this.pagosConImporte();
-    if (pagosList.length > 0) {
-      const totalEfectivo = pagosList
-        .filter((p) => Number(p.formapagoId) === FORMAPAGO_EFECTIVO)
-        .reduce((s, p) => s + (Number(p.importe) || 0), 0);
-      const cambioEfectivo = Math.max(
-        0,
-        this.state.redondear(totalEfectivo - this.state.totales().total),
-      );
-      const pagoOps = pagosList.map((p) => {
-        const importe = Number(p.importe) || 0;
-        const esEfectivo = Number(p.formapagoId) === FORMAPAGO_EFECTIVO;
-        return this.api.post<any>('/facturacion/fac-caja', {
-          facturaId: fac.facturaId,
-          formapagoId: p.formapagoId,
-          tarjetacreditoId: p.tarjetacreditoId || null,
-          nrotarjeta: p.nrotarjeta || null,
-          nroautorizacion: p.nroautorizacion || null,
-          importe_otros: esEfectivo ? 0 : importe,
-          importe_efectivo: esEfectivo ? importe : 0,
-          importe_cambio: esEfectivo ? cambioEfectivo : 0,
-          factordecambio: raw.factordecambio ?? 0,
-          cajaId: raw.cajaId,
-        });
-      });
-      forkJoin(pagoOps)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => {
-            this.procesarKardexYFinalizar(fac, `Factura #${fac.nrofactura} creada con ${pagosList.length} pago(s)`);
-          },
-          error: () => {
-            this.guardando.set(false);
-            this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.nrofactura} creada, pero falló el registro de pagos` });
-            this.nueva();
-          },
-        });
-    } else {
-      this.procesarKardexYFinalizar(fac, `Factura #${fac.nrofactura} creada`);
-    }
-  }
-
-  private procesarKardexYFinalizar(fac: any, mensajeExito: string) {
-    this.api
-      .post<any>(`/facturacion/facturas/${fac.facturaId}/procesar-kardex`, {})
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.guardando.set(false);
-          this.msgs.add({ severity: 'success', summary: 'Guardado', detail: mensajeExito });
           // El ticket se imprime ANTES de navegar: `nueva()` destruye este
           // componente y takeUntilDestroyed cancelaría la petición del ticket.
           if (this.state.snImprimeFactura) {
@@ -458,10 +424,11 @@ export class PosPagar implements OnInit {
             this.nueva();
           }
         },
-        error: () => {
+        error: (err) => {
           this.guardando.set(false);
-          this.msgs.add({ severity: 'warn', summary: 'Advertencia', detail: `Factura #${fac.nrofactura} creada, pero falló el registro de kardex` });
-          this.nueva();
+          const crudo = err?.error?.message ?? err?.error?.error ?? 'No se pudo guardar la factura';
+          const detail = Array.isArray(crudo) ? crudo.join(', ') : String(crudo);
+          this.msgs.add({ severity: 'error', summary: 'Error', detail });
         },
       });
   }
