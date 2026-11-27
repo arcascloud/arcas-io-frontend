@@ -7,6 +7,7 @@ import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DrawerModule } from 'primeng/drawer';
 import { SelectModule } from 'primeng/select';
+import { TabsModule } from 'primeng/tabs';
 import { ToastModule } from 'primeng/toast';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { TooltipModule } from 'primeng/tooltip';
@@ -62,6 +63,7 @@ const REFRESCO_MS = 15_000;
     ButtonModule,
     DrawerModule,
     SelectModule,
+    TabsModule,
     ToastModule,
     ToggleButtonModule,
     TooltipModule,
@@ -192,6 +194,16 @@ export class RestauranteMesero implements OnInit {
   irAListas() {
     this.tipoVista.set(this.todasMesas().some((p) => p.estado === 'lista') ? 'M' : 'K');
     this.filtro.set('listas');
+  }
+
+  /** Vuelve la selección de mesero a cero para elegir otro desde el inicio. */
+  limpiarMesero() {
+    this.gestorId.set(null);
+  }
+
+  /** p-tabs emite string | number | undefined: se normaliza a 'M' | 'K'. */
+  cambiarTipoVista(valor: string | number | undefined) {
+    this.tipoVista.set(valor === 'K' ? 'K' : 'M');
   }
 
   salir() {

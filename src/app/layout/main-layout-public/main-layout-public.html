@@ -41,40 +41,61 @@
       </div>
       <div class="topbar-center">
         <p-autoComplete
+          #buscadorTopbar
           [ngModel]="busquedaTopbar()"
-          (ngModelChange)="busquedaTopbar.set($event)"
+          (ngModelChange)="onTopbarModelChange($event)"
           [suggestions]="sugerenciasTopbar()"
           (completeMethod)="filterProductos($event)"
-          field="descripcion"
+          optionLabel="descripcion"
           placeholder="Buscar productos..."
           styleClass="topbar-search"
           [inputStyle]="{ width: '100%' }"
+          [panelStyle]="topbarPanelStyle()"
           [dropdown]="true"
           [forceSelection]="false"
           [showClear]="true"
           [appendTo]="'body'"
+          (onShow)="ajustarAnchoPanelBuscador()"
           (onSelect)="onProductoSelect($event)"
           (onClear)="onTopbarClear()"
           (onInputKeydown)="onTopbarKeydown($event)"
         >
           <ng-template let-producto pTemplate="item">
-            <div class="flex align-items-center gap-2 py-1">
+            <div class="topbar-search-item flex align-items-center gap-3 py-1">
               @if (producto.imagen) {
               <img
                 [src]="resolverImagenTopbar(producto.imagen)"
-                width="32"
-                height="32"
+                [alt]="producto.descripcion"
+                width="64"
+                height="64"
                 class="topbar-search-img"
               />
               } @else {
-              <i class="pi pi-box topbar-search-icon"></i>
+              <div class="topbar-search-img-placeholder">
+                <i class="pi pi-box topbar-search-icon"></i>
+              </div>
               }
-              <div class="flex flex-column">
-                <span class="font-bold text-xs">{{ producto.descripcion }}</span>
-                <span class="text-xs text-muted-color"
-                  >Cód: {{ producto.codbarra || 'N/A' }} | Precio: {{
-                  formatearPrecioTopbar(producto.precioventa) }}</span
-                >
+              <div class="topbar-search-info flex flex-column">
+                <span class="font-bold text-sm">{{ producto.descripcion }}</span>
+                <div class="topbar-search-meta flex align-items-center flex-wrap">
+                  <span class="text-xs text-muted-color"
+                    >Cód: {{ producto.codbarra || 'N/A' }} | Precio: {{
+                    formatearPrecioTopbar(producto.precioventa) }}</span
+                  >
+                  <p-button
+                    icon="pi pi-cart-plus"
+                    [rounded]="true"
+                    [raised]="true"
+                    variant="text"
+                    severity="secondary"
+                    size="small"
+                    class="ml-5"
+                    [disabled]="producto.existencia <= 0 && !esBajoDemanda(producto)"
+                    (click)="agregarAlCarritoTopbar($event, producto)"
+                    pTooltip="Agregar al carrito"
+                    tooltipPosition="top"
+                  />
+                </div>
               </div>
             </div>
           </ng-template>

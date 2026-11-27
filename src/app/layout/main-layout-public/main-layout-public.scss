@@ -339,16 +339,45 @@ $topbar-height: 75px;
   }
 }
 
-.topbar-search-img {
-  width: 32px;
-  height: 32px;
-  object-fit: cover;
-  border-radius: 4px;
+// Estilos del overlay del buscador (appendTo="body")
+::ng-deep .topbar-search-item {
+  width: 100%;
+  min-width: 0;
 }
 
-.topbar-search-icon {
-  font-size: 1.2rem;
+::ng-deep .topbar-search-img {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+}
+
+::ng-deep .topbar-search-img-placeholder {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-surface-ground);
+  border: 1px solid var(--c-border);
+}
+
+::ng-deep .topbar-search-icon {
+  font-size: 1.75rem;
   color: var(--c-primary);
+}
+
+::ng-deep .topbar-search-info {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
 }
 
 .user-chip {

@@ -69,6 +69,7 @@
             label="Pagar ahora"
             icon="pi pi-check"
             severity="success"
+            rounded
             [fluid]="true"
             [disabled]="cargandoCarrito() || !autenticado()"
             (click)="abrirCheckout(); carritoOpen.set(false)"
@@ -77,7 +78,7 @@
             label="Vaciar carrito"
             icon="pi pi-trash"
             severity="danger"
-            variant="text"
+            rounded
             [fluid]="true"
             [disabled]="cargandoCarrito() || carritoItems().length === 0"
             (click)="confirmarVaciarCarrito()"

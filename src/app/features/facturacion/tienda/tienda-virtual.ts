@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, model, DestroyRef, NgZone, ViewChild, effect, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, model, DestroyRef, NgZone, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { filter, forkJoin } from 'rxjs';
@@ -117,15 +117,15 @@ export class TiendaVirtual implements OnInit {
   }
 
   productos = signal<ProductoTienda[]>([]);
-  carritoItems = signal<CarritoItem[]>([]);
-  carritoId = signal<number | null>(null);
+  readonly carritoItems = this.carritoState.carritoItems;
+  readonly carritoId = this.carritoState.carritoId;
   busqueda = signal<string>('');
 
   categoriaIdFiltro = signal<number | null>(null);
   deptoIdFiltro = signal<number | null>(null);
   layout = signal<'grid' | 'list'>('grid');
   cargando = signal(false);
-  cargandoCarrito = signal(false);
+  readonly cargandoCarrito = this.carritoState.cargandoCarrito;
 
   // model() en vez de signal(): [(visible)] de PrimeNG es binding de dos vías —
   // con signal() plano, visibleChange() SOBREESCRIBE la señal con un booleano
@@ -218,13 +218,8 @@ export class TiendaVirtual implements OnInit {
     return copia;
   });
 
-  totalItems = computed(() => this.carritoItems().reduce((sum, i) => sum + Number(i.cantidad), 0));
-  totalCarrito = computed(() => this.carritoItems().reduce((sum, i) => sum + Number(i.subTotal), 0));
-
-  /** Sincroniza totalItems al servicio compartido para que el topbar lo muestre */
-  private _syncCarrito = effect(() => {
-    this.carritoState.setTotalItems(this.totalItems());
-  });
+  readonly totalItems = this.carritoState.totalItems;
+  readonly totalCarrito = this.carritoState.totalCarrito;
 
   checkout: CheckoutPago & { nrotarjeta?: string; tarjetacreditoId?: number; fechaexpiracion?: string; cvv?: string } = {
     poscotmaeId: 0,
@@ -321,92 +316,16 @@ export class TiendaVirtual implements OnInit {
   /** Producto solicitado bajo demanda: no exige existencia para agregarlo/venderlo */
   readonly esBajoDemanda = esBajoDemanda;
 
-  async agregarAlCarrito(producto: ProductoTienda) {
-    // Bajo demanda: se puede vender aunque la existencia sea 0
-    if (producto.existencia <= 0 && !this.esBajoDemanda(producto)) {
-      this.messageService.add({ severity: 'warn', summary: 'Sin stock', detail: 'Producto sin existencia' });
-      return;
-    }
-
-    if (!this.carritoId()) {
-      await this.crearCarrito();
-    }
-
-    const existing = this.carritoItems().find(i => i.productoId === String(producto.produtoId));
-    const nuevaCant = existing ? existing.cantidad + 1 : 1;
-    if (nuevaCant > producto.existencia && !this.esBajoDemanda(producto)) {
-      this.messageService.add({ severity: 'warn', summary: 'Stock insuficiente', detail: `Solo quedan ${producto.existencia} unidades` });
-      return;
-    }
-
-    this.cargandoCarrito.set(true);
-    const payload = {
-      poscotmaeId: this.carritoId()!,
-      productoId: String(producto.produtoId),
-      codbarra: producto.codbarra || '',
-      cantidad: nuevaCant,
-      precio: Number(producto.precioventa),
-      subTotal: Number(producto.precioventa) * nuevaCant,
-    };
-
-    if (existing) {
-      this.tiendaService.eliminarItem(existing.poscotdetId)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => {
-          this.tiendaService.agregarItem(payload)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: () => this.recargarItems(),
-              error: () => this.cargandoCarrito.set(false),
-            });
-        });
-    } else {
-      this.tiendaService.agregarItem(payload)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => {
-            this.recargarItems();
-            this.messageService.add({ severity: 'success', summary: 'Agregado', detail: `${producto.descripcion} agregado al carrito` });
-          },
-          error: () => {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo agregar al carrito' });
-            this.cargandoCarrito.set(false);
-          },
-        });
-    }
+  agregarAlCarrito(producto: ProductoTienda) {
+    return this.carritoState.agregarAlCarrito(producto);
   }
 
-  async crearCarrito() {
-    return new Promise<void>((resolve) => {
-      const user = this.auth.currentUser();
-      const gestorId = user?.usuarioId || 1;
-      const atendio = user?.nombre || 'Tienda Online';
-      this.tiendaService.crearCarrito('Cliente Tienda', 'N/A', atendio, gestorId)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (carrito) => {
-            this.carritoId.set(carrito.poscotmaeId);
-            resolve();
-          },
-          error: () => {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el carrito' });
-            resolve();
-          },
-        });
-    });
+  crearCarrito() {
+    return this.carritoState.crearCarrito();
   }
 
   recargarItems() {
-    if (!this.carritoId()) return;
-    this.tiendaService.getCarritoItems(this.carritoId()!)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (items) => {
-          this.carritoItems.set(items);
-          this.cargandoCarrito.set(false);
-        },
-        error: () => this.cargandoCarrito.set(false),
-      });
+    this.carritoState.recargarItems();
   }
 
   incrementar(item: CarritoItem) {
@@ -678,8 +597,7 @@ export class TiendaVirtual implements OnInit {
   }
 
   limpiarTodo() {
-    this.carritoItems.set([]);
-    this.carritoId.set(null);
+    this.carritoState.limpiarCarrito();
     this.dialogCheckout.set(false);
   }
 

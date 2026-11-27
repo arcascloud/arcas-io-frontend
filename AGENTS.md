@@ -353,6 +353,8 @@ Each feature has its own `*.routes.ts` with exported route constants:
 | `EPERM .angular/cache` on Windows | `npx ng build --clear-cache` or delete `.angular/` |
 | PrimeNG Table type errors | Re-run `npm install` to trigger `patch-primeng.js` |
 | PrimeNG Select not full-width | Add `.p-select { width: 100% }` in component SCSS |
+| HeidiSQL: error 6125 "Missing unique key for constraint ... in the referenced table" | Usar `libmysql-8.4.0.dll` en HeidiSQL (Configuración de red). El DLL por defecto reporta errores FK falsos; el DDL/esquema está bien |
+
 
 ## Key Files
 
@@ -664,6 +666,12 @@ Interfaces principales:
 - `mysql.exe` en esta máquina tiene launcher interactivo (localhost/aiven.io/Salir)
 - Usar siempre `Invoke-RestMethod` o `Invoke-WebRequest` desde PowerShell para queries
 - Login: `POST /api/auth/login` con `{"usuario":"admin","password":"admin123"}`
+
+### HeidiSQL — error 6125 falso (DLL)
+- Síntoma: al crear una tabla hija o `ADD CONSTRAINT`, HeidiSQL lanza `6125 Failed to add the foreign key constraint. Missing unique key for constraint ... in the referenced table ...`
+- Causa: la DLL cliente que usa HeidiSQL, **no** el esquema ni el servidor. El DDL está correcto
+- Fix: HeidiSQL → Configuración de red → usar **`libmysql-8.4.0.dll`** (no la `libmariadb.dll`/`libmysql.dll` por defecto)
+- Para confirmar que es del cliente: ejecutar el mismo DDL con el cliente `mysql`/`mariadb` del servidor
 
 ### PrimeNG v21+ Tabs: value, no activeIndex
 - `p-tabs` usa `value`/`valueChange` (ModelSignal), NO `activeIndex`/`activeIndexChange`

@@ -9,10 +9,21 @@
         label="volver"
         severity="primary"
         variant="outlined"
-        class="ml-5 ms-icono" aria-label="Salir de toma de pedidos" (click)="salir()">
+        class="ml-5 mr-5 ms-icono" aria-label="Salir de toma de pedidos" (click)="salir()">
           <i class="pi pi-arrow-left"></i>
         </p-button>
-        <h1 class="ms-titulo">Local</h1>
+        <p-button type="button"
+         rounded
+          class="ms-icono"
+          severity="secondary"
+          variant="text"
+          pTooltip="Limpiar mesero"
+          tooltipPosition="bottom"
+          aria-label="Limpiar mesero seleccionado"
+          (click)="limpiarMesero()">
+          <i class="pi pi-eraser"></i>
+        </p-button>
+        <h1 class="ms-titulo">Toma de pedido</h1>
         @if (listasTotal() > 0) {
           <p-button type="button" rounded
             variant="outlined"
@@ -57,22 +68,13 @@
       }
         -->
 
-      <div class="ms-segmento" role="tablist" aria-label="Tipo de puesto">
-        <p-button type="button"
-         rounded
-          severity="info"
-        variant="outlined"
-                   styleClass="w-full"
-                    role="tab" [attr.aria-selected]="tipoVista() === 'M'"
-                     [class.activo]="tipoVista() === 'M'"
-                     (click)="tipoVista.set('M')">Mesas</p-button>
-        <p-button type="button"
-        rounded
-        severity="info"
-        variant="outlined"
-                     role="tab" styleClass="ml-2 w-full"
-                     [attr.aria-selected]="tipoVista() === 'K'" [class.activo]="tipoVista() === 'K'"
-                     (click)="tipoVista.set('K')">Kioskos</p-button>
+      <div class="ms-tabs">
+        <p-tabs [value]="tipoVista()" (valueChange)="cambiarTipoVista($event)">
+          <p-tablist>
+            <p-tab value="M">Mesas</p-tab>
+            <p-tab value="K">Kioskos</p-tab>
+          </p-tablist>
+        </p-tabs>
       </div>
 
       <div class="ms-filtros" role="group" aria-label="Filtrar">

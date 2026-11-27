@@ -151,26 +151,46 @@ button {
   text-align: left;
 }
 /* ═════════ Puestos ═════════ */
-.ms-segmento {
-  display: grid;
-  grid-template-columns: 48% 48%;
-    width: 100%;
+.ms-tabs {
   margin: 0.75rem 1rem 0.5rem;
-  padding: 0.2rem;
-  border: 1px solid var(--c-border);
-  border-radius: 999px;
-  background: var(--c-surface);
 
-  button {
-    width: 100% !important;
-    min-height: $tap;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    font-weight: 600;
-    cursor: pointer;
+  ::ng-deep {
+    .p-tablist {
+      padding: 0.2rem;
+      border: 1px solid var(--c-border);
+      border-radius: 999px;
+      background: var(--c-surface);
+      overflow: hidden;
+    }
 
-    &.activo {
+    .p-tablist-content {
+      overflow: visible;
+    }
+
+    .p-tablist-tab-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.2rem;
+      border: 0;
+      background: transparent;
+    }
+
+    .p-tablist-active-bar {
+      display: none;
+    }
+
+    .p-tab {
+      justify-content: center;
+      min-height: $tap;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--c-text);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .p-tab.p-tab-active {
       background: var(--c-primary);
       color: #fff;
     }

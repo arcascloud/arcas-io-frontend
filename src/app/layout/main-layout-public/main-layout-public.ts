@@ -6,7 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { AutoCompleteModule } from 'primeng/autocomplete';
+import { AutoComplete, AutoCompleteModule } from 'primeng/autocomplete';
 import { Popover } from 'primeng/popover';
 import { DialogModule } from 'primeng/dialog';
 import { PasswordModule } from 'primeng/password';
@@ -25,6 +25,7 @@ import { CarritoStateService } from '../../core/services/carrito-state.service';
 import { AvatarModule } from 'primeng/avatar';
 import { AuthService } from '../../core/services/auth.service';
 import { EmpresaBrandService } from '../../core/services/empresa-brand.service';
+import { esBajoDemanda } from '../../core/utils/stock';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -74,6 +75,8 @@ export class MainLayoutPublic {
   @ViewChild('loginDlg') loginDlg?: LoginDialog;
   /** Diálogo de registro (template ref #registroDlg) */
   @ViewChild('registroDlg') registroDlg?: RegistroDialog;
+  /** Buscador de productos del topbar */
+  @ViewChild('buscadorTopbar') buscadorTopbar?: AutoComplete;
 
   /** true si hay sesión activa (define el contenido del popover) */
   readonly usuario = this.auth.currentUser;
@@ -98,6 +101,8 @@ export class MainLayoutPublic {
   busquedaTopbar = signal('');
   /** Sugerencias mostradas en el dropdown (mismo filtrado que tienda-virtual) */
   sugerenciasTopbar = signal<ProductoTienda[]>([]);
+  /** Estilo calculado del panel de sugerencias (+80px a cada lado del input) */
+  readonly topbarPanelStyle = signal<Record<string, string>>({});
   /** Catálogo de productos — se carga de forma perezosa en el primer tipeo */
   private productosTopbar = signal<ProductoTienda[]>([]);
   /** true mientras se carga el catálogo (evita requests duplicados) */
@@ -135,7 +140,27 @@ export class MainLayoutPublic {
     this.aplicarFiltroTopbar(event);
   }
 
+  /** Expande el panel de sugerencias +80px a la izquierda y +80px a la derecha (acotado al viewport) */
+  ajustarAnchoPanelBuscador() {
+    const el: HTMLElement | undefined = this.buscadorTopbar?.el?.nativeElement;
+    if (!el || typeof window === 'undefined') return;
+    const rect = el.getBoundingClientRect();
+    if (!rect.width) return;
+
+    const margenViewport = 8;
+    const extraIzq = Math.min(20, Math.max(0, rect.left - margenViewport));
+    const extraDer = Math.min(20, Math.max(0, window.innerWidth - rect.right - margenViewport));
+    const anchoTotal = Math.round(rect.width + extraIzq + extraDer);
+
+    this.topbarPanelStyle.set({
+      width: `${anchoTotal}px`,
+      'max-width': `calc(100vw - ${margenViewport * 2}px)`,
+      'margin-left': `${-Math.round(extraIzq)}px`,
+    });
+  }
+
   private aplicarFiltroTopbar(event: { query: string }) {
+    this.ajustarAnchoPanelBuscador();
     const query = (event.query || '').toLowerCase().trim();
     const lista = this.productosTopbar();
     if (!query) {
@@ -144,8 +169,7 @@ export class MainLayoutPublic {
     }
     const filtrados = lista.filter(
       (p) =>
-        p.descripcion?.toLowerCase().includes(query) ||
-        p.codbarra?.toLowerCase().includes(query),
+        p.descripcion?.toLowerCase().includes(query) || p.codbarra?.toLowerCase().includes(query),
     );
     this.sugerenciasTopbar.set(filtrados.slice(0, 10));
   }
@@ -167,26 +191,48 @@ export class MainLayoutPublic {
     });
   }
 
-  /** Selección de una sugerencia → envía el producto como parámetro de búsqueda a la tienda */
+  /** Normaliza el modelo del p-autoComplete para almacenar siempre texto (string) */
+  onTopbarModelChange(valor: string | ProductoTienda | null) {
+    if (typeof valor === 'string') {
+      this.busquedaTopbar.set(valor);
+      return;
+    }
+    this.busquedaTopbar.set(valor?.descripcion ?? '');
+  }
+
+  /** Selección de una sugerencia → muestra la descripción en el input y filtra la tienda */
   onProductoSelect(event: any) {
     this.enterPendiente = false;
     const prod: ProductoTienda | undefined = event?.value;
-    this.irATienda(prod?.descripcion || this.busquedaTopbar());
+    const descripcion = prod?.descripcion || this.busquedaTopbar();
+    this.busquedaTopbar.set(descripcion);
+    this.irATienda(descripcion, false);
   }
 
   /** Sincroniza el estado del dropdown al limpiar el input */
   onTopbarClear() {
+    this.busquedaTopbar.set('');
     this.sugerenciasTopbar.set([]);
     this.enterPendiente = false;
   }
 
   /** Navega a la tienda virtual enviando el texto en el query param `buscar` */
-  private irATienda(texto: string) {
+  private irATienda(texto: string, limpiarInput = true) {
     const q = (texto || '').trim();
     if (!q) return;
-    this.busquedaTopbar.set('');
+    if (limpiarInput) {
+      this.busquedaTopbar.set('');
+    }
     this.sugerenciasTopbar.set([]);
     this.router.navigate(['/facturacion/tienda'], { queryParams: { buscar: q } });
+  }
+
+  readonly esBajoDemanda = esBajoDemanda;
+
+  agregarAlCarritoTopbar(event: Event, producto: ProductoTienda) {
+    event.stopPropagation();
+    event.preventDefault();
+    this.carritoState.agregarAlCarrito(producto);
   }
 
   resolverImagenTopbar(imagen: string | null): string {
@@ -279,22 +325,36 @@ export class MainLayoutPublic {
     const nueva = this.passwordNueva.trim();
     const confirm = this.passwordConfirm.trim();
     if (!this.pwdValida) {
-      this.msgs.add({ severity: 'warn', summary: 'Contraseña no cumple requisitos', detail: 'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'Contraseña no cumple requisitos',
+        detail:
+          'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.',
+      });
       return;
     }
     if (nueva !== confirm) {
-      this.msgs.add({ severity: 'warn', summary: 'No coinciden', detail: 'La confirmación de contraseña no coincide.' });
+      this.msgs.add({
+        severity: 'warn',
+        summary: 'No coinciden',
+        detail: 'La confirmación de contraseña no coincide.',
+      });
       return;
     }
 
     this.cambiandoPassword = true;
-    this.api.putBase('/users/password/actualizar', { passwordNueva: nueva })
+    this.api
+      .putBase('/users/password/actualizar', { passwordNueva: nueva })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
           this.cambiandoPassword = false;
           this.dialogCambiarPassword = false;
-          this.msgs.add({ severity: 'success', summary: 'Contraseña actualizada', detail: 'Tu contraseña ha sido cambiada exitosamente' });
+          this.msgs.add({
+            severity: 'success',
+            summary: 'Contraseña actualizada',
+            detail: 'Tu contraseña ha sido cambiada exitosamente',
+          });
         },
         error: (err) => {
           this.cambiandoPassword = false;
