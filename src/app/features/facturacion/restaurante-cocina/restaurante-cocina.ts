@@ -5,8 +5,6 @@ import { forkJoin, Observable } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
-import { CarouselModule } from 'primeng/carousel';
-import type { CarouselResponsiveOptions } from 'primeng/carousel';
 import { ApiService } from '../../../core/services/api.service';
 import { RestauranteService } from '../../../core/services/restaurante.service';
 import {
@@ -28,15 +26,9 @@ const CLAVE_SONIDO = 'rest-cocina-sonido';
 /** Clase global que pinta el body de negro mientras el tablero está montado. */
 const CLASE_BODY_NEGRO = 'cocina-body-negro';
 
-/** Tickets visibles por fila según el ancho de la pantalla (array readonly para el template). */
-const CAROUSEL_RESPONSIVE: readonly CarouselResponsiveOptions[] = [
-  { breakpoint: '1400px', numVisible: 2, numScroll: 1 },
-  { breakpoint: '768px', numVisible: 1, numScroll: 1 },
-];
-
 /**
- * Tablero de cocina (fase 3): tres COLUMNAS con carrusel circular vertical
- * (PrimeNG Carousel) — col-1 Nuevos, col-2 Preparando, col-3 Listos.
+ * Tablero de cocina (fase 3): tres COLUMNAS con lista scrollable vertical —
+ * col-1 Nuevos, col-2 Preparando, col-3 Listos.
  *
  * Cada tarjeta es un TICKET POR RONDA (pospedmaeId + ronda_uuid): lo que el
  * mesero envió junto avanza junto con un toque, pero también se puede avanzar
@@ -50,7 +42,7 @@ const CAROUSEL_RESPONSIVE: readonly CarouselResponsiveOptions[] = [
 @Component({
   selector: 'app-restaurante-cocina',
   standalone: true,
-  imports: [CommonModule, ButtonModule, TooltipModule, CarouselModule],
+  imports: [CommonModule, ButtonModule, TooltipModule],
   templateUrl: './restaurante-cocina.html',
   styleUrls: ['./restaurante-cocina.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -65,7 +57,6 @@ export class RestauranteCocina implements OnInit {
   /** Para el template (prohibido llamar new Date() en la plantilla). */
   readonly etiquetaPuesto = etiquetaPuesto;
   readonly siguienteEstadoCocina = siguienteEstadoCocina;
-  readonly carouselResponsive = CAROUSEL_RESPONSIVE;
 
   lineas = signal<LineaCocina[]>([]);
   pedidos = signal<OrdenMesero[]>([]);
@@ -80,6 +71,8 @@ export class RestauranteCocina implements OnInit {
 
   private clavesConocidas = new Set<string>();
   private primeraCarga = true;
+  /** Secuencia de carga: descarta respuestas obsoletas cuando se solapan (refresco 15 s + post-acción). */
+  private seqCarga = 0;
 
   /**
    * Tarjetas agrupadas por (orden, ronda). El estado de la tarjeta es la línea
@@ -132,6 +125,7 @@ export class RestauranteCocina implements OnInit {
   // ───────────────────────── Carga ─────────────────────────
 
   cargar(): void {
+    const seq = ++this.seqCarga;
     forkJoin({
       lineas: this.srv.getLineasCocina(),
       pedidos: this.srv.getOrdenesAbiertas(),
@@ -139,6 +133,7 @@ export class RestauranteCocina implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ lineas, pedidos }) => {
+          if (seq !== this.seqCarga) return; // respuesta obsoleta: otra carga más nueva ya corre
           this.lineas.set(lineas);
           // getOrdenesAbiertas está tipeado como OrdenRestaurante; el JSON trae
           // además estado/cajaId/gestorId (que esta pantalla sí lee).
@@ -149,6 +144,7 @@ export class RestauranteCocina implements OnInit {
           this.detectarNuevos();
         },
         error: () => {
+          if (seq !== this.seqCarga) return;
           this.cargando.set(false);
           // Silencioso en el refresco automático: no spamear toasts cada 15 s
           if (!this.actualizadoEn()) this.error.set('No se pudo cargar el tablero de cocina');

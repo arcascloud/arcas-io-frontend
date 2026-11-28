@@ -34,6 +34,7 @@
                 formControlName="descripcion"
                 maxlength="250"
                 placeholder="Descripción del producto"
+                [readonly]="bloqueadoPorKardex()"
                 [ngClass]="{ 'ng-invalid': invalid('descripcion') }"
               />
               @if (invalid('descripcion')) {
@@ -78,7 +79,11 @@
                 formControlName="codbarra"
                 maxlength="20"
                 placeholder="Código de barras"
+                [readonly]="bloqueadoPorKardex()"
               />
+              @if (bloqueadoPorKardex()) {
+              <small class="hint">El producto tiene movimientos en kardex; la descripción y el código de barras no se pueden modificar</small>
+              }
             </div>
           </div>
         </div>

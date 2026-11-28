@@ -14,6 +14,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { GalleriaModule } from 'primeng/galleria';
 import { MessageService } from 'primeng/api';
 import { ProductosService } from '../../../core/services/productos.service';
+import { KardexService } from '../../../core/services/kardex.service';
 import { CategoriasService } from '../../../core/services/categorias.service';
 import { DepartamentosService } from '../../../core/services/departamentos.service';
 import { MarcasService } from '../../../core/services/marcas.service';
@@ -69,6 +70,7 @@ export class ProductoForm implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private service = inject(ProductosService);
+  private kardexSvc = inject(KardexService);
   private categoriasSvc = inject(CategoriasService);
   private departamentosSvc = inject(DepartamentosService);
   private marcasSvc = inject(MarcasService);
@@ -80,6 +82,7 @@ export class ProductoForm implements OnInit {
 
   // ── Estado ──────────────────────────────────────────────────────
   esEdicion = signal(false);
+  bloqueadoPorKardex = signal(false);
   cargando = signal(false);
   guardando = signal(false);
   titulo = signal('Nuevo producto');
@@ -236,6 +239,7 @@ export class ProductoForm implements OnInit {
           });
           this.cargarAtributos();
           this.cargarImagenes();
+          this.verificarCodbarra();
           this.cargando.set(false);
         },
         error: () => {
@@ -245,6 +249,14 @@ export class ProductoForm implements OnInit {
         },
       });
     }
+  }
+
+  /** Descripción y código de barras quedan readonly si el producto ya tiene kardex. */
+  private verificarCodbarra() {
+    this.kardexSvc.tieneMovimientos(this.produtoId).subscribe({
+      next: (tiene) => this.bloqueadoPorKardex.set(tiene),
+      error: () => this.bloqueadoPorKardex.set(false),
+    });
   }
 
   // ── Carga de datos ──────────────────────────────────────────────

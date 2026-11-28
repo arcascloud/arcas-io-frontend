@@ -53,25 +53,11 @@
         <span class="badge">{{ nuevos().length }}</span>
       </div>
       <div class="col-body">
-        @if (nuevos().length) {
-          <p-carousel
-            [value]="nuevos()"
-            [circular]="true"
-            [orientation]="'vertical'"
-            verticalViewPortHeight="calc(100% - 4rem)"
-            [numVisible]="2"
-            [numScroll]="1"
-            [showIndicators]="false"
-            [showNavigators]="true"
-            [responsiveOptions]="carouselResponsive"
-          >
-            <ng-template let-t pTemplate="item">
-              <div class="carrusel-slot">
-                <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
-              </div>
-            </ng-template>
-          </p-carousel>
-        } @else {
+        @for (t of nuevos(); track t.key) {
+          <div class="tarjeta-slot">
+            <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
+          </div>
+        } @empty {
           <div class="vacio">Sin tickets nuevos</div>
         }
       </div>
@@ -84,25 +70,11 @@
         <span class="badge">{{ enPreparacion().length }}</span>
       </div>
       <div class="col-body">
-        @if (enPreparacion().length) {
-          <p-carousel
-            [value]="enPreparacion()"
-            [circular]="true"
-            [orientation]="'vertical'"
-            verticalViewPortHeight="calc(100% - 4rem)"
-            [numVisible]="2"
-            [numScroll]="1"
-            [showIndicators]="false"
-            [showNavigators]="true"
-            [responsiveOptions]="carouselResponsive"
-          >
-            <ng-template let-t pTemplate="item">
-              <div class="carrusel-slot">
-                <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
-              </div>
-            </ng-template>
-          </p-carousel>
-        } @else {
+        @for (t of enPreparacion(); track t.key) {
+          <div class="tarjeta-slot">
+            <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
+          </div>
+        } @empty {
           <div class="vacio">Sin tickets en preparación</div>
         }
       </div>
@@ -115,25 +87,11 @@
         <span class="badge">{{ listos().length }}</span>
       </div>
       <div class="col-body">
-        @if (listos().length) {
-          <p-carousel
-            [value]="listos()"
-            [circular]="true"
-            [orientation]="'vertical'"
-            verticalViewPortHeight="calc(100% - 4rem)"
-            [numVisible]="2"
-            [numScroll]="1"
-            [showIndicators]="false"
-            [showNavigators]="true"
-            [responsiveOptions]="carouselResponsive"
-          >
-            <ng-template let-t pTemplate="item">
-              <div class="carrusel-slot">
-                <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
-              </div>
-            </ng-template>
-          </p-carousel>
-        } @else {
+        @for (t of listos(); track t.key) {
+          <div class="tarjeta-slot">
+            <ng-container *ngTemplateOutlet="tarjetaTpl; context: { $implicit: t }" />
+          </div>
+        } @empty {
           <div class="vacio">Sin tickets listos</div>
         }
       </div>
@@ -173,7 +131,7 @@
           @if (siguienteEstadoCocina(l.estado_cocina); as sig) {
             <p-button
               type="button"
-              size="small"
+              size="large"
               rounded
               [severity]="sig === 'EN_PREPARACION' ? 'warn' : 'primary'"
               [disabled]="ocupado()"
@@ -190,8 +148,11 @@
     </ul>
 
     @if (puedeAvanzar(t)) {
-      <p-button type="button" size="small" rounded
-      styleClass="w-full" [severity]="t.estado === 'PENDIENTE' ? 'warn' : 'primary'"
+      <p-button type="button"
+      [rounded]="true"
+      size="large" rounded
+      styleClass="w-full"
+      [severity]="t.estado === 'PENDIENTE' ? 'warn' : 'primary'"
        [disabled]="ocupado()" (click)="avanzarTarjeta(t)">
         <i class="pi" [class.pi-play]="t.estado === 'PENDIENTE'" [class.pi-check]="t.estado === 'EN_PREPARACION'"></i>
         {{ etiquetaBoton(t) }}

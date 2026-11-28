@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ApiService } from './api.service';
 import { Kardex } from '../models/inventario.models';
 
@@ -24,5 +24,15 @@ export class KardexService {
    */
   getOne(id: number): Observable<Kardex> {
     return this.api.getOne<Kardex>(this.path, id);
+  }
+
+  /** Indica si el producto ya tiene movimientos en kardex. */
+  tieneMovimientos(productoId: number): Observable<boolean> {
+    return this.api
+      .get<{ total: number }>(`${this.path}/consulta`, {
+        productoId,
+        limit: 1,
+      })
+      .pipe(map((r) => Number(r?.total ?? 0) > 0));
   }
 }

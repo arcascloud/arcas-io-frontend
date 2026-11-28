@@ -27,7 +27,7 @@ $background: #0D1117;
 
   h2 {
     margin: 0;
-    font-size: 1.4rem;
+    font-size: 1.8rem;
     font-weight: 700;
     color: var(--c-text);
     display: flex;
@@ -47,7 +47,7 @@ $background: #0D1117;
 }
 
 .actualizado {
-  font-size: 0.85rem;
+  font-size: 1.05rem;
   color: var(--c-text-muted);
   display: flex;
   align-items: center;
@@ -106,7 +106,7 @@ $background: #0D1117;
   align-items: center;
   justify-content: space-between;
   flex: 0 0 auto;
-    padding: 0.5rem 1rem;
+    padding: 0.7rem 1rem;
   font-weight: 700;
   border-bottom: 1px solid var(--c-disabled-color);
 
@@ -114,19 +114,19 @@ $background: #0D1117;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 1rem;
+    font-size: 1.3rem;
   }
 
   .badge {
-    min-width: 1.75rem;
-    height: 1.75rem;
-    padding: 0 0.45rem;
+    min-width: 2.2rem;
+    height: 2.2rem;
+    padding: 0 0.55rem;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
-    font-weight: 700;
+    font-size: 1.15rem;
+    font-weight: 800;
     color: #fff;
   }
 }
@@ -161,50 +161,36 @@ $background: #0D1117;
 .col-body {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
-    padding: 0.5rem;
-    display: flex;
-    background: $background;
-  }
-
-  /* Carrusel circular VERTICAL: el viewport (alto calculado) deja sitio a las flechas. */
-  .col-body ::ng-deep .p-carousel {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .col-body ::ng-deep .p-carousel-content-container {
-    flex: 1;
-    min-height: 0;
-  }
-
-  .col-body ::ng-deep .p-carousel-content {
-    height: 100%;
+  overflow-y: auto;
+  padding: 0.5rem;
   display: flex;
   flex-direction: column;
+  gap: 0.75rem;
+  background: $background;
+
+  /* Scrollbar discreta (pantalla táctil oscura) */
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-disabled-color) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--c-disabled-color);
+    border-radius: 3px;
+  }
+
+  .vacio {
+    margin: auto;
+  }
 }
 
-.col-body ::ng-deep .p-carousel-item {
-  display: flex;
-}
-
-.col-body ::ng-deep .p-carousel-prev-button,
-.col-body ::ng-deep .p-carousel-next-button {
+.tarjeta-slot {
   flex: 0 0 auto;
-  color: var(--c-text);
-}
-
-.carrusel-slot {
-  flex: 1;
   min-width: 0;
-  padding: 0.25rem 0.4rem;
-  display: flex;
 
   .tarjeta {
-    flex: 1;
-    min-width: 0;
     width: 100%;
   }
 }
@@ -213,7 +199,8 @@ $background: #0D1117;
   padding: 2rem 1rem;
   text-align: center;
   color: var(--c-text-muted);
-  font-size: 0.9rem;
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 
 /* ── Tarjeta de ticket ── */
@@ -221,10 +208,10 @@ $background: #0D1117;
   background: $background;
     border: 2px solid var(--c-disabled-color);
   border-radius: 0.75rem;
-  padding: 0.75rem;
+  padding: 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.7rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -236,7 +223,7 @@ $background: #0D1117;
 }
 
 .t-puesto {
-  font-size: 1.15rem;
+  font-size: 1.7rem;
   font-weight: 800;
   color: var(--c-text);
 }
@@ -245,10 +232,10 @@ $background: #0D1117;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.2rem 0.55rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 1.2rem;
+  font-weight: 800;
   background: $background;
   color: var(--c-text-muted);
 
@@ -283,7 +270,7 @@ $background: #0D1117;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.35rem 0.9rem;
-  font-size: 0.82rem;
+  font-size: 1.1rem;
   color: var(--c-text-muted);
 
   i {
@@ -296,18 +283,33 @@ $background: #0D1117;
   }
 }
 
+/* Nombre del cliente: protagonista de la tarjeta (fila propia, letra grande). */
+.t-cliente {
+  flex: 1 1 100%;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--c-text);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+
+  i {
+    font-size: 1.3rem;
+    color: var(--c-primary);
+  }
+}
+
 .t-ronda {
   font-weight: 700;
   color: var(--c-text);
 
   .t-nlineas {
     margin-left: 0.4rem;
-    padding: 0.05rem 0.4rem;
+    padding: 0.1rem 0.5rem;
     border-radius: 999px;
     background: $background;
     color: var(--c-text-muted);
-    font-size: 0.72rem;
-    font-weight: 600;
+    font-size: 0.95rem;
+    font-weight: 700;
   }
 }
 
@@ -318,18 +320,19 @@ $background: #0D1117;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.45rem;
   border-top: 1px dashed var(--c-border);
-  padding-top: 0.55rem;
+  padding-top: 0.6rem;
 
   li {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.3rem 0.4rem;
-    border-radius: 0.4rem;
+    gap: 0.6rem;
+    padding: 0.6rem 0.6rem;
+    border-radius: 0.5rem;
     background: $background;
-    font-size: 0.9rem;
+    font-size: 1.5rem;
+    line-height: 1.35;
 
     &.linea-prep {
       background: color-mix(in srgb, var(--c-primary) 12%, var(--c-bg-black));
@@ -343,31 +346,35 @@ $background: #0D1117;
 }
 
 .l-cant {
-  font-weight: 600;
+  font-weight: 800;
     color: var(--c-bg-white);
-  min-width: 2rem;
+  min-width: 3.4rem;
+  font-size: 1.9rem;
 }
 
 .l-desc {
   flex: 1;
   color: var(--c-bg-white);
+  font-size: 1.6rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .l-ok {
   color: var(--c-success);
-  font-size: 1rem;
+  font-size: 1.6rem;
 }
 
 /* ── Botones ── */
 .btn-linea {
-  min-height: 2rem;
-  padding: 0 0.7rem;
+  min-height: 2.6rem;
+  padding: 0 1rem;
   border: none;
-  border-radius: 0.4rem;
+  border-radius: 0.5rem;
   background: var(--c-primary);
   color: #fff;
-  font-weight: 700;
-  font-size: 0.8rem;
+  font-weight: 800;
+  font-size: 1.15rem;
   cursor: pointer;
 
   &:hover:not(:disabled) {
@@ -382,12 +389,12 @@ $background: #0D1117;
 
 .btn-tarjeta {
   width: 100%;
-  min-height: 3rem; /* objetivo táctil de tablet */
+  min-height: 3.5rem; /* objetivo táctil grande (adultos mayores) */
   border: none;
   border-radius: 0.6rem;
   background: var(--c-primary);
   color: #fff;
-  font-size: 1rem;
+  font-size: 1.35rem;
   font-weight: 800;
   cursor: pointer;
   display: flex;
@@ -396,7 +403,7 @@ $background: #0D1117;
   gap: 0.5rem;
 
   i {
-    font-size: 1.1rem;
+    font-size: 1.35rem;
   }
 
   &:hover:not(:disabled) {
@@ -418,12 +425,12 @@ $background: #0D1117;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  min-height: 3rem;
+  min-height: 3.5rem;
   border-radius: 0.6rem;
   background: color-mix(in srgb, var(--c-success) 14%, var(--c-bg-black));
   color: var(--c-success);
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 800;
+  font-size: 1.25rem;
 }
 
 /* ── Responsive ── */
@@ -438,6 +445,6 @@ $background: #0D1117;
   }
 
   .columna {
-    max-height: 420px;
+    max-height: 560px;
   }
 }
